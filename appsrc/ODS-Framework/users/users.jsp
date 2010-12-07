@@ -316,9 +316,12 @@
     int $_formTab = 0;
     if (getParameter(items, request, "formTab") != null)
       $_formTab = Integer.parseInt(getParameter(items, request, "formTab"));
-    int $_formSubtab = 0;
-    if (getParameter(items, request, "formSubtab") != null)
-      $_formSubtab = Integer.parseInt(getParameter(items, request, "formSubtab"));
+    int $_formTab2 = 0;
+    if (getParameter(items, request, "formTab2") != null)
+      $_formTab2 = Integer.parseInt(getParameter(items, request, "formTab2"));
+    int $_formTab3 = 0;
+    if (getParameter(items, request, "formTab3") != null)
+      $_formTab3 = Integer.parseInt(getParameter(items, request, "formTab3"));
     String $_formMode = "";
     if (getParameter(items, request, "formMode") != null)
       $_formMode = getParameter(items, request, "formMode");
@@ -339,13 +342,31 @@
 
       if ($_form.equals("profile"))
       {
-        if (getParameter(items, request, "pf_update06") != null)
+        if (getParameter(items, request, "pf_update051") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", getParameter(items, request, "pf06_id")) +
-                   httpParam("&", "label", getParameter(items, request, "pf06_label")) +
-                   httpParam("&", "uri", getParameter(items, request, "pf06_uri")) +
+                   httpParam("&", "id", getParameter(items, request, "pf051_id")) +
+                   httpParam("&", "flag", getParameter(items, request, "pf051_flag")) +
+                   httpParam("&", "name", getParameter(items, request, "pf051_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf051_comment")) +
+                   httpParam("&", "properties", getParameter(items, request, "items"));
+          $_retValue = httpRequest ("POST", "user.owns."+$_formMode, params);
+          if ($_retValue.indexOf("<failed>") == 0)
+          {
+		        $_document = createDocument($_retValue);
+            throw new Exception(xpathEvaluate($_document, "/failed/message"));
+          }
+          $_formMode = "";
+        }
+        else if (getParameter(items, request, "pf_update052") != null)
+        {
+          params = httpParam( "", "sid", $_sid) +
+                   httpParam("&", "realm", $_realm) +
+                   httpParam("&", "id", getParameter(items, request, "pf052_id")) +
+                   httpParam("&", "flag", getParameter(items, request, "pf052_flag")) +
+                   httpParam("&", "label", getParameter(items, request, "pf052_label")) +
+                   httpParam("&", "uri", getParameter(items, request, "pf052_uri")) +
                    httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.favorites."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
@@ -355,14 +376,14 @@
           }
           $_formMode = "";
         }
-        else if (getParameter(items, request, "pf_update07") != null)
+        else if (getParameter(items, request, "pf_update053") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", getParameter(items, request, "pf07_id")) +
-                   httpParam("&", "property", getParameter(items, request, "pf07_property")) +
-                   httpParam("&", "url", getParameter(items, request, "pf07_url")) +
-                   httpParam("&", "description", getParameter(items, request, "pf07_description"));
+                   httpParam("&", "id", getParameter(items, request, "pf053_id")) +
+                   httpParam("&", "property", getParameter(items, request, "pf053_property")) +
+                   httpParam("&", "url", getParameter(items, request, "pf053_url")) +
+                   httpParam("&", "description", getParameter(items, request, "pf053_description"));
           $_retValue = httpRequest ("POST", "user.mades."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
           {
@@ -371,13 +392,14 @@
           }
           $_formMode = "";
         }
-        else if (getParameter(items, request, "pf_update08") != null)
+        else if (getParameter(items, request, "pf_update054") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", getParameter(items, request, "pf08_id")) +
-                   httpParam("&", "name", getParameter(items, request, "pf08_name")) +
-                   httpParam("&", "comment", getParameter(items, request, "pf08_comment")) +
+                   httpParam("&", "id", getParameter(items, request, "pf054_id")) +
+                   httpParam("&", "flag", getParameter(items, request, "pf054_flag")) +
+                   httpParam("&", "name", getParameter(items, request, "pf054_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf054_comment")) +
                    httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.offers."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
@@ -387,13 +409,14 @@
           }
           $_formMode = "";
         }
-        else if (getParameter(items, request, "pf_update09") != null)
+        else if (getParameter(items, request, "pf_update055") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", getParameter(items, request, "pf09_id")) +
-                   httpParam("&", "name", getParameter(items, request, "pf09_name")) +
-                   httpParam("&", "comment", getParameter(items, request, "pf09_comment")) +
+                   httpParam("&", "id", getParameter(items, request, "pf055_id")) +
+                   httpParam("&", "flag", getParameter(items, request, "pf055_flag")) +
+                   httpParam("&", "name", getParameter(items, request, "pf055_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf055_comment")) +
                    httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.seeks."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
@@ -403,21 +426,69 @@
           }
           $_formMode = "";
         }
-        else if (getParameter(items, request, "pf_update10") != null)
+        else if (getParameter(items, request, "pf_update056") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", getParameter(items, request, "pf10_id")) +
-                   httpParam("&", "uri", getParameter(items, request, "pf10_uri")) +
-                   httpParam("&", "type", getParameter(items, request, "pf10_type")) +
-                   httpParam("&", "name", getParameter(items, request, "pf10_name")) +
-                   httpParam("&", "comment", getParameter(items, request, "pf10_comment")) +
+                   httpParam("&", "id", getParameter(items, request, "pf056_id")) +
+                   httpParam("&", "flag", getParameter(items, request, "pf056_flag")) +
+                   httpParam("&", "uri", getParameter(items, request, "pf056_uri")) +
+                   httpParam("&", "type", getParameter(items, request, "pf056_type")) +
+                   httpParam("&", "name", getParameter(items, request, "pf056_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf056_comment")) +
                    httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.likes."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
           {
 		        $_document = createDocument($_retValue);
             throw new Exception(xpathEvaluate($_document, "/failed/message"));
+          }
+          $_formMode = "";
+        }
+        else if (getParameter(items, request, "pf_update057") != null)
+        {
+          List items2 = new ArrayList();
+          if ($_formMode.equals("import"))
+          {
+            Enumeration keys = request.getParameterNames();
+    		    while (keys.hasMoreElements())
+    		    {
+    		      String key = (String)keys.nextElement();
+              if (key.indexOf("k_fld_1_") == 0)
+              {
+                String suffix = key.replace("k_fld_1_", "");
+                items2.add(new String[]{"",
+                                        getParameter(items, request, "k_fld_1_"+suffix),
+                                        getParameter(items, request, "k_fld_2_"+suffix),
+                                        getParameter(items, request, "k_fld_3_"+suffix)
+                                       }
+                          );
+              }
+            }
+            $_formMode = "new";
+          } else {
+            items2.add(new String[]{getParameter(items, request, "pf057_id"),
+                                    getParameter(items, request, "pf057_flag"),
+                                    getParameter(items, request, "pf057_uri"),
+                                    getParameter(items, request, "pf057_label")
+                                   }
+                      );
+          }
+          for (int N = 0; N < items2.size(); N++)
+          {
+            String[] item = (String[])items2.get(N);
+            params = httpParam( "", "sid", $_sid) +
+                     httpParam("&", "realm", $_realm) +
+                     httpParam("&", "id", item[0]) +
+                     httpParam("&", "flag", item[1]) +
+                     httpParam("&", "uri", item[2]) +
+                     httpParam("&", "label", item[3]);
+            $_retValue = httpRequest ("POST", "user.knows."+$_formMode, params);
+            if ($_retValue.indexOf("<failed>") == 0)
+            {
+  		        $_document = createDocument($_retValue);
+              throw new Exception($_formMode + xpathEvaluate($_document, "/failed/message"));
+            }
           }
           $_formMode = "";
         }
@@ -448,11 +519,11 @@
           String suffix = "";
           Enumeration keys;
           try {
-            if ((($_formTab == 0) && ($_formSubtab == 3)) || (($_formTab == 1) && ($_formSubtab == 2)))
+            if ((($_formTab == 0) && ($_formTab2 == 3)) || (($_formTab == 1) && ($_formTab2 == 2)))
             {
               String accountType = "P";
               prefix = "x4";
-              if (($_formTab == 1) && ($_formSubtab == 2))
+              if (($_formTab == 1) && ($_formTab2 == 2))
               {
                 accountType = "B";
                 prefix = "y1";
@@ -485,7 +556,7 @@
                 }
       		    }
             }
-            else if (($_formTab == 0) && ($_formSubtab == 5))
+            else if (($_formTab == 0) && ($_formTab2 == 5))
             {
               prefix = "x5";
               params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
@@ -516,7 +587,7 @@
                 }
       		    }
             }
-            else if (($_formTab == 2) && ($_formSubtab == 0))
+            else if (($_formTab == 2) && ($_formTab2 == 0))
             {
               params = httpParam( "", "sid", $_sid) +
                        httpParam("&", "realm", $_realm) +
@@ -539,7 +610,7 @@
               params = httpParam ( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
               if ($_formTab == 0)
               {
-                if ($_formSubtab == 0)
+                if ($_formTab2 == 0)
                 {
                   // Import
                   if ("1".equals(getParameter(items, request, "cb_item_i_name")))
@@ -593,7 +664,7 @@
                   if ("1".equals(getParameter(items, request, "cb_item_i_onlineAccounts")))
                     params += httpParam ("&", "onlineAccounts", getParameter(items, request, "i_onlineAccounts"));
                 }
-                else if ($_formSubtab == 1)
+                else if ($_formTab2 == 1)
                 {
                   params +=
                        httpParam ("&", "nickName"              , getParameter(items, request, "pf_nickName")) +
@@ -687,7 +758,7 @@
             		  }
                   params += httpParam ("&", "topicInterests", tmp);
                 }
-                if ($_formSubtab == 2)
+                if ($_formTab2 == 2)
                 {
                   params +=
                        httpParam ("&", "homeDefaultMapLocation", getParameter(items, request, "pf_homeDefaultMapLocation")) +
@@ -704,7 +775,7 @@
                        httpParam ("&", "homePhoneExt"          , getParameter(items, request, "pf_homePhoneExt")) +
                        httpParam ("&", "homeMobile"            , getParameter(items, request, "pf_homeMobile"));
                 }
-                if ($_formSubtab == 4)
+                if ($_formTab2 == 4)
                 {
                   params +=
                        httpParam ("&", "icq"                   , getParameter(items, request, "pf_icq")) +
@@ -728,7 +799,7 @@
               }
               if ($_formTab == 1)
               {
-                if ($_formSubtab == 0)
+                if ($_formTab2 == 0)
                 {
                   params +=
                        httpParam ("&", "businessIndustry"      , getParameter(items, request, "pf_businessIndustry")) +
@@ -744,7 +815,7 @@
                        httpParam ("&", "businessNetwork"       , getParameter(items, request, "pf_businessNetwork")) +
                        httpParam ("&", "businessResume"        , getParameter(items, request, "pf_businessResume"));
                 }
-                if ($_formSubtab == 1)
+                if ($_formTab2 == 1)
                 {
                   params +=
                        httpParam ("&", "businessCountry"       , getParameter(items, request, "pf_businesscountry")) +
@@ -760,7 +831,7 @@
                        httpParam ("&", "businessPhoneExt"      , getParameter(items, request, "pf_businessPhoneExt")) +
                        httpParam ("&", "businessMobile"        , getParameter(items, request, "pf_businessMobile"));
                 }
-                if ($_formSubtab == 3)
+                if ($_formTab2 == 3)
                 {
                   params +=
                        httpParam ("&", "businessIcq"          , getParameter(items, request, "pf_businessIcq")) +
@@ -784,16 +855,16 @@
               }
               if ($_formTab == 2)
               {
-                if ($_formSubtab == 1)
+                if ($_formTab2 == 1)
                   params +=
                        httpParam ("&", "securitySecretQuestion", getParameter(items, request, "pf_securitySecretQuestion")) +
                        httpParam ("&", "securitySecretAnswer", getParameter(items, request, "pf_securitySecretAnswer"));
 
-                if ($_formSubtab == 2)
+                if ($_formTab2 == 2)
                   params +=
                        httpParam ("&", "securityOpenID", getParameter(items, request, "pf_securityOpenID"));
 
-                if ($_formSubtab == 3)
+                if ($_formTab2 == 3)
                 {
                   if (getParameter(items, request, "pf_clear") != null)
                   {
@@ -805,7 +876,7 @@
                   }
                 }
 
-                if ($_formSubtab == 4)
+                if ($_formTab2 == 4)
                   params +=
                        httpParam ("&", "securitySiocLimit", getParameter(items, request, "pf_securitySiocLimit"));
               }
@@ -848,14 +919,14 @@
             }
             if (getParameter(items, request, "pf_next") != null)
             {
-              $_formSubtab += 1;
+              $_formTab2 += 1;
               if (
-                  (($_formTab == 1) && ($_formSubtab > 3)) ||
-                  (($_formTab == 2) && ($_formSubtab > 5))
+                  (($_formTab == 1) && ($_formTab2 > 3)) ||
+                  (($_formTab == 2) && ($_formTab2 > 5))
                  )
               {
                 $_formTab += 1;
-                $_formSubtab = 0;
+                $_formTab2 = 0;
               }
               if ($_formTab == 3)
                 $_formTab = 0;
@@ -879,7 +950,7 @@
         {
           $_form = "profile";
           $_formTab = 0;
-          $_formSubtab = 0;
+          $_formTab2 = 0;
         }
       }
 
@@ -931,13 +1002,14 @@
     }
   %>
   <body>
-    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formSubtab == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>" action="users.jsp">
+    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formTab2 == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>" action="users.jsp">
       <input type="hidden" name="mode" id="mode" value="jsp" />
       <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
       <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
       <input type="hidden" name="form" id="form" value="<% out.print($_form); %>" />
       <input type="hidden" name="formTab" id="formTab" value="<% out.print($_formTab); %>" />
-      <input type="hidden" name="formSubtab" id="formSubtab" value="<% out.print($_formSubtab); %>" />
+      <input type="hidden" name="formTab2" id="formTab2" value="<% out.print($_formTab2); %>" />
+      <input type="hidden" name="formTab3" id="formTab3" value="<% out.print($_formTab3); %>" />
       <input type="hidden" name="formMode" id="formMode" value="<% out.print($_formMode); %>" />
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
@@ -1183,6 +1255,10 @@
                   <li id="pf_tab_2" title="Security">Security</li>
                 </ul>
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <%
+                  if ($_formTab == 0)
+                  {
+                  %>
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
                       <li id="pf_tab_0_0">Profile Import</li>
@@ -1190,14 +1266,13 @@
                       <li id="pf_tab_0_2">Address</li>
                       <li id="pf_tab_0_3">Online Accounts</li>
                       <li id="pf_tab_0_4">Messaging Services</li>
-                      <li id="pf_tab_0_5">Biographical Events</li>
-                      <li id="pf_tab_0_6">Favorite Things</li>
-                      <li id="pf_tab_0_7">Creator Of</li>
-                      <li id="pf_tab_0_8">My Offers</li>
-                      <li id="pf_tab_0_9">Offers I Seek</li>
-                      <li id="pf_tab_0_10">Offers I Seek</li>
+                      <li id="pf_tab_0_5">Others</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <%
+                      if ($_formTab2 == 0)
+                      {
+                      %>
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -1223,6 +1298,11 @@
                           </tbody>
                         </table>
                       </div>
+                      <%
+                      }
+                      if ($_formTab2 == 1)
+                      {
+                      %>
                       <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
@@ -1623,7 +1703,11 @@
                           </tr>
                     </table>
                   </div>
-
+                      <%
+                      }
+                      if ($_formTab2 == 2)
+                      {
+                      %>
                       <div id="pf_page_0_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -1795,7 +1879,11 @@
                       </tr>
                     </table>
                   </div>
-
+                      <%
+                      }
+                      if ($_formTab2 == 3)
+                      {
+                      %>
                       <div id="pf_page_0_3" class="tabContent" style="display:none;">
                         <input type="hidden" name="c_nick" value="<% out.print(xpathEvaluate($_document, "/user/nickName")); %>" id="c_nick" />
                     <table class="form" cellspacing="5">
@@ -1827,7 +1915,11 @@
                       </tr>
                         </table>
                       </div>
-
+                      <%
+                      }
+                      if ($_formTab2 == 4)
+                      {
+                      %>
                       <div id="pf_page_0_4" class="tabContent" style="display:none;">
                         <table id="x6_tbl" class="form" cellspacing="5">
                       <tr>
@@ -1921,8 +2013,28 @@
                           </script>
                         </table>
                       </div>
-
+                      <%
+                      }
+                      if ($_formTab2 == 5)
+                      {
+                      %>
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <ul id="pf_tabs_0_5" class="tabs">
+                          <li id="pf_tab_0_5_0">Biographical Events</li>
+                          <li id="pf_tab_0_5_1">Owns</li>
+                          <li id="pf_tab_0_5_2">Favorite Things</li>
+                          <li id="pf_tab_0_5_3">Creator Of</li>
+                          <li id="pf_tab_0_5_4">My Offers</li>
+                          <li id="pf_tab_0_5_5">Offers I Seek</li>
+                          <li id="pf_tab_0_5_6">Likes & DisLikes</li>
+                          <li id="pf_tab_0_5_7">Social Network</li>
+                        </ul>
+                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                          <%
+                          if ($_formTab3 == 0)
+                          {
+                          %>
+                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -1955,32 +2067,126 @@
                           </tr>
                         </table>
                       </div>
-
                       <%
-                      if ($_formTab == 0)
+                          }
+                          if ($_formTab3 == 1)
+                          {
+                          %>
+                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                            <h3>Owns</h3>
+                            <%
+                              if ($_formMode == "")
+                              {
+                            %>
+                            <div id="pf051_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
+                              </div>
+                          	  <table id="pf051_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf051_tbody">
+                                  <script type="text/javascript">
+                                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOwns();});
+                                  </script>
+                          	    </tbody>
+                              </table>
+                            </div>
+                            <%
+                              }
+                              else
                       {
-                        if ($_formSubtab == 6)
+                                out.print("<input type=\"hidden\" id=\"pf051_id\" name=\"pf051_id\" value=\"" + ((getParameter(items, request, "pf051_id") != null) ? getParameter(items, request, "pf051_id"): "0") + "\" />");
+                            %>
+                            <div id="pf051_form">
+                              <table class="form" cellspacing="5">
+                      				  <tr>
+                                  <th width="25%">
+                      		          Access
+                      		        </th>
+                      		        <td>
+                                    <select name="pf051_flag" id="pf051_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf051_name" id="pf051_name" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Comment
+                                  </th>
+                                  <td>
+                                    <textarea name="pf051_comment" id="pf051_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                  </td>
+                                </tr>
+                      				  <tr>
+                      				    <th valign="top">
+                      		          Products
+                      		        </th>
+                      		        <td width="800px">
+                                    <table id="ow_tbl" class="listing">
+                                      <tbody id="ow_tbody">
+                                        <tr id="ow_throbber">
+                                          <td>
+                                            <img src="/ods/images/oat/Ajax_throbber.gif" />
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <input type="hidden" id="ow_no" name="ow_no" value="1" />
+                                  </td>
+                                </tr>
+                              </table>
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOwn();});
+                              </script>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                                <input type="submit" name="pf_update051" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf051');"/>
+                              </div>
+                            </div>
+                            <%
+                              }
+                            %>
+                          </div>
+                          <%
+                          }
+                          if ($_formTab3 == 2)
                         {
                       %>
-                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
                         <h3>Favorites</h3>
                         <%
                           if ($_formMode == "")
                           {
                         %>
-                        <div id="pf06_list">
+                            <div id="pf052_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Favorite'" alt="Add 'Favorite'" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf06_tbl" class="listing">
+                          	  <table id="pf052_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
-                        		    <th>Label</th>
-                        		    <th>URI</th>
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                                   </tr>
                                 </thead>
-                      	    <tbody id="pf06_tbody">
+                          	    <tbody id="pf052_tbody">
                                   <script type="text/javascript">
                                     OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorites();});
                                   </script>
@@ -1991,16 +2197,28 @@
                           }
                           else
                           {
-                            out.print("<input type=\"hidden\" id=\"pf06_id\" name=\"pf06_id\" value=\"" + ((getParameter(items, request, "pf06_id") != null) ? getParameter(items, request, "pf06_id"): "0") + "\" />");
+                                out.print("<input type=\"hidden\" id=\"pf052_id\" name=\"pf052_id\" value=\"" + ((getParameter(items, request, "pf052_id") != null) ? getParameter(items, request, "pf052_id"): "0") + "\" />");
                         %>
-                        <div id="pf06_form">
+                            <div id="pf052_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+                      		          Access
+                      		        </th>
+                      		        <td>
+                                    <select name="pf052_flag" id="pf052_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Label (*)
                               </th>
                               <td>
-                                <input type="text" name="pf06_label" id="pf06_label" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf052_label" id="pf052_label" value="" class="_validate_" style="width: 400px;">
                             </td>
                             </tr>
                             <tr>
@@ -2008,7 +2226,7 @@
                                 External URI
                               </th>
                               <td>
-                                <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf052_uri" id="pf052_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2028,7 +2246,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
-                            <input type="submit" name="pf_update06" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf06');"/>
+                                <input type="submit" name="pf_update052" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf052');"/>
                           </div>
                       </div>
                       <%
@@ -2037,20 +2255,20 @@
                       </div>
                       <%
                         }
-                        else if ($_formSubtab == 7)
+                          if ($_formTab3 == 3)
                         {
                       %>
-                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
                         <%
                           if ($_formMode == "")
                           {
                         %>
-                        <div id="pf07_list">
+                            <div id="pf053_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Creator Of" alt="Add Creator Of" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf07_tbl" class="listing">
+                          	  <table id="pf053_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Property</th>
@@ -2058,7 +2276,7 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf07_tbody">
+                          	    <tbody id="pf053_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowMades();});
                               </script>
@@ -2069,9 +2287,9 @@
                           }
                           else
                           {
-                              out.print("<input type=\"hidden\" id=\"pf07_id\" name=\"pf07_id\" value=\"" + ((getParameter(items, request, "pf07_id") != null) ? getParameter(items, request, "pf07_id"): "0") + "\" />");
+                                out.print("<input type=\"hidden\" id=\"pf053_id\" name=\"pf053_id\" value=\"" + ((getParameter(items, request, "pf053_id") != null) ? getParameter(items, request, "pf053_id"): "0") + "\" />");
                         %>
-                        <div id="pf07_form">
+                            <div id="pf053_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
@@ -2082,7 +2300,7 @@
                                   function p_init ()
                                   {
                                     var fld = new OAT.Combolist([]);
-                                    fld.input.name = 'pf07_property';
+                                        fld.input.name = 'pf053_property';
                                     fld.input.id = fld.input.name;
                                     fld.input.style.width = "400px";
                                     $("if_opt").appendChild(fld.div);
@@ -2099,7 +2317,7 @@
                                 URI
                               </th>
                               <td>
-                                <input type="text" name="pf07_url" id="pf07_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf053_url" id="pf053_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2107,7 +2325,7 @@
                                 Description (*)
                               </th>
                               <td>
-                                <textarea name="pf07_description" id="pf07_description" style="width: 400px;"></textarea>
+                                    <textarea name="pf053_description" id="pf053_description" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                             <tr>
@@ -2122,7 +2340,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
-                            <input type="submit" name="pf_update07" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf07');"/>
+                                <input type="submit" name="pf_update053" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf053');"/>
                           </div>
                         </div>
                         <%
@@ -2131,28 +2349,28 @@
                       </div>
                       <%
                         }
-                        else if ($_formSubtab == 8)
+                          if ($_formTab3 == 4)
                         {
                       %>
-                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
                         <%
                           if ($_formMode == "")
                           {
                         %>
-                        <div id="pf08_list">
+                            <div id="pf054_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf08_tbl" class="listing">
+                          	  <table id="pf054_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th>Name</th>
-                        		    <th>Description</th>
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf08_tbody">
+                          	    <tbody id="pf054_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOffers();});
                               </script>
@@ -2163,16 +2381,28 @@
                           }
                           else
                           {
-                            out.print("<input type=\"hidden\" id=\"pf08_id\" name=\"pf08_id\" value=\"" + ((getParameter(items, request, "pf08_id") != null) ? getParameter(items, request, "pf08_id"): "0") + "\" />");
+                                out.print("<input type=\"hidden\" id=\"pf054_id\" name=\"pf054_id\" value=\"" + ((getParameter(items, request, "pf054_id") != null) ? getParameter(items, request, "pf054_id"): "0") + "\" />");
                         %>
-                        <div id="pf08_form">
+                            <div id="pf054_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Name
+                      		          Access
+                      		        </th>
+                      		        <td>
+                                    <select name="pf054_flag" id="pf054_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
                               </th>
                               <td>
-                                <input type="text" name="pf08_name" id="pf08_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf054_name" id="pf054_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2180,7 +2410,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf08_comment" id="pf08_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf054_comment" id="pf054_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -2206,7 +2436,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update08" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf08');"/>
+                                <input type="submit" name="pf_update054" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf054');"/>
                           </div>
                         </div>
                         <%
@@ -2215,28 +2445,28 @@
                       </div>
                       <%
                         }
-                        else if ($_formSubtab == 9)
+                          if ($_formTab3 == 5)
                         {
                       %>
-                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
                         <%
                           if ($_formMode == "")
                           {
                         %>
-                        <div id="pf09_list">
+                            <div id="pf055_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf09_tbl" class="listing">
+                          	  <table id="pf055_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th>Name</th>
-                        		    <th>Description</th>
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf09_tbody">
+                          	    <tbody id="pf055_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowSeeks();});
                               </script>
@@ -2247,16 +2477,28 @@
                           }
                           else
                           {
-                            out.print("<input type=\"hidden\" id=\"pf09_id\" name=\"pf09_id\" value=\"" + ((getParameter(items, request, "pf09_id") != null) ? getParameter(items, request, "pf09_id"): "0") + "\" />");
+                                out.print("<input type=\"hidden\" id=\"pf055_id\" name=\"pf055_id\" value=\"" + ((getParameter(items, request, "pf055_id") != null) ? getParameter(items, request, "pf055_id"): "0") + "\" />");
                         %>
-                        <div id="pf09_form">
+                            <div id="pf055_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Name
+                      		          Access
+                      		        </th>
+                      		        <td>
+                                    <select name="pf055_flag" id="pf055_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
                               </th>
                               <td>
-                                <input type="text" name="pf09_name" id="pf09_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf055_name" id="pf055_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2264,7 +2506,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf09_comment" id="pf09_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf055_comment" id="pf055_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -2290,7 +2532,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf09');"/>
+                                <input type="submit" name="pf_update055" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf055');"/>
                           </div>
                         </div>
                         <%
@@ -2299,28 +2541,29 @@
                       </div>
                       <%
                         }
-                        else if ($_formSubtab == 10)
+                          if ($_formTab3 == 6)
                         {
                       %>
-                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
                         <h3>Likes &amp; DisLikes</h3>
                         <%
                           if ($_formMode == "")
                           {
                         %>
-                        <div id="pf10_list">
+                            <div id="pf056_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Like" alt="Add Like" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf10_tbl" class="listing">
+                          	  <table id="pf056_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th width="50%">URI</th>
-                        		    <th width="50%">Name</th>
+                            		    <th width="10%">Type</th>
+                            		    <th width="45%">URI</th>
+                            		    <th width="45%">Name</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf10_tbody">
+                          	    <tbody id="pf056_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowLikes();});
                               </script>
@@ -2331,16 +2574,28 @@
                           }
                           else
                           {
-                            out.print("<input type=\"hidden\" id=\"pf10_id\" name=\"pf10_id\" value=\"" + ((getParameter(items, request, "pf10_id") != null) ? getParameter(items, request, "pf10_id"): "0") + "\" />");
+                                out.print("<input type=\"hidden\" id=\"pf056_id\" name=\"pf056_id\" value=\"" + ((getParameter(items, request, "pf056_id") != null) ? getParameter(items, request, "pf056_id"): "0") + "\" />");
                         %>
-                        <div id="pf10_form">
+                            <div id="pf056_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+                      		          Access
+                      		        </th>
+                      		        <td>
+                                    <select name="pf056_flag" id="pf056_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Type
                               </th>
                               <td>
-                                <select name="pf10_type" id="pf10_type">
+                                    <select name="pf056_type" id="pf056_type">
                                   <option value="L">Like</option>
                                   <option value="DL">DisLike</option>
                                 </select>
@@ -2348,18 +2603,18 @@
                             </tr>
                             <tr>
                               <th>
-                                URI
+                                    URI (*)
                               </th>
                               <td>
-                                <input type="text" name="pf10_uri" id="pf10_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                    <input type="text" name="pf056_uri" id="pf056_uri" value="" class="_validate_ _uri_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
                               <th>
-                                Name
+                                    Name (*)
                               </th>
                               <td>
-                                <input type="text" name="pf10_name" id="pf10_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf056_name" id="pf056_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2367,7 +2622,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf10_comment" id="pf10_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf056_comment" id="pf056_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -2393,17 +2648,155 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update10" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf10');"/>
+                                <input type="submit" name="pf_update056" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf056');"/>
+                              </div>
+                            </div>
+                            <%
+                              }
+                            %>
                           </div>
+                          <%
+                          }
+                          if ($_formTab3 == 7)
+                          {
+                          %>
+                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                            <h3>Knows</h3>
+                            <%
+                              if ($_formMode.equals(""))
+                              {
+                            %>
+                            <div id="pf057_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Knows" alt="Add Knows" src="/ods/images/icons/add_16.png"> Add</span>
+                                <span onclick="javascript: $('formMode').value = 'import'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Import Knows" alt="Import Knows" src="/ods/images/icons/add_16.png"> Import</span>
+                              </div>
+                          	  <table id="pf057_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf057_tbody">
+                                  <script type="text/javascript">
+                                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowKnows();});
+                                  </script>
+                          	    </tbody>
+                              </table>
                         </div>
                         <%
                           }
+                              else if ($_formMode.equals("import"))
+                              {
                         %>
+                            <div id="pf057_import">
+                              <table>
+                      				  <tr>
+                      				    <th width="100px">
+                      		          Source
+                      		        </th>
+                                  <td>
+                                    <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                  </th><td>
+                                    <table class="listing" id="k_tbl">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            Access
+                                          </th>
+                                          <th width="50%">
+                                            URI
+                                          </th>
+                                          <th width="50%">
+                                            Label
+                                          </th>
+                                          <th width="65px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr id="k_tr_no">
+                                           <td colspan="3">
+                                             <b>No downloaded items</b>
+                                           </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                                <input type="submit" name="pf_update057" value="Import" onclick="myBeforeSubmit(); return true;"/>
+                              </div>
                       </div>
                       <%
                         }
                         else
                         {
+                                out.print("<input type=\"hidden\" id=\"pf057_id\" name=\"pf057_id\" value=\"" + ((getParameter(items, request, "pf057_id") != null) ? getParameter(items, request, "pf057_id"): "0") + "\" />");
+                            %>
+                            <div id="pf057_form">
+                              <table class="form" cellspacing="5">
+                      				  <tr>
+                                  <th width="25%">
+                      		          Access
+                      		        </th>
+                      		        <td>
+                                    <select name="pf057_flag" id="pf057_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    URI (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_uri" id="pf057_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Label (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_label" id="pf057_label" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                              </table>
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowKnow();});
+                              </script>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                                <input type="submit" name="pf_update057" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf057');"/>
+                              </div>
+                            </div>
+                            <%
+                              }
+                            %>
+                          </div>
+                          <%
+                          }
+                          %>
+                        </div>
+                      </div>
+                      <%
+                      }
+                      if ($_formTab2 < 5)
+                      {
                       %>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
@@ -2412,11 +2805,14 @@
                       </div>
                       <%
                         }
-                      }
                       %>
                     </div>
                   </div>
-
+                  <%
+                  }
+                  if ($_formTab == 1)
+                  {
+                  %>
                   <div id="pf_page_1" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_1" class="tabs">
                       <li id="pf_tab_1_0" title="Main">Main</li>
@@ -2425,6 +2821,10 @@
                       <li id="pf_tab_1_3" title="Messaging Services">Messaging Services</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <%
+                      if ($_formTab2 == 0)
+                      {
+                      %>
                       <div id="pf_page_1_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -2638,7 +3038,11 @@
                       </tr>
                         </table>
                       </div>
-
+                      <%
+                      }
+                      if ($_formTab2 == 1)
+                      {
+                      %>
                       <div id="pf_page_1_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
@@ -2810,6 +3214,11 @@
                           </tr>
                         </table>
                       </div>
+                      <%
+                      }
+                      if ($_formTab2 == 2)
+                      {
+                      %>
                       <div id="pf_page_1_2" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
@@ -2840,7 +3249,11 @@
                           </tr>
                         </table>
                       </div>
-
+                      <%
+                      }
+                      if ($_formTab2 == 3)
+                      {
+                      %>
                       <div id="pf_page_1_3" class="tabContent" style="display:none;">
                         <table id="y2_tbl" class="form" cellspacing="5">
                           <tr>
@@ -2934,7 +3347,9 @@
                           </script>
                     </table>
                   </div>
-
+                      <%
+                      }
+                      %>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
@@ -2942,7 +3357,11 @@
                       </div>
                     </div>
                   </div>
-
+                  <%
+                  }
+                  if ($_formTab == 2)
+                  {
+                  %>
                   <div id="pf_page_2" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_2" class="tabs">
                       <li id="pf_tab_2_0" title="Password Settings">Password Settings</li>
@@ -2954,6 +3373,10 @@
                       <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <%
+                      if ($_formTab2 == 0)
+                      {
+                      %>
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -2998,6 +3421,11 @@
                       </tr>
                         </table>
                       </div>
+                      <%
+                      }
+                      if ($_formTab2 == 1)
+                      {
+                      %>
                       <div id="pf_page_2_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3033,6 +3461,11 @@
                       </tr>
                         </table>
                       </div>
+                      <%
+                      }
+                      if ($_formTab2 == 2)
+                      {
+                      %>
                       <div id="pf_page_2_2" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3045,6 +3478,11 @@
                       </tr>
                         </table>
                       </div>
+                      <%
+                      }
+                      if ($_formTab2 == 3)
+                      {
+                      %>
                       <div id="pf_page_2_3" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3074,6 +3512,11 @@
                       </tr>
                         </table>
                       </div>
+                      <%
+                      }
+                      if ($_formTab2 == 4)
+                      {
+                      %>
                       <div id="pf_page_2_4" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3087,7 +3530,8 @@
                         </table>
                       </div>
                       <%
-                      if (($_formTab == 2) && ($_formSubtab == 5))
+                      }
+                      if ($_formTab2 == 5)
                       {
                       %>
                       <div id="pf_page_2_5" class="tabContent" style="display:none;">
@@ -3097,7 +3541,7 @@
                       </div>
                       <%
                       }
-                      else if (($_formTab == 2) && ($_formSubtab == 6))
+                      if ($_formTab2 == 6)
                       {
                       %>
                       <div id="pf_page_2_6" class="tabContent" style="display:none;">
@@ -3198,13 +3642,13 @@
                       </div>
                       <%
                         }
-                        else
+                      if ($_formTab2 < 5)
                         {
                       %>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                         <%
-                          if (($_formTab == 2) && ($_formSubtab == 3) && (xpathEvaluate($_document, "/user/securityFacebookID") != null))
+                        if (($_formTab2 == 3) && (xpathEvaluate($_document, "/user/securityFacebookID") != null))
                           {
                         %>
                         <input type="submit" name="pf_clear" value="Clear" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
@@ -3219,6 +3663,9 @@
                       %>
                   </div>
                 </div>
+                  <%
+                  }
+                  %>
                 </div>
               </div>
               <%

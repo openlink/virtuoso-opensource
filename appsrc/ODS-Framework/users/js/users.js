@@ -702,39 +702,46 @@ function init() {
   */
 	if ($('pf')) {
 	  var obj = $('formTab');
-	  if (!obj) {hiddenCreate('formSubtab', null, '0');}
-	  var obj = $('formSubtab');
-	  if (!obj) {hiddenCreate('formSubtab', null, '0');}
+    if (!obj) {hiddenCreate('formTab2', null, '0');}
+    var obj = $('formTab2');
+    if (!obj) {hiddenCreate('formTab2', null, '0');}
+    var obj = $('formTab3');
+    if (!obj) {hiddenCreate('formTab3', null, '0');}
 
-    OAT.Event.attach("pf_tab_0", 'click', function(){pfTabSelect('pf_tab_', 0, 'pf_tab_0_');});
-    OAT.Event.attach("pf_tab_1", 'click', function(){pfTabSelect('pf_tab_', 1, 'pf_tab_1_');});
-    OAT.Event.attach("pf_tab_2", 'click', function(){pfTabSelect('pf_tab_', 2, 'pf_tab_2_');});
+    OAT.Event.attach("pf_tab_0", 'click', function(){pfTabSelect('pf_tab_', 0);});
+    OAT.Event.attach("pf_tab_1", 'click', function(){pfTabSelect('pf_tab_', 1);});
+    OAT.Event.attach("pf_tab_2", 'click', function(){pfTabSelect('pf_tab_', 2);});
     pfTabInit('pf_tab_', $v('formTab'));
 
-    OAT.Event.attach("pf_tab_0_0", 'click', function(){pfTabSelect('pf_tab_0_', 0);});
-    OAT.Event.attach("pf_tab_0_1", 'click', function(){pfTabSelect('pf_tab_0_', 1);});
-    OAT.Event.attach("pf_tab_0_2", 'click', function(){pfTabSelect('pf_tab_0_', 2);});
-    OAT.Event.attach("pf_tab_0_3", 'click', function(){pfTabSelect('pf_tab_0_', 3);});
-    OAT.Event.attach("pf_tab_0_4", 'click', function(){pfTabSelect('pf_tab_0_', 4);});
-    OAT.Event.attach("pf_tab_0_5", 'click', function(){pfTabSelect('pf_tab_0_', 5);});
-    OAT.Event.attach("pf_tab_0_6", 'click', function(){pfTabSelect('pf_tab_0_', 6);});
-    OAT.Event.attach("pf_tab_0_7", 'click', function(){pfTabSelect('pf_tab_0_', 7);});
-    OAT.Event.attach("pf_tab_0_8", 'click', function(){pfTabSelect('pf_tab_0_', 8);});
-    OAT.Event.attach("pf_tab_0_9", 'click', function(){pfTabSelect('pf_tab_0_', 9);});
-    OAT.Event.attach("pf_tab_0_10",'click', function(){pfTabSelect('pf_tab_0_', 10);});
-    pfTabInit('pf_tab_0_', $v('formSubtab'));
+    OAT.Event.attach("pf_tab_0_0", 'click', function(){pfTabSelect('pf_tab_0_', 0, 0);});
+    OAT.Event.attach("pf_tab_0_1", 'click', function(){pfTabSelect('pf_tab_0_', 0, 1);});
+    OAT.Event.attach("pf_tab_0_2", 'click', function(){pfTabSelect('pf_tab_0_', 0, 2);});
+    OAT.Event.attach("pf_tab_0_3", 'click', function(){pfTabSelect('pf_tab_0_', 0, 3);});
+    OAT.Event.attach("pf_tab_0_4", 'click', function(){pfTabSelect('pf_tab_0_', 0, 4);});
+    OAT.Event.attach("pf_tab_0_5", 'click', function(){pfTabSelect('pf_tab_0_', 0, 5);});
+    pfTabInit('pf_tab_0_', $v('formTab2'));
 
-    OAT.Event.attach("pf_tab_1_0", 'click', function(){pfTabSelect('pf_tab_1_', 0);});
-    OAT.Event.attach("pf_tab_1_1", 'click', function(){pfTabSelect('pf_tab_1_', 1);});
-    OAT.Event.attach("pf_tab_1_2", 'click', function(){pfTabSelect('pf_tab_1_', 2);});
-    OAT.Event.attach("pf_tab_1_3", 'click', function(){pfTabSelect('pf_tab_1_', 3);});
-    pfTabInit('pf_tab_1_', $v('formSubtab'));
+    OAT.Event.attach("pf_tab_0_5_0", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 0);});
+    OAT.Event.attach("pf_tab_0_5_1", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 1);});
+    OAT.Event.attach("pf_tab_0_5_2", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 2);});
+    OAT.Event.attach("pf_tab_0_5_3", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 3);});
+    OAT.Event.attach("pf_tab_0_5_4", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 4);});
+    OAT.Event.attach("pf_tab_0_5_5", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 5);});
+    OAT.Event.attach("pf_tab_0_5_6", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 6);});
+    OAT.Event.attach("pf_tab_0_5_7", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 7);});
+    pfTabInit('pf_tab_0_5_', $v('formTab3'));
 
-    OAT.Event.attach("pf_tab_2_0", 'click', function(){pfTabSelect('pf_tab_2_', 0);});
-    OAT.Event.attach("pf_tab_2_1", 'click', function(){pfTabSelect('pf_tab_2_', 1);});
-    OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2);});
-    OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 3);});
-    OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 4);});
+    OAT.Event.attach("pf_tab_1_0", 'click', function(){pfTabSelect('pf_tab_1_', 1, 0);});
+    OAT.Event.attach("pf_tab_1_1", 'click', function(){pfTabSelect('pf_tab_1_', 1, 1);});
+    OAT.Event.attach("pf_tab_1_2", 'click', function(){pfTabSelect('pf_tab_1_', 1, 2);});
+    OAT.Event.attach("pf_tab_1_3", 'click', function(){pfTabSelect('pf_tab_1_', 1, 3);});
+    pfTabInit('pf_tab_1_', $v('formTab2'));
+
+    OAT.Event.attach("pf_tab_2_0", 'click', function(){pfTabSelect('pf_tab_2_', 2, 0);});
+    OAT.Event.attach("pf_tab_2_1", 'click', function(){pfTabSelect('pf_tab_2_', 2, 1);});
+    OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2, 2);});
+    OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 2, 3);});
+    OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 2, 4);});
     var x = function (data) {
       var url;
       try {
@@ -751,14 +758,14 @@ function init() {
           OAT.Dom.show("pf_tab_2_5");
         }
       } else {
-    OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 5);});
+        OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
       OAT.Dom.show("pf_tab_2_5");
       }
     }
     OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
-    OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 6);});
+    OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 2, 6);});
 
-    pfTabInit('pf_tab_2_', $v('formSubtab'));
+    pfTabInit('pf_tab_2_', $v('formTab2'));
 	}
   OAT.MSG.send(OAT, 'PAGE_LOADED');
 }
@@ -794,6 +801,7 @@ function myCancel(prefix)
   needToConfirm = false;
   OAT.Dom.show(prefix+'_list');
   OAT.Dom.hide(prefix+'_form');
+  OAT.Dom.hide(prefix+'_import');
   $('formMode').value = '';
   return false;
 }
@@ -801,48 +809,98 @@ function myCancel(prefix)
 function mySubmit(prefix)
 {
   needToConfirm = false;
-  if (validateInputs($(prefix+'_id'), prefix)) {
-    if (prefix == 'pf06') {
+  if (($v('formMode') == 'import') || validateInputs($(prefix+'_id'), prefix)) {
+    if (prefix == 'pf051') {
+      var S = '/ods/api/user.owns.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf051_id'))
+              + '&flag=' + encodeURIComponent($v('pf051_flag'))
+              + '&name=' + encodeURIComponent($v('pf051_name'))
+              + '&comment=' + encodeURIComponent($v('pf051_comment'))
+              + '&properties=' + encodeURIComponent(prepareItems('ow'));
+      OAT.AJAX.GET(S, '', function(data){pfShowOffers();});
+    }
+    if (prefix == 'pf052') {
       var S = '/ods/api/user.favorites.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf06_id'))
-              + '&label=' + encodeURIComponent($v('pf06_label'))
-              + '&uri=' + encodeURIComponent($v('pf06_uri'))
+              + '&id=' + encodeURIComponent($v('pf052_id'))
+              + '&flag=' + encodeURIComponent($v('pf052_flag'))
+              + '&label=' + encodeURIComponent($v('pf052_label'))
+              + '&uri=' + encodeURIComponent($v('pf052_uri'))
               + '&properties=' + encodeURIComponent(prepareProperties('r'));
       OAT.AJAX.GET(S, '', function(data){pfShowFavorites();});
     }
-    if (prefix == 'pf07') {
+    if (prefix == 'pf053') {
     	var S = '/ods/api/user.mades.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf07_id'))
-              + '&property=' + encodeURIComponent($v('pf07_property'))
-              + '&url=' + encodeURIComponent($v('pf07_url'))
-              + '&description=' + encodeURIComponent($v('pf07_description'));
+              + '&id=' + encodeURIComponent($v('pf053_id'))
+              + '&property=' + encodeURIComponent($v('pf053_property'))
+              + '&url=' + encodeURIComponent($v('pf053_url'))
+              + '&description=' + encodeURIComponent($v('pf053_description'));
     	OAT.AJAX.GET(S, '', function(data){pfShowMades();});
     }
-    if (prefix == 'pf08') {
+    if (prefix == 'pf054') {
     	var S = '/ods/api/user.offers.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf08_id'))
-              + '&name=' + encodeURIComponent($v('pf08_name'))
-              + '&comment=' + encodeURIComponent($v('pf08_comment'))
+              + '&id=' + encodeURIComponent($v('pf054_id'))
+              + '&flag=' + encodeURIComponent($v('pf054_flag'))
+              + '&name=' + encodeURIComponent($v('pf054_name'))
+              + '&comment=' + encodeURIComponent($v('pf054_comment'))
               + '&properties=' + encodeURIComponent(prepareItems('ol'));
     	OAT.AJAX.GET(S, '', function(data){pfShowOffers();});
     }
-    if (prefix == 'pf09') {
+    if (prefix == 'pf055') {
     	var S = '/ods/api/user.seeks.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf09_id'))
-              + '&name=' + encodeURIComponent($v('pf09_name'))
-              + '&comment=' + encodeURIComponent($v('pf09_comment'))
+              + '&id=' + encodeURIComponent($v('pf055_id'))
+              + '&flag=' + encodeURIComponent($v('pf055_flag'))
+              + '&name=' + encodeURIComponent($v('pf055_name'))
+              + '&comment=' + encodeURIComponent($v('pf055_comment'))
               + '&properties=' + encodeURIComponent(prepareItems('wl'));
     	OAT.AJAX.GET(S, '', function(data){pfShowSeeks();});
     }
-    if (prefix == 'pf10') {
+    if (prefix == 'pf056') {
       var S = '/ods/api/user.likes.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf10_id'))
-              + '&uri=' + encodeURIComponent($v('pf10_uri'))
-              + '&type=' + encodeURIComponent($v('pf10_type'))
-              + '&name=' + encodeURIComponent($v('pf10_name'))
-              + '&comment=' + encodeURIComponent($v('pf10_comment'))
+              + '&id=' + encodeURIComponent($v('pf056_id'))
+              + '&flag=' + encodeURIComponent($v('pf056_flag'))
+              + '&uri=' + encodeURIComponent($v('pf056_uri'))
+              + '&type=' + encodeURIComponent($v('pf056_type'))
+              + '&name=' + encodeURIComponent($v('pf056_name'))
+              + '&comment=' + encodeURIComponent($v('pf056_comment'))
               + '&properties=' + encodeURIComponent(prepareItems('ld'));
       OAT.AJAX.GET(S, '', function(data){pfShowLikes();});
+    }
+    if (prefix == 'pf057') {
+      var items = [];
+      if ($v('formMode') == 'import') {
+        var form = $('page_form');
+        for (var N = 0; N < form.elements.length; N++)
+        {
+          if (!form.elements[N])
+            continue;
+
+          var ctrl = form.elements[N];
+          if (typeof(ctrl.type) == 'undefined')
+            continue;
+
+          if (ctrl.name.indexOf("k_fld_1_") != 0)
+            continue;
+
+          var suffix = ctrl.name.replace("k_fld_1_", "");
+          items.push(["", $v("k_fld_1_"+suffix), $v("k_fld_2_"+suffix), $v("k_fld_3_"+suffix)]);
+        }
+        $('formMode').value = 'new';
+        TBL.clean('k');
+      } else {
+        items = [[$v("pf057_id"), $v("pf057_flag"), $v("pf057_uri"), $v("pf057_label")]];
+      }
+      for (var N = 0; N < items.length; N++) {
+        var S = '/ods/api/user.knows.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+                + '&id=' + encodeURIComponent(items[N][0])
+                + '&flag=' + encodeURIComponent(items[N][1])
+                + '&uri=' + encodeURIComponent(items[N][2])
+                + '&label=' + encodeURIComponent(items[N][3]);
+        if (N == items.length-1) {
+          OAT.AJAX.GET(S, '', function(data){pfShowKnows();});
+        } else {
+          OAT.AJAX.GET(S, null, null);
+        }
+      }
     }
     if (prefix == 'pf26') {
       var S = '/ods/api/user.certificates.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
@@ -853,6 +911,7 @@ function mySubmit(prefix)
     }
     OAT.Dom.show(prefix+'_list');
     OAT.Dom.hide(prefix+'_form');
+    OAT.Dom.hide(prefix+'_import');
     $('formMode').value = '';
   }
   return false;
@@ -861,13 +920,15 @@ function mySubmit(prefix)
 function submitItems()
 {
   if ($('items')) {
-    if ($v('formTab') == '0' && $v('formSubtab') == '6' && $v('formMode') != '')
+    if ($v('formTab') == '0' && $v('formTab2') == '5' && $v('formTab3') == '1' && $v('formMode') != '')
+      $('items').value = prepareItems('ow');
+    if ($v('formTab') == '0' && $v('formTab2') == '5' && $v('formTab3') == '2' && $v('formMode') != '')
       $('items').value = prepareProperties('r');
-    if ($v('formTab') == '0' && $v('formSubtab') == '8' && $v('formMode') != '')
+    if ($v('formTab') == '0' && $v('formTab2') == '5' && $v('formTab3') == '4' && $v('formMode') != '')
       $('items').value = prepareItems('ol');
-    if ($v('formTab') == '0' && $v('formSubtab') == '9' && $v('formMode') != '')
+    if ($v('formTab') == '0' && $v('formTab2') == '5' && $v('formTab3') == '5' && $v('formMode') != '')
       $('items').value = prepareItems('wl');
-    if ($v('formTab') == '0' && $v('formSubtab') =='10' && $v('formMode') != '')
+    if ($v('formTab') == '0' && $v('formTab2') == '5' && $v('formTab3') == '6' && $v('formMode') != '')
       $('items').value = prepareItems('ld');
   }
 }
@@ -882,8 +943,8 @@ function myValidateInputs(fld)
 {
   var form = fld.form;
   var formTab = parseInt($v('formTab'));
-  var formSubtab = parseInt($v('formSubtab'));
-  var div = $(pfPages[formTab][formSubtab]);
+  var formTab2 = parseInt($v('formTab2'));
+  var div = $(pfPages[formTab][formTab2]);
 
   for (var i = 0; i < form.elements.length; i++)
   {
@@ -917,8 +978,8 @@ var needToConfirm = true;
 function myCheckLeave (form)
 {
   var formTab = parseInt($v('formTab'));
-  var formSubtab = parseInt($v('formSubtab'));
-  var div = $(pfPages[formTab][formSubtab]);
+  var formTab2 = parseInt($v('formTab2'));
+  var div = $(pfPages[formTab][formTab2]);
   var dirty = false;
   var retValue = true;
 
@@ -995,8 +1056,8 @@ function pfSetACLSelects (obj)
 {
   var form = obj.form;
   var formTab = parseInt($v('formTab'));
-  var formSubtab = parseInt($v('formSubtab'));
-  var div = $(pfPages[formTab][formSubtab]);
+  var formTab2 = parseInt($v('formTab2'));
+  var div = $(pfPages[formTab][formTab2]);
 
   for (var i = 0; i < form.elements.length; i++)
   {
@@ -1031,29 +1092,43 @@ function pfParam(fldName)
   return S;
 }
 
-function pfTabSelect(tabPrefix, newIndex, subtabPrefix) {
+function pfTabSelect(tabPrefix, newIndex, newIndex2, newIndex3) {
   $('formMode').value = '';
-  if (subtabPrefix) {
-    if ($v('formTab') == newIndex) {return;}
+  if (newIndex3 != null) {
+    if ($v('formTab3') == newIndex3) {return;}
+  } else if (newIndex2 != null) {
+    if ($v('formTab2') == newIndex2) {return;}
   } else {
-    if ($v('formSubtab') == newIndex) {return;}
+    if ($v('formTab') == newIndex) {return;}
   }
   if ($('form')) {
-    var S = '?'+pfParam('sid')+pfParam('realm')+pfParam('form');
-    if (subtabPrefix) {
-      S += '&formTab='+newIndex+'&formSubtab=0';
-    } else {
-      S += pfParam('formTab')+'&formSubtab='+newIndex;
-    }
+    var S = '?'+pfParam('sid')+pfParam('realm')+pfParam('form')+'&formTab='+newIndex;
+    if (newIndex2)
+      S += '&formTab2='+newIndex2;
+
+    if (newIndex3)
+      S += '&formTab3='+newIndex3;
+
     document.location = document.location.protocol + '//' + document.location.host + document.location.pathname + S;
     return;
   }
   if (myCheckLeave($('page_form'))) {
-    if (subtabPrefix) {
+    if (newIndex3) {
       $('formTab').value = newIndex;
-      $('formSubtab').value = 0;
-    } else {
-      $('formSubtab').value = newIndex;
+      $('formTab2').value = newIndex2;
+      $('formTab3').value = newIndex3;
+    }
+    else if (newIndex2)
+    {
+      $('formTab').value = newIndex;
+      $('formTab2').value = newIndex2;
+      $('formTab3').value = 0;
+    }
+    else
+    {
+      $('formTab').value = newIndex;
+      $('formTab2').value = 0;
+      $('formTab3').value = 0;
     }
     ufProfileLoad();
   } else {
@@ -1239,16 +1314,20 @@ function pfEditListObject(prefix, id) {
   hiddenCreate(prefix+'_id', $('page_form'), id);
   $('formMode').value = 'edit';
   if ($v('mode') == 'html') {
-    if (prefix == 'pf06')
+    if (prefix == 'pf051')
+      pfShowOwn('edit', id);
+    if (prefix == 'pf052')
       pfShowFavorite('edit', id);
-    if (prefix == 'pf07')
+    if (prefix == 'pf053')
       pfShowMade('edit', id);
-    if (prefix == 'pf08')
+    if (prefix == 'pf054')
       pfShowOffer('edit', id);
-    if (prefix == 'pf09')
+    if (prefix == 'pf055')
       pfShowSeek('edit', id);
-    if (prefix == 'pf10')
+    if (prefix == 'pf056')
       pfShowLike('edit', id);
+    if (prefix == 'pf057')
+      pfShowKnow('edit', id);
     if (prefix == 'pf26')
       pfShowCertificate('edit', id);
     return false;
@@ -1259,14 +1338,30 @@ function pfEditListObject(prefix, id) {
 function pfShowMode(prefix, mode, id) {
   if (mode) {
     OAT.Dom.hide(prefix+'_list');
+    if (mode == 'import') {
+      OAT.Dom.show(prefix+'_import');
+    } else {
     OAT.Dom.show(prefix+'_form');
+    }
     hiddenCreate(prefix+'_id', $('page_form'), id);
     $('formMode').value = mode;
   }
 }
 
+function pfShowOwn(mode, id) {
+  pfShowMode('pf051', mode, id);
+  var x = function (obj) {
+    $('ow_tbody').innerHTML = '';
+    RDF.tablePrefix = 'ow';
+    RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+    RDF.itemTypes = obj.properties;
+    RDF.showItemTypes();
+  }
+  pfShowItem('user.owns.get', 'pf051', ['flag', 'name', 'comment'], x);
+}
+
 function pfShowFavorite(mode, id) {
-  pfShowMode('pf06', mode, id);
+  pfShowMode('pf052', mode, id);
   var x = function (obj) {
     $('r_tbody').innerHTML = '<tr id="r_item_0_tr_0_properties"><td></td><td></td><td valign="top"></td></tr>';
     RDF.tablePrefix = 'r';
@@ -1281,16 +1376,16 @@ function pfShowFavorite(mode, id) {
       }
     )
   }
-  pfShowItem('user.favorites.get', 'pf06', ['label', 'uri'], x);
+  pfShowItem('user.favorites.get', 'pf052', ['flag', 'label', 'uri'], x);
 }
 
 function pfShowMade(mode, id) {
-  pfShowMode('pf07', mode, id);
-  pfShowItem('user.mades.get', 'pf07', ['property', 'uri', 'description']);
+  pfShowMode('pf053', mode, id);
+  pfShowItem('user.mades.get', 'pf053', ['property', 'uri', 'description']);
 }
 
 function pfShowOffer(mode, id) {
-  pfShowMode('pf08', mode, id);
+  pfShowMode('pf054', mode, id);
   var x = function (obj) {
     $('ol_tbody').innerHTML = '';
     RDF.tablePrefix = 'ol';
@@ -1298,11 +1393,11 @@ function pfShowOffer(mode, id) {
     RDF.itemTypes = obj.properties;
     RDF.showItemTypes();
   }
-  pfShowItem('user.offers.get', 'pf08', ['name', 'comment'], x);
+  pfShowItem('user.offers.get', 'pf054', ['flag', 'name', 'comment'], x);
 }
 
 function pfShowSeek(mode, id) {
-  pfShowMode('pf09', mode, id);
+  pfShowMode('pf055', mode, id);
   var x = function(obj) {
     $('wl_tbody').innerHTML = '';
     RDF.tablePrefix = 'wl';
@@ -1310,11 +1405,11 @@ function pfShowSeek(mode, id) {
     RDF.itemTypes = obj.properties;
     RDF.showItemTypes();
   }
-  pfShowItem('user.seeks.get', 'pf09', ['name', 'comment'], x);
+  pfShowItem('user.seeks.get', 'pf055', ['flag', 'name', 'comment'], x);
 }
 
 function pfShowLike(mode, id) {
-  pfShowMode('pf10', mode, id);
+  pfShowMode('pf056', mode, id);
   var x = function(obj) {
     $('ld_tbody').innerHTML = '';
     RDF.tablePrefix = 'ld';
@@ -1322,7 +1417,12 @@ function pfShowLike(mode, id) {
     RDF.itemTypes = obj.properties;
     RDF.showItemTypes();
   }
-  pfShowItem('user.likes.get', 'pf10', ['uri', 'name'], x);
+  pfShowItem('user.likes.get', 'pf056', ['flag', 'type', 'uri', 'name'], x);
+}
+
+function pfShowKnow(mode, id) {
+  pfShowMode('pf057', mode, id);
+  pfShowItem('user.knows.get', 'pf057', ['flag', 'uri', 'label']);
 }
 
 function pfShowCertificate(mode, id) {
@@ -1339,24 +1439,32 @@ function pfShowCertificate(mode, id) {
   pfShowItem('user.certificates.get', 'pf26', ['subject', 'agentID', 'fingerPrint', 'certificate', 'enableLogin']);
 }
 
+function pfShowOwns() {
+  pfShowList('user.owns.list', 'pf051', 'No Items', [1, 2], 0, function (data){pfShowOwns();});
+}
+
 function pfShowFavorites() {
-  pfShowList('user.favorites.list', 'pf06', 'No Items', [3, 4], 0, function (data){pfShowFavorites();});
+  pfShowList('user.favorites.list', 'pf052', 'No Items', [3, 4], 0, function (data){pfShowFavorites();});
 }
 
 function pfShowMades() {
-  pfShowList('user.mades.list', 'pf07', 'No Items', [1, 3], 0, function (data){pfShowMades();});
+  pfShowList('user.mades.list', 'pf053', 'No Items', [1, 3], 0, function (data){pfShowMades();});
 }
 
 function pfShowOffers() {
-  pfShowList('user.offers.list', 'pf08', 'No Items', [1, 2], 0, function (data){pfShowOffers();});
+  pfShowList('user.offers.list', 'pf054', 'No Items', [1, 2], 0, function (data){pfShowOffers();});
 }
 
 function pfShowSeeks() {
-  pfShowList('user.seeks.list', 'pf09', 'No Items', [1, 2], 0, function (data){pfShowSeeks();});
+  pfShowList('user.seeks.list', 'pf055', 'No Items', [1, 2], 0, function (data){pfShowSeeks();});
 }
 
 function pfShowLikes() {
-  pfShowList('user.likes.list', 'pf10', 'No Items', [1, 3], 0, function (data){pfShowLikes();});
+  pfShowList('user.likes.list', 'pf056', 'No Items', [2, 1, 3], 0, function (data){pfShowLikes();});
+}
+
+function pfShowKnows() {
+  pfShowList('user.knows.list', 'pf057', 'No Items', [2, 1], 0, function (data){pfShowKnows();});
 }
 
 function pfShowCertificates() {
@@ -1920,7 +2028,7 @@ function userSubmit() {
 function profileSubmit() {
   $('form').value='profile';
   $('formTab').value=0;
-  $('formSubtab').value=0;
+  $('formTab2').value=0;
   $('page_form').submit();
 
   return false;
@@ -1952,7 +2060,8 @@ function ufProfileSubmit() {
   showTitle('user');
 
 	$('formTab').value = '0';
-	$('formSubtab').value = '0';
+  $('formTab2').value = '0';
+  $('formTab3').value = '0';
   updateList('pf_homecountry', 'Country');
   updateList('pf_businesscountry', 'Country');
   updateList('pf_businessIndustry', 'Industry');
@@ -1961,29 +2070,31 @@ function ufProfileSubmit() {
 
 function ufProfileLoad(No) {
     var formTab = parseInt($v('formTab'));
-    var formSubtab = parseInt($v('formSubtab'));
+  var formTab2 = parseInt($v('formTab2'));
+  var formTab3 = parseInt($v('formTab3'));
   if (No == 1) {
-    formSubtab++;
+    formTab2++;
     if (
-        ((formTab == 1) && (formSubtab > 3)) ||
-        ((formTab == 2) && (formSubtab > 5))
+        ((formTab == 1) && (formTab2 > 3)) ||
+        ((formTab == 2) && (formTab2 > 5))
        )
     {
       formTab++;
-      formSubtab = 0;
+      formTab2 = 0;
       pfTabInit('pf_tab_', formTab);
     }
-    if ($('pf_tab_'+formTab+'_'+formSubtab).style.display == 'none')
-      formSubtab++;
+    if ($('pf_tab_'+formTab+'_'+formTab2).style.display == 'none')
+      formTab2++;
     $('formTab').value = "" + formTab;
-    $('formSubtab').value = "" + formSubtab;
+    $('formTab2').value = "" + formTab2;
+    $('formTab3').value = "" + formTab3;
   }
-  if ((formTab == 0) && (formSubtab > 5)) {
+  if ((formTab == 0) && (formTab2 > 4)) {
     OAT.Dom.hide('pf_footer_0');
   } else {
     OAT.Dom.show('pf_footer_0');
   }
-  if ((formTab == 2) && (formSubtab > 4)) {
+  if ((formTab == 2) && (formTab2 > 4)) {
     OAT.Dom.hide('pf_footer_2');
   } else {
     OAT.Dom.show('pf_footer_2');
@@ -2071,28 +2182,35 @@ function ufProfileCallback(data) {
       // bio events
       pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});
 
-      // made
-      if (($v('formTab') == "0") && ($v('formSubtab') == "6"))
+      // owns
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "1"))
+        pfShowOwns();
+
+      // favorites
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "2"))
         pfShowFavorites();
 
       // made
-      if (($v('formTab') == "0") && ($v('formSubtab') == "7"))
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "3"))
         pfShowMades();
 
       // offer
-      if (($v('formTab') == "0") && ($v('formSubtab') == "8"))
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "4"))
         pfShowOffers();
 
       // seek
-      if (($v('formTab') == "0") && ($v('formSubtab') == "9"))
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "5"))
         pfShowSeeks();
 
       // likes
-      if (($v('formTab') == "0") && ($v('formSubtab') == "10"))
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "6"))
         pfShowLikes();
 
+      if (($v('formTab') == "0") && ($v('formTab2') == "5") && ($v('formTab3') == "7"))
+        pfShowKnows();
+
       // seek
-      if (($v('formTab') == "2") && ($v('formSubtab') == "6"))
+      if (($v('formTab') == "2") && ($v('formTab2') == "6"))
         pfShowCertificates();
 
 			// contact
@@ -2201,9 +2319,10 @@ function ufProfileCallback(data) {
       OAT.Dom.hide("uf");
       OAT.Dom.show("pf");
 			pfTabInit('pf_tab_', $v('formTab'));
-      pfTabInit('pf_tab_0_', $v('formSubtab'));
-      pfTabInit('pf_tab_1_', $v('formSubtab'));
-      pfTabInit('pf_tab_2_', $v('formSubtab'));
+      pfTabInit('pf_tab_0_', $v('formTab2'));
+      pfTabInit('pf_tab_1_', $v('formTab2'));
+      pfTabInit('pf_tab_2_', $v('formTab2'));
+      pfTabInit('pf_tab_0_5_', $v('formTab3'));
     }
   }
 }
@@ -2367,23 +2486,23 @@ function pfUpdateSubmit(No) {
     return false;
 
   var formTab = parseInt($v('formTab'));
-  var formSubtab = parseInt($v('formSubtab'));
-  if ((formTab == 0) && (formSubtab == 3))
+  var formTab2 = parseInt($v('formTab2'));
+  if ((formTab == 0) && (formTab2 == 3))
   {
     updateOnlineAccounts('x4', 'P');
     ufProfileLoad(No);
   }
-  else if ((formTab == 0) && (formSubtab == 5))
+  else if ((formTab == 0) && (formTab2 == 5))
   {
     updateBioEvents('x5');
     ufProfileLoad(No);
   }
-  else if ((formTab == 1) && (formSubtab == 2))
+  else if ((formTab == 1) && (formTab2 == 2))
   {
     updateOnlineAccounts('y1', 'B');
     ufProfileLoad(No);
   }
-  else if ((formTab == 2) && (formSubtab == 0))
+  else if ((formTab == 2) && (formTab2 == 0))
   {
     pfChangeSubmit();
   }
@@ -2393,7 +2512,7 @@ function pfUpdateSubmit(No) {
   	var S = '/ods/api/user.update.fields?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
     if (formTab == 0)
     {
-      if (formSubtab == 0)
+      if (formTab2 == 0)
       {
         // Import
         if ($v('cb_item_i_name') == '1')
@@ -2447,7 +2566,7 @@ function pfUpdateSubmit(No) {
         if ($v('cb_item_i_onlineAccounts') == '1')
           S += '&onlineAccounts=' + encodeURIComponent($v('i_onlineAccounts'));
       }
-      else if (formSubtab == 1)
+      else if (formTab2 == 1)
       {
         S +='&nickName=' + encodeURIComponent($v('pf_nickName'))
         + '&mail=' + encodeURIComponent($v('pf_mail'))
@@ -2482,7 +2601,7 @@ function pfUpdateSubmit(No) {
           + '&audio=' + $v('pf_acl_audio')
           + '&photo=' + $v('pf_acl_photo');
       }
-      else if (formSubtab == 2)
+      else if (formTab2 == 2)
       {
         S +='&defaultMapLocation=' + encodeURIComponent($v('pf_homeDefaultMapLocation'))
 			+ '&homeCountry=' + encodeURIComponent($v('pf_homecountry'))
@@ -2506,7 +2625,7 @@ function pfUpdateSubmit(No) {
   			  + '&homeLatitude=' + $v('pf_acl_homeLatitude')
   			  + '&homePhone=' + $v('pf_acl_homePhone');
   	  }
-      else if (formSubtab == 4)
+      else if (formTab2 == 4)
       {
         S +='&icq=' + encodeURIComponent($v('pf_icq'))
         + '&skype=' + encodeURIComponent($v('pf_skype'))
@@ -2523,7 +2642,7 @@ function pfUpdateSubmit(No) {
     }
     else if (formTab == 1)
     {
-      if (formSubtab == 0)
+      if (formTab2 == 0)
       {
         S +='&businessIndustry=' + encodeURIComponent($v('pf_businessIndustry'))
   			+ '&businessOrganization=' + encodeURIComponent($v('pf_businessOrganization'))
@@ -2549,7 +2668,7 @@ function pfUpdateSubmit(No) {
           + '&businessNetwork=' + $v('pf_acl_businessNetwork')
           + '&businessResume=' + $v('pf_acl_businessResume');
   	  }
-      else if (formSubtab == 1)
+      else if (formTab2 == 1)
       {
         S +='&businessCountry=' + encodeURIComponent($v('pf_businesscountry'))
         + '&businessState=' + encodeURIComponent($v('pf_businessstate'))
@@ -2572,7 +2691,7 @@ function pfUpdateSubmit(No) {
   			  + '&businessLatitude=' + $v('pf_acl_businesslat')
   			  + '&businessPhone=' + $v('pf_acl_businessPhone')
   	  }
-      else if (formSubtab == 3)
+      else if (formTab2 == 3)
       {
         S +='&businessIcq=' + encodeURIComponent($v('pf_businessIcq'))
         + '&businessSkype=' + encodeURIComponent($v('pf_businessSkype'))
@@ -2589,16 +2708,16 @@ function pfUpdateSubmit(No) {
   	}
     else if (formTab == 2)
     {
-      if (formSubtab == 1)
+      if (formTab2 == 1)
       {
         S += '&securitySecretQuestion=' + encodeURIComponent($v('pf_securitySecretQuestion')) +
              '&securitySecretAnswer=' + encodeURIComponent($v('pf_securitySecretAnswer'));
     	}
-      else if (formSubtab == 2)
+      else if (formTab2 == 2)
       {
         S += '&securityOpenID=' + encodeURIComponent($v('pf_securityOpenID'));
     	}
-      else if (formSubtab == 3)
+      else if (formTab2 == 3)
       {
         if (No == 2)
         {
@@ -2607,7 +2726,7 @@ function pfUpdateSubmit(No) {
         S += '&securityFacebookID=' + encodeURIComponent(facebookData.uid);
     	}
       }
-      else if (formSubtab == 4)
+      else if (formTab2 == 4)
       {
         S += '&securitySiocLimit=' + encodeURIComponent($v('pf_securitySiocLimit'));
     	}
@@ -2615,7 +2734,7 @@ function pfUpdateSubmit(No) {
   	if (A != '')
   	  OAT.AJAX.GET('/ods/api/user.acl.update?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&acls=' + encodeURIComponent(A), false, null, {async: false});
 
-  	OAT.AJAX.GET(S, '', function(data){ if((formTab == 0) && (formSubtab == 1)) {$('page_form').submit();}; pfUpdateCallback(data, No);});
+    OAT.AJAX.GET(S, '', function(data){ if((formTab == 0) && (formTab2 == 1)) {$('page_form').submit();}; pfUpdateCallback(data, No);});
   }
   $('pf_oldPassword').value = '';
   $('pf_newPassword').value = '';
@@ -2675,7 +2794,7 @@ function pfCleanFOAFData() {
 }
 
 function pfGetFOAFData(iri) {
-	var S = '/ods/api/user.getFOAFData?foafIRI=' + encodeURIComponent(iri);
+  var S = '/ods/api/user.getFOAFData?spongerMode=1&foafIRI=' + encodeURIComponent(iri);
 	var x = function(data) {
 		var o = null;
 		try {
@@ -2709,10 +2828,11 @@ function pfGetFOAFData(iri) {
 			pfSetFOAFValue(tbody, o.organizationHomepage, 'Organization Homepage', 'i_businessHomePage');
 			pfSetFOAFValue(tbody, o.resume,               'Resume',                       'i_summary');
 			pfSetFOAFValue(tbody, o.tags,                 'Tags',                  'i_tags');
-			pfSetFOAFValue(tbody, o.sameAs,               'Other Personal URIs (WebIDs)', 'i_sameAs', ['URI'], ['\n']);
-			pfSetFOAFValue(tbody, o.interest,             'Topic of Interest',     'i_interests', ['URL', 'Label'], ['\n', ';']);
-			pfSetFOAFValue(tbody, o.topic_interest,       'Thing of Interest',     'i_topicInterests', ['URI', 'Label'], ['\n', ';']);
-			pfSetFOAFValue(tbody, o.onlineAccounts,       'Online Accounts',              'i_onlineAccounts', ['Label', 'URI'], ['\n', ';']);
+      pfSetFOAFValue(tbody, o.sameAs,               'Other Personal URIs (WebIDs)', 'i_sameAs', ['URI'], ['value']);
+      pfSetFOAFValue(tbody, o.interest,             'Topic of Interest',            'i_interests', ['URL', 'Label'], ['value', 'label']);
+      pfSetFOAFValue(tbody, o.topic_interest,       'Thing of Interest',            'i_topicInterests', ['URI', 'Label'], ['value', 'label']);
+      pfSetFOAFValue(tbody, o.onlineAccounts,       'Online Accounts',              'i_onlineAccounts', ['Label', 'URI'], ['value', 'uri']);
+      pfSetFOAFValue(tbody, o.knows,                'Social Network',               'i_knows', ['URI', 'Name'], ['value', 'name']);
 		} else {
 			alert('No data founded for \'' + iri + '\'');
 		}
@@ -2729,7 +2849,7 @@ function pfGetFOAFData(iri) {
 	});
 }
 
-function pfSetFOAFValue(tbody, fValue, fTitle, fName, fHeaders, fDelimiters) {
+function pfSetFOAFValue(tbody, fValue, fTitle, fName, fHeaders, fLabels) {
   if (fValue) {
     var tr = OAT.Dom.create('tr');
     tbody.appendChild(tr);
@@ -2766,24 +2886,23 @@ function pfSetFOAFValue(tbody, fValue, fTitle, fName, fHeaders, fDelimiters) {
         thx.appendChild(OAT.Dom.text(fHeaders[N]));
         trx.appendChild(thx);
       }
-    	var lines = fValue.split(fDelimiters[0]);
-    	for ( var N = 0; N < lines.length; N++) {
-    	  if (lines[N] != '') {
-    	    var V;
-      		if (fDelimiters.length == 1) {
-      			V = [lines[N]];
-      		} else {
-      			V = lines[N].split(fDelimiters[1]);
-      		}
+      tmp = '';
+      for ( var N = 0; N < fValue.length; N++) {
           var trx = OAT.Dom.create('tr');
           tbl.appendChild(trx);
-        	for ( var M = 0; M < V.length; M++) {
+        for ( var M = 0; M < fLabels.length; M++) {
             var tdx = OAT.Dom.create('td');
-            tdx.appendChild(OAT.Dom.text(V[M]));
+          var tmpValue = OAT.Dom.text(fValue[N][fLabels[M]]);
+          if (tmpValue)
+            tdx.appendChild(tmpValue);
             trx.appendChild(tdx);
+          if (tmpValue)
+            tmp += tmpValue;
+          tmp += ';';
           }
+        tmp += '\n';
       	}
-    	}
+      fValue = tmp;
     } else {
       td.appendChild(OAT.Dom.text(fValue));
     }
@@ -3022,4 +3141,27 @@ function showTitle(txt) {
       OAT.Dom.hide(T);
     }
   }
+}
+
+function knowsData() {
+  if (!validateField($('k_import')))
+    return;
+
+	var S = '/ods/api/user.getKnowsData?sourceURI=' + encodeURIComponent($v('k_import'));
+	var x = function(data) {
+		var o = null;
+		try {
+			o = OAT.JSON.parse(data);
+		} catch (e) {
+			o = null;
+		}
+		if (o) {
+      for ( var i = 0; i < o.length; i++) {
+        TBL.createRow('k', null, {fld_1: {mode: 4, value: '1'}, fld_2: {value: o[i].uri, readOnly: true}, fld_3: {value: o[i].label, readOnly: true}});
+      }
+		} else {
+			alert('No data founded');
+		}
+	}
+	OAT.AJAX.GET(S, '', x, {onstart : function() {OAT.Dom.show('k_import_image')}, onend : function() {OAT.Dom.hide('k_import_image')}});
 }

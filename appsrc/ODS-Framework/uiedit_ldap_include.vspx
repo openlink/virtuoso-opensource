@@ -29,25 +29,6 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="render_select1" arglist="inout name any">
-    <![CDATA[
-  	  declare s1, s2, s3, s4 varchar;
-
-  	  s1 := either (equ (name, 'uid'), 'selected', '');
-  	  s2 := either (equ (name, 'cn'), 'selected', '');
-  	  s3 := either (equ (name, 'mail'), 'selected', '');
-  	  s4 := either (equ (name, 'title'), 'selected', '');
-
-  	  http (sprintf ('<select name="sel_%s" onchange="checkRest (this.form, this)">', name));
-  	  http ('<option value="skip">--</option>');
-  	  http (sprintf ('<option value="nick" %s>Login Name</option>', s1));
-  	  http (sprintf ('<option value="name" %s>Name</option>', s2));
-  	  http (sprintf ('<option value="mbox" %s>E-Mail</option>', s3));
-  	  http (sprintf ('<option value="title" %s>Title</option>', s4));
-  	  http ('</select>');
-	  ]]>
-	</v:method>
-
 	<v:method name="render_select" arglist="inout name any">
     <![CDATA[
       declare N any;

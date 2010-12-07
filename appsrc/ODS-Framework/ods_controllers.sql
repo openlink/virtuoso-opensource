@@ -287,6 +287,12 @@ create procedure isJsonObject (inout o any)
 }
 ;
 
+create procedure array2obj (in V any)
+{
+  return vector_concat (jsonObject (), V);
+}
+;
+
 create procedure obj2json (
   in o any,
   in d integer := 10,
@@ -445,19 +451,7 @@ create procedure obj2xml (
 
 create procedure params2json (in o any)
 {
-  declare N integer;
-  declare retValue any;
-
-	retValue := '{';
-	for (N := 0; N < length(o); N := N + 2)
-	{
-	  retValue := retValue || o[N] || ':' || obj2json (o[N+1]);
-	  if (N <> length(o)-2)
-		  retValue := retValue || ', ';
-	}
-	retValue := retValue || '}';
-
-	return retValue;
+  return obj2json (array2obj(o));
 }
 ;
 
@@ -3189,7 +3183,7 @@ create procedure ODS.ODS_API."user.favorites.get" (
   declare uname varchar;
   declare retValue any;
   declare _u_id integer;
-  declare label, uri, properties any;
+  declare flag, label, uri, properties any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -3198,11 +3192,13 @@ create procedure ODS.ODS_API."user.favorites.get" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '1';
   label := '';
   uri := '';
   properties := vector();
-  for (select WUF_ID, WUF_LABEL, WUF_URI, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_ID = id and WUF_U_ID = _u_id) do
+  for (select WUF_ID, WUF_FLAG, WUF_LABEL, WUF_URI, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_ID = id and WUF_U_ID = _u_id) do
   {
+    flag := WUF_FLAG;
     label := WUF_LABEL;
     uri := WUF_URI;
     properties := deserialize (WUF_PROPERTIES);
@@ -3226,13 +3222,14 @@ create procedure ODS.ODS_API."user.favorites.get" (
                                               )
                                       )
                        );
-  retValue := vector_concat (jsonObject (), vector ('id', id, 'label', label, 'uri', uri, 'properties', properties));
+  retValue := vector_concat (jsonObject (), vector ('id', id, 'flag', flag, 'label', label, 'uri', uri, 'properties', properties));
   return obj2json (retValue);
     }
 ;
 
 create procedure ODS.ODS_API."user.favorites.update" (
   in id integer,
+  in flag varchar := '1',
   in label varchar,
   in uri varchar,
   in properties varchar)
@@ -3251,12 +3248,13 @@ create procedure ODS.ODS_API."user.favorites.update" (
   properties := json_parse (properties);
   if (isnull (id))
   {
-    insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
-      values (_u_id, 'http://rdfs.org/sioc/ns#', 'sioc:Item', label, uri, serialize (properties));
+    insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_FLAG, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
+      values (_u_id, flag, 'http://rdfs.org/sioc/ns#', 'sioc:Item', label, uri, serialize (properties));
     rc := (select max (WUF_ID) from DB.DBA.WA_USER_FAVORITES);
   } else {
     update DB.DBA.WA_USER_FAVORITES
-       set WUF_LABEL = label,
+       set WUF_FLAG = flag,
+           WUF_LABEL = label,
            WUF_URI = uri,
            WUF_PROPERTIES = serialize (properties)
      where WUF_ID = id;
@@ -3267,21 +3265,23 @@ create procedure ODS.ODS_API."user.favorites.update" (
 ;
 
 create procedure ODS.ODS_API."user.favorites.new" (
+  in flag varchar := '1',
   in label varchar,
   in uri varchar,
   in properties varchar) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.favorites.update" (null, label, uri, properties);
+  return ODS.ODS_API."user.favorites.update" (null, flag, label, uri, properties);
 }
 ;
 
 create procedure ODS.ODS_API."user.favorites.edit" (
   in id integer,
+  in flag varchar := '1',
   in label varchar,
   in uri varchar,
   in properties varchar) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.favorites.update" (id, label, uri, properties);
+  return ODS.ODS_API."user.favorites.update" (id, flag, label, uri, properties);
 }
 ;
 
@@ -3501,7 +3501,8 @@ create procedure ODS.ODS_API."user.mades.delete" (
 }
 ;
 
-create procedure ODS.ODS_API."user.offers.list" () __soap_http 'application/json'
+create procedure ODS.ODS_API."user.offers.list" (
+  in type varchar := '1') __soap_http 'application/json'
   {
   declare uname varchar;
   declare _u_id integer;
@@ -3515,7 +3516,7 @@ create procedure ODS.ODS_API."user.offers.list" () __soap_http 'application/json
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   retValue := vector();
-  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id) do
+  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_TYPE = type) do
   {
     retValue := vector_concat (retValue, vector (vector (WUOL_ID, WUOL_OFFER, WUOL_COMMENT)));
   }
@@ -3528,7 +3529,7 @@ create procedure ODS.ODS_API."user.offers.get" (
 {
   declare uname varchar;
   declare _u_id integer;
-  declare name, comment, products, retValue any;
+  declare flag, name, comment, products, retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -3537,11 +3538,13 @@ create procedure ODS.ODS_API."user.offers.get" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '1';
   name := '';
   comment := '';
   products := vector ();
-  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = id) do
+  for (select WUOL_ID, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = id) do
   {
+    flag := WUOL_FLAG;
     name := WUOL_OFFER;
     comment := WUOL_COMMENT;
     products := deserialize (WUOL_PROPERTIES);
@@ -3549,6 +3552,7 @@ create procedure ODS.ODS_API."user.offers.get" (
   retValue := vector_concat (jsonObject (),
                              vector (
                                      'id', id,
+                                     'flag', flag,
                                      'name', name,
                                      'comment', comment,
                                      'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
@@ -3560,6 +3564,8 @@ create procedure ODS.ODS_API."user.offers.get" (
 
 create procedure ODS.ODS_API."user.offers.update" (
   in id integer,
+  in type varchar := '1',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any) __soap_http 'text/xml'
@@ -3582,14 +3588,15 @@ create procedure ODS.ODS_API."user.offers.update" (
   properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
   if (isnull (id))
   {
-    insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
-      values (_u_id, name, comment, serialize (properties));
+    insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
+      values (_u_id, type, flag, name, comment, serialize (properties));
     id := (select max (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST);
   }
   else
   {
     update DB.DBA.WA_USER_OFFERLIST
-       set WUOL_OFFER = name,
+       set WUOL_FLAG = flag,
+           WUOL_OFFER = name,
            WUOL_COMMENT = comment,
            WUOL_PROPERTIES = serialize (properties)
      where WUOL_ID = id;
@@ -3599,21 +3606,25 @@ create procedure ODS.ODS_API."user.offers.update" (
 ;
 
 create procedure ODS.ODS_API."user.offers.new" (
+  in type varchar := '1',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.offers.update" (null, name, comment, properties);
+  return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
 }
 ;
 
 create procedure ODS.ODS_API."user.offers.edit" (
   in id integer,
+  in type varchar := '1',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.offers.update" (id, name, comment, properties);
+  return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
 }
 ;
 
@@ -3642,139 +3653,88 @@ create procedure ODS.ODS_API."user.offers.delete" (
 
 create procedure ODS.ODS_API."user.seeks.list" () __soap_http 'application/json'
 {
-  declare uname varchar;
-  declare _u_id integer;
-  declare retValue any;
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  retValue := vector();
-  for (select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id) do
-  {
-    retValue := vector_concat (retValue, vector (vector (WUWL_ID, WUWL_BARTER, WUWL_COMMENT)));
-  }
-  return obj2json (retValue);
+  return ODS.ODS_API."user.offers.list"('2');
 }
 ;
 
 create procedure ODS.ODS_API."user.seeks.get" (
   in id integer) __soap_http 'application/json'
-  {
-  declare uname varchar;
-  declare _u_id integer;
-  declare name, comment, products, retValue any;
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  name := '';
-  comment := '';
-  products := vector ();
-  for (select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_ID = id) do
-    {
-    name := WUWL_BARTER;
-    comment := WUWL_COMMENT;
-    products := deserialize (WUWL_PROPERTIES);
-    }
-  retValue := vector_concat (jsonObject (),
-                             vector (
-                                     'id', id,
-                                     'name', name,
-                                     'comment', comment,
-                                     'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
-                                    )
-                            );
-  return obj2json (retValue);
-  }
-;
-
-create procedure ODS.ODS_API."user.seeks.update" (
-  in id integer,
-  in name varchar,
-  in comment varchar,
-  in properties any) __soap_http 'text/xml'
 {
-  declare uname varchar;
-  declare _u_id integer;
-  declare products, ontologies any;
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  products := vector();
-  ontologies := json_parse (properties);
-  if (length(ontologies))
-    products := get_keyword ('items', ontologies[0], vector());
-  properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
-  if (isnull (id))
-  {
-    insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
-      values (_u_id, name, comment, serialize (properties));
-    id := (select max (WUWL_ID) from DB.DBA.WA_USER_WISHLIST);
-  }
-  else
-  {
-  update DB.DBA.WA_USER_WISHLIST
-       set WUWL_BARTER = name,
-           WUWL_COMMENT = comment,
-           WUWL_PROPERTIES = serialize (properties)
-     where WUWL_ID = id;
-  }
-  return ods_serialize_int_res (id);
+  return ODS.ODS_API."user.offers.get"(id);
 }
 ;
 
 create procedure ODS.ODS_API."user.seeks.new" (
+  in type varchar := '2',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.seeks.update" (null, name, comment, properties);
+  return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
 }
 ;
 
 create procedure ODS.ODS_API."user.seeks.edit" (
   in id integer,
+  in type varchar := '2',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.seeks.update" (id, name, comment, properties);
+  return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
 }
 ;
 
 create procedure ODS.ODS_API."user.seeks.delete" (
   in id integer) __soap_http 'text/xml'
 {
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id integer;
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
+  return ODS.ODS_API."user.offers.update" (id);
+}
+;
 
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+create procedure ODS.ODS_API."user.owns.list" (
+  in type varchar := '3') __soap_http 'application/json'
+{
+  return ODS.ODS_API."user.offers.list"(type);
+}
+;
 
-  delete from DB.DBA.WA_USER_WISHLIST where WUWL_ID = id and WUWL_U_ID = _u_id;
-  rc := row_count ();
+create procedure ODS.ODS_API."user.owns.get" (
+  in id integer) __soap_http 'application/json'
+{
+  return ODS.ODS_API."user.offers.get"(id);
+}
+;
 
-  return ods_serialize_int_res (rc);
+create procedure ODS.ODS_API."user.owns.new" (
+  in type varchar := '3',
+  in flag varchar := '1',
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.edit" (
+  in id integer,
+  in type varchar := '3',
+  in flag varchar := '1',
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+ return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (id);
 }
 ;
 
@@ -3794,7 +3754,7 @@ create procedure ODS.ODS_API."user.likes.list" () __soap_http 'application/json'
   retValue := vector();
   for (select WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_U_ID = _u_id) do
   {
-    retValue := vector_concat (retValue, vector (vector (WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT)));
+    retValue := vector_concat (retValue, vector (vector (WUL_ID, WUL_URI, case when (WUL_TYPE = 'L') then 'Like' else 'DisLike' end, WUL_NAME, WUL_COMMENT)));
   }
   return obj2json (retValue);
 }
@@ -3802,10 +3762,10 @@ create procedure ODS.ODS_API."user.likes.list" () __soap_http 'application/json'
 
 create procedure ODS.ODS_API."user.likes.get" (
   in id integer) __soap_http 'application/json'
-{
+  {
   declare uname varchar;
   declare _u_id integer;
-  declare uri, type, name, comment, products, retValue any;
+  declare flag, uri, type, name, comment, products, retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -3814,22 +3774,25 @@ create procedure ODS.ODS_API."user.likes.get" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '';
   uri := '';
   type := '';
   name := '';
   comment := '';
   products := vector ();
-  for (select WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_ID = id) do
-  {
+  for (select WUL_ID, WUL_FLAG, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_ID = id) do
+    {
+    flag := WUL_FLAG;
     uri := WUL_URI;
     type := WUL_TYPE;
     name := WUL_NAME;
     comment := WUL_COMMENT;
     products := deserialize (WUL_PROPERTIES);
-  }
+    }
   retValue := vector_concat (jsonObject (),
                              vector (
                                      'id', id,
+                                     'flag', flag,
                                      'uri', uri,
                                      'type', type,
                                      'name', name,
@@ -3838,11 +3801,12 @@ create procedure ODS.ODS_API."user.likes.get" (
                                     )
                             );
   return obj2json (retValue);
-}
+  }
 ;
 
 create procedure ODS.ODS_API."user.likes.update" (
   in id integer,
+  in flag varchar := '1',
   in uri varchar,
   in type varchar,
   in name varchar,
@@ -3867,14 +3831,15 @@ create procedure ODS.ODS_API."user.likes.update" (
   properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
   if (isnull (id))
   {
-    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
-      values (_u_id, uri, type, name, comment, serialize (properties));
+    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_FLAG, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
+      values (_u_id, flag, uri, type, name, comment, serialize (properties));
     id := (select max (WUL_ID) from DB.DBA.WA_USER_LIKES);
   }
   else
   {
     update DB.DBA.WA_USER_LIKES
-       set WUL_URI = uri,
+       set WUL_FLAG = flag,
+           WUL_URI = uri,
            WUL_TYPE = type,
            WUL_NAME = name,
            WUL_COMMENT = comment,
@@ -3886,25 +3851,27 @@ create procedure ODS.ODS_API."user.likes.update" (
 ;
 
 create procedure ODS.ODS_API."user.likes.new" (
+  in flag varchar := '1',
   in uri varchar,
   in type varchar,
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.likes.update" (null, uri, type, name, comment, properties);
+  return ODS.ODS_API."user.likes.update" (null, flag, uri, type, name, comment, properties);
 }
 ;
 
 create procedure ODS.ODS_API."user.likes.edit" (
   in id integer,
+  in flag varchar := '1',
   in uri varchar,
   in type varchar,
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.likes.update" (id, uri, type, name, comment, properties);
+  return ODS.ODS_API."user.likes.update" (id, flag, uri, type, name, comment, properties);
 }
 ;
 
@@ -3924,6 +3891,144 @@ create procedure ODS.ODS_API."user.likes.delete" (
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
   delete from DB.DBA.WA_USER_LIKES where WUL_ID = id and WUL_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select WUK_ID, WUK_URI, WUK_LABEL from DB.DBA.WA_USER_KNOWS where WUK_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (WUK_ID, WUK_URI, WUK_LABEL)));
+  }
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare flag, uri, label, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '';
+  uri := '';
+  label := '';
+  for (select WUK_ID, WUK_FLAG, WUK_URI, WUK_LABEL from DB.DBA.WA_USER_KNOWS where WUK_ID = id) do
+  {
+    flag := WUK_FLAG;
+    uri := WUK_URI;
+    label := WUK_LABEL;
+  }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'flag', flag,
+                                     'uri', uri,
+                                     'label', label
+                                    )
+                            );
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.update" (
+  in id integer,
+  in flag varchar := '1',
+  in uri varchar,
+  in label varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare products, ontologies any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (isnull (id))
+  {
+    if (not exists (select 1 from DB.DBA.WA_USER_KNOWS where WUK_U_ID = _u_id and WUK_URI = uri))
+    {
+      insert into DB.DBA.WA_USER_KNOWS (WUK_U_ID, WUK_FLAG, WUK_URI, WUK_LABEL)
+        values (_u_id, flag, uri, label);
+      id := (select max (WUK_ID) from DB.DBA.WA_USER_KNOWS);
+    } else {
+      id := 0;
+    }
+  }
+  else
+  {
+    update DB.DBA.WA_USER_KNOWS
+       set WUK_FLAG = flag,
+           WUK_URI = uri,
+           WUK_LABEL = label
+     where WUK_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.new" (
+  in flag varchar := '1',
+  in uri varchar,
+  in label varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.knows.update" (null, flag, uri, label);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.edit" (
+  in id integer,
+  in flag varchar := '1',
+  in uri varchar,
+  in label varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.knows.update" (id, flag, uri, label);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_KNOWS where WUK_ID = id and WUK_U_ID = _u_id;
   rc := row_count ();
 
   return ods_serialize_int_res (rc);
@@ -4077,7 +4182,7 @@ create procedure ODS.ODS_API.appendProperty (
   in propertyValue any,
   in propertyNS varchar := '')
 {
-  if (not isnull (propertyValue))
+  if (not isnull (propertyValue) and isstring (propertyValue) and propertyValue not like 'nodeID:%' and isnull (get_keyword (propertyName, V)))
   {
     if (propertyNS <> '')
     {
@@ -4086,6 +4191,57 @@ create procedure ODS.ODS_API.appendProperty (
     }
     V := vector_concat (V, vector (propertyName, propertyValue));
   }
+  return V;
+}
+;
+
+create procedure ODS.ODS_API.appendPropertyArray (
+  inout V any,
+  inout N integer,
+  in propertyName varchar,
+  in propertyValue any,
+  in meta any,
+  in data any)
+{
+  declare M integer;
+  declare property varchar;
+  declare newPropertyArray, propertyArray any;
+
+  property := replace (propertyName, '_array', '');
+  N := N + 1;
+  if (not isnull (propertyValue) and isstring (propertyValue) and (propertyValue not like 'nodeID:%'))
+  {
+    newPropertyArray := vector_concat (jsonObject(), vector ('value', propertyValue));
+
+    propertyArray := get_keyword (property, V);
+    if (isnull (propertyArray))
+      propertyArray := vector ();
+
+    for (M := 0; M < length (propertyArray); M := M + 1)
+    {
+      if (get_keyword ('value', propertyArray[M]) = propertyValue)
+        goto _exit;
+    }
+
+    while ((N < length(meta)) and (meta[N] like property || '_%'))
+    {
+      if (not isnull (data[N]))
+        newPropertyArray := vector_concat (newPropertyArray, vector (replace (meta[N], property||'_', ''), data[N]));
+
+      N := N + 1;
+    }
+
+    propertyArray := vector_concat (propertyArray, vector (newPropertyArray));
+    ODS.ODS_API.set_keyword (property, V, propertyArray);
+  }
+  else
+  {
+  _exit:;
+    while ((N < length(meta)) and (meta[N] like property || '_%'))
+      N := N + 1;
+  }
+
+  N := N - 1;
   return V;
 }
 ;
@@ -4126,6 +4282,20 @@ create procedure ODS.ODS_API.vector_contains(
 }
 ;
 
+create procedure ODS.ODS_API.simplifyMeta (
+  in abMeta any)
+{
+  declare N integer;
+  declare newMeta any;
+
+  newMeta := vector ();
+  for (N := 0; N < length (abMeta[0]); N := N + 1)
+    newMeta := vector_concat (newMeta, vector (abMeta[0][N][0]));
+
+  return newMeta;
+}
+;
+
 create procedure ODS.ODS_API.set_keyword (
   in    name   varchar,
   inout params any,
@@ -4147,7 +4317,7 @@ _end:
 }
 ;
 
-create procedure ODS.ODS_API.get_foaf_data_array (
+create procedure ODS.ODS_API.getFOAFDataArray (
   in foafIRI varchar,
   in spongerMode integer := 1,
   in sslFOAFCheck integer := 0,
@@ -4155,12 +4325,9 @@ create procedure ODS.ODS_API.get_foaf_data_array (
 {
   declare N, M integer;
   declare S, IRI, foafGraph, _identity, _loc_idn varchar;
-  declare V, st, msg, data, meta any;
+  declare V, st, msg, rows, meta any;
   declare certLogin, certLoginEnable any;
-  declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
-  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "skypeChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "resume" any;
-  declare "interest", "topic_interest", "onlineAccounts", "sameAs" any;
-  declare "vInterest", "vTopic_interest", "vOnlineAccounts", "vSameAs" any;
+  declare person any;
   declare host, port, arr any;
   declare info any;
 
@@ -4199,22 +4366,24 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   {
     if (not is_https_ctx ())
       goto _exit;
+
     info := get_certificate_info (9);
-    st := '00000';
     S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
+
+    st := '00000';
     commit work;
-    exec (S, st, msg, vector (), 0, meta, data);
-    if (st = '00000' and length (data)) 
+    exec (S, st, msg, vector (), 0, meta, rows);
+    if (st = '00000' and length (rows))
       {
-	foreach (any _row in data) do 
+	    foreach (any _row in rows) do
 	  {
 	    if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
-	      goto loginin;
+  	      goto _loginIn;
 	  }
       }
       goto _exit;
   }
-loginin:
+_loginIn:
   certLogin := 0;
   certLoginEnable := 0;
   if (is_https_ctx ())
@@ -4233,7 +4402,8 @@ loginin:
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   prefix bio: <http://vocab.org/bio/0.1/>
-                 select ?person
+                 select ?iri
+                        ?personalProfileDocument
                         ?title
                          ?name
                          ?nick
@@ -4257,173 +4427,111 @@ loginin:
                          ?keywords
                          ?depiction
                         ?resume
-                         ?interest
+                        ?interest_array
                          ?interest_label
-                        ?topic_interest
+                        ?topic_interest_array
                         ?topic_interest_label
-                        ?onlineAccount
+                        ?onlineAccount_array
                         ?onlineAccount_url
-                        ?sameAs
+                        ?sameAs_array
+                        ?knows_array
+                        ?knows_nick
 		               from <%s>
                    where {
                            {
-                             [] a foaf:PersonalProfileDocument ;
-                             foaf:primaryTopic ?person .
-                             optional { ?person foaf:name ?name } .
-                             optional { ?person foaf:title ?title } .
-                             optional { ?person foaf:nick ?nick } .
-                             optional { ?person foaf:firstName ?firstName } .
-                             optional { ?person foaf:givenname ?givenname } .
-                             optional { ?person foaf:family_name ?family_name } .
-                             optional { ?person foaf:mbox ?mbox } .
-                             optional { ?person foaf:gender ?gender } .
-                             optional { ?person foaf:birthday ?birthday } .
-                             optional { ?person foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
-                             optional { ?person foaf:icqChatID ?icqChatID } .
-                             optional { ?person foaf:msnChatID ?msnChatID } .
-                             optional { ?person foaf:aimChatID ?aimChatID } .
-                             optional { ?person foaf:yahooChatID ?yahooChatID } .
-  	                        optional { ?person foaf:holdsAccount ?holdsAccount .
+                            ?personalProfileDocument a foaf:PersonalProfileDocument ;
+                                                     foaf:primaryTopic ?iri .
+                            optional { ?iri foaf:name ?name } .
+                            optional { ?iri foaf:title ?title } .
+                            optional { ?iri foaf:nick ?nick } .
+                            optional { ?iri foaf:firstName ?firstName } .
+                            optional { ?iri foaf:givenname ?givenname } .
+                            optional { ?iri foaf:family_name ?family_name } .
+                            optional { ?iri foaf:mbox ?mbox } .
+                            optional { ?iri foaf:gender ?gender } .
+                            optional { ?iri foaf:birthday ?birthday } .
+                            optional { ?iri foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
+                            optional { ?iri foaf:icqChatID ?icqChatID } .
+                            optional { ?iri foaf:msnChatID ?msnChatID } .
+                            optional { ?iri foaf:aimChatID ?aimChatID } .
+                            optional { ?iri foaf:yahooChatID ?yahooChatID } .
+  	                        optional { ?iri foaf:holdsAccount ?holdsAccount .
   	                                   ?holdsAccount foaf:accountServiceHomepage ?accountServiceHomepage ;
   	                                                 foaf:accountName ?skypeChatID.
                                        filter (str(?accountServiceHomepage) like ''skype%%'').
                                      } .
-                             optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
-                             optional { ?person foaf:homepage ?homepage } .
-                             optional { ?person foaf:phone ?phone } .
-                             optional { ?person foaf:depiction ?depiction } .
-                             optional { ?person bio:keywords ?keywords } .
+                            optional { ?iri foaf:workplaceHomepage ?workplaceHomepage } .
+                            optional { ?iri foaf:homepage ?homepage } .
+                            optional { ?iri foaf:phone ?phone } .
+                            optional { ?iri foaf:depiction ?depiction } .
+                            optional { ?iri bio:keywords ?keywords } .
                              optional { ?organization a foaf:Organization }.
                              optional { ?organization foaf:homepage ?workplaceHomepage }.
                              optional { ?organization dc:title ?organizationTitle }.
-                             optional { ?person foaf:interest ?interest .
-                                        ?interest rdfs:label ?interest_label. } .
-                            optional { ?person foaf:topic_interest ?topic_interest .
-                                       ?topic_interest rdfs:label ?topic_interest_label. } .
-                            optional { ?person foaf:holdsAccount ?oa .
-                                       ?oa a foaf:OnlineAccount.
-                                       ?oa foaf:accountServiceHomepage ?onlineAccount_url.
-                                       ?oa foaf:accountName ?onlineAccount. } .
-                            optional { ?person owl:sameAs ?sameAs } .
-                            optional { ?person bio:olb ?resume } .
+                            optional { ?iri foaf:interest ?interest_array .
+                                       ?interest_array rdfs:label ?interest_label. } .
+                            optional { ?iri foaf:topic_interest ?topic_interest_array .
+                                       ?topic_interest_array rdfs:label ?topic_interest_label. } .
+                            optional { ?iri foaf:holdsAccount ?oa .
+                                       ?oa a foaf:OnlineAccount;
+                                           foaf:accountServiceHomepage ?onlineAccount_url;
+                                           foaf:accountName ?onlineAccount_array. } .
+                            optional { ?iri owl:sameAs ?sameAs_array } .
+                            optional { ?iri bio:olb ?resume } .
+                            optional { ?iri foaf:knows ?knows_array .
+                                       optional { ?knows_array foaf:nick ?knows_nick } .
+                                       optional { ?knows_array foaf:name ?knows_name } .
+                                     } .
                            }
                         }', foafGraph);
+  st := '00000';
   commit work;
-  exec (S, st, msg, vector (), 0, meta, data);
-  M := 0;
-  "interest" := '';
-  "topic_interest" := '';
-  "onlineAccounts" := '';
-  "sameAs" := '';
-  "vInterest" := vector ();
-  "vTopic_interest" := vector ();
-  "vOnlineAccounts" := vector ();
-  "vSameAs" := vector ();
-  for (N := 0; N < length (data); N := N + 1)
+  exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
+  if (st <> '00000')
+    goto _exit;
+
+  meta := ODS.ODS_API.simplifyMeta(meta);
+  person := null;
+  foreach (any row in rows) do
   {
-    if (_identity = data[N][0])
+    if (not isnull(person))
+      person := row[0];
+
+    if (person <> row[0])
+      goto _skip;
+
+    N := 0;
+    while (N < length(meta))
     {
-      if (M = 0)
+      if (meta[N] like '%_array')
     {
-        M := 1;
-        "title" := data[N][1];
-        "name" := data[N][2];
-        "nick" := data[N][3];
-        "firstName" := data[N][4];
-        "givenname" := data[N][5];
-        "family_name" := data[N][6];
-        "mbox" := data[N][7];
-        if (isnull ("mbox") and is_https_ctx ())
+        appendPropertyArray (V, N, meta[N], row[N], meta, row);
+      } else {
+        appendProperty (V, meta[N], row[N]);
+      }
+      N := N + 1;
+    }
+  _skip:;
+  }
+  if (is_https_ctx () and isnull (get_keyword (V, 'mbox')))
         {
-          declare L integer;
-          declare V, X any;
+    declare X, Y any;
   
           X := vector ();
           info := get_certificate_info (2);
-          V := split_and_decode (info, 0, '\0\0/');
-          for (L := 0; L < length (V); L := L + 1)
-            X := vector_concat (X, split_and_decode (V[L], 0, '\0\0='));
-            
-          "mbox" := get_keyword ('emailAddress', X);
-        }       
-        "gender" := lcase (data[N][8]);
-        "birthday" := data[N][9];
-        "lat" := data[N][10];
-        "lng" := data[N][11];
-        "icqChatID" := data[N][12];
-        "msnChatID" := data[N][13];
-        "aimChatID" := data[N][14];
-        "yahooChatID" := data[N][15];
-        "skypeChatID" := data[N][16];
-        "workplaceHomepage" := data[N][17];
-        "homepage" := data[N][18];
-        "phone" := data[N][19];
-        "organizationTitle" := data[N][20];
-        "keywords" := data[N][21];
-        "depiction" := data[N][22];
-        "resume" := data[N][23];
+    Y := split_and_decode (info, 0, '\0\0/');
+    for (N := 0; N < length (Y); N := N + 1)
+      X := vector_concat (X, split_and_decode (Y[N], 0, '\0\0='));
 
-          appendProperty (V, 'certLogin', certLogin);
-        appendProperty (V, 'certLoginEnable', certLoginEnable);
-        appendProperty (V, 'iri', foafIRI);                                   -- FOAF IRI
-        appendProperty (V, 'nickName', coalesce ("nick", "name"));            -- WAUI_NICK
-    appendProperty (V, 'title', "title");		   -- WAUI_TITLE
-    appendProperty (V, 'name', "name");			   -- WAUI_FULL_NAME
-    appendProperty (V, 'firstName', coalesce ("firstName", "givenname")); -- WAUI_FIRST_NAME
-    appendProperty (V, 'family_name', "family_name");	   -- WAUI_LAST_NAME
-    appendProperty (V, 'mbox', "mbox", 'mailto:');	   -- E_MAIL
-    appendProperty (V, 'birthday', "birthday");		   -- WAUI_BIRTHDAY
-    appendProperty (V, 'gender', "gender");		   -- WAUI_GENDER
-    appendProperty (V, 'lat', "lat");			   -- WAUI_LAT
-    appendProperty (V, 'lng', "lng");			   -- WAUI_LNG
-    appendProperty (V, 'icqChatID', "icqChatID");	   -- WAUI_ICQ
-    appendProperty (V, 'msnChatID', "msnChatID");	   -- WAUI_MSN
-    appendProperty (V, 'aimChatID', "aimChatID");	   -- WAUI_AIM
-    appendProperty (V, 'yahooChatID', "yahooChatID");	   -- WAUI_YAHOO
-        appendProperty (V, 'skypeChatID', "skypeChatID");	                    -- WAUI_SKYPE
-    appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
-    appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
-    appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
-        appendProperty (V, 'organizationHomepage', "workplaceHomepage");      -- WAUI_BORG_HOMEPAGE
-      appendProperty (V, 'organizationTitle', "organizationTitle");         -- WAUI_
-      appendProperty (V, 'tags', "keywords");                               -- WAUI_
-      appendProperty (V, 'depiction', "depiction");                         -- WAUI_
-    }
-      if (data[N][24] is not null and data[N][24] <> '' and not ODS.ODS_API.vector_contains ("vInterest", data[N][24]))
-      {
-        "interest" := "interest" || data[N][24] || ';' || data[N][25] || '\n';
-        "vInterest" := vector_concat ("vInterest", vector (data[N][24]));
-      }
-      if (data[N][26] is not null and data[N][26] <> '' and not ODS.ODS_API.vector_contains ("vTopic_interest", data[N][26]))
-      {
-        "topic_interest" := "topic_interest" || data[N][26] || ';' || data[N][27] || '\n';
-        "vTopic_interest" := vector_concat ("vTopic_interest", vector (data[N][26]));
-      }
-      if (data[N][28] is not null and data[N][28] <> '' and not ODS.ODS_API.vector_contains ("vOnlineAccounts", data[N][28]))
-      {
-        "onlineAccounts" := "onlineAccounts" || data[N][28] || ';' || data[N][29] || '\n';
-        "vOnlineAccounts" := vector_concat ("vOnlineAccounts", vector (data[N][28]));
-      }
-      if (data[N][30] is not null and data[N][30] <> '' and not ODS.ODS_API.vector_contains ("vSameAs", data[N][30]))
-      {
-        "sameAs" := "sameAs" || data[N][30] || '\n';
-        "vSameAs" := vector_concat ("vSameAs", vector (data[N][30]));
-      }
+    appendProperty (V, 'mbox', get_keyword ('emailAddress', X));
   }
-  }
-  if ("interest" <> '')
-    appendProperty (V, 'interest', "interest");
-  if ("topic_interest" <> '')
-    appendProperty (V, 'topic_interest', "topic_interest");
-  if ("onlineAccounts" <> '')
-    appendProperty (V, 'onlineAccounts', "onlineAccounts");
-  if ("sameAs" <> '')
-    appendProperty (V, 'sameAs', "sameAs");
-  if ((certLogin <> '') and length (V))
-    appendProperty (V, 'certLogin', certLogin);
+
+  if (certLogin and length (V))
+    appendProperty (V, 'certLogin', cast (certLogin as varchar));
 
 _exit:;
   exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  -- dbg_obj_print ('V', V);
  return V;
   }
 ;
@@ -4440,7 +4548,7 @@ create procedure ODS.ODS_API."user.getFOAFData" (
   {
     return case when outputMode then obj2json (null) else null end;
   };
-  V := ODS.ODS_API.get_foaf_data_array (foafIRI, spongerMode, sslFOAFCheck, sslLoginCheck);
+  V := ODS.ODS_API.getFOAFDataArray (foafIRI, spongerMode, sslFOAFCheck, sslLoginCheck);
   return case when outputMode then params2json (V) else V end;
 }
 ;
@@ -4463,7 +4571,7 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   if (not isnull (foafIRI))
   {
     try_auth:
-    V := ODS.ODS_API.get_foaf_data_array (foafIRI, 0, sslFOAFCheck, sslLoginCheck);
+    V := ODS.ODS_API.getFOAFDataArray (foafIRI, 0, sslFOAFCheck, sslLoginCheck);
     return case when outputMode then params2json (V) else V end;
   }
   else if (is_https_ctx ()) -- try webfinger
@@ -4545,6 +4653,103 @@ create procedure ODS.ODS_API."user.getFacebookData" (
     }
   }
   return case when outputMode then obj2json (retValue) else retValue end;
+}
+;
+
+create procedure ODS.ODS_API."user.getKnowsData" (
+  in sourceURI varchar,
+  in spongerMode integer := 0) __soap_http 'application/json'
+{
+  declare N integer;
+  declare S, sourceIRI, foafGraph varchar;
+  declare V, st, msg, data, meta any;
+  declare knows, seeAlso, nick, name, uri, label any;
+
+  set_user_id ('dba');
+
+  V := rfc1808_parse_uri (trim (sourceURI));
+  V[5] := '';
+  sourceIRI := DB.DBA.vspx_uri_compose (V);
+
+  -- V := vector (vector_concat (jsonObject (), vector ('label', 'mara', 'uri', 'http://mara.com#this')));
+  V := vector ();
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+  if (spongerMode)
+  {
+    S := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, sourceIRI);
+  } else {
+    S := sprintf ('sparql load <%s> into graph <%s>', sourceIRI, foafGraph);
+  }
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (), 0);
+  if (st <> '00000')
+    goto _exit;
+
+  S := sprintf ('sparql
+                 define input:storage ""
+                 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                 prefix dc: <http://purl.org/dc/elements/1.1/>
+                 prefix foaf: <http://xmlns.com/foaf/0.1/>
+                 select ?knows
+                        ?nick
+                        ?name
+		               from <%s>
+                  where {
+                          [] a foaf:PersonalProfileDocument ;
+                             foaf:primaryTopic ?person .
+                          ?person foaf:knows ?knows.
+                          optional {?knows foaf:nick ?nick.}
+                          optional {?knows foaf:name ?name.}
+                        }
+                  order by ?knows', foafGraph);
+  commit work;
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st <> '00000')
+    goto _exit;
+
+  knows := '';
+  nick := '';
+  name := '';
+  for (N := 0; N < length (data); N := N + 1)
+  {
+    if (knows <> data[N][0])
+    {
+      if (knows <> '')
+      {
+        -- store data
+        uri := knows;
+        if (uri not like 'nodeID:%')
+        {
+          label := name;
+          if (label = '')
+          {
+            label := nick;
+          }
+          else if (nick <> '')
+          {
+            label := name || ' (' || nick || ')';
+          }
+          V := vector_concat (V, vector (vector_concat (jsonObject (), vector ('uri', uri, 'label', label))));
+        }
+      }
+
+      -- start new collect data
+      knows := data[N][0];
+      nick := '';
+      name := '';
+    }
+    if ((nick = '') and not DB.DBA.is_empty_or_null (data[N][1]))
+      nick := data[N][1];
+
+    if ((name = '') and not DB.DBA.is_empty_or_null (data[N][2]))
+      name := data[N][2];
+  }
+
+_exit:;
+  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  return obj2json (V);
 }
 ;
 
@@ -5033,16 +5238,27 @@ grant execute on ODS.ODS_API."user.seeks.get" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.new" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.list" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.get" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.new" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.likes.list" to ODS_API;
 grant execute on ODS.ODS_API."user.likes.get" to ODS_API;
 grant execute on ODS.ODS_API."user.likes.new" to ODS_API;
 grant execute on ODS.ODS_API."user.likes.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.likes.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.list" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.get" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.new" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.getKnowsData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFacebookData" to ODS_API;

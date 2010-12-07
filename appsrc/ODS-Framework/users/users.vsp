@@ -47,7 +47,7 @@
   <?vsp
     declare N integer;
     declare vHostUrl, vUrl, vParams, vResult, vRequest, vRespond any;
-    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormSubtab, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
+    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormTab2, vFormTab3, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
 
       vHostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
       if (isstring (vHostUrl) and strchr (vHostUrl , ':') is null)
@@ -87,7 +87,8 @@
     else
     vForm := get_keyword ('form', params, 'login');
     vFormTab := atoi(get_keyword ('formTab', params, '0'));
-    vFormSubtab := atoi(get_keyword ('formSubtab', params, '0'));
+    vFormTab2 := atoi(get_keyword ('formTab2', params, '0'));
+    vFormTab3 := atoi(get_keyword ('formTab3', params, '0'));
     vFormMode := get_keyword ('formMode', params, '');
     vSid := get_keyword ('sid', params);
     vRealm := 'wa';
@@ -103,17 +104,51 @@
 
     if (vForm = 'profile')
     {
-      if (get_keyword ('pf_update06', params, '') <> '')
+      if (get_keyword ('pf_update051', params, '') <> '')
       {
         vUrl := sprintf (
-                         '%s/user.favorites.%s?sid=%U&realm=%U&id=%U&label=%U&uri=%U&properties=%U',
+                         '%s/user.owns.%s?sid=%U&realm=%U&id=%U&flag=%U&name=%U&comment=%U&properties=%U',
                          vHostUrl,
                          vFormMode,
                          vSid,
                          vRealm,
-                         get_keyword ('pf06_id', params, ''),
-                         get_keyword ('pf06_label', params, ''),
-                         get_keyword ('pf06_uri', params, ''),
+                         get_keyword ('pf051_id', params, ''),
+                         get_keyword ('pf051_flag', params, ''),
+                         get_keyword ('pf051_name', params, ''),
+                         get_keyword ('pf051_comment', params, ''),
+                         get_keyword ('items', params, '')
+                        );
+        commit work;
+        vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+        }
+        else
+        {
+          vXml := xml_tree_doc (vResult);
+          if (xpath_eval ('/failed/message', vXml))
+          {
+            vError := xpath_eval ('string (/failed/message)', vXml);
+            if (xpath_eval ('string (/failed/code)', vXml) <> '23023')
+              vForm := 'login';
+          }
+        }
+        vFormMode := '';
+      }
+      else if (get_keyword ('pf_update052', params, '') <> '')
+      {
+        vUrl := sprintf (
+                         '%s/user.favorites.%s?sid=%U&realm=%U&id=%U&flag=%U&label=%U&uri=%U&properties=%U',
+                         vHostUrl,
+                         vFormMode,
+                         vSid,
+                         vRealm,
+                         get_keyword ('pf052_id', params, ''),
+                         get_keyword ('pf052_flag', params, ''),
+                         get_keyword ('pf052_label', params, ''),
+                         get_keyword ('pf052_uri', params, ''),
                          get_keyword ('items', params, '[]')
                         );
         commit work;
@@ -135,7 +170,7 @@
         }
         vFormMode := '';
       }
-      if (get_keyword ('pf_update07', params, '') <> '')
+      if (get_keyword ('pf_update053', params, '') <> '')
       {
         vUrl := sprintf (
                          '%s/user.mades.%s?sid=%U&realm=%U&id=%U&property=%U&url=%U&description=%U',
@@ -143,10 +178,10 @@
                          vFormMode,
                          vSid,
                          vRealm,
-                         get_keyword ('pf07_id', params, ''),
-                         get_keyword ('pf07_property', params, ''),
-                         get_keyword ('pf07_url', params, ''),
-                         get_keyword ('pf07_description', params, '')
+                         get_keyword ('pf053_id', params, ''),
+                         get_keyword ('pf053_property', params, ''),
+                         get_keyword ('pf053_url', params, ''),
+                         get_keyword ('pf053_description', params, '')
                         );
         commit work;
         vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
@@ -167,17 +202,18 @@
         }
         vFormMode := '';
       }
-      else if (get_keyword ('pf_update08', params, '') <> '')
+      else if (get_keyword ('pf_update054', params, '') <> '')
       {
         vUrl := sprintf (
-                         '%s/user.offers.%s?sid=%U&realm=%U&id=%U&name=%U&comment=%U&properties=%U',
+                         '%s/user.offers.%s?sid=%U&realm=%U&id=%U&flag=%U&name=%U&comment=%U&properties=%U',
                          vHostUrl,
                          vFormMode,
                          vSid,
                          vRealm,
-                         get_keyword ('pf08_id', params, ''),
-                         get_keyword ('pf08_name', params, ''),
-                         get_keyword ('pf08_comment', params, ''),
+                         get_keyword ('pf054_id', params, ''),
+                         get_keyword ('pf054_flag', params, ''),
+                         get_keyword ('pf054_name', params, ''),
+                         get_keyword ('pf054_comment', params, ''),
                          get_keyword ('items', params, '')
                         );
         commit work;
@@ -199,17 +235,18 @@
         }
         vFormMode := '';
       }
-      else if (get_keyword ('pf_update09', params, '') <> '')
+      else if (get_keyword ('pf_update055', params, '') <> '')
       {
         vUrl := sprintf (
-                         '%s/user.seeks.%s?sid=%U&realm=%U&id=%U&name=%U&comment=%U&properties=%U',
+                         '%s/user.seeks.%s?sid=%U&realm=%U&id=%U&flag=%U&name=%U&comment=%U&properties=%U',
                          vHostUrl,
                          vFormMode,
                          vSid,
                          vRealm,
-                         get_keyword ('pf09_id', params, ''),
-                         get_keyword ('pf09_name', params, ''),
-                         get_keyword ('pf09_comment', params, ''),
+                         get_keyword ('pf055_id', params, ''),
+                         get_keyword ('pf055_flag', params, ''),
+                         get_keyword ('pf055_name', params, ''),
+                         get_keyword ('pf055_comment', params, ''),
                          get_keyword ('items', params, '')
                         );
         commit work;
@@ -231,19 +268,20 @@
         }
         vFormMode := '';
       }
-      else if (get_keyword ('pf_update10', params, '') <> '')
+      else if (get_keyword ('pf_update056', params, '') <> '')
       {
         vUrl := sprintf (
-                         '%s/user.likes.%s?sid=%U&realm=%U&id=%U&uri=%U&type=%U&name=%U&comment=%U&properties=%U',
+                         '%s/user.likes.%s?sid=%U&realm=%U&id=%U&flag=%U&uri=%U&type=%U&name=%U&comment=%U&properties=%U',
                          vHostUrl,
                          vFormMode,
                          vSid,
                          vRealm,
-                         get_keyword ('pf10_id', params, ''),
-                         get_keyword ('pf10_uri', params, ''),
-                         get_keyword ('pf10_type', params, 'L'),
-                         get_keyword ('pf10_name', params, ''),
-                         get_keyword ('pf10_comment', params, ''),
+                         get_keyword ('pf056_id', params, ''),
+                         get_keyword ('pf056_flag', params, ''),
+                         get_keyword ('pf056_uri', params, ''),
+                         get_keyword ('pf056_type', params, 'L'),
+                         get_keyword ('pf056_name', params, ''),
+                         get_keyword ('pf056_comment', params, ''),
                          get_keyword ('items', params, '')
                         );
         commit work;
@@ -263,6 +301,76 @@
               vForm := 'login';
           }
         }
+        vFormMode := '';
+      }
+      else if (get_keyword ('pf_update057', params, '') <> '')
+      {
+        declare suffix, flag, uri, label varchar;
+        declare N, items any;
+
+        items := vector ();
+        if (vFormMode <> 'import')
+        {
+          items := vector_concat (items,
+                                  vector (vector (get_keyword ('pf057_id', params, ''),
+                                                  get_keyword ('pf057_flag', params, ''),
+                                                  get_keyword ('pf057_uri', params, ''),
+                                                  get_keyword ('pf057_label', params, '')
+                                                 )
+                                          )
+                                 );
+
+        } else {
+          for (N := 0; N < length (params); N := N + 2)
+          {
+            if (params [N] like 'k_fld_1_%')
+            {
+              suffix := replace (params [N], 'k_fld_1_', '');
+              flag :=  trim (params [N+1]);
+              uri :=  trim (get_keyword ('k_fld_2_'||suffix, params, ''));
+              label :=  trim (get_keyword ('k_fld_3_'||suffix, params, ''));
+              items := vector_concat (items, vector (vector ('', flag, uri, label)));
+            }
+          }
+          vFormMode := 'new';
+        }
+        foreach (any item in items) do
+        {
+          vUrl := sprintf (
+                           '%s/user.knows.%s?sid=%U&realm=%U&id=%U&flag=%U&uri=%U&label=%U',
+                           vHostUrl,
+                           vFormMode,
+                           vSid,
+                           vRealm,
+                           item[0],
+                           item[1],
+                           item[2],
+                           item[3]
+                          );
+          commit work;
+          vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+          if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+          {
+            vError := vRespond[0];
+            vForm := 'login';
+
+            goto _exit057;
+          }
+          else
+          {
+            vXml := xml_tree_doc (vResult);
+            if (xpath_eval ('/failed/message', vXml))
+            {
+              vError := xpath_eval ('string (/failed/message)', vXml);
+              if (xpath_eval ('string (/failed/code)', vXml) <> '23023')
+              {
+                vForm := 'login';
+                goto _exit057;
+              }
+            }
+          }
+        }
+      _exit057:;
         vFormMode := '';
       }
       else if (get_keyword ('pf_update26', params, '') <> '')
@@ -303,13 +411,13 @@
       else if ((get_keyword ('pf_update', params, '') <> '') or (get_keyword ('pf_next', params, '') <> '') or (get_keyword ('pf_clear', params, '') <> ''))
       {
         vFormMode := '';
-        if (((vFormTab = 0) and (vFormSubtab = 3)) or ((vFormTab = 1) and (vFormSubtab = 2)))
+        if (((vFormTab = 0) and (vFormTab2 = 3)) or ((vFormTab = 1) and (vFormTab2 = 2)))
         {
           declare accountType, prefix any;
 
           accountType := 'P';
           prefix := 'x4';
-          if ((vFormTab = 1) and (vFormSubtab = 2))
+          if ((vFormTab = 1) and (vFormTab2 = 2))
           {
             accountType := 'B';
             prefix := 'y1';
@@ -360,7 +468,7 @@
             }
           }
         }
-        else if ((vFormTab = 0) and (vFormSubtab = 5))
+        else if ((vFormTab = 0) and (vFormTab2 = 5))
         {
           vUrl := vHostUrl || '/user.bioEvents.delete?sid=' || vSid || '&realm=' || vRealm || '&type=P';
           commit work;
@@ -408,7 +516,7 @@
             }
           }
         }
-        else if ((vFormTab = 2) and (vFormSubtab = 0))
+        else if ((vFormTab = 2) and (vFormTab2 = 0))
         {
           if (get_keyword ('pf_newPassword', params, '') <> get_keyword ('pf_newPassword2', params, ''))
           {
@@ -444,7 +552,7 @@
           vParams := 'sid=' || vSid || '&realm=' || vRealm;
           if (vFormTab = 0)
       {
-            if (vFormSubtab = 0)
+            if (vFormTab2 = 0)
             {
               -- Import
               if (get_keyword ('cb_item_i_name', params, '') = '1')
@@ -498,7 +606,7 @@
               if (get_keyword ('cb_item_i_onlineAccounts', params, '') = '1')
                 vParams := vParams || sprintf ('&onlineAccounts=%U', get_keyword ('i_onlineAccounts', params, ''));
             }
-            if (vFormSubtab = 1)
+            if (vFormTab2 = 1)
             {
               -- Main
               vParams := vParams ||
@@ -553,7 +661,7 @@
               }
               vParams := vParams || sprintf ('&topicInterests=%U', tmp);
             }
-            if (vFormSubtab = 2)
+            if (vFormTab2 = 2)
             {
               vParams := vParams ||
                 '&homeDefaultMapLocation=' || sprintf ('%U', get_keyword ('pf_homeDefaultMapLocation', params, '')) ||
@@ -570,7 +678,7 @@
                   '&homePhoneExt=' ||           sprintf ('%U', get_keyword ('pf_homePhoneExt', params, '')) ||
                   '&homeMobile=' ||             sprintf ('%U', get_keyword ('pf_homeMobile', params, ''));
             }
-            if (vFormSubtab = 4)
+            if (vFormTab2 = 4)
             {
               vParams := vParams ||
                   '&icq=' ||                    sprintf ('%U', get_keyword ('pf_icq', params, '')) ||
@@ -592,7 +700,7 @@
           }
           if (vFormTab = 1)
           {
-            if (vFormSubtab = 0)
+            if (vFormTab2 = 0)
             {
               vParams := vParams ||
                 '&businessIndustry=' ||       sprintf ('%U', get_keyword ('pf_businessIndustry', params, '')) ||
@@ -608,7 +716,7 @@
                   '&businessNetwork=' ||        sprintf ('%U', get_keyword ('pf_businessNetwork', params, '')) ||
                   '&businessResume=' ||         sprintf ('%U', get_keyword ('pf_businessResume', params, ''));
             }
-            if (vFormSubtab = 1)
+            if (vFormTab2 = 1)
             {
               vParams := vParams ||
                 '&businessCountry=' ||        sprintf ('%U', get_keyword ('pf_businesscountry', params, '')) ||
@@ -624,7 +732,7 @@
                   '&businessPhoneExt=' ||  sprintf ('%U', get_keyword ('pf_businessPhoneExt', params, '')) ||
                   '&businessMobile=' ||         sprintf ('%U', get_keyword ('pf_businessMobile', params, ''));
             }
-            if (vFormSubtab = 3)
+            if (vFormTab2 = 3)
             {
               vParams := vParams ||
                   '&businessIcq=' ||            sprintf ('%U', get_keyword ('pf_businessIcq', params, '')) ||
@@ -647,17 +755,17 @@
           if (vFormTab = 2)
           {
             -- Passrord recovery
-            if (vFormSubtab = 1)
+            if (vFormTab2 = 1)
               vParams := vParams ||
                   '&securitySecretQuestion=' || sprintf ('%U', get_keyword ('pf_securitySecretQuestion', params, '')) ||
                   '&securitySecretAnswer=' || sprintf ('%U', get_keyword ('pf_securitySecretAnswer', params, ''));
 
             -- OpenID
-            if (vFormSubtab = 2)
+            if (vFormTab2 = 2)
               vParams := vParams || '&securityOpenID=' || sprintf ('%U', get_keyword ('pf_openID', params, ''));
 
             -- Facebook
-            if (vFormSubtab = 3)
+            if (vFormTab2 = 3)
             {
               if (get_keyword ('pf_clear', params, '') <> '')
               {
@@ -668,7 +776,7 @@
             }
 
             -- Limits
-            if (vFormSubtab = 4)
+            if (vFormTab2 = 4)
               vParams := vParams || '&securitySiocLimit=' || sprintf ('%U', get_keyword ('pf_securitySiocLimit', params, ''));
 
           }
@@ -727,14 +835,14 @@
         }
         if (get_keyword ('pf_next', params, '') <> '')
         {
-          vFormSubtab := vFormSubtab + 1;
+          vFormTab2 := vFormTab2 + 1;
           if (
-              ((vFormTab = 1) and (vFormSubtab > 3)) or
-              ((vFormTab = 2) and (vFormSubtab > 6))
+              ((vFormTab = 1) and (vFormTab2 > 3)) or
+              ((vFormTab = 2) and (vFormTab2 > 6))
              )
           {
             vFormTab := vFormTab + 1;
-            vFormSubtab := 0;
+            vFormTab2 := 0;
           }
           if (vFormTab > 2)
             vFormTab := 0;
@@ -751,7 +859,7 @@
       if (get_keyword ('uf_profile', params, '') <> '')
       {
         vFormTab := 0;
-        vFormSubtab := 0;
+        vFormTab2 := 0;
         vForm := 'profile';
     }
     }
@@ -847,7 +955,8 @@
       <input type="hidden" name="realm" id="realm" value="<?V vRealm ?>" />
       <input type="hidden" name="form" id="form" value="<?V vForm ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?V vFormTab ?>" />
-      <input type="hidden" name="formSubtab" id="formSubtab" value="<?V vFormSubtab ?>" />
+      <input type="hidden" name="formTab2" id="formTab2" value="<?V vFormTab2 ?>" />
+      <input type="hidden" name="formTab3" id="formTab3" value="<?V vFormTab3 ?>" />
       <input type="hidden" name="formMode" id="formMode" value="<?V vFormMode ?>" />
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
@@ -1104,6 +1213,10 @@
                   <li id="pf_tab_2" title="Security">Security</li>
                 </ul>
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <?vsp
+                  if (vFormTab = 0)
+                  {
+                  ?>
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
                       <li id="pf_tab_0_0">Profile Import</li>
@@ -1111,19 +1224,14 @@
                       <li id="pf_tab_0_2">Address</li>
                       <li id="pf_tab_0_3">Online Accounts</li>
                       <li id="pf_tab_0_4">Messaging Services</li>
-                      <li id="pf_tab_0_5">Biographical Events</li>
-                      <li id="pf_tab_0_6">Favorite Things</li>
-                      <li id="pf_tab_0_7">Creator Of</li>
-                      <li id="pf_tab_0_8">My Offers</li>
-                      <li id="pf_tab_0_9">Offers I Seek</li>
-                      <li id="pf_tab_0_10">Likes & DisLikes</li>
+                      <li id="pf_tab_0_5">Others</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                      <div id="pf_page_0_0" class="tabContent" style="display:none;">
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 0))
+                      if (vFormTab2 = 0)
                         {
                         ?>
+                      <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                             <th>
@@ -1147,15 +1255,13 @@
                           <tbody id="i_tbody">
                           </tbody>
                         </table>
-                        <?vsp
-                        }
-                        ?>
                       </div>
-                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 1))
+                      }
+                      if (vFormTab2 = 1)
                         {
                         ?>
+                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <th>
@@ -1546,16 +1652,13 @@
                             </td>
                           </tr>
                     </table>
-                        <?vsp
-                        }
-                        ?>
                   </div>
-
-                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 2))
+                      }
+                      if (vFormTab2 = 2)
                         {
                         ?>
+                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
@@ -1732,16 +1835,13 @@
                         </td>
                       </tr>
                     </table>
-                        <?vsp
-                        }
-                        ?>
                   </div>
-
-                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 3))
+                      }
+                      if (vFormTab2 = 3)
                         {
                         ?>
+                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
                         <input type="hidden" name="c_nick" value="<?V xpath_eval ('string (/user/nickName)', vXml) ?>" id="c_nick" />
                     <table class="form" cellspacing="5">
                       <tr>
@@ -1771,16 +1871,13 @@
                             </td>
                           </tr>
                         </table>
-                        <?vsp
-                        }
-                        ?>
                       </div>
-
-                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 4))
+                      }
+                      if (vFormTab2 = 4)
                         {
                         ?>
+                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
                         <table id="x6_tbl" class="form" cellspacing="5">
                           <tr>
                             <th width="30%">
@@ -1877,16 +1974,29 @@
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x6", "<?V replace(cast (xpath_eval ('string (/user/messaging)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
                         </table>
+                      </div>
                         <?vsp
                         }
+                      if (vFormTab2 = 5)
+                      {
                         ?>
-                      </div>
-
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <ul id="pf_tabs_0_5" class="tabs">
+                          <li id="pf_tab_0_5_0">Biographical Events</li>
+                          <li id="pf_tab_0_5_1">Owns</li>
+                          <li id="pf_tab_0_5_2">Favorite Things</li>
+                          <li id="pf_tab_0_5_3">Creator Of</li>
+                          <li id="pf_tab_0_5_4">My Offers</li>
+                          <li id="pf_tab_0_5_5">Offers I Seek</li>
+                          <li id="pf_tab_0_5_6">Likes & DisLikes</li>
+                          <li id="pf_tab_0_5_7">Social Network</li>
+                        </ul>
+                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 5))
+                          if (vFormTab3 = 0)
                         {
                         ?>
+                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -1918,28 +2028,119 @@
                             </td>
                           </tr>
                         </table>
+                          </div>
                         <?vsp
                         }
+                          if (vFormTab3 = 1)
+                          {
+                          ?>
+                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                            <h3>Owns</h3>
+                            <?vsp
+                              if (vFormMode = '')
+                              {
                         ?>
+                            <div id="pf051_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
+                              </div>
+                          	  <table id="pf051_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th>Name</th>
+                            		    <th>Description</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf051_tbody">
+                                  <script type="text/javascript">
+                                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOwns();});
+                                  </script>
+                          	    </tbody>
+                              </table>
                       </div>
-
                       <?vsp
-                      if (vFormTab = 0)
+                              }
+                              else
                       {
-                        if (vFormSubtab = 6)
+                                http (sprintf ('<input type="hidden" id="pf051_id" name="pf051_id" value="%s" />', get_keyword ('pf051_id', params, '0')));
+                            ?>
+                            <div id="pf051_form">
+                              <table class="form" cellspacing="5">
+              		        		  <tr>
+                                  <th width="25%">
+              		                  Access
+              		                </th>
+              		                <td>
+                                    <select name="pf051_flag" id="pf051_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf051_name" id="pf051_name" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Comment
+                                  </th>
+                                  <td>
+                                    <textarea name="pf051_comment" id="pf051_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                  </td>
+                                </tr>
+              		        		  <tr>
+              		        		    <th valign="top">
+              		                  Products
+              		                </th>
+              		                <td width="800px">
+                                    <table id="ow_tbl" class="listing">
+                                      <tbody id="ow_tbody">
+                                        <tr id="ow_throbber">
+                                          <td>
+                                            <img src="/ods/images/oat/Ajax_throbber.gif" />
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <input type="hidden" id="ow_no" name="ow_no" value="1" />
+                                  </td>
+                                </tr>
+                              </table>
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOwn();});
+                              </script>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                                <input type="submit" name="pf_update051" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf051');"/>
+                              </div>
+                            </div>
+                            <?vsp
+                              }
+                            ?>
+                          </div>
+                          <?vsp
+                          }
+                          if (vFormTab3 = 2)
                         {
                       ?>
-                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
                         <h3>Favorites</h3>
                         <?vsp
                           if (vFormMode = '')
                         {
                         ?>
-                        <div id="pf06_list">
+                            <div id="pf052_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf06_tbl" class="listing">
+                          	  <table id="pf052_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
                         		    <th>Label</th>
@@ -1947,7 +2148,7 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                                   </tr>
                                 </thead>
-                      	    <tbody id="pf06_tbody">
+                          	    <tbody id="pf052_tbody">
                                   <script type="text/javascript">
                                     OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorites();});
                                   </script>
@@ -1958,16 +2159,28 @@
                           }
                           else
                           {
-                            http (sprintf ('<input type="hidden" id="pf06_id" name="pf06_id" value="%s" />', get_keyword ('pf06_id', params, '0')));
+                                http (sprintf ('<input type="hidden" id="pf052_id" name="pf052_id" value="%s" />', get_keyword ('pf052_id', params, '0')));
                         ?>
-                        <div id="pf06_form">
+                            <div id="pf052_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+              		                  Access
+              		                </th>
+              		                <td>
+                                    <select name="pf052_flag" id="pf052_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Label (*)
                               </th>
                               <td>
-                                <input type="text" name="pf06_label" id="pf06_label" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf052_label" id="pf052_label" value="" class="_validate_" style="width: 400px;">
                             </td>
                             </tr>
                             <tr>
@@ -1975,7 +2188,7 @@
                                 External URI
                               </th>
                               <td>
-                                <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf052_uri" id="pf052_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                             </td>
                           </tr>
                             <tr>
@@ -1995,7 +2208,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
-                            <input type="submit" name="pf_update06" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf06');"/>
+                                <input type="submit" name="pf_update052" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf052');"/>
                           </div>
                         </div>
                         <?vsp
@@ -2004,20 +2217,20 @@
                       </div>
                       <?vsp
                         }
-                        else if (vFormSubtab = 7)
+                          if (vFormTab3 = 3)
                         {
                       ?>
-                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
                         <?vsp
                           if (vFormMode = '')
                           {
                         ?>
-                        <div id="pf07_list">
+                            <div id="pf053_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Creator Of'" alt="Add 'Creator Of'" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf07_tbl" class="listing">
+                          	  <table id="pf053_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Made Property</th>
@@ -2025,7 +2238,7 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf07_tbody">
+                          	    <tbody id="pf053_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowMades();});
                               </script>
@@ -2036,9 +2249,9 @@
                           }
                           else
                           {
-                            http (sprintf ('<input type="hidden" id="pf07_id" name="pf07_id" value="%s" />', get_keyword ('pf07_id', params, '0')));
+                                http (sprintf ('<input type="hidden" id="pf053_id" name="pf053_id" value="%s" />', get_keyword ('pf053_id', params, '0')));
                         ?>
-                        <div id="pf07_form">
+                            <div id="pf053_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
@@ -2049,7 +2262,7 @@
                                   function p_init ()
                                   {
                                     var fld = new OAT.Combolist([]);
-                                    fld.input.name = 'pf07_property';
+                                        fld.input.name = 'pf053_property';
                                     fld.input.id = fld.input.name;
                                     fld.input.style.width = "400px";
                                     $("if_opt").appendChild(fld.div);
@@ -2066,7 +2279,7 @@
                                 URI
                               </th>
                               <td>
-                                <input type="text" name="pf07_url" id="pf07_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf053_url" id="pf053_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2074,7 +2287,7 @@
                                 Description (*)
                               </th>
                               <td>
-                                <textarea name="pf07_description" id="pf07_description" style="width: 400px;"></textarea>
+                                    <textarea name="pf053_description" id="pf053_description" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                             <tr>
@@ -2089,7 +2302,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
-                            <input type="submit" name="pf_update07" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf07');"/>
+                                <input type="submit" name="pf_update053" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf053');"/>
                           </div>
                         </div>
                         <?vsp
@@ -2098,20 +2311,20 @@
                       </div>
                       <?vsp
                         }
-                        else if (vFormSubtab = 8)
+                          if (vFormTab3 = 4)
                         {
                       ?>
-                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
                         <?vsp
                           if (vFormMode = '')
                           {
                         ?>
-                        <div id="pf08_list">
+                            <div id="pf054_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf08_tbl" class="listing">
+                          	  <table id="pf054_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Name</th>
@@ -2119,7 +2332,7 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf08_tbody">
+                          	    <tbody id="pf054_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOffers();});
                               </script>
@@ -2130,16 +2343,28 @@
                           }
                           else
                           {
-                            http (sprintf ('<input type="hidden" id="pf08_id" name="pf08_id" value="%s" />', get_keyword ('pf08_id', params, '0')));
+                                http (sprintf ('<input type="hidden" id="pf054_id" name="pf054_id" value="%s" />', get_keyword ('pf054_id', params, '0')));
                         ?>
-                        <div id="pf08_form">
+                            <div id="pf054_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+              		                  Access
+              		                </th>
+              		                <td>
+                                    <select name="pf054_flag" id="pf054_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Name
                               </th>
                               <td>
-                                <input type="text" name="pf08_name" id="pf08_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf054_name" id="pf054_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2147,7 +2372,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf08_comment" id="pf08_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf054_comment" id="pf054_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -2173,7 +2398,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update08" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf08');"/>
+                                <input type="submit" name="pf_update054" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf054');"/>
                           </div>
                         </div>
                         <?vsp
@@ -2182,20 +2407,20 @@
                       </div>
                       <?vsp
                         }
-                        else if (vFormSubtab = 9)
+                          if (vFormTab3 = 5)
                         {
                       ?>
-                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
                         <?vsp
                           if (vFormMode = '')
                           {
                         ?>
-                        <div id="pf09_list">
+                            <div id="pf055_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf09_tbl" class="listing">
+                          	  <table id="pf055_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Name</th>
@@ -2203,7 +2428,7 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf09_tbody">
+                          	    <tbody id="pf055_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowSeeks();});
                               </script>
@@ -2214,16 +2439,28 @@
                           }
                           else
                           {
-                            http (sprintf ('<input type="hidden" id="pf09_id" name="pf09_id" value="%s" />', get_keyword ('pf09_id', params, '0')));
+                                http (sprintf ('<input type="hidden" id="pf055_id" name="pf055_id" value="%s" />', get_keyword ('pf055_id', params, '0')));
                         ?>
-                        <div id="pf09_form">
+                            <div id="pf055_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+              		                  Access
+              		                </th>
+              		                <td>
+                                    <select name="pf055_flag" id="pf055_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Name
                               </th>
                               <td>
-                                <input type="text" name="pf09_name" id="pf09_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf055_name" id="pf055_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2231,7 +2468,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf09_comment" id="pf09_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf055_comment" id="pf055_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -2257,7 +2494,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf09');"/>
+                                <input type="submit" name="pf_update055" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf055');"/>
                           </div>
                         </div>
                         <?vsp
@@ -2266,28 +2503,29 @@
                       </div>
                       <?vsp
                         }
-                        else if (vFormSubtab = 10)
+                          if (vFormTab3 = 6)
                         {
                       ?>
-                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
                         <h3>Likes & DisLikes</h3>
                         <?vsp
                           if (vFormMode = '')
                           {
                         ?>
-                        <div id="pf10_list">
+                            <div id="pf056_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Like" alt="Add Like" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf10_tbl" class="listing">
+                          	  <table id="pf056_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th width="50%">URI</th>
-                        		    <th width="50%">Name</th>
+                            		    <th width="10%">Type</th>
+                            		    <th width="45%">URI</th>
+                            		    <th width="45%">Name</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf10_tbody">
+                          	    <tbody id="pf056_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowLikes();});
                               </script>
@@ -2298,16 +2536,28 @@
                           }
                           else
                           {
-                            http (sprintf ('<input type="hidden" id="pf10_id" name="pf10_id" value="%s" />', get_keyword ('pf10_id', params, '0')));
+                                http (sprintf ('<input type="hidden" id="pf056_id" name="pf056_id" value="%s" />', get_keyword ('pf056_id', params, '0')));
                         ?>
-                        <div id="pf10_form">
+                            <div id="pf056_form">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+              		                  Access
+              		                </th>
+              		                <td>
+                                    <select name="pf056_flag" id="pf056_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Type
                               </th>
                               <td>
-                                <select name="pf10_type" id="pf10_type">
+                                    <select name="pf056_type" id="pf056_type">
                                   <option value="L">Like</option>
                                   <option value="DL">DisLike</option>
                                 </select>
@@ -2315,18 +2565,18 @@
                             </tr>
                             <tr>
                               <th>
-                                URI
+                                    URI (*)
                               </th>
                               <td>
-                                <input type="text" name="pf10_uri" id="pf10_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                    <input type="text" name="pf056_uri" id="pf056_uri" value="" class="_validate_ _uri_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
                               <th>
-                                Name
+                                    Name (*)
                               </th>
                               <td>
-                                <input type="text" name="pf10_name" id="pf10_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf056_name" id="pf056_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -2334,7 +2584,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf10_comment" id="pf10_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf056_comment" id="pf056_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -2360,17 +2610,156 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update10" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf10');"/>
+                                <input type="submit" name="pf_update056" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf056');"/>
+                              </div>
+                            </div>
+                            <?vsp
+                              }
+                            ?>
                           </div>
+                          <?vsp
+                          }
+                          if (vFormTab3 = 7)
+                          {
+                          ?>
+                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                            <h3>Social Network</h3>
+                            <?vsp
+                              if (vFormMode = '')
+                              {
+                            ?>
+                            <div id="pf057_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Knows" alt="Add Knows" src="/ods/images/icons/add_16.png"> Add</span>
+                                <span onclick="javascript: $('formMode').value = 'import'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Import Knows" alt="Import Knows" src="/ods/images/icons/go_16.png"> Import</span>
+                          </div>
+                          	  <table id="pf057_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf057_tbody">
+                                  <script type="text/javascript">
+                                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowKnows();});
+                                  </script>
+                          	    </tbody>
+                              </table>
                         </div>
                         <?vsp
                           }
+                              else if (vFormMode = 'import')
+                              {
                         ?>
+                            <div id="pf057_import">
+                              <table>
+                      				  <tr>
+                      				    <th width="100px">
+                      		          Source
+                      		        </th>
+                                  <td>
+                                    <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                  </th><td>
+                                    <table class="listing" id="k_tbl">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            Access
+                                          </th>
+                                          <th width="50%">
+                                            URI
+                                          </th>
+                                          <th width="50%">
+                                            Label
+                                          </th>
+                                          <th width="65px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr id="k_tr_no">
+                                           <td colspan="3">
+                                             <b>No downloaded items</b>
+                                           </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                                <input type="submit" name="pf_update057" value="Import" onclick="myBeforeSubmit(); return true;"/>
+                              </div>
                       </div>
                       <?vsp
                         }
                         else
                         {
+                                http (sprintf ('<input type="hidden" id="pf057_id" name="pf057_id" value="%s" />', get_keyword ('pf057_id', params, '0')));
+                            ?>
+                            <div id="pf057_form">
+                              <table class="form" cellspacing="5">
+              		        		  <tr>
+                                  <th width="25%">
+              		                  Access
+              		                </th>
+              		                <td>
+                                    <select name="pf057_flag" id="pf057_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    URI (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_uri" id="pf057_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Label (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_label" id="pf057_label" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                              </table>
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowKnow();});
+                              </script>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                                <input type="submit" name="pf_update057" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf057');"/>
+                              </div>
+                            </div>
+                            <?vsp
+                              }
+                            ?>
+                          </div>
+                          <?vsp
+                          }
+                          ?>
+                        </div>
+                      </div>
+                    </div>
+                    <?vsp
+                    }
+                    if (vFormTab2 < 5)
+                    {
                       ?>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
@@ -2379,11 +2768,13 @@
                       </div>
                       <?vsp
                         }
-                      }
                       ?>
                     </div>
-                  </div>
-
+                  <?vsp
+                  }
+                  if (vFormTab = 1)
+                  {
+                  ?>
                   <div id="pf_page_1" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_1" class="tabs">
                       <li id="pf_tab_1_0" title="Main">Main</li>
@@ -2392,6 +2783,10 @@
                       <li id="pf_tab_1_3" title="Messaging Services">Messaging Services</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <?vsp
+                      if (vFormTab2 = 0)
+                      {
+                      ?>
                       <div id="pf_page_1_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
@@ -2606,7 +3001,11 @@
                           </tr>
                         </table>
                       </div>
-
+                      <?vsp
+                      }
+                      if (vFormTab2 = 1)
+                      {
+                      ?>
                       <div id="pf_page_1_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
@@ -2783,7 +3182,11 @@
                       </tr>
                         </table>
                       </div>
-
+                      <?vsp
+                      }
+                      if (vFormTab2 = 2)
+                      {
+                      ?>
                       <div id="pf_page_1_2" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -2814,7 +3217,11 @@
                       </tr>
                         </table>
                       </div>
-
+                      <?vsp
+                      }
+                      if (vFormTab2 = 3)
+                      {
+                      ?>
                       <div id="pf_page_1_3" class="tabContent" style="display:none;">
                         <table id="y2_tbl" class="form" cellspacing="5">
                       <tr>
@@ -2913,7 +3320,9 @@
                           </script>
                     </table>
                       </div>
-
+                      <?vsp
+                      }
+                      ?>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
@@ -2921,7 +3330,11 @@
                       </div>
                     </div>
                   </div>
-
+                  <?vsp
+                  }
+                  if (vFormTab = 2)
+                  {
+                  ?>
                   <div id="pf_page_2" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_2" class="tabs">
                       <li id="pf_tab_2_0" title="Password Settings">Password Settings</li>
@@ -2933,6 +3346,10 @@
                       <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <?vsp
+                      if (vFormTab2 = 0)
+                      {
+                      ?>
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -2977,6 +3394,11 @@
                       </tr>
                         </table>
                       </div>
+                      <?vsp
+                      }
+                      if (vFormTab2 = 1)
+                      {
+                      ?>
                       <div id="pf_page_2_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3012,6 +3434,11 @@
                       </tr>
                         </table>
                       </div>
+                      <?vsp
+                      }
+                      if (vFormTab2 = 2)
+                      {
+                      ?>
                       <div id="pf_page_2_2" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3024,6 +3451,11 @@
                       </tr>
                         </table>
                       </div>
+                      <?vsp
+                      }
+                      if (vFormTab2 = 3)
+                      {
+                      ?>
                       <div id="pf_page_2_3" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3053,6 +3485,11 @@
                       </tr>
                         </table>
                       </div>
+                      <?vsp
+                      }
+                      if (vFormTab2 = 4)
+                      {
+                      ?>
                       <div id="pf_page_2_4" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -3066,7 +3503,8 @@
                         </table>
                       </div>
                       <?vsp
-                      if ((vFormTab = 2) and (vFormSubtab = 5))
+                      }
+                      if (vFormTab2 = 5)
                       {
                       ?>
                       <div id="pf_page_2_5" class="tabContent" style="display:none;">
@@ -3076,7 +3514,7 @@
                       </div>
                       <?vsp
                       }
-                      else if ((vFormTab = 2) and (vFormSubtab = 6))
+                      if (vFormTab2 = 6)
                       {
                       ?>
                       <div id="pf_page_2_6" class="tabContent" style="display:none;">
@@ -3177,13 +3615,13 @@
                       </div>
                       <?vsp
                         }
-                        else
+                      if (vFormTab2 < 5)
                         {
                       ?>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                         <?vsp
-                        if ((vFormTab = 2) and (vFormSubtab = 3) and not isnull (xpath_eval ('/user/securityFacebookID', vXml)))
+                        if ((vFormTab2 = 3) and not isnull (xpath_eval ('/user/securityFacebookID', vXml)))
                         {
                         ?>
                         <input type="submit" name="pf_clear" value="Clear" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
@@ -3198,6 +3636,9 @@
                       ?>
                   </div>
                 </div>
+                  <?vsp
+                  }
+                  ?>
                 </div>
               </div>
               <?vsp

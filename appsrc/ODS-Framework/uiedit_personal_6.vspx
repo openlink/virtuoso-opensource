@@ -63,6 +63,7 @@
           <v:on-post>
             <![CDATA[
               self.r_mode := 'R/add';
+              self.r_flag.ufl_value := null;
               self.r_label.ufl_value := null;
               self.r_uri.ufl_value := null;
               self.r_properties := vector ();
@@ -82,8 +83,8 @@
         <v:template name="r_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
       	  <table class="listing" rules="groups">
       	    <tr class="listing_header_row">
-      		    <th>Label</th>
-      		    <th>URI</th>
+      		    <th width="50%">Label</th>
+      		    <th width="50%">URI</th>
       		    <th width="1%" nowrap="nowrap">Action</th>
       	    </tr>
           </table>
@@ -94,7 +95,7 @@
           <v:template name="r_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table>
               <tr>
-                <td colspan="3">No 'Favorites' Items</td>
+                <td colspan="3">No Favorites</td>
               </tr>
             </table>
           </v:template>
@@ -119,10 +120,12 @@
                       <![CDATA[
                         self.r_mode := 'R/edit';
                         self.r_id := (control.vc_parent as vspx_row_template).te_column_value('WUF_ID');
-                        select WUF_LABEL,
+                        select WUF_FLAG,
+                               WUF_LABEL,
                                WUF_URI,
                                deserialize (WUF_PROPERTIES)
-                          into self.r_label.ufl_value,
+                          into self.r_flag.ufl_value,
+                               self.r_label.ufl_value,
                                self.r_uri.ufl_value,
                                self.r_properties
                           from DB.DBA.WA_USER_FAVORITES
@@ -175,7 +178,19 @@
   	  <div class="fm">
 				<table>
         <tr>
-				    <th width="120px">
+				    <th width="100px">
+		          Access
+		        </th>
+		        <td>
+              <v:select-list name="r_flag" xhtml_id="r_flag">
+                <v:item name="public" value="1" />
+                <v:item name="acl" value="2" />
+                <v:item name="private" value="3" />
+              </v:select-list>
+            </td>
+          </tr>
+				  <tr>
+				    <th>
 		          Label (*)
                   </th>
 		        <td>
@@ -192,7 +207,7 @@
                 </tr>
 				  <tr>
 				    <th valign="top">
-		          Item Properties
+		          Properties
 		        </th>
 		        <td width="800px">
               <table id="r_tbl" class="listing">
@@ -252,11 +267,12 @@
                     properties := self.getProperties('r', params, '0', '0');
                     if (self.r_mode = 'R/add')
                     {
-                      insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
-                        values (self.u_id, 'http://rdfs.org/sioc/ns#', 'sioc:Item', self.r_label.ufl_value, self.r_uri.ufl_value, serialize (properties));
+                      insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_FLAG, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
+                        values (self.u_id, self.r_flag.ufl_value, 'http://rdfs.org/sioc/ns#', 'sioc:Item', self.r_label.ufl_value, self.r_uri.ufl_value, serialize (properties));
                     } else {
                       update DB.DBA.WA_USER_FAVORITES
-                         set WUF_LABEL = self.r_label.ufl_value,
+                         set WUF_FLAG = self.r_flag.ufl_value,
+                             WUF_LABEL = self.r_label.ufl_value,
                              WUF_URI = self.r_uri.ufl_value,
                              WUF_PROPERTIES = serialize (properties)
                        where WUF_ID = self.r_id;

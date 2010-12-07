@@ -64,6 +64,7 @@
           <v:on-post>
             <![CDATA[
               self.ld_mode := 'LD/add';
+              self.ld_flag.ufl_value := null;
               self.ld_uri.ufl_value := null;
               self.ld_type.ufl_value := null;
               self.ld_name.ufl_value := null;
@@ -78,16 +79,17 @@
       </div>
 
 	    <v:data-set name="ld_ds"
-	                sql="select WUL_ID, WUL_URI, WUL_NAME from DB.DBA.WA_USER_LIKES where WUL_U_ID = :self.u_id"
+	                sql="select WUL_ID, WUL_TYPE, WUL_URI, WUL_NAME from DB.DBA.WA_USER_LIKES where WUL_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
-		              nrows="10">
+		              nrows="0">
 
         <v:template name="ld_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
       	  <table class="listing" rules="groups">
       	    <tr class="listing_header_row">
-      		    <th width="50%">URI</th>
-      		    <th width="50%">Name</th>
+      		    <th width="10%">Type</th>
+      		    <th width="45%">Label</th>
+      		    <th width="40%">URI</th>
       		    <th width="50px">Action</th>
       	    </tr>
           </table>
@@ -98,7 +100,7 @@
           <v:template name="ld_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table>
               <tr align="center">
-                <td colspan="3">No Likes/DisLikes</td>
+                <td colspan="4">No Likes/DisLikes</td>
               </tr>
             </table>
           </v:template>
@@ -106,11 +108,14 @@
           <v:template name="ld_ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
   			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                <td nowrap="nowrap" width="50%">
-                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUL_URI')" format="%s" name="ld_ds_browse_1_label"/>
+                <td nowrap="nowrap">
+                  <v:label value="--case when (control.vc_parent as vspx_row_template).te_column_value('WUL_TYPE') = 'L' then 'Like' else 'DisLike' end" format="%s" name="ld_ds_browse_1_label"/>
                 </td>
-                <td nowrap="nowrap" width="50%">
+                <td nowrap="nowrap">
                   <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUL_NAME')" format="%s" name="ld_ds_browse_2_label"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUL_URI')" format="%s" name="ld_ds_browse_3_label"/>
                 </td>
                 <td nowrap="nowrap">
                   <v:button name="ld_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
@@ -123,12 +128,14 @@
                       <![CDATA[
                         self.ld_mode := 'LD/edit';
                         self.ld_id := (control.vc_parent as vspx_row_template).te_column_value('WUL_ID');
-                        select WUL_URI,
+                        select WUL_FLAG,
+                               WUL_URI,
                                WUL_TYPE,
                                WUL_NAME,
                                WUL_COMMENT,
                                deserialize (WUL_PROPERTIES)
-                          into self.ld_uri.ufl_value,
+                          into self.ld_flag.ufl_value,
+                               self.ld_uri.ufl_value,
                                self.ld_type.ufl_value,
                                self.ld_name.ufl_value,
                                self.ld_comment.ufl_value,
@@ -163,6 +170,18 @@
 				<table>
 				  <tr>
 				    <th width="100px">
+		          Access
+		        </th>
+		        <td>
+              <v:select-list name="ld_flag" xhtml_id="ld_flag">
+                <v:item name="public" value="1" />
+                <v:item name="acl" value="2" />
+                <v:item name="private" value="3" />
+              </v:select-list>
+            </td>
+          </tr>
+				  <tr>
+				    <th>
 		          Type
 		        </th>
 		        <td>
@@ -174,18 +193,18 @@
           </tr>
 				  <tr>
 				    <th>
-		          URI
+		          Label (*)
 		        </th>
 		        <td>
-              <v:text name="ld_uri" value="" xhtml_id="ld_uri" xhtml_size="50" xhtml_class="_validate_ _uri_" />
+              <v:text name="ld_name" value="" xhtml_id="ld_name" xhtml_size="50" xhtml_class="_validate_" />
             </td>
           </tr>
 				  <tr>
 				    <th>
-		          Name
+		          URI (*)
 		        </th>
 		        <td>
-              <v:text name="ld_name" value="" xhtml_id="ld_name" xhtml_size="50" xhtml_class="_validate_" />
+              <v:text name="ld_uri" value="" xhtml_id="ld_uri" xhtml_size="50" xhtml_class="_validate_ _uri_" />
             </td>
           </tr>
 				  <tr>
@@ -255,17 +274,18 @@
                   {
                     if (exists (select 1 from DB.DBA.WA_USER_LIKES where WUL_U_ID = self.u_id and WUL_NAME = self.ld_name.ufl_value))
                     {
-                      self.vc_error_message := 'An "Like/DisLike" with same name already exists, please specify unique name.';
+                      self.vc_error_message := 'A "Like/DisLike" with same name already exists, please specify unique name.';
                       self.vc_is_valid := 0;
                       return;
                     }
-                    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
-                      values (self.u_id, self.ld_uri.ufl_value, self.ld_type.ufl_value, self.ld_name.ufl_value, self.ld_comment.ufl_value, serialize (self.ld_properties));
+                    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_FLAG, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
+                      values (self.u_id, self.ld_flag.ufl_value, self.ld_uri.ufl_value, self.ld_type.ufl_value, self.ld_name.ufl_value, self.ld_comment.ufl_value, serialize (self.ld_properties));
                   }
                   else
                   {
                     update DB.DBA.WA_USER_LIKES
-                       set WUL_URI = self.ld_uri.ufl_value,
+                       set WUL_FLAG = self.ld_flag.ufl_value,
+                           WUL_URI = self.ld_uri.ufl_value,
                            WUL_TYPE = self.ld_type.ufl_value,
                            WUL_NAME = self.ld_name.ufl_value,
                            WUL_COMMENT = self.ld_comment.ufl_value,
