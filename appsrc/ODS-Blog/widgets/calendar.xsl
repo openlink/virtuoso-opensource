@@ -1572,6 +1572,47 @@
 </v:template>
   </xsl:template>
 
+  <xsl:template match="vm:micro-post">
+      <v:template name="mpt" type="simple" enabled="--(case when (self.blog_access = 1 or self.blog_access = 2) then 1 else 0 end)">
+	  <div class="micro-post">
+	      <div id="mptitle"><xsl:value-of select="@title"/></div>
+	      <v:form name="mpf" method="POST" type="simple">
+		  <v:textarea name="mpta" xhtml_cols="70" xhtml_rows="5" xhtml_id="mpta"/>
+		  <v:button name="mpb" action="simple" value="Send" xhtml_id="mpb" xhtml_class="real_button">
+		      <v:on-post><![CDATA[
+			  declare res BLOG.DBA."MTWeblogPost";
+			  declare dat datetime;
+			  declare id, dummy, title, message, tmp any;
+
+			  tmp := trim (self.mpta.ufl_value);
+			  if (length (tmp) = 0)
+			    {
+			      self.vc_is_valid := 0;
+			      self.vc_error_message := 'No content';
+			      return 0;
+			    }
+			  title := BLOG..BLOG_RESOLVE_REFS (sprintf ('%V', tmp));
+			  message := '';
+			  dat := now ();
+			  id := cast (sequence_next ('blogger.postid') as varchar);
+			  dummy := null;
+			  res := BLOG.DBA.BLOG_MESSAGE_OR_META_DATA (dummy, self.user_id, dummy, id, dat);
+
+			  res.title := title;
+			  res.dateCreated := dat;
+			  res.postid := id;
+			  insert into BLOG.DBA.SYS_BLOGS( B_APPKEY, B_POST_ID, B_BLOG_ID, B_TS, B_CONTENT, B_USER_ID, B_META, B_STATE, B_TITLE, B_TS)
+			    values( 'appKey', id, self.blogid, dat, message, self.user_id, res, 2, title, dat);
+			  self.mpta.ufl_value := '';
+                          self.vc_data_bind(e);
+			  ODS.DBA.sp_send_all_mentioned (self.owner_name, sioc..blog_post_iri (self.blogid, id), title);
+			  ]]></v:on-post>
+		  </v:button>
+	      </v:form>
+	  </div>
+      </v:template>
+  </xsl:template>
+
   <xsl:template match="vm:advanced-search-link">
       <xsl:variable name="val">--get_keyword ('title', self.user_data, <xsl:apply-templates select="@title" mode="static_value"/>)</xsl:variable>
       <v:url name="a_srch" value="{$val}" url="--sprintf('/weblog/public/search.vspx?blogid=%s', self.blogid)" />

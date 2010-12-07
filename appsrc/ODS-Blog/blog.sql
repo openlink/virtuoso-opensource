@@ -8375,3 +8375,14 @@ CREATE FUNCTION BLOG..GET_DAYS_IN_MONTH (in pDate  DATETIME) RETURNS INT
 
 }
 ;
+
+create procedure BLOG..BLOG_RESOLVE_REFS (in txt any)
+{
+  declare a any;
+  a := regexp_replace (txt, '((http://|https://|mailto:|ftp:)[^ ]+)', '<a href="\\1">\\1</a>', 1, null);
+  a := regexp_replace (a, '(@)([[:alnum:]]+)(:)', '\\1<a href="/dataspace/person/\\2">\\2</a>\\3', 1, null);
+  a := regexp_replace (a, '([[:alnum:]]+)(@)([[:alnum:]]+\\.[[:alnum:]]+)', '<a href="mailto:\\1@\\3">\\1@\\3</a>', 1, null);
+  return '<div>' || a || '</div>';
+}
+;
+

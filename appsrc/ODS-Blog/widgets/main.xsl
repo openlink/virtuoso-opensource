@@ -2208,6 +2208,26 @@ window.onload = function (e)
       </span>
   </xsl:template>
 
+  <xsl:template match="vm:post-author-nick">
+      <xsl:call-template name="post-parts-check"/>
+      <span class="dc-creator" property="dc:creator">
+	<?vsp
+	     {
+		    declare title_val any;
+                    set isolation = 'uncommitted';
+		    declare auth_name, auth_iri, auth_pers_iri any;
+                    declare exit handler for not found;
+                    select U_NAME into auth_name from BLOG.DBA.SYS_BLOG_INFO, SYS_USERS where BI_OWNER = control.te_rowset[5] and U_ID = BI_OWNER;
+			   auth_iri := sioc.DBA.user_obj_iri (auth_name);
+                           auth_pers_iri := sioc.DBA.person_iri (auth_iri);
+                           title_val := charset_recode ('<a rel="foaf:maker" rev="foaf:made" href="' || auth_pers_iri || '">' ||
+			       sprintf('%V', auth_name) || '</a>', 'UTF-8', '');
+		    http (title_val);
+	      }
+	  ?>
+      </span>
+  </xsl:template>
+
   <xsl:template match="vm:post-body">
       <xsl:call-template name="post-parts-check"/>
                     <?vsp
@@ -2337,6 +2357,20 @@ window.onload = function (e)
     <v:url name="show_log1" value="Log" url="--concat('index.vspx?page=routing_queue&post_id=', t_post_id)" render-only="1" />
     <?vsp
        }
+    ?>
+  </xsl:template>
+
+  <xsl:template match="vm:micropost-actions">
+    <xsl:call-template name="post-parts-check"/>
+    <?vsp
+      if (BLOG2_GET_ACCESS (t_blog_id, self.sid, self.realm, 120) in (1, 2))
+      {
+    ?>
+    <v:url name="delete1" value="Delete" url="--concat('index.vspx?delete_post=', t_post_id)" render-only="1" />
+    <xsl:text> </xsl:text>
+    <v:url name="show_log1" value="Log" url="--concat('index.vspx?page=routing_queue&post_id=', t_post_id)" render-only="1" />
+    <?vsp
+      }
     ?>
   </xsl:template>
 
