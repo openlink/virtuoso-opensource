@@ -210,6 +210,9 @@ dv_to_sql_type (dtp_t dv, int cli_binary_timestamp)
     case DV_INT64:
       return SQL_INTEGER;
 
+    case DV_IRI_ID:
+      return SQL_VARCHAR;
+
     default:
       return SQL_VARCHAR;
     }
@@ -3487,6 +3490,9 @@ col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
 	else
 	  return 8;
       }
+
+    case DV_IRI_ID:
+	return 23; /* #ib + 20 digits precision */
 
     default:
       return SQL_NO_TOTAL;
