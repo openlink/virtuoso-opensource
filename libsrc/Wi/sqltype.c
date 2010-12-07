@@ -3610,7 +3610,10 @@ static void *
 box_read_long_ref (dk_session_t *session, dtp_t dtp)
 {
   size_t length = (size_t) read_long (session);
-  char *ref = (char *) dk_alloc_box (length, DV_REFERENCE);
+  char *ref;
+  if (length >= MAX_BOX_LENGTH)
+    return box_read_error (session, dtp);
+  ref = (char *) dk_alloc_box (length, DV_REFERENCE);
   session_buffered_read (session, ref, (int) length);
   return (void *) ref;
 }

@@ -7477,6 +7477,27 @@ bif_xml_tree_doc_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return ret;
 }
 
+static caddr_t
+bif_xtree_doc_get_dtd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  xml_entity_t * xe = bif_entity_arg (qst, args, 0, "xtree_doc_get_dtd");
+  long what = bif_long_arg (qst, args, 1, "xtree_doc_get_dtd");
+  xml_doc_t *xd = xe->xe_doc.xd;
+  caddr_t ret = NULL;
+  if (xd->xd_dtd)
+    {
+      switch (what)
+	{
+	  case 1:
+	      ret = xd->xd_dtd->ed_sysuri ? box_dv_short_string (xd->xd_dtd->ed_sysuri) : NULL;
+	      break;
+	  case 2:
+	      ret = xd->xd_dtd->ed_puburi ? box_dv_short_string (xd->xd_dtd->ed_puburi) : NULL;
+	      break;
+	}
+    }
+  return ret ? ret : NEW_DB_NULL;
+}
 
 int
 xe_destroy (caddr_t box)
@@ -10296,6 +10317,7 @@ xml_tree_init (void)
   bif_define ("xml_tree_doc_set_output", bif_xml_tree_doc_set_output);
   bif_define ("xml_tree_doc_set_ns_output", bif_xml_tree_doc_set_ns_output);
   bif_define ("xml_namespace_scope", bif_xml_namespace_scope);
+  bif_define ("xtree_doc_get_dtd", bif_xtree_doc_get_dtd);
   bif_define ("xpath_eval", bif_xpath_eval);
   bif_set_uses_index (bif_xpath_eval);
   bif_define ("xquery_eval", bif_xquery_eval);

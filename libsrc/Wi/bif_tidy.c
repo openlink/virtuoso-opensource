@@ -149,10 +149,21 @@ bif_tidy_list_errors (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return errlist;
 }
 
+caddr_t
+bif_tidy_external (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#ifdef OLD_TIDY
+  return box_num (0);
+#else
+  return box_num (1);
+#endif
+}
+
 int bif_tidy_init(void)
 {
   tidy_mtx = mutex_allocate ();
   bif_define ("tidy_html", bif_tidy_html);
   bif_define ("tidy_list_errors", bif_tidy_list_errors);
+  bif_define ("tidy_external", bif_tidy_external);
   return 0;
 }
