@@ -1592,9 +1592,13 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare state, msg varchar;
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
+  declare qtxt integer;
+  declare __dbg integer;
+
   -- dbg_obj_princ (path, params, lines);
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
+      __dbg := 1;
       for (declare i int, i := 0; i < length (params); i := i + 2)
         {
 	  if (isstring (params[i+1]))
@@ -1623,9 +1627,14 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime');
   if (timeout is null)
     timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout');
+  def_qry := get_keyword('qtxt', params, '');
+  if ('' = def_qry)
+    {
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
+    }
+  else qtxt := 1;
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
@@ -1675,8 +1684,13 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       return;
     }
 
+  if (__dbg) dbg_printf ('soap_ver: %d', soap_ver);
+
   paramcount := length (params);
-  if (((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0]))) and soap_ver = 0)
+
+  if ((0 = paramcount) or
+      (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0) or
+      qtxt = 1)
     {
        declare redir varchar;
        redir := registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT');
@@ -1831,6 +1845,7 @@ http('			    <option value="text/plain">NTriples</option>\n');
 http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
 http('			  </select>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
+--http('                    <div id="xsl_uri"><input type="text" name"xslt-uri" id="xslt_uri"</div>');
 http('<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>\n');
 http('			  <label for="debug" class="n">Rigorous check of the query</label>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
