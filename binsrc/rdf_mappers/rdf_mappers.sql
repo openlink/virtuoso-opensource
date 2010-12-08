@@ -344,6 +344,10 @@ update DB.DBA.SYS_RDF_MAPPERS
 	set RM_PATTERN = 'http://.*delicious.com/.*'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://(www\\.)?overstock.com/.*\\.(html|htm)(\\?.*)?',
+	'URL', 'DB.DBA.RDF_LOAD_OVERSTOCK', null, 'Overstock');
+
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
@@ -2368,6 +2372,31 @@ create procedure DB.DBA.RDF_LOAD_GOOGLEBASE (in graph_iri varchar, in new_origin
   return 1;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_OVERSTOCK (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare thisgr, cont varchar;
+
+  thisgr := coalesce (dest, graph_iri);
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+  ret_body := replace (ret_body, '= \'<script', '= \'<scr\' + \'ipt');
+  --ret_body := replace (ret_body, '[url]', '{url}');
+  --ret_body := replace (ret_body, '[title]', '{title}');
+  cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+  --string_to_file ('over.html', cont, -2);
+  if (dest is null)
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+  DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 2);
+  --DB.DBA.RDF_QUAD_URI (thisgr, new_origin_uri, 'http://xmlns.com/foaf/0.1/primaryTopic', new_origin_uri || '#product');
+  return 1;
+}
+;
+
 
 create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -6560,7 +6589,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
   declare ret_flag, is_grddl, download_size, load_msec int;
   declare get_feeds, add_html_meta, grddl_loop int;
-  declare base_url, ns_url, reg, doc_base, proxy_iri, cset, dtd_sysuri  varchar;
+  declare base_url, ns_url, reg, doc_base, proxy_iri, cset, dtd_sysuri, tgt_page  varchar;
   declare profile_trf, ns_trf, ext_profs, thisgr, cnt any;
   declare dict any;
 
@@ -6572,6 +6601,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
       if (get_keyword ('add-html-meta', opts) = 'yes')
         add_html_meta := 1;
     }
+  tgt_page := get_keyword ('get:uri', opts, new_origin_uri);
   set_user_id ('dba');
   mdta := 0;
   ret_flag := 1;
@@ -6702,17 +6732,17 @@ try_grddl:
     goto ret;
   try_rdfa:;
   -- RDFa
+  thisgr := coalesce (dest, graph_iri);
   if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
     goto no_dtd_check;
   dtd_sysuri := xtree_doc_get_dtd (xt, 1);
-  thisgr := coalesce (dest, graph_iri);
   if (dtd_sysuri = 'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd') 
     {
       declare exit handler for sqlstate '*' { goto try_grddl1; };
       DB.DBA.RDF_LOAD_RDFA_1 (ret_body, new_origin_uri, thisgr, 0);
-      if (mdta) 
-	goto ret;
       mdta := mdta + 1;
+      --if (mdta) 
+	goto ret;
     }
   else if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1') -- only for tests
     {
@@ -6869,7 +6899,7 @@ no_feed:;
   xt := xt_sav;
   if (add_html_meta = 1 and xpath_eval ('/html', xt) is not null)
     {
-      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/html2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/html2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'source', tgt_page));
       if (xpath_eval ('count(/RDF/*)', xd) > 0)
         {
 	  mdta := mdta + 1;
@@ -7030,11 +7060,21 @@ create procedure DB.DBA.SYS_URN_SPONGE_UP (in local_iri varchar, in get_uri varc
 
 create procedure DB.DBA.SYS_DOI_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
 {
-  if (lower (local_iri) like 'doi:%' and __proc_exists ('HS_Resolve', 2) is not null)
+  if (lower (local_iri) like 'doi:%')
     {
       declare new_get_uri varchar;
+      if (__proc_exists ('HS_Resolve', 2) is not null)
+	{
       new_get_uri := HS_Resolve (substring (get_uri, 5, length (get_uri)));
-      if (new_get_uri is null)
+	}
+      else
+	{
+	  declare hdr any;
+	  http_get ('http://dx.doi.org/' || substring (get_uri, 5, length (get_uri)), hdr);
+	  new_get_uri := http_request_header (hdr, 'Location');
+	}
+
+      if (not isstring (new_get_uri))
         signal ('RDFZZ', 'Cannot resolve IRI='||get_uri);
       options := vector_concat (vector ('get:uri', new_get_uri), options);
       return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
