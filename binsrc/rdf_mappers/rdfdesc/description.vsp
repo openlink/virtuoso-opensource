@@ -6,7 +6,7 @@
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
    declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn varchar;
-   declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn int;
+   declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn, expir int;
 
    set http_charset='utf-8';
    if (0 = DB.DBA.RDF_SPONGE_AUTH ('Virtuoso Sponger'))
@@ -94,7 +94,7 @@
    --if (arr[5] <> '')
    --  do_sponge := 0;
    arr[0] := lower (arr[0]);
-   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi', 'webcal') and arr[0] not like 'urn:lsid:%')
+   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi', 'webcal', 'oai') and _G not like 'urn:lsid:%')
      {
        do_sponge := 0;
        local_lookup := 1;
@@ -229,10 +229,16 @@
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
 
-   links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; type="application/rdf+xml"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; type="text/n3"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Fjson>;\r\n rel="alternate"; type="application/json"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Fatom%%2Bxml>;\r\n rel="alternate"; type="application/atom+xml"; title="OData (Atom feed) format"\r\n', host, rdf_link); 
+   links := sprintf ('Link: <http://%s%s&output=rdf>; rel="alternate"; type="application/rdf+xml"; title="Metadata in RDF/XML format", ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=n3>; rel="alternate"; type="text/n3"; title="Metadata in N3/Turtle format", ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Fjson>; rel="alternate"; type="application/json"; title="Metadata in RDF/JSON format", ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="OData (Atom feed) format"\r\n', host, rdf_link); 
+   for select HS_EXPIRATION from SYS_HTTP_SPONGE where HS_ORIGIN_URI = _G do 
+     {
+       if (HS_EXPIRATION is not null)
+         links := links||sprintf ('Expires: %s\r\n', date_rfc1123 (HS_EXPIRATION));
+     }
+   commit work;  
    http_header (http_header_get () || links);
    errors:
    if (not length (label))
@@ -439,7 +445,17 @@
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" style="border-width:0" /></a> &nbsp;  &nbsp;
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" style="border-width:0" /></a>
-	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="statics/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. <br />
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="statics/creativecommons.png" /></a>
+	<span about=""
+	resource="http://www.w3.org/TR/rdfa-syntax"
+	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
+	<a href="http://validator.w3.org/check?uri=referer"><img
+	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
+	    alt="Valid XHTML + RDFa" height="27" /></a>
+	</span>
+	<br />
+	This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. 
+	<br />
 	<?vsp rdfdesc_virt_info (); ?>
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->

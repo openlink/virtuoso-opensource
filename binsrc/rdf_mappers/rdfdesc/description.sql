@@ -79,6 +79,7 @@ foaf:logo owl:subPropertyOf foaf:depiction .
 gr:name owl:equivalentProperty foaf:name .
 <http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
 <http://www.w3.org/2007/05/powder-s#describedby> owl:equivalentProperty <http://www.iana.org/assignments/relation/describedby> .
+<http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -618,7 +619,7 @@ create procedure rdfdesc_prop_label (in uri any)
 create procedure rdfdesc_type (in gr varchar, in subj varchar, out url varchar)
 {
   declare meta, data, ll any;
-  ll := 'unknown';
+  ll := 'Thing';
   url := 'javascript:void()';
   if (length (gr))
     {

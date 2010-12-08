@@ -48,6 +48,7 @@
   version="1.0">
   <xsl:output method="xml" indent="yes" encoding="utf-8"/>
   <xsl:param name="baseUri" />
+  <xsl:param name="source" />
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
   <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
@@ -85,7 +86,7 @@
       <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
 	  <rdf:Description rdf:about="{$resourceURL}#content">
 	      <rdf:type rdf:resource="&awol;Content"/>
-	      <awol:src rdf:resource="{$baseUri}"/>
+	      <awol:src rdf:resource="{$source}"/>
 	  </rdf:Description>
       </xsl:if>
   </xsl:template>

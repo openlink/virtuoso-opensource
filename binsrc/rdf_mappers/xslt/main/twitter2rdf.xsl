@@ -278,22 +278,22 @@
 				<xsl:value-of select="id" />
 			</twitter:id>
 			<xsl:if test="followers_count != ''">
-				<twitter:followers_count>
+				<twitter:followers_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="followers_count" />
 				</twitter:followers_count>
 			</xsl:if>
 			<xsl:if test="friends_count != ''">
-				<twitter:friends_count>
+				<twitter:friends_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="friends_count" />
 				</twitter:friends_count>
 			</xsl:if>
 			<xsl:if test="favourites_count != ''">
-				<twitter:favourites_count>
+				<twitter:favourites_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="favourites_count" />
 				</twitter:favourites_count>
 			</xsl:if>
 			<xsl:if test="statuses_count != ''">
-				<twitter:statuses_count>
+				<twitter:statuses_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="statuses_count" />
 				</twitter:statuses_count>
 			</xsl:if>
