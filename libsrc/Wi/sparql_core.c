@@ -3095,7 +3095,7 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   aggregate_mode = 1;
   if (sparp->sparp_in_precode_expn)
     spar_error (sparp, "Aggregate function %.100s() is not allowed in 'precode' expressions that should be calculated before the result-set of the query", funname);
-  if (!sparp->sparp_allow_aggregates_in_expn)
+  if (!(sparp->sparp_allow_aggregates_in_expn & 1))
     spar_error (sparp, "Aggregate function %.100s() is not allowed outside result-set expressions", funname);
 aggr_checked:
   if (aggregate_mode)
@@ -3884,20 +3884,19 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int param_ctr = 0;
   spar_query_env_t sparqre;
   sparp_t * sparp;
-  caddr_t str;
+  caddr_t str, uname = NULL;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   dk_session_t *res;
   str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
+  if (1 < BOX_ELEMENTS (args))
+    uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text"); /* set before MP_START () for case of argument of wrong type causing signal w/o MP_DONE() */
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
-  if (1 < BOX_ELEMENTS (args))
-    {
-      caddr_t uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text");
+  if (NULL != uname)
       sparqre.sparqre_exec_user = sec_name_to_user (uname);
-    }
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {

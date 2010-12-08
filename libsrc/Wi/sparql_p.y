@@ -600,7 +600,7 @@ spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' )?
 	: spar_select_query_mode {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
-		sparp_arg->sparp_allow_aggregates_in_expn++; }
+		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier {
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
@@ -732,18 +732,18 @@ spar_precode_expn	/* [Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can 
 
 spar_wherebindings_clause_opt	/* ::=  (WhereClause BindingsClause?)?	*/
 	: /* nothing */ {
-		sparp_arg->sparp_allow_aggregates_in_expn--;
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	| spar_wherebindings_clause {;}
 	;
 
 spar_where_clause	/* [13*]	WhereClause	 ::=  'WHERE'? GroupGraphPattern	*/
 	: WHERE_L _LBRA	{
-		sparp_arg->sparp_allow_aggregates_in_expn--;
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_gp _RBRA spar_bindings_clause_opt {;}
 	| _LBRA {
-		sparp_arg->sparp_allow_aggregates_in_expn--;
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_gp _RBRA {;}
 	;
@@ -826,10 +826,10 @@ spar_group_clause_opt	/* [Virt]	GroupClause	 ::=  'GROUP' 'BY' GroupExpn+	*/
 	: /* empty */				{ $$ = NULL; }
 	| GROUP_L BY_L {
 		spar_selid_push_reused (sparp_arg, sparp_arg->sparp_env->spare_top_retval_selid);
-		sparp_arg->sparp_allow_aggregates_in_expn++; }
+		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_group_expns	{
 		spar_selid_pop (sparp_arg); $$ = $4;
-		sparp_arg->sparp_allow_aggregates_in_expn--; }
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
 	;
 
 spar_group_expns	/* ::=  GroupExpn+	*/
@@ -850,20 +850,20 @@ spar_having_clause_opt	/* [Virt]	HavingClause	 ::= 'HAVING' Expn */
 	: /* empty */	{ $$ = NULL; }
 	| HAVING_L {
 		spar_selid_push_reused (sparp_arg, sparp_arg->sparp_env->spare_top_retval_selid);
-		sparp_arg->sparp_allow_aggregates_in_expn++; }
+		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_expn {
 		spar_selid_pop (sparp_arg); $$ = $3;
-		sparp_arg->sparp_allow_aggregates_in_expn--; }
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
 	;
 
 spar_order_clause_opt	/* [15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+	*/
 	: /* empty */				{ $$ = NULL; }
 	| ORDER_L BY_L {
 		spar_selid_push_reused (sparp_arg, sparp_arg->sparp_env->spare_top_retval_selid);
-		sparp_arg->sparp_allow_aggregates_in_expn++; }
+		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_order_conditions	{
 		spar_selid_pop (sparp_arg); $$ = $4;
-		sparp_arg->sparp_allow_aggregates_in_expn--; }
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
 	;
 
 spar_order_conditions	/* ::=  OrderCondition+	*/
@@ -915,7 +915,8 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
-		sparp_arg->sparp_allow_aggregates_in_expn++; }
+		sparp_arg->sparp_allow_aggregates_in_expn <<= 1;
+		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier
 	    _RBRA spar_triple_optionlist_opt {
@@ -931,7 +932,8 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		if (SPAR_REQ_TOP == subselect_top->type)
 		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
 		spar_env_pop (sparp_arg);
-		$$ = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top); }
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top);
+		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	;
 
 spar_gp			/* [20]	GraphPattern	 ::=  Triples? ( GraphPatternNotTriples '.'? GraphPattern )?	*/
@@ -1417,7 +1419,8 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
                 spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
-                t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
+		sparp_arg->sparp_allow_aggregates_in_expn <<= 1; }
             spar_dataset_clauses_opt
 	    spar_wherebindings_clause
 	    _RPAR spar_triple_optionlist_opt {
@@ -1427,14 +1430,16 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
 		  where_gp, NULL, NULL, NULL, (SPART *)t_box_num(1), (SPART *)t_box_num(0) );
 		spar_env_pop (sparp_arg);
-		$$ = spar_gp_finalize_with_subquery (sparp_arg, $7, subselect_top); }
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, $7, subselect_top);
+		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	| _LPAR spar_select_query_mode {
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "scalar subquery");
                 spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
-		sparp_arg->sparp_allow_aggregates_in_expn++; }
+		sparp_arg->sparp_allow_aggregates_in_expn <<= 1;
+		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier
 	    _RPAR spar_triple_optionlist_opt {
@@ -1450,12 +1455,13 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		if (SPAR_REQ_TOP == subselect_top->type)
 		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
 		spar_env_pop (sparp_arg);
-		$$ = spar_gp_finalize_with_subquery (sparp_arg, $9, subselect_top); }
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, $9, subselect_top);
+		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	| spar_ret_agg_call {
 		$$ = $1;
 		if (sparp_arg->sparp_in_precode_expn)
 		  sparyyerror ("Aggregates are not allowed in 'precode' expressions that should be calculated before the result-set of the query");
-		if (!sparp_arg->sparp_allow_aggregates_in_expn)
+		if (!(sparp_arg->sparp_allow_aggregates_in_expn & 1))
 		  sparyyerror ("Aggregates are allowed only in result sets"); }
 	| spar_built_in_call
 	| spar_iriref spar_arg_list_opt {	/* [55]	IRIrefOrFunction	 ::=  IRIref ArgList? */
