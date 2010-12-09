@@ -57,6 +57,7 @@
       <v:variable name="_rdf_graph" type="varchar" default="''" persist="0" />
       <v:variable name="_html_meta" type="int" default="0" persist="0" />
       <v:variable name="_other" type="int" default="0" persist="0" />
+      <v:variable name="_convhtml" type="int" default="1" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -97,11 +98,11 @@
               select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
 		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
-		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN
+		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
 		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
-		self._ask_rdf, self._udata, self._store_fn, self._ext_fn
+		self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
               if (self._other is null) 
 	        self._other := 0;	      
@@ -399,6 +400,14 @@
             <tr>
               <td/>
               <td>
+		<v:check-box name="convhtml" value="1" initial-checked="--case when self._convhtml then 1 else 0 end" xhtml_id="convhtml"
+		  />
+		<label for="convhtml">Convert Links</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
 		<v:check-box name="ask_rdf" value="1" initial-checked="--case when self._ask_rdf then 1 else 0 end" xhtml_id="ask_rdf"
 		  />
 		<label for="ask_rdf">Ask for RDF</label>
@@ -544,6 +553,7 @@
 			self._store := get_keyword ('store', params, '0');
 			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
 			self._ask_rdf := atoi (get_keyword ('ask_rdf', params, '0'));
+			self._convhtml := atoi (get_keyword ('convhtml', params, '1'));
 
 			if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
 			  {
@@ -642,7 +652,8 @@
 			      VS_UDATA = serialize (self._udata),
 			      VS_STORE_FN = self._store_fn,
 			      VS_EXTRACT_FN = self._ext_fn,
-			      VS_OTHER = case when self._other = 1 then 'checked' else NULL end
+			      VS_OTHER = case when self._other = 1 then 'checked' else NULL end,
+			      VS_CONVERT_HTML = self._convhtml
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
@@ -661,13 +672,13 @@
                             VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
 			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
 			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
-			    VS_STORE_FN, VS_EXTRACT_FN)
+			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML)
 			    values
 			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
 			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
 			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
 			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
-			    self._store_fn, self._ext_fn);
+			    self._store_fn, self._ext_fn, self._convhtml);
 
 			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
 			    values (self._host, self._url, now(), 'waiting', self._root);
