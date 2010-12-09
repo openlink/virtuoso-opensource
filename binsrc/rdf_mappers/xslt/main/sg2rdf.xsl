@@ -45,10 +45,11 @@
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
+  <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
   <xsl:template match="/">
       <rdf:RDF>
 	  <xsl:variable name="res" select="vi:proxyIRI ($baseUri)"/>
-	  <rdf:Description rdf:about="{$baseUri}">
+	  <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$res}"/>
 		<foaf:primaryTopic rdf:resource="{$res}"/>

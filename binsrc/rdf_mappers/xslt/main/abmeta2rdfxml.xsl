@@ -52,6 +52,7 @@
 
 	<xsl:param name="nss" />
 
+        <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	<xsl:variable name="prefix" select="string($nss//namespace/@prefix)" />
 	<xsl:variable name="ns" select="string($nss//namespace)" />
 
@@ -66,11 +67,11 @@
 	</xsl:template>
 
     <xsl:template match="html">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 		</rdf:Description>
 		<xsl:if test="head[@typeof != '']">
-			<rdf:Description rdf:about="{$baseUri}">
+			<rdf:Description rdf:about="{$docproxyIRI}">
 				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 				<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
@@ -98,7 +99,7 @@
 			<xsl:variable name="resourceURI">
 				<xsl:value-of select="normalize-space(a/@href)"/>
 			</xsl:variable>
-			<rdf:Description rdf:about="{$baseUri}">
+			<rdf:Description rdf:about="{$docproxyIRI}">
 				<sioc:container_of rdf:resource="{vi:proxyIRI($resourceURI)}"/>
 				<foaf:topic rdf:resource="{vi:proxyIRI($resourceURI)}"/>
 				<dcterms:subject rdf:resource="{vi:proxyIRI($resourceURI)}"/>

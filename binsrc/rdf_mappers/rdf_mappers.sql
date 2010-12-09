@@ -627,6 +627,14 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hRecipe ', 'http://microformats.org/wiki/hrecipe', registry_get ('_rdf_mappers_path_') || 'xslt/main/hrecipe2rdf.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hRecipe ', 'http://microformats.org/wiki/hrecipe', registry_get ('_rdf_mappers_path_') || 'xslt/main/hrecipe2rdf.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('hAudio', 'http://purl.org/weborganics/mo-haudio', registry_get ('_rdf_mappers_path_') || 'xslt/main/haudio2rdf.xsl')
 ;
 
@@ -707,7 +715,6 @@ create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
   if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
     return x;
   return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
-  --return DB.DBA.RDF_SPONGE_PROXY_IRI (x);
 }
 ;
 

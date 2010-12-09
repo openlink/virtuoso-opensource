@@ -34,6 +34,7 @@
 
 <xsl:preserve-space elements="*"/>
 <xsl:param name="baseUri" />
+<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -49,7 +50,7 @@
   </xsl:variable>
 
   <xsl:if test="$vcard != 0">
-    <rdf:Description rdf:about="{$baseUri}">
+    <rdf:Description rdf:about="{$docproxyIRI}">
       <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcard')}"/>
     </rdf:Description>
     <v:VCard rdf:about="{vi:proxyIRI ($baseUri, '', 'hcard')}">
