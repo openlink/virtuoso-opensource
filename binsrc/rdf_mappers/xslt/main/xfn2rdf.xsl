@@ -28,10 +28,11 @@
     xmlns:h    ="http://www.w3.org/1999/xhtml"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:xfnv ="http://vocab.sindice.com/xfn#"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     >
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
-
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     <xsl:variable name="xfn-rel">
 	<xfn>
 	    <rel value="contact"/>
@@ -131,7 +132,7 @@
 		</xsl:for-each>
 	    </xsl:variable>
 	    <xsl:if test="$xfn-doc/*">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 		    <foaf:homepage rdf:resource="{$baseUri}"/>
 		    <xsl:copy-of select="$xfn-doc"/>
 		</rdf:Description>

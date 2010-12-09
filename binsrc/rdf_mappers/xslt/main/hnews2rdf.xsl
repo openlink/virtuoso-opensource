@@ -43,7 +43,7 @@ version="1.0">
   <xsl:output indent="yes" omit-xml-declaration="yes" method="xml"/>
   
   <xsl:param name="baseUri" />
-  
+  <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>  
   <xsl:template match="/">
     <rdf:RDF>
       <xsl:apply-templates />
@@ -52,7 +52,7 @@ version="1.0">
 
 
   <xsl:template match="*[contains(@class, 'hnews hentry')]">
-    <rdf:Description rdf:about="{$baseUri}">
+    <rdf:Description rdf:about="{$docproxyIRI}">
       <foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri)}"/>
     </rdf:Description>
     <bibo:Article rdf:about="{vi:proxyIRI ($baseUri)}">
