@@ -138,9 +138,7 @@
           declare data any;
 
           self.i_source := 0;
-          data := ODS.ODS_API.getFOAFDataArray (self.foaf_url.ufl_value, 0);
-          if (length (data) = 0)
-            data := ODS.ODS_API.getFOAFDataArray (self.foaf_url.ufl_value, 1);
+          data := ODS.ODS_API.getFOAFDataArray (self.foaf_url.ufl_value);
           if (length (data) = 0)
           {
             self.vc_error_message := 'The specified URL doesn\'t contains personal FOAF profile.';
