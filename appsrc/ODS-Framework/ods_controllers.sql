@@ -346,7 +346,7 @@ create procedure obj2json (
   	        S := subseq (S, length (nsArray[M])+1);
         }
   	  }
-  	  retValue := retValue || S || ':' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
+  	  retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
   	  if (N <> length(o)-2)
   		  retValue := retValue || ', ';
   	}
@@ -4176,18 +4176,46 @@ create procedure ODS.ODS_API."user.certificates.delete" (
 }
 ;
 
+create procedure ODS.ODS_API.appendPropertyTitle (
+  in title varchar)
+{
+  declare M integer;
+  declare V any;
+
+  V := vector ('Mr', 'Mrs', 'Dr', 'Ms', 'Sir');
+  for (M := 0; M < length (V); M := M + 1)
+  {
+    if (lcase (title) like (lcase (V[M])|| '%'))
+      return V[M];
+  }
+  return '';
+}
+;
+
 create procedure ODS.ODS_API.appendProperty (
   inout V any,
   in propertyName varchar,
   in propertyValue any,
   in propertyNS varchar := '')
 {
-  if (not isnull (propertyValue) and isstring (propertyValue) and propertyValue not like 'nodeID:%' and isnull (get_keyword (propertyName, V)))
+  if (not DB.DBA.is_empty_or_null (propertyValue) and isstring (propertyValue) and propertyValue not like 'nodeID:%' and isnull (get_keyword (propertyName, V)))
   {
     if (propertyNS <> '')
     {
       if (propertyValue like propertyNS || '%')
         propertyValue := substring (propertyValue, length (propertyNS) + 1, length (propertyValue));
+    }
+    if (propertyValue like 'mailto:%')
+    {
+      propertyValue := replace (propertyValue, 'mailto:', '');
+    }
+    else if (propertyValue like 'tel:%')
+    {
+      propertyValue := replace (propertyValue, 'tel:', '');
+    }
+    else if (propertyName = 'title')
+    {
+      propertyValue := appendPropertyTitle (propertyValue);
     }
     V := vector_concat (V, vector (propertyName, propertyValue));
   }
@@ -4209,7 +4237,7 @@ create procedure ODS.ODS_API.appendPropertyArray (
 
   property := replace (propertyName, '_array', '');
   N := N + 1;
-  if (not isnull (propertyValue) and isstring (propertyValue) and (propertyValue not like 'nodeID:%'))
+  if (not DB.DBA.is_empty_or_null (propertyValue) and isstring (propertyValue) and (propertyValue not like 'nodeID:%'))
   {
     newPropertyArray := vector_concat (jsonObject(), vector ('value', propertyValue));
 
@@ -4225,7 +4253,7 @@ create procedure ODS.ODS_API.appendPropertyArray (
 
     while ((N < length(meta)) and (meta[N] like property || '_%'))
     {
-      if (not isnull (data[N]))
+      if (not DB.DBA.is_empty_or_null (data[N]) and isstring (data[N]) and (data[N] not like 'nodeID:%'))
         newPropertyArray := vector_concat (newPropertyArray, vector (replace (meta[N], property||'_', ''), data[N]));
 
       N := N + 1;
@@ -4317,17 +4345,30 @@ _end:
 }
 ;
 
+create procedure ODS.ODS_API.graph_create ()
+{
+  return 'http://local.virt/ods/' || cast (rnd (1000) as varchar);
+}
+;
+
+create procedure ODS.ODS_API.graph_clear (
+  in graph varchar)
+{
+  commit work;
+  exec (sprintf ('SPARQL clear graph <%s>', graph));
+}
+;
+
 create procedure ODS.ODS_API.getFOAFDataArray (
   in foafIRI varchar,
-  in spongerMode integer := 1,
   in sslFOAFCheck integer := 0,
   in sslLoginCheck integer := 0)
 {
-  declare N, M integer;
-  declare S, IRI, foafGraph, _identity, _loc_idn varchar;
+  declare N integer;
+  declare S, SQLs, IRI, foafGraph, _identity, _loc_idn varchar;
   declare V, st, msg, rows, meta any;
   declare certLogin, certLoginEnable any;
-  declare person any;
+  declare personUri any;
   declare host, port, arr any;
   declare info any;
 
@@ -4347,19 +4388,50 @@ create procedure ODS.ODS_API.getFOAFDataArray (
   V := rfc1808_parse_uri (trim (foafIRI));
   V[5] := '';
   IRI := DB.DBA.vspx_uri_compose (V);
+
   V := vector ();
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  if (spongerMode)
+  foafGraph := ODS.ODS_API.graph_create ();
+  sqls := vector (sprintf ('sparql
+                            define input:storage ""
+                            prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                            prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                            prefix foaf: <http://xmlns.com/foaf/0.1/>
+                            select ?iri
+          		                from <%s>
+                             where {
+                                     ?personalProfileDocument a foaf:PersonalProfileDocument;
+                                                              foaf:primaryTopic ?iri .
+                                   }', foafGraph),
+                  sprintf ('sparql
+                            define input:storage ""
+                            prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                            prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                            prefix foaf: <http://xmlns.com/foaf/0.1/>
+                            select ?iri
+          		                from <%s>
+                             where {
+                                     ?iri a foaf:Person.
+                                   } ', foafGraph)
+                 );
+
+  personUri := ODS.ODS_API.getPersonUri (
+                 sprintf ('sparql load <%s> into graph <%s>', IRI, foafGraph),
+                 sqls,
+                 IRI,
+                 foafGraph
+               );
+  if (isnull (personUri))
   {
-    S := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, IRI);
-  } else {
-    S := sprintf ('sparql load <%s> into graph <%s>', IRI, foafGraph);
+  personUri := ODS.ODS_API.getPersonUri (
+                 sprintf ('sparql define get:soft "soft" define get:uri <%s> select * from <%s> where { ?s ?p ?o }', IRI, foafGraph),
+                 sqls,
+                 IRI,
+                 foafGraph
+               );
   }
-  st := '00000';
-  commit work;
-  exec (S, st, msg, vector (), 0);
-  if (st <> '00000')
+  if (isnull (personUri))
     goto _exit;
+
   commit work;
   set isolation='committed';
   if (sslFOAFCheck)
@@ -4372,7 +4444,7 @@ create procedure ODS.ODS_API.getFOAFDataArray (
 
     st := '00000';
     commit work;
-    exec (S, st, msg, vector (), 0, meta, rows);
+    exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
     if (st = '00000' and length (rows))
       {
 	    foreach (any _row in rows) do
@@ -4394,6 +4466,70 @@ _loginIn:
       certLoginEnable := coalesce (UC_LOGIN, 0);
   }
   }
+  V := ODS.ODS_API.extractFOAFDataArray (personUri, foafGraph);
+
+  if (is_https_ctx () and isnull (get_keyword (V, 'mbox')))
+  {
+    declare X, Y any;
+
+    X := vector ();
+    info := get_certificate_info (2);
+    Y := split_and_decode (info, 0, '\0\0/');
+    for (N := 0; N < length (Y); N := N + 1)
+      X := vector_concat (X, split_and_decode (Y[N], 0, '\0\0='));
+
+    appendProperty (V, 'mbox', get_keyword ('emailAddress', X));
+  }
+
+  if (certLogin and length (V))
+    appendProperty (V, 'certLogin', cast (certLogin as varchar));
+
+_exit:;
+  ODS.ODS_API.graph_clear (foafGraph);
+  -- dbg_obj_print ('V', V);
+  return V;
+}
+;
+
+create procedure ODS.ODS_API.getPersonUri (
+  in S varchar,
+  in SQLs any,
+  in iri varchar,
+  in graph varchar)
+{
+  declare N integer;
+  declare st, msg, rows, meta any;
+
+  ODS.ODS_API.graph_clear (graph);
+
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (), vector ('use_cache', 1));
+  if (st <> '00000')
+    return null;
+
+  for (N := 0; N < length(SQLs); n := N + 1)
+  {
+    st := '00000';
+    commit work;
+    exec (SQLs[N], st, msg, vector (), vector ('use_cache', 1), meta, rows);
+    if (st = '00000' and (length (rows) > 0))
+    {
+      return rows[0][0];
+    }
+  }
+  return null;
+}
+;
+
+create procedure ODS.ODS_API.extractFOAFDataArray (
+  in iri varchar,
+  in graph varchar)
+{
+  declare N integer;
+  declare S varchar;
+  declare V, S, st, msg, rows, meta any;
+
   S := sprintf ('sparql
                  define input:storage ""
                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4403,6 +4539,7 @@ _loginIn:
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   prefix bio: <http://vocab.org/bio/0.1/>
                  select ?iri
+                        ?type
                         ?personalProfileDocument
                         ?title
                          ?name
@@ -4438,9 +4575,8 @@ _loginIn:
                         ?knows_nick
 		               from <%s>
                    where {
-                           {
-                            ?personalProfileDocument a foaf:PersonalProfileDocument ;
-                                                     foaf:primaryTopic ?iri .
+                          ?iri rdf:type ?type .
+                          optional { ?personalProfileDocument foaf:primaryTopic ?iri }.
                             optional { ?iri foaf:name ?name } .
                             optional { ?iri foaf:title ?title } .
                             optional { ?iri foaf:nick ?nick } .
@@ -4450,7 +4586,9 @@ _loginIn:
                             optional { ?iri foaf:mbox ?mbox } .
                             optional { ?iri foaf:gender ?gender } .
                             optional { ?iri foaf:birthday ?birthday } .
-                            optional { ?iri foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
+                          optional { ?iri foaf:based_near ?b1 .
+                                     ?b1 geo:lat ?lat ;
+                                         geo:long ?lng . } .
                             optional { ?iri foaf:icqChatID ?icqChatID } .
                             optional { ?iri foaf:msnChatID ?msnChatID } .
                             optional { ?iri foaf:aimChatID ?aimChatID } .
@@ -4482,24 +4620,17 @@ _loginIn:
                                        optional { ?knows_array foaf:nick ?knows_nick } .
                                        optional { ?knows_array foaf:name ?knows_name } .
                                      } .
-                           }
-                        }', foafGraph);
+                          filter (?iri = iri(?::0)).
+                        }', graph);
+  V := vector ();
   st := '00000';
   commit work;
-  exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
-  if (st <> '00000')
-    goto _exit;
-
+  exec (S, st, msg, vector (iri), vector ('use_cache', 1), meta, rows);
+  if (st = '00000')
+  {
   meta := ODS.ODS_API.simplifyMeta(meta);
-  person := null;
   foreach (any row in rows) do
   {
-    if (not isnull(person))
-      person := row[0];
-
-    if (person <> row[0])
-      goto _skip;
-
     N := 0;
     while (N < length(meta))
     {
@@ -4511,27 +4642,8 @@ _loginIn:
       }
       N := N + 1;
     }
-  _skip:;
   }
-  if (is_https_ctx () and isnull (get_keyword (V, 'mbox')))
-        {
-    declare X, Y any;
-  
-          X := vector ();
-          info := get_certificate_info (2);
-    Y := split_and_decode (info, 0, '\0\0/');
-    for (N := 0; N < length (Y); N := N + 1)
-      X := vector_concat (X, split_and_decode (Y[N], 0, '\0\0='));
-
-    appendProperty (V, 'mbox', get_keyword ('emailAddress', X));
   }
-
-  if (certLogin and length (V))
-    appendProperty (V, 'certLogin', cast (certLogin as varchar));
-
-_exit:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
-  -- dbg_obj_print ('V', V);
  return V;
   }
 ;
@@ -4548,7 +4660,7 @@ create procedure ODS.ODS_API."user.getFOAFData" (
   {
     return case when outputMode then obj2json (null) else null end;
   };
-  V := ODS.ODS_API.getFOAFDataArray (foafIRI, spongerMode, sslFOAFCheck, sslLoginCheck);
+  V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
   return case when outputMode then params2json (V) else V end;
 }
 ;
@@ -4571,7 +4683,7 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   if (not isnull (foafIRI))
   {
     try_auth:
-    V := ODS.ODS_API.getFOAFDataArray (foafIRI, 0, sslFOAFCheck, sslLoginCheck);
+    V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
     return case when outputMode then params2json (V) else V end;
   }
   else if (is_https_ctx ()) -- try webfinger
