@@ -1429,13 +1429,15 @@ static char restricted_xml_chars[0x80] = {
   o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o };
 #undef o
   caddr_t src = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "patch_restricted_xml_chars");
-  int src_box_length = box_length (src);
   int add_percents = bif_long_arg (qst, args, 1, "patch_restricted_xml_chars");
+  dtp_t src_dtp;
+  int src_box_length;
   int weird_char_ctr = 0;
   caddr_t dest_to_swap;
-  dtp_t src_dtp = DV_TYPE_OF (src);
-  if (DV_DB_NULL == src_dtp)
+  if (NULL == src)
     return NULL;
+  src_dtp = DV_TYPE_OF (src);
+  src_box_length = box_length (src);
   if (!SSL_IS_REFERENCEABLE (args[0]))
     sqlr_new_error ("22023", "SR642", "The first argument of patch_restricted_xml_chars() should be a variable, not a constant or an expression");
   if (DV_WIDE == src_dtp)
