@@ -13,6 +13,8 @@
 	iSPARQL query executer & visualizer
 */
 
+// XXX move defaultPrefixes to be handled by defaults.js
+
 window.defaultPrefixes = [
 				 		 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
 						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
@@ -54,6 +56,12 @@ window.defaultPrefixes = [
     {"label":'dbpprop',    "uri":'http://dbpedia.org/property/'},
     {"label":'dbpedia',    "uri":'http://dbpedia.org/resource/'}
 ];
+
+iSPARQL.ResultType = {
+    RESSET: 0,
+    GRAPH: 1,
+    ERROR: 666
+};
 
 iSPARQL.CircularBuffer = function (len, initList) {
     var self = this;
@@ -167,15 +175,14 @@ var QueryExec = function(optObj) {
 	this.cacheIndex = -1;
 	this.dom = {};
 	this.tab = false;
-	this.store = new OAT.RDFStore(false);
 	this.mini = false;
     	this.miniplnk = false;
     	this.mRDFCtr = false;
 
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
-		this.dom.request = OAT.Dom.create("div");
-		this.dom.response = OAT.Dom.create("pre");
+		this.dom.request = OAT.Dom.create("div", {className:'ep_request'}); 
+		this.dom.response = OAT.Dom.create("pre",{className:'ep_response'});
 		this.dom.query = OAT.Dom.create("pre");
 //	this.dom.select = OAT.Dom.create("select");
 //	OAT.Dom.option("Machine-readable","1",this.dom.select);
@@ -232,29 +239,39 @@ var QueryExec = function(optObj) {
 		self.dom.prev.title = "Back";
 		self.dom.next.title = "Forward";
 		self.dom.last.title = "Last";
-		OAT.Dom.append([self.dom.ul,self.dom.first,self.dom.prev,self.dom.next,self.dom.last]);
+		self.dom.pos_ind = OAT.Dom.create("li",{},"nav");
+		
+		OAT.Dom.append([self.dom.ul,self.dom.first,self.dom.prev,self.dom.pos_ind,self.dom.next,self.dom.last]);
+		
 		OAT.Event.attach(self.dom.first,"click",function(){
 			if (self.cacheIndex > 0) {
+				var old = self.cacheIndex;
 				self.cacheIndex = 0;
-				self.draw()
+				self.nav(old);
 			}
 		});
+		
 		OAT.Event.attach(self.dom.prev,"click",function(){
 			if (self.cacheIndex > 0) {
+				var old = self.cacheIndex;
 				self.cacheIndex--;
-				self.draw();
+				self.nav(old);
 			}
 		});
+		
 		OAT.Event.attach(self.dom.next,"click",function(){
 			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) {
+				var old = self.cacheIndex;
 				self.cacheIndex++;
-				self.draw();
+				self.nav(old);
 			}
 		});
+		
 		OAT.Event.attach(self.dom.last,"click",function(){
 			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) {
+				var old = self.cacheIndex;
 				self.cacheIndex = self.cache.length-1;
-				self.draw();
+				self.nav(old);
 			}
 		});
 		self.refreshNav();
@@ -284,6 +301,12 @@ var QueryExec = function(optObj) {
 			deactivate(self.dom.next);
 			deactivate(self.dom.last);
 		}
+		self.dom.pos_ind.innerHTML = 
+			'<span class="nav_pos_ind"><span class="nav_cache_pos">' + 
+			(self.cacheIndex + 1) + 
+			'</span>(<span class="nav_cache_max">' +
+			self.cache.length +
+			'</span>)</span>';
     };
 
     this.isNew = function(opts) {
@@ -337,20 +360,60 @@ var QueryExec = function(optObj) {
 		return arr.join("&");
     };
 
+    this.resultType = function(data) {
+		if (data.documentElement.localName == "sparql")
+			return iSPARQL.ResultType.RESSET;
+		if (data.documentElement.localName == "RDF")
+			return iSPARQL.ResultType.GRAPH;
+    };
+	
+    //
+    // Cache incoming result set or graph
+    //
+	
      this.addResponse = function(request,opts,wasError,data) { /* Cache and visualize */
 		if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
 
+		var rt;
+        var to = false;
+		
+		if (!wasError) 
+			rt = self.resultType (data);
+		else {
+			rt = iSPARQL.ResultType.ERROR;
+			if (data.match (/Error SR171/))
+				to = true;
+		}
+		
 	if (self.isNew(opts) || (self.cache[self.cacheIndex].wasError && !wasError)) {
-			var cache = {
-				opts:opts,
+			var cacheItem = {
+				resType: rt,
 				wasError:wasError,
+				timeOut:to,
+				opts:opts,
 				request:request,
-				data:data
+				data:data,
+				txt:OAT.Xml.serializeXmlDoc (data),
+				store: new OAT.RDFStore(),
+				dom: {}
 			}
-			self.cache.push(cache);
+			
+			cacheItem.dom.query_c    = OAT.Dom.create ("div",{className: "query_c"});
+			cacheItem.dom.result_c   = OAT.Dom.create ("div",{className: "result_c"});
+			cacheItem.dom.request_c  = OAT.Dom.create ("div",{className: "request_c"});
+			cacheItem.dom.response_c = OAT.Dom.create ("div",{className: "response_c"});
+			
+			if (rt == iSPARQL.ResultType.GRAPH) {
+				cacheItem.store.addXmlDoc(data);
+			}
+
+			var old = self.cacheIndex;
+			self.cache.push(cacheItem);
 			self.cacheIndex = self.cache.length-1;
+
 		}
 		self.draw();
+		if (old>=0) self.nav(old);
     };
 
     this.makeMiniRDFPlinkURI = function (caller,msg,o) {
@@ -365,13 +428,15 @@ var QueryExec = function(optObj) {
 
 	if (opts.endpoint)
 	    xparm = xparm + "&endpoint="  + opts.endpoint;
-
-        xparm = xparm + "&resultview=" + self.mini.options.tabs[o.tabIndex][0];
+		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 
 	plnk.target = "_blank";
 	plnk.href= nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 
+		if (iSPARQL.Settings.shorten_uris) 
+			iSPARQL.Common.shortenURI (plnk);
+				
     }
 
     this.parseTabIndex = function (rvVal, tabs) {
@@ -389,7 +454,7 @@ var QueryExec = function(optObj) {
     this.renderResultValue = function (val, opts) {
 	if (val.restype == self.RESULT_TYPE.URI) {
 	    var a = OAT.Dom.create("a");
-	    a.innerHTML = self.store.simplify (val.value);
+			a.innerHTML = self.cache[self.cacheIndex].store.simplify (val.value);
 	    a.href = val.value;
 	    self.processLink(a, val.value);
 	    return a;
@@ -486,7 +551,7 @@ var QueryExec = function(optObj) {
 // XXX produces URLs which are invalid
 //
     
-    this.makePivotPermalink = function () {
+    this.makePivotPermalink = function (ctr) {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 
@@ -504,10 +569,14 @@ var QueryExec = function(optObj) {
 	var spc = OAT.Dom.create("span");
 	spc.innerHTML = "&nbsp;";
 
-	OAT.Dom.append([self.dom.result,spc,a]);
+		if (iSPARQL.Settings.shorten_uris)
+			iSPARQL.Common.shortenURI (a);
+		
+		OAT.Dom.append([ctr,spc,a]);
+		
     };
 
-    this.makeExecPermalink = function () {
+    this.makeExecPermalink = function (ctr) {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 	var request = item.request;
@@ -522,18 +591,26 @@ var QueryExec = function(optObj) {
 
 	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 	
+		if (iSPARQL.Settings.shorten_uris) 
+			iSPARQL.Common.shortenURI (execURIa);
+			
 	execURIa.target = "_blank";
 	
-	OAT.Dom.append([self.dom.result,execURIa]);
+		OAT.Dom.append([ctr,execURIa]);
     };
 
     this.drawSparqlResultSet = function (resSet) {
-	OAT.Dom.clear(self.dom.result);
+		var item = self.cache[self.cacheIndex];
+		self.dom.plnk_ctr = OAT.Dom.create("div", {className: "result_plnk_ctr"});
 
-	self.makeExecPermalink ();
-	if (iSPARQL.Defaults.pivotInstalled) self.makePivotPermalink();
+		self.makeExecPermalink (self.dom.plnk_ctr);
 	
-	var grid = new OAT.Grid (self.dom.result);
+		if (iSPARQL.Settings.pivotInstalled) 
+			self.makePivotPermalink(self.dom.plnk_ctr);
+
+		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr]);
+
+		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
 
 	for (var z=0;z<resSet.results.length;z++) {
@@ -573,24 +650,9 @@ var QueryExec = function(optObj) {
 			}
 		}
 
-/*
-	var h = OAT.Dom.create("h3");
-		h.innerHTML = "This page is about:";
-	
-		if (entCount) {
-			var ul = OAT.Dom.create("ul");
-			for (var p in entities) {
-				var li = OAT.Dom.create("li");
-				ul.appendChild(li);
-				li.innerHTML = p;
-			}
-	    OAT.Dom.append([self.dom.result,ul]);
-		}
-*/	
-
 	self.makeExecPermalink ();
 
-	var data_root = self.store.data.all[0];
+		var data_root = self.cache[cacheIndex].store.data.all[0];
 		var ns_var = "http://www.w3.org/2005/sparql-results#resultVariable";
 		var ns_var2 = "http://www.w3.org/2005/sparql-results#variable";
 		var ns_sol = "http://www.w3.org/2005/sparql-results#solution";
@@ -643,7 +705,7 @@ var QueryExec = function(optObj) {
 
 					if (!value) value = "";
 
-					var simple = self.store.simplify(value);
+					var simple = self.cache[cacheIndex].store.simplify(value);
 					simplified_row[index] = simple;
 				}
 			}
@@ -694,7 +756,34 @@ var QueryExec = function(optObj) {
 	return txt;
     };
 
-	this.draw = function() {
+    this.nav = function (old) {
+		var item = self.cache[self.cacheIndex];
+		var oldItem = self.cache[old];
+
+//		lastIndex = item.mini.select.selectedIndex;
+
+/*
+		self.dom.result.replaceChild (oldItem.dom.result_c, item.dom.result_c);
+		self.dom.request.replaceChild (oldItem.dom.request_c, item.dom.request_c);
+		self.dom.query.replaceChild (oldItem.dom.query_c, item.dom.query_c);
+		self.dom.response.replaceChild (oldItem.dom.response_c, item.dom.response_c);
+*/
+		OAT.Dom.clear(self.dom.result);
+		OAT.Dom.clear(self.dom.request);
+		OAT.Dom.clear(self.dom.query);
+		OAT.Dom.clear(self.dom.response);
+
+		OAT.Dom.append ([self.dom.result, item.dom.result_c],
+						[self.dom.request, item.dom.request_c],
+						[self.dom.query, item.dom.query_c],
+						[self.dom.response, item.dom.response_c]);
+
+		self.refreshNav();
+	};
+
+	// called only when new result is received
+
+    this.draw = function(refresh) {
 		var item = self.cache[self.cacheIndex];
 		var opts = item.opts;
 		var request = item.request;
@@ -703,15 +792,17 @@ var QueryExec = function(optObj) {
 
 		if (self.options.executeCallback) { self.options.executeCallback(item); }
 
-		OAT.Dom.clear(self.dom.request);
+		// Generate request page
+
 		var r = decodeURIComponent(request);
 		var parts = r.split("&");
 		var req = OAT.Dom.create("pre");
-		OAT.Dom.append([self.dom.request,req]);
+
+		OAT.Dom.append([item.dom.request_c, req]);
 
 		for (var i=0;i<parts.length;i++) { req.innerHTML += OAT.Xml.escape(parts[i])+"\n"; }
 
-		OAT.Dom.clear(self.dom.query);
+		// Generate query page
 
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Query Permalink";
@@ -721,26 +812,37 @@ var QueryExec = function(optObj) {
 	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
 		a.target = "_blank";
 
+		if (iSPARQL.Settings.shorten_uris)
+			iSPARQL.Common.shortenURI(a);
+		
 		var q = OAT.Dom.create("pre");
 		q.innerHTML = OAT.Xml.escape(opts.query);
 
-		OAT.Dom.append([self.dom.query,a,q]);
+		OAT.Dom.append([item.dom.query_c,a,q]);
+		
 
 	if (wasError && !data.match(/Error SR171/)) { // Timeout SR171 means there may be data to display
 			/* trap http codes */
-	    self.dom.result.innerHTML = self.makeErrorMsg (data);
-	    self.dom.response.innerHTML = self.makeErrorResp (data);
+			item.dom.result_c.innerHTML = self.makeErrorMsg (data);
+			item.dom.response_c.innerHTML = self.makeErrorResp (data);
 	    self.tab.go(0); // buggy JS in FireFox...
 	    self.refreshNav();
 	    return;
-		} else {
-			var txt = OAT.Xml.serializeXmlDoc(data);
-	    var xmlTxt = txt; // Used if we have to draw a result set - need to remove namespace, etc.
-			txt = OAT.Xml.escape(txt);
-			self.dom.response.innerHTML = txt;
+		} 
+		else {
 
-			if (opts.query.match(/describe/i) || opts.query.match(/construct/i)) {
-				/* rdf mini */
+			// Generate Response page 
+
+			var xmlTxt = item.txt; // Used if we have to draw a result set - need to remove namespace, etc.
+			var txt = OAT.Xml.escape(xmlTxt);
+			var resp_p = OAT.Dom.create ("pre");
+			resp_p.innerHTML = txt;
+			
+			OAT.Dom.append ([item.dom.response_c, resp_p]);
+
+			//	generate Result
+			
+			if (item.resType == iSPARQL.ResultType.GRAPH) { // Use RDFMini to show Graphs
 				var lastIndex = 0;
 				var tabs = [
 					["navigator","Navigator"],
@@ -756,44 +858,48 @@ var QueryExec = function(optObj) {
 					hoverPopup:false}] 
 				];
 
-				if(self.mini) {
-					lastIndex = self.mini.select.selectedIndex;
-		    OAT.Dom.clear (self.dom.result);
-		    OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
-				}
-		else {
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
+				var c_i = self.cacheIndex;
+				
+				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
 		self.miniplnk = OAT.Dom.create ("a");
 		self.miniplnk.innerHTML = "Permalink";
-		self.mRDFCtr = OAT.Dom.create ("div");
-		self.mRDFCtr.id = "mini_rdf_ctr";
-	        OAT.Dom.clear (self.dom.result);
-		    OAT.Dom.append ([self.dom.result, self.miniplnk]);
-		    if (iSPARQL.Defaults.pivotInstalled) self.makePivotPermalink();
-		    OAT.Dom.append([self.dom.result, self.mRDFCtr]);
-		    self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,
-							      showSearch:false});
-		}
-		self.tab.go(0); // got to do here or maps won't resize properly.
-				self.mini.processLink = self.processLink;
-				self.mini.store.addXmlDoc(data);
-				self.mini.select.selectedIndex = lastIndex;
-		self.mini.redraw();
+				item.content = OAT.Dom.create ("div",{className: "mini_rdf_ctr"});
+				
+				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
+
+				if (iSPARQL.Settings.pivotInstalled) 
+					self.makePivotPermalink(self.plnk_ctr);
+
+				var mini_c = OAT.Dom.create("div");
+				
+				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
+													showSearch:false,
+													store: item.store});
+
+				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, mini_c]);
+				
+				//		self.tab.go(0); // got to do here or maps won't resize properly.
+				//		self.cache[self.cacheIndex].mini.processLink = self.processLink;
+				//		self.cache[self.cacheIndex].mini.store.addXmlDoc(data);
+				
+				item.mini.select.selectedIndex = lastIndex;
+				item.mini.redraw();
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
-		 OAT.MSG.attach (self.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
+				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
 		    var rs = self.parseSparqlResultSet (data);
 		    self.drawSparqlResultSet (rs);
-		} else {
-				/* own table */
-				self.store.clear();
-				self.store.addXmlDoc(data);
-				self.drawTable();
 			}
 		}
 	}
+
+		OAT.Dom.append ([self.dom.result, item.dom.result_c],
+						[self.dom.request, item.dom.request_c],
+						[self.dom.query, item.dom.query_c],
+						[self.dom.response, item.dom.response_c]);
 		self.tab.go(0);
 		self.refreshNav();
     };

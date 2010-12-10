@@ -62,7 +62,7 @@ iSPARQL.IO = {
     },
 
     serializeLdr:function(dataObj) {
-	var xslt = iSPARQL.Preferences.xslt + 'dynamic-page.xsl';
+		var xslt = iSPARQL.Settings.xslt + 'dynamic-page.xsl';
 	var iNS = "urn:schemas-openlink-com:isparql";
 	var xmlTemplate = '<?xml version="1.0" encoding="UTF-8"?>\n'+
 	'<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n'+

@@ -75,7 +75,7 @@ iSPARQL.Defaults = {
 	if (p['endpoint']) { iSPARQL.Defaults.endpoint = p['endpoint']; qp = true;}
 	if (p['resultview']) { iSPARQL.Defaults.resultView = p['resultview']; qp = true;}
 	if (qp) iSPARQL.Defaults.qp_override = qp;
-	if (p['__DEBUG']) iSPARQL.Preferences.debug = true;
+	if (p['__DEBUG']) iSPARQL.Defaults.debug = true;
 	if (p['maxrows']) iSPARQL.Defaults.maxrows = parseInt(p['maxrows']);
     },
 
@@ -146,7 +146,7 @@ iSPARQL.Defaults = {
 // curie, prefix, selected by default
 
 
-iSPARQL.Preferences = {
+iSPARQL.Settings = {
     xslt:'/isparql/xslt/',
     debug:true
 };
