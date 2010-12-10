@@ -58,15 +58,22 @@ OAT.RDFStoreData = {
 OAT.RDFStore = function(tripleChangeCallback, optObj) {
     var self = this;
 
+    this.preferredClasses = {
+	'http://xmlns.com/foaf/0.1/Person': 0,
+	'http://': 1
+    };
+    
     // properties used as labels - in order of preference
 
-    this.labelProps = {"http://xmlns.com/foaf/0.1/name": 0,
-		       "http://xmlns.com/foaf/0.1/nick": 1,
-		       "http://www.w3.org/2000/01/rdf-schema#label": 2,
-		       "http://purl.org/dc/elements/1.1/title": 3,
-		       "http://dbpedia.org/property/name":4,
-		       "http://www.w3.org/2004/02/skos/core#prefLabel": 5,
-		       "http://www.w3.org/2002/12/cal/ical#summary": 6};
+    this.labelProps = {
+	"http://www.w3.org/2000/01/rdf-schema#label": 0,
+	"http://www.w3.org/2004/02/skos/core#prefLabel": 1,
+	"http://xmlns.com/foaf/0.1/name": 2,
+	"http://xmlns.com/foaf/0.1/nick": 3,
+	"http://purl.org/dc/elements/1.1/title": 4,
+	"http://dbpedia.org/property/name":5,
+	"http://www.w3.org/2002/12/cal/ical#summary": 6
+    };
 
     self.labelPropLookup = []; // label predicates by iid
 
@@ -218,7 +225,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     //
 
     for (i in self.labelProps)
-	self.addPredHandler (i, self.labelPredHandler, self.labelProps[i])
+	self.addPredHandler (i, self.labelPredHandler, self.labelProps[i]);
 
     //
     // Add predicate handler for type
@@ -317,7 +324,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	var triples = OAT.RDF.parse (xmlDoc);
 	var ncount = 0;
 
-	if (!!window.console) window.console.log("addXmlDoc: Got " + triples.length + " triples.");
+	if (!!window.console && !!window.__isparql_debug) window.console.log("addXmlDoc: Got " + triples.length + " triples.");
 
 	/* sanitize triples */
 /*	for (var i=0;i<triples.length;i++) {
@@ -361,6 +368,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    enabled:true,
 	    title:title
 	}
+	
 	self.items.push(o);
 	self.rebuild(false);
     }
@@ -448,7 +456,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    var p = triple[1];
 	    var o = triple[2];
 
-	    if (!!window.console) window.console.log ("<"+OAT.IRIDB.getIRI(s)+">"+"<"+OAT.IRIDB.getIRI(p)+">"+o.toString());
+	    //	    if (!!window.console) window.console.log ("<"+OAT.IRIDB.getIRI(s)+">"+"<"+OAT.IRIDB.getIRI(p)+">"+o.toString());
 
 	    var cnt = self.data.all.length;
 
@@ -740,10 +748,5 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 
     this.simplify = function(str) {
 	return (self.getCIRIorSplit (OAT.IRIDB.insertIRI(str)));
-//	var r = str.match(/([^\/#]+)[\/#]?$/);
-//	if (r && r[1] == "this") {
-//	    r = str.match(/([^\/#]+)#[^#]*$/);
-//	}
-//	return (r ? r[1] : str);
     }
 }
