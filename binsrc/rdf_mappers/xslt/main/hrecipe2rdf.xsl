@@ -28,6 +28,7 @@ xmlns:h="http://www.w3.org/1999/xhtml"
 xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 xmlns:foaf="http://xmlns.com/foaf/0.1/"
 xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:sioc="http://rdfs.org/sioc/ns#"
 xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
   <xsl:output method="xml" encoding="utf-8" indent="yes" />
   <xsl:preserve-space elements="*" />
@@ -48,6 +49,13 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:with-param name="val" select="'hrecipe'" />
       </xsl:call-template>
     </xsl:variable>
+    <xsl:if test="$recipe = 0">	
+		<xsl:variable name="recipe">
+		  <xsl:call-template name="testclass">
+			<xsl:with-param name="val" select="'hRecipe'" />
+		  </xsl:call-template>
+		</xsl:variable>
+    </xsl:if>
     <xsl:if test="$recipe != 0">
       <rdf:Description rdf:about="{$docproxyIRI}">
         <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hrecipe')}" />
@@ -71,6 +79,11 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:with-param name="val" select="'ingredient'" />
       </xsl:call-template>
     </xsl:variable>
+    <xsl:variable name="ingredients">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'ingredients'" />
+      </xsl:call-template>
+    </xsl:variable>
     <xsl:variable name="yield">
       <xsl:call-template name="testclass">
         <xsl:with-param name="val" select="'yield'" />
@@ -81,14 +94,44 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:with-param name="val" select="'instructions'" />
       </xsl:call-template>
     </xsl:variable>
+    <xsl:variable name="directions">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'directions'" />
+      </xsl:call-template>
+    </xsl:variable>
     <xsl:variable name="duration">
       <xsl:call-template name="testclass">
         <xsl:with-param name="val" select="'duration'" />
       </xsl:call-template>
     </xsl:variable>
+    <xsl:variable name="prepTime">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'prepTime'" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="cooktime">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'cooktime'" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="cookTime">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'cookTime'" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="totalTime">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'totalTime'" />
+      </xsl:call-template>
+    </xsl:variable>
     <xsl:variable name="photo">
       <xsl:call-template name="testclass">
         <xsl:with-param name="val" select="'photo'" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="food-image">
+      <xsl:call-template name="testid">
+        <xsl:with-param name="val" select="'food-image'" />
       </xsl:call-template>
     </xsl:variable>
     <xsl:variable name="summary">
@@ -111,6 +154,11 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:with-param name="val" select="'nutrition'" />
       </xsl:call-template>
     </xsl:variable>
+    <xsl:variable name="nutritional-information">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'nutritional-information'" />
+      </xsl:call-template>
+    </xsl:variable>
     <xsl:variable name="tag">
       <xsl:call-template name="testclass">
         <xsl:with-param name="val" select="'tag'" />
@@ -125,11 +173,51 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:value-of select="." />
       </dv:name>
     </xsl:if>
+	
     <xsl:if test="$ingredient != 0">
+		<xsl:variable name="ing_name">
+		  <xsl:call-template name="testclass">
+			<xsl:with-param name="val" select="'name'" />
+		  </xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$ing_name">
+			  <dv:ingredient>
+				<dv:Ingredient rdf:about="{vi:proxyIRI ($baseUri, '', concat('hrecipe', .))}">
+					<dv:name>
+						<xsl:value-of select="*[@class = 'name' or starts-with(@class,concat('name', ' ')) or contains(@class,concat(' ','name',' ')) 
+						or substring(@class, string-length(@class)-string-length('name')) = concat(' ','name')]" />
+					</dv:name>
+					<dv:amount>
+						<xsl:choose>
+							<xsl:when test="*[@class = 'amount' or starts-with(@class,concat('amount', ' ')) or contains(@class,concat(' ','amount',' ')) 
+									or substring(@class, string-length(@class)-string-length('amount')) = concat(' ','amount')]">
+								<xsl:variable name="amount" select="*[@class = 'amount' or starts-with(@class,concat('amount', ' ')) or contains(@class,concat(' ','amount',' ')) 
+									or substring(@class, string-length(@class)-string-length('amount')) = concat(' ','amount')]"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:variable name="amount" select="."/>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:value-of select="$amount" />
+					</dv:amount>
+				</dv:Ingredient>
+			  </dv:ingredient>
+			</xsl:when>
+			<xsl:otherwise>
+				<dv:ingredient>
+					<xsl:value-of select="." />
+				</dv:ingredient>
+			</xsl:otherwise>
+		</xsl:choose>
+    </xsl:if>
+
+	<xsl:if test="$ingredients != 0">
       <dv:ingredient>
         <xsl:value-of select="." />
       </dv:ingredient>
     </xsl:if>
+	
     <xsl:if test="$yield != 0">
       <dv:yield>
         <xsl:value-of select="." />
@@ -140,10 +228,44 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:value-of select="." />
       </dv:instructions>
     </xsl:if>
+    <xsl:if test="$directions != 0">
+      <dv:instructions>
+        <xsl:value-of select="." />
+      </dv:instructions>
+    </xsl:if>
     <xsl:if test="$duration != 0">
       <dv:duration>
         <xsl:value-of select="." />
       </dv:duration>
+    </xsl:if>
+    <xsl:if test="$prepTime != 0">
+	  <xsl:if test="string-length(.) &gt; 0">
+      <dv:prepTime>
+        <xsl:value-of select="." />
+      </dv:prepTime>
+    </xsl:if>
+    </xsl:if>
+    <xsl:if test="$cooktime != 0">
+	  <dv:cookTime>
+		<xsl:value-of select="." />
+	  </dv:cookTime>
+    </xsl:if>
+    <xsl:if test="$cookTime != 0">
+	  <xsl:if test="string-length(.) &gt; 0">
+   	  <dv:cookTime>
+        <xsl:value-of select="." />
+      </dv:cookTime>
+	  </xsl:if>
+    </xsl:if>
+    <xsl:if test="$totalTime != 0">
+	  <xsl:if test="string-length(.) &gt; 0">
+      <dv:totalTime>
+        <xsl:value-of select="." />
+      </dv:totalTime>
+    </xsl:if>
+    </xsl:if>
+    <xsl:if test="$food-image != 0 and @src">
+      <dv:photo rdf:resource="{@src}" />
     </xsl:if>
     <xsl:if test="$photo != 0 and @src">
       <dv:photo rdf:resource="{@src}" />
@@ -164,9 +286,18 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
       </dv:published>
     </xsl:if>
     <xsl:if test="$nutrition != 0">
+	  <xsl:if test="string-length(.) &gt; 0">
       <dv:nutrition>
         <xsl:value-of select="." />
       </dv:nutrition>
+    </xsl:if>
+    </xsl:if>
+    <xsl:if test="$nutritional-information != 0">
+	  <xsl:if test="string-length(.) &gt; 0">
+  	  <dv:nutrition>
+        <xsl:value-of select="." />
+      </dv:nutrition>
+    </xsl:if>
     </xsl:if>
     <xsl:if test="$tag != 0">
       <dv:tag>
@@ -175,14 +306,22 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
     </xsl:if>
     <xsl:apply-templates mode="extract-recipe" />
   </xsl:template>
-  <xsl:template match="comment()|processing-instruction()|text()"
-  mode="extract-recipe" />
+  <xsl:template match="comment()|processing-instruction()|text()" mode="extract-recipe" />
+  
   <xsl:template name="testclass">
     <xsl:param name="class" select="@class" />
     <xsl:param name="val" select="''" />
     <xsl:choose>
-      <xsl:when test="$class = $val or starts-with($class,concat($val, ' ')) or contains($class,concat(' ',$val,' ')) or substring($class, string-length($class)-string-length($val)) = concat(' ',$val)">
-      1</xsl:when>
+      <xsl:when test="$class = $val or starts-with($class,concat($val, ' ')) or contains($class,concat(' ',$val,' ')) or substring($class, string-length($class)-string-length($val)) = concat(' ',$val)">1</xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  
+  <xsl:template name="testid">
+    <xsl:param name="class" select="@id" />
+    <xsl:param name="val" select="''" />
+    <xsl:choose>
+      <xsl:when test="$class = $val or starts-with($class,concat($val, ' ')) or contains($class,concat(' ',$val,' ')) or substring($class, string-length($class)-string-length($val)) = concat(' ',$val)">1</xsl:when>
       <xsl:otherwise>0</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
