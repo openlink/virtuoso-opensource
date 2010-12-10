@@ -119,14 +119,9 @@ create method call_method(
   declare res_xml varchar;
 
     res_xml := self.post_request(method, params);
---    dbg_obj_print(res_xml);
     _result:=xtree_doc(res_xml);
-
-
     if(xpath_eval('/error_response',_result) is not null )
     {
---       dbg_obj_print(cast(xpath_eval('/error_response/error_code',_result) as varchar));
-
        if(self.debug_mode=1)
        {
           dbg_obj_print('Facebook REST API returns ERROR XML');
@@ -1646,21 +1641,16 @@ create procedure DB.DBA.fbf_rdf_load_fql (
   {
    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
    xd := serialize_to_UTF8_xml (xt);
---   dbg_printf ('%s', xd);
    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   }
-
   q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album WHERE owner = %s', own);
   ret := fb_obj.api_client.fql_query(q);
   if(ret is not null)
   {
-
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
     xd := serialize_to_UTF8_xml (xt);
---    dbg_printf ('%s', xd);
     DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   }
-
   q := sprintf ('select eid, name, tagline, nid, pic_small, pic_big, pic, host, description, event_type, event_subtype, '||
                 ' start_time, end_time, creator, update_time, location, venue from event where eid in '||
                 '(SELECT eid FROM event_member where uid = %s)', own);
@@ -1676,7 +1666,6 @@ create procedure DB.DBA.fbf_rdf_load_fql (
   {
      q := sprintf ('select uid2 from friend where uid1 = %s', own);
      ret := fb_obj.api_client.fql_query(q);
---     dbg_printf ('%s', ret);
      if(ret is not null)
      {
         xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));

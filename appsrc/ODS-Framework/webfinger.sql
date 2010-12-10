@@ -24,6 +24,7 @@
 
 use ODS;
 
+-- XXX: obsoleted by server side host meta see below
 create procedure "host-meta" () __SOAP_HTTP 'application/xrd+xml'
 {
   declare host varchar;
