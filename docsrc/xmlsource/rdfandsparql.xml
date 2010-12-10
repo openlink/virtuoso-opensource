@@ -2811,7 +2811,7 @@ etc ...
 </sect3>
 <sect3 id="sparqliniservice"><title>SPARQL INI service</title>
     <para>
-	The [SPARQL] section of the virtuoso.ini configuration file sets parameters and limits for the SPARQL query web service. 
+	The <link linkend="ini_SPARQL">[SPARQL] section</link> of the virtuoso.ini configuration file sets parameters and limits for the SPARQL query web service.
 	The values contained in the [SPARQL] section can be exposed in RDF form via the URL pattern http://cname/sparql?ini
     </para>
     <para>Example: http://demo.openlinksw.com/sparql?ini</para>
@@ -6597,7 +6597,7 @@ WHERE
   }
 ]]></programlisting>
 </sect5>
-<sect5 id="rdfsparqlaggregateexamples7"><title>Example for MAX with HACING and GROOP BY</title>
+<sect5 id="rdfsparqlaggregateexamples7"><title>Example for MAX with HAVING and GROUP BY</title>
 <programlisting><![CDATA[
 ## Example "Find which town or city in
 ## the UK has the largest proportion of students.
@@ -6627,6 +6627,94 @@ HAVING ( ( ( (?pgrad+?ugrad)/ MAX(?population) )*100 ) > 0 )
 ORDER BY DESC 6
 ]]></programlisting>
 </sect5>
+<sect5 id="rdfsparqlaggregateexamples8"><title>Example Aggregating Distance Values Over Years</title>
+<para>The following example demonstrate how to aggregate Distance Values Over Years:</para>
+<para>First we insert some data in a graph with name for ex. &lt;urn:dates:distances&gt;:</para>
+<programlisting><![CDATA[
+SQL> SPARQL INSERT INTO GRAPH <urn:dates:distances>
+  {
+    <:a1> <http://purl.org/dc/elements/1.1/date> <2010-12-23T00:00:00> .
+    <:a1> <http://linkedgeodata.org/vocabulary#distance> <0.955218675> .    
+    <:a2> <http://purl.org/dc/elements/1.1/date> <2010-12-24T00:00:00> .
+    <:a2> <http://linkedgeodata.org/vocabulary#distance> <0.798155989> .
+    <:a3> <http://purl.org/dc/elements/1.1/date> <2010-12-25T00:00:00> .
+    <:a3> <http://linkedgeodata.org/vocabulary#distance> <0.064686628> .
+    <:a4> <http://purl.org/dc/elements/1.1/date> <2010-12-26T00:00:00> .
+    <:a4> <http://linkedgeodata.org/vocabulary#distance> <0.279800332> .
+    <:a5> <http://purl.org/dc/elements/1.1/date> <2010-12-27T00:00:00> .
+    <:a5> <http://linkedgeodata.org/vocabulary#distance> <0.651255995> .
+    <:a6> <http://purl.org/dc/elements/1.1/date> <2010-12-28T00:00:00> .
+    <:a6> <http://linkedgeodata.org/vocabulary#distance> <0.094410557> .
+    <:a7> <http://purl.org/dc/elements/1.1/date> <2010-12-29T00:00:00> .
+    <:a7> <http://linkedgeodata.org/vocabulary#distance> <0.43461913> .
+    <:a8> <http://purl.org/dc/elements/1.1/date> <2010-12-30T00:00:00> .
+    <:a8> <http://linkedgeodata.org/vocabulary#distance> <0.264862918> .
+    <:a9> <http://purl.org/dc/elements/1.1/date> <2010-12-31T00:00:00> .
+    <:a9> <http://linkedgeodata.org/vocabulary#distance> <0.770588658> .
+    <:a10> <http://purl.org/dc/elements/1.1/date> <2011-01-01T00:00:00> .
+    <:a10> <http://linkedgeodata.org/vocabulary#distance> <0.900997627> .
+    <:a11> <http://purl.org/dc/elements/1.1/date> <2011-01-02T00:00:00> .
+    <:a11> <http://linkedgeodata.org/vocabulary#distance> <0.324972375> .
+    <:a12> <http://purl.org/dc/elements/1.1/date> <2011-01-03T00:00:00> .
+    <:a12> <http://linkedgeodata.org/vocabulary#distance> <0.937221226> .
+    <:a13> <http://purl.org/dc/elements/1.1/date> <2011-01-04T00:00:00> .
+    <:a13> <http://linkedgeodata.org/vocabulary#distance> <0.269511925> .
+    <:a14> <http://purl.org/dc/elements/1.1/date> <2011-01-05T00:00:00> .
+    <:a14> <http://linkedgeodata.org/vocabulary#distance> <0.726014538> .
+    <:a15> <http://purl.org/dc/elements/1.1/date> <2011-01-06T00:00:00> .
+    <:a15> <http://linkedgeodata.org/vocabulary#distance> <0.843581439> .
+    <:a16> <http://purl.org/dc/elements/1.1/date> <2011-01-07T00:00:00> .
+    <:a16> <http://linkedgeodata.org/vocabulary#distance> <0.835685559> .
+    <:a17> <http://purl.org/dc/elements/1.1/date> <2011-01-08T00:00:00> .
+    <:a17> <http://linkedgeodata.org/vocabulary#distance> <0.673213742> .
+    <:a18> <http://purl.org/dc/elements/1.1/date> <2011-01-09T00:00:00> .
+    <:a18> <http://linkedgeodata.org/vocabulary#distance> <0.055026879> .
+    <:a19> <http://purl.org/dc/elements/1.1/date> <2011-01-10T00:00:00> .
+    <:a19> <http://linkedgeodata.org/vocabulary#distance> <0.987475424> .
+    <:a20> <http://purl.org/dc/elements/1.1/date> <2011-01-11T00:00:00> .
+    <:a20> <http://linkedgeodata.org/vocabulary#distance> <0.167315598> .
+    <:a21> <http://purl.org/dc/elements/1.1/date> <2011-01-12T00:00:00> .
+    <:a21> <http://linkedgeodata.org/vocabulary#distance> <0.545317103> .
+    <:a22> <http://purl.org/dc/elements/1.1/date> <2011-01-13T00:00:00> .
+    <:a22> <http://linkedgeodata.org/vocabulary#distance> <0.75137005> .
+    <:a23> <http://purl.org/dc/elements/1.1/date> <2011-01-14T00:00:00> .
+    <:a23> <http://linkedgeodata.org/vocabulary#distance> <0.123649985> .
+    <:a24> <http://purl.org/dc/elements/1.1/date> <2011-01-15T00:00:00> .
+    <:a24> <http://linkedgeodata.org/vocabulary#distance> <0.750214251> .
+  };	
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <urn:dates:distances>, 48 (or less) triples -- done
+
+1 Rows. -- 94 msec.
+]]></programlisting>
+<para>Then we execute the following query:</para>
+<programlisting><![CDATA[
+SQL> SPARQL 
+PREFIX dst: <http://linkedgeodata.org/vocabulary#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+SELECT (bif:year( bif:stringdate(?sdate)) AS ?syear) (bif:sum( bif:number(?dist)) AS ?distance)
+FROM <urn:dates:distances>
+WHERE
+  {
+    ?row dc:date ?sdate .
+    ?row dst:distance ?dist
+  }
+GROUP BY (bif:year(bif:stringdate(?sdate)))
+ORDER BY ASC(bif:year(bif:stringdate(?sdate)));
+
+syear                                distance
+VARCHAR                              VARCHAR
+________________________________________________
+
+2010                                 4.313598882
+2011                                 8.891567721
+
+2 Rows. -- 31 msec.
+]]></programlisting>
+</sect5>	
 </sect4>
 <sect4 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
 <para>Inferencing is added to a SPARQL query only for those variables whose value is actually used. Thus,
@@ -8869,36 +8957,17 @@ http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	       
       <itemizedlist>
         <listitem>Go to Conductor UI, for ex. at http://localhost:8890/conductor</listitem>
         <listitem>Login as dba user</listitem>
-        <listitem>Go to Web Application Server
+        <listitem>Go to RDF -&gt; RDF Store Upload
           <figure id="uc1" float="1">
-	    <title>Using Conductor UI</title>
+	    <title>RDF Store Upload</title>
 	    <graphic fileref="ui/uc1.png"/>
           </figure>
   </listitem>
-        <listitem>Click the "New Folder" button.</listitem>
-        <listitem>Enter for name for ex. test and click the "Create" button.
-          <figure id="uc2" float="1">
-	    <title>Using Conductor UI</title>
-	    <graphic fileref="ui/uc2.png"/>
-          </figure>
-  </listitem>
-        <listitem>Click the new folder "test" name link.
-          <figure id="uc3" float="1">
-	    <title>Using Conductor UI</title>
-	    <graphic fileref="ui/uc3.png"/>
-          </figure>
-</listitem>
-        <listitem>Click the "Upload" button and in the shown form select Destination: RDF Store.
-        <figure id="uc4" float="1">
-	    <title>Using Conductor UI</title>
-	    <graphic fileref="ui/uc4.png"/>
-          </figure>
-</listitem>
         <listitem>In the shown form click the "Browse" button in order to select a file, for ex. the file jose.rdf
 and set the "RDF IRI*"
-          <figure id="uc5" float="1">
-	    <title>Using Conductor UI</title>
-	    <graphic fileref="ui/uc5.png"/>
+          <figure id="uc2" float="1">
+	    <title>RDF Store Upload</title>
+	    <graphic fileref="ui/uc2.png"/>
           </figure>
   </listitem>
          <listitem>Click the "Upload" button.</listitem>
@@ -8996,6 +9065,9 @@ create procedure PTSW_CRAWL ()
 insert soft SYS_SCHEDULED_EVENT (SE_SQL, SE_START, SE_INTERVAL, SE_NAME)
 	values ('DB.DBA.PTSW_CRAWL ()', cast (stringtime ('0:0') as DATETIME), 60, 'PTSW Crawling');
 ]]></programlisting>
+      <tip><title>See Also:</title>
+        <para><link linkend="contentcrawlerrdf">Other Methods to Set Up the Content Crawler for RDF gathering.</link></para>
+      </tip>
     </sect2>
     <sect2 id="rdfinsertmethodsparqlqueryandsponger">
       <title>Using SPARQL Query and Sponger (i.e. we Sponge the Resources in the FROM Clause or values for the graph-uri parameter in SPARQL protocol URLs)</title>
@@ -9031,7 +9103,7 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openli
     </sect2>
     <sect2 id="rdfinsertmethodplapis">
       <title>Using Virtuoso PL APIs</title>
-      <para><emphasis>Example:</emphasis></para>
+      <sect3 id="rdfinsertmethodplapissimpleexample"><title>Basic Sponger Cartridge Example</title>
       <para>In the example script we implement a basic mapper which maps a text/plain mime type
 to an imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
 and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
@@ -9086,34 +9158,39 @@ INSERT SOFT DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 -- here we set order to some large number so don't break existing mappers
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2000 WHERE RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
 ]]></programlisting>
-      <para>To test the mapper we just use /sparql endpoint with option 'Retrieve remote
-RDF data for all missing source graphs' to execute:</para>
-<programlisting><![CDATA[
-SELECT * FROM <http://demo.openlinksw.com:8890/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt>
-WHERE { ?s ?p ?o }
-]]></programlisting>
-      <para>To check the results:</para>
-      <itemizedlist>
-        <listitem>Make sure the initial state of tutorial <ulink url="http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp">RD_S_1</ulink> is set.</listitem>
-        <listitem>Go to http://demo.openlinksw.com/sparql</listitem>
-        <listitem>Enter for Default Graph URI this value:</listitem>
-<programlisting><![CDATA[
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt
-]]></programlisting>
-        <listitem>Enter for Query text:</listitem>
+
+<orderedlist>
+  <listitem>Paste the whole of this code into Conductor's iSQL interface and execute it to 
+  	define and register the cartridge.</listitem>
+  <listitem>Create a simple text document with a .txt extension. For ex. with name: summary.txt</listitem>
+  <listitem>The .txt file must now be made Web accessible. A simple way to do this is to expose it as a WebDAV 
+  	resource using Virtuoso's built-in WebDAV support:
+    <orderedlist>
+      <listitem>Log in to Virtuoso's ODS Briefcase application;</listitem>
+      <listitem>Navigate to your Public folder;</listitem>
+      <listitem>Upload your text document, ensuring that the file extension is .txt, the MIME type is set to text/plain and the file permissions are rw-r--r--.</listitem>
+      <listitem>As result the file would be Web accessible via the URL http://cname/DAV/home/username/Public/summary.txt .</listitem>
+      <listitem>Note: you can also check our <ulink url="http://demo.openlinksw.com:8890/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt">live demo</ulink>.</listitem>
+    </orderedlist>
+  </listitem>
+  <listitem>To test the mapper we just use /sparql endpoint with option 'Retrieve remote
+RDF data for all missing source graphs' to execute (for ex.):
 <programlisting><![CDATA[
 SELECT *
+FROM <http://cname/DAV/home/username/Public/summary.txt>
 WHERE {?s ?p ?o}
 ]]></programlisting>
+  </listitem>
         <listitem>Click the "Run Query" button.</listitem>
-        <listitem>As result should be shown the following triples:</listitem>
+  <listitem>As result should be shown the found triples, for ex.:
 <programlisting><![CDATA[
 s  	                                                                    p  	                                            o
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://xmlns.com/foaf/0.1/Document
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:UniqueWords 	                    47
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:Chars 	                            625
+http://cname/DAV/home/username/Public/summary.txt  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://xmlns.com/foaf/0.1/Document
+http://cname/DAV/home/username/Public/summary.txt  urn:txt:v0.0:UniqueWords 	                      47
+http://cname/DAV/home/username/Public/summary.txt  urn:txt:v0.0:Chars 	                            625
 ]]></programlisting>
-      </itemizedlist>
+  </listitem>
+</orderedlist>
       <para><emphasis>Important: Setting Sponger Permissions</emphasis></para>
       <para>In order to allow the Sponger to update the local RDF quad store with triples
 constituting the sponged structured data, the role "SPARQL_SPONGE" must be granted to the
@@ -9131,6 +9208,7 @@ parse TTL (TURTLE or N3 resource).</listitem>
 retrieve content of a gzipped file and example for loading gzipped N3 and Turtle files.</listitem>
     </itemizedlist>
   </tip>
+      </sect3>
     </sect2>
     <sect2 id="rdfinsertmethodsimilerdfbankapi">
       <title>Using SIMILE RDF Bank API</title>
@@ -9199,30 +9277,69 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
     </sect2>
     <sect2 id="rdfinsertmethodproxy">
       <title>Using the RDF Proxy (Sponger) Service</title>
-    <para>Triples can be inserted also using the Sponger Proxy URI Service. For more information and examples see <link linkend="rdfproxyservice">here</link>.</para>
+    <para>Triples can be inserted also using the Sponger Proxy URI Service. For more information 
+    	and examples see <link linkend="rdfproxyservice">here</link>.</para>
     </sect2>
 </sect1>
 
 
 <sect1 id="virtuososponger"><title>RDFizer Middleware (Sponger)</title>
-    <sect2 id="virtuosospongerintro"><title>Introduction</title>
-<para>The Virtuoso Sponger is a middleware component of Virtuoso that generates RDF Linked Data 
-from a variety of data sources. The sponger is transparently integrated into Virtuoso's SPARQL Query 
-Processor, where it delivers URI de-referencing functionality and data caching services. Optionally, 
-it can be used by the <link linkend="importtargets">Virtuoso Content Crawler</link> to periodically 
-build and replenish local RDF graphs.
+    <sect2 id="virtuosospongerintro"><title>What Is The Sponger?</title>
+<para>The Virtuoso Sponger is the Linked Data middleware component of Virtuoso that generates 
+	Linked Data from a variety of data sources, supporting a wide variety of data representation 
+	and serialization formats. The sponger is transparently integrated into Virtuoso's SPARQL Query 
+	Processor where it delivers URI de-referencing within SPARQL query patterns, across disparate 
+	data spaces. It also delivers configurable smart HTTP caching services. Optionally, it can be 
+	used by the <link linkend="contentcrawlerrdf">Virtuoso Content Crawler</link> to periodically 
+	populate and replenish data within the native RDF Quad Store. 
 </para>
-<para>The sponger is a fully fledged HTTP proxy service that is also directly accessible via SOAP or 
-REST interfaces.</para>
+<para>The sponger is a fully fledged HTTP proxy service that is also directly accessible via 
+	SOAP or REST interfaces.
+</para>
+<para>As depicted below, OpenLink's broad portfolio of Linked-Data-aware products supports a number 
+	of routes for creating or consuming Linked Data. The Sponger provides a key platform for developers 
+	to generate quality data meshes from unstructured or semi-structured data sources.
+</para>
 <figure id="virtuosospongerdiagram" float="1">
-		<title>Virtuoso Sponger</title>
+		<title>OpenLink Linked Data generation options</title>
 		<graphic fileref="linked_data_gen_opts3.png"/>
         </figure>
 <para>
+Architecturally, the Sponger is comprised of a number of Cartridges two types of cartridges: Extractor 
+and Meta Cartridges. Extractor Cartridges focus on data extraction and transformation services while 
+the Meta Cartridges provide lookups and joins across other linked data spaces and Web 2.0 APIs. Both 
+cartridge types are themselves comprised of a data extractors and RDF Schema/Ontology Mapper 
+components.</para>
+<para>Cartridges are is highly customizable. Custom cartridges can be developed using any language 
+	supported by the Virtuoso Server Extensions API enabling structured linked data generation from 
+	resource types not available in the default Sponger Cartridge collection bundled -- as part of 
+	the Virtuoso Sponger VAD package (rdf_mappers_dav.vad).
+</para>
+    <figure id="virtuosospongerdiagram" float="1">
+  	  <title>Virtuoso metadata extraction &amp; RDF structured data generation</title>
+		  <graphic fileref="linked_data_gen_opts4.png"/>
+		<title>Virtuoso metadata extraction &amp; RDF structured data generation</title>
+		<graphic fileref="linked_data_gen_opts4.png"/>
+    </figure>
+  </sect2>  
+  
+	<sect2 id="virtuosospongerimp"><title>Why is it Important?</title>
+<para>	
 A majority of the worlds data naturally resides in non RDF form at the current time. The Sponger
 delivers middleware that accelerates the bootstrap of the Semantic Data Web by generating RDF
-from non RDF data sources, unobtrusively.
+from non RDF data sources, unobtrusively. This "Swiss army knife" for on-the-fly Linked Data generation 
+provides a bridge between the traditional Document Web and the Linked Data Web ("Data Web").
 </para>
+<para>Sponging data from non-RDF Web sources and converting it to RDF exposes the data in a 
+canonical form for querying and inference, and enables fast and easy construction of linked 
+data driven mesh-ups as opposed to code driven Web 2.0 mash-ups.
+</para>
+<para>The RDF extraction and instance data generation products that offer functionality 
+demonstrated by the Sponger are also commonly referred to as RDFizers.
+</para>
+</sect2>
+
+<sect2 id="virtuosospongerworkpr"><title>How Does It Work?</title>
 <para>
 When an RDF aware client requests data from a network accessible resource via the Sponger
 the following events occur:
@@ -9243,12 +9360,15 @@ by the source data server, then the "Sponger" will derive it's own invalidation 
 evaluating the 'date' header and 'last-modified' HTTP headers. Irrespective of path taken,
 local cache invalidation is driven by an assessment of current time relative to recorded expiration time.
 </para>
+<para>To manage the cache expiration, set the <emphasis>MinExpiration</emphasis> parameter in 
+your Virtuoso.ini file.</para>
+<para>Read full description of the parameter in the <link linkend="ini_SPARQL">[SPARQL] ini seciton</link>.</para>
 <para>Designed with a pluggable architecture, the Sponger's core functionality is provided by Cartridges.
 Each cartridge includes Data Extractors which extract data from one or more data sources, and Ontology
 Mappers which map the extracted data to one or more ontologies/schemas, and route to producing RDF
 Linked Data.
 </para>
-<para>The Schema Mappers are typically XSLT (e.g. GRDDL and other OpenLink Mapping Schemes) or
+<para>The Schema Mappers are typically XSLT (e.g. GRDDL and other OpenLink Mapping Schemas) or
 Virtuoso PL based. The Metadata Extractors may be developed in Virtuoso PL, C/C++, Java, or any
 other language that can be integrated into the Virtuoso via it's server extensions APIs.
 </para>
@@ -9258,32 +9378,201 @@ Custom Resolvers for naming schemes (e.g. URNs) associated with protocols beyond
 Examples of custom resolvers include:
 </para>
 <itemizedlist>
-<listitem>LSID</listitem>
-<listitem>DOI</listitem>
+<listitem><ulink url="http://dbpedia.org/resource/LSID">LSID</ulink></listitem>
+<listitem><ulink url="http://dbpedia.org/resource/DOI">DOI</ulink></listitem>
 </itemizedlist>
+</sect2>
 
-    <para><emphasis>How is it used?</emphasis></para>
+<sect2 id="virtuosospongerinstall"><title>Installation Steps</title>
+<orderedlist>
+  <listitem>Download the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/rdf_mappers_dav.vad">rdf_mappers_dav.vad</ulink> package.</listitem>
+  <listitem>Install the rdf_mappers_dav.vad package by using the Conductor UI or by using iSQL:
+<programlisting><![CDATA[
+SQL> DB.DBA.VAD_INSTALL('tmp/rdf_mappers_dav.vad',0);
+SQL_STATE  SQL_MESSAGE
+VARCHAR  VARCHAR
+_______________________________________________________________________________
+
+00000    No errors detected
+00000    Installation of "RDF Mappers" is complete.
+00000    Now making a final checkpoint.
+00000    Final checkpoint is made.
+00000    SUCCESS
+
+
+6 Rows. -- 1078 msec.
+]]></programlisting>  	
+  </listitem>
+  <listitem><link linkend="virtuosospongercreatecustcartrrgst">Cartridge Configuration</link>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="virtuosospongercartridgesextr">Extractor Cartridges</link></listitem>
+      <listitem><link linkend="virtuosospongercartridgesmeta">Meta Cartridges</link></listitem>
+</itemizedlist>
+  </listitem>
+</orderedlist>
+<para>
+	<tip>
+		<title>See Also: <link linkend="virtuosospongerrdfmapperspackage">RDF Mapper Package content description.</link></title>
+  </tip>
+</para>  
+</sect2>
+
+
+<sect2 id="virtuosospongerusage"><title>Using The Sponger</title>
     <para>The Sponger can be invoked via the following mechanisms:</para>
     <orderedlist>
-      <listitem>Virtuoso SPARQL query processor</listitem>
-      <listitem>OpenLink RDF client applications via the Virtuoso RDF Proxy Service</listitem>
-      <listitem>From Virtuoso PL, by calling the cartridge hook function directly</listitem>
-      <listitem>ODS-Briefcase (Virtuoso WebDAV) - a component of the OpenLink Data Spaces distributed collaborative application platform</listitem>
+      <listitem><link linkend="virtuosospongerusageprocessor">Virtuoso SPARQL query processor</link></listitem>
+      <listitem><link linkend="virtuosospongerusageproxy">RDF Proxy Service</link></listitem>
+      <listitem><link linkend="virtuosospongerusageclapp">OpenLink RDF client applications</link></listitem>
+      <listitem><link linkend="virtuosospongerusagebrief">ODS-Briefcase (Virtuoso WebDAV)</link> - a component of the OpenLink Data Spaces distributed collaborative application platform</listitem>
+      <listitem><link linkend="virtuosospongerusagedirect">Directly via Virtuoso PL</link></listitem>
     </orderedlist>
-    <para>File metadata extraction by ODS-Briefcase details you can find at the <ulink url="http://virtuoso.openlinksw.com/Whitepapers/pdf/sponger_whitepaper_10102007.pdf">Virtuoso Sponger whitepaper</ulink>.</para>
-    <para><emphasis>SPARQL Query Processor IRI Dereferencing</emphasis></para>
+    
+    <sect3 id="virtuosospongerusageprocessor"><title>SPARQL Query Processor IRI Dereferencing</title>
     <para>The Sponger is transparently integrated into the Virtuoso SPARQL query processor, where it supports
-IRI dereferencing.</para>
-    <para>Given the distributed nature of RDF data, it is quite possible when executing a SPARQL query that
-some of the referenced data resides outside the local quad store. To cope with this scenario, the Virtuoso
-SPARQL query processor can be instructed to retrieve the external data and cache it in local quad storage.
-This feature is exposed through a set of Virtuoso SPARQL extensions known as "IRI dereferencing".
-Essentially these enable downloading and local storage of selected triples either from one or more
-named graphs or based on a proximity search from a starting URI for entities matching the select
-criteria and also related by the specified predicates, up to a given depth. Because the SPARQL
-processor understands only RDF data (serialized as RDF/XML, Turtle, N3), it utilizes the Sponger
-RDF mapper functionality when dereferencing web or file resources which don't naturally contain RDF data.</para>
-    <para><emphasis>RDF Proxy Service</emphasis></para>
+IRI dereferencing.
+      </para>
+      <para>Virtuoso extends the SPARQL Query Language such that it is possible to download RDF resources 
+      	from a given IRI, parse, and then store the resulting triples in a graph, with all three operations 
+      	performed during the SPARQL query-execution process. The IRI/URI of the graph used to store the 
+      	triples is usually equal to the URL where the resources are downloaded from, consequently the 
+      	feature is known as "IRI/URI dereferencing". If a SPARQL query instructs the SPARQL processor 
+      	to retrieve the target graph into local storage, then the SPARQL sponger will be invoked.
+      </para>
+      <para>The SPARQL extensions for IRI dereferencing are described below. Essentially these enable 
+      	downloading and local storage of selected triples either from one or more named graphs, or 
+      	based on a proximity search from a starting URI for entities matching the select criteria and 
+      	also related by the specified predicates, up to a given depth. For full details see 
+      	section <link linkend="rdfiridereferencing">Linked Data - IRI Dereferencing</link>.
+      </para>
+      <para>Note: For brevity, any reference to URI/IRIs above or in subsequent sections implies 
+      an HTTP URI/IRI, where IRI is an internationalized URI. Similarly, in the context of the 
+      Sponger, the term IRI in the Virtuoso reference documentation should be taken to mean an HTTP IRI.	
+      </para> 
+      <sect4 id="virtuosospongerusageprocessor"><title>SPARQL Extensions for IRI Dereferencing of FROM Clauses</title>
+        <para>In addition to the "define get:..." SPARQL extensions for IRI dereferencing in FROM 
+        	clauses, Virtuoso supports dereferencing SPARQL IRIs used in the WHERE clause (graph patterns) 
+        	of a SPARQL query via a set of "define input:grab-..." pragmas.
+        </para>	
+        <para>Consider an RDF resource which describes a member of a contact list, user1, and also 
+        	contains statements about other users, user2 anduser3 , known to him. Resource user3 in turn 
+        	contains statements about user4 and so on. If all the data relating to these users were 
+        	loaded into Virtuoso's RDF database, the query to retrieve the details of all the users 
+        	could be quite simple. e.g.:         	
+        </para>	
+<programlisting><![CDATA[
+sparql
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+select ?id ?firstname ?nick
+where
+  {
+    graph ?g
+      {
+        ?id rdf:type foaf:Person .
+        ?id foaf:firstName ?firstname .
+        ?id foaf:knows ?fn .
+        ?fn foaf:nick ?nick .
+      }
+   }
+limit 10;	
+]]></programlisting>        
+        <para>But what if some or all of these resources were not present in Virtuoso's quad store? 
+        	The highly distributed nature of the Linked Data Web makes it highly likely that these 
+        	interlinked resources would be spread across several data spaces. Virtuoso's 'input:grab-...' 
+        	extensions to SPARQL enable IRI dereferencing in such a way that all appropriate resources 
+        	are loaded, i.e. "sponged", during query execution, even if some of the resources are not 
+        	known beforehand. For any particular resource matched, and if necessary downloaded, by the 
+        	query, it is possible to download related resources via a designated predicate path(s) to 
+        	a specifiable depth i.e. number of 'hops', distance, or degrees of separation (i.e compute 
+        	Transitive Closures in SPARQL).
+        </para>
+        <para>Using Virtuoso's 'input:grab-' pragmas to enable sponging, the above query might be 
+        	recast to: 
+        </para>	
+<programlisting><![CDATA[
+sparql
+define input:grab-var "?more"
+define input:grab-depth 10
+define input:grab-limit 100
+define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+select ?id ?firstname ?nick
+where {
+    graph ?g {
+               ?id rdf:type foaf:Person .
+               ?id foaf:firstName ?firstname .
+               ?id foaf:knows ?fn .
+               ?fn foaf:nick ?nick .
+               optional { ?id rdfs:SeeAlso ?more }
+            }
+}
+limit 10;	
+]]></programlisting>        
+        <para>Another example showing a designated predicate traversal path via the input:grab-seealso 
+        	extension is: 
+        </para>	
+<programlisting><![CDATA[
+sparql
+define input:grab-iri <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+define input:grab-var "id"
+define input:grab-depth 10
+define input:grab-limit 100
+define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
+define input:grab-seealso <foaf:maker>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+
+select ?id
+where
+  {
+    graph ?g
+      {
+        ?id a foaf:Person .
+      }
+  }
+limit 10;	
+]]></programlisting>        
+        <para>A list of the input:grab pragmas is given below:</para>
+          <itemizedlist mark="bullet">        
+            <listitem>input:grab-var specifies the name of the SPARQL variable whose values should be used as IRIs of resources that should be downloaded.</listitem>
+            <listitem>input:grab-iri specifies an IRI that should be retrieved before executing the rest of the query, if it is not in the quad store already. (This pragma can be included multiple times).</listitem>
+            <listitem>input:grab-seealso (or its synonym input:grab-follow-predicate) specifies a predicate IRI to be used when traversing a graph. (This pragma can be included multiple times).</listitem>
+            <listitem>input:grab-limit sets the maximum number of resources (graph subject or object nodes) to be retrieved from a target graph.</listitem>
+            <listitem>input:grab-depth sets the maximum 'degrees of separation' or links (predicates) between nodes in the target graph.</listitem>
+            <listitem>input:grab-all "yes" instructs the SPARQL processor to dereference everything related to the query. All variables and literal IRIs in the query become values for input:grab-var and input:grab-iri. The resulting performance may be very bad.</listitem>
+            <listitem>input:grab-base specifies the base IRI to use when converting relative IRIs to absolute. (Default: empty string).</listitem>
+            <listitem>input:grab-destination overrides the default IRI dereferencing and forces all retrieved triples to be stored in the specified graph.</listitem>
+            <listitem>input:grab-loader identifies the procedure used to retrieve each resource via HTTP, parse and store it. (Default: DB.DBA.RDF_SPONGE_UP)</listitem>
+            <listitem>input:grab-resolver identifies the procedure that resolves IRIs and determines the HTTP method of retrieval. (Default: DB.DBA.RDF_GRAB_RESOLVER_DEFAULT)</listitem>
+          </itemizedlist>
+      </sect4>
+      <sect4 id="virtuosospongerusageprocessorex"><title>SPARQL Processor Usage Example</title>
+        <para>Sponge can be performed directly from within the SPARQL processor.</para>
+        <para>After logging into Virtuoso's Conductor interface, the following query can be 
+        issued from the Interactive SQL (iSQL) panel: 
+        </para> 	
+<programlisting><![CDATA[
+sparql
+define get:uri "http://www.ivan-herman.net/foaf.html"
+define get:soft "soft"
+select * from <http://mygraph> where {?s ?p ?o}
+]]></programlisting>        
+        <para>Here the sparql keyword invokes the SPARQL processor from the SQL interface and the 
+        	RDF data sponged from page http://www.ivan-herman.net/foaf.html is loaded into the local 
+        	RDF quad store as graph http://mygraph .
+        </para>	
+        <para>The new graph can then be queried using the basic SPARQL client normally available 
+        	in a default Virtuoso installation at http://localhost:8890/sparql/. e.g.: 
+        </para>		
+<programlisting><![CDATA[
+select * from <http://mygraph> where {?s ?p ?o}	
+]]></programlisting>        
+      </sect4>      
+    </sect3>   
+    <sect3 id="virtuosospongerusageproxy"><title>RDF Proxy Service</title>
     <para>The Sponger's functionality is also exposed via an in-built REST style Web service. This web
 service takes a target URL and either returns the content "as is" or tries to transform (by sponging)
 to RDF. Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.</para>
@@ -9293,7 +9582,7 @@ requests on port 8080 then client applications should use a 'service endpoint' s
 'http://example.com:8080/about/[id|data|rdf|html]/http/'. If the rdf_mappers package is not installed, then
 the service uses the path '/proxy/rdf/'.</para>
     <para>Note: The old Sponger Proxy URI Service pattern '/proxy/' is now deprecated.</para>
-    <para><emphasis>Example:</emphasis></para>
+      <sect4 id="virtuosospongerusageproxyex1"><title>Example 1</title>
     <para>The following URLs return information about musician John Cale, gleaned from the MusicBrainz
 music metadatabase, rendered as RDF or HTML respectively. (The sponged data is available in the HTML
 rendering through the foaf:primaryTopic property.)</para>
@@ -9301,18 +9590,345 @@ rendering through the foaf:primaryTopic property.)</para>
       <listitem>http://demo.openlinksw.com/about/rdf/http://musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
       <listitem>http://demo.openlinksw.com/about/html/http/musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
     </itemizedlist>
+      </sect4>
+      <sect4 id="virtuosospongerusageproxyex2"><title>Example 2</title>
+        <para>The file http://www.ivan-herman.net/foaf.html contains a short profile of the W3C Semantic 
+        	Web Activity Lead Ivan Herman. This XHTML file contains RDF embedded as RDFa. Running the file 
+        	through the Sponger via Virtuoso's RDF proxy service extracts the embedded FOAF data as pure 
+        	RDF, as can be seen by executing:
+        </para>
+<programlisting><![CDATA[
+curl -H "Accept: application/rdf+xml" http://linkeddata.uriburner.com/about/rdf/http://www.ivan-herman.net/foaf.html	
+]]></programlisting>
+        <para>(linkeddata.uriburner.com hosts a public Virtuoso instance.) Though this example 
+        	demonstrates the action of the /about/rdf/ service quite transparently, it is a basic and 
+        	unwieldy way to view RDF. As described earlier, the OpenLink Data Explorer uses the same 
+        	proxy service to provide a more polished means to extract and view sponged RDF data.
+        </para>	
+      </sect4>
+    </sect3>
+    <sect3 id="virtuosospongerusageclapp"><title>OpenLink RDF Client Applications</title>
+      <para>OpenLink currently provides two main RDF client applications:</para>
+      <itemizedlist mark="bullet">
+        <listitem><ulink url="http://ode.openlinksw.com/">OpenLink Data Explorer</ulink> (ODE)</listitem>
+        <listitem><ulink url="http://demo.openlinksw.com/isparql">iSPARQL</ulink></listitem>
+      </itemizedlist>
+      <para>ODE is a Linked Data explorer packaged as a Firefox plugin (support for other browsers 
+      	is planned). iSPARQL is an interactive AJAX-based SPARQL query builder with support for 
+      	SPARQL QBE, bundled as part of the 
+      	<ulink url="http://oat.openlinksw.com/">OpenLink Ajax Toolkit</ulink> (OAT). Both RIA 
+      	clients utilise sponging extensively.</para>
+      <para>The ODE plugin is dual faceted - RDF data can be viewed and explored natively, through its 
+      	integral RDF browser, or, as described above, rendered as HTML through ODE's 'View Page Metadata' 
+      	option. The screenshots below show ODE's RDF browser being launched through the 'View Linked 
+      	Data Sources' popup menu.
+      </para>
+      <figure id="ODEBrowser" float="1">
+        <title>Launching ODE's RDF browser</title>
+        <graphic fileref="twitter_home.png"/>
+      </figure>
+      <para>The RDF browser then displays RDF data sponged via the Crunchbase cartridge.</para>
+      <figure id="ODEBrowserRDF" float="1">
+        <title>ODE RDF browser displaying sponged Crunchbase data</title>
+        <graphic fileref="twitter_ode_rdf.png"/>
+      </figure>      
+      <para>iSPARQL directs queries to the configured SPARQL endpoint. When targetting a Virtuoso 
+      	/sparql service, Virtuoso specific sponging options can be enabled through the 'Preferences' 
+      	dialog box.
+      </para>	
+      <para>The iSPARQL sponger settings are appended to SPARQL queries through the 'should-sponge' 
+      	query parameter. These are translated to IRI dereferencing pragmas on the server as follows: 
+      </para>	
+      <table>
+<tgroup cols="3">
+<thead>
+  <row>
+    <entry>iSPARQL sponging setting</entry><entry>/sparql endpoint: "should-sponge" query parameter value</entry><entry>SPARQL processor directives</entry>
+  </row>
+</thead>
+<tbody>
+<row><entry>Use only local data</entry><entry>N/A</entry><entry>N/A</entry></row>
+<row><entry>Retrieve remote RDF data for all missing source graphs</entry><entry>soft</entry><entry>define get:soft "soft"</entry></row>
+<row><entry>Retrieve all missing remote RDF data that might be useful</entry><entry>grab-all</entry><entry>	define input:grab-all "yes" define input:grab-depth 5 <br/>define input:grab-limit 100</entry></row>
+<row><entry>Retrieve all missing remote RDF data that might be useful including seeAlso references</entry><entry>grab-seealso</entry><entry>define input:grab-all "yes" define input:grab-depth 5 define input:grab-limit 200<br/>define input:grab-seealso &lt;http://www.w3.org.2000/01/rdf-schema#seeAlso&gt;<br/>define input:grab-seealso &lt;http://xmlns.com/foaf/0.1/seeAlso&gt;</entry></row>
+<row><entry>Try to download all referenced resources</entry><entry>grab-everything</entry><entry>
+define input:grab-all "yes"<br/>define input:grab-intermediate "yes"<br/>define input:grab-depth 5<br/>define input:grab-limit 500<br/>define input:grab-seealso &lt;http://www.w3.org.2000/01/rdf-schema#seeAlso&gt;<br/>define input:grab-seealso &lt;http://xmlns.com/foaf/0.1/seeAlso&gt;<br/></entry></row>
+</tbody>
+</tgroup>
+</table>
 
-<sect3 id="virtuosospongercartridwh"><title>What is a Cartridge?</title>
-<para>The Sponger is comprised of cartridges which are themselves comprised of an entity extractor
-and an ontology mapper. Entities extracted from non-RDF resources are used as the basis for generating
-structured data by mapping them to a suitable ontology. A cartridge is invoked through its cartridge
-hook, a Virtuoso/PL procedure entry point and binding to the cartridge's entity extractor and
-ontology mapper.</para>
 </sect3>
-<sect3 id="virtuosospongercartridges"><title>Extractor Cartridges</title>
+    <sect3 id="virtuosospongerusagebrief"><title>ODS-Briefcase (Virtuoso WebDAV)</title>
+      <para>ODS-Briefcase is a component of 
+      	<ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/OdsIndex">OpenLink Data Spaces</ulink> 
+      	(ODS), a new generation distributed collaborative application platform for creating Semantic 
+      	Web presence via Data Spaces derived from weblogs, wikis, feed aggregators, photo galleries, 
+      	shared bookmarks, discussion forums and more. It is also a high level interface to the Virtuoso 
+      	WebDAV repository.
+      </para>
+      <para>ODS-Briefcase offers file-sharing functionality that includes the following features:</para>
+      <itemizedlist mark="bullet">
+        <listitem>Web brower-based interactions</listitem>
+        <listitem>Web Services (direct use of the HTTP based WebDAV protocol)</listitem>
+        <listitem>SPARQL query language support - all WebDAV resources are exposed as SIOC ontology 
+        	instance data (RDF data sets)</listitem>        
+      </itemizedlist>      
+      <para>When resources or documents are put into the ODS Briefcase and are made publicly readable 
+      	(via a Unix-style +r permission or ACL setting) and the resource in question is of a supported 
+      	content type, metadata is automatically extracted at file upload time.
+      </para>
+      <para>Note: ODS-Briefcase extracts metadata from a wide array of file formats, automatically.</para>
+      <para>The extracted metadata is available in two forms, pure WebDAV and RDF (with RDF/XML or 
+      	N3/Turtle serialization options), that is optionally synchronized with the underlying Virtuoso 
+      	Quad Store.
+      </para>                  
+      <para>All public readable resources in WebDAV have their owner, creation time, update time, size 
+      	and tags published, plus associated content type dependent metadata. This WebDAV metadata is 
+      	also available in RDF form as a SPARQL queriable graph accessible via the SPARQL protocol 
+      	endpoint using the WebDAV location as the RDF data set URI (graph or data source URI).
+      </para>                  
+      <para>You can also use a special RDF_Sink folder to automate the process of uploading RDF 
+      	resources files into the Virtuoso Quad Store via WebDAV or raw HTTP. The properties of the special 
+      	folder control whether sponging (RDFization) occurs. Of course, by default, this feature is enabled 
+      	across all Virtuoso and ODS installations (with an ODS-Briefcase Data Space instance enabled).
+      </para>
+      <sect4 id="virtuosospongerusagebriefex"><title>Raw HTTP Example for Extracting Metadata using CURL</title>                  
+<programlisting><![CDATA[
+Username: demo
+Password: demo
+Source File: wine.rdf
+Destination Folder:
+http://demo.openlinksw.com/DAV/home/demo/rdf_sink/
+Content Type: application/rdf+xml
+
+$ curl -v -T wine.rdf -H content-type:application/rdf+xml http://demo.openlinksw.com/DAV/home/demo/rdf_sink/ -u demo:demo	
+]]></programlisting>      
+      <para>Finally, you can also get RDF data into Virtuoso's Quad Store via WebDAV using the Virtuoso 
+      	Web Crawler utility (configurable via the Virtuoso Conductor UI). This feature also provides the 
+      	ability to enable or disable Sponging as depicted below.
+      </para>
+      </sect4>   
+      <sect4 id="virtuosospongerusagebriefint"><title>Sponger and ODS-Briefcase Structured Data Extractor Interrelationship</title>                                                         
+        <para>As the Sponger and ODS-Briefcase both extract structured data, what is the relationship 
+        	between these two facilities?
+        </para>	
+        <para>The principal difference between the two is that the Sponger is anRDF data crawler &amp; 
+        	generator, whereas Briefcase's structured data extractor is a WebDAV resourcefilter. The 
+        	Briefcase structured data extractor is aimed at providing RDF data from WebDAV resources. 
+        	Thus, if none of the available Sponger cartridges are able to extract metadata and produce 
+        	RDF structured data, the Sponger calls upon the Briefcase extractor as the last resort in 
+        	the RDF structured data generation pipeline.
+        </para>
+        <figure id="cninp1" float="1">
+          <title>Conductor's content import configuration panel</title>
+          <graphic fileref="fig2_top.jpg"/>
+        </figure>
+        <figure id="cninp2" float="1">
+          <title>Conductor's content import configuration panel</title>
+          <graphic fileref="fig2_bottom.jpg"/>
+        </figure>
+       </sect4> 
+    </sect3>
+    <sect3 id="virtuosospongerusagedirect"><title>Directly via Virtuoso PL</title>
+    <para>Sponger cartridges are invoked through a cartridge hook which provides a Virtuoso PL entry point 
+    	to the packaged functionality. Should you wish to utilize the Sponger from your own Virtuoso PL 
+    	procedures, you can do so by calling these hook routines directly. Full details of the hook 
+    	function prototype and how to define your own cartridges are presented <link linkend="virtuosospongercreatecustcartran">here</link>.</para>
+    </sect3>
+</sect2>
+
+<sect2 id="virtuosospongerconsm"><title>Consuming the Generated RDF Structured Data</title>
+  <para>The generated RDF-based structured data (RDF) can be consumed in a number of ways, depending on 
+  	whether or not the data is persisted in Virtuoso's RDF Quad Store.
+  </para>
+  <para>If the data is persisted, it can be queried through the Virtuoso SPARQL endpoint associated with 
+  	any Virtuoso instance: /sparql. The RDF is exposed in a graph typically identified using a URL matching 
+  	the source resource URL from which the RDF data was generated. Naturally, any SQL query can also access 
+  	this, since SPARQL can be freely intermixed with SQL via Virtuoso's SPASQL (SPARQL inside SQL) 
+  	functionality. RDF data is also accessible through Virtuoso's implementation of the URIQA protocol.
+  </para>
+  <para>If not persisted, as is the case with the RDF Proxy Service, the data can be consumed by an RDF 
+  	aware Web client, e.g. an RDF browser such as the OpenLink Data Explorer (ODE).
+  </para>
+ </sect2>
+
+
+   <sect2 id="virtuosospongercartridgesextractorusecases"><title>RDF Cartridges Use Cases</title>
+<para>This section contains examples of Web resources which can be transformed by RDF Cartridges.
+It also states where additional setup for given cartridges is needed i.e. keys account names etc.
+</para>
+<para><emphasis>Service based:</emphasis></para>
+<itemizedlist>
+<listitem>amazon
+<programlisting><![CDATA[
+needs: api key
+example: http://www.amazon.com/gp/product/0553383043
+]]></programlisting>
+</listitem>
+<listitem>ebay
+<programlisting><![CDATA[
+needs: account, api-key
+example: http://cgi.ebay.com/RARE-DAY-IN-FAIRY-LAND-ELEPHANT-FOLIO-20-FULL-COLOR_W0QQitemZ140209597189QQihZ004QQcategoryZ29223QQssPageNameZWDVWQQrdZ1QQcmdZViewItem
+]]></programlisting>
+</listitem>
+<listitem>flickr
+needs: api-key
+example: http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg
+<programlisting><![CDATA[
+]]></programlisting>
+</listitem>
+<listitem>mbz
+<programlisting><![CDATA[
+example: http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html
+]]></programlisting>
+</listitem>
+<listitem>mql (freebase)
+<programlisting><![CDATA[
+example: http://www.freebase.com/view/en/beta_ursae_majoris
+]]></programlisting>
+</listitem>
+<listitem>facebook
+<programlisting><![CDATA[
+needs: api-key, secret, persistent-session-id
+example: http://www.facebook.com/profile.php?id=841100003
+]]></programlisting>
+</listitem>
+<listitem>yahoo-stock
+<programlisting><![CDATA[
+example: http://finance.yahoo.com/q?s=AAPL
+]]></programlisting>
+</listitem>
+<listitem>yahoo-traffic
+<programlisting><![CDATA[
+example: http://local.yahooapis.com/MapsService/V1/trafficData?appid=YahooDemo&street=701+First+Street&city=Sunnyvale&state=CA
+]]></programlisting>
+</listitem>
+<listitem>Bugzilla
+<programlisting><![CDATA[
+example: https://bugzilla.mozilla.org/show_bug.cgi?id=251714
+]]></programlisting>
+</listitem>
+<listitem>SVG</listitem>
+<listitem>OO document
+<programlisting><![CDATA[
+needs: unzip plugin
+]]></programlisting>
+</listitem>
+<listitem>Wikipedia
+<programlisting><![CDATA[
+needs: php plugin & dbpedia extractor
+example: http://wikipedia.org/wiki/London
+]]></programlisting>
+</listitem>
+<listitem>Opencalais</listitem>
+<listitem>iCalendar</listitem>
+</itemizedlist>
+<para><emphasis>GRDDL</emphasis></para>
   <itemizedlist>
-    <listitem>Supported Standard Non-RDF Data Formats
-<para>These Cartridges handle open formats - typically community-developed, openly-documented, and freely-licensed data structures.</para>
+<listitem>Google Base (google)
+<programlisting><![CDATA[
+example: http://www.google.com/base/feeds/snippets/17891817243016304554
+]]></programlisting>
+</listitem>
+<listitem>eRDF</listitem>
+<listitem>RDFa</listitem>
+<listitem>hCard</listitem>
+<listitem>hCalendar</listitem>
+<listitem>hReview</listitem>
+<listitem>relLicense</listitem>
+<listitem>XBRL</listitem>
+<listitem>HR-XML</listitem>
+<listitem>DC</listitem>
+<listitem>geoURL</listitem>
+<listitem>Ning</listitem>
+<listitem>XFN</listitem>
+<listitem>xFolk</listitem>
+</itemizedlist>
+<para><emphasis>URN handlers</emphasis></para>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>URN handlers List</title>
+    <tgroup align="char" charoff="50" char="." cols="6">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>URN handler</entry>
+        <entry>Sample URI</entry>
+        <entry>Resource Description</entry>
+        <entry>Linked Data View</entry>        
+        <entry>Linked Data Graph</entry>        
+        <entry>Needs</entry>                
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>LSID</entry>
+        <entry>urn:lsid:ubio.org:namebank:12292</entry>
+        <entry><ulink url="http://demo.openlinksw.com/about/html/urn:lsid:ubio.org:namebank:12292">HTML Representation</ulink></entry>
+        <entry><ulink url="http://demo.openlinksw.com/describe/?url=urn:lsid:ubio.org:namebank:12292">Linked Data View</ulink></entry>
+        <entry><ulink url="http://demo.openlinksw.com/ode/?uri=urn:lsid:ubio.org:namebank:12292">Data Explorer View</ulink></entry>                                
+        <entry>none</entry>        
+      </row>
+      <row>
+        <entry>DOI</entry>
+        <entry>doi:10.1038/35057062</entry>
+        <entry><ulink url="http://demo.openlinksw.com/about/html/doi:10.1038/35057062">HTML Representation</ulink></entry>
+        <entry><ulink url="http://demo.openlinksw.com/describe/?url=doi:10.1038/35057062">Linked Data View</ulink></entry>
+        <entry><ulink url="http://demo.openlinksw.com/ode/?uri=doi:10.1038/35057062">Data Explorer View</ulink></entry>                                
+        <entry>Needs hslookup plugin, relevant html, pdf, xml etc. mappers enabled.</entry>        
+      </row>
+      <row>
+        <entry>OAI</entry>
+        <entry>oai:dcmi.ischool.washington.edu:article/8</entry>
+        <entry><ulink url="http://demo.openlinksw.com/about/html/oai:dcmi.ischool.washington.edu:article/8">HTML Representation</ulink></entry>
+        <entry><ulink url="http://demo.openlinksw.com/describe/?url=oai:dcmi.ischool.washington.edu:article/8">Linked Data View</ulink></entry>
+        <entry><ulink url="http://demo.openlinksw.com/ode/?uri=oai:dcmi.ischool.washington.edu:article/8">Data Explorer View</ulink></entry>                                
+        <entry>none</entry>        
+      </row>
+      
+    </tbody>
+  </tgroup>
+</table>
+<sect3 id="virtuosospongerrdfmappers"><title>SPARQL IRI Dereferencing</title>
+<para>The Virtuoso SPARQL engine (called for brevity just SPARQL bellow) supports IRI Dereferencing,
+however it understands only RDF data, that is it can retrieve only files containing RDF/XML, turtle
+or N3 serialized RDF data, if format is unknown it will try mapping with built-in WebDAV metadata
+extractor. In order to extend this feature with dereferencing web or file resources which naturally
+don't have RDF data (like PDF, JPEG files for example) is provided a special mechanism in SPARQL
+engine. This mechanism is called RDF mappers for translation of non-RDF data files to RDF.</para>
+<para>In order to instruct the SPARQL to call a RDF mapper it needs to be registered and it will
+be called for a given URL or MIME type pattern. In other words, when unknown for SPARQL format is
+received during URL dereferencing process, it will look into a special registry (a table) to match
+either the MIME type or IRI using a regular expression, if match is found the mapper function will
+be called.</para>
+<sect4 id="virtuosospongerproxy"><title>Sponger Proxy service</title>
+<para>Sponger functionality is also exposed via Virtuoso's "/proxy/rdf/" endpoint, as an in-built
+REST style Web service available in any Virtuoso standard installation. This web service takes
+a target URL and either returns the content "as is" or tries to transform (by sponging) to RDF.
+Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.
+</para>
+<para>For more information see <link linkend="rdfproxyservice">RDF Sponger Proxy service</link></para>
+</sect4>
+<sect4 id="virtuosospongercache"><title>Cache Invalidation</title>
+<para>To clear cache on all values of HS_LOCAL_IRI of the SYS_HTTP_SPONGE table use:</para>
+<programlisting><![CDATA[
+SPARQL clear graph <A-Named-Graph>;
+]]></programlisting>
+</sect4>
+</sect3>
+</sect2>
+
+<sect2 id="virtuosospongerarch"><title>Cartridge Architecture</title>
+  <sect3 id="virtuosospongerarchcr"><title>What is a Cartridge?</title>
+    <para>See full description <link linkend="virtuosospongeroverviewcartarch">here</link></para>
+  </sect3>
+  <sect3 id="virtuosospongercartridgesextr"><title>Extractor Cartridges</title>
+    <para>An Extractor Cartridge processes a Resource of a given format, extracting RDF according to 
+    	rules appropriate to that format. External data does not come into play; only the content of 
+    	the Resource fed to the Sponger.
+    </para>	
+    <sect4 id="virtuosospongercartridgesstand"><title>Supported Standard Non-RDF Data Formats</title>
+      <para>These Cartridges handle open formats - typically community-developed, openly-documented, 
+      	and freely-licensed data structures.</para>
 <table>
 <tgroup cols="4">
 <thead>
@@ -9333,6 +9949,7 @@ ontology mapper.</para>
 <row><entry>hNews</entry><entry><ulink url="http://www.semissourian.com/story/1620555.html">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http://www.semissourian.com/story/1620555.html">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.semissourian.com/story/1620555.html">Data Explorer View</ulink></entry></row>
 <row><entry>hProduct</entry><entry><ulink url="http://www.roger-junca.com/Roti-de-magret-du-Sud-ouest-produit-89.html">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http/www.roger-junca.com/Roti-de-magret-du-Sud-ouest-produit-89.html">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.roger-junca.com/Roti-de-magret-du-Sud-ouest-produit-89.html">Data Explorer View</ulink></entry></row>
 <row><entry>HR-XML</entry><entry><ulink url="http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http/ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://ns.hr-xml.org/2_5/HR-XML-2_5/SEP/ResumeExample.xml">Data Explorer View</ulink></entry></row>
+<row><entry>hRecipe</entry><entry><ulink url="http://www.bbc.co.uk/food/recipes/beef_tacos_with_salsa_67130%01hrecipe">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http://linkeddata.uriburner.com/about/id/entity/http/www.bbc.co.uk/food/recipes/beef_tacos_with_salsa_67130%01hrecipe">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.bbc.co.uk/food/recipes/beef_tacos_with_salsa_67130">Data Explorer View</ulink></entry></row>
 <row><entry>hResume</entry><entry><ulink url="http://brev.name/resume/brev-resume.html">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http/brev.name/resume/brev-resume.html">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://brev.name/resume/brev-resume.html">Data Explorer View</ulink></entry></row>
 <row><entry>hReview</entry><entry><ulink url="http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http/www.concertbuzz.net/genres/classic-rock/jethro-tull.html">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://www.concertbuzz.net/genres/classic-rock/jethro-tull.html">Data Explorer View</ulink></entry></row>
 <row><entry>HTTP in RDF</entry><entry><ulink url="http://linkeddata.uriburner.com/about/rdf/http://data.london.gov.uk/datafiles/business-economy/employment-projections-sector-2009.csv">example</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/about/html/http/linkeddata.uriburner.com/about/rdf/http://data.london.gov.uk/datafiles/business-economy/employment-projections-sector-2009.csv">HTML Representation</ulink> </entry><entry>  <ulink url="http://linkeddata.uriburner.com/ode/?uri=http://linkeddata.uriburner.com/about/rdf/http://data.london.gov.uk/datafiles/business-economy/employment-projections-sector-2009.csv">Data Explorer View</ulink></entry></row>
@@ -9358,8 +9975,8 @@ ontology mapper.</para>
 </tbody>
 </tgroup>
 </table>
-    </listitem>
-    <listitem>Supported Vendor-specific Non-RDF Data Formats
+    </sect4>
+    <sect4 id="virtuosospongercartridgesnonstand"><title>Supported Standard Non-RDF Data Formats</title>
 <para>These Cartridges handle closed formats - typically proprietary; sometimes undocumented; possibly 
 	licensed to no-one except the format originator. Sometimes data may not be parsed as desired or 
 	expected, as many of these Cartridges have required reverse-engineering of the data format 
@@ -9438,47 +10055,17 @@ ontology mapper.</para>
 </tbody>
 </tgroup>
 </table>
-
-</listitem>
-  </itemizedlist>
-</sect3>
-<sect3 id="virtuosospongercartridgetypes"><title>Types of Cartridges</title>
-<sect4 id="virtuosospongercartridgetypesbasic"><title>Basic Cartridges</title>
-<para>Sponger cartridges are invoked as follows:</para>
-<para>When the SPARQL processor dereferences a URI, it plays the role of an HTTP user agent (client)
-that makes a content type specific request to an HTTP server via the HTTP request's Accept headers.
-The following then occurs:</para>
-
-<itemizedlist>
-  <listitem>If the content type returned is RDF then no further transformation is needed and the process
-stops. For instance, when consuming an (X)HTML document with a GRDDL profile, the profile URI points to a
-data provider that simply returns RDF instance data. </listitem>
-  <listitem>If the content type is not RDF (i.e. application/rdf+xml or text/rdf+n3 ), for instance
-'text/plain', the Sponger looks in the Cartridge Registry iterating over every record for which the
-RM_ENABLED flag is true, with the look-up sequence ordered on the RM_ID column values. For each record,
-the processor tries matching the content type or URL against the RM_PATTERN value and, if there is
-match, the function specified in RM_HOOK column is called. If the function doesn't exist, or signals
-an error, the SPARQL processor looks at next record.
-    <itemizedlist>
-      <listitem>If the hook returns zero, the next cartridge is tried. (A cartridge function can return
-zero if it believes a subsequent cartridge in the chain is capable of extracting more RDF data.)</listitem>
-      <listitem>If the result returned by the hook is negative, the Sponger is instructed that no
-RDF was generated and the process stops.
-        <itemizedlist>
-          <listitem>If the hook result is positive, the Sponger is informed that structured data was
-retrieved and the process stops. </listitem>
-        </itemizedlist>
-      </listitem>
-    </itemizedlist>
-  </listitem>
-  <listitem>If none of the cartridges match the source data signature (content type or URL), the
- ODS-Briefcase WebDAV metadata extractor and RDF generator is called.</listitem>
-</itemizedlist>
 </sect4>
-<sect4 id="virtuosospongercartridgetypesmeta"><title>Meta Cartridges</title>
-<para>A Meta Cartridge submits a Resource to a third-party Web Service for processing. Returned RDF supplements the RDF generated by Extractor and other Meta Cartridges. Locally generated RDF may also be submitted to the third-party services, instead-of or in-addition-to the original Resource itself.</para>
-<para>Default Sponger behavior is for all installed Meta Cartridges to be brought to bear on all submitted Resources.</para>
-
+  </sect3>
+  <sect3 id="virtuosospongercartridgesmeta"><title>Meta Cartridges</title>
+    <para>A Meta Cartridge submits a Resource to a third-party Web Service for processing. Returned RDF 
+    	supplements the RDF generated by Extractor and other Meta Cartridges. Locally generated RDF may 
+    	also be submitted to the third-party services, instead-of or in-addition-to the original 
+    	Resource itself.
+    </para>	
+    <para>Default Sponger behavior is for all installed Meta Cartridges to be brought to bear on all 
+    	submitted Resources:
+    </para>	
 <table>
 <tgroup cols="5">
 <thead>
@@ -9561,9 +10148,8 @@ retrieved and the process stops. </listitem>
 </tbody>
 </tgroup>
 </table>
-<sect5 id="virtuosospongercartridgetypesmetarest"><title>Meta Cartridges Usage via REST Request</title>
+    <sect4 id="virtuosospongercartridgetypesmetarest"><title>Meta Cartridge Usage via REST Request</title>
 <para>Description.vsp underlies the /about/html/ page, and accepts the parameters described below.</para> 
-
 <table>
 <tgroup cols="4">
 <thead>
@@ -9617,8 +10203,8 @@ retrieved and the process stops. </listitem>
 </tbody>
 </tgroup>
 </table>
-</sect5>
-<sect5 id="virtuosospongercartridgetypesmetarestexamples"><title>Parametrized Examples</title>
+    </sect4>  
+    <sect4 id="virtuosospongercartridgetypesmetarestexamples"><title>Meta Cartridges Parametrized Examples</title>
 <para>All examples in the table below start from the same Resource, 
 	http://www.news.com, and submit it to the Sponger for processing with the single listed Meta Cartridge.</para>
 
@@ -9638,204 +10224,64 @@ retrieved and the process stops. </listitem>
   </row>
 </thead>
 <tbody>
-<row><entry>Alchemy</entry><entry>@Lookup@=8&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=8&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Amazon Search for products</entry><entry>@Lookup@=13&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=13&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>BBC</entry><entry>@Lookup@=1665&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=1665&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>BestBuy Search for products</entry><entry>@Lookup@=14&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=14&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Bing</entry><entry>@Lookup@=11&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=11&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Bit.ly</entry><entry>@Lookup@=915&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=915&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>CNET</entry><entry>@Lookup@=19&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=19&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Crunchbase</entry><entry>@Lookup@=839&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=839&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Dapper</entry><entry>@Lookup@=243&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=2436&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>DBpedia</entry><entry>@Lookup@=26&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=26&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Delicious Meta</entry><entry>@Lookup@=23&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=23&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Discogs</entry><entry>@Lookup@=840&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=840&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Document Links</entry><entry>@Lookup@=34&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=34&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>eBay</entry><entry>@Lookup@=18&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=18&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Evri Meta</entry><entry>@Lookup@=3966&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3966&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Flickr Search for photos</entry><entry>@Lookup@=16&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=16&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Freebase NYTC</entry><entry>@Lookup@=5&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=5&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Freebase NYTCF</entry><entry>@Lookup@=4&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=4&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Geonames Meta</entry><entry>@Lookup@=24&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=24&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Geopoints</entry><entry>@Lookup@=3731&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3731&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Get Glue Meta</entry><entry>@Lookup@=25&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=25&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Google Search</entry><entry>@Lookup@=1382&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=1382&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Google Social Graph</entry><entry>@Lookup@=30&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=30&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Guardian</entry><entry>@Lookup@=28&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=28&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Hoovers</entry><entry>@Lookup@=2&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=2&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Journalisted</entry><entry>@Lookup@=3174&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3174&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Local Search</entry><entry>@Lookup@=15&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=15&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>LOD</entry><entry>@Lookup@=21&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=21&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>MIME Type</entry><entry>@Lookup@=1029&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=1029&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>New York Times</entry><entry>@Lookup@=22&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=22&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>NPR Meta</entry><entry>@Lookup@=29&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=29&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>NYT: The Article Search</entry><entry>@Lookup@=9&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=9&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>NYT: The TimesTags</entry><entry>@Lookup@=22&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=22&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>OpenCalais</entry><entry>@Lookup@=1&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=1&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Oreilly Search for products</entry><entry>@Lookup@=17&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=17&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>RapLeaf</entry><entry>@Lookup@=2745&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=2745&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>SameAs.org</entry><entry>@Lookup@=3257&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3257&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Sindice</entry><entry>@Lookup@=12&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=12&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Technorati</entry><entry>@Lookup@=27&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=27&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Tesco</entry><entry>@Lookup@=31&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=31&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>TrueKnowledge</entry><entry>@Lookup@=3967&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3967&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Twitter</entry><entry>@Lookup@=4020&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=4020&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>uClassify</entry><entry>@Lookup@=3086&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3086&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>UMBEL</entry><entry>@Lookup@=6&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=6&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Ustream</entry><entry>@Lookup@=3902&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3902&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Virtuoso Facets Web Service</entry><entry>@Lookup@=21&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=21&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>voID Statistics</entry><entry>@Lookup@=35&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=35&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>whoisi?</entry><entry>@Lookup@=3052&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3052&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>World Bank</entry><entry>@Lookup@=3&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>XRD</entry><entry>@Lookup@=3650&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=3650&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Yahoo BOSS</entry><entry>@Lookup@=10&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=10&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Yahoo Geocode</entry><entry>@Lookup@=2855&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=2855&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Yelp Search for business</entry><entry>@Lookup@=20&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=20&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Zemanta</entry><entry>@Lookup@=7&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=7&amp;refresh=0">cURL example</ulink></entry></row> 
-<row><entry>Zillow</entry><entry>@Lookup@=32&amp;refresh=0</entry><entry>   <ulink url="http://linkeddata.uriburner.com/about/html/http/www.news.com/?@Lookup@=32&amp;refresh=0">cURL example</ulink></entry></row> 
+<row><entry>Alchemy</entry><entry>@Lookup@=8&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL1">cURL example</ulink></entry></row> 
+<row><entry>Amazon Search for products</entry><entry>@Lookup@=13&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL2">cURL example</ulink></entry></row> 
+<row><entry>BBC</entry><entry>@Lookup@=1665&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL3">cURL example</ulink></entry></row> 
+<row><entry>BestBuy Search for products</entry><entry>@Lookup@=14&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL4">cURL example</ulink></entry></row> 
+<row><entry>Bing</entry><entry>@Lookup@=11&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL5">cURL example</ulink></entry></row> 
+<row><entry>Bit.ly</entry><entry>@Lookup@=915&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL6">cURL example</ulink></entry></row> 
+<row><entry>CNET</entry><entry>@Lookup@=19&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL7">cURL example</ulink></entry></row> 
+<row><entry>Crunchbase</entry><entry>@Lookup@=839&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL8">cURL example</ulink></entry></row> 
+<row><entry>Dapper</entry><entry>@Lookup@=243&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL9">cURL example</ulink></entry></row> 
+<row><entry>DBpedia</entry><entry>@Lookup@=26&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL10">cURL example</ulink></entry></row> 
+<row><entry>Delicious Meta</entry><entry>@Lookup@=23&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL11">cURL example</ulink></entry></row> 
+<row><entry>Discogs</entry><entry>@Lookup@=840&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL12">cURL example</ulink></entry></row> 
+<row><entry>Document Links</entry><entry>@Lookup@=34&amp;refresh=0</entry><entry>   <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL13">cURL example</ulink></entry></row> 
+<row><entry>eBay</entry><entry>@Lookup@=18&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL14">cURL example</ulink></entry></row>  
+<row><entry>Evri Meta</entry><entry>@Lookup@=3966&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL15">cURL example</ulink></entry></row>  
+<row><entry>Flickr Search for photos</entry><entry>@Lookup@=16&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL16">cURL example</ulink></entry></row>  
+<row><entry>Freebase NYTC</entry><entry>@Lookup@=5&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL17">cURL example</ulink></entry></row>  
+<row><entry>Freebase NYTCF</entry><entry>@Lookup@=4&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL18">cURL example</ulink></entry></row>  
+<row><entry>Geonames Meta</entry><entry>@Lookup@=24&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL19">cURL example</ulink></entry></row>  
+<row><entry>Geopoints</entry><entry>@Lookup@=3731&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL20">cURL example</ulink></entry></row>  
+<row><entry>Get Glue Meta</entry><entry>@Lookup@=25&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL21">cURL example</ulink></entry></row>  
+<row><entry>Google Search</entry><entry>@Lookup@=1382&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL22">cURL example</ulink></entry></row>  
+<row><entry>Google Social Graph</entry><entry>@Lookup@=30&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL23">cURL example</ulink></entry></row>  
+<row><entry>Guardian</entry><entry>@Lookup@=28&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL24">cURL example</ulink></entry></row>  
+<row><entry>Hoovers</entry><entry>@Lookup@=2&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL25">cURL example</ulink></entry></row>  
+<row><entry>Journalisted</entry><entry>@Lookup@=3174&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL26">cURL example</ulink></entry></row>  
+<row><entry>Local Search</entry><entry>@Lookup@=15&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL27">cURL example</ulink></entry></row>  
+<row><entry>LOD</entry><entry>@Lookup@=21&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL28">cURL example</ulink></entry></row>  
+<row><entry>MIME Type</entry><entry>@Lookup@=1029&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL29">cURL example</ulink></entry></row>  
+<row><entry>New York Times</entry><entry>@Lookup@=22&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL30">cURL example</ulink></entry></row>  
+<row><entry>NPR Meta</entry><entry>@Lookup@=29&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL31">cURL example</ulink></entry></row>  
+<row><entry>NYT: The Article Search</entry><entry>@Lookup@=9&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL32">cURL example</ulink></entry></row>  
+<row><entry>NYT: The TimesTags</entry><entry>@Lookup@=22&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL33">cURL example</ulink></entry></row>  
+<row><entry>OpenCalais</entry><entry>@Lookup@=1&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL34">cURL example</ulink></entry></row>  
+<row><entry>Oreilly Search for products</entry><entry>@Lookup@=17&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL35">cURL example</ulink></entry></row>  
+<row><entry>RapLeaf</entry><entry>@Lookup@=2745&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL36">cURL example</ulink></entry></row>  
+<row><entry>SameAs.org</entry><entry>@Lookup@=3257&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL37">cURL example</ulink></entry></row>  
+<row><entry>Sindice</entry><entry>@Lookup@=12&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL38">cURL example</ulink></entry></row>  
+<row><entry>Technorati</entry><entry>@Lookup@=27&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL39">cURL example</ulink></entry></row>  
+<row><entry>Tesco</entry><entry>@Lookup@=31&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL40">cURL example</ulink></entry></row>  
+<row><entry>TrueKnowledge</entry><entry>@Lookup@=3967&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL41">cURL example</ulink></entry></row>  
+<row><entry>Twitter</entry><entry>@Lookup@=4020&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL42">cURL example</ulink></entry></row>  
+<row><entry>uClassify</entry><entry>@Lookup@=3086&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL43">cURL example</ulink></entry></row>  
+<row><entry>UMBEL</entry><entry>@Lookup@=6&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL44">cURL example</ulink></entry></row>  
+<row><entry>Ustream</entry><entry>@Lookup@=3902&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL45">cURL example</ulink></entry></row>  
+<row><entry>Virtuoso Facets Web Service</entry><entry>@Lookup@=21&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL46">cURL example</ulink></entry></row>  
+<row><entry>voID Statistics</entry><entry>@Lookup@=35&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL47">cURL example</ulink></entry></row>  
+<row><entry>whoisi?</entry><entry>@Lookup@=3052&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL48">cURL example</ulink></entry></row>  
+<row><entry>World Bank</entry><entry>@Lookup@=3&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL49">cURL example</ulink></entry></row>  
+<row><entry>XRD</entry><entry>@Lookup@=3650&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL50">cURL example</ulink></entry></row>  
+<row><entry>Yahoo BOSS</entry><entry>@Lookup@=10&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL51">cURL example</ulink></entry></row>  
+<row><entry>Yahoo Geocode</entry><entry>@Lookup@=2855&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL52">cURL example</ulink></entry></row>  
+<row><entry>Yelp Search for business</entry><entry>@Lookup@=20&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL53">cURL example</ulink></entry></row>  
+<row><entry>Zemanta</entry><entry>@Lookup@=7&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL54">cURL example</ulink></entry></row>  
+<row><entry>Zillow</entry><entry>@Lookup@=32&amp;refresh=0</entry><entry><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeSupportedDataSourcesMetaRESTExamplescURL55">cURL example</ulink></entry></row>  
 </tbody>
 </tgroup>
 </table>
-
-</sect5>
-</sect4>
-</sect3>
-</sect2>
-   <sect2 id="virtuosospongercartridgesextractorusecases"><title>RDF Cartridges Use Cases</title>
-<para>This section contains examples of Web resources which can be transformed by RDF Cartridges.
-It also states where additional setup for given cartridges is needed i.e. keys account names etc.
-</para>
-<para><emphasis>Service based:</emphasis></para>
-<itemizedlist>
-<listitem>amazon
-<programlisting><![CDATA[
-needs: api key
-example: http://www.amazon.com/gp/product/0553383043
-]]></programlisting>
-</listitem>
-<listitem>ebay
-<programlisting><![CDATA[
-needs: account, api-key
-example: http://cgi.ebay.com/RARE-DAY-IN-FAIRY-LAND-ELEPHANT-FOLIO-20-FULL-COLOR_W0QQitemZ140209597189QQihZ004QQcategoryZ29223QQssPageNameZWDVWQQrdZ1QQcmdZViewItem
-]]></programlisting>
-</listitem>
-<listitem>flickr
-needs: api-key
-example: http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg
-<programlisting><![CDATA[
-]]></programlisting>
-</listitem>
-<listitem>mbz
-<programlisting><![CDATA[
-example: http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html
-]]></programlisting>
-</listitem>
-<listitem>mql (freebase)
-<programlisting><![CDATA[
-example: http://www.freebase.com/view/en/beta_ursae_majoris
-]]></programlisting>
-</listitem>
-<listitem>facebook
-<programlisting><![CDATA[
-needs: api-key, secret, persistent-session-id
-example: http://www.facebook.com/profile.php?id=841100003
-]]></programlisting>
-</listitem>
-<listitem>yahoo-stock
-<programlisting><![CDATA[
-example: http://finance.yahoo.com/q?s=AAPL
-]]></programlisting>
-</listitem>
-<listitem>yahoo-traffic
-<programlisting><![CDATA[
-example: http://local.yahooapis.com/MapsService/V1/trafficData?appid=YahooDemo&street=701+First+Street&city=Sunnyvale&state=CA
-]]></programlisting>
-</listitem>
-<listitem>Bugzilla
-<programlisting><![CDATA[
-example: https://bugzilla.mozilla.org/show_bug.cgi?id=251714
-]]></programlisting>
-</listitem>
-<listitem>SVG</listitem>
-<listitem>OO document
-<programlisting><![CDATA[
-needs: unzip plugin
-]]></programlisting>
-</listitem>
-<listitem>Wikipedia
-<programlisting><![CDATA[
-needs: php plugin & dbpedia extractor
-example: http://wikipedia.org/wiki/London
-]]></programlisting>
-</listitem>
-<listitem>Opencalais</listitem>
-<listitem>iCalendar</listitem>
-</itemizedlist>
-<para><emphasis>GRDDL</emphasis></para>
-<itemizedlist>
-<listitem>Google Base (google)
-<programlisting><![CDATA[
-example: http://www.google.com/base/feeds/snippets/17891817243016304554
-]]></programlisting>
-</listitem>
-<listitem>eRDF</listitem>
-<listitem>RDFa</listitem>
-<listitem>hCard</listitem>
-<listitem>hCalendar</listitem>
-<listitem>hReview</listitem>
-<listitem>relLicense</listitem>
-<listitem>XBRL</listitem>
-<listitem>HR-XML</listitem>
-<listitem>DC</listitem>
-<listitem>geoURL</listitem>
-<listitem>Ning</listitem>
-<listitem>XFN</listitem>
-<listitem>xFolk</listitem>
-</itemizedlist>
-<para><emphasis>URN handlers</emphasis></para>
-<itemizedlist>
-<listitem>LSID
-<programlisting><![CDATA[
-example: urn:lsid:ubio.org:namebank:12292
-]]></programlisting>
-</listitem>
-<listitem>DOI
-<programlisting><![CDATA[
-needs: hslookup plugin, relevant html, pdf, xml etc. mappers enabled
-example: doi:10.1038/35057062
-]]></programlisting>
-</listitem>
-<listitem>OAI
-<programlisting><![CDATA[
-example: oai:dcmi.ischool.washington.edu:article/8
-]]></programlisting>
-</listitem>
-</itemizedlist>
-<sect3 id="virtuosospongerrdfmappers"><title>SPARQL IRI Dereferencing</title>
-<para>The Virtuoso SPARQL engine (called for brevity just SPARQL bellow) supports IRI Dereferencing,
-however it understands only RDF data, that is it can retrieve only files containing RDF/XML, turtle
-or N3 serialized RDF data, if format is unknown it will try mapping with built-in WebDAV metadata
-extractor. In order to extend this feature with dereferencing web or file resources which naturally
-don't have RDF data (like PDF, JPEG files for example) is provided a special mechanism in SPARQL
-engine. This mechanism is called RDF mappers for translation of non-RDF data files to RDF.</para>
-<para>In order to instruct the SPARQL to call a RDF mapper it needs to be registered and it will
-be called for a given URL or MIME type pattern. In other words, when unknown for SPARQL format is
-received during URL dereferencing process, it will look into a special registry (a table) to match
-either the MIME type or IRI using a regular expression, if match is found the mapper function will
-be called.</para>
-<sect4 id="virtuosospongerproxy"><title>Sponger Proxy service</title>
-<para>Sponger functionality is also exposed via Virtuoso's "/proxy/rdf/" endpoint, as an in-built
-REST style Web service available in any Virtuoso standard installation. This web service takes
-a target URL and either returns the content "as is" or tries to transform (by sponging) to RDF.
-Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.
-</para>
-<para>For more information see <link linkend="rdfproxyservice">RDF Sponger Proxy service</link></para>
-</sect4>
-<sect4 id="virtuosospongercache"><title>Cache Invalidation</title>
-<para>To clear cache on all values of HS_LOCAL_IRI of the SYS_HTTP_SPONGE table use:</para>
-<programlisting><![CDATA[
-SPARQL clear graph <A-Named-Graph>;
-]]></programlisting>
 </sect4>
 </sect3>
  </sect2>
@@ -9983,8 +10429,7 @@ a later section.</para>
         <title>RDF Mappers VAD</title>
         <para>Virtuoso supplies a number of prewritten cartridges for extracting RDF data from a
 variety of popular Web resources and file types. The cartridges are bundled as part of the rdf_mappers
-VAD (Virtuoso Application Distribution). Appendix B of the Virtuoso Sponger whitepaper briefly
-outlines the cartridges contained in the VAD.</para>
+VAD (Virtuoso Application Distribution).</para>
         <para>To see which cartridges are available, look at the 'RDF Cartridges' screen in
 Conductor. This can be reached through the 'RDF' > 'RDF Cartridges' tabbed menu items.</para>
         <figure id="spong2" float="1">
@@ -10074,7 +10519,7 @@ C/C++, Java or any other external language supported by Virtuoso's Server Extens
 Virtuoso's own entity extractors are written in Virtuoso PL.</para>
       <sect4 id="virtuosospongercreatecustcartran">
         <title>The Anatomy of a Cartridge</title>
-        <para><emphasis>Cartridge Hook Function</emphasis></para>
+        <para><emphasis>Cartridge Hook Prototype</emphasis></para>
         <para>Every Virtuoso PL hook function used to plug a custom Sponger cartridge into the Virtuoso
 SPARQL engine must have a parameter list with the following parameters (the names of the parameters are
 not important, but their order and presence are):</para>
@@ -10088,7 +10533,7 @@ has been configured in the [SPARQL] section of the virtuoso.ini file, this is a 
 queue to be used to call the ping service</listitem>
           <listitem><emphasis>inout ping_service any</emphasis>: the URL of a ping service, as assigned
 to the PingService parameter in the [SPARQL] section of the virtuoso.ini configuration file.
-PingTheSemanticWeb is an example of a such a service. See Appendix A for more details.</listitem>
+PingTheSemanticWeb is an <link linkend="virtuosospongerefping">example</link> of a such a service.</listitem>
           <listitem><emphasis>inout api_key any</emphasis>: a string value specific to a given cartridge,
 contained in the RC_KEY column of the DB.DBA.SYS_RDF_CARTRIDGES table. The value can be a single
 string or a serialized array of strings providing cartridge specific data.</listitem>
@@ -10177,50 +10622,6 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (
       add_html_meta := 1;
   }
   ...
-]]></programlisting>
-         <para><emphasis>API Keys</emphasis></para>
-         <para>Some Cartridges require and API account and/or API Key to be 
-provided for accessing the required service. This can be done from the RDF -> Sponger tab of the 
-Conductor by selecting the cartridge from the list provided, entering the API Account and API Key 
-in the dialog at the bottom of the page and click update to save, as indicated in the screenshot 
-below:</para>
-     <figure id="catr1" float="1">
-       <title>Registering API Key</title>
-       <graphic fileref="ui/cartrapikey.png"/>
-     </figure>
-     <para>For example, for the service Flickr developers must register
-to obtain a key. See http://developer.yahoo.com/flickr/. In order
-to cater for services which require an application key, the Cartridge Registry
-SYS_RDF_MAPPERS table includes an RM_KEY column to store any key required for a
-particular service. This value is passed to the service's cartridge through the
-_key parameter of the cartridge hook function.</para>
-         <para>Alternatively a cartridge can store a key value in the virtuoso.ini
-configuration file and retrieve it in the hook function.</para>       
-         <para>The next example shows an extract from the Flickr cartridge hook function
-DB.DBA.RDF_LOAD_FLICKR_IMG and the use of an API key. Also, commented out, is a call to
-cfg_item_value() which illustrates how the API key could instead be stored and retrieved
-from the SPARQL section of the virtuoso.ini file.
-</para>
-<programlisting><![CDATA[
-create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (
-in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
-inout _ret_body any, inout aq any, inout ps any, inout _key any,
-inout opts any )
-{
-declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
-declare exit handler for sqlstate '*'
-{
- return 0;
-};
-tmp := sprintf_inverse (new_origin_uri,
-  'http://farm%s.static.flickr.com/%s/%s_%s.%s', 0);
-img_id := tmp[2];
-api_key := _key;
---cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'FlickrAPIkey');
-if (tmp is null or length (tmp) <> 5 or not isstring (api_key))
-  return 0;
-url :=  sprintf('http://api.flickr.com/services/rest/?method=flickr.photos.getInfo&photo_id=%s&api_key=%s',img_id, api_key);
-tmp := http_get (url, hdr);
 ]]></programlisting>
         <para><emphasis>XSLT - The Fulchrum</emphasis></para>
         <para>XSLT is the fulchrum of all OpenLink supplied cartridges. It provides the most convenient
@@ -10502,7 +10903,8 @@ to have the SPARQL processor recognize and use it. You should have compiled your
 function first by issuing a "create procedure DB.DBA.RDF_LOAD_xxx ..." command through one of
 Virtuoso's SQL interfaces. You can create the required Cartridge Registry entry either by adding
 a row to the SYS_REF_MAPPERS table directly using SQL, or by using the Conductor UI.</para>
-        <para><emphasis>Using SQL</emphasis></para>
+        <sect5 id="virtuosospongercreatecustcartrrgstis">
+        <title>Using SQLs</title>
         <para>If you choose register your cartridge using SQL, possibly as part of a Virtuoso/PL
 script, the required SQL will typically mirror one of the following INSERT commands.</para>
         <para>Below, a cartridge for OpenCalais is being installed which will be tried when
@@ -10535,7 +10937,9 @@ UPDATE DB.DBA.SYS_RDF_MAPPERS
 SET RM_ID = 1000
 WHERE RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
 ]]></programlisting>
-        <para><emphasis>Using Conductor</emphasis></para>
+        </sect5>
+        <sect5 id="virtuosospongercreatecustcartrrgstcn">
+        <title>Using Conductor</title>
         <para>Cartridges can be added manually using the 'Add' panel of the 'RDF Cartridges' screen.</para>
         <figure id="spong4" float="1">
           <title>RDF Cartridges</title>
@@ -10545,7 +10949,9 @@ WHERE RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
           <title>RDF Cartridges</title>
           <graphic fileref="ui/spong5.png"/>
         </figure>
-        <para><emphasis>Installing Stylesheets</emphasis></para>
+        </sect5>
+        <sect5 id="virtuosospongercreatecustcartrrgstit">
+        <title>Installing Stylesheets</title>
         <para>Although you could place your cartridge stylesheet in any folder configured to be accessible
 by Virtuoso, the simplest option is to upload them to the DAV/VAD/rdf_mappers/xslt folder using the
 WebDAV browser accessible from the Conductor UI.</para>
@@ -10555,9 +10961,59 @@ WebDAV browser accessible from the Conductor UI.</para>
         </figure>
         <para>Should you wish to locate your stylesheets elsewhere, ensure
 that the DirsAllowed setting in the virtuoso.ini file is configured appropriately.</para>
+        </sect5>
+        <sect5 id="virtuosospongercreatecustcartrrgstap">
+        <title>Setting API Key</title>        
+         <para>Some Cartridges require and API account and/or API Key to be 
+provided for accessing the required service. This can be done from the RDF -> Sponger tab of the 
+Conductor by selecting the cartridge from the list provided, entering the API Account and API Key 
+in the dialog at the bottom of the page and click update to save, as indicated in the screenshot 
+below:</para>
+     <figure id="catr1" float="1">
+       <title>Registering API Key</title>
+       <graphic fileref="ui/cartrapikey.png"/>
+     </figure>
+     <para>For example, for the service Flickr developers must register
+to obtain a key. See http://developer.yahoo.com/flickr/. In order
+to cater for services which require an application key, the Cartridge Registry
+SYS_RDF_MAPPERS table includes an RM_KEY column to store any key required for a
+particular service. This value is passed to the service's cartridge through the
+_key parameter of the cartridge hook function.</para>
+         <para>Alternatively a cartridge can store a key value in the virtuoso.ini
+configuration file and retrieve it in the hook function.</para>       
+         </sect5>
+         <sect5 id="virtuosospongercreatecustcartrrgstflickr">
+           <title>Flickr Cartridge</title> 
+           <para>This example shows an extract from the Flickr cartridge hook function
+DB.DBA.RDF_LOAD_FLICKR_IMG and the use of an API key. Also, commented out, is a call to
+cfg_item_value() which illustrates how the API key could instead be stored and retrieved
+from the SPARQL section of the virtuoso.ini file.
+         </para>
+<programlisting><![CDATA[
+create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (
+in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
+inout _ret_body any, inout aq any, inout ps any, inout _key any,
+inout opts any )
+{
+declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
+declare exit handler for sqlstate '*'
+{
+ return 0;
+};
+tmp := sprintf_inverse (new_origin_uri,
+  'http://farm%s.static.flickr.com/%s/%s_%s.%s', 0);
+img_id := tmp[2];
+api_key := _key;
+--cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'FlickrAPIkey');
+if (tmp is null or length (tmp) <> 5 or not isstring (api_key))
+  return 0;
+url :=  sprintf('http://api.flickr.com/services/rest/?method=flickr.photos.getInfo&photo_id=%s&api_key=%s',img_id, api_key);
+tmp := http_get (url, hdr);
+]]></programlisting>
+        </sect5>
     </sect4>
       <sect4 id="virtuosospongercreatecustcartrexmp">
-        <title>Example - MusicBrainz: A Music Metadatabase</title>
+        <title>MusicBrainz Example: A Music Metadatabase</title>
         <para>To illustrate some of the material presented so far, we'll delve
 deeper into the <ulink url="http://musicbrainz.org/">MusicBrainz</ulink> cartridge mentioned earlier.</para>
         <para><emphasis>MusicBrainz XML Web Service</emphasis></para>
@@ -11272,7 +11728,7 @@ be invoked. If it returns 1 or -1, the post-processing stops and no further meta
         <para>The example which follows builds on a Freebase Sponger cartridge developed prior to the announcement of Freebase's
 support for generating Linked Data through the endpoint http://rdf.freebase.com/ . The OpenLink cartridge
 has since evolved to reflect these changes. A snapshot of the Freebase cartridge and stylesheet compatible
-with this example can be found in Appendix C.</para>
+with this example can be found <link linkend="virtuosospongerfreeb">here</link>.</para>
         <para><ulink url="http://www.freebase.com/">Freebase</ulink> is an open community database of the world's information which serves facts
 and statistics rather than articles. Its designers see this difference in emphasis from article-oriented
 databases as beneficial for developers wanting to use Freebase facts in other websites and applications.</para>
@@ -12244,6 +12700,19 @@ sparql define get:soft "soft" select * from <http://www.amazon.com/Apple-touch-G
     </orderedlist>
   </sect3>
 </sect2>
+<sect2 id="virtuosospongersampleuses"><title>Sponger Usage Examples</title>
+<itemizedlist mark="bullet">
+	<listitem><link linkend="virtuosospongerusageprocessorex">SPARQL Processor Usage Example</link></listitem>
+	<listitem><link linkend="virtuosospongerusageproxyex2">RDF Proxy Service Example</link></listitem>
+	<listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtDeployingLinkedDataGuide_BrowsingNorthwindRdfView#AncMozToc2">Browsing &amp; Exploring RDF View Example Using ODE</ulink></listitem>
+	<listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtDeployingLinkedDataGuide_BrowsingNorthwindRdfView#AncMozToc3">Browsing &amp; Exploring RDF View Example Using iSPARQL</ulink></listitem>
+	<listitem><link linkend="rdfinsertmethodplapissimpleexample">Basic Sponger Cartridge Example</link></listitem>
+  <listitem><link linkend="virtuosospongerusagebriefex">HTTP Example for Extracting Metadata using CURL</link></listitem>
+  <listitem><link linkend="virtuosospongercartridgetypesmetarestexamples">RESTFul Interaction Examples</link></listitem>
+  <listitem><link linkend="virtuosospongercreatecustcartrrgstflickr">Flickr Cartridge Example</link></listitem>
+  <listitem><link linkend="virtuosospongercreatecustcartrexmp">MusicBrainz Metadatabase Example</link></listitem>
+</itemizedlist>
+</sect2>	
 </sect1>
 
 <sect1 id="virtuosospongerfacetinstall">
@@ -18012,6 +18481,11 @@ system. In that case one may wish to declare a separate storage that consists of
 by that application and define <emphasis>input:storage</emphasis> in appropriate row of
 <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.</para>
 </sect2>
+<sect2 id="rdfperfgetallgraphs"><title>Get All Graphs</title>
+<para>In order to get all graphs URIs, one might use the Virtuoso 
+<link linkend="fn_sparql_select_known_graphs"><function>DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()</function></link> 
+built-in function.</para>
+</sect2>
 <sect2 id="rdfperfdumpandreloadgraphs"><title>Dump and Reload Graphs</title>
 In order to dump all graphs with extension exclude those graphs of a certain type by using a
 sparql ask query, you may use the following script sequence:
@@ -21938,13 +22412,13 @@ http://example.org
 <orderedlist>
   <listitem>In the Virtuoso Conductor, go to RDF -> RDF Store Upload 
      <figure id="star7" float="1">
-       <title>Star Replication Topology</title>
+       <title>Replication Topology</title>
        <graphic fileref="ui/r1.png"/>
      </figure>
   </listitem> 
   <listitem>In the form: 
      <figure id="star8" float="1">
-       <title>Star Replication Topology</title>
+       <title>Replication Topology</title>
        <graphic fileref="ui/r2.png"/>
      </figure>
     <itemizedlist mark="bullet">

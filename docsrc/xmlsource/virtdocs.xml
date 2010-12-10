@@ -318,6 +318,7 @@
 <!ENTITY rdf_suo_diff_ttl                       SYSTEM  "funcref/rdf_suo_diff_ttl.xml">
 <!ENTITY sparql_rdb2rdf_codegen                 SYSTEM  "funcref/sparql_rdb2rdf_codegen.xml">
 <!ENTITY sparql_rdb2rdf_list_tables             SYSTEM  "funcref/sparql_rdb2rdf_list_tables.xml">
+<!ENTITY sparql_select_known_graphs             SYSTEM  "funcref/sparql_select_known_graphs.xml">
 
 <!ENTITY ttlp                   		SYSTEM "funcref/ttlp.xml">
 <!ENTITY ttlp_mt                		SYSTEM "funcref/ttlp_mt.xml">

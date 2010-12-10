@@ -169,8 +169,8 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;&ttlp_mt_local_file;
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
 &rdf_convert_rdfxml_to_ttl; &rdf_graph_group_create; &rdf_graph_group_ins; &rdfs_rule_set;
-&rdf_graph_collect_fp_list; &rdf_graph_diff; &rdf_suo_apply_patch;
-&rdf_suo_diff_ttl; &sparql_rdb2rdf_codegen; &sparql_rdb2rdf_list_tables;
+&rdf_geo_fill; &rdf_geo_add; &rdf_graph_collect_fp_list; &rdf_graph_diff; &rdf_suo_apply_patch;
+&rdf_suo_diff_ttl; &sparql_rdb2rdf_codegen; &sparql_rdb2rdf_list_tables; &sparql_select_known_graphs;
 &rowvector_digit_sort; <!-- &rowvector_subj_sort; -->
 &isref;
 
