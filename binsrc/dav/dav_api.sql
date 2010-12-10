@@ -2184,6 +2184,36 @@ DAV_RES_UPLOAD_STRSES_INT (
     in check_locks any := 1 -- must be here to match arg order for DAV replication.
     )
 {
+  declare rc, old_log_mode, new_log_mode any;
+  old_log_mode := log_enable (null);
+  -- we disable row auto commit since there are triggers reading blobs, we do that even in atomic mode since this is vital for dav uploads
+  new_log_mode := bit_and (old_log_mode, 1);
+  old_log_mode := log_enable (bit_or (new_log_mode, 4), 1);
+  rc := DAV_RES_UPLOAD_STRSES_INT_INNER (path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks);
+  log_enable (bit_or (old_log_mode, 4), 1);
+  return rc;
+}
+;
+
+create procedure
+DAV_RES_UPLOAD_STRSES_INT_INNER (
+    in path varchar,
+    inout content any,
+    in type varchar := '',
+    in permissions varchar := '110100000RR',
+    in uid any := 'dav',
+    in gid any := 'administrators',
+    in auth_uname varchar := null,
+    in auth_pwd varchar := null,
+    in extern integer := 1,
+    in cr_time datetime := null,
+    in mod_time datetime := null,
+    in _rowguid varchar := null,
+    in ouid integer := null,
+    in ogid integer := null,
+    in check_locks any := 1 -- must be here to match arg order for DAV replication.
+    )
+{
   declare auth_uid, pid, puid, pgid, rc, id integer;
   declare pperms, name varchar;
   declare par any;
@@ -3518,6 +3548,29 @@ DAV_PROP_SET_RAW (
     in auto_version varchar:=NULL
 ) returns integer
 {
+  declare rc, old_log_mode, new_log_mode any;
+  old_log_mode := log_enable (null);
+  -- we disable row auto commit since there are triggers reading blobs, we do that even in atomic mode since this is vital for dav uploads
+  new_log_mode := bit_and (old_log_mode, 1);
+  old_log_mode := log_enable (bit_or (new_log_mode, 4), 1);
+  rc := DAV_PROP_SET_RAW_INNER (id, st, propname, propvalue, overwrite, auth_uid, locked, auto_version);
+  log_enable (bit_or (old_log_mode, 4), 1);
+  return rc;
+}
+;
+
+create function
+DAV_PROP_SET_RAW_INNER (
+    inout id integer,
+    in st char(0),
+    inout propname varchar,
+    inout propvalue any,
+    in overwrite integer,
+    in auth_uid integer,
+    in locked int:=0,
+    in auto_version varchar:=NULL
+) returns integer
+{
   declare pid integer;
   declare resv any;
   declare can_patch_access integer;
@@ -4545,7 +4598,7 @@ create procedure WS.WS.DAV_IRI (
 ;
 
 -- ACL - WebDAV Collection
-create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 10 referencing new as NC
+create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 9 referencing new as NC
 {
   declare N, colID, parentID integer;
   declare aAcl, aParentAcl any;
@@ -4582,7 +4635,7 @@ create function WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (inout aAcl any, in grantee 
 }
 ;
 
-create trigger SYS_DAV_COL_ACL_U after update (COL_ACL) on WS.WS.SYS_DAV_COL order 10 referencing new as N, old as O
+create trigger SYS_DAV_COL_ACL_U after update (COL_ACL) on WS.WS.SYS_DAV_COL order 9 referencing new as N, old as O
 {
   declare aAcl, aLog any;
   -- dbg_obj_princ (now(), 'trigger SYS_DAV_COL_ACL_U (', N.COL_ID, ')');
@@ -4616,7 +4669,7 @@ create trigger SYS_DAV_COL_ACL_U after update (COL_ACL) on WS.WS.SYS_DAV_COL ord
 }
 ;
 
-create trigger SYS_DAV_COL_ACL_D after delete on WS.WS.SYS_DAV_COL order 10 referencing old as O
+create trigger SYS_DAV_COL_ACL_D after delete on WS.WS.SYS_DAV_COL order 9 referencing old as O
 {
   -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_D (', O.COL_ID, ')');
   delete
@@ -4629,7 +4682,7 @@ create trigger SYS_DAV_COL_ACL_D after delete on WS.WS.SYS_DAV_COL order 10 refe
 
 -- ACL - WebDAV Resource
 --
-create trigger SYS_DAV_RES_ACL_I after insert on WS.WS.SYS_DAV_RES order 10 referencing new as N
+create trigger SYS_DAV_RES_ACL_I after insert on WS.WS.SYS_DAV_RES order 9 referencing new as N
 {
   declare aAcl any;
   declare aParentAcl varbinary;
@@ -4654,7 +4707,7 @@ create trigger SYS_DAV_RES_ACL_I after insert on WS.WS.SYS_DAV_RES order 10 refe
 }
 ;
 
-create trigger SYS_DAV_RES_ACL_U after update (RES_ACL) on WS.WS.SYS_DAV_RES order 10 referencing new as N, old as O
+create trigger SYS_DAV_RES_ACL_U after update (RES_ACL) on WS.WS.SYS_DAV_RES order 9 referencing new as N, old as O
 {
   declare aAcl any;
   -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_U (', N.RES_ID, ')');
@@ -4676,7 +4729,7 @@ create trigger SYS_DAV_RES_ACL_U after update (RES_ACL) on WS.WS.SYS_DAV_RES ord
 }
 ;
 
-create trigger SYS_DAV_RES_ACL_D after delete on WS.WS.SYS_DAV_RES order 10 referencing old as O
+create trigger SYS_DAV_RES_ACL_D after delete on WS.WS.SYS_DAV_RES order 9 referencing old as O
 {
   -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_D (', O.RES_ID, ')');
   delete
