@@ -1505,7 +1505,7 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t val = bif_arg (qst, args, 0, "__rdf_long_to_ttl");
   dk_session_t *out = http_session_no_catch_arg (qst, args, 1, "__rdf_long_to_ttl");
-  query_instance_t *qi = (query_instance_t *)qi;
+  query_instance_t *qi = (query_instance_t *)qst;
   dtp_t val_dtp = DV_TYPE_OF (val);
   char temp[256];
   if (DV_RDF == val_dtp)
