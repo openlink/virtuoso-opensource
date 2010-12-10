@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" ?> <!-- -*- tab-width: 4 -*- -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <!--
@@ -57,6 +57,8 @@ var featureList = ["keyboard","dimmer","tab","ajax","combolist","win","tree","gr
   <script type="text/javascript" src="ubiq.js"></script>
 
   <script type="text/javascript">
+
+// XXX should be done in defaults.js
 
 function myInit() {
   OAT.Preferences.imagePath = '/isparql/toolkit/images/';
@@ -125,6 +127,13 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
 
     <div id="page_content" style="display:none;">
       <ul id="menu">
+        <li>iSPARQL
+          <ul id="menu_isparql_down" class="menu_isparql" style="display:none">
+            <li id="menu_b_prefs">Preferences&#8230;</li>
+	    	<li class="noclose"><hr/></li>
+	    	<li id="menu_b_about">About iSPARQL&#8230;</li>
+          </ul>
+        </li>
         <li>File
           <ul id="menu_file_down" class="menu_file" style="display:none;">
 	    <li id="menu_b_reset">Reset</li>
@@ -137,9 +146,7 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
         </li>
         <li>Help
 	  <ul class="menu_help" style="display:none;">
-	    <li id="menu_b_help">iSPARQL Help&#8230;
-	    <li class="noclose"><hr/></li>
-	    <li id="menu_b_about">About iSPARQL&#8230;</li>
+	        <li id="menu_b_help">iSPARQL Help&#8230;</li>
 	  </ul>
         </li>
         <li id="login_b">Login</li>
@@ -374,9 +381,6 @@ ASK WHERE
           <span class="tgl_indicator" id="endpointoptstogglerarrow">&#9656;</span>Endpoint Options <span id="epvirtuosoindicator" style="display: none">(Virtuoso)</span>
           </h3>
 	    <div id="endpoint_opts" class="ctl_ctr" style="display:none">
-            <fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
-              <legend>Endpoint</legend>
-	    </fieldset>
 	      <fieldset class="deref_opts" id="derefOpts" style="display:none">
 	      <legend>Data Dereferencing Options</legend>
               <table>
@@ -518,9 +522,6 @@ ASK WHERE
       <div id="auth_dlg_error"></div>
       <div id="auth_buttons"><button id="auth_login_b">Login</button><button id="auth_cancel_b">Cancel</button></div>
     </div>
-    <div id="prefs_dlg">
-      <div></div>
-    </div>
     <div id="goptions">
       <div id="prefs_auth">
         <label for="username" class="align">Username:</label>
@@ -612,6 +613,25 @@ ASK WHERE
       </pre>
       <div class="btn_row"><button id="about_dlg_b_ok">OK</button></div>
     </div> <!-- #about_dlg -->
+
+	<div id="prefs_dlg">
+	  <!-- ul id="prefs_tabrow">
+        <li id="ptab_services">Services</li>
+        <li id="ptab_deref">Data Dereferencing</li>
+      </ul-->
+	  <!--div id="prefs_tabdeck"> </div--> <!-- Browser DOM bug alert: do not make into a self-terminating tag -->
+      <div id="prefs_tab_services_ct">
+        <h2>Services</h2>
+		<div id="endpoint"><label for="service">SPARQL Endpoint:</label></div> <!-- endpoint combo box container -->
+        <div id="shortener">
+		  <input type="checkbox" id="shortener_ep_ckb">
+		  <label for="shortener_ep_ckb" class="ckb">Shorten URIs using:</label><input id="shortener_ep"></div>
+		  <div class="expln">Virtuoso c_uri service endpoint.</div>
+      </div> <!-- #prefs_tab_services -->
+      <!-- div id="prefs_tab_deref_ct">
+        <h2>Dereferencing options</h2>
+      </div--> <!-- #prefs_tab_deref_ct -->
+    </div> <!-- #prefs_dlg -->
 
     <div id="qbe_unsupported_div">
       iSPARQL's Query By Example feature relies upon features and open standards not supported by

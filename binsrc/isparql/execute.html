@@ -38,6 +38,10 @@ function init() {
   OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result") });
 
   iSPARQL.Defaults.init();
+
+  for (i in iSPARQL.Defaults)
+    iSPARQL.Settings[i] = iSPARQL.Defaults[i];
+
   iSPARQL.StatusUI.init();
 
   var opts = OAT.Dom.uriParams();

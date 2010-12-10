@@ -283,7 +283,6 @@ ul#nav_bar {
   background-color: #999;
 }
 
-/* /tabs */
 
 img.corner {
   width: 15px;
@@ -392,7 +391,7 @@ div#virtuoso_options
 }
 
 #service{
-  width: 390px;
+  width: 320px;
 }
 
 #default-graph-uri {

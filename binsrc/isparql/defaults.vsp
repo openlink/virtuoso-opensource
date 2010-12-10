@@ -74,6 +74,13 @@
 
   if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
       pivot_installed := 'true';
+
+  declare curi_installed varchar;
+  curi_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('c_uri') is not NULL)
+	curi_installed := 'true';
+
 ?>
 {  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
    query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
@@ -91,5 +98,6 @@
    map_type: '<?= map_type ?>',
    api_key: '<?=api_key ?>',
    pivotInstalled: <?= pivot_installed ?>,
+   curiInstalled: <?= curi_installed ?>,
    setup_done: <?= setup_done ?>
 }

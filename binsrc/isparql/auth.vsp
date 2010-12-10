@@ -36,7 +36,10 @@
   }
   if (_u_password is null) goto nf;
 
-  if (DB.DBA.vsp_auth_verify_pass (vector('authtype','basic','username',_u_name,'pass',get_keyword ('pass', params,'')), _u_name,'','','','','','',_u_password))
+  if (DB.DBA.vsp_auth_verify_pass (vector('authtype','basic',
+                                          'username',_u_name,
+                                          'pass',get_keyword ('pass', params,'')), 
+                                          _u_name,'','','','','','',_u_password))
 	{
 	  http('OK');
 	  return;
