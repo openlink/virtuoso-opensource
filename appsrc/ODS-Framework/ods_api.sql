@@ -18,7 +18,7 @@
 --  in inst_name varchar,         -- desired name for the instance
 --  in owner varchar,             -- username of the owner of the instance
 --  in model int := 0,            -- refers to Membership model (Open,Closed,Invitation only,Approval based
---  in pub int := 1,              -- refers to Visible to public property
+--  in pub int := 0,              -- refers to Visible to public property
 --  in inst_descr varchar := null -- description for the instance
 --
 -- result is INTEGER (instance id)if successful, otherwise varchar - ERROR MESSAGE
