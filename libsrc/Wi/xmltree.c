@@ -9781,7 +9781,7 @@ again:
       return (ccaddr_t)((ptrlong)2);
     case DV_RDF:
       {
-        rdf_box_t *rb = (rdf_box_t *)rb;
+        rdf_box_t *rb = (rdf_box_t *)arg;
         if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
           {
             ccaddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
