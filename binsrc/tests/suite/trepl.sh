@@ -50,7 +50,7 @@ mixed=""
 grep VDB ident.txt
 if test $? -ne 0
 then 
-    LOG "No VDB in trepl,.sh"
+    LOG "No VDB in trepl.sh"
     echo "trepl.sh: The present build is not set up for VDB."
     exit
 fi
