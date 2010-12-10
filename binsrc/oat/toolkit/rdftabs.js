@@ -662,7 +662,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
 
 	obj.push ([refByIID, OAT.IRIDB.getIRI(item.back)]);
-	self.drawSpotlight(self.parent.getTitle(item),obj);
+	self.drawSpotlight(self.parent.getTitle(item),OAT.IRIDB.getIRI(item.uri),obj);
     }
 
     this.breadCrumbClickFun = function (index) {
@@ -674,9 +674,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
     this.drawBreadCrumbs = function () {
 	var bc = self.nav.breadCrumbs;
 	OAT.Dom.clear(bc);
-	var a = OAT.Dom.create("a", {className: "bc_title"});
+	var a = OAT.Dom.create("span", {className: "bc_title"});
 	a.innerHTML = "Result";
-	a.href = "#";
+//	a.href = "#";
 	a.title = "Initial query result";
 
 	OAT.Event.attach(a,"click",function() {
@@ -698,8 +698,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    else
 		a.innerHTML = self.parent.store.getCIRIorSplit(iid);
 
-	    a.title = OAT.IRIDB.getIRI(iid);
-	    a.href = "#";
+	    a.title = a.href = OAT.IRIDB.getIRI(iid);
 
 	    OAT.Event.attach (a,"click", self.breadCrumbClickFun (i));
 
@@ -857,13 +856,22 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
     }
 
-    this.drawSpotlight = function(title,obj) { /* list of resources */
+    this.drawSpotlight = function(title, uri, obj) { /* list of resources */
 	OAT.Dom.clear(self.mainDiv);
-	var h3 = OAT.Dom.create("h3",{className:"rdf_nav_title"});
-	h3.innerHTML = title;
+	var t_elm = OAT.Dom.create("h3",{className:"rdf_nav_title"});
+
+	if (uri) {
+            var a = OAT.Dom.create ("a");
+            a.href = uri;
+            a.innerHTML = title;
+            OAT.Dom.append ([t_elm, a]);
+	}
+	else 
+            t_elm.innerHTML = title;
+
 	var table = OAT.Dom.create("table",{className:"rdf_nav_spotlight"});
 	var tbody = OAT.Dom.create("tbody");
-	OAT.Dom.append([self.mainDiv,h3,table],[table,tbody]);
+	OAT.Dom.append([self.mainDiv,t_elm,table],[table,tbody]);
 	var remain = false;
 
 	for (i=0;i<obj.length;i++)
@@ -878,7 +886,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
 	/* give a list of items for navigation */
 	var obj = self.getTypeObject();
-	self.drawSpotlight("Click on a Data Entity to explore its Linked Data Web.",obj);
+	self.drawSpotlight("Click on a Data Entity to explore its Linked Data Web.",false,obj);
 	self.redrawTop();
     }
 
@@ -1095,15 +1103,15 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 
 	for (var i=0;i<cnt;i++) {
 	    var t = self.parent.data.triples[i];
-	    var triple = [OAT.IRIDB.getIRI(t[0]), OAT.IRIDB.getIRI(t[1])]
+	    var triple = [OAT.IRIDB.getIRI(t[0]), OAT.IRIDB.getIRI(t[1]), OAT.IRIDB.getIRI(t[3].iid)];
 
-	    if (t[2].isIRI()) {
-		triple.push (t[2].getIRI());
-		triple.push (1);
-	    } else {
-		triple.push (t[2].getValue());
-		triple.push(0);
-	    }
+//	    if (t[2].isIRI()) {
+//		triple.push (t[2].getIRI());
+//		triple.push (1);
+//	    } else {
+//		triple.push (t[2].getValue());
+//		triple.push(0);
+//	    }
 
 	    triples.push(triple);
 	}

@@ -31,7 +31,8 @@ OAT.RDFMini = function(div,optObj) {
 		querySearchURI:false,
 		showSearch:true,
 		imagePath:OAT.Preferences.imagePath,
-		endpoint:"/sparql?query="
+	endpoint:"/sparql?query=",
+	store: false
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 
@@ -138,7 +139,14 @@ OAT.RDFMini = function(div,optObj) {
 	var ajaxStart = function() { OAT.Dom.show(self.throbber); }
 	var ajaxEnd = function() { OAT.Dom.hide(self.throbber); }
 
-	this.store = new OAT.RDFStore(self.reset,{onstart:ajaxStart,onend:ajaxEnd});
+    if (this.options.store) {
+	this.store = this.options.store;
+	this.store.options.onstart = ajaxStart;
+	this.store.options.onend = ajaxEnd;
+	this.store.reset = this.reset;
+    }
+    else this.store = new OAT.RDFStore(this.reset,{onstart:ajaxStart,onend:ajaxEnd});
+
 	this.data = self.store.data;
 
 	this.getContent = function(data_,disabledActions) {

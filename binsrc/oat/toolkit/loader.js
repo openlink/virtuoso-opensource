@@ -1268,7 +1268,16 @@ OAT.Browser = {
     hasXmlParser: ((!!document.implementation && 
 		    !!document.implementation.createDocument) ||
 		   (!!document.getImplementation &&
-		    !!document.getImplementation().createDocument))
+		    !!document.getImplementation().createDocument)),
+
+    hasHtml5Storage: function () {
+	try {
+	    return 'localStorage' in window && window['localStorage'] !== null;
+	}
+	catch (e) {
+	    return false;
+	}
+    }
 }
 
 /**
