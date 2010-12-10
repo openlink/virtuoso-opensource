@@ -720,7 +720,7 @@ sqlg_inx_op_and_ks (sqlo_t * so, inx_op_t * and_iop, inx_op_t * iop,
   dk_set_t max_ssls = NULL;
   int nth = 0, nth_free = 0;
   int is_first = NULL == and_iop->iop_max;
-  int n_eqs;
+  int n_eqs = 0;
   nth = 0;
   sp = ks->ks_spec.ksp_spec_array;
   DO_SET (dbe_column_t *, col, &iop->iop_ks->ks_key->key_parts)
