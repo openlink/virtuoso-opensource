@@ -329,6 +329,13 @@
       <div id="hd_r">
         <a href="http://www.openlinksw.com" title="OpenLink Software"><img src="statics/openlinklogo_wstrap_2008.png" alt="[OpenLink Software]" height="80" width="191" /></a>
       </div> <!-- hd_r -->
+<?vsp
+  declare qrimg any;
+  qrimg := rdfdesc_make_qr_code (case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end);
+  if (qrimg is not null) {
+?>
+	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
+<?vsp } ?>
     </div> <!-- header -->
     <div id="content_wrapper">
     <div id="content">
@@ -458,13 +465,13 @@
 	<br />
 	<?vsp rdfdesc_virt_info (); ?>
       </div> <!-- #ft_b -->
-    </div> <!-- #footer -->
     <div>
 	<?vsp
 	   if (registry_get ('__rdf_sponge_debug') = '1')
 	     http ('Trace ID: ' || sid);
 	?>
     </div>
+    </div> <!-- #footer -->
 
     <?vsp if (isstring (registry_get ('urchinTracker'))) { ?>
     <script type="text/javascript">

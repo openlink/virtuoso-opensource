@@ -37,6 +37,7 @@ TTLP (
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
 @prefix og: <http://opengraphprotocol.org/schema/> .
+@prefix dv: <http://rdf.data-vocabulary.org/> .
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -80,6 +81,7 @@ gr:name owl:equivalentProperty foaf:name .
 <http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
 <http://www.w3.org/2007/05/powder-s#describedby> owl:equivalentProperty <http://www.iana.org/assignments/relation/describedby> .
 <http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
+dv:photo owl:equivalentProperty foaf:depiction .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -979,6 +981,26 @@ virt_proxy_init_about ()
 ;
 
 drop procedure virt_proxy_init_about;
+
+create procedure rdfdesc_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 4)
+{
+  declare qrcode_bytes, mixed_content, content varchar;
+  declare qrcode any;
+
+  if (__proc_exists ('QRcode encodeString8bit', 2) is null)
+    return null;
+
+  declare exit handler for sqlstate '*' { return null; };
+
+  content := "IM CreateImageBlob" (src_width, src_height, 'white', 'jpg');
+  qrcode := "QRcode encodeString8bit" (data_to_qrcode);
+  qrcode_bytes := aref_set_0 (qrcode, 0);
+  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale, 0, 0, cast (content as varchar), length (content));
+  mixed_content := encode_base64 (cast (mixed_content as varchar));
+  mixed_content := replace (mixed_content, '\r\n', '');
+  return mixed_content;
+}
+;
 
 create procedure rdfdesc_virt_info ()
 {
