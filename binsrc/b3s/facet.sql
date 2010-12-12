@@ -357,6 +357,7 @@ og:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasCategory> rdfs:subPropertyOf rdf:type .
+<http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
 ', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
@@ -648,7 +649,7 @@ element_split (in val any)
 ;
 
 create procedure
-fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
+fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in plain integer := 0)
 {
   declare lim, offs int;
   declare mode varchar;
@@ -710,8 +711,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
       http (sprintf (' ?s%d a ?s%dc .', this_s, this_s), txt);
       http (sprintf (' group by ?s%dc order by desc 2', this_s), post);
     }
-
-  if ('text' = mode)
+  if ('text' = mode or ('text-d' = mode and plain = 1))
     {
       declare exp any;
 
@@ -836,25 +836,6 @@ fct_cond_range (in tree any, in this_s int, in txt any)
 }
 ;
 
-create procedure
-fct_text_1 (in tree any,
-	    in this_s int,
-	    inout max_s int,
-	    in txt any,
-	    in pre any,
-	    in post any)
-{
-  declare c any;
-  declare i, len int;
-
-  c := xpath_eval ('./node()', tree, 0);
-
-  for (i := 0; i < length (c); i := i + 1)
-    {
-      fct_text (c[i], this_s, max_s, txt, pre, post);
-    }
-}
-;
 
 create procedure 
 fct_curie_iri (in curie varchar)
@@ -890,12 +871,34 @@ fct_curie (in curie varchar)
 ;
 
 create procedure
+fct_text_1 (in tree any,
+	    in this_s int,
+	    inout max_s int,
+	    in txt any,
+	    in pre any,
+	    in post any,
+            in plain integer := 0)
+{
+  declare c any;
+  declare i, len int;
+
+  c := xpath_eval ('./node()', tree, 0);
+
+  for (i := 0; i < length (c); i := i + 1)
+    {
+      fct_text (c[i], this_s, max_s, txt, pre, post, plain);
+    }
+}
+;
+
+create procedure
 fct_text (in tree any,
 	  in this_s int,
 	  inout max_s int,
 	  in txt any,
 	  in pre any,
-	  in post any)
+	  in post any,
+	  in plain integer := 0)
 {
   declare n varchar;
 
@@ -927,7 +930,7 @@ fct_text (in tree any,
   if ('query' = n)
     {
       max_s := 1;
-      fct_text_1 (tree, 1, max_s, txt, pre, post);
+      fct_text_1 (tree, 1, max_s, txt, pre, post, plain);
       return;
     }
 
@@ -965,13 +968,13 @@ fct_text (in tree any,
 	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d <%s> ?v%d } ))) .', this_s, piri, new_s), txt);
 	  max_s := max_s - 1;
 	  new_s := max_s;
-	  fct_text_1 (tree, new_s, max_s, txt, pre, post);
+	  fct_text_1 (tree, new_s, max_s, txt, pre, post, plain);
 	  return;
 	}
       else
 	{
 	  http (sprintf (' ?s%d <%s> ?s%d .', this_s, piri, new_s), txt);
-	  fct_text_1 (tree, new_s, max_s, txt, pre, post);
+	  fct_text_1 (tree, new_s, max_s, txt, pre, post, plain);
 	}
     }
 
@@ -981,7 +984,7 @@ fct_text (in tree any,
       max_s := max_s + 1;
       new_s := max_s;
       http (sprintf (' ?s%d <%s> ?s%d .', new_s, fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar)), this_s), txt);
-      fct_text_1 (tree, new_s, max_s, txt, pre, post);
+      fct_text_1 (tree, new_s, max_s, txt, pre, post, plain);
     }
 
   if ('value' = n)
@@ -996,13 +999,13 @@ fct_text (in tree any,
 
   if ('view' = n)
     {
-      fct_view (tree, this_s, txt, pre, post);
+      fct_view (tree, this_s, txt, pre, post, plain);
     }
 }
 ;
 
 create procedure
-fct_query (in tree any)
+fct_query (in tree any, in plain integer := 0)
 {
   declare s, add_graph int;
   declare txt, pre, post any;
@@ -1017,7 +1020,7 @@ fct_query (in tree any)
   if (xpath_eval ('//view[@type="graphs"]', tree) is not null)
     add_graph := 1;
 
-  fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post);
+  fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post, plain);
 
   http (' where {', pre);
   if (add_graph) http (' graph ?g { ', pre);

@@ -32,6 +32,7 @@
 <xsl:param name="p_term"/>
 <xsl:param name="o_term"/>
 <xsl:param name="t_term"/>
+<xsl:param name="p_qry"/>
 
 <xsl:template match = "facets">
 <div id="res">
@@ -209,7 +210,7 @@ function init(){
 </div> <!-- #res -->
 <script type="text/javascript">
   var sparql_a = OAT.Dom.create('a',{}, 'sparql_a');
-  sparql_a.href='sparql.vsp?q=<xsl:value-of select="urlify (/facets/sparql)"/>'
+  sparql_a.href='/sparql?qtxt=<xsl:value-of select="urlify ($p_qry)"/>'
   sparql_a.innerHTML = 'View query as SPARQL';
   OAT.Dom.append (['sparql_a_ctr',sparql_a]);
 </script>
@@ -303,14 +304,11 @@ function init(){
             </td>
 	</xsl:if>
 	    <td>
-	      <xsl:if test="'url' = column[1]/@dataview-type">
-		<a>
-		  <xsl:attribute name="href">
+	      <xsl:if test="'url' = column[1]/@datatype">
+		<a><xsl:attribute name="href">
 		    /describe/?url=<xsl:value-of select="urlify (column[1])"/>&amp;sid=<xsl:value-of select="$sid"/>
 		  </xsl:attribute>
-		  <xsl:attribute name="class">describe</xsl:attribute>
-		    Describe
-		</a>
+		  <xsl:attribute name="class">describe</xsl:attribute>Describe</a>
 	      </xsl:if>
 	      <xsl:if test="$view-type = 'properties' or $view-type = 'classes'">
 		  <input type="checkbox" name="cb" value="{position (.)}" checked="true" onclick="javascript:fct_sel_neg (this)"/>

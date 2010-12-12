@@ -482,6 +482,18 @@ b3s_uri_curie (in uri varchar)
 }
 ;
 
+create procedure b3s_prop_label (in uri any)
+{
+  declare ll varchar;
+  ll := (select top 1 __ro2sq (O) from DB.DBA.RDF_QUAD where S = __i2idn (uri) and P = __i2idn ('http://www.w3.org/2000/01/rdf-schema#label') OPTION (QUIETCAST));
+  if (length (ll) = 0)
+    ll := b3s_uri_curie (uri);
+  if (isstring (ll) and ll like 'opl%:isDescribedUsing')
+    ll := 'Described Using Terms From';  
+  return ll;
+}
+;
+
 create procedure
 b3s_trunc_uri (in s varchar, in maxlen int := 80)
 {
@@ -523,7 +535,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
    declare short_p, p_prefix, int_redirect, url any;
 
    odd_position :=  odd_position + 1;
-   p_prefix := b3s_uri_curie (p_text);
+   p_prefix := b3s_prop_label (p_text);
    url := b3s_http_url (p_text, sid);
 
    if (not length (p_text))
@@ -718,6 +730,10 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
   sprintf ('<%s&output=text%%2Fn3>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)",', desc_link);
   links := links || 
   sprintf ('<%s&output=application%%2Frdf%%2Bjson>; rel="alternate"; type="application/rdf+json"; title="Structured Descriptor Document (RDF/JSON format)",', desc_link);
+  links := links || 
+  sprintf ('<%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="Structured Descriptor Document (OData/Atom format)",', desc_link);
+  links := links || 
+  sprintf ('<%s&output=application%%2Fodata%%2Bjson>; rel="alternate"; type="application/odata+json"; title="Structured Descriptor Document (OData/JSON format)",', desc_link);
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
@@ -747,4 +763,24 @@ fct_make_selector (in subj any, in sid integer)
 {
   return null;
 }	
+;
+
+create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 4)
+{
+  declare qrcode_bytes, mixed_content, content varchar;
+  declare qrcode any;
+
+  if (__proc_exists ('QRcode encodeString8bit', 2) is null)
+    return null;
+
+  declare exit handler for sqlstate '*' { return null; };
+
+  content := "IM CreateImageBlob" (src_width, src_height, 'white', 'jpg');
+  qrcode := "QRcode encodeString8bit" (data_to_qrcode);
+  qrcode_bytes := aref_set_0 (qrcode, 0);
+  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale, 0, 0, cast (content as varchar), length (content));
+  mixed_content := encode_base64 (cast (mixed_content as varchar));
+  mixed_content := replace (mixed_content, '\r\n', '');
+  return mixed_content;
+}
 ;

@@ -33,9 +33,16 @@
    declare dbg_out any;
    declare inf_parm varchar;
   declare ses_parms varchar;
-  declare all_langs, dset any;
-  declare c_iri, iri_type, iri_uri, _F, _from varchar;
+  declare all_langs, lang_parm any;
+  declare c_iri, iri_type, iri_uri, _F, _from, topof varchar;
+  declare page, n_per_page, lim, ofs, dis_next int;
+  declare vis, printed, _skip, _last int;
+  declare all_lang any;
+  declare curr_pred any;
+  declare dt1, dt2, count_str, tbinf varchar;
 
+  n_per_page := 100;
+  dis_next := 0;
    dbg_enable := get_keyword ('dbg', params);
    if (dbg_enable = '1') 
      {
@@ -57,6 +64,12 @@
 
    b3s_parse_inf (sid, params);
    inf := b3s_render_inf_clause ();
+  tbinf := connection_get ('inf');
+  if (tbinf is not null)
+    tbinf := sprintf ('TABLE OPTION (WITH \'%s\')', tbinf);
+  else
+    tbinf := '';
+  
 
   ses_parms := b3s_render_ses_params ();
 
@@ -65,9 +78,12 @@
    host := http_request_header (http_request_header (), 'Host');  
    langs := http_request_header_full (lines, 'Accept-Language', 'en');
   all_langs := b3s_get_lang_acc (lines);
-  dset := get_keyword ('lang', params, '');
-  if (length (dset))
-    all_langs := vector (dset, 1.0);
+  lang_parm := get_keyword ('lang', params, '');
+  if (length (lang_parm))
+    {
+      all_langs := vector (lang_parm, 1.0);
+      langs := lang_parm;
+    }
    gr := get_keyword ('g', params, '');
   _from := get_keyword ('graph', params, '');
 --  dbg_obj_print_vars (gr, _F);
@@ -76,6 +92,20 @@
   else
     _F := '';
 
+   _last := atoi (get_keyword ('lp', params, '0'));
+  if ({?'prev'} is not null)  
+    page := atoi (get_keyword ('op', params, '0'));
+  else if ({?'first'} is not null)  
+    page := 0; 
+  else if ({?'last'} is not null)  
+    page := _last;
+  else if ({?'next'} is not null) 
+    page := atoi (get_keyword ('p', params, '0'));
+  else if ({?'go'} is not null) 
+    page := atoi (get_keyword ('gp', params, '1')) - 1;
+  else 
+    page := atoi (get_keyword ('p', params, '1')) - 1;
+  --topof := '';
   b3s_dbg_out (dbg_out, 'sid     : ' || sid);
   b3s_dbg_out (dbg_out, 'gr      : ' || gr);
 
@@ -178,7 +208,7 @@
   __res_desc := b3s_uri_curie(page_resource_uri);
   fct_links_hdr (_S, rdf_link);
   if (not length (label))
-    label := page_resource_uri;
+    label := b3s_trunc_uri (page_resource_uri);
   --http_flush (1);
 ?>
 <head>
@@ -225,7 +255,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h2>
+	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&sid=<?V sid ?>&sp=1" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity"/></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
@@ -253,7 +283,12 @@
      href="/fct/facet.vsp?cmd=new_with_class&iri=<?/ _ciri ?>">Start faceted browsing from this Type</a>
 <?vsp
   } 
+  declare qrimg any;
+  qrimg := fct_make_qr_code (case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end);
+  if (qrimg is not null) {
 ?>
+	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
+<?vsp } ?>
       </div>
         </div>
 <?vsp 
@@ -274,68 +309,107 @@ if (_subject <> '') {
       <table class="description">
 
 <?vsp
-      declare vis, printed int;
-      declare all_lang any;
-      declare curr_pred any;
 
       if (connection_get ('s_term') = 's')
         http ('<tr><th class="property">Properties</th><th class="value">Objects</th></tr>');
       else
         http ('<tr><th class="property">Attributes</th><th class="value">Values</th></tr>');
       all_lang := vector ('*', 1.0);
+      topof := sprintf (' TOP %d, %d  ', n_per_page * page, n_per_page);
+      _skip := n_per_page * page;
+
+      if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
+      { 
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%S> ?p ?o }  order by 1) sp1', inf, _F, _S);
+      }
+      else
+      {
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) ORDER BY 1 ASC OPTION (QUIETCAST)) sp1', tbinf, _S);
+      }
+      dt2 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 1 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
+
+      --topof := '';
+      qry_str := sprintf ('select %s PRED, OBJECT, FLAG from (%s UNION ALL %s) un0', topof, dt1, dt2);
+      --dbg_printf ('%s', qry_str);
+      if (_last = 0)
+        { 
+	  if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
+            {
+	      dt1 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%S> ?p ?o }  order by 1) sp1', inf, _F, _S);
+	    }
+          else
+	    {
+              dt1 := sprintf ('select count(*) as cnt from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) ORDER BY 1 ASC OPTION (QUIETCAST)) sp1', tbinf, _S);
+	    }
+	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
+	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
+	  --dbg_printf ('%s', count_str);
+	  exec (count_str, null, null, vector (), 0, meta, data);
+	  _last := data[0][0]; -- sum is supposed to have always number
+	  _last := _last / n_per_page;
+        }
       
-      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%S> ?p ?o }  order by 1) sp', inf, _F, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
       curr_pred := '';
+      inx := 0;
       while (0 = exec_next (h1, null, null, data))	
 	{
-           declare PRED, OBJECT any;
+           declare PRED, OBJECT, FLAG any;
+	   --if (inx <= _skip)
+	   --  goto nxt1;
 	   pred := data[0];  
            object := data[1];
+           FLAG := data[2];
 	   if (not length (PRED))
 	     goto nxt1;
 
 	   if (curr_pred <> pred)
 	     {
                if (curr_pred <> '') http ('</ul></td></tr>');
-	       b3s_http_print_l (PRED, odd_position, 0, sid);
+	       b3s_http_print_l (PRED, odd_position, flag, sid);
 	       curr_pred := pred;
 	     }
            vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_langs, _from);
 	   nxt1:;
-	}
-      exec_close (h1);
-      if (curr_pred <> '') http ('</ul></td></tr>');
-
-      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp', inf, _F, _S);
-      exec (qry_str, null, null, vector (), 0, null, null, h1); 
-      inx := 0;	
-      curr_pred := '';
-      while (0 = exec_next (h1, null, null, data))	
-	{
-           declare PRED, OBJECT any;
-	   PRED := data[0];  
-	   OBJECT := data[1];
 	   inx := inx + 1;
-	   if (not length (PRED))
-	     goto nxt2;
-	   if (curr_pred <> pred)
-		  {	
-               if (curr_pred <> '') http ('</ul></td></tr>');
-	       b3s_http_print_l (PRED, odd_position, 1, sid);
-	       curr_pred := pred;
-	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 0, all_langs, _from);
-	   nxt2:;
 	}
       exec_close (h1);
       if (curr_pred <> '') http ('</ul></td></tr>');
+--      dbg_obj_print (inx);
+      if (inx < n_per_page)
+        dis_next := 1;
+
        if  (odd_position = 0)
 	 {
 	    http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
 	 }
 ?>
       </table>
+      <div id="nav">
+	  <form action="/describe/" method="get">
+	      <input type="hidden" name="url" value="<?V gr ?>" />
+	      <input type="hidden" name="p" value="<?V page + 1 ?>"/>
+	      <?vsp if (sid is not null) { ?>
+	      <input type="hidden" name="sid" value="<?V sid ?>"/>
+	      <?vsp } ?>
+	      <input type="hidden" name="lp" value="<?V _last ?>"/>
+	      <?vsp if (topof <> '' and _last > 0) {  if (1 or page > 0) { ?>   
+	      <button type="submit" value="" name="first" <?vsp if (page <= 0) { http ('disabled="true"'); } ?>>&#9666;&#9666; First</button>
+	      &nbsp;
+	      <input type="hidden" name="op" value="<?V page - 1 ?>"/>
+	      <button type="submit" value="" name="prev" <?vsp if (page <= 0) { http ('disabled="true"'); } ?>>&#9666; Prev</button>
+	      &nbsp;&nbsp;&nbsp;
+	<?vsp } if (1 or not dis_next) { ?>   
+	      <button type="submit" value="" name="next" <?vsp if (dis_next) { http ('disabled="true"'); } ?>>Next &#9656;</button>
+	       &nbsp;
+	      <button type="submit" value="" name="last" <?vsp if (dis_next) { http ('disabled="true"'); } ?>>Last &#9656;&#9656;</button>
+	       &nbsp;&nbsp;&nbsp;
+	       Page <?V page + 1 ?> of <?V _last + 1 ?>  &nbsp;&nbsp;&nbsp;
+	       <input type="text" value="<?V page + 1 ?>" size="5" name="gp" /> &nbsp; 
+	       <button type="submit" value="" name="go">Go</button>
+	<?vsp } } ?>
+	</form>
+      </div>
     </div> <!--  #MD -->
     <?vsp b3s_render_dbg_out (dbg_out); ?>
 <!-- footer -->
@@ -345,8 +419,11 @@ if (_subject <> '') {
         <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
         &nbsp; &nbsp; Raw Data in:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">NTriples</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">RDF/XML</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">RDF/JSON</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">RDF/JSON</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">OData/Atom</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">OData/JSON</a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
@@ -355,7 +432,15 @@ if (_subject <> '') {
         <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]"></a>
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" border="0"></a>
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" 
-	    src="/fct/images/creativecommons.png" /></a><br />
+	    src="/fct/images/creativecommons.png" /></a>
+	<span about=""
+	resource="http://www.w3.org/TR/rdfa-syntax"
+	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
+	<a href="http://validator.w3.org/check?uri=referer"><img
+	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
+	    alt="Valid XHTML + RDFa" height="27" /></a>
+	</span>
+	<br />
 	This work is licensed under a 
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
 	<?vsp fct_virt_info (); ?><br /> 
