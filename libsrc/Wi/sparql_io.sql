@@ -1391,7 +1391,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'JSON;ODATA')
         DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
       else if (ret_format = 'CXML')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, status);
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 0, status);
+      else if (ret_format = 'CXML;QRCODE')
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 1, status);
       else if (ret_format = 'CSV')
         DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
       else if (ret_format = 'SOAP')
@@ -1524,7 +1526,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       http ('\n</rdf:RDF>', ses);
       goto body_complete;
     }
-  if (ret_format = 'CXML')
+  if ((ret_format = 'CXML') or (ret_format = 'CXML;QRCODE'))
     {
       DB.DBA.SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, add_http_headers, status);
       goto body_complete;
@@ -1749,7 +1751,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
   declare dflt_graphs, named_graphs any;
-  declare paramctr, paramcount, qry_params, maxrows, can_sponge, can_cxml, start_time integer;
+  declare paramctr, paramcount, qry_params, maxrows, can_sponge, can_cxml, can_qrcode, start_time integer;
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
@@ -1871,6 +1873,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
       where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
   can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
+  can_qrcode := isstring (__proc_exists ('QRcode encodeString8bit', 2));
 
   paramcount := length (params);
 
@@ -1921,7 +1924,11 @@ http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');
 http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
 http('    format.options[8] = new Option(\'CSV\',\'text/csv\');\n');
 if (can_cxml)
-  http('    format.options[9] = new Option(\'CXML\',\'text/cxml\');\n');
+  {
+    http('    format.options[9] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+    if (can_qrcode)
+      http('    format.options[10] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+  }
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -1939,7 +1946,7 @@ http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n
 http('    format.options[8] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
 if (can_cxml)
-  http('    format.options[10] = new Option(\'CXML\',\'text/cxml\');\n');
+  http('    format.options[10] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 1;\n');
 http('  }\n');
@@ -2022,10 +2029,16 @@ http('			    <option value="text/plain">NTriples</option>\n');
 http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
 http('			    <option value="text/csv">CSV</option>\n');
 if (can_cxml)
+  {
   http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
+    if (can_qrcode)
+      http('			    <option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
+  }
 http('			  </select>\n');
 if (not can_cxml)
   http('&nbsp;<font size="-1"><i>(The&nbsp;CXML&nbsp;output&nbsp;is&nbsp;disabled,&nbsp;see&nbsp;<a href="/sparql?help=enable_cxml">details</a>)</i></font>\n');
+else if (not can_qrcode)
+  http('&nbsp;<font size="-1"><i>(The&nbsp;QRcode&nbsp;output&nbsp;is&nbsp;disabled,&nbsp;no&nbsp;&quot;qrcode&quot;&nbsp;plugin&nbsp;found</a>)</i></font>\n');
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
 if (save_dir is not null)
 {
@@ -2202,6 +2215,8 @@ http('</html>\n');
         when 'rdf' then 'application/rdf+xml'
         when 'n3' then 'text/rdf+n3'
         when 'cxml' then 'text/cxml'
+        when 'cxml+qrcode' then 'text/cxml+qrcode'
+        when 'csv' then 'text/csv'
         else format
       end);
   }
@@ -2774,6 +2789,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       when 'rdf' then 'application/rdf+xml'
       when 'n3' then 'text/rdf+n3'
       when 'cxml' then 'text/cxml'
+      when 'cxml+qrcode' then 'text/cxml+qrcode'
       when 'csv' then 'text/csv'
       else _format
       end);
@@ -2792,6 +2808,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/soap+xml') is not null or
       strcasestr (accept, 'application/rdf+turtle') is not null or
       strcasestr (accept, 'text/cxml') is not null or
+      strcasestr (accept, 'text/cxml+qrcode') is not null or
       strcasestr (accept, 'text/csv') is not null
      )
     {

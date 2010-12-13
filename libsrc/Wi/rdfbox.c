@@ -1860,7 +1860,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (24*2,
+      tmp = (caddr_t *)list (25*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -1883,8 +1883,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/odata+json"		, "JSON;ODATA"	, /* 19 */
         "text/rdf+nt"				, "NT"		, /* 20 */
         "text/plain"				, "NT"		, /* 21 */
-        "text/cxml"				, "CXML"	, /* 22 */
-        "text/csv"				, "CSV" /* 23 Increase count in this list() call when add more MIME types! */ );
+        "text/cxml+qrcode"			, "CXML"	, /* 22 */
+        "text/cxml"				, "CXML"	, /* 23 */
+        "text/csv"				, "CSV" /* 24 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -1893,7 +1894,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (25*2,
+      tmp = (caddr_t *)list (26*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -1917,8 +1918,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/atom+xml"			, "ATOM;XML"	, /* 20 */
         "application/odata+json"		, "JSON;ODATA"	, /* 21 */
         "application/sparql-results+xml"	, "XML"		, /* 22 */
-        "text/cxml"				, "CXML"	, /* 23 */
-        "text/csv"				, "CSV" /* 24 Increase count in this list() call when add more MIME types! */ );
+        "text/cxml+qrcode"			, "CXML;QRCODE"	, /* 23 */
+        "text/cxml"				, "CXML"	, /* 24 */
+        "text/csv"				, "CSV" /* 25 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
