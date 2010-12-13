@@ -39,7 +39,7 @@
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
-  declare dt1, dt2, count_str, tbinf varchar;
+  declare dt1, dt2, count_str, tbinf, ua varchar;
 
   n_per_page := 100;
   dis_next := 0;
@@ -77,6 +77,7 @@
   if (host is null)
    host := http_request_header (http_request_header (), 'Host');  
    langs := http_request_header_full (lines, 'Accept-Language', 'en');
+  ua :=   http_request_header (lines, 'User-Agent');
   all_langs := b3s_get_lang_acc (lines);
   lang_parm := get_keyword ('lang', params, '');
   if (length (lang_parm))
@@ -284,8 +285,8 @@
 <?vsp
   } 
   declare qrimg any;
-  qrimg := fct_make_qr_code (case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end);
-  if (qrimg is not null) {
+  qrimg := fct_make_qr_code ('http://' || host || b3s_http_url (page_resource_uri));
+  if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
 ?>
 	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
