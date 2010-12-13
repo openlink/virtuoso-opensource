@@ -710,6 +710,18 @@ create aggregate DB.DBA.VECTOR_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
 ;
 
+create aggregate DB.DBA.VECTOR_OF_NONNULLS_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vectorbld_agg_final
+;
+
+create aggregate DB.DBA.VECTOR_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vector_or_null_bld_agg_final
+;
+
+create aggregate DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vector_or_null_bld_agg_final
+;
+
 -- same as vector agg but does not force query to produce deterministic result order
 create aggregate DB.DBA.BAG_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
