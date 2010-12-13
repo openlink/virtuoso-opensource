@@ -2443,8 +2443,8 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
   if ((NULL != inf_ctx) && (SPAR_QNAME == SPART_TYPE (predicate)))
         {
       caddr_t p_name = predicate->_.qname.val;
-      caddr_t *propprops = sparp->sparp_env->spare_inference_ctx->ric_prop_props;
-      caddr_t *invlist = sparp->sparp_env->spare_inference_ctx->ric_inverse_prop_pair_sortedalist;
+      caddr_t *propprops = inf_ctx->ric_prop_props;
+      caddr_t *invlist = inf_ctx->ric_inverse_prop_pair_sortedalist;
       if (NULL != propprops)
         {
           int propproplen = BOX_ELEMENTS (propprops);
