@@ -658,6 +658,7 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcall.xsl \
 	$(srcdir)/rdf_net.sql \
 	$(srcdir)/simile.sql \
+	$(srcdir)/xrd2json.xsl \
 	$(srcdir)/http_auth.sql \
 	$(srcdir)/xmla.sql \
 	$(srcdir)/openxml.sql \
