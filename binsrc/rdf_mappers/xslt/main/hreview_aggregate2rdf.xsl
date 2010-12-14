@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
  -
  -  $Id$
@@ -39,27 +39,26 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
   <xsl:variable name="docproxyIRI"
   select="vi:docproxyIRI($baseUri)" />
   <xsl:template match="/">
-  <rdf:RDF>
-	<xsl:apply-templates />
-  </rdf:RDF>
-</xsl:template>
+    <rdf:RDF>
+      <xsl:apply-templates />
+    </rdf:RDF>
+  </xsl:template>
   <xsl:template match="*">
     <xsl:variable name="hreview">
       <xsl:call-template name="testclass">
-        <xsl:with-param name="val" select="'hreview'" />
+        <xsl:with-param name="val" select="'hreview-aggregate'" />
       </xsl:call-template>
     </xsl:variable>
     <xsl:if test="$hreview != 0">
       <rdf:Description rdf:about="{$docproxyIRI}">
-        <foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('hreview', position()))}" />
+        <foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('hreview-aggregate', position()))}" />
       </rdf:Description>
-      <review:Review rdf:about="{vi:proxyIRI ($baseUri, '', concat('hreview', position()))}">
-
+      <review:Review rdf:about="{vi:proxyIRI ($baseUri, '', concat('hreview-aggregate', position()))}">
         <xsl:apply-templates mode="extract-hreview" />
-  </review:Review>
+      </review:Review>
     </xsl:if>
     <xsl:apply-templates />
-</xsl:template>
+  </xsl:template>
   <xsl:template match="comment()|processing-instruction()|text()" />
   <!-- ============================================================ -->
   <xsl:template match="*" mode="extract-hreview">
@@ -67,10 +66,20 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
       <xsl:call-template name="testclass">
         <xsl:with-param name="val" select="'version'" />
       </xsl:call-template>
-  </xsl:variable>
+    </xsl:variable>
     <xsl:variable name="summary">
       <xsl:call-template name="testclass">
         <xsl:with-param name="val" select="'summary'" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="count">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'count'" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="votes">
+      <xsl:call-template name="testclass">
+        <xsl:with-param name="val" select="'votes'" />
       </xsl:call-template>
     </xsl:variable>
     <xsl:variable name="reviewer">
@@ -122,18 +131,28 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
         <xsl:value-of select="." />
       </review:version>
     </xsl:if>
+    <xsl:if test="$count != 0">
+      <review:totalVotes>
+        <xsl:value-of select="." />
+      </review:totalVotes>
+    </xsl:if>
+    <xsl:if test="$votes != 0">
+      <review:positiveVotes>
+        <xsl:value-of select="." />
+      </review:positiveVotes>
+    </xsl:if>
     <xsl:if test="$summary != 0">
       <dc:description>
         <xsl:value-of select="." />
       </dc:description>
     </xsl:if>
     <xsl:if test="$reviewer != 0 and a/@href">
-	<review:reviewer>
+		<review:reviewer>
 		  <foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', concat('reviewer', .))}">
 			<foaf:name><xsl:value-of select="."/></foaf:name>
 			<bibo:uri rdf:resource="{a/@href}"/>
-	  </foaf:Person>
-	</review:reviewer>
+		  </foaf:Person>
+		</review:reviewer>
     </xsl:if>
     <xsl:if test="$dtreviewed != 0">
       <dcterms:modified>
@@ -164,7 +183,7 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
       </review:license>
     </xsl:if>
     <xsl:apply-templates mode="extract-hreview" />
-</xsl:template>
+  </xsl:template>
   <xsl:template match="comment()|processing-instruction()|text()"
   mode="extract-hreview" />
   <!-- ============================================================ -->
@@ -183,7 +202,7 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
   </xsl:template>
   <xsl:template match="comment()|processing-instruction()|text()"
   mode="extract-item" />
-
+  
   <xsl:template name="testclass">
     <xsl:param name="class" select="@class" />
     <xsl:param name="val" select="''" />

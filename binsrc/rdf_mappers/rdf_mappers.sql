@@ -643,7 +643,11 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
-    values ('hReview', 'http://dannyayers.com/micromodels/profiles/hreview', registry_get ('_rdf_mappers_path_') || 'xslt/main/hreview2rdf.xsl')
+    values ('hReview', 'http://microformats.org/wiki/hreview', registry_get ('_rdf_mappers_path_') || 'xslt/main/hreview2rdf.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hReview-aggregate', 'http://microformats.org/wiki/hreview-aggregate', registry_get ('_rdf_mappers_path_') || 'xslt/main/hreview_aggregate2rdf.xsl')
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
