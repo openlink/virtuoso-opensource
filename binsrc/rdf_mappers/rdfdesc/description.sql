@@ -982,6 +982,18 @@ virt_proxy_init_about ()
 
 drop procedure virt_proxy_init_about;
 
+create procedure rdfdesc_make_curie (in url varchar, in lines any)
+{
+  declare curie, chost, dhost varchar;
+  if (__proc_exists ('WS.CURI.curi_make_curi') is null)
+    return url;
+  curie := WS.CURI.curi_make_curi (url);
+  dhost := registry_get ('URIQADefaultHost');
+  chost := http_request_header(lines, 'Host', null, dhost);
+  return sprintf ('http://%s/c/%s', chost, curie);
+}
+;
+
 create procedure rdfdesc_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 4)
 {
   declare qrcode_bytes, mixed_content, content varchar;

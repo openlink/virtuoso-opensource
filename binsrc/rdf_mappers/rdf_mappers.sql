@@ -6249,7 +6249,7 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
          inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
     declare get_uri, body, dbpiri any;
-    declare code, base any;
+    declare code, base, primary_topic, doc_iri any;
     get_uri := split_and_decode (new_origin_uri, 0, '\0\0/');
     get_uri := get_uri[length (get_uri) - 1];
     get_uri := split_and_decode (get_uri)[0];
@@ -6267,9 +6267,12 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 	        <foaf:Document rdf:about=\"%s\">
             <foaf:primaryTopic rdf:resource=\"http://dbpedia.org/resource/%U\"/>
             </foaf:Document>
-            </rdf:RDF>', new_origin_uri, get_uri);
+            </rdf:RDF>', RDF_SPONGE_PROXY_IRI (new_origin_uri), get_uri);
 	--body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
 	--delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (coalesce (dest, graph_iri));
+	primary_topic := DB.DBA.RDF_PROXY_ENTITY_IRI (graph_iri);
+	doc_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+	update DB.DBA.RDF_QUAD set P = iri_to_id ('http://xmlns.com/foaf/0.1/topic') where G = iri_to_id (coalesce (dest, graph_iri)) and P = iri_to_id ('http://xmlns.com/foaf/0.1/primaryTopic') and S = iri_to_id (doc_iri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
       }
     if (base is not null and isstring (file_stat (base)) and __proc_exists ('php_str', 2) is not null)

@@ -5,7 +5,7 @@
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
-   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn varchar;
+   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn, ua varchar;
    declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn, expir int;
 
    set http_charset='utf-8';
@@ -25,6 +25,9 @@
    sponge_type := '';
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    host := http_request_header (http_request_header (), 'Host');
+   ua :=   http_request_header (http_request_header (), 'User-Agent');
+   if (not isstring (ua))
+     ua := null;
    langs := rdfdesc_get_lang_acc (lines);
    gr := get_keyword ('g', params, '');
    if (gr like '%?debug=on' or gr like '%&debug=on')
@@ -331,8 +334,9 @@
       </div> <!-- hd_r -->
 <?vsp
   declare qrimg any;
-  qrimg := rdfdesc_make_qr_code (case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end);
-  if (qrimg is not null) {
+  qrimg := rdfdesc_make_qr_code (rdfdesc_make_curie (case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end, lines));
+  if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
+    
 ?>
 	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
