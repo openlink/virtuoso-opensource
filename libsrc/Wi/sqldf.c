@@ -3339,7 +3339,7 @@ int sprintff_is_proven_bijection (const char *f);
 static const char *
 sqlo_is_call_invertible_sprintf (ST *st)
 {
-  const char *ret;
+  const char *ret = NULL;
   caddr_t arg1;
   if (casemode_strncmp (st->_.call.name, "__spf", 5))
     return NULL;
