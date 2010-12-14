@@ -1751,7 +1751,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
   declare dflt_graphs, named_graphs any;
-  declare paramctr, paramcount, qry_params, maxrows, can_sponge, can_cxml, can_qrcode, start_time integer;
+  declare paramctr, paramcount, qry_params, maxrows, can_sponge, can_cxml, can_pivot, can_qrcode, start_time integer;
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
@@ -1764,7 +1764,18 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare save_mode, save_dir, fname varchar;
   declare save_dir_id any;
   declare help_topic varchar;
-  -- dbg_obj_princ (path, params, lines);
+  -- dbg_obj_princ ('===============');
+  -- dbg_obj_princ ('===============');
+  -- dbg_obj_princ ('===============');
+  -- dbg_obj_princ ('WS.WS."/!sparql/" (', path, params, lines, ')');
+  for (declare i int, i := 0; i < length (params); i := i + 2)
+    {
+      declare vn, vv varchar;
+      vn := params[i];
+      vv := params[i+1];
+      if (not (isstring (vv)) or (vv <> ''))
+        connection_set ('SPARQL_' || vn, vv);
+    }
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
       __debug_mode := 1;
@@ -1873,6 +1884,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
       where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
   can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
+  can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
   can_qrcode := isstring (__proc_exists ('QRcode encodeString8bit', 2));
 
   paramcount := length (params);
@@ -2035,6 +2047,29 @@ if (can_cxml)
       http('			    <option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
   }
 http('			  </select>\n');
+if (can_cxml)
+  {
+http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
+http('			  <label for="redir_for_subjs" class="n">Style&nbsp;for&nbsp;RDF&nbsp;subjects:</label>\n');
+http('			  <select name="CXML_redir_for_subjs">\n');
+http('			    <option value="" selected="selected">Convert to string facets</option>\n');
+http('			    <option value="121">Make Plain Links</option>\n');
+if (can_pivot is not null)
+  http('			    <option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\n');
+http('			    <option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\n');
+http('			    <option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\n');
+http('			  </select>\n');
+http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
+http('			  <label for="redir_for_hrefs" class="n">Style&nbsp;for&nbsp;other&nbsp;links:</label>\n');
+http('			  <select name="CXML_redir_for_hrefs">\n');
+http('			    <option value="">Convert to string facets</option>\n');
+http('			    <option value="121" selected="selected">Make Plain Links</option>\n');
+if (can_pivot is not null)
+  http('			    <option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\n');
+http('			    <option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\n');
+http('			    <option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\n');
+http('			  </select>\n');
+  }
 if (not can_cxml)
   http('&nbsp;<font size="-1"><i>(The&nbsp;CXML&nbsp;output&nbsp;is&nbsp;disabled,&nbsp;see&nbsp;<a href="/sparql?help=enable_cxml">details</a>)</i></font>\n');
 else if (not can_qrcode)
