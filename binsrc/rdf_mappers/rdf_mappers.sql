@@ -4133,7 +4133,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 	else
 		return 0;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-        
+	commit work; 
 	if (id0 = 'music')
 	{
 		if (id1 is not null and id1 <> '')
@@ -8118,6 +8118,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	  spmode := tmp;
         }	  
     }  
+  set isolation='committed';
   labels := DB.DBA.RM_GET_LABELS_INIT (dest, graph, new_origin_uri, options);
   for select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS, MC_API_TYPE 
     from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
