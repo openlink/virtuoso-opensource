@@ -1769,7 +1769,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
   SPART *triple;
   int s_ctr;
   spar_selid_push_reused (sparp, uname__ref);
-  t_set_push (&(sparp->sparp_env->spare_context_gp_subtypes), (ptrlong)WHERE_L);
+  t_set_push (&(sparp->sparp_env->spare_context_gp_subtypes), (caddr_t)((ptrlong)WHERE_L));
   triple = spar_make_plain_triple (sparp,
     spar_make_fake_blank_node (sparp),
     NULL,
@@ -1828,7 +1828,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
   SPART *agg_call;
   SPART *var_vector_expn;
   SPART *var_vector_arg;
-  SPART **opts;
+  dk_set_t opts_revlist = NULL;
   caddr_t limofs_name;
   const char *descr_name;
   int need_limofs_trick = (
@@ -1864,7 +1864,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
       (SPART **)t_list (1, var_vector_arg ) );
   if (NULL != sparp->sparp_env->spare_describe_mode)
     {
-      int phys_only = spar_describe_restricted_by_physical (sparp, retvals);
+      int phys_only = ((NULL == sparp->sparp_env->spare_inference_name) && spar_describe_restricted_by_physical (sparp, retvals));
       if (phys_only)
         descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s_PHYSICAL", sparp->sparp_env->spare_describe_mode);
       else
@@ -1877,12 +1877,23 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
   else
     good_graphs = (SPART *)t_box_num_nonull (0);
   bad_graphs = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_NOT_FROM, SPART_GRAPH_NOT_GROUP, SPART_GRAPH_NOT_NAMED, 0x0, NULL);
-  if (NULL == sparp->sparp_gs_app_callback)
-    opts = (SPART **)t_list (2, t_box_dv_short_string ("uid"), spar_boxed_exec_uid (sparp));
-  else
-    opts = (SPART **)t_list (6, t_box_dv_short_string ("uid"), spar_boxed_exec_uid (sparp),
-      t_box_dv_short_string ("gs-app-callback"), sparp->sparp_gs_app_callback,
-      t_box_dv_short_string ("gs-app-uid"), ((NULL == sparp->sparp_gs_app_uid) ? t_NEW_DB_NULL : sparp->sparp_gs_app_uid) );
+  t_set_push (&opts_revlist, t_box_dv_short_string ("uid"));
+  t_set_push (&opts_revlist, spar_boxed_exec_uid (sparp));
+  if (NULL != sparp->sparp_gs_app_callback)
+    {
+      t_set_push (&opts_revlist, t_box_dv_short_string ("gs-app-callback"));
+      t_set_push (&opts_revlist, sparp->sparp_gs_app_callback );
+    }
+  if (NULL != sparp->sparp_gs_app_uid)
+    {
+      t_set_push (&opts_revlist, t_box_dv_short_string ("gs-app-uid"));
+      t_set_push (&opts_revlist, sparp->sparp_gs_app_uid);
+    }
+  if (NULL != sparp->sparp_env->spare_inference_name)
+    {
+      t_set_push (&opts_revlist, t_box_dv_short_string ("inference"));
+      t_set_push (&opts_revlist, sparp->sparp_env->spare_inference_name);
+    }
   descr_call = spar_make_funcall (sparp, 0, descr_name,
       (SPART **)t_list (6,
         agg_call,
@@ -1891,7 +1902,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
         good_graphs,
         bad_graphs,
         sparp->sparp_env->spare_storage_name,
-        spar_make_funcall (sparp, 0, "bif:vector", opts) ) ); /*!!!TBD describe options will be added here */
+        spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_revlist_to_array (opts_revlist)) ) ); /*!!!TBD describe options will be added here */
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
       spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
@@ -2125,7 +2136,7 @@ spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv)
                   break;
                 }
               var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-              var->_.var.rvr.rvrFixedValue = datum;
+              var->_.var.rvr.rvrFixedValue = (ccaddr_t)datum;
               break;
             }
         }
@@ -4044,7 +4055,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
         storage_name = t_box_dv_uname_string (storage_name);
       sparp.sparp_storage = sparp_find_storage_by_name (storage_name);
       t_set_push (&(spare.spare_selids), t_box_dv_short_string (fname));
-      t_set_push (&(spare.spare_context_gp_subtypes), (ptrlong)WHERE_L);
+      t_set_push (&(spare.spare_context_gp_subtypes), (caddr_t)((ptrlong)WHERE_L));
       triple = spar_make_plain_triple (&sparp,
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_GRAPH_IDX]		, (int)(flags & 1)),
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_SUBJECT_IDX]	, (int)(flags & 1)),

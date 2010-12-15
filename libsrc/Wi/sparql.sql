@@ -6024,12 +6024,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
-  declare gs_app_callback, gs_app_uid varchar;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
   declare rdf_type_iid IRI_ID;
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
     gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -6073,7 +6074,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
-  else if ('' = storage_name)
+  else if (('' = storage_name) and (inf_ruleset is null))
     {
       for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
         {
@@ -6100,7 +6101,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
       maps_len := length (maps);
-      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
           if (isiri_id (s))
             {
@@ -6135,12 +6136,12 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, in res any', ses);
           if (graphs_listed)
             http (', inout sorted_good_graphs any', ses);
           http (')\n', ses);
@@ -6152,6 +6153,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
             {
               http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
             }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
           http ('select ?g1 ?p1 ?o1\n', ses);
           http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
@@ -6159,7 +6162,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
               if (map_ctr > 0) http ('              union\n', ses);
               http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
-          http ('            } } ) do { ', ses);
+          http ('            } } ) do {\n', ses);
           if (graphs_listed)
             http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
@@ -6291,12 +6294,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
-  declare gs_app_callback, gs_app_uid varchar;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
   declare rdf_type_iid IRI_ID;
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
     gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -6340,7 +6344,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
-  else if ('' = storage_name)
+  else if (('' = storage_name) and (inf_ruleset is null))
     {
       for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
         {
@@ -6367,7 +6371,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
       maps_len := length (maps);
-      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
           if (isiri_id (s))
             {
@@ -6402,12 +6406,12 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, in res any', ses);
           if (graphs_listed)
             http (', inout sorted_good_graphs any', ses);
           http (')\n', ses);
@@ -6419,6 +6423,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
             {
               http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
             }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
           http ('select ?g1 ?p1 ?o1\n', ses);
           http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
@@ -6426,9 +6432,9 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
               if (map_ctr > 0) http ('              union\n', ses);
               http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
-          http ('            } } ) do { ', ses);
+          http ('            } } ) do {\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g1", sorted_good_graphs))\n', ses);
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
@@ -6661,12 +6667,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT_CBD (in subj_dict any, in consts any, i
 {
   declare all_subjs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, next_iter_subjs, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
-  declare gs_app_callback, gs_app_uid varchar;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
   declare rdf_type_iid IRI_ID;
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
     gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -6715,7 +6722,7 @@ next_iteration:
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
-  else if ('' = storage_name)
+  else if (('' = storage_name) and (inf_ruleset is null))
     {
       for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
         {
@@ -6742,7 +6749,7 @@ next_iteration:
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, id_to_iri (s), ' maps = ', maps);
       maps_len := length (maps);
-      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
           if (isiri_id (s))
             {
@@ -6777,12 +6784,12 @@ next_iteration:
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_CBD_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      fname := sprintf ('SPARQL_DESC_DICT_CBD_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout subj_dict any, inout next_iter_subjs any, inout res any', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, in subj_dict any, in next_iter_subjs any, in res any', ses);
           if (graphs_listed)
             http (', inout sorted_good_graphs any', ses);
           http (')\n', ses);
@@ -6794,6 +6801,8 @@ next_iteration:
             {
               http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
             }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
           http ('select ?g1 ?p1 ?o1 ?g2 ?st2\n', ses);
           http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
@@ -6804,20 +6813,19 @@ next_iteration:
           http ('            }\n', ses);
           http ('          optional { graph ?g2 {\n', ses);
           http ('                  ?st2 a rdf:Statement ; rdf:subject ?:subj_iri ; rdf:predicate ?p1 ; rdf:object ?o1 } }\n', ses);
-          http (' } ) do { ', ses);
-          http ('            } } ) do { ', ses);
+          http ('            } ) do {\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g1", sorted_good_graphs)) {\n', ses);
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1);\n', ses);
           http ('      if (isiri_id ("o1") and "o1" > min_bnode_iri_id() and dict_get (subj_dict, "o1") is null)\n', ses);
           http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g2", sorted_good_graphs)) {\n', ses);
+            http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
           http ('      if ("st2" is not null and dict_get (subj_dict, "st2") is null)\n', ses);
           http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
           if (graphs_listed)
             http ('        } }\n', ses);
-          http ('      } } }\n', ses);
+          http ('      } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
 	  saved_user := user;
