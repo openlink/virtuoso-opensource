@@ -579,6 +579,124 @@ function destinationChange(obj, actions) {
   }
 }
 
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
+
+// progress bar
+var progressTimer = null;
+var progressID = null;
+var progressMax = null;
+var progressSize = 40;
+var progressInc = 100 / progressSize;
+
+function stopState()
+{
+  progressTimer = null;
+  var x = function (data) {
+    doPost ('F1', 'btn_Background');
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=stop&id="+progressID+urlParam("sid")+urlParam("realm"), x, {async: false});
+}
+
+function initState()
+{
+  progressTimer = null;
+  var x = function (data) {
+    try {
+      var xml = OAT.Xml.createXmlDoc(data);
+      progressID = OAT.Xml.textValue(xml.getElementsByTagName('id')[0]);
+    } catch (e) {}
+
+    createProgressBar();
+    progressTimer = setTimeout("checkState()", 500);
+
+    document.forms['F1'].action = 'home.vspx';
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=init"+urlParam("sid")+urlParam("realm")+urlParam("i_type")+urlParam("i_data")+urlParam("i_options")+urlParam("i_validation"), x, {async: false});
+}
+
+function checkState()
+{
+  var x = function (data) {
+    var progressIndex;
+    try {
+      var xml = OAT.Xml.createXmlDoc(data);
+      progressIndex = OAT.Xml.textValue(xml.getElementsByTagName('index')[0]);
+    } catch (e) { }
+
+    showProgress (progressIndex);
+
+    if ((progressIndex != null) && (progressIndex != progressMax)) {
+      setTimeout("checkState()", 500);
+    } else {
+      progressTimer = null;
+      $('btn_Stop').click();
+    }
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParam("sid")+urlParam("realm"), x);
+}
+
+function createProgressBar()
+{
+  progressMax = $('progressMax').innerHTML;
+  var centerCellName;
+  var tableText = "";
+  var tdText = "";
+  for (x = 0; x < progressSize; x++) {
+    if (progressMax != null) {
+      if (x == (progressSize/2))
+        centerCellName = "progress_" + x;
+    }
+    tableText += "<td id=\"progress_" + x + "\" width=\"" + progressInc + "%\" height=\"20\" bgcolor=\"blue\" />";
+  }
+  var idiv = $("progressText");
+  if (idiv)
+    idiv.innerHTML = "Imported 0 contacts from " + progressMax;
+  var idiv = $("progressBar");
+  if (idiv)
+    idiv.innerHTML = "<table with=\"200\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr>" + tableText + "</tr></table>";
+  centerCell = $(centerCellName);
+}
+
+function showProgress (progressIndex)
+{
+  if (!progressMax)
+    return;
+
+  if (!progressIndex)
+    progressIndex = progressMax;
+
+  var idiv = $("progressText");
+  if (idiv)
+    idiv.innerHTML = "Imported " + progressIndex + " contacts from " + progressMax;
+  var percentage = 100;
+  if (progressMax != 0)
+    percentage = Math.round (progressIndex * 100 / progressMax);
+  var percentageText = "";
+  if (percentage < 10)
+  {
+    percentageText = "&nbsp;" + percentage;
+  } else {
+    percentageText = percentage;
+  }
+  centerCell.innerHTML = "<font color=\"white\">" + percentageText + "%</font>";
+  for (x = 0; x < progressSize; x++)
+  {
+    var cell = $("progress_" + x);
+    if ((cell) && (percentage/x < progressInc))
+    {
+      cell.style.backgroundColor = "blue";
+    } else {
+      cell.style.backgroundColor = "red";
+    }
+  }
+}
+
 var AB = new Object();
 AB.trim = function(sString, sChar) {
 	if (sString) {

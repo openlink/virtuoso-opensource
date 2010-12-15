@@ -94,8 +94,6 @@
 
       styleStr := '';
       onclickEvent := '';
-      --if (self.abLabels = 0)
-      --  styleStr := styleStr || 'width: 40px;';
       if (self.toolbarEnable(cmd))
       {
         onclickEvent := cmdOnClick;
@@ -111,7 +109,7 @@
     ]]>
   </v:method>
 
-  <v:method name="render_select" arglist="inout name any">
+  <v:method name="render_select" arglist="inout options any, inout name any">
     <![CDATA[
       declare N any;
       declare S, T any;
@@ -124,12 +122,10 @@
 
   	  http (sprintf ('<select name="sel_%s">', name));
   	  http ('<option value="skip">--</option>');
-      for (N := 0; N < length (self.i_Options); N := N + 2)
+      for (N := 0; N < length (options); N := N + 2)
       {
-        S := '';
-        if (self.i_Options[N] = T)
-          S := ' selected="selected"';
-        http (sprintf ('<option value="%s"%s>%s</option>', self.i_Options[N], S, self.i_Options[N+1]));
+        S := case when (options[N] = T) then ' selected="selected"' else '' end;
+        http (sprintf ('<option value="%s"%s>%s</option>', options[N], S, options[N+1]));
       }
   	  http ('</select>');
 	  ]]>
@@ -358,39 +354,6 @@
     ]]>
   </v:method>
 
-  <v:method name="shareNode" arglist="in person_id integer, in grants varchar, in override integer">
-    <![CDATA[
-      declare N, pos, id integer;
-      declare name, V any;
-
-      grants := replace(grants, ' ', '');
-      grants := replace(grants, ',,', ',');
-      grants := trim(grants, ',', '');
-      grants := grants || ',';
-      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do
-      {
-        name := U_NAME;
-        id := U_ID;
-        pos := strstr(grants, name || ',');
-        if (isnull (pos))
-        {
-          if (override)
-            delete from AB.WA.GRANTS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = id and G_PERSON_ID = person_id;
-        } else {
-          grants := replace(grants, name || ',', '');
-        }
-      }
-      V := split_and_decode(trim(grants, ','), 0, '\0\0,');
-      for (N := 0; N < length (V); N := N + 1)
-      {
-        id := (select U_ID from SYS_USERS where U_NAME = V[N]);
-        if (not isnull(id))
-          insert into AB.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_PERSON_ID)
-            values(self.account_id, id, person_id);
-      }
-    ]]>
-  </v:method>
-
   <v:method name="shareSelect" arglist="in person_id integer">
     <![CDATA[
       declare grants any;
@@ -414,9 +377,11 @@
     ]]>
   </v:method>
 
-  <v:method name="resetImport" arglist="">
+  <v:method name="resetImport" arglist="in mode integer">
     <![CDATA[
+      if (not mode)
       AB.WA.ab_graph_delete (self.i_iri);
+
       self.i_source := -1;
       self.i_type := -1;
       self.i_lName := '';
@@ -427,13 +392,19 @@
       self.i_lPassword := '';
       self.i_lMaps := null;
       self.i_maps := null;
+      self.i_number := 0;
       self.i_iri := null;
       self.i_contentItems := null;
+      self.i_contentPings := null;
       self.i_contentDepth := 0;
-      self.i_contentDepth := 100;
+      self.i_contentLimit := 100;
       self.i_contentFollow := null;
       self.i_data := null;
       self.i_validation := null;
+      self.v_grants := '';
+      self.v_acl := '';
+
+      self.abAction := 'browse';
     ]]>
   </v:method>
 
@@ -613,17 +584,18 @@
       <v:variable name="i_lPassword" type="varchar" default="''"/>
       <v:variable name="i_lSearch" type="varchar" default="'(cn=*)'"/>
       <v:variable name="i_lMaps" type="any" default="null"/>
-      <v:variable persist="temp" name="i_Options" type="any" default="null" />
       <v:variable persist="temp" name="i_Items" type="any" default="null" />
 
       <v:variable name="i_data" type="varchar" default="null"/>
       <v:variable name="i_iri" type="varchar" default="null" />
       <v:variable name="i_contentItems" type="any" default="null" />
+      <v:variable name="i_contentPings" type="any" default="null" />
       <v:variable name="i_contentDepth" type="integer" default="0" />
       <v:variable name="i_contentLimit" type="integer" default="100" />
       <v:variable name="i_contentFollow" type="any" default="null" />
       <v:variable name="i_validation" type="varchar" default="null" />
       <v:variable name="i_maps" type="any" default="null" />
+      <v:variable name="i_number" type="integer" default="0" />
 
       <v:variable name="ve_id" type="any" default="-1" />
       <v:variable name="ve_name" type="varchar" default="''" />
@@ -797,7 +769,7 @@
                   }
                 else if (cmd = 'import')
                 {
-                  self.resetImport ();
+                  self.resetImport (0);
                     self.abAction := cmd;
                     self.abStep := '1';
                   self.abSteps  := vector ();
@@ -1418,7 +1390,7 @@
                     self.v_override := self.s_override.ufl_selected;
 
                     for (N := 0; N < length(self.abSelected); N := N + 1)
-                      self.shareNode (self.abSelected[N], self.v_grants, self.v_override);
+                         AB.WA.contact_share (self.account_id, self.abSelected[N], self.v_grants, self.v_override);
 
                     self.abAction := 'browse';
                     self.vc_data_bind(e);
@@ -1770,7 +1742,7 @@
                       <th>
                           <v:label for="ab_birthday" value="Birthday" />
                       </th>
-                      <td nowrap="1">
+                        <td nowrap="nowrap">
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_birthday" xhtml_id="ab_birthday" null-value="--''" value="--AB.WA.dt_format (self.v_birthday, 'Y-M-D')" xhtml_onclick="javascript: datePopup(\'ab_birthday\');" xhtml_class="textbox" xhtml_size="10" />
                             <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="datePopup('ab_birthday'); return false;" class="noapp">
@@ -1833,7 +1805,7 @@
                         <th valign="top">
                           <label for="ab_photo">Photo</label>
                         </th>
-                        <td class="listing_col" nowrap="1">
+                        <td class="listing_col" nowrap="nowrap">
                           <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_photo" value="--self.v_photo" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                             <v:button name="ab_photo_preview" value="Preview" action="simple" xhtml_class="button">
@@ -2925,7 +2897,7 @@
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_RELATIONSHIPS', self.v_relationships);
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_ACL', self.v_acl);
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_CERTIFICATE', self.v_certificate);
-                    self.shareNode (self.v_id, self.v_grants, 1);
+                      AB.WA.contact_share (self.account_id, self.v_id, self.v_grants, 1);
 
                     self.abAction := 'browse';
                     self.vc_data_bind(e);
@@ -2958,58 +2930,107 @@
 	            <div class="new-form-body">
 	              <table cellspacing="0">
 	                <tr>
-                    <th rowspan="4" valign="middle" width="45%">
+                      <th rowspan="4" valign="top" width="45%">
 	                    <v:label for="i_file" value="Source type"/>
 	                  </th>
 	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0">
+                        <label>
+                          <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(lte(self.i_source, 0), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_source_0" value="--'File'" /></b>
+                          <b>File</b>
+                        </label>
 	                  </td>
 	                </tr>
 	                <tr>
 	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1">
+                        <label>
+                          <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(equ(self.i_source, 1), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_source_1" value="--'WebDAV'" /></b>
+                          <b>WebDAV</b>
+                        </label>
 	                  </td>
 	                </tr>
 	                <tr>
 	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2">
+                        <label>
+                          <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(equ(self.i_source, 2), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-                        <b><vm:label for="i_source_2" value="--'URI'" /></b>
+                          <b>URI</b>
+                        </label>
                     </td>
                   </tr>
                   <tr>
                     <td nowrap="nowarap">
-                      <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3">
+                        <label>
+                          <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := either(equ(self.i_source, 3), 1, 0);
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      <xsl:call-template name="nbsp" />
-                      <b><vm:label for="i_source_3" value="--'LDAP Server'" /></b>
+                          <b>LDAP Server</b>
+                        </label>
+	                  </td>
+	                </tr>
+                    <tr id="imp_tr_0">
+                      <th rowspan="3" valign="top" width="45%">
+	                    <v:label for="i_file" value="Content type"/>
+	                  </th>
+	                  <td nowrap="nowarap">
+                        <label>
+	                    <v:radio-button name="i_type_0" xhtml_id="i_type_0" group-name="i_type" value="0">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(lte(self.i_type, 0), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+                          <b>vCard</b>
+                        </label>
+	                  </td>
+	                </tr>
+                    <tr id="imp_tr_1">
+	                  <td nowrap="nowarap">
+                        <label>
+	                    <v:radio-button name="i_type_1" xhtml_id="i_type_1" group-name="i_type" value="1">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(equ(self.i_type, 1), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+                          <b>FOAF</b>
+                        </label>
+	                  </td>
+	                </tr>
+                    <tr id="imp_tr_2">
+	                  <td nowrap="nowarap">
+                        <label>
+	                    <v:radio-button name="i_type_2" xhtml_id="i_type_2" group-name="i_type" value="2">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(equ(self.i_type, 2), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+                          <b>CSV</b>
+                        </label>
 	                  </td>
 	                </tr>
 	              </table>
@@ -3019,109 +3040,26 @@
                   <v:button name="i1_next" action="simple" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    declare tmp any;
-
-                      self.abStep := '2';
-	                    tmp := self.i_source;
-                        if (self.i_source_0.ufl_selected)
+                        if (self.i_source_3.ufl_selected)
                         {
-	                      self.i_source := 0;
+                          self.i_source := 3;
+                          self.i_type   := 3;
                         }
-                        else if (self.i_source_1.ufl_selected)
+                        else
                         {
-	                      self.i_source := 1;
-                        }
-                        else if (self.i_source_2.ufl_selected)
-                        {
-	                      self.i_source := 2;
-                        }
-                        else if (self.i_source_3.ufl_selected)
-                        {
-                        self.i_source := 3;
-	                      self.i_type := 3;
-                        self.abStep := '3';
-	                    }
+                          if (self.i_source_0.ufl_selected)
+                          {
+                            self.i_source := 0;
+                          }
+                          else if (self.i_source_1.ufl_selected)
+                          {
+                            self.i_source := 1;
+                          }
+                          else if (self.i_source_2.ufl_selected)
+                          {
+                            self.i_source := 2;
+                          }
 
-                      AB.WA.push (self.abSteps, '1');
-                      self.vc_data_bind(e);
-	                  ]]>
-	                </v:on-post>
-	              </v:button>
-                <v:button action="simple" name="i1_cancel" value="Cancel" xhtml_class="form-button">
-	                <v:on-post>
-	                  <![CDATA[
-	                    self.abAction := 'browse';
-	                    self.vc_data_bind(e);
-	                  ]]>
-	                </v:on-post>
-	              </v:button>
-	            </div>
-	          </v:template>
-
-              <v:template  name="t9" type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
-	            <div class="new-form-header">
-	              <v:label format="%s" value="Import: Select content type"/>
-	            </div>
-
-	            <div class="new-form-body">
-	              <table cellspacing="0">
-	                <tr>
-	                  <th rowspan="3" valign="middle" width="45%">
-	                    <v:label for="i_file" value="Content type"/>
-	                  </th>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_type_0" xhtml_id="i_type_0" group-name="i_type" value="0">
-	                      <v:before-render>
-	                        <![CDATA[
-	                          control.ufl_selected := either(lte(self.i_type, 0), 1, 0);
-	                        ]]>
-	                      </v:before-render>
-	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_type_0" value="--'vCard'" /></b>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_type_1" xhtml_id="i_type_1" group-name="i_type" value="1">
-	                      <v:before-render>
-	                        <![CDATA[
-	                          control.ufl_selected := either(equ(self.i_type, 1), 1, 0);
-	                        ]]>
-	                      </v:before-render>
-	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_type_1" value="--'FOAF'" /></b>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_type_2" xhtml_id="i_type_2" group-name="i_type" value="2">
-	                      <v:before-render>
-	                        <![CDATA[
-	                          control.ufl_selected := either(equ(self.i_type, 2), 1, 0);
-	                        ]]>
-	                      </v:before-render>
-	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_type_2" value="--'CSV'" /></b>
-	                  </td>
-	                </tr>
-	              </table>
-	            </div>
-
-	            <div class="new-form-footer">
-                  <v:button action="simple" name="i2_back" value="Back" xhtml_class="form-button">
-	                <v:on-post>
-	                  <![CDATA[
-                      self.abStep := AB.WA.pop (self.abSteps);
-                      self.vc_data_bind(e);
-	                  ]]>
-	                </v:on-post>
-	              </v:button>
-                  <v:button action="simple" name="i2_next" value="Next" xhtml_class="form-button">
-	                <v:on-post>
-	                  <![CDATA[
                         if (self.i_type_0.ufl_selected)
                         {
 	                      self.i_type := 0;
@@ -3134,18 +3072,18 @@
                         {
 	                      self.i_type := 2;
 	                    }
+                        }
 
-                      self.abStep := '3';
-                      AB.WA.push (self.abSteps, '2');
+                        self.abStep := '2';
+                        AB.WA.push (self.abSteps, '1');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i1_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
-                      self.resetImport ();
 	                    self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -3153,7 +3091,7 @@
 	            </div>
 	          </v:template>
 
-              <v:template name="t10" type="simple" enabled="-- case when (self.abStep = '3') then 1 else 0 end">
+              <v:template name="t10" type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Source parameters"/>
 	            </div>
@@ -3244,6 +3182,7 @@
                       </vm:if>
                   </vm:if>
                   <vm:if test="self.i_source = 3">
+                      <vm:if test="exists (select 1 from LDAP..LDAP_SERVERS where LS_USER_ID = self.account_id)">
                     <tr>
                       <th width="30%">
                         LDAP server
@@ -3287,6 +3226,7 @@
               	        </v:data-list>
               	      </td>
               	    </tr>
+                      </vm:if>
                     <tr>
 		                  <th width="30%">
                         Host URL
@@ -3370,7 +3310,7 @@
 	            </div>
 
 	            <div class="new-form-footer">
-                <v:button action="simple" name="i3_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i2_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3378,7 +3318,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                  <v:button action="simple" name="i3_next" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i2_next" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                         declare tmp, host varchar;
@@ -3400,12 +3340,7 @@
                         {
                           self.i_data := trim(get_keyword ('f_file', params, ''));
                           if (is_empty_or_null (self.i_data))
-                          {
-	                        self.vc_error_message := 'Please select file from your local file system!';
-	                        self.vc_is_valid := 0;
-	                        return;
-	                      }
-
+                            signal ('TEST', 'Please select file from your local file system!');
                         }
                         else if (self.i_source = 1)
                         {
@@ -3413,22 +3348,14 @@
                           tmp := http_physical_path_resolve (replace (self.f_dav.ufl_value, ' ', '%20'));
                           self.i_data := AB.WA.dav_content (AB.WA.host_url () || tmp, AB.WA.account_name (self.account_id));
                           if (isnull(self.i_data))
-                          {
-	                        self.vc_error_message := 'Bad import source!';
-	                        self.vc_is_valid := 0;
-	                        return;
-	                      }
-
+                            signal ('TEST', 'Bad import source!');
                         }
                         else if (self.i_source = 2)
                         {
                         self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                           if (is_empty_or_null (self.f_uri.ufl_value))
-                          {
-                          self.vc_error_message := 'Please select correct URL address!';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
+                            signal ('TEST', 'Please select correct URL address!');
+
                           if (self.i_type = 1)
                           {
                             AB.WA.test (self.i_limit.ufl_value, vector('name', 'Grab Limit', 'class', 'integer', 'minValue', 1, 'maxValue', 100));
@@ -3454,20 +3381,21 @@
 
                       	declare exit handler for sqlstate '*'
                       	{
-                      	  self.vc_error_message := 'Unknown LDAP server. Please, check parameters!';
-                      	  self.vc_is_valid := 0;
-                      	  return;
+                            signal ('TEST', 'Unknown LDAP server. Please, check parameters!');
                       	};
                         connection_set ('LDAP_VERSION', 2);
                       	host := 'ldap://' || self.i_lHost || ':' || self.i_lPort;
                         self.i_data := ldap_search (host, 0, self.i_lBase_dn, self.i_lSearch, self.i_lBind_dn, self.i_lPassword);
 	                    }
 
+                        self.i_number := 0;
                         if (self.i_type = 1)
                         {
                           AB.WA.ab_graph_delete (self.i_iri);
                           self.i_iri := AB.WA.ab_graph_create ();
-                          self.i_Items := AB.WA.import_foaf_content (self.i_data, case when (self.i_source = 2) then 1 else 0 end, self.i_iri, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
+                          self.i_Items := AB.WA.import_foaf_content (self.i_data, vector ('contentType', case when (self.i_source = 2) then 1 else 0 end, 'contentIRI', self.i_iri, 'contentDepth', self.i_contentDepth, 'contentLimit', self.i_contentLimit, 'contentFollow', self.i_contentFollow));
+
+                          self.i_number := length (self.i_Items);
                       }
                         else if (self.i_type = 2)
                         {
@@ -3476,23 +3404,39 @@
                         self.i_data := replace (self.i_data, '\015', '\012');
                         self.i_data := replace (self.i_data, '\012 ', '');
                         self.i_data := split_and_decode (self.i_data, 0, '\0\0\n');
-                      }
 
-                      self.abStep := '5';
+                          self.i_number := AB.WA.import_count (self.i_type, self.i_data);
+                      }
+                        else
+                        {
+                          self.i_number := AB.WA.import_count (self.i_type, self.i_data);
+                        }
+                        if (self.i_number = 0)
+                          signal ('TEST', 'No persons founded!<>');
+
+                        -- next step
                       if (self.i_type = 0)
-                        self.abStep := '6';
-                      if (self.i_type = 1)
+                        {
+                          self.abStep := '5';
+                        }
+                        else if (self.i_type = 1)
+                        {
+                          self.abStep := '3';
+                        }
+                        else
+                        {
                         self.abStep := '4';
-                      AB.WA.push (self.abSteps, '3');
+                        }
+
+                        AB.WA.push (self.abSteps, '2');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                <v:button action="simple" name="i3_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (0);
 	                    self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -3500,22 +3444,12 @@
 	            </div>
 	          </v:template>
 
-              <v:template name="t11" type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
+              <v:template name="t11" type="simple" enabled="-- case when (self.abStep = '3') then 1 else 0 end">
 	            <div class="new-form-header">
-                <v:label format="%s" value="Import: Select persons" />
+                  Import: Select persons
               </div>
 
               <div class="new-form-mapping">
-                <?vsp
-                  declare N integer;
-
-                  if (length (self.i_Items) = 0)
-                  {
-                ?>
-          		  No Persons
-                <?vsp
-                  } else {
-                ?>
                   <table id="foaf" class="AB_grid" style="border-width: 0" cellspacing="0">
                   <thead class="sortHeader">
                     <tr>
@@ -3525,39 +3459,49 @@
                       <th>Name</th>
                       <th>Mail</th>
                       <th>Comment</th>
+                        <th class="checkbox last-child" width="1%" style="border-width: 0px 0px 1px 0px;">
+                          <input type="checkbox" name="cb_all_ping" value="Select All" onclick="selectAllCheckboxes(this, 'cb_ping')" />
+                        </th>
+                        <th width="1%">Ping</th>
                         <th width="1%">Action</th>
                     </tr>
                   </thead>
                 <?vsp
-                    for (N := 0; N < length (self.i_Items); N := N + 1)
+                      foreach (any item in self.i_Items) do
                     {
                 ?>
-              	  <tr class="<?V case when (self.i_Items[N][0] = 1) then 'tr_select' else '' end ?>">
+                    <tr class="<?V case when (item[0] = 1) then 'tr_select' else '' end ?>">
               		  <td width="1%">
                       <?vsp
-                        if (self.i_Items[N][0] = 0)
-                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', self.i_Items[N][1]));
+                          if (item[0] = 0)
+                            http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', item[1]));
                       ?>
               		  </td>
               		  <td>
-                        <?V AB.WA.utf2wide (self.i_Items[N][2]) ?>
+                        <?V AB.WA.utf2wide (item[2]) ?>
               		  </td>
               		  <td>
-                      <?V self.i_Items[N][3] ?>
+                        <?V item[3] ?>
               		  </td>
               		  <td>
                       <?vsp
-                          if (self.i_Items[N][0] = 1)
+                          if (item[0] = 1)
                           {
                           http ('FOAF Owner');
-                          http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', self.i_Items[N][1]));
+                            http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', item[1]));
                         }
                       ?>
               		  </td>
+                      <td width="1%" colspan="2">
+                        <?vsp
+                          if (item[1] not like 'nodeID://%')
+                            http (sprintf ('<input type="checkbox" name="cb_ping" value="%s" onclick="selectCheck(this, \'cb_ping\')" />', item[1]));
+                        ?>
+                      </td>
               		  <td>
                       <?vsp
-                        if (not is_empty_or_null (self.i_Items[N][3]))
-                            http (self.windowOpen (sprintf ('invite.vspx?name=%U&mail=%U', self.i_Items[N][2], self.i_Items[N][3]), 'invite', self.i_Items[N][2]));
+                          if (not is_empty_or_null (item[3]))
+                            http (self.windowOpen (sprintf ('invite.vspx?name=%U&mail=%U', item[2], item[3]), 'invite', item[2]));
                       ?>
               		  </td>
                   </tr>
@@ -3565,9 +3509,6 @@
                     }
                 ?>
                 </table>
-                <?vsp
-                  }
-                ?>
               </div>
               <script>
                 <![CDATA[
@@ -3576,7 +3517,7 @@
               </script>
 
               <div class="new-form-footer">
-                <v:button action="simple" name="i4_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i3_back" value="Back" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3584,7 +3525,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                  <v:button action="simple" name="i4_next" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i3_next" value="Next" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -3592,33 +3533,35 @@
 
                       params := e.ve_params;
                         self.i_contentItems := vector ();
+                        self.i_contentPings := vector ();
                       for (N := 0; N < length (params); N := N + 4)
                       {
                         if (params[N] = 'cb_item')
                             self.i_contentItems := vector_concat (self.i_contentItems, vector (vector (params[N+1])));
+                          if (params[N] = 'cb_ping')
+                            self.i_contentPings := vector_concat (self.i_contentPings, vector (vector (params[N+1])));
                       }
 
-                        if (length (self.i_contentItems))
-                        {
-                        self.abStep := '6';
-                        if ((self.i_type = 2) or (self.i_type = 3))
+                        self.i_number := length (self.i_contentItems);
+                        if (self.i_number)
                         {
                           self.abStep := '5';
-                        }
-                        AB.WA.push (self.abSteps, '4');
+                          if ((self.i_type = 2) or (self.i_type = 3))
+                            self.abStep := '4';
+
+                          AB.WA.push (self.abSteps, '3');
                       } else {
-                        self.abAction := 'browse';
-                        self.resetImport ();
+                          self.resetImport (0);
+                          self.abAction := 'import';
                       }
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i3_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (0);
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
@@ -3626,7 +3569,7 @@
               </div>
             </v:template>
 
-              <v:template name="t12" type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
+              <v:template name="t12" type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
               <div class="new-form-header">
 	              <v:label format="%s" value="Import: Mapping"/>
 	            </div>
@@ -3643,9 +3586,9 @@
                   </tr>
                   <?vsp
                     declare N, M integer;
-                    declare data any;
+                        declare data, options any;
 
-                      self.i_Options := LDAP..contact_fields ();
+                        options := LDAP..contact_fields ();
                       for (N := 0; N < 1; N := N + 2)
                       {
                       data := split_and_decode (self.i_data [N], 0, '\0\0,');
@@ -3656,9 +3599,9 @@
               	    <td>
               		    <?V trim (data[M], '"') ?>
               		  </td>
-              		  <td nowrap="1">
+                        <td nowrap="nowrap">
               		    <?vsp
-              		      self.render_select (cast (M as varchar));
+                            self.render_select (options, cast (M as varchar));
               		    ?>
               		  </td>
                   </tr>
@@ -3681,9 +3624,9 @@
                   </tr>
                   <?vsp
                       declare L, N, M integer;
-                    declare data any;
+                        declare data, options any;
 
-                      self.i_Options := LDAP..contact_fields ();
+                        options := LDAP..contact_fields ();
                       for (N := 0; N < length (self.i_data); N := N + 2)
                       {
                         if (self.i_data [N] = 'entry')
@@ -3698,9 +3641,9 @@
               	    <td>
               		    <?V data[M] ?>
               		  </td>
-              		  <td nowrap="1">
+                        <td nowrap="nowrap">
               		    <?vsp
-              		      self.render_select (data[M]);
+                            self.render_select (options, data[M]);
               		    ?>
               		  </td>
               		  <td>
@@ -3718,9 +3661,9 @@
                       <td>
                         <?V self.i_lMaps[M] ?>
                       </td>
-                      <td nowrap="1">
+                        <td nowrap="nowrap">
                         <?vsp
-                          self.render_select (self.i_lMaps[M]);
+                            self.render_select (options, self.i_lMaps[M]);
                         ?>
                       </td>
                       <td>
@@ -3823,7 +3766,7 @@
                 </v:button>
               </div>
 	            <div class="new-form-footer">
-                  <v:button action="simple" name="i5_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i4_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3831,7 +3774,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                  <v:button action="simple" name="i5_next" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i4_next" value="Next" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -3840,20 +3783,20 @@
                       params := e.ve_params;
                       self.i_maps := vector ();
                       for (N := 0; N < length (params); N := N + 2)
+                        {
                         if (params[N] like 'sel_%' and params[N+1] <> 'skip')
                           self.i_maps := vector_concat (self.i_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
-
-                      self.abStep := '6';
-                      AB.WA.push (self.abSteps, '5');
+                        }
+                        self.abStep := '5';
+                        AB.WA.push (self.abSteps, '4');
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (0);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -3866,7 +3809,7 @@
               </script>
 	          </v:template>
 
-              <v:template name="t14" type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
+              <v:template name="t14" type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Options"/>
 	            </div>
@@ -3884,10 +3827,78 @@
                     <?vsp self.myTags ('i_tags'); ?>
                   <tr>
                     <th valign="top">
+                        Sharing
+                      </th>
+                      <td>
+                        <fieldset>
+                          <legend><b>ODS users</b></legend>
+                          <table class="form-body" cellspacing="0">
+                            <tr>
+                              <td style="width: 95%; background-color: white;">
+                                <table id="f_tbl" width="100%" cellspacing="0">
+                                  <thead class="sortHeader">
+                                    <tr>
+                                      <th width="100%">Value</th>
+                                      <th width="50px">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tr id="f_tr_no"><td colspan="2"><b>No Shares</b></td></tr>
+                            		</table>
+                            	</td>
+                              <td valign="top" nowrap="nowrap">
+                                <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', tdCssText: 'white-space: nowrap;'}});" />
+                              </td>
+                            </tr>
+                          </table>
+                        </fieldset>
+                        <fieldset>
+                          <legend><b>WebID users</b></legend>
+                          <table class="form-body" cellspacing="0">
+                            <tr>
+                              <td style="width: 95%; background-color: white;">
+                                <table id="s_tbl" width="100%" cellspacing="0">
+                                  <thead class="sortHeader">
+                                    <tr>
+                                      <th width="15%">Type</th>
+                                      <th>Value</th>
+                                      <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                      <th width="50px">Action</th>
+                                    </tr>
+                                  </thead>
+                            		  <![CDATA[
+                            		    <script type="text/javascript">
+                                    <?vsp
+                                      declare N, L integer;
+                                      declare acl, aType, aAccess any;
+
+                                      L := 0;
+                                      acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                                      acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                                      for (N := 0; N < length (acl); N := N + 1)
+                                      {
+                                        L := L + 1;
+                                        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                                      }
+                                    ?>
+                            		    </script>
+                            		  ]]>
+                                  <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="4"><b>No Shares</b></td></tr>
+                            		</table>
+                            	</td>
+                              <td valign="top" nowrap="nowrap">
+                                <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                              </td>
+                            </tr>
+                          </table>
+                        </fieldset>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th valign="top">
                       Validation Fields
                     </th>
                     <td>
-                        <div style="height: 400px; overflow: auto;">
+                        <div style="height: 250px; overflow: auto;">
                         <table cellspacing="0" style="background-color: #fff;">
                           <?vsp
                             declare N integer;
@@ -3922,7 +3933,7 @@
 	            </div>
 
 	            <div class="new-form-footer">
-                  <v:button action="simple" name="i6_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i5_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3930,10 +3941,10 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                  <v:button action="simple" name="i6_import" value="Import" xhtml_class="form-button">
+                  <v:button action="simple" name="i5_import" value="Import" xhtml_class="form-button">
 			            <v:on-post>
 			              <![CDATA[
-                      declare N integer;
+                        declare N, M integer;
                       declare tmp, params any;
 
                         declare exit handler for SQLSTATE '*'
@@ -3955,52 +3966,125 @@
                       self.v_tags := AB.WA.vector2tags (tmp);
 
                       params := e.ve_params;
+
                       self.i_validation := vector ();
+                        self.v_grants := '';
+                        self.v_acl := '';
                         for (N := 0; N < length (params); N := N + 4)
                         {
                         if (params[N] = 'cb_item')
+                          {
                           self.i_validation := vector_concat (self.i_validation, vector (params[N+1]));
                       }
+                          else if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+                          {
+                            tmp := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+                            for (M := 0; M < length (tmp); M := M + 1)
+                            {
+                              if (not isnull (AB.WA.account_id (trim (tmp[M]))))
+                                self.v_grants := self.v_grants || ',' || tmp[M];
+                            }
+                          }
+                        }
+                        self.v_grants := trim (self.v_grants, ',');
+                        tmp  := DB.DBA.wa_acl_params (params);
+                        if (length (tmp))
+                          self.v_acl := serialize (tmp);
 
-			                -- vCard
+                        self.abStep := '6';
+                        self.vc_data_bind(e);
+                       ]]>
+                     </v:on-post>
+                  </v:button>
+                  <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.resetImport (0);
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+              </v:template>
+
+              <v:template name="t13" type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
+                <?vsp
+                  declare options any;
+
+                  options := vector ();
                       if (self.i_type = 0)
+                  {
+                    -- vCard
                           if (self.i_source = 2)
                           {
-                            AB.WA.import_vcard2 (self.domain_id, self.i_data, vector ('tags', self.v_tags), self.i_validation, 2);
+                      options := vector ('tags', self.v_tags, 'mode', 2);
                           } else {
-                          AB.WA.import_vcard (self.domain_id, self.i_data, vector ('tags', self.v_tags), self.i_validation);
+                      options := vector ('tags', self.v_tags);
                           }
-
-
+                  }
+                  else if (self.i_type = 1)
+                  {
 			                -- FOAF
-                      if (self.i_type = 1)
-                          AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, 2, self.i_iri, self.i_contentItems, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
-
+                    options := vector ('tags', self.v_tags, 'contentItems', self.i_contentItems, 'contentPings', self.i_contentPings, 'contentType', -1, 'contentIRI', self.i_iri, 'contentDepth', self.i_contentDepth, 'contentLimit', self.i_contentLimit, 'contentFollow', self.i_contentFollow);
+                  }
+                  else if (self.i_type = 2)
+                  {
 			                -- CSV
-                      if (self.i_type = 2)
-                        AB.WA.import_csv (self.domain_id, self.i_data, self.v_tags, self.i_maps, self.i_validation);
-
+                    options := vector ('tags', self.v_tags, 'maps', self.i_maps);
+                  }
+                  else if (self.i_type = 3)
+                  {
 			                -- LDAP
-                      if (self.i_type = 3)
-                        AB.WA.import_ldap (self.domain_id, self.i_data, self.v_tags, self.i_maps, self.i_validation);
+                    options := vector ('tags', self.v_tags, 'maps', self.i_maps);
+                  }
 
-	                    self.abAction := 'browse';
-                      self.resetImport ();
-                      self.vc_data_bind(e);
-			               ]]>
-			             </v:on-post>
-			          </v:button>
-                <v:button action="simple" name="i6_cancel" value="Cancel" xhtml_class="form-button">
+                  if (self.v_grants <> '')
+                    options := vector_concat (options, vector ('grants', self.v_grants));
+
+                  if (self.v_acl <> '')
+                    options := vector_concat (options, vector ('acls', self.v_acl));
+
+                  http (sprintf ('<input type="hidden" name="i_type" id="i_type" value="%V" />', encode_base64 (serialize (self.i_type))));
+                  http (sprintf ('<input type="hidden" name="i_data" id="i_data" value="%V" />', encode_base64 (serialize (self.i_data))));
+                  http (sprintf ('<input type="hidden" name="i_options" id="i_options" value="%V" />', encode_base64 (serialize (options))));
+                  http (sprintf ('<input type="hidden" name="i_validation" id="i_validation" value="%V" />', encode_base64 (serialize (self.i_validation))));
+                ?>
+                <div class="new-form-header">
+                  Import contacts
+                </div>
+                <div class="new-form-body">
+                  <span id="progressMax" style="display: none;"><?V self.i_number ?></span>
+                  <table id="progressTable" cellspacing="0">
+                    <tr>
+                      <td>
+                        <div id="progressText"></div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div id="progressBar"></div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="form-footer">
+                  <v:button action="simple" name="btn_Background" xhtml_id="btn_Background" value="Background" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (1);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
+                  <input type="button" id="btn_Stop" value="Stop" onclick="javascript: stopState(); return false;" xhtml_class="form-button" />
 	            </div>
+                <script type="text/javascript">
+                  <![CDATA[
+                    OAT.MSG.attach(OAT, "PAGE_LOADED", initState);
+                  ]]>
+                </script>
 	          </v:template>
+
           </v:template>
 
             <v:template name="t17" type="simple" enabled="--case when (self.abAction = 'export') then 1 else 0 end">
@@ -4015,17 +4099,26 @@
                     <v:label for="e_format" value="Content type" />
                   </th>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_0" value="vCard" checked="checked" onclick="changeExportName('e_file', ['.foaf', '.csv'], '.vcf');" /><xsl:call-template name="nbsp" /><label for="e_format_0">vCard</label>
+                      <label>
+                        <input type="radio" name="e_format" id="e_format_0" value="vCard" checked="checked" onclick="changeExportName('e_file', ['.foaf', '.csv'], '.vcf');" />
+                        vCard
+                      </label>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', ['.vcf', '.csv'], '.foaf');" /><xsl:call-template name="nbsp" /><label for="e_format_1">FOAF</label>
+                      <label>
+                        <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', ['.vcf', '.csv'], '.foaf');" />
+                        FOAF
+                      </label>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_2" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" /><xsl:call-template name="nbsp" /><label for="e_format_2">CSV</label>
+                      <label>
+                        <input type="radio" name="e_format" id="e_format_2" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" />
+                        CSV
+                      </label>
                   </td>
                 </tr>
                 <tr>

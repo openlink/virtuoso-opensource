@@ -2735,12 +2735,16 @@ create procedure AB.WA.validate_tags (
 --
 create procedure AB.WA.ab_sparql (
   in S varchar,
+  in V any := null,
   in debug any := null)
 {
   declare st, msg, meta, rows any;
 
+  if (not isnull (V))
+    V := vector ();
+
   st := '00000';
-  exec (S, st, msg, vector (), 0, meta, rows);
+  exec (S, st, msg, V, vector ('use_cache', 1), meta, rows);
   if (not isnull (debug) and ('00000' <> st))
     dbg_obj_print ('', S, st, msg);
   if ('00000' = st)
@@ -3496,21 +3500,239 @@ create procedure AB.WA.contact_tags_update (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.contact_share (
+  in account_id integer,
+  in person_id integer,
+  in grants varchar,
+  in override integer)
+{
+  declare N, pos, id integer;
+  declare name, V any;
+
+  grants := replace(grants, ' ', '');
+  grants := replace(grants, ',,', ',');
+  grants := trim(grants, ',', '');
+  grants := grants || ',';
+  for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do
+  {
+    name := U_NAME;
+    id := U_ID;
+    pos := strstr (grants, name || ',');
+    if (isnull (pos))
+    {
+      if (override)
+        delete from AB.WA.GRANTS where G_GRANTER_ID = account_id and G_GRANTEE_ID = id and G_PERSON_ID = person_id;
+    } else {
+      grants := replace (grants, name || ',', '');
+    }
+  }
+  V := split_and_decode (trim (grants, ','), 0, '\0\0,');
+  for (N := 0; N < length (V); N := N + 1)
+  {
+    id := (select U_ID from SYS_USERS where U_NAME = V[N]);
+    if (not isnull(id))
+      insert into AB.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_PERSON_ID)
+        values(account_id, id, person_id);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.value2str (
+  in data any,
+  in labels any,
+  in defaults any)
+{
+  declare N, M integer;
+  declare retValue varchar;
+
+  retValue := '';
+  for (N := 0; N < length (data); N := N + 1)
+  {
+    for (M := 0; M < length (labels); M := M + 1)
+    {
+      retValue := retValue || get_keyword (labels[M], data[N], defaults[M]) || ';';
+    }
+    retValue := retValue || '\n';
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_count (
+  in type integer,
+  in data any)
+{
+  -- vCard
+  if (type = 0)
+    return AB.WA.import_vcard_count (data);
+
+  -- FOAF
+  if (type = 1)
+    return AB.WA.import_foaf_count (data);
+
+  -- CSV
+  if (type = 2)
+    return AB.WA.import_csv_count (data);
+
+  -- LDAP
+  if (type = 3)
+    return AB.WA.import_ldap_count (data);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_vcard_count (
+  in content any)
+{
+  declare xmlData, items any;
+  declare retValue integer;
+
+  if (not isstring (content))
+    content := cast (content as varchar);
+
+  xmlData := DB.DBA.IMC_TO_XML (content);
+  xmlData := xml_tree_doc (xmlData);
+  items := xpath_eval ('/*', xmlData, 0);
+  retValue := 0;
+  foreach (any item in items) do
+  {
+    if (xpath_eval ('name(.)', item) = 'IMC-VCARD')
+      retValue := retValue + 1;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_foaf_count (
+  in domain_id integer,
+  in content any)
+{
+  return 10;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_csv_count (
+  in content any)
+{
+  declare N, nLength integer;
+  declare retValue integer;
+
+  retValue := 0;
+  nLength := length (content);
+  for (N := 1; N < nLength; N := N + 1)
+  {
+    retValue := retValue + 1;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_ldap_count (
+  in content any)
+{
+  declare N, nLength integer;
+  declare retValue integer;
+
+  retValue := 0;
+  nLength := length (content);
+  for (N := 0; N < nLength; N := N + 2)
+  {
+    if (content [N] = 'entry')
+      retValue := retValue + 1;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_progress_id (
+  in progress_id any)
+{
+  declare tmp any;
+
+  if (is_empty_or_null (progress_id))
+    return 1;
+
+  if  (cast (registry_get ('addressbook_action_' || progress_id) as varchar) = 'stop')
+    return 0;
+
+  tmp := cast (registry_get('addressbook_index_' || progress_id) as integer) + 1;
+  registry_set ('addressbook_index_' || progress_id, cast (tmp as varchar));
+
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import (
+  in domain_id integer,
+  in type integer,
+  in data any,
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
+{
+  if (type = 0)
+  {
+    -- vCard
+    AB.WA.import_vcard (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 1)
+  {
+    -- FOAF
+    AB.WA.import_foaf (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 2)
+  {
+    -- CSV
+    AB.WA.import_csv (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 3)
+  {
+    -- LDAP
+    AB.WA.import_ldap (domain_id, data, options, validation, progress_id);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_vcard (
   in domain_id integer,
   in content any,
   in options any := null,
   in validation any := null,
-  in updatedBefore integer := null,
-  in externalUID varchar := null)
+  in progress_id varchar := null)
 {
   declare L, M, N, nLength, mLength, id integer;
-  declare tmp, uid, oTags, data, pFields, pValues, pField, pField2 any;
+  declare tmp, uid, data, pFields, pValues, pField, pField2 any;
   declare xmlData, xmlItems, itemName, Meta, V any;
-  declare vcardImported any;
+  declare mode, externalUID, updatedBefore, vcardImported any;
 
   vcardImported := vector ();
-  oTags := case when isnull (options) then '' else get_keyword ('tags', options, '') end;
+
+  if (isnull (options))
+    options := vector ();
+
+  mode := get_keyword ('mode', options, 0);
+  if (mode = 2)
+    return AB.WA.import_vcard2 (domain_id, data, options, validation);
+
+  updatedBefore := get_keyword ('updatedBefore', options);
+  externalUID := get_keyword ('externalUID', options);
 
   Meta := vector
     (
@@ -3548,6 +3770,9 @@ create procedure AB.WA.import_vcard (
     itemName := xpath_eval ('name(.)', xmlItem);
     if (itemName = 'IMC-VCARD')
     {
+      if (not AB.WA.import_progress_id (progress_id))
+        return;
+
       id := -1;
       uid := null;
       pFields := vector ();
@@ -3562,22 +3787,10 @@ create procedure AB.WA.import_vcard (
           if (not is_empty_or_null (T))
           {
             pField2 := pField;
-            if (pField2 = 'P_BIRTHDAY')
-            {
-              {
-                declare continue handler for sqlstate '*'
-              {
-                  T := '';
-                };
-                T := AB.WA.dt_reformat (T, 'YMD');
-              }
-            }
-            else if (pField2 = 'P_UID')
+            if (pField2 = 'P_UID')
             {
               uid := T;
             }
-            if (not is_empty_or_null (T))
-            {
               if (not isnull (Meta [N+1]))
               {
                 if (strstr (T, ' @TYPE_') <> 0)
@@ -3591,8 +3804,10 @@ create procedure AB.WA.import_vcard (
             } else {
                       V := split_and_decode (Meta [N+1][M], 0, '\0\0,');
                       for (L := 0; L < length (V); L := L + 1)
+                    {
                         if (isnull (strstr (T, ' @TYPE_' || V[L])))
                           goto _exit;
+                    }
                       pField2 := Meta [N+1][M+1];
                     _exit:;
                     }
@@ -3610,31 +3825,25 @@ create procedure AB.WA.import_vcard (
           }
         }
       }
-      }
       if (isnull (uid) and not isnull (externalUID))
       {
         N := strchr (externalUID, '_');
         if (isnull (N))
-        {
           N := 0;
-        }
+
         tmp := subseq (externalUID, N, length (externalUID));
         id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = tmp), -1);
         if (id <> -1)
-        {
           uid := tmp;
         }
-      }
       id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = uid), -1);
       if ((id <> -1) and not isnull (updatedBefore))
       {
         if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_UPDATED >= updatedBefore))
           goto _skip;
       }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
-      connection_set ('__addressbook_import', '0');
+
+      id := AB.WA.import_contact_update (id, domain_id, pFields, pValues, options, validation);
       vcardImported := vector_concat (vcardImported, id);
 
     _skip:;
@@ -3646,147 +3855,129 @@ create procedure AB.WA.import_vcard (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.import_rdf_data (
+  in domain_id integer,
+  in data  any,
+  in options varchar,
+  in validation any := null)
+  {
+  declare M integer;
+  declare meta, tags, pValue, pField, pFields, pValues any;
+
+  meta := vector
+    (
+      'iri',                     'P_IRI',
+      'personalProfileDocument', 'P_FOAF',
+      'nick',                    'P_NAME',
+      'name',                    'P_FULL_NAME',
+      'type',                    'P_KIND',
+      'firstNname',              'P_FIRST_NAME',
+      'family_name',             'P_LAST_NAME',
+      'dateOfBirth',             'P_BIRTHDAY',
+      'mbox',                    'P_MAIL',
+      'workplaceHomepage',       'P_WEB',
+      'icqChatID',               'P_ICQ',
+      'msnChatID',               'P_MSN',
+      'aimChatID',               'P_AIM',
+      'yahooChatID',             'P_YAHOO',
+      'title',                   'P_TITLE',
+      'phone',                   'P_H_PHONE',
+      'homepage',                'P_H_WEB',
+      'workplaceHomepage',       'P_B_WEB',
+      'lat',                     'P_H_LAT',
+      'long',                    'P_H_LNG',
+      'depiction',               'P_PHOTO'
+    );
+
+  pFields := vector ();
+  pValues := vector ();
+  for (M := 0; M < length (meta); M := M + 2)
+            {
+    pValue := get_keyword (meta[M], data);
+    if (not isnull(pValue))
+              {
+      pField := meta[M+1];
+      pFields := vector_concat (pFields, vector (pField));
+      pValues := vector_concat (pValues, vector (pValue));
+            }
+          }
+  pValue := get_keyword ('keywords', data);
+  if (not isnull(pValue))
+          {
+    tags := AB.WA.tags_join (get_keyword ('tags', options, ''), pValue);
+    options := AB.WA.set_keyword ('tags', options, tags);
+          }
+  pValue := get_keyword ('interest', data);
+  if (not isnull(pValue))
+          {
+    pValue := AB.WA.value2str(pValue, vector('value', 'label'), vector('', ''));
+    pFields := vector_concat (pFields, vector ('P_INTERESTS'));
+    pValues := vector_concat (pValues, vector (pValue));
+          }
+  pValue := get_keyword ('knows', data);
+  if (not isnull(pValue))
+          {
+    pValue := AB.WA.value2str(pValue, vector('x', 'value'), vector('foaf:knows', ''));
+    pFields := vector_concat (pFields, vector ('P_RELATIONSHIPS'));
+    pValues := vector_concat (pValues, vector (pValue));
+          }
+  AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation);
+          }
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_vcard2 (
   in domain_id integer,
   in content any,
   in options any := null,
   in validation any := null,
-  in contentType any := 0,
-  in contentIRI varchar := null)
-{
-  declare N, M, L, mLength, iLength, id integer;
-  declare tmp, tmp2, tmpTags, data, pFields, pValues any;
-  declare Tags, Meta, Persons, Person, Items any;
-  declare S, T, name, fullName varchar;
+  in progress_id varchar := null)
+          {
+  declare items, data any;
+  declare S, st, msg, meta any;
+  declare contentType, contentIRI any;
 
-  Tags := case when isnull (options) then '' else get_keyword ('tags', options, '') end;
-  if (isnull (contentIRI))
-    contentIRI := AB.WA.ab_graph_create ();
+  if (isnull (options))
+    options := vector ();
+
+  contentType := get_keyword ('contentType', options, 0);
+  contentIRI := get_keyword ('contentIRI', options, AB.WA.ab_graph_create ());
 
   declare exit handler for sqlstate '*'
-  {
-    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+          {
     AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');
   };
 
-  Meta := vector
-    (
-      'P_NAME',
-      'P_FIRST_NAME',
-      'P_LAST_NAME',
-      'P_BIRTHDAY',
-      'P_TITLE',
-      'P_TAGS'
-    );
-  mLength := length (Meta);
-
-  if (contentType = 0)
+  if (contentType > 0)
   {
-    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
-  } else {
-    declare st, msg, meta any;
-
-    -- S := sprintf ('SPARQL load <%s> into graph <%s>', content, contentIRI);
-    S := sprintf ('SPARQL\ndefine get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', content, contentIRI);
+    S := sprintf ('sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }', content, contentIRI);
     st := '00000';
+        commit work;
     exec (S, st, msg, vector (), 0, meta, Items);
     if ('00000' <> st)
       signal (st, msg);
-  }
-  S := ' SPARQL '                                                    ||
-       ' define input:storage "" '                                   ||
-       ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> '     ||
-       ' select ?P_ID'                                               ||
-       '   from <%s> '                                               ||
-       '  where { ?P_ID a vcard:vCard . }';
-  Items := AB.WA.ab_sparql (sprintf (S, contentIRI));
-  for (L := 0; L < length (Items); L := L + 1)
-  {
-    AB.WA.ab_sparql (sprintf ('SPARQL\ndefine get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', Items[L][0], contentIRI));
-    S := ' SPARQL ' ||
-         ' define input:storage "" ' ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '      ||
-         ' prefix foaf: <http://xmlns.com/foaf/0.1/> '                 ||
-         ' prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> '    ||
-         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> '     ||
-         ' prefix bio: <http://vocab.org/bio/0.1/> '                   ||
-         ' select ?P_NAME ?P_FIRST_NAME ?P_LAST_NAME ?P_BIRTHDAY ?P_TITLE ?P_TAGS' ||
-         '   from <%s> '                                          ||
-         '  where { '                                             ||
-         '         <%s> a vcard:vCard . '                         ||
-         '         optional { ?P_ID vcard:NICKNAME ?P_NAME. }. '  ||
-         '         optional { ?P_ID vcard:N ?N. '                 ||
-         '                    ?N vcard:Given ?P_FIRST_NAME. '     ||
-         '                    ?N vcard:Family ?P_LAST_NAME. '     ||
-         '                    ?N vcard:Prefix ?P_TITLE. '         ||
-         '                  }.'                                   ||
-         '         optional { ?P_ID vcard:BDAY ?P_BIRTHDAY} . '   ||
-         '         optional { ?P_ID vcard:CATEGORIES ?P_TAGS} . ' ||
-         '       }';
-    Person := AB.WA.ab_sparql (sprintf (S, Items[L][0], contentIRI));
-    if (length (Person) = 1)
-    {
-      Person := Persons[0];
-      name := Person[1];
-      if (not is_empty_or_null (name))
-      {
-        pFields := vector ('P_NAME');
-        pValues := vector (name);
-        if (content like 'http://%')
-        {
-          pFields := vector_concat (pFields, vector ('P_FOAF'));
-          pValues := vector_concat (pValues, vector (content));
-        }
-        for (M := 2; M < mLength; M := M + 1)
-        {
-          tmp := Meta[M];
-          tmp2 := Person[M];
-          tmpTags := tags;
-          if (tmp = 'P_BIRTHDAY')
-          {
-            {
-              declare continue handler for sqlstate '*'
-              {
-                tmp := '';
-              };
-              tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
-            }
-          }
-          if (tmp = 'P_KIND')
-          {
-            tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
-          }
-          if (tmp = 'P_MAIL')
-          {
-            tmp2 := replace (tmp2, 'mailto:', '');
-          }
-          if (tmp = 'P_PHONE')
-          {
-            tmp2 := replace (tmp2, 'tel:', '');
-          }
-          if (tmp = 'P_TITLE')
-          {
-            tmp2 := AB.WA.import_title (tmp2);
-          }
-          if (tmp = 'P_TAGS')
-          {
-            tmpTags := AB.WA.tags_join (tmpTags, tmp2);
-            tmp := '';
-          }
-          if (tmp <> '')
-          {
-            pFields := vector_concat (pFields, vector (tmp));
-            pValues := vector_concat (pValues, vector (tmp2));
-          }
-        }
-        commit work;
-        connection_set ('__addressbook_import', '1');
-        AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tmpTags, validation);
-        connection_set ('__addressbook_import', '0');
       }
+  else if (contentType = 0)
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
     }
+
+  S := sprintf ('sparql
+                 define input:storage ""
+                 prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+                 select ?x
+                   from <%s>
+                  where { ?x a vcard:vCard . }', contentIRI);
+  items := AB.WA.ab_sparql (S);
+  foreach (any item in items) do
+  {
+    if (not AB.WA.import_progress_id (progress_id))
+      return;
+
+    data := AB.WA.import_vcard2_array (item[0], contentIRI);
+    AB.WA.import_rdf_data (domain_id, data, options, validation);
   }
 
 _delete:;
@@ -3796,21 +3987,59 @@ _delete:;
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.import_title (
-  in title varchar)
+create procedure AB.WA.import_vcard2_array (
+  in iri varchar,
+  in graph varchar)
 {
-  declare M integer;
-  declare V any;
+  declare N integer;
+  declare S varchar;
+  declare V, S, st, msg, rows, meta any;
 
-  V := vector ('Mr', 'Mrs', 'Dr', 'Ms', 'Sir');
-  for (M := 0; M < length (V); M := M + 1)
+  S := sprintf (' sparql
+                  define input:storage ""
+                  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                  prefix foaf: <http://xmlns.com/foaf/0.1/>
+                  prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+                  prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+                  prefix bio: <http://vocab.org/bio/0.1/>
+                  select ?nick ?firstName ?family_name ?birthday ?title ?keywords
+                    from <%s>
+                   where {
+                          ?iri a vcard:vCard .
+                          optional { ?iri vcard:NICKNAME ?nick. }.
+                          optional { ?iri vcard:N ?N.
+                                     ?N vcard:Given ?firstName.
+                                     ?N vcard:Family ?family_name.
+                                     ?N vcard:Prefix ?title.
+                                   }.
+                          optional { ?iri vcard:BDAY ?birthday} .
+                          optional { ?iri vcard:CATEGORIES ?keywords} .
+                          filter (?iri = iri(?::0)).
+                         }', graph);
+  V := vector ();
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (iri), vector ('use_cache', 1), meta, rows);
+  if (st = '00000')
   {
-    if (lcase (title) like (lcase (V[M])|| '%'))
+    meta := ODS.ODS_API.simplifyMeta(meta);
+    foreach (any row in rows) do
+  {
+      N := 0;
+      while (N < length(meta))
+      {
+        if (meta[N] like '%_array')
     {
-      return V[M];
+          ODS.ODS_API.appendPropertyArray (V, N, meta[N], row[N], meta, row);
+        } else {
+          ODS.ODS_API.appendProperty (V, meta[N], row[N]);
+    }
+        N := N + 1;
+  }
     }
   }
-  return '';
+  return V;
 }
 ;
 
@@ -3819,216 +4048,71 @@ create procedure AB.WA.import_title (
 create procedure AB.WA.import_foaf (
   inout domain_id integer,
   inout content any,
-  in tags any,
-  in validation any,
-  in contentType any := 0,
-  in contentIRI varchar := null,
-  in contentItems any := null,
-  in contentDepth any := 0,
-  in contentLimit any := 100,
-  in contentFollow any := 'foaf:knows')
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
 {
-  declare N, M, pLength, mLength, iLength, id integer;
-  declare tmp, tmp2, tmpTags, data, pFields, pValues any;
-  declare Meta, Persons, Person, Items any;
-  declare S, T, P, name, fullName varchar;
+  declare S, T varchar;
+  declare st, msg, meta, items, data any;
+  declare contentType, contentIRI, contentItems, contentPings, contentDepth, contentLimit, contentFollow any;
 
-  if (isnull (contentIRI))
-    contentIRI := AB.WA.ab_graph_create ();
+  if (isnull (options))
+    options := vector ();
+
+  contentType := get_keyword ('contentType', options, 0);
+  contentIRI := get_keyword ('contentIRI', options, AB.WA.ab_graph_create ());
+  contentItems := get_keyword ('contentItems', options);
+  contentPings := get_keyword ('contentPings', options);
 
   declare exit handler for sqlstate '*'
   {
-    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    -- dbg_obj_print ('', __SQL_MESSAGE);
     AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');    
   };
 
-  Meta := vector
-    (
-      'P_ID',
-      'P_NAME',
-      'P_FULL_NAME',
-      'P_KIND',
-      'P_FIRST_NAME',
-      'P_LAST_NAME',
-      'P_BIRTHDAY',
-      'P_MAIL',
-      'P_WEB',
-      'P_ICQ',
-      'P_MSN',
-      'P_AIM',
-      'P_YAHOO',
-      'P_TITLE',
-      'P_H_PHONE',
-      'P_H_WEB',
-      'P_B_WEB',
-      'P_H_LAT',
-      'P_H_LNG',
-      'P_TAGS',
-      'P_PHOTO'
-    );
-  mLength := length (Meta);
-
-  if (contentType = 0)
+  if (contentType > 0)
   {
-    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
-  } else {
-    declare st, msg, meta any;
+    contentDepth := get_keyword ('contentDepth', options, 0);
+    contentLimit := get_keyword ('contentLimit', options, 100);
+    contentFollow := get_keyword ('contentFollow', options, 'foaf:knows');
   
     T := case when contentDepth then sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI) else '' end;
     S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
+    commit work;
     exec (S, st, msg, vector (), 0, meta, Items);
     if ('00000' <> st)
       signal (st, msg);
   }
+  else if (contentType = 0)
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
+  }
+
   if (isnull (contentItems))
   {
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' define input:storage ""                                   \n' ||
-                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' SELECT ?x                                                 \n' ||
-                                       '   FROM <%s>                                               \n' ||
-                                       '  WHERE {                                                  \n' ||
-                                       '          {?x a foaf:Person .}                             \n' ||
-                                       '          UNION                                            \n' ||
-                                       '          {?x a foaf:Organization .}                       \n' ||
-                                       '        }', contentIRI));
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL
+                                         define input:storage ""
+                                         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                                         PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+                                         SELECT ?x
+                                           FROM <%s>
+                                          WHERE {
+                                                  {?x a foaf:Person .}
+                                                  UNION
+                                                  {?x a foaf:Organization .}
+                                                }', contentIRI));
   } else {
     Items := contentItems;
   }
-  iLength := length (Items);
+  foreach (any item in items) do
+      {
+    if (not AB.WA.import_progress_id (progress_id))
+      return;
 
-    S := ' SPARQL ' ||
-       ' define input:storage "" ' ||
-       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-       ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
-       ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
-       ' prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> ' ||
-       ' prefix bio: <http://vocab.org/bio/0.1/> ' ||
-       ' select ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE, ?P_H_WEB, ?P_B_WEB, ?P_H_LAT, ?P_H_LNG, ?P_TAGS, ?P_PHOTO' ||
-       '   from <%s> ' ||
-       '  where { ' ||
-       '         {?P_ID a foaf:Person } UNION {?P_ID a foaf:Organization } . ' ||
-       '         ?P_ID rdf:type ?P_KIND .' ||
-       '         optional { ?P_ID foaf:nick ?P_NAME} . '                        ||
-       '         optional { ?P_ID foaf:title ?P_TITLE} . '                      ||
-       '         optional { ?P_ID foaf:name ?P_FULL_NAME} . '                   ||
-       '         optional { ?P_ID foaf:firstNname ?P_FIRST_NAME} . '            ||
-       '         optional { ?P_ID foaf:family_name ?P_LAST_NAME} . '            ||
-       '         optional { ?P_ID foaf:dateOfBirth ?P_BIRTHDAY} . '             ||
-       '         optional { ?P_ID foaf:mbox ?P_MAIL} . '                        ||
-       '         optional { ?P_ID foaf:workplaceHomepage ?P_WEB} . '            ||
-       '         optional { ?P_ID foaf:icqChatID ?P_ICQ } .'                    ||
-       '         optional { ?P_ID foaf:msnChatID ?P_MSN } .'                    ||
-       '         optional { ?P_ID foaf:aimChatID ?P_AIM } .'                    ||
-       '         optional { ?P_ID foaf:yahooChatID ?P_YAHOO } .'                ||
-       '         optional { ?P_ID foaf:phone ?P_H_PHONE } .'                    ||
-       '         optional { ?P_ID foaf:homepage ?P_H_WEB} . '                   ||
-       '         optional{ ?P_ID foaf:workplaceHomepage ?P_B_WEB } .'          ||
-       '         optional{ ?P_ID foaf:depiction ?P_PHOTO } .'                  ||
-       '         optional{ ?P_ID foaf:based_near ?based_near .'                ||
-       '                   ?based_near geo:lat ?P_H_LAT ;'                     ||
-       '                               geo:long ?P_H_LNG .'                    ||
-       '                 } .'                                                  ||
-       '         optional{ ?P_ID bio:keywords ?P_TAGS } .'                     ||
-       '         optional{ ?P_ID foaf:interest ?interest .'                    ||
-       '                   ?interest rdfs:label ?interest_label. } .'          ||
-         '       }';
-  Persons := AB.WA.ab_sparql (sprintf (S, contentIRI));
-  pLength := length (Persons);
-  P := '';
-  for (N := 0; N < pLength; N := N + 1)
-    {
-    Person := Persons[N];
-    if (P <> Person[0])
-      {
-      for (M := 0; M < iLength; M := M + 1)
-      {
-        if (Person[0] = Items[M][0])
-      {
-          goto _import;
-        }
-      }
-      }
-    goto _next;
-
-  _import:;
-    P := Person[0];
-    name := Person[1];
-    fullName := Person[2];
-    if (isnull (fullName) and not (isnull (Person[4]) and isnull (Person[5])))
-    {
-      fullName := trim (Person[4] || ' ' || Person[5]);
-    }
-    if (not is_empty_or_null (coalesce (name, fullName)))
-      {
-        pFields := vector ('P_NAME');
-      pValues := vector (coalesce (name, fullName));
-      if (P not like 'nodeID://%')
-	      {
-          pFields := vector_concat (pFields, vector ('P_IRI'));
-        pValues := vector_concat (pValues, vector (P));
-	      }
-	      if (content like 'http://%')
-	      {
-          pFields := vector_concat (pFields, vector ('P_FOAF'));
-          pValues := vector_concat (pValues, vector (content));
-	      }
-            if (not isnull (fullName))
-            {
-        pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
-              pValues := vector_concat (pValues, vector (fullName));
-            }
-      for (M := 3; M < mLength; M := M + 1)
-      {
-            tmp := Meta[M];
-        tmp2 := Person[M];
-        tmpTags := tags;
-            if (tmp = 'P_BIRTHDAY')
-            {
-              {
-            declare continue handler for sqlstate '*'
-            {
-                  tmp := '';
-                };
-                tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
-              }
-            }
-            if (tmp = 'P_KIND')
-            {
-          tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
-            }
-            if (tmp = 'P_MAIL')
-            {
-              tmp2 := replace (tmp2, 'mailto:', '');
-            }
-        if (tmp = 'P_PHONE')
-        {
-          tmp2 := replace (tmp2, 'tel:', '');
-        }
-        if (tmp = 'P_TITLE')
-        {
-          tmp2 := AB.WA.import_title (tmp2);
-        }
-        if (tmp = 'P_TAGS')
-        {
-          tmpTags := AB.WA.tags_join (tmpTags, tmp2);
-          tmp := '';
-        }
-            if (tmp <> '')
-            {
-              pFields := vector_concat (pFields, vector (tmp));
-              pValues := vector_concat (pValues, vector (tmp2));
-            }
-          }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tmpTags, validation);
-      connection_set ('__addressbook_import', '0');
-      }
-  _next:;
+    data := ODS.ODS_API.extractFOAFDataArray (item[0], contentIRI);
+    AB.WA.import_rdf_data (domain_id, data, options, validation);
   }
 
 _delete:;
@@ -4040,15 +4124,19 @@ _delete:;
 --
 create procedure AB.WA.import_foaf_content (
   inout content any,
-  in contentType any := 0,
-  in contentIRI any := null,
-  in contentDepth any := 0,
-  in contentLimit any := 100,
-  in contentFollow any := 'foaf:knows')
+  in options any := null)
 {
   declare N, M integer;
   declare tmp, Items, Persons any;
+  declare st, msg, meta any;
   declare S, T, personIRI varchar;
+  declare contentType, contentIRI, contentDepth, contentLimit, contentFollow any;
+
+  if (isnull (options))
+    options := vector ();
+
+  contentType := get_keyword ('contentType', options, 0);
+  contentIRI := get_keyword ('contentIRI', options, AB.WA.ab_graph_create ());
 
   declare exit handler for sqlstate '*'
   {
@@ -4058,90 +4146,76 @@ create procedure AB.WA.import_foaf_content (
   };
 
   Persons := vector ();
-  if (isnull (contentIRI))
-    contentIRI := AB.WA.ab_graph_create ();
   AB.WA.ab_graph_delete (contentIRI);
 
   -- store in QUAD Store
-  if (contentType)
+  if (contentType > 0)
   {
-    declare st, msg, meta any;
+    contentDepth := get_keyword ('contentDepth', options, 0);
+    contentLimit := get_keyword ('contentLimit', options, 100);
+    contentFollow := get_keyword ('contentFollow', options, 'foaf:knows');
 
-    T := '';
-    if (contentDepth)
-      T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
+    T := case when contentDepth then sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI) else '' end;
     S := sprintf ('sparql \n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
     exec (S, st, msg, vector (), 0, meta, Items);
-    if ('00000' <> st)
+    if (st <> '00000')
       signal (st, msg);
-  } else {
+  }
+  else
+  {
     DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
   }
-  Items := AB.WA.ab_sparql (sprintf (' sparql \n' ||
-                                     ' define input:storage ""                                   \n' ||
-                                     ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                     ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                     ' select ?person, ?nick, ?name, ?mbox                       \n' ||
-                                     '   from <%s>                                               \n' ||
-                                     '  where {                                                  \n' ||
-                                     '          [] a foaf:PersonalProfileDocument ;              \n' ||
-                                     '             foaf:primaryTopic ?person .                   \n' ||
-                                     '          optional { ?person foaf:nick ?nick } .           \n' ||
-                                     '          optional { ?person foaf:name ?name } .           \n' ||
-                                     '          optional { ?person foaf:mbox ?mbox } .           \n' ||
-                                     '        }', contentIRI));
+  Items := AB.WA.ab_sparql (sprintf (' sparql
+                                       define input:storage ""
+                                       prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                                       prefix foaf: <http://xmlns.com/foaf/0.1/>
+                                       select ?person, ?nick, ?name, ?mbox
+                                         from <%s>
+                                        where {
+                                                [] a foaf:PersonalProfileDocument ;
+                                                   foaf:primaryTopic ?person .
+                                                optional { ?person foaf:nick ?nick } .
+                                                optional { ?person foaf:name ?name } .
+                                                optional { ?person foaf:mbox ?mbox } .
+                                              }', contentIRI));
   if (length (Items))
   {
     personIRI := Items[0][0];
     tmp := replace (Items[N][3], 'mailto:', '');
     Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), tmp)));
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' define input:storage ""                                   \n' ||
-                                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' select ?person, ?nick, ?name, ?mbox                       \n' ||
-                                       '   from <%s>                                               \n' ||
-                                       '  where {                                                  \n' ||
-                                       '          {                                                \n' ||
-                                       '            <%s> foaf:knows ?person .                      \n' ||
-                                       '            ?person a foaf:Person .                        \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '          UNION                                            \n' ||
-                                       '          {                                                \n' ||
-                                       '            <%s> foaf:knows ?person .                      \n' ||
-                                       '            ?person a foaf:Organization .                  \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '        }', contentIRI, personIRI, personIRI));
+    S := sprintf (' sparql
+                    define input:storage ""
+                    prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                    prefix foaf: <http://xmlns.com/foaf/0.1/>
+                    select ?person, ?nick, ?name, ?mbox
+                      from <%s>
+                     where {
+                             <%s> foaf:knows ?person .
+                             {?person a foaf:Person .}
+                             UNION
+                             {?person a foaf:Organization .}
+                             optional { ?person foaf:nick ?nick } .
+                             optional { ?person foaf:name ?name } .
+                             optional { ?person foaf:mbox ?mbox } .
+                           }', contentIRI, personIRI);
   } else {
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' define input:storage ""                                   \n' ||
-                                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' select ?person, ?nick, ?name, ?mbox                       \n' ||
-                                       '   from <%s>                                               \n' ||
-                                       '  where {                                                  \n' ||
-                                       '          {                                                \n' ||
-                                       '            ?person a foaf:Person .                        \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '          UNION                                            \n' ||
-                                       '          {                                                \n' ||
-                                       '            ?person a foaf:Organization .                  \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '        }', contentIRI));
+    S := sprintf (' SPARQL
+                    define input:storage ""
+                    prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                    prefix foaf: <http://xmlns.com/foaf/0.1/>
+                    select ?person, ?nick, ?name, ?mbox
+                      from <%s>
+                     where {
+                             {?person a foaf:Person .}
+                             UNION
+                             {?person a foaf:Organization .}
+                             optional { ?person foaf:nick ?nick } .
+                             optional { ?person foaf:name ?name } .
+                             optional { ?person foaf:mbox ?mbox } .
+                           }', contentIRI);
   }
+  Items := AB.WA.ab_sparql (S);
   for (N := 0; N < length (Items); N := N + 1)
   {
     if (not isnull (coalesce (Items[N][2], Items[N][1])))
@@ -4167,99 +4241,39 @@ _exit:;
 create procedure AB.WA.import_csv (
   in domain_id integer,
   in content any,
-  in tags any,
-  in maps any,
-  in validation any)
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
 {
-  declare N, M, nLength, mLength, id integer;
-  declare tmp, tmp2, data, pFields, pValues any;
-  declare nameIdx, firstNameIdx, lastNameIdx, fullNameIdx integer;
-  declare name, fullName varchar;
+  declare N, M, nLength, mLength integer;
+  declare tmp, data, pFields, pValues any;
+  declare maps any;
 
-  nameIdx := -1;
-  firstNameIdx := -1;
-  lastNameIdx := -1;
-  fullNameIdx := -1;
-  for (N := 0; N < length (maps); N := N + 2)
-  {
-    if (maps[N+1] = 'P_NAME')
-      nameIdx := cast (maps[N] as integer);
-    if (maps[N+1] = 'P_FIRST_NAME')
-      firstNameIdx := cast (maps[N] as integer);
-    if (maps[N+1] = 'P_LAST_NAME')
-      lastNameIdx := cast (maps[N] as integer);
-    if (maps[N+1] = 'P_FULL_NAME')
-      fullNameIdx := cast (maps[N] as integer);
-  }
+  if (isnull (options))
+    options := vector ();
+
+  maps := get_keyword ('maps', options, vector());
+
   nLength := length (content);
   for (N := 1; N < nLength; N := N + 1)
   {
+    if (not AB.WA.import_progress_id (progress_id))
+      return;
+
+    pFields := vector ();
+    pValues := vector ();
     data := split_and_decode (content [N], 0, '\0\0,');
-    name := '';
-    fullName := '';
-    if ((nameIdx <> -1) and (nameIdx < length (data)))
-      name := trim (trim (data[nameIdx], '"'));
-    if ((fullNameIdx <> -1) and (fullNameIdx < length (data)))
-      fullName := trim (trim (data[fullNameIdx], '"'));
-    if (fullName = '')
-    {
-      if ((firstNameIdx <> -1) and (firstNameIdx < length (data)))
-         fullName := trim (trim (data[firstNameIdx], '"'));
-      if ((lastNameIdx <> -1) and (lastNameIdx < length (data)))
-         fullName := fullName || ' ' || trim (trim (data[lastNameIdx], '"'));
-       fullName := trim (fullName);
-    }
-    if (name = '')
-      name := fullName;
-    if (name <> '')
-    {
-      pFields := vector ('P_NAME');
-      pValues := vector (name);
       mLength := length (data);
       for (M := 0; M < mLength; M := M + 1)
       {
-        if (M <> nameIdx)
-        {
-          if (M = fullNameIdx)
-          {
-            if (fullName <> '')
-            {
-               pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
-               pValues := vector_concat (pValues, vector (fullName));
-             }
-          } else
-          {
              tmp := get_keyword (cast (M as varchar), maps, '');
             if (tmp <> '')
             {
-               tmp2 := trim (data[M], '"');
-              if (tmp = 'P_BIRTHDAY')
-              {
-                 {
-                   declare continue handler for sqlstate '*' {
-                     tmp := '';
-                   };
-                   tmp2 := AB.WA.dt_reformat (tmp2);
-                 }
-               }
-              if (tmp = 'P_TITLE')
-              {
-                tmp2 := AB.WA.import_title (tmp2);
-              }
-              if (tmp <> '')
-              {
                  pFields := vector_concat (pFields, vector (tmp));
-                 pValues := vector_concat (pValues, vector (tmp2));
-               }
-             }
-           }
+        pValues := vector_concat (pValues, vector (trim (data[M], '"')));
          }
       }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
-      connection_set ('__addressbook_import', '0');
-    }
+    AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation);
   }
 }
 ;
@@ -4269,18 +4283,27 @@ create procedure AB.WA.import_csv (
 create procedure AB.WA.import_ldap (
   in domain_id integer,
   in content any,
-  in tags any,
-  in maps any,
-  in validation any)
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
 {
   declare N, M, nLength, mLength, id integer;
   declare data, pFields, pValues any;
+  declare maps any;
+
+  if (isnull (options))
+    options := vector ();
+
+  maps := get_keyword ('maps', options, vector());
 
   nLength := length (content);
   for (N := 0; N < nLength; N := N + 2)
   {
     if (content [N] = 'entry')
     {
+      if (not AB.WA.import_progress_id (progress_id))
+        return;
+
       data := content [N+1];
       mLength := length (data);
         pFields := vector ();
@@ -4293,12 +4316,114 @@ create procedure AB.WA.import_ldap (
             pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
           }
         }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
-      connection_set ('__addressbook_import', '0');
+      AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation);
     }
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_contact_update (
+  in id integer,
+  in domain_id integer,
+  in pFields any,
+  in pValues any,
+  in options any,
+  in validation any)
+{
+  declare N, noRelations inteher;
+  declare tmp, tags, name, firstName, lastName, fullName varchar;
+
+  name := '';
+  firstName := '';
+  lastName := '';
+  fullName := '';
+  noRelations := 1;
+  for (N := 0; N < length (pFields); N := N + 1)
+  {
+    if (pFields[N] = 'P_NAME')
+    {
+      name := pValues[N];
+    }
+    else if (pFields[N] = 'P_FIRST_NAME')
+    {
+      firstName := pValues[N];
+    }
+    else if (pFields[N] = 'P_LAST_NAME')
+    {
+      lastName := pValues[N];
+    }
+    else if (pFields[N] = 'P_FULL_NAME')
+    {
+      fullName := pValues[N];
+    }
+    else if (pFields[N] = 'P_BIRTHDAY')
+    {
+      {
+        declare continue handler for sqlstate '*'
+        {
+          pValues[N] := '';
+        };
+        pValues[N] := AB.WA.dt_reformat (pValues[N], 'Y-M-D');
+      }
+    }
+    else if (pFields[N] = 'P_KIND')
+    {
+      pValues[N] := case when (pValues[N] = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
+    }
+    else if (pFields[N] = 'P_MAIL')
+    {
+      pValues[N] := replace (pValues[N], 'mailto:', '');
+    }
+    else if (pFields[N] = 'P_PHONE')
+    {
+      pValues[N] := replace (pValues[N], 'tel:', '');
+    }
+    else if (pFields[N] = 'P_TITLE')
+    {
+      pValues[N] := ODS.ODS_API.appendPropertyTitle (pValues[N]);
+    }
+    else if (pFields[N] = 'P_RELATIONSHIPS')
+    {
+      pValues[N] := pValues[N] || '\nfoaf:knows;' || AB.WA.account_sioc_url (domain_id);
+      noRelations := 0;
+    }
+  }
+  if (noRelations)
+  {
+    pFields := vector_concat (pFields, vector ('P_RELATIONSHIPS'));
+    pValues := vector_concat (pValues, vector ('foaf:knows;' || AB.WA.account_sioc_url (domain_id)));
+  }
+  if (fullName = '')
+  {
+    fullName := trim (firstName || ' ' || lastName);
+    pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
+    pValues := vector_concat (pValues, vector (fullName));
+  }
+  if (name = '')
+  {
+    pFields := vector_concat (pFields, vector ('P_NAME'));
+    pValues := vector_concat (pValues, vector (fullName));
+  }
+  tags := get_keyword ('tags', options, '');
+
+      commit work;
+      connection_set ('__addressbook_import', '1');
+  id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, tags, validation);
+  if (length (id))
+  {
+    tmp := get_keyword ('grants', options, '');
+    if (tmp <> '')
+      AB.WA.contact_share (AB.WA.domain_owner_id (domain_id), id[0], tmp, 1);
+
+    tmp := get_keyword ('acls', options, '');
+    if (tmp <> '')
+      AB.WA.contact_update2 (id[0], domain_id, 'P_ACL', tmp);
+  }
+  connection_set ('__addressbook_import', '0');
+
+  return id;
 }
 ;
 
@@ -5215,8 +5340,7 @@ create procedure AB.WA.syncml2entry_internal (
 
   if (not isinteger (_data))
   {
-    IDs := AB.WA.import_vcard (_domain_id, _data, vector ('tags', _tags), null, _res_mod_time, _res_name);
-    -- return;
+    IDs := AB.WA.import_vcard (_domain_id, _data, vector ('tags', _tags, 'updatedBefore', _res_mod_time, 'externalUID', _res_name));
     for (N := 0; N < length (IDs); N := N + 1)
     {
       _uid := (select P_UID from AB.WA.PERSONS where P_ID = IDs[N]);
@@ -7634,7 +7758,6 @@ create procedure AB.WA.yahooSQL (
   sql := replace (sql, '%TOP%', cast (_min as varchar));
 
   exec (sql, st, msg, params, 0, _meta, _data);
-  -- dbg_obj_print('', sql, st);
   if ('00000' <> st)
     return 0;
 
