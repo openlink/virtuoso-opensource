@@ -5706,13 +5706,14 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
     {
       SPART *var = eq->e_vars[var_ctr];
       caddr_t tabid = var->_.var.tabid;
-      if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && (NULL != tabid))
+      int mixed_restrictions = (eq->e_rvr.rvrRestrictions | var->_.var.rvr.rvrRestrictions);
+      if ((SPART_VARR_FIXED & mixed_restrictions) && (NULL != tabid))
         {
           SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
           ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &(eq->e_rvr), var, var_triple);
           continue;
         }
-      if ((NULL != tabid) && ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions))
+      if (((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & mixed_restrictions) && (NULL != tabid))
         {
           SPART *glob_var;
           caddr_t glob_name;
@@ -5726,7 +5727,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
           var_rv->_.retval.vname = "";
           vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
           SPART_AUTO (glob_rv, glob_rv_buf, SPAR_RETVAL);
-          if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
+          if (SPART_VARR_GLOBAL & mixed_restrictions)
             ssg_find_global_in_equiv (eq, &glob_var, &glob_name);
           else
             {
@@ -5782,7 +5783,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
               ssg_print_scalar_expn (ssg, glob_rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
         }
-      if ((SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions) &&
+      else if ((SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions) &&
         ((NULL != tabid) ||
          ((SPART_VARR_TYPED & eq->e_replaces_filter) && (0 == eq->e_gspo_uses) && (0 == var_ctr)) ) )
         {
