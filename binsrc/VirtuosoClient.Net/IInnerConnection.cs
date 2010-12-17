@@ -65,7 +65,7 @@ namespace OpenLink.Data.Virtuoso
 
 		void BeginTransaction (CLI.IsolationLevel level);
 
-		void EndTransaction (bool commit, bool endedOnServer);
+		void EndTransaction (bool commit);
 
 		void Enlist (object distributedTransaction);
 

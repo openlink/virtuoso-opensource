@@ -537,8 +537,7 @@ namespace OpenLink.Data.Virtuoso
             if (autocommit)
                 throw new InvalidOperationException ("No transaction is active.");
 
-            VirtuosoTransaction transaction = (VirtuosoTransaction) transactionStrongRef;
-            innerConnection.EndTransaction (commit, transaction.endedOnServer);
+            innerConnection.EndTransaction (commit);
 
             transactionStrongRef = null;
             autocommit = true;
@@ -567,12 +566,6 @@ namespace OpenLink.Data.Virtuoso
             }
             return transaction;
         }
-
-	internal void SetTransactionEnded ()
-	{
-            VirtuosoTransaction transaction = (VirtuosoTransaction) transactionStrongRef;
-	    transaction.endedOnServer = true;
-	}
 
         protected override void Dispose (bool disposing)
         {
