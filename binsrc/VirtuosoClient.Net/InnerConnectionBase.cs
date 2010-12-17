@@ -107,7 +107,7 @@ namespace OpenLink.Data.Virtuoso
 		public abstract IInnerCommand CreateInnerCommand (VirtuosoCommand outerCommand);
 		public abstract void RemoveCommand (VirtuosoCommand outerCommand);
 		public abstract void BeginTransaction (CLI.IsolationLevel level);
-		public abstract void EndTransaction (bool commit, bool endedOnServer);
+		public abstract void EndTransaction (bool commit);
 		public abstract void Enlist (object transaction);
 		public abstract string GetCurrentCatalog ();
 		public abstract void SetCurrentCatalog (string name);

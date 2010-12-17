@@ -269,12 +269,10 @@ namespace OpenLink.Data.Virtuoso
 			isolation = level;
 		}
 
-		public override void EndTransaction (bool commit, bool endedOnServer)
+		public override void EndTransaction (bool commit)
 		{
 		        Debug.WriteLineIf (CLI.FnTrace.Enabled, String.Format (
 			      "ManagedConnection.EndTransaction ({0})", commit));
-                        if (!endedOnServer)
-                        {
 			  CLI.CompletionType completion = commit ? 
 			      CLI.CompletionType.SQL_COMMIT : 
 			      CLI.CompletionType.SQL_ROLLBACK;
@@ -301,7 +299,6 @@ namespace OpenLink.Data.Virtuoso
 				  errors.AddServerError ((string) results[1], null, (string) results[2]);
 				  Diagnostics.HandleErrors (CLI.ReturnCode.SQL_ERROR, this);
 			  }
-                        }
 
 			autocommit = true;
 			isolation = CLI.IsolationLevel.SQL_TXN_READ_COMMITED;
