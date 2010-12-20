@@ -2386,6 +2386,7 @@ CLI_WRAPPER (sf_sql_free_stmt, (caddr_t stmt_id, int op), (stmt_id, op))
 #define sf_sql_free_stmt sf_sql_free_stmt_w
 #endif
 
+/* in case of rollback don't report txn error as txn is already rolledback */
 caddr_t
 cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 {
@@ -2403,7 +2404,7 @@ cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
   LEAVE_CLIENT (cli);
   rc = lt_close (lt, op);
   /* lt_close leaves the txn mtx */
-  if (rc == LTE_OK)
+  if (rc == LTE_OK || SQL_ROLLBACK == op)
     {
       res = SQL_SUCCESS;
     }
