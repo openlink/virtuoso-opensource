@@ -320,6 +320,14 @@
 
     <div id="header">
       <div id="hd_l">
+        <div id="opl_logo">
+          <a href="http://www.openlinksw.com" 
+             title="OpenLink Software">
+            <img src="statics/openlinklogo_wstrap_2008.png" 
+                 alt="[OpenLink Software]" />
+          </a>
+        </div>
+	<div id="entity_info">
 	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (label); ?></a></h1>
         <div id="homelink">
         </div>
@@ -328,10 +336,9 @@
 	    from Data Source : <a href="<?V dsn ?>"><?V dsn ?></a>, 
 	    within Data Space : <a href="http://<?V dspace ?>"><?V host ?></a>
         </div>
+        </div> <!-- #entity_info -->
       </div> <!-- hd_l -->
       <div id="hd_r">
-        <a href="http://www.openlinksw.com" title="OpenLink Software"><img src="statics/openlinklogo_wstrap_2008.png" alt="[OpenLink Software]" height="80" width="191" /></a>
-      </div> <!-- hd_r -->
 <?vsp
   declare qrimg any;
   qrimg := rdfdesc_make_qr_code (rdfdesc_make_curie (case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end, lines));
@@ -340,6 +347,8 @@
 ?>
 	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
+
+      </div> <!-- hd_r -->
     </div> <!-- header -->
     <div id="content_wrapper">
     <div id="content">

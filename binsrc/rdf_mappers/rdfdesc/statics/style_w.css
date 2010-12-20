@@ -1,9 +1,8 @@
 html { margin: 0; padding: 0; }
 body {
+  font-size: 10pt;
   font-family: gill sans, sans-serif;
-  font-size: 80%;
-  margin: 0;
-  padding: 1.2em 2em}
+  margin: 0}
 
 #rdficon {
   float: right;
@@ -17,20 +16,18 @@ body {
   width: 100%;
   float: left;
   clear: left;
-  border-bottom: 2px solid #696;
-  margin: 0 0 1.2em;
-  padding: 0 0 0.3em; }
+  border-bottom: 2px solid #696}
 
-#hd_l { width: 64%; float: left;}
-#hd_r { width: 33%; float: right; clear: right; text-align: right; }
+#hd_l { width: 85%; float: left; clear: left; margin: 10px 5px 10px 10px}
+#hd_r { width: 12%; float: right; clear: right; text-align: right; margin: 0 10px 0 5px}
 
 #homelink { display: inline; }
 #homelink, #homelink a { color: #666; }
 #homelink a { font-weight: bold; text-decoration: none; }
 #homelink a:hover { color: red; text-decoration: underline; }
 
-h1, h2 { color: #224; }
-h1 { display: inline; font-weight: bold; font-size: 200%; margin: 0; text-align: left; }
+h1, h2 { font-size: 14pt; color: #224; }
+#entity_info h1 { display: inline; font-weight: bold; margin: 0; text-align: left; }
 h2 { font-weight: normal; font-size: 124%; margin: 1.2em 0 0.2em; }
 
 #sidebar h1 {color: #3c9bbc; font-size: 110%; }
@@ -46,7 +43,7 @@ a.sparql-uri:hover { color: red; text-decoration: underline; }
 
 img { border: none; }
 
-table.description { border-collapse: collapse; clear: left; font-size: 100%; margin: 0 0 1em; width: 100%; }
+table.description { border-collapse: collapse; clear: left; font-size: 100%; margin: 0 0 1em; width: 99%; }
 table.description th { text-align: left; }
 table.description td, table.description th { line-height: 1.2em; padding: 0.2em 0.4em; vertical-align: top; }
 table.description ul { margin: 0; padding-left: 0em; }
@@ -69,25 +66,25 @@ a.rdf_source img { vertical-align: middle;margin-right: 5px;}
 #rdficon:hover { background-color: #eef; border: 1px solid #666;}
 
 #content_wrapper {
-width: 80%; float: left; clear: left;
-}
+  width: 100%; float: left; clear: left;}
 
 #content {
-  /* Needed for static help sidebar, but not for help slidebar
-  width: 64%;
-   */
-  width: 95%;
+  width: 100%;
   float:left;
-  margin: 0;
 }
+
+#attributes { margin: 10px } 
+
+#x_content {
+  width: 100%; 
+  height: 300px;
+  margin-top: 3px;
+  margin-bottom: 3px}
+
+
 #err { color: red; font-size: 120%; }
+
 #sidebar {
-  /* Needed for static help sidebar, but not for help slidebar
-  width: 33%;
-  float: right;
-  margin: 0;
-  border-left: 1px solid #696;
-  */
   padding: 5px 10px 5px 10px;
   color: #4e4e4e;
 }
@@ -99,8 +96,8 @@ width: 80%; float: left; clear: left;
   color: #666;
   border-top: 2px solid #696;
   margin: 1.2em 0 0;
-  padding: 0.3em;
-  background-color: #fff;}
+  background-color: #fff;
+  margin-bottom: 30px}
 
 #ft_r { float: right; clear: right;}
 #ft_t { text-align: center; margin-top: 2ex}
@@ -112,6 +109,10 @@ width: 80%; float: left; clear: left;
   color: rgb(20,100,10);
   font-size: 0.9em;
 }
+
+#opl_logo { float: left; clear: left; height: 55px; margin-right: 15px}
+#opl_logo img { height: 55px; float: left; clear:left}
+#entity_info { float: left; }
 
 /* area controlled by navigation tabs */
 
@@ -130,48 +131,43 @@ width: 80%; float: left; clear: left;
 
 /* navigation tabs */
 
-#navlist
-{
+#navlist {
 padding: 3px;
 margin-left: 0;
 padding-bottom: 3px;
-border-bottom: 1px solid #778;
-}
+border-bottom: 1px solid #778 }
 
-#navlist li
-{
+#navlist li {
 list-style: none;
 margin: 0;
 display: inline;
-line-height: 120%;
-}
+  line-height: 120% }
 
-#navlist li a
-{
+#navlist li a {
 padding: 3px 0.5em;
 margin-left: 3px;
 border: 1px solid #778;
 border-bottom: none;
 background: #DDE;
 text-decoration: none;
-line-height: 120%;
-}
+  line-height: 120% }
 
 #navlist li a:link { color: #448; }
 #navlist li a:visited { color: #667; }
 
-#navlist li a:hover
-{
+#navlist li a:hover {
 color: #000;
 background: #AAE;
 border-color: #227;
-border-bottom: none;
-}
+  border-bottom: none }
 
-#navlist li a.current
-{
+#navlist li a.current {
 background: white;
-border-bottom: 1px solid #EAEAEE;
+  border-bottom: none;
 line-height: 120%;
-}
-#qrcode { position:fixed; top:110px; right: 30px; z-index: -1; } 
+  padding-bottom: 5px; }
+
+#qrcode { 
+  float: right;
+  clear: right;
+  margin-right: 20px} 
