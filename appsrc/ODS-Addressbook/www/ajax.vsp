@@ -21,9 +21,18 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+  declare exit handler for SQLSTATE '*'
+  {
+    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    resignal;
+  };
+
   declare domain_id, account_id integer;
-  declare action, subAction any;
+  declare sid, realm, action, subAction any;
   declare aSession any;
+
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
 
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
@@ -32,7 +41,61 @@
   domain_id  := cast (get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast (get_keyword('account_id', aSession, '0') as integer);
 
-  if (action = 'about')
+  if (action = 'load')
+  {
+    declare progressID, progressIndex any;
+
+    progressID := cast (get_keyword ('id', params, msec_time()) as varchar);
+    progressIndex := registry_get ('addressbook_index_' || progressID);
+	  if (subAction = 'stop')
+	  {
+	    registry_set ('addressbook_action_' || progressID, 'stop');
+	  }
+	  else if (subAction = 'state')
+	  {
+      if (not (isinteger(progressIndex) and (progressIndex = 0)))
+      {
+        http_rewrite ();
+        http_header ('Content-Type: text/xml\r\n');
+        http('<root>');
+        http(sprintf('<index>%s</index>', cast (progressIndex as varchar)));
+        http('</root>');
+      }
+	  }
+	  else if (subAction = 'init')
+	  {
+	    registry_set ('addressbook_index_' || progressID, '0');
+
+	    http_rewrite ();
+	    http_header ('Content-Type: text/xml\r\n');
+	    http ('<root>');
+	    http (sprintf ('<id>%s</id>', cast (progressID as varchar)));
+	    http ('</root>');
+	    http_flush ();
+      commit work;
+
+      declare i_type, i_data, i_options, i_validation any;
+
+      i_type := deserialize (decode_base64 (get_keyword ('i_type', params)));
+      i_data := deserialize (decode_base64 (get_keyword ('i_data', params)));
+      i_options := deserialize (decode_base64 (get_keyword ('i_options', params)));
+      i_validation := deserialize (decode_base64 (get_keyword ('i_validation', params)));
+
+      -- import
+      {
+        declare exit handler for sqlstate '*'
+        {
+        	goto _end;
+        };
+        AB.WA.import (domain_id, i_type, i_data, i_options, i_validation, progressID);
+      }
+	  _end:;
+
+	    registry_remove ('addressbook_index_'  || progressID);
+	    registry_remove ('addressbook_action_' || progressID);
+	  }
+	}
+  else if (action = 'about')
   {
     http (         '<div style="padding: 1em;">');
     http (         '<table style="width: 100%;">');
