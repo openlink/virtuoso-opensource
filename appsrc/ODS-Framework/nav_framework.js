@@ -2448,15 +2448,10 @@ ODS.Nav = function(navOptions) {
 																t.uid,
 																1,
 										    function () {
-																	self.session
-																			.connectionAdd(
-																					t.uid,
-														    t.fullName);
-																	self.session
-																			.invitationAdd(t.uid);
+																	self.session.connectionAdd(t.uid, t.fullName);
+																	self.session.invitationAdd(t.uid);
 											self.connections.show = true;
-																	self
-																			.connectionsGet(
+																	self.connectionsGet(
 																					self.session.userId,
 													     'fullName,photo,homeLocation,dataspace',
 													     self.updateConnectionsInterface);
@@ -3538,21 +3533,7 @@ ODS.Nav = function(navOptions) {
 	    $('ciP2state').innerHTML   = organization.state;
 			$('ciP2zip').innerHTML = (organization.state.length + organization.zip.length) > 0 ? organization.zip + ', ' : ' ';
 	    $('ciP2country').innerHTML = organization.country;
-			$('ciP2tel').innerHTML = (organization.mobile.length > 0) ? organization.phone
-					+ ', ' + organization.mobile
-					: organization.phone;
-
-  //      var organizationA=OAT.Dom.create('a');
-  //      organizationA.href= (organization.url.indexOf('http://')>=0) ?  organization.url : 'http://'+organization.url;
-  //      organizationA.target='_blank';
-  //      organizationA.innerHTML=organization.title;
-  //      OAT.Dom.append([$('ciP2'),
-  //                      organizationA,
-  //                      OAT.Dom.create('br'),
-  //                      OAT.Dom.text(organization.address1+organization.address2),
-  //                      OAT.Dom.create('br'),
-  //                      OAT.Dom.text(organization.city+', '+organization.state+' '+organization.zip+', '+organization.country)
-  //                     ]);
+			$('ciP2tel').innerHTML = (organization.mobile.length > 0) ? organization.phone + ', ' + organization.mobile : organization.phone;
 
 	    var home = {};
 
@@ -3571,6 +3552,12 @@ ODS.Nav = function(navOptions) {
         $('ciP1photo').appendChild(img);
     	}
 
+			$('ciP1uri').href = this.nav.profile.personal_uri;
+  		var x = function(data) {
+			  $('ciP1qrcode').src = 'data:image/jpg;base64,' + data;
+  		};
+      OAT.AJAX.GET ('/ods/api/qrcode?data='+encodeURIComponent(this.nav.profile.personal_uri), null, x, ajaxOptions);
+
 	    $('ciP1fn').innerHTML        = titledFullname;
 	    $('ciP1org').innerHTML       = organization.title;
 	    $('ciP1email').style.display = 'none';
@@ -3579,9 +3566,6 @@ ODS.Nav = function(navOptions) {
 	    $('ciP1state').innerHTML     = home.state;
 			$('ciP1zip').innerHTML = (home.state.length + home.zip.length) > 0 ? home.zip + ', ' : home.zip;
 	    $('ciP1country').innerHTML   = home.country;
-
- //       $('ciP1tel').style.display='none';
-
 			$('ciP1tel').innerHTML = (home.mobile.length > 0) ? home.phone + ', ' + home.mobile : home.phone;
 
 	    //  	    self.profile.ciMap.centerAndZoom (home.latitude,home.longitude,8); /* africa, middle zoom */
@@ -3656,12 +3640,10 @@ ODS.Nav = function(navOptions) {
 //      self.profile.ciMap.optimalPosition(new Array(self.profile.ciMap.homeLocation,self.profile.ciMap.workLocation));
 
       $('sm_personal').href = this.nav.profile.personal_uri;
-			$('sm_openid').href = this.nav.profile.personal_uri.replace(
-					'#this', '');
+			$('sm_openid').href = this.nav.profile.personal_uri.replace('#this', '');
       $('sm_foaf').href = this.nav.profile.foaf_uri;
       $('sm_sioc').href = this.nav.profile.sioc_uri;
-			$('sm_dataspace').href = this.nav.profile.personal_uri.replace(
-					'#this', '');
+			$('sm_dataspace').href = this.nav.profile.personal_uri.replace('#this', '');
       $('sm_vcard').href = this.nav.profile.vcard;
 
 	    return;
@@ -4099,14 +4081,10 @@ ODS.Nav = function(navOptions) {
 				  });
 		} else
       setTimeout ('OAT.Dimmer.hide ()', 5000)
-		OAT.Event.attach(div, "click", function() {
-				  OAT.Dimmer.hide ();
-			      });
+		OAT.Event.attach(div, "click", function() {OAT.Dimmer.hide();});
 
 	OAT.Dimmer.hide ();
-		OAT.Dimmer.show(div, {
-			popup : true
-		});
+		OAT.Dimmer.show(div, {popup : true});
 	OAT.Dom.center (div, 1, 1);
 
 	if (typeof (callback) == "function")
@@ -4115,9 +4093,7 @@ ODS.Nav = function(navOptions) {
 
 	var ajaxOptions = {
 		auth : OAT.AJAX.AUTH_BASIC,
-		onerror : function(request) {
-			dd(request.getStatus());
-		}
+		onerror : function(request) {dd(request.getStatus());}
     };
 
   this.installedPackages = function (callbackFunction) {
@@ -4760,6 +4736,11 @@ ODS.Nav = function(navOptions) {
 	{
 	  self.logIn();
 		lfTab.go(1);
+	}
+	else if (!self.session.sid && (typeof (uriParams['oauth_verifier']) != 'undefined' && uriParams['oauth_verifier'] != '') && (typeof (uriParams['oauth_token']) != 'undefined' && uriParams['oauth_token'] != ''))
+	{
+	  self.logIn();
+		lfTab.go(4);
 	}
 	else if (!self.session.sid && typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
 	{

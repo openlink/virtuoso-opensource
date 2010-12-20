@@ -643,6 +643,7 @@ wa_exec_no_error(
    WS_HTTPS integer default 0,
    WS_REGISTER_OPENID integer default 1,
    WS_REGISTER_FACEBOOK integer default 1,
+   WS_REGISTER_TWITTER integer default 1,
    WS_REGISTER_SSL integer default 1,
    WS_REGISTER_AUTOMATIC_SSL integer default 1,
    WS_FEEDS_UPDATE_PERIOD varchar default \'hourly\',
@@ -727,6 +728,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_OPENID', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_FACEBOOK', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_TWITTER', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL', 'integer default 1')
@@ -2011,6 +2015,7 @@ create procedure INIT_SERVER_SETTINGS ()
   	   WS_REGISTER,
        WS_REGISTER_OPENID,
        WS_REGISTER_FACEBOOK,
+       WS_REGISTER_TWITTER,
        WS_REGISTER_SSL,
        WS_REGISTER_AUTOMATIC_SSL,
   	   WS_MAIL_VERIFY,
@@ -2030,6 +2035,7 @@ create procedure INIT_SERVER_SETTINGS ()
   	  )
 	  values
 	    (
+	     1,
 	     1,
 	     1,
 	     1,
@@ -3685,6 +3691,8 @@ wa_exec_no_error_log(
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_TYPE', 'varchar');
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_URI', 'varchar');
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_OAUTH_SID', 'varchar');
+
+wa_exec_no_error_log('ALTER TABLE DB.DBA.WA_USER_OL_ACCOUNTS ADD FOREIGN KEY (WUO_U_ID) REFERENCES DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
 
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 {

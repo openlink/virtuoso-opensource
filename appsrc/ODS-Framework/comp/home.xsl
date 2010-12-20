@@ -259,21 +259,25 @@
                       if (length (self.arr[7])) {
 			    ?>
                             <tr>
-                      <th><v:label value="Personal Webpage:" /></th>
-                      <td><v:url name="lwpage1" value="--coalesce(self.arr[7],'')" url="--self.arr[7]" xhtml_target="_blank" xhtml_class="url"/></td>
+                      <th valign="top"><v:label value="Personal Webpage:" /></th>
+                      <td>
+                        <v:url name="lwpage1" value="--coalesce(self.arr[7],'')" url="--self.arr[7]" xhtml_target="_blank" xhtml_class="url"/>
+                        <br />
+                        <img src="data:image/jpg;base64,<?V ODS.ODS_API.qrcode(self.arr[7]) ?>"/>
+                      </td>
                             </tr>
                     <?vsp
                       }
 			    if (length (self.arr[8])) {
 			    ?>
                             <tr>
-                      <th><v:label value="Other Identity URIs (synonyms):" /></th>
+                      <th valign="top"><v:label value="Other Identity URIs (synonyms):" /></th>
 			      <td>
 				  <?vsp
                         for select Y from DB.DBA.ODS_USER_IDENTIY_URLS (uname) (Y varchar) sub where uname = self.fname do
 				      {
 					  ?>
-					  <a href="<?V Y ?>" target="_blank"><?V Y ?></a>
+                          <a href="<?V Y ?>" target="_blank"><?V Y ?></a><br />
 					  <?vsp
 				       }
 				  ?>

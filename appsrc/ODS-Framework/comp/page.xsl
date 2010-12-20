@@ -1492,9 +1492,15 @@ if (i > 0)
       </td>
     </tr>
     <tr>
+      <th>Allow Twitter Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc6" value="1" initial-checked="--(select top 1 WS_REGISTER_TWITTER from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
       <th>Verify registration by email</th>
       <td>
-        <v:check-box name="ssetc6" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
+        <v:check-box name="ssetc7" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
@@ -1527,7 +1533,7 @@ if (i > 0)
     <tr>
       <th>Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
       <td>
-        <v:check-box name="ssetc7" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
+        <v:check-box name="ssetc8" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
@@ -1624,15 +1630,16 @@ if (i > 0)
                        WS_REGISTER_FACEBOOK = self.ssetc3.ufl_selected,
                        WS_REGISTER_SSL = self.ssetc4.ufl_selected,
                        WS_REGISTER_AUTOMATIC_SSL = self.ssetc5.ufl_selected,
-                       WS_MAIL_VERIFY = self.ssetc6.ufl_selected,
+                       WS_REGISTER_TWITTER = self.ssetc6.ufl_selected,
+                       WS_MAIL_VERIFY = self.ssetc7.ufl_selected,
                   WS_UNIQUE_MAIL = self.unique_mail.ufl_selected,
-                       WS_VERIFY_TIP = self.ssetc7.ufl_selected,
+                       WS_VERIFY_TIP = self.ssetc8.ufl_selected,
                   WS_REGISTRATION_EMAIL_EXPIRY = _reg,
                   WS_JOIN_EXPIRY = _join;
                 if (row_count() = 0)
                 {
-                  insert into WA_SETTINGS (WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
-  	                values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected, self.ssetc3.ufl_selected, self.ssetc4.ufl_selected, self.ssetc5.ufl_selected, self.ssetc6.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc7.ufl_selected);
+                  insert into WA_SETTINGS (WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL, WS_REGISTER_TWITTER, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
+  	                values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected, self.ssetc3.ufl_selected, self.ssetc4.ufl_selected, self.ssetc5.ufl_selected, self.ssetc6.ufl_selected, self.ssetc7.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc8.ufl_selected);
                 }
               ]]>
           </v:on-post>
