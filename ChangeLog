@@ -1,6 +1,533 @@
+2010-12-20 21:43  source
+
+	* Updated version to 6.1.3-rc2
+
+2010-12-20 19:12  source
+
+	* Fixed minor issue
+
+2010-12-20 18:20  source
+
+	* Fixed layout to make optional qrcode fit without wasting space
+	* Fixed tabs CSS and overall margins etc
+
+2010-12-20 18:09  source
+
+	* Fixed sqltype and display size of DV_IRI_ID column
+
+2010-12-20 13:26  source
+
+	* Fixed merge error
+
+2010-12-20 12:31  source
+
+	* Fixed missing column error in SPARQL-to-SQL preprocessor
+
+2010-12-20 12:27  source
+
+	* Added support for Twitter
+	* Added JSON format for webfinger
+	* Added optional qrcode
+
+2010-12-20 12:26  source
+
+	* Fixed missing files from vad
+
+2010-12-20 12:26  source
+
+	* Added progress bar, ping and ACL
+
+2010-12-20 12:22  source
+
+	* Added option to use tidy before loading rdfa
+
+2010-12-20 11:34  source
+
+	* Fixed minor issues
+
+2010-12-17 17:40  source
+
+	* Added support for connection string parameters with or without
+	  spaces in name
+	* Fixed removed workaround for rollback msg
+
+2010-12-17 11:27  source
+
+	* Fixed must not return error during rollback on killed txn
+
+2010-12-16 19:47  source
+
+	* Fixed sparql select (1) { { ?:sss ?p ?o } optional { ?s1 ?p1 ?o1 }}
+	  (t1.S=sss condition was lost before)
+
+2010-12-15 15:25  source
+
+	* Fixed index_only on partial can return has data even if main row
+	  does not
+
+2010-12-15 12:47  source
+
+	* Added small optimizations
+
+2010-12-15 12:19  source
+
+	* Added optimization to look at GS index only
+
+2010-12-15 10:42  source
+
+	* Added support for define input:inference in SAPRQL DESCRIBE
+
+2010-12-14 19:18  source
+
+	* Added JSON format for /.well-known/host-meta
+
+2010-12-14 13:22  source
+
+	* Fixed cxml generation options
+
+2010-12-14 13:22  source
+
+	* Fixed compiler warning
+
+2010-12-14 12:10  source
+
+	* Fixed use CURI to make smaller footprint
+
+2010-12-14 12:07  source
+
+	* Fixed hreview aggreates
+	* Fixed use CURI to make smaller qrcode
+	* Fixed CRLF
+
+2010-12-14 11:50  source
+
+	file hreview_aggregate2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-12-14 12:07:57 +0000
+
+2010-12-13 21:32  source
+
+	* Fixed 'none' is a special case with value 1
+
+2010-12-13 15:08  source
+
+	* Fixed crash when only option inference is given without define
+
+2010-12-13 15:08  source
+
+	* Fixed cxml
+
+2010-12-13 11:17  source
+
+	* Fixed utf8_exec server issue
+
+2010-12-13 10:24  source
+
+	* Fixed comparison of VARCHAR and UNAME box whith identical content
+
+2010-12-13 10:23  source
+
+	* Added three new aggregates mostly for use with SPARQL-BI
+
+2010-12-13 10:22  source
+
+	* Added support for passing NVARCHAR arguments to thread-safe dicts
+
+2010-12-13 10:20  source
+
+	* Fixed check for mobile devices
+
+2010-12-12 18:09  source
+
+	* Added RDFa W3c validation button
+	* Added missing default XSL setting classes as view
+	* Added optional qrcode in page
+	* Added scrolling to use stop skip/N
+	* Added link to /sparql endpoint
+	* Fixed sid
+	* Fixed shortened uri if too long
+	* Fixed bookmarable urls
+
+2010-12-10 16:12  source
+
+	* Updated documentation
+
+2010-12-10 16:02  source
+
+	* Removed extra debugging
+	* Fixed comments
+
+2010-12-10 15:43  source
+
+	* Fixed minor issues
+
+2010-12-10 15:28  source
+
+	* Added new settings to execute.html
+	* Added hrefs to breadcrumbs in rdftab
+	* Added a pager for queries.
+	* Added URI shortener detection and user preference (persisted in
+	  HTML5 localStorage on compatible browsers)
+	* Changed the way results are cached.
+	  Each query owns its results store, which is passed to the RDFMini
+	  for display.
+
+2010-12-10 15:27  source
+
+	* Altered the order of preference for subject labels.
+	* Fixed rdfs:label and skos:prefLabel now take preference over
+	  foaf:name.
+	* Changed OAT.Dialog to accept a bitmap for buttons to include
+	  Should be (sort-of) backwards compatible (default value and setting
+	  to zero causes same behavior as before)
+
+2010-12-10 15:19  source
+
+	* Merged from V5
+
+2010-12-10 15:18  source
+
+	* Fixed do not do row autocommit when uploading with DAV api
+	  as this will break trigger logic
+
+2010-12-10 12:24  source
+
+	* Added new testcases
+
+2010-12-10 12:00  source
+
+	* Fixed deref of uninitialized memory
+
+2010-12-10 11:59  source
+
+	* FIxed uninitialized variable
+
+2010-12-10 11:58  source
+
+	* Fixed deref of uninited memory
+
+2010-12-09 14:00  source
+
+	* Fixed FOAF import
+
+2010-12-09 13:57  source
+
+	* Fixed convert link option
+
+2010-12-09 12:16  source
+
+	file hrecipe2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-12-09 12:36:06 +0000
+
+2010-12-09 12:16  source
+
+	* Added hRecipe cartridge
+
+2010-12-09 09:53  source
+
+	* Fixed NULL case in patch_restricted_xml_chars()
+
+2010-12-08 16:08  source
+
+	* Fixed sparql aggregate
+
+2010-12-08 16:04  source
+
+	* Added RDFa W3c validation button
+	* Added expiration header
+	* Fixed DOI and RDFa
+	* Fixed use doi proxy if no hslookup plugin
+	* Fixed datatype for twitter
+	* Fixed tidy for overstock cartridge
+	* Fixed enable xlat iris
+	* Fixed small bugs
+
+2010-12-07 11:30  source
+
+	* Updated version of adapter
+
+2010-12-07 11:11  source
+
+	* Added 'Owns', 'Knows' and 'Social Network'
+	* Added profile security for offers, likes etc
+	* Enhanced import procedure
+	* Fixed small issues
+
+2010-12-07 10:38  source
+
+	file index.vspx was added on branch V6_0_0-DEVEL on 2010-12-07 10:59:24 +0000
+
+2010-12-07 10:38  source
+
+	* Added microblog template
+
+2010-12-07 10:38  source
+
+	file default.css was added on branch V6_0_0-DEVEL on 2010-12-07 10:59:24 +0000
+
+2010-12-07 10:35  source
+
+	file uiedit_knows.vspx was added on branch V6_0_0-DEVEL on 2010-12-07 11:11:31 +0000
+
+2010-12-07 10:35  source
+
+	file uiedit_others.vspx was added on branch V6_0_0-DEVEL on 2010-12-07 11:11:31 +0000
+
+2010-12-07 10:35  source
+
+	file uiedit_owns.vspx was added on branch V6_0_0-DEVEL on 2010-12-07 11:11:31 +0000
+
+2010-12-07 10:32  source
+
+	* Added 'Knows' to the import
+	* Enhanced import procedure
+
+2010-12-06 17:10  source
+
+	* Added MinExpiration param for sponger
+
+2010-12-06 17:09  source
+
+	* Fixed minor issues
+
+2010-12-06 17:08  source
+
+	* FIxed show better message instead of error on url parse
+
+2010-12-06 10:34  source
+
+	* Fixed max dns name is 250 chars
+
+2010-12-06 10:34  source
+
+	* Added copy_list_to_array and revlist_to_array for plugins
+
+2010-12-06 10:33  source
+
+	* Fixed if we have bad fd in saved sessions, check which one and
+	  remove, to avoid busy loop on unix
+
+2010-11-30 12:34  source
+
+	* Fixed use char flags instead of bitfield
+
+2010-11-30 12:33  source
+
+	* Added optimization for case when there is no locality
+
+2010-11-30 12:33  source
+
+	* Fixed must lock mtx before reading cache
+
+2010-11-29 14:37  source
+
+	* FIxed minor issues
+
+2010-11-29 14:36  source
+
+	* Added statistics on how many remaps are free
+
+2010-11-26 21:23  source
+
+	* Fixed busy loop when no free remaps
+
+2010-11-26 10:47  source
+
+	* Added extra debugging on shared cache
+
+2010-11-26 10:46  source
+
+	* Fixed issue compiling extensions in debug mode
+
+2010-11-25 19:53  source
+
+	* Fixed must cut before print else will return wrong error
+
+2010-11-24 11:41  source
+
+	* Fixed use external bif_tidy in the crawler
+
+2010-11-24 11:36  source
+
+	* Fixed mark transaction as ended in provider if virtuoso server kills
+	  the transaction
+
+2010-11-23 19:30  source
+
+	* FIxed issue with DISTINCT and ORDER BY
+
+2010-11-23 19:28  source
+
+	* FIxed "delayed" crash in case of passing wrong argument
+
+2010-11-23 19:27  source
+
+	* Added check for tidy in crawler
+
+2010-11-23 19:26  source
+
+	* Fixed minor issue
+
+2010-11-23 10:20  source
+
+	* Fixed bad test
+
+2010-11-22 20:40  source
+
+	* Fixed issue with sparql-fed
+
+2010-11-22 20:39  source
+
+	* Fixed prevent assert on large box
+
+2010-11-22 14:26  source
+
+	* Fixed issue with bnode
+
+2010-11-22 11:28  source
+
+	* Added VirtuosoQueryEngine auto registration was added to VirtGraph
+	  static initilization
+
+2010-11-22 11:06  source
+
+	* Rebuild driver
+
+2010-11-22 11:00  source
+
+	* Rebuild drivers
+
+2010-11-22 10:59  source
+
+	* Fixed JDBC driver lost prepared data after execution query, so next
+	  execute of prepared query throws exception
+
+2010-11-20 10:57  source
+
+	* Added bif patch_restrictec_xml_chars()
+
+2010-11-19 16:50  source
+
+	* Added Likes and DisLikes
+
+2010-11-19 16:49  source
+
+	* Added group sharing
+	* Fixed extended user's select
+
+2010-11-19 16:47  source
+
+	* Updated to ckeditor version 3.4.2
+
+2010-11-19 16:45  source
+
+	* Added optimizations
+	* Added checking for rdfa dtd
+
+2010-11-19 16:43  source
+
+	* Fixed use integer for https_verity and https_cv_depth
+	* Fixed use uppercase for SSL auth
+
+2010-11-19 16:41  source
+
+	* Added setup for DET on collections
+
+2010-11-19 14:25  source
+
+	* Fixed wrong number of params
+
+2010-11-19 14:25  source
+
+	* Fixed busy loop
+
+2010-11-18 12:09  source
+
+	file uiedit_likes.vspx was added on branch V6_0_0-DEVEL on 2010-11-19 16:50:49 +0000
+
+2010-11-18 12:07  source
+
+	file icons_rtl.png was added on branch V6_0_0-DEVEL on 2010-11-19 16:47:48 +0000
+
+2010-11-17 21:30  source
+
+	* Added function to get DTD identifiers
+
+2010-11-17 21:29  source
+
+	* Fixed dimension is not in triples
+
+2010-11-17 21:29  source
+
+	* Fixed page debug
+
+2010-11-17 21:28  source
+
+	* Fixed name in footer
+
+2010-11-17 21:27  source
+
+	* Added initialize query text option for /sparql
+
+2010-11-16 20:17  source
+
+	* Fixed do not try to close bad filedescriptor as windows does not
+	  like this
+
+2010-11-16 14:30  source
+
+	* Added imap client support
+
+2010-11-15 20:12  source
+
+	* Fixed if we have a qr with no params at all, exec should signal error
+
+2010-11-15 16:51  source
+
+	* Fixed issue with combination of UNION in the argument of IN causing
+	  General internal Optimized compiler error
+
+2010-11-15 16:47  source
+
+	* Fixed record the thread which entered/left the buffer in debug mode
+
+2010-11-15 10:13  source
+
+	* Fixed do not attempt to parse empty content
+
+2010-11-12 21:01  source
+
+	* Fixed only check pages in online backup
+
+2010-11-12 21:00  source
+
+	* Fixed recovery mode
+
+2010-11-12 21:00  source
+
+	* Fixed send body of 509 bandwidth error
+
+2010-11-11 16:06  source
+
+	* Updated version to 6.1.3-rc1
+
+2010-11-11 15:53  source
+
+	* Fixed check for sql disabled flag
+
+2010-11-11 12:38  source
+
+	* Fixed group editing
+	* Fixed WebID for Briefcase instances
+
+2010-11-11 12:34  source
+
+	* Added group sharing
+
 2010-11-11 11:23  source
 
 	* Added special immutable setting for inf rules
+
+2010-11-10 15:59  source
+
+	* Fixed use dsn from content-location when it exists
 
 2010-11-10 15:45  source
 
