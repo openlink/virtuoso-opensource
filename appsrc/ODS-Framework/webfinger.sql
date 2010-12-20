@@ -40,7 +40,7 @@ create procedure "host-meta" () __SOAP_HTTP 'application/xrd+xml'
 }
 ;
 
-create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
+create procedure "describe" (in "uri" varchar, in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
 {
   declare host, mail, uname varchar;
   declare arr, tmp, graph, uri_copy any;
@@ -127,6 +127,8 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
   set_user_id ('dba');
   http (sprintf ('  <Link rel="salmon" href="http://%s/ods/salmon" />\n', host));
   http ('</XRD>\n');
+  if (format = 'json')
+    http_xslt ('http://local.virt/xrd2json');
   return '';
 }
 ;

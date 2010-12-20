@@ -62,11 +62,15 @@ function lfInit() {
   lfTab.add("lf_tab_1", "lf_page_1");
   lfTab.add("lf_tab_2", "lf_page_2");
   lfTab.add("lf_tab_3", "lf_page_3");
+  if (regData.twitterEnable)
+    OAT.Dom.show('lf_tab_4');
+  lfTab.add("lf_tab_4", "lf_page_4");
   lfTab.go(0);
   var uriParams = OAT.Dom.uriParams();
   if (uriParams['oid-form'] == 'lf') {
-    $('lf_openId').value = uriParams['openid.identity'];
     OAT.Dom.show('lf');
+    if (uriParams['oid-mode'] != 'twitter') {
+      $('lf_openId').value = uriParams['openid.identity'];
     lfTab.go(1);
     if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
     {
@@ -75,6 +79,10 @@ function lfInit() {
     else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
     {
       alert('OpenID Authentication Failed');
+    }
+    } else {
+      lfTab.go(4);
+      $('lf_login').click();
     }
   }
 
@@ -124,12 +132,14 @@ function lfInit() {
 function lfCallback(oldIndex, newIndex) {
   if (newIndex == 0)
     $('lf_login').value = 'Login';
-  if (newIndex == 1)
+  else if (newIndex == 1)
     $('lf_login').value = 'OpenID Login';
-  if (newIndex == 2)
+  else if (newIndex == 2)
     $('lf_login').value = 'Facebook Login';
-  if (newIndex == 3)
+  else if (newIndex == 3)
     $('lf_login').value = 'WebID Login';
+  else if (newIndex == 4)
+    $('lf_login').value = 'Twitter';
 
   pageFocus('lf_page_'+newIndex);
 }
@@ -181,6 +191,15 @@ function lfLoginSubmit(cb) {
 
     q += '&facebookUID=' + lfFacebookData.uid;
   } else if (mode == 3) {
+  } else if (mode == 4) {
+    var uriParams = OAT.Dom.uriParams();
+	  if ((typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
+      twitterAuthenticate('lf');
+      return false;
+    }
+    q +='twitterSid=' + encodeURIComponent(uriParams['sid'])
+      + '&twitterOAuthVerifier=' + encodeURIComponent(uriParams['oauth_verifier'])
+      + '&twitterOAuthToken=' + encodeURIComponent(uriParams['oauth_token']);
   } else {
     if (($(prefix+'_uid').value.length == 0) || ($(prefix+'_password').value.length == 0))
       return showError('Invalid User ID or Password');
@@ -284,6 +303,19 @@ function lfOpenIdAuthenticate(prefix) {
     document.location = S;
   };
   OAT.AJAX.POST ("/ods_services/Http/openIdServer", q, x);
+}
+
+function twitterAuthenticate(prefix) {
+  var thisPage  = document.location.protocol +
+    '//' +
+    document.location.host +
+    document.location.pathname +
+    '?oid-mode=twitter&oid-form=' + prefix;
+
+  var x = function (data) {
+    document.location = data;
+  }
+  OAT.AJAX.POST ("/ods/api/twitterServer?hostUrl="+encodeURIComponent(thisPage), null, x);
 }
 
 function lfLoadFacebookData(cb) {

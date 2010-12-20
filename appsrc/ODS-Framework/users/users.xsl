@@ -91,6 +91,7 @@
       <div class="PF_header">Contact Info</div>
       <table class="PF_form">
         <xsl:apply-templates select="user/homepage"/>
+        <xsl:apply-templates select="user/qrcode"/>
         <xsl:apply-templates select="user/phone"/>
         <xsl:apply-templates select="user/mbox"/>
         <xsl:apply-templates select="user/icqChatID"/>
@@ -370,6 +371,18 @@
           </xsl:attribute>
           <xsl:value-of select="."/>
         </a>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template match="qrcode">
+    <tr>
+      <th></th>
+      <td>
+        <img>
+          <xsl:attribute name="src">data:image/jpg;base64,<xsl:value-of select="."/></xsl:attribute>
+        </img>
       </td>
     </tr>
   </xsl:template>

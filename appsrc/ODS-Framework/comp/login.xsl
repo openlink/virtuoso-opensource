@@ -69,6 +69,7 @@
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
+                  <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content">&nbsp;
@@ -127,6 +128,20 @@
                     <table id="lf_table_3" class="form" cellspacing="5">
                       <tr>
                         <td>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div id="lf_page_4" class="tabContent" style="display: none;">
+                    <table id="lf_table_4" class="form" cellspacing="5">
+                      <tr>
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <span id="lf_twitter" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="lf_twitterButton" src="/ods/images/sign-in-with-twitter-d.png" border="0"/>
                         </td>
                       </tr>
                     </table>

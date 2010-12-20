@@ -82,11 +82,13 @@ function rfInit() {
   rfTab.add("rf_tab_1", "rf_page_1");
   rfTab.add("rf_tab_2", "rf_page_2");
   rfTab.add("rf_tab_3", "rf_page_3");
+  rfTab.add("rf_tab_4", "rf_page_4");
   rfTab.go(0);
 
   var uriParams = OAT.Dom.uriParams();
   if (uriParams['oid-form'] == 'rf') {
     OAT.Dom.show('rf');
+    if (uriParams['oid-mode'] != 'twitter') {
     rfTab.go(1);
     if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
       var x = function (params, param, data, property) {
@@ -142,6 +144,30 @@ function rfInit() {
     {
       alert('OpenID Authentication Failed');
     }
+    } else {
+      rfTab.go(4);
+      $('rf_is_agreed').checked = true;
+      var x = function (data) {
+        var xml = OAT.Xml.createXmlDoc(data);
+        var user = xml.getElementsByTagName('user')[0];
+        if (user && user.getElementsByTagName('id')[0]) {
+          hiddenCreate('twitter-data', null, data);
+          var tbl = $('rf_table_4');
+          rfRowValue(tbl, 'Login Name', OAT.Xml.textValue(user.getElementsByTagName('screen_name')[0]));
+          rfRowInput(tbl, 'E-Mail', 'rf_twitter_email');
+        }
+        else
+        {
+          alert('Twitter Authentication Failed');
+        }
+      }
+      var S = "/ods/api/twitterVerify"+
+        '?sid=' + encodeURIComponent(uriParams['sid']) +
+        '&oauth_verifier=' + encodeURIComponent(uriParams['oauth_verifier']) +
+        '&oauth_token=' + encodeURIComponent(uriParams['oauth_token']);
+
+      OAT.AJAX.POST (S, null, x);
+    }
   }
   if (regData.facebookEnable) {
     rfLoadFacebookData(function() {
@@ -156,6 +182,10 @@ function rfInit() {
         });
     });
   }
+  if (regData.twitterEnable) {
+    OAT.Dom.show("rf_tab_4");
+  }
+
 
   if ((document.location.protocol == 'https:') && regData.sslEnable) {
     var x = function(data) {
@@ -187,12 +217,14 @@ function rfInit() {
 function rfCallback(oldIndex, newIndex) {
   if (newIndex == 0)
     $('rf_signup').value = 'Sign Up';
-  if (newIndex == 1)
+  else if (newIndex == 1)
     $('rf_signup').value = 'OpenID Sign Up';
-  if (newIndex == 2)
+  else if (newIndex == 2)
     $('rf_signup').value = 'Facebook Sign Up';
-  if (newIndex == 3)
+  else if (newIndex == 3)
     $('rf_signup').value = 'WebID Sign Up';
+  else if (newIndex == 4)
+    $('rf_signup').value = 'Twitter Sign Up';
 
   pageFocus('rf_page_'+newIndex);
 }
@@ -262,6 +294,15 @@ function rfSignupSubmit(event) {
       q +='&name=' + encodeURIComponent($v('rf_webid_uid'));
     if ($('rf_webid_email'))
       q +='&email=' + encodeURIComponent($v('rf_webid_email'));
+  }
+  else if (rfTab.selectedIndex == 4) {
+    if (!$('twitter-data')) {
+      twitterAuthenticate('rf');
+      return false;
+    }
+    q +='&data=' + encodeURIComponent($v('twitter-data'));
+    if ($('rf_twitter_email'))
+      q +='&email=' + encodeURIComponent($v('rf_twitter_email'));
   }
   OAT.AJAX.POST("/ods/api/user.register", q, rfAfterSignup, rfOptions);
   return false;
@@ -342,6 +383,19 @@ function rfOpenIdAuthenticate(prefix) {
     document.location = S;
   };
   OAT.AJAX.POST ("/ods_services/Http/openIdServer", q, x);
+}
+
+function twitterAuthenticate(prefix) {
+  var thisPage  = document.location.protocol +
+    '//' +
+    document.location.host +
+    document.location.pathname +
+    '?oid-mode=twitter&oid-form=' + prefix;
+
+  var x = function (data) {
+    document.location = data;
+  }
+  OAT.AJAX.POST ("/ods/api/twitterServer?hostUrl="+encodeURIComponent(thisPage), null, x);
 }
 
 function rfLoadFacebookData(cb) {

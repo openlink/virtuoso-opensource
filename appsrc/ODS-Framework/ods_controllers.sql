@@ -486,6 +486,50 @@ create procedure dav_path_normalize (
 }
 ;
 
+-- QRCode
+create procedure ODS.ODS_API."make_curie" (
+  in url varchar) __soap_http 'text/plain'
+{
+  if (__proc_exists ('WS.CURI.curi_make_curi') is null)
+    return url;
+
+  declare curie, chost, dhost varchar;
+  declare lines any;
+
+  lines := http_request_header ();
+  curie := WS.CURI.curi_make_curi (url);
+  dhost := registry_get ('URIQADefaultHost');
+  chost := http_request_header(lines, 'Host', null, dhost);
+
+  return sprintf ('http://%s/c/%s', chost, curie);
+}
+;
+
+create procedure ODS.ODS_API."qrcode" (
+  in data any,
+  in width int := 120,
+  in height int := 120,
+  in scale int := 4) __soap_http 'text/plain'
+{
+  declare qrcode_bytes, mixed_content, content varchar;
+  declare qrcode any;
+
+  if (__proc_exists ('QRcode encodeString8bit', 2) is null)
+    return null;
+
+  declare exit handler for sqlstate '*' { return null; };
+
+  content := "IM CreateImageBlob" (width, height, 'white', 'jpg');
+  qrcode := "QRcode encodeString8bit" (data);
+  qrcode_bytes := aref_set_0 (qrcode, 0);
+  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], scale, scale, 0, 0, cast (content as varchar), length (content));
+  mixed_content := encode_base64 (cast (mixed_content as varchar));
+  mixed_content := replace (mixed_content, '\r\n', '');
+
+  return mixed_content;
+}
+;
+
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
   in ontology varchar,
@@ -1089,17 +1133,22 @@ create procedure ODS.ODS_API."server.getInfo" (
   {
     for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
     {
-      declare facebookEnable integer;
+      declare facebookEnable, twitterEnable integer;
       declare facebookOptions any;
 
       facebookEnable := WS_REGISTER_FACEBOOK;
       if ((facebookEnable = 1) and (not DB.DBA._get_ods_fb_settings (facebookOptions)))
         facebookEnable := 0;
 
+      twitterEnable := 1;
+      if ((twitterEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'Twitter API')))
+        twitterEnable := 0;
+
   	  retValue := vector (
   	                      'register', WS_REGISTER,
   	                      'openidEnable', WS_REGISTER_OPENID,
   	                      'facebookEnable', facebookEnable,
+  	                      'twitterEnable', twitterEnable,
   	                      'sslEnable', WS_REGISTER_SSL,
   	                      'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL
   	                     );
@@ -1152,7 +1201,7 @@ create procedure ODS.ODS_API."user.register" (
 	in mode integer := 0,
 	in data any := null) __soap_http 'text/xml'
 {
-  declare sid, rc any;
+  declare sid, rc, xmlData any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1184,6 +1233,15 @@ create procedure ODS.ODS_API."user.register" (
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
 	  if (isnull ("email"))
     "email" := get_keyword ('mbox', data);
+    "password" := uuid ();
+	}
+	else if (mode = 4)
+	{
+	  -- Twitter
+    xmlData := xml_tree_doc (data);
+    if (xpath_eval ('string(/users/user/id)', xmlData))
+      name := cast (xpath_eval ('string(/users/user/screen_name)', xmlData) as varchar);
+
     "password" := uuid ();
 	}
   if (name is null or length (name) < 1 or length (name) > 20)
@@ -1257,17 +1315,72 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FOAF'         , get_keyword ('iri', data));
-    --DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
-    --DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
+
     declare cert any;
     cert := client_attr ('client_certificate');
     insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
 	values (rc, cert, get_certificate_info (6, cert, 0, ''), 1);
   }
+  else if (mode = 4)
+  {
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , xpath_eval ('string(/users/user/name)', xmlData));
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
+      values (rc, 'P', 'Twitter', sprintf ('http://twitter.com/%U', name));
+  }
+
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
     values (sid, 'wa', name, now ());
   return '<sid>' || sid  || '</sid>';
+}
+;
+
+create procedure ODS.ODS_API.twitterServer (
+  in hostUrl varchar) __SOAP_HTTP 'text/plain'
+{
+  declare token, result, url, sid, oauth_token, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('Twitter API');
+  sid := md5 (datestring (now ()));
+  return_url := sprintf ('%s&sid=%U', hostUrl, sid);
+  url := OAUTH..sign_request ('GET', 'http://twitter.com/oauth/request_token', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+
+  OAUTH..set_session_data (sid, vector());
+  oauth_token := OAUTH..get_auth_token (sid);
+
+  return sprintf ('http://twitter.com/oauth/authenticate?oauth_token=%U', oauth_token);
+}
+;
+
+create procedure ODS.ODS_API.twitterVerify (
+  in sid varchar,
+  in oauth_verifier varchar,
+  in oauth_token varchar) __SOAP_HTTP 'text/xml'
+{
+  declare tmp, screen_name, header, auth any;
+  declare token, result, url, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('Twitter API');
+  url := OAUTH..sign_request (
+    'GET',
+    'http://twitter.com/oauth/access_token',
+    sprintf ('oauth_token=%U&oauth_verifier=%U', oauth_token, oauth_verifier),
+    token,
+    sid,
+    1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+  tmp := split_and_decode (result, 0);
+  screen_name := get_keyword ('screen_name', tmp);
+
+  auth := OAUTH..signed_request_header ('GET', 'http://api.twitter.com/1/users/lookup.xml', sprintf ('screen_name=%U', screen_name), token, '', sid, 0);
+  url := sprintf ('http://api.twitter.com/1/users/lookup.xml?screen_name=%U', screen_name);
+  result := http_get (url, header, 'GET', auth);
+  OAUTH..session_terminate (sid);
+
+  return result;
 }
 ;
 
@@ -1278,7 +1391,10 @@ create procedure ODS.ODS_API."user.authenticate" (
 	in password_hash varchar := null,
 	in facebookUID integer := null,
 	in openIdUrl varchar := null,
-	in openIdIdentity varchar := null) __soap_http 'text/xml'
+	in openIdIdentity varchar := null,
+  in twitterSid varchar := null,
+  in twitterOAuthVerifier varchar := null,
+  in twitterOAuthToken varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare sid, tmp varchar;
@@ -1308,6 +1424,28 @@ create procedure ODS.ODS_API."user.authenticate" (
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     }
+  else if (not isnull (twitterSid))
+  {
+    declare tmp, url, token, result, screen_name any;
+
+    token := ODS.ODS_API.get_oauth_tok ('Twitter API');
+    url := OAUTH..sign_request ('GET',
+                                'http://twitter.com/oauth/access_token',
+		                            sprintf ('oauth_token=%U&oauth_verifier=%U', twitterOAuthToken, twitterOAuthVerifier),
+		                            token,
+		                            twitterSid,
+		                            1);
+    result := http_get (url);
+    OAUTH..parse_response (twitterSid, token, result);
+    tmp := split_and_decode (result, 0);
+    screen_name := get_keyword ('screen_name', tmp);
+
+    uname := (select U_NAME
+                from DB.DBA.SYS_USERS,
+                     DB.DBA.WA_USER_OL_ACCOUNTS
+               where WUO_U_ID = U_ID
+                 and WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
+  }
   else
   {
     if (not ods_check_auth (uname))
@@ -2033,6 +2171,7 @@ create procedure ODS.ODS_API."user.info" (
     ods_xml_item ('lastName',  WAUI_LAST_NAME);
     ods_xml_item ('fullName',  WAUI_FULL_NAME);
     ods_xml_item ('homepage',  WAUI_WEBPAGE);
+    ods_xml_item ('qrcode',     ODS.ODS_API."qrcode"(WAUI_WEBPAGE));
 
     if ("short" = '0')
     {
@@ -2140,7 +2279,7 @@ create procedure ODS.ODS_API."user.info.webID" (
   declare N, M, L integer;
   declare foafGraph varchar;
   declare S, st, msg, data, meta, cleanMeta any;
-  declare V, metaName, metaValue, _names, _values, _newValue any;
+  declare V, tmp, metaName, metaValue, _names, _values, _newValue any;
 
   V := jsonObject ();
   set_user_id ('dba');
@@ -2300,6 +2439,9 @@ create procedure ODS.ODS_API."user.info.webID" (
 
       ODS.ODS_API.set_keyword ('rsaPublicKey', V, C);
     }
+    tmp := get_keyword ('homepage', V);
+    if (not isnull (tmp))
+      ODS.ODS_API.set_keyword ('qrcode', V, ODS.ODS_API."qrcode"(tmp));
   }
 
 _exit:;
@@ -5278,6 +5420,8 @@ DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API
 
 grant execute on ODS.ODS_API.error_handler to ODS_API;
 
+grant execute on ODS.ODS_API."qrcode" to ODS_API;
+
 grant execute on ODS.ODS_API."ontology.classes" to ODS_API;
 grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;
 grant execute on ODS.ODS_API."ontology.objects" to ODS_API;
@@ -5285,8 +5429,10 @@ grant execute on ODS.ODS_API."ontology.objects" to ODS_API;
 grant execute on ODS.ODS_API."lookup.list" to ODS_API;
 
 grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
-
 grant execute on ODS.ODS_API."address.geoData" to ODS_API;
+
+grant execute on ODS.ODS_API."twitterServer" to ODS_API;
+grant execute on ODS.ODS_API."twitterVerify" to ODS_API;
 
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;

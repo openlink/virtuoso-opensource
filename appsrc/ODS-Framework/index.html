@@ -320,6 +320,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
             	      <div class="vcard_l" id="ciP1photo">
 		      </div>
                       <div class="vcard_r">
+            	        <span>
+            	          <a href="#" class="personal_uri" id="ciP1uri">Personal URI</a>
+            	          <br />
+                        <img id="ciP1qrcode" src=""/>
+            	        </span><br />
                         <span class="fn" id="ciP1fn"></span>
                         <div class="org" id="ciP1org"></div>
                         <a class="email" id="ciP1email" rel="foaf:mbox" href=""></a>
@@ -402,62 +407,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		</div> <!-- w_title_bar_btns -->
               </div>
               <div class="w_content" id="notify_content">
-<!--
-		<h3 class="date" >Today</h3>
-                <ul class="msgs" >
-                  <li>
-                    <img class="msg_icon person_tnail"
-                         alt="Dipsy"
-                         src="images/people/dipsy.jpg"/>
-                    <div class="msg">
-                      <span class="time">20:30</span>
-                      LaaLaa and <a href="#">Dipsy</a> are now connected.
-                    </div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
-                  </li>
-                  <li>
-                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/>
-                    <div class="msg"><span class="time">22:20</span> LaaLaa wrote a weblog article titled <a href="#">Eh Oh!</a></div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
-                  </li>
-                  <li>
-                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/>
-                    <div class="msg"><span class="time">22:20</span> LaaLaa published a feed <a href="#">Raw!</a></div>
-                    <div class="msg_r">
-                      <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                    </div>
-                  </li>
-                </ul>
--->
               </div> <!-- w_content -->
             </div> <!-- widget -->
-
-	    <!-- Locator -->
-            <!-- div class="widget w_contact">
-              <div class="w_title">
-                <h3>Locator</h3>
-		<div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png"
-		       alt="settings" />
-		  <img src="images/skin/default/menu_dd_handle_close.png"
-		       alt="Minimize"
-		       class="w_toggle"
-		       onclick="widgetToggle(this);"/>
-		</div--> <!-- w_title_bar_btns -->
-              <!--</div>--> <!-- w_title -->
-              <!-- div class="w_content">
-                <div id="locatorMap" style="height:300px;"></div>
-              </div>
-            </div-->
-          </div> <!-- #u_home_r -->
-
    	  <!-- Profile Page end-->
           <!-- Connections Page start-->
-
           <div id="contacts_interface" style="display:none;">
             <div class="widget w_contact">
               <div class="w_content">
@@ -483,10 +436,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <table border="0" cellspacing="0" width="98%">
                         <tr>
 			  <td class="image" style="width:150px;">
-			    <img src="{connImgSRC}"
-				 alt=""
-				 class=""
-				 style="width:40px;cursor:pointer"/><br/>
+                  			    <img src="{connImgSRC}" style="width:40px;cursor:pointer"/>
+                  			    <br/>
 			    <span style="cursor:pointer;text-decoration: underline;">{connProfileFullName}</span>
 			  </td>
                           <td class="info">
@@ -647,37 +598,43 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			     tabindex="4"
 			     checked="checked"
 			     value="on_people"
-			     name="cb_people"/><label for="cb_people">People</label>
+                  			     name="cb_people"/>
+                  		<label for="cb_people">People</label>
                       <input id="cb_apps"
 			     type="checkbox"
 			     tabindex="9"
 			     checked="checked"
 			     value="on_apps"
-			     name="cb_apps"/><label for="cb_apps">Application descriptions</label>
+                  			     name="cb_apps"/>
+                  	  <label for="cb_apps">Application descriptions</label>
                       <input id="cb_dav"
 			     type="checkbox"
 			     tabindex="8"
 			     checked="checked"
 			     value="on_dav"
-			     name="cb_dav"/><label for="cb_dav">DAV</label>
+                  			     name="cb_dav"/>
+                  		<label for="cb_dav">DAV</label>
                       <input id="cb_blogs"
 			     type="checkbox"
 			     tabindex="6"
 			     checked="checked"
 			     value="on_blogs"
-			     name="cb_blogs"/><label for="cb_blogs">Weblog</label>
+                  			     name="cb_blogs"/>
+                  	  <label for="cb_blogs">Weblog</label>
                       <input id="cb_news"
 			     type="checkbox"
 			     tabindex="5"
 			     checked="checked"
 			     value="on_news"
-			     name="cb_news"/><label for="cb_news">Feeds</label>
+                  			     name="cb_news"/>
+                  		<label for="cb_news">Feeds</label>
                       <input id="cb_wikis"
 			     type="checkbox"
 			     tabindex="7"
 			     checked="checked"
 			     value="on_wikis"
-			     name="cb_wikis"/><label for="cb_wikis">Wiki</label>
+                  			     name="cb_wikis"/>
+                  		<label for="cb_wikis">Wiki</label>
                       <input id="cb_omail"
 			     type="checkbox"
 			     tabindex="10"
@@ -689,19 +646,22 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			     tabindex="11"
 			     checked="checked"
 			     value="on_bookmark"
-			     name="cb_bookmark"/><label for="cb_bookmark">Bookmarks</label>
+                  			     name="cb_bookmark"/>
+                  		<label for="cb_bookmark">Bookmarks</label>
                       <input id="cb_polls"
 			     type="checkbox"
 			     tabindex="13"
 			     checked="checked"
 			     value="on_polls"
-			     name="cb_polls"/><label for="cb_polls">Polls</label>
+                  			     name="cb_polls"/>
+                  	  <label for="cb_polls">Polls</label>
                       <input id="cb_addressbook"
 			     type="checkbox"
 			     tabindex="14"
 			     checked="checked"
 			     value="on_addressbook"
-			     name="cb_addressbook"/><label for="cb_addressbook">AddressBook</label>
+                  			     name="cb_addressbook"/>
+                  		<label for="cb_addressbook">AddressBook</label>
                       <input id="cb_calendar"
 			     type="checkbox"
 			     tabindex="15"
@@ -713,7 +673,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			     tabindex="12"
 			     checked="checked"
 			     value="on_nntp"
-			     name="cb_nntp"/><label for="cb_nntp">Discussion</label>
+                  			     name="cb_nntp"/>
+                  		<label for="cb_nntp">Discussion</label>
                     </div>
                     <div class="pager" style="text-align:left;display:none;" id="do_tag_block">
                       <input id="tagsInput"
@@ -775,55 +736,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <li>
 			<div class="hit person"></div>
 		      </li>
-
-<!--
-                            <li>
-                              <div class="hit person">
-                                <input type="checkbox" class="sel_ckb"/>
-                                <div class="person_box">
-                                  <img alt="Kingsley" src="i/people/kingsley_t.png" class="person_tnail"/><br/>
-                                  <div class="conn_info"><a href="#">Kingsley</a></div>
-                                </div>
-                                <div class="person_summary_ctr vcard">
-                                  <h4 class="fn">Kingsley <span class="n">Idehen</span></h4>
-                                  <div class="adr">
-                                    <span class="locality">Lexington</span>, <span class="state">MA</span>, <span class="country">USA</span>
-                                  </div>
-                                </div>
-                                <div class="cmds"><button>Write Message</button><button>Delete Connection</button></div>
-                              </div>
-                            </li>
-                            <li>
-                              <div class="hit wiki_article">
-                                <input type="checkbox" class="sel_ckb"/>
-                                <div class="hit_ctr">
-                                  <img src="images/icons/ods_wiki_16.png" class="app_icon"/>
-                                  <h4><a href="#">ODS Menu Spec Revision 0.9</a></h4>
-                                  <p class="excerpt">"ODS Menu system revision was needed to improve control flow and accessibility of the ODS system and to facilitate modern interface using AJAX techniques and the OpenLink Ajax Toolkit. The aims..." <a href="="#"">More...</a></p>
-                                  <div class="props">
-                                    Updated <span class="date">Yesterday</span> by <a href="#">Yrjänä Rankka</a><br/>
-                                  </div>
-                                </div>
-                              </div>
-                            </li>
-                            <li>
-                              <div class="hit message">
-                                <input type="checkbox" class="sel_ckb"/>
-                                <div class="person_box">
-                                  <img alt="Dipsy" src="i/people/dipsy.jpg" class="person_tnail"/><br/>
-                                  <div class="conn_info"><a href="#">Dipsy</a></div>
-                                </div>
-                                <div class="msg_summary">
-                                  <h4><a href="#">New OAT demo page</a></h4>
-                                  <p class="excerpt">"All, See <a href="http://oat.openlinksw.com">OAT demo</a> and tell me what to do with it? I'm Uh-Ohing all over the place but it won't do me any..." <a href="="#"">More...</a></p>
-                                  <div class="props">
-                                    Received <span class="date">Yesterday at 12:32</span>
-                                  </div>
-                                  <div class="cmds"><button>Reply</button><button>Forward</button></div>
-                                </div>
-                              </div>
-                            </li>
--->
                     </ul>
                     <div class="pager" id="bottom_pager">Results 0:
                       <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
@@ -970,21 +882,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
         </div> <!-- #FT -->
       </div> <!-- #RT -->
     </div> <!-- #PG -->
-
-<!-- templates
-    
-    span prof_user_full_name
-    span prof_user_first_name
-    span prof_user_last_name
-    span prof_user_id
-    span prof_user_dataspace_lnk
-    img user_depiction
-    img user_depiction_thumbnail
-    a user_dataspace_lnk
-    a user_vcard_lnk
-    a user_personal_uri_lnk
-
--->
     <div id="connect_box_tpl" class="widget" style="display: none">
       <div class="w_title">
 	<h3 class="w_title"><span class="u_full_name">Full Name</span> is not in your network</h3>
@@ -1125,6 +1022,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                 <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                 <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                 <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
+                <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
               </ul>
               <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                 <div id="lf_content">&nbsp;
@@ -1181,6 +1079,20 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   <table id="lf_table_3" class="form" cellspacing="5">
                     <tr>
                       <td>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div id="lf_page_4" class="tabContent" style="display: none;">
+                  <table id="lf_table_4" class="form" cellspacing="5">
+                    <tr>
+                      <th width="20%">
+                      </th>
+                      <td>
+                        <span id="lf_twitter" style="min-height: 20px;"></span>
+                        <br />
+                        <img id="lf_twitterButton" src="/ods/images/sign-in-with-twitter-d.png" border="0"/>
                       </td>
                     </tr>
                   </table>
