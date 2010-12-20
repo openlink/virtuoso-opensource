@@ -8046,6 +8046,18 @@ create procedure RM_CHECK_CLASS_MATCH (in pattern varchar, in graph varchar, in 
 }
 ;
 
+create procedure DB.DBA.RM_GET_BASEURI (inout opts any, in graph_iri any, in dest any)
+{
+  declare mt, baseiri varchar;
+  mt := get_keyword ('content-type', opts, 'application/octet-stream');
+  if (mt = 'application/rdf+xml' or mt like '%/rdf+%' or mt like '%/turtle' or mt = 'application/x-turtle') 
+    baseiri := DB.DBA.RDF_SPONGE_DOC_IRI (dest, graph_iri); -- just coalsce
+  else  
+    baseiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri); -- doc proxy iri 
+  return baseiri; 
+}
+;
+
 create procedure DB.DBA.RM_GET_LABELS_INIT (in dest varchar, in graph_iri varchar, in new_origin_uri varchar, inout opts any)
 {
   declare data, meta, state, message any;
