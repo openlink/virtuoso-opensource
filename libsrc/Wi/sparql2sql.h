@@ -406,8 +406,13 @@ otherwise a triple should contain a field whose selid, tabid, name and tr_idx ma
 The \c var may b blank node or retval as well, but retval has no meaning if \c need_strong_match is set */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int need_strong_match);
 
-/*! This finds a variable that is a source of value of a given external variable or an appropriate retval. */
-extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var);
+/*! This finds a variable that is a source of value of a given VARR_EXTERNAL variable \c var or an appropriate retval.
+If \c find_exact_specimen then the function will try return a variable from origin eq or its subequivs
+that will provide as many restrictions and valmode preferences as possible, but may be unusable for direct use in the codegen
+because it can be nested too deep in subqueries and its alias will not be visible at the location of \c var.
+If not \c find_exact_specimen then an upper-level retval can be returned instead of deeply buried origin var.
+ */
+extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_specimen);
 
 /*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the expression or, if \c return_alias, the whole SPAR_ALIAS */
 extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals, int return_alias);

@@ -1698,7 +1698,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         return sparp_rettype_of_global_param (sparp, tree->_.var.vname);
       else if (SPART_VARR_EXTERNAL & tree->_.var.rvr.rvrRestrictions)
         {
-          SPART *orig = sparp_find_origin_of_external_var (sparp, tree);
+          SPART *orig = sparp_find_origin_of_external_var (sparp, tree, 1);
           return sparp_expn_native_valmode (sparp, orig);
         }
       else if (NULL != tree->_.var.tabid)
@@ -5347,7 +5347,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
       ssg_find_external_in_equiv (eq, &vartree, &varname);
       if (NULL != vartree)
         {
-          SPART *orig = sparp_find_origin_of_external_var (ssg->ssg_sparp, vartree);
+          SPART *orig = sparp_find_origin_of_external_var (ssg->ssg_sparp, vartree, 0);
           ssg_print_scalar_expn (ssg, orig, needed, asname);
           return 1;
         }
@@ -5733,7 +5733,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
             {
               SPART *local_glob_var;
               ssg_find_external_in_equiv (eq, &local_glob_var, &glob_name);
-              glob_var = sparp_find_origin_of_external_var (ssg->ssg_sparp, local_glob_var);
+              glob_var = sparp_find_origin_of_external_var (ssg->ssg_sparp, local_glob_var, 0);
             }
           if (NULL != glob_var)
             {
@@ -6990,7 +6990,7 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"IFP", "SAME_AS", 
           if (NULL != val)
             t_set_push (&tblopts, val);
         }
-      if (NULL != active_inference && active_inference != (ptrlong)1)
+      if (NULL != active_inference && active_inference != (caddr_t)((ptrlong)1))
         t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
       if (NULL != tblopts)
         has_table_options = 1;

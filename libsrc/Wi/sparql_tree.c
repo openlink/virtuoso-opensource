@@ -3232,10 +3232,11 @@ sparp_find_quad_map_by_name (ccaddr_t name)
 }
 
 SPART *
-sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
+sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_specimen)
 {
-  sparp_equiv_t *eq, *esrc;
+  sparp_equiv_t *eq, *esrc, *esub_res_eq = NULL;
   SPART *esub_res_gp = NULL, *esub_res = NULL;
+  SPART *rv;
   int vctr, subv_ctr;
 #ifdef DEBUG
   if (!(SPART_VARR_EXTERNAL & var->_.var.rvr.rvrRestrictions))
@@ -3252,6 +3253,12 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
     }
   if (SPAR_BINDINGS_INV == esrc->e_gp->type) /* An external variable may come from bindings invocation instead of a GP. Binding var is the only choice then. */
     return esrc->e_vars[0];
+  if (UNION_L == esrc->e_gp->type) /* No one specimen from (one branch of) union can reliably represent all cases a union can produce. */
+    {
+      esub_res_eq = esrc;
+      esub_res_gp = esrc->e_gp;
+      goto make_rv; /* see below */
+    }
 /* The best origin is triple pattern right in the GP because this increases the chance that SQL optimizer will find a good place for some condition on variable from subquery */
   for (vctr = esrc->e_var_count; vctr--; /*no step*/)
      {
@@ -3287,13 +3294,18 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
              continue;
            if ((NULL == source->_.var.tabid) && (NULL != esub_res->_.var.tabid))
              continue;
+           esub_res_eq = esub_eq;
            esub_res_gp = esub_gp;
            esub_res = source;
         }
     }
   END_DO_BOX_FAST;
   if (NULL != esub_res)
+    {
+      if (find_exact_specimen)
     return esub_res;
+      goto make_rv; /* see below */
+    }
   DO_BOX_FAST (ptrlong, subeq_idx, subv_ctr, esrc->e_subvalue_idxs)
     {
       sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
@@ -3301,17 +3313,20 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
       SPART *rv;
       if (SELECT_L != esub_gp->_.gp.subtype)
         continue;
-      rv = (SPART *)t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
-      rv->_.retval.equiv_idx = esub_eq->e_own_idx;
-      rv->_.retval.gp = esub_gp;
-      memcpy (&(rv->_.retval.rvr), &(esub_eq->e_rvr), sizeof (rdf_val_range_t));
-      rv->_.retval.selid = esub_gp->_.gp.selid;
-      rv->_.retval.vname = var->_.var.vname;
-      return rv;
+      esub_res_eq = esub_eq;
+      esub_res_gp = esub_gp;
+      goto make_rv; /* see below */
     }
   END_DO_BOX_FAST;
   spar_internal_error (sparp, "sparp_" "find_origin_of_external_var(): external source equiv is found, external source var is not");
-  return NULL;
+make_rv:
+  rv = (SPART *)t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
+  rv->_.retval.equiv_idx = esub_res_eq->e_own_idx;
+  rv->_.retval.gp = esub_res_gp;
+  memcpy (&(rv->_.retval.rvr), &(esub_res_eq->e_rvr), sizeof (rdf_val_range_t));
+  rv->_.retval.selid = esub_res_gp->_.gp.selid;
+  rv->_.retval.vname = var->_.var.vname;
+  return rv;
 }
 
 SPART *
@@ -3399,6 +3414,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         {
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
+        case GEO_L: case PRECISION_L: has_geo = 1; continue;
         case IFP_L: case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TABLE_OPTION_L: continue;
         case TRANSITIVE_L: has_transitive = 1; continue;
