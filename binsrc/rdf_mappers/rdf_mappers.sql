@@ -4089,7 +4089,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM2 (in url varchar, in new_origin_uri varc
 
 create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-	declare xd, xt, url, tmp, tmp1, server, api_key, hdr any;
+	declare xd, xt, url, tmp, tmp1, server, api_key, hdr, gr_iri any;
 	declare pos, len int;
 	declare xsl2, origin_uri, id0, id1, id2, id3, id4 varchar;
 	id0 := '';
@@ -4132,8 +4132,9 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 		id0 := tmp[0];
 	else
 		return 0;
-	delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-	commit work; 
+	--gr_iri := iri_to_id (coalesce (dest, graph_iri));
+	DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1, 0);
+	--delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
 	if (id0 = 'music')
 	{
 		if (id1 is not null and id1 <> '')

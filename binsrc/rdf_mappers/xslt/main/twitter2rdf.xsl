@@ -312,6 +312,7 @@
 			<xsl:if test="$what = 'followers'">
 				<sioc:follows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
 			</xsl:if>
+			<owl:sameAs rdf:resource="{concat('http://twitter.com/!#/', screen_name)}"/>
 		</foaf:Person>
 	</xsl:template>
 
