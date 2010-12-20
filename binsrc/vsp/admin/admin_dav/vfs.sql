@@ -1886,7 +1886,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
                               inout _content varchar, in _s_etag varchar, in _c_type varchar,
 			      in store_flag int := 1, in udata any := null, in lev int := 0)
 {
-  declare graph, url_ck, base varchar;
+  declare graph, use_tidy, url_ck, base varchar;
   graph := null;
   declare exit handler for sqlstate '*'
     {
@@ -1899,6 +1899,9 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
 
   if (isvector (udata) and isstring (get_keyword ('rdf-graph', udata)))
     graph := get_keyword ('rdf-graph', udata, '');
+  use_tidy := 'N';
+  if (isvector (udata) and isstring (get_keyword ('use-tidy', udata)))
+    use_tidy := get_keyword ('use-tidy', udata, 'N');
   base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
   if (not length (graph))  
     graph := base;
@@ -1924,7 +1927,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     }
   else if (_c_type = 'text/html')
     {
-      if (tidy_external ())
+      if (tidy_external () and use_tidy = 'Y')
 	_content := tidy_html (_content, 'output-xhtml:yes\r\ntidy-mark:no');
       DB.DBA.RDF_LOAD_RDFA (_content, base, graph, 2);
     }
