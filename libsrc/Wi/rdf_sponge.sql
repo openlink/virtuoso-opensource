@@ -1305,6 +1305,20 @@ resignal_parse_error:
 create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout options any)
 {
   declare dest varchar;
+  declare deadl int;
+  deadl := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxDeadlockRetries'), '5'));
+  declare exit handler for sqlstate '40001'
+    {
+      deadl := deadl - 1;
+      rollback work;
+      if (deadl > 0)
+	{
+	  delay (0.2);
+	  goto again;
+	}
+      resignal;
+    };
+again:
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is null)
     DB.DBA.SPARUL_CLEAR (graph_iri, 1, 0);
