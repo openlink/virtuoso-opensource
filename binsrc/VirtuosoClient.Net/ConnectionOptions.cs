@@ -187,19 +187,19 @@ namespace OpenLink.Data.Virtuoso
 		internal const string ENCRYPT = "Encrypt";
 		internal const string PERSISTSECURITYINFO = "PersistSecurityInfo";
 		internal const string PERSIST_SECURITY_INFO = "Persist Security Info";
-		internal const string CONNECTTIMEOUT = "Connect Timeout";
+		internal const string CONNECTTIMEOUT = "ConnectTimeout";
 		internal const string CONNECT_TIMEOUT = "Connect Timeout";
-		internal const string CONNECTIONTIMEOUT = "Connection Timeout";
+		internal const string CONNECTIONTIMEOUT = "ConnectionTimeout";
 		internal const string CONNECTION_TIMEOUT = "Connection Timeout";
-		internal const string CONNECTIONLIFETIME = "Connection Lifetime";
+		internal const string CONNECTIONLIFETIME = "ConnectionLifetime";
 		internal const string CONNECTION_LIFETIME = "Connection Lifetime";
-		internal const string MINPOOLSIZE = "Min Pool Size";
+		internal const string MINPOOLSIZE = "MinPoolSize";
 		internal const string MIN_POOL_SIZE = "Min Pool Size";
-		internal const string MAXPOOLSIZE = "Max Pool Size";
+		internal const string MAXPOOLSIZE = "MaxPoolSize";
 		internal const string MAX_POOL_SIZE = "Max Pool Size";
 		internal const string POOLING = "Pooling";
 		internal const string ENLIST = "Enlist";
-		internal const string ROUNDROBIN = "Round Robin";
+		internal const string ROUNDROBIN = "RoundRobin";
 		internal const string ROUND_ROBIN = "Round Robin";
 
 		private BooleanOption odbc;
