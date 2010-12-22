@@ -2065,8 +2065,8 @@ http('			  </select>\n');
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
 http('			  <label for="redir_for_hrefs" class="n">Style&nbsp;for&nbsp;other&nbsp;links:</label>\n');
 http('			  <select name="CXML_redir_for_hrefs">\n');
-http('			    <option value="">Convert to string facets</option>\n');
-http('			    <option value="121" selected="selected">Make Plain Links</option>\n');
+http('			    <option value="" selected="selected">Convert to string facets</option>\n');
+http('			    <option value="121">Make Plain Links</option>\n');
 if (can_pivot is not null)
   http('			    <option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\n');
 http('			    <option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\n');
