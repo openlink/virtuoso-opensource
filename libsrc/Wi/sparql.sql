@@ -1447,6 +1447,8 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
     {
       if (isiri_id (shortobj))
         return null;
+      if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
+        return null;
       return iri_to_id (__xsd_type (shortobj, dflt));
     }
   twobyte := rdf_box_type (shortobj);
@@ -1467,7 +1469,13 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
   declare twobyte integer;
   declare res varchar;
   if (__tag of rdf_box <> __tag (shortobj))
-    return case (isiri_id (shortobj)) when 0 then dflt else null end;
+    {
+      if (isiri_id (shortobj))
+        return null;
+      if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
+        return null;
+      return dflt;
+    }
   twobyte := rdf_box_lang (shortobj);
   if (257 = twobyte)
     return dflt;
