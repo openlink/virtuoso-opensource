@@ -4301,6 +4301,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN
+order
 ;
 
 
@@ -4346,6 +4347,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN (inout _env any) returns 
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN
+order
 ;
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (inout _env any)
@@ -4440,6 +4442,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN (inout _env any) ret
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN
+order
 ;
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT (inout _env any)
@@ -4503,6 +4506,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN (inout _env any) return
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN
+order
 ;
 
 
@@ -4575,6 +4579,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN (inout _env any) returns
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN
+order
 ;
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT (inout _env any)
@@ -4631,6 +4636,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN (inout _env any) return
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN
+order
 ;
 
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar

@@ -82,6 +82,7 @@ create aggregate DB.DBA.SPARQL_RSET_XML_HTTP (inout colnames any, inout row any)
   DB.DBA.SPARQL_RSET_XML_HTTP_INIT,
   sparql_rset_xml_write_row,
   DB.DBA.SPARQL_RSET_XML_HTTP_FINAL
+order
 ;
 
 
@@ -175,6 +176,7 @@ create aggregate DB.DBA.SPARQL_RSET_TTL_HTTP (inout colnames any, inout row any)
   DB.DBA.SPARQL_RSET_TTL_HTTP_INIT,
   sparql_rset_ttl_write_row,
   DB.DBA.SPARQL_RSET_TTL_HTTP_FINAL
+order
 ;
 
 --!AWK PUBLIC
@@ -224,6 +226,7 @@ create aggregate DB.DBA.SPARQL_RSET_NT_HTTP (inout colnames any, inout row any) 
   DB.DBA.SPARQL_RSET_TTL_HTTP_INIT,
   sparql_rset_nt_write_row,
   DB.DBA.SPARQL_RSET_TTL_HTTP_FINAL
+order
 ;
 
 -----
