@@ -986,7 +986,7 @@ qst_set_bin_string (caddr_t * state, state_slot_t * sl, db_buf_t data, size_t le
     {
       dtp_t old_dtp = box_tag (old);
       if (!IS_STRING_DTP (old_dtp) &&
-	  ALIGN_4 (box_length (old)) == ALIGN_4 ((uint32) len))
+	  ALIGN_8 (box_length (old)) == ALIGN_8 ((uint32) len))
 	{
 	  box_reuse ((box_t) old, (box_t) data, len, dtp);
 	}
@@ -1569,11 +1569,18 @@ caddr_t
 box_to_shorten_any (caddr_t data, caddr_t * err_ret)
 {
   dtp_t data_dtp = DV_TYPE_OF (data);
+  caddr_t box = NULL, ret;
   size_t data_len;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &err_ret, (PAGE_DATA_SZ+1500)))
     {
       *err_ret = srv_make_new_error ("42000", "SR483", "Stack Overflow");
       return NULL;
+    }
+  if (DV_WIDE == data_dtp)
+    {
+      box = box_wide_as_utf8_char (data, box_length (data) / sizeof (wchar_t) - 1, DV_LONG_STRING);
+      data_dtp = DV_TYPE_OF (box);
+      data = box;
     }
 #define BOX_SHORT_ANY_LIMIT (128+1+(BOX_AUTO_OVERHEAD-8))
   if (((DV_STRING == data_dtp) || (DV_WIDE == data_dtp) || (DV_BIN == data_dtp)) &&
@@ -1595,9 +1602,13 @@ box_to_shorten_any (caddr_t data, caddr_t * err_ret)
       ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-17))[0] = hi;
       ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-9))[0] = lo;
       tmp[BOX_SHORT_ANY_LIMIT-1] = '\0';
-      return box_to_any_1 (tmp, err_ret, NULL, 0);
+      ret = box_to_any_1 (tmp, err_ret, NULL, 0);
+      dk_free_box (box);
+      return ret;
     }
-  return box_to_any_1 (data, err_ret, NULL, 0);
+  ret = box_to_any_1 (data, err_ret, NULL, 0);
+  dk_free_box (box);
+  return ret;
 }
 
 
