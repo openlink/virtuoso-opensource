@@ -1594,8 +1594,8 @@ create procedure WS.WS.host_meta_del (in app varchar)
 
 create procedure WS.WS."host-meta" (in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
 {
-  declare ses any;
-  declare ret varchar;
+  declare ses, lines any;
+  declare ret, accept varchar;
   ses := string_output ();
   http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
   http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0" Id="host-meta">\n', ses);
@@ -1613,8 +1613,13 @@ create procedure WS.WS."host-meta" (in format varchar := 'xml') __SOAP_HTTP 'app
     {
       ret := xml_sign (ret, WS.WS.host_meta_dss (), 'http://docs.oasis-open.org/ns/xri/xrd-1.0:XRD');
     }
-  if (format = 'json')
+  lines := http_request_header ();
+  accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
+  if (format = 'json' or accept = 'application/json')
+    {
+      http_header ('Content-Type: applicaition/json\r\n');
     http_xslt ('http://local.virt/xrd2json');
+    }
   return ret;
 }
 ;
