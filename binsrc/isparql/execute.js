@@ -608,7 +608,20 @@ var QueryExec = function(optObj) {
 		if (iSPARQL.Settings.pivotInstalled) 
 			self.makePivotPermalink(self.dom.plnk_ctr);
 
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr]);
+		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
+		anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
+		anchor_label.innerHTML = "Anchor behavior:";
+		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
+		anchor_pref_sel.add (new Option ("Describe"));
+		anchor_pref_sel.add (new Option ("Get Data Items"));
+		anchor_pref_sel.add (new Option ("Open Web Page"));
+
+		OAT.Event.attach(anchor_pref_sel, 'change', function () {
+			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
+		});
+
+		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr, anchor_pref_ctr]);
+        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
 
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
@@ -988,7 +1001,7 @@ var QueryExec = function(optObj) {
 			return ul;
 	};
 
-		var obj = {
+/*		var obj = {
 			title:"URL",
 			content:genRef,
 			newHref:href,
@@ -996,9 +1009,22 @@ var QueryExec = function(optObj) {
 			height:100,
 			result_control:false,
 			activation:"click"
-		};
+		}; */
+		
+		OAT.Event.attach (domNode, 'click', function (event) {
+			switch (iSPARQL.Settings.anchorMode) {
+			case 0:
+				dereferenceRef(event);
+				break;
+			case 1:
+				selectRef(event);
+				break;
+			default:
+				OAT.Event.prevent(event);
+				window.open(href);
+			}
+		});
 
-		OAT.Anchor.assign(domNode,obj);
 
 //	var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
 //	img1.title = "Describe Data Source";

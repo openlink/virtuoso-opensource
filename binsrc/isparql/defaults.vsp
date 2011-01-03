@@ -86,7 +86,6 @@
    query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
    sponge:'<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>',
    auth: {
-       endpoint:'./auth.vsp',
        user:    '<?vsp http(replace(default_user,'\'','\\\'')); ?>',
        pass:    '<?vsp http(replace(default_pass,'\'','\\\'')); ?>'
    },<?vsp 

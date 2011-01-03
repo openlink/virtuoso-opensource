@@ -36,7 +36,8 @@ iSPARQL.IO = {
 		var pragma = dataObj.endpointOpts.pragmas[i];
 		var name = pragma[0];
 		var values = pragma[1];
-		for(var j=0;j<values.length;j++) { str += '# {pragma} {'+name+'} = {'+values[j]+'}\n'; }
+		for(var j=0;j<values.length;j++) { 
+		    str += '# {pragma} {'+name+'} = {'+values[j]+'}\n'; }
 	    }
 
 	/* endpoint */
@@ -81,9 +82,9 @@ iSPARQL.IO = {
 	var xml = OAT.Xml.createXmlDoc(xmlTemplate);
 	var page = xml.getElementsByTagName("ISparqlDynamicPage")[0];
 	var isparql = xml.getElementsByTagName("iSPARQL")[0];
-	var title = xml.getElementsByTagName("dc:title")[0];
-	var creator = xml.getElementsByTagName("dc:creator")[0];
-	var description = xml.getElementsByTagName("dc:description")[0];
+	var title = xml.getElementsByTagName("title")[0];
+	var creator = xml.getElementsByTagName("creator")[0];
+	var description = xml.getElementsByTagName("description")[0];
 
 	var addNode = function(p,ns,name,text,nenc) {
 	    var node = xml.createElementNS(ns,name);
@@ -144,9 +145,9 @@ iSPARQL.IO = {
 	if (dataObj.canvas) { addNode(isparql,iNS,"canvas",dataObj.canvas); }
 
 	if (dataObj.metaDataOpts) {
-	    title.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.metadata.title);
-	    creator.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.metadata.creator);
-	    description.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.metadata.description);
+	    title.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.title);
+	    creator.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.creator);
+	    description.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.description);
 	}
 
 	return OAT.Xml.serializeXmlDoc(xml);

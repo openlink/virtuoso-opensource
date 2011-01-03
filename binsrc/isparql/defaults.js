@@ -38,8 +38,9 @@ iSPARQL.Defaults = {
     grabAll:      false,
     graph:        '',
     queryTimeout: 2000, // ms
-    auth:         {user:'dav',pass:'dav',endpoint:'./auth.vsp'},
+    auth:         {user:'dav',password:'dav'},
     tab:          0,
+    anchorMode:   0, /* 0:describe, 1:get data items,2:Open in new window */
     maxrows:      50,
     endpoint:     '/sparql',
     pivotInstalled: false,
