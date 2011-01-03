@@ -42,8 +42,8 @@ create procedure "host-meta" () __SOAP_HTTP 'application/xrd+xml'
 
 create procedure "describe" (in "uri" varchar, in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
 {
-  declare host, mail, uname varchar;
-  declare arr, tmp, graph, uri_copy any;
+  declare host, mail, uname, accept varchar;
+  declare arr, tmp, graph, uri_copy, lines any;
   host := http_host ();
   arr := WS.WS.PARSE_URI ("uri");
   graph := sioc..get_graph ();
@@ -127,8 +127,13 @@ create procedure "describe" (in "uri" varchar, in format varchar := 'xml') __SOA
   set_user_id ('dba');
   http (sprintf ('  <Link rel="salmon" href="http://%s/ods/salmon" />\n', host));
   http ('</XRD>\n');
-  if (format = 'json')
+  lines := http_request_header ();
+  accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
+  if (format = 'json' or accept = 'application/json')
+    {
+      http_header ('Content-Type: applicaition/json\r\n');
     http_xslt ('http://local.virt/xrd2json');
+    }
   return '';
 }
 ;
