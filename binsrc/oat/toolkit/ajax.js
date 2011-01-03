@@ -77,7 +77,7 @@ OAT.AJAX = {
 			var secure = OAT.AJAX.createCookie(); /* array of name & value */
 			url_ += secure[0]+"="+secure[1];
 		}
-		xhr.open("GET",url_,options.async);
+	xhr.open("GET",url_,options.async,options.user,options.password);
 		OAT.AJAX.send(xhr,null);
 		return xhr;
 	},
@@ -85,7 +85,7 @@ OAT.AJAX = {
 	POST:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
-		xhr.open("POST",url,options.async);
+	xhr.open("POST",url,options.async,options.user,options.password);
 		xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
 		OAT.AJAX.send(xhr,data);
 		return xhr;
@@ -94,7 +94,7 @@ OAT.AJAX = {
 	PUT:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
-		xhr.open("PUT",url,options.async);
+	xhr.open("PUT",url,options.async,options.user,options.password);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
 	},
@@ -102,7 +102,7 @@ OAT.AJAX = {
 	SOAP:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
-		xhr.open("POST",url,options.async);
+	xhr.open("POST",url,options.async,options.user,options.password);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
 	},
@@ -110,7 +110,7 @@ OAT.AJAX = {
 	MKCOL:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
-		xhr.open("MKCOL",url,options.async);
+	xhr.open("MKCOL",url,options.async,options.user,options.password);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
 	},
@@ -118,7 +118,7 @@ OAT.AJAX = {
 	PROPFIND:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
-		xhr.open("PROPFIND",url,options.async);
+	xhr.open("PROPFIND",url,options.async,options.user,options.password);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
 	},
@@ -126,7 +126,7 @@ OAT.AJAX = {
 	PROPPATCH:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
-		xhr.open("PROPPATCH",url,options.async);
+	xhr.open("PROPPATCH",url,options.async,options.user,options.password);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
 	},
@@ -135,8 +135,8 @@ OAT.AJAX = {
 		var options = {
 			headers:{},
 			auth:OAT.AJAX.AUTH_NONE,
-			user:"",
-			password:"",
+	    user:null,
+	    password:null,
 			timeout:false,
 			type:OAT.AJAX.TYPE_TEXT,
 			noSecurityCookie:false,
@@ -315,9 +315,10 @@ OAT.AJAX = {
 		this.options = options;
 		this.timeout = false;
 		this.aborted = false;
-		this.open = function(method, target, async) {
+	
+	this.open = function(method, target, async, user, password) {
 			try {
-				self.obj.open(method, target, async);
+		self.obj.open(method, target, async, user, password);
 			} catch(e) {
 				self.aborted = true;
 				if (self.options.onend) { self.options.onend(self); }

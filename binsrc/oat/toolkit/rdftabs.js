@@ -624,10 +624,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    }
 	}
 	else if (typeof(value) == "object") { /* resource */
-	    var items = self.parent.store.items;
+	    var graphs = self.parent.store.graphs;
 	    var dereferenced = false;
-	    for (var j=0;j<items.length;j++) {
-		var item = items[j];
+	    for (var j=0;j<graphs.length;j++) {
+		var item = graphs[j];
 		/* handle anchors to local file */
 		var baseuri = OAT.IRIDB.getIRI(value.iid).match(/^[^#]+/);
 		baseuri = baseuri ? baseuri[0] : "";
@@ -661,8 +661,12 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    obj.push ([p, item.preds[p]]);
 	}
 
-	obj.push ([refByIID, OAT.IRIDB.getIRI(item.back)]);
-	self.drawSpotlight(self.parent.getTitle(item),OAT.IRIDB.getIRI(item.uri),obj);
+	for (var i=0;i<item.back.length;i++)
+          obj.push ([refByIID, item.back[i]]); // XXX item.back is a list of backreferences
+
+	self.drawSpotlight(self.parent.getTitle(item),
+			   OAT.IRIDB.getIRI(item.uri),
+			   obj);
     }
 
     this.breadCrumbClickFun = function (index) {
@@ -884,7 +888,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    self.navigate(self.historyIndex);
 	    return;
 	}
-	/* give a list of items for navigation */
+	/* give a list of graphs for navigation */
 	var obj = self.getTypeObject();
 	self.drawSpotlight("Click on a Data Entity to explore its Linked Data Web.",false,obj);
 	self.redrawTop();
@@ -1103,7 +1107,28 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 
 	for (var i=0;i<cnt;i++) {
 	    var t = self.parent.data.triples[i];
-	    var triple = [OAT.IRIDB.getIRI(t[0]), OAT.IRIDB.getIRI(t[1]), OAT.IRIDB.getIRI(t[3].iid)];
+
+	    //
+	    // XXX: FIXME here and in RDFStore
+	    //
+ 
+	    var new_o;
+
+	    if (t[2].constructor == OAT.RDFAtom) {
+		if (t[2].isIRI())
+		    new_o = t[2].getIRI();
+		else 
+		    new_o = t[2].value;
+	    }
+	    else {
+		if (typeof t[2] == 'object') {
+		    new_o = OAT.IRIDB.getIRI(t[2].iid)
+		}
+		else new_o = t[2];
+	    }
+	    var triple = [OAT.IRIDB.getIRI(t[0]), 
+			  OAT.IRIDB.getIRI(t[1]),
+			  new_o];
 
 //	    if (t[2].isIRI()) {
 //		triple.push (t[2].getIRI());
@@ -1121,7 +1146,7 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 
 	for (var i=0;i<self.graphsvg.data.length;i++) {
 	    var node = self.graphsvg.data[i];
-	    if (node.name.match(/^http/i)) {
+	    if (node.name && node.name.match(/^http/i)) {
 		self.parent.processLink(node.svg,node.name);
 	    }
 	}
@@ -1950,7 +1975,8 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		} else {
 		    /* look for predicates that are/contain image links */
 		    for (var j=0;j<pred.length;j++) {
-			if (pred[j].getTag() != OAT.RDFTag.IRI) { continue; }
+			if (item.constructor != OAT.RDFAtom ||
+			    pred[j].getTag() != OAT.RDFTag.IRI) { continue; }
 			var value = pred[j].getIRI();
 			if (self.parent.getContentType(value) == 3) {
 			    self.addUriItem(value,item);
@@ -1963,7 +1989,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		    } /* for all values */
 		}
 	    } /* for all predicates */
-	} /* for all items */
+	} /* for all graphs */
     }
 
     this.redraw = function() {
@@ -2060,7 +2086,7 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 	    if (item.type == tcP) {
 		self.addCloud(item);
 	    }
-	} /* for all items */
+	} /* for all graphs */
 
 	for (var i=0; i<this.clouds.length;i++) {
 	    var cloud = this.clouds[i];

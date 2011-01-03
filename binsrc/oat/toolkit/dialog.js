@@ -97,7 +97,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
     }
 
     var keyPress = function(event) {
-	if (self.okBtn.disabled) { return; }
+	if ((!!self.okBtn) && self.okBtn.disabled) { return; }
 	if (event.keyCode == 13) { onOk(); }
 	if (event.keyCode == 27) { onCancel(); }
     }
