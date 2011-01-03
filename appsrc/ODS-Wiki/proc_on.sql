@@ -184,8 +184,10 @@ create method ti_find_id_by_raw_title () returns any for WV.WIKI.TOPICINFO
 
 create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
 {
-  for select top 1 ClusterId, ResId, ResXmlId, TopicTypeId, LocalName, LocalName2, TitleText, Abstract, MailBox, ParentId, AuthorId
-  from WV.WIKI.TOPIC where TopicId = self.ti_id do {
+  for (select top 1 ClusterId, ResId, ResXmlId, TopicTypeId, LocalName, LocalName2, TitleText, Abstract, MailBox, ParentId, AuthorId
+         from WV.WIKI.TOPIC
+        where TopicId = self.ti_id) do
+  {
     self.ti_cluster_id := ClusterId;
     self.ti_res_id := ResId;
     self.ti_type_id := TopicTypeId;
@@ -201,9 +203,6 @@ create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
   if (self.ti_abstract is null)
     self.ti_abstract := (select WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and WAI_NAME = self.ti_cluster_name);
 
-
-  --dbg_obj_print ('after:',self.ti_rev_id);
-  
   declare _mod_time datetime;
   declare _author varchar; 
   declare _author_id integer;
@@ -238,12 +237,11 @@ create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
           self.ti_text := cast (content as varchar);
         }
       else
+      {
         WV.WIKI.APPSIGNAL (11001, 'Can not get topic content (revision: ' || case when self.ti_rev_id = 0 then 'last' else cast (self.ti_rev_id as varchar) end || ')',  vector () );
-	  --dbg_obj_print ('xxx 2');	
+      }
       self.ti_mod_time := DAV_HIDE_ERROR (DAV_PROP_GET (path, ':getlastmodified', _dav_auth, _dav_pwd));
-	  --dbg_obj_print ('xxx y', self.ti_author_id);	
       self.ti_author := coalesce ( 
-	-- (select AuthorName from WV.WIKI.TOPIC where ResId = self.ti_res_id), 
 	(select UserName from WV.WIKI.USERS where UserId = self.ti_author_id), 
 	WV.WIKI.USER_WIKI_NAME_2(self.ti_author_id), 
 	'Unknown');
@@ -263,9 +261,12 @@ create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
 create method ti_find_metadata_by_res_id () returns any for WV.WIKI.TOPICINFO
 {
   declare _topic_id integer;
+
   _topic_id := (select TopicId from WV.WIKI.TOPIC where ResId = self.ti_res_id);
   if (_topic_id is null)
+  {
     self.ti_id := 0;
+  }
   else
     {
       self.ti_id := _topic_id;
@@ -3160,10 +3161,9 @@ create procedure WV.WIKI.DELICIOUSPUBLISH (in _topic_id integer, in _category_na
 create function WV.WIKI.PARSEPARAM (in arg varchar) returns any
 {
   declare _res any;
+
   _res := split_and_decode (arg, 0, '\0\0=');
-  aset (_res, 1, subseq ( subseq ( aref (_res, 1), 
-				   0, length (aref (_res, 1)) - 1),
-			  1));
+  aset (_res, 1, subseq (subseq (_res[1], 0, length (_res[1]) - 1), 1));
   return _res;
 }
 ;
@@ -3282,8 +3282,8 @@ create function WV.WIKI.GETDEFAULTPERMS (in _cluster_id integer) returns varchar
 }
 ;
   
-
-create procedure WV.WIKI.ADDHISTORYITEM (in _topic WV.WIKI.ADDHISTORYITEM, 
+create procedure WV.WIKI.ADDHISTORYITEM (
+  in _topic WV.WIKI.ADDHISTORYITEM,
 					       in _filename varchar, 
 					       in _action varchar, 
 					       in _context varchar,
@@ -3293,9 +3293,9 @@ create procedure WV.WIKI.ADDHISTORYITEM (in _topic WV.WIKI.ADDHISTORYITEM,
 }
 ;
 					       
-create procedure WV.WIKI.PRINTLENGTH (in sz integer)
+create procedure WV.WIKI.PRINTLENGTH (
+  in sz integer)
 {
-  declare sz_postfix any;
   declare offs integer;
 
   offs := 0;
@@ -3339,7 +3339,8 @@ create procedure WV.WIKI.ADDLINK (in _topic WV.WIKI.TOPICINFO,
 }
 ;  
 
-create procedure WV.WIKI.NORMALIZETOWIKIWORD (in _name varchar)
+create procedure WV.WIKI.NORMALIZETOWIKIWORD (
+  in _name varchar)
 {
   if (length (_name) = 0)
 	return _name;

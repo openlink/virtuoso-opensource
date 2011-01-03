@@ -224,7 +224,7 @@ cont:
 	declare wa_home_link varchar;
 	wa_home_link := registry_get ('wa_home_link');
 	if (isinteger(wa_home_link))
-	 wa_home_link :='/wa/';
+        wa_home_link :='/ods/';
         http_request_status ('HTTP/1.1 302 Found');
 	if (_cmd = 'wa_redirect')
         http_header (sprintf('Location: %s/uiedit.vspx?sid=%s&realm=wa\r\n', wa_home_link, sid));
@@ -478,13 +478,13 @@ content:
     }
 
   if (_cmd = 'upstream_now') {
-    declare exit handler for sqlstate '42WV9' {
+    declare exit handler for sqlstate '42WV9'
+    {
       if (_user <> 'WikiGuest')
         goto major_exit_handler;
+
       http_rewrite();
       WV.WIKI.redirect (sprintf('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
---      http_request_status ('HTTP/1.1 302 Found');
---      http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
       return;
     };
     declare _filename varchar;
@@ -539,22 +539,33 @@ content:
           goto content;
         }
       declare _vspx, _type varchar;
+
       _type := '';
       if (_cmd = 'maintenance')
+      {
         _vspx := 'ops.vspx';
-      if (_cmd = 'web')
+      }
+      else if (_cmd = 'web')
+      {
         _vspx := 'export.vspx';
-      if (_cmd = 'doc') {
+      }
+      else if (_cmd = 'doc')
+      {
         _vspx := 'export.vspx';
         _type := 'docbook';
       }
-      if (_cmd = 'revisions')
+      else if (_cmd = 'revisions')
+      {
         _vspx := 'history.vspx';
-      if (_cmd = 'tags')
+      }
+      else if (_cmd = 'tags')
+      {
         _vspx := 'tags.vspx';
-      if (_cmd = 'tag')
+      }
+      else if (_cmd = 'tag')
+      {
         _vspx := 'tag.vspx';
-
+      }
       WV.WIKI.VSPTOPICRESOURCE (_vspx, _type, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
       goto do_nothing;
     }
@@ -581,13 +592,12 @@ create_or_view:
       declare exit handler for sqlstate '42WV9' {
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
+
+        _title := sprintf ('?goto_title=%U', coalesce (_title, ''));
   	http_rewrite();
         http_request_status ('HTTP/1.1 302 Found');
-	if (_title is not null)
-	  _title := sprintf ('?goto_title=%U', _title);
-	else
-	  _title := '';
         http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || _title || '?' ||  _parent));
+
         return;
       };
       WV.WIKI.VSPTOPICCREATE (path, lines, _cluster, _topic.ti_raw_title, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
