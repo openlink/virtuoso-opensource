@@ -87,7 +87,7 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
   declare _udata, ext_hook, store_hook, _header_arr, _resps any;
-  declare n_urls, conv_html int;
+  declare n_urls, conv_html, is_sitemap int;
 
   conv_html := 1;
   n_urls := position (0, _urls) - 1;
@@ -97,10 +97,10 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   whenever not found goto nf_opt;
   select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
          coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), 
-	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), VS_CONVERT_HTML
+	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), VS_CONVERT_HTML, VS_IS_SITEMAP
       into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, 
       	 redir_flag, store_flag, try_to_get_rdf, 
-	 _udata, ext_hook, store_hook, _del, _other, conv_html
+	 _udata, ext_hook, store_hook, _del, _other, conv_html, is_sitemap
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 nf_opt:
 
@@ -112,7 +112,7 @@ nf_opt:
     _header := concat (_header, 'If-Modified-Since: ', soap_print_box (_since, '', 1), '\r\n');
 
   if (try_to_get_rdf)
-    _header := _header || 'Accept: application/rdf+xml, text/rdf+n3, */*\r\n';
+    _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*\r\n'; -- /* rdf formats */
 
   if (_upd = 1)  
     {
@@ -258,8 +258,10 @@ get_again:
     {
       if (ext_hook is not null and __proc_exists (ext_hook))
 	    call (ext_hook) (_host, _url, _root, _content, _c_type, lev + 1);
-	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%') and _dav_method <> 'checked' and _opage <> 'checked')
+	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%') and _dav_method <> 'checked' and _opage <> 'checked' and is_sitemap = 0)
 	    WS.WS.GET_URLS (_host, _url, _root, _content, lev + 1);
+	  else if (_dav_method <> 'checked' and _opage <> 'checked' and (_url like '%.xml' or _url like '%.xml.gz')) 
+	    WS.WS.SITEMAP_PROCESS (_host, _url, _root, _content, _c_type, lev + 1); 
 
       if (store_hook is not null and __proc_exists (store_hook))
 	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, _udata, lev + 1);
@@ -366,10 +368,11 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
   _tgt := __tgt;
   _root := __root;
   registry_set ('WEB_COPY', 'X __sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
-  _last_shut := coalesce (sequence_set ('WEB_COPY_SSHUT', 0, 2), 0);
-
-  update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting'
-      where VQ_STAT = 'pending' and (VQ_TS is null or datediff ('second', stringdate ('1980-01-01'), VQ_TS) < _last_shut);
+  --_last_shut := coalesce (sequence_set ('WEB_COPY_SSHUT', 0, 2), 0);
+  --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting'
+  --    where VQ_STAT = 'pending' and (VQ_TS is null or datediff ('second', stringdate ('1980-01-01'), VQ_TS) < _last_shut);
+  --commit work;
+  WS.WS.VFS_RECOVER_QUEUE_STAT (_tgt, _root);
   commit work;
 
   whenever not found goto n_site;
@@ -604,30 +607,28 @@ err_end:
 
 create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root varchar, inout _content varchar, in lev int)
 {
-  declare _stag, _etag, _len, _inx, _htag, _sltag, _count, _t_tag1, _t_tag2, _uri_len integer;
-  declare _cut_pos integer;
+  declare _stag, _etag, _len, _inx, _htag, _sltag, _count, _t_tag1, _t_tag2, _urls_arr_len, depth integer;
   declare _tmp, _tmp_host, _tmp_url, _t_len, _d_imgs, _other varchar;
-  declare _uri any;
-  declare _flw, _nflw, _method, _delete varchar;
+  declare _flw, _nflw, _method, _delete, xp_exp, base varchar;
   declare _newer datetime;
   declare _own integer;
-  declare frames any;
+  declare frames, _urls_arr any;
 
-  whenever not found goto nf_img;
-  select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER
-      into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer
+  whenever not found goto no_site_rec;
+  select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER, VS_XPATH, VS_DEPTH
+      into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer, xp_exp, depth
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   --dbg_obj_print ('OTHER SITES:', _other);
-nf_img:
+  if (depth is not null and depth >= 0 and depth >= lev)
+    return;
   frames := vector ();
   if (isstring (_content))
-    _uri := WS.WS.FIND_URI (_content, _d_imgs, _host, _url, frames);
+    _urls_arr := WS.WS.FIND_URI (_content, _d_imgs, _host, _url, xp_exp, frames);
   else if (__tag (_content) = 193)
-    _uri := _content;
-  if (__tag (_uri) = 193 )
-    {
-      _uri_len := length (_uri);
-    }
+    _urls_arr := _content;
+
+  if (__tag (_urls_arr) = 193)
+    _urls_arr_len := length (_urls_arr);
   else
     return;
 
@@ -635,43 +636,32 @@ nf_img:
     frames := vector ();
 
   _inx := 0;
-  while (_inx < _uri_len)
-    {
-      _tmp := aref (_uri, _inx);
-      if (_tmp is not null)
-	{
-	  _cut_pos := strstr (_tmp, '#');
-	  if (_cut_pos is not null)
+  base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  while (_inx < _urls_arr_len)
 	    {
-	      if (0 <> _cut_pos)
-		_tmp := subseq (_tmp, 0, _cut_pos);
-	      else
-		_tmp := './';
-	    }
-	  _cut_pos := strstr (_tmp, '?');
-	  if (_cut_pos is not null)
-	    _tmp := subseq (_tmp, 0, _cut_pos);
-	  if (strcasestr (_tmp, 'ftp://') is null and strcasestr (_tmp, 'mailto:') is null
-	      and strcasestr (_tmp, 'news:') is null and strcasestr (_tmp, 'telnet://') is null
-	      and strcasestr (_tmp, 'https://') is null and _tmp <> 'http://')
+      declare hi, sch any;
+      _tmp := _urls_arr[_inx];
+
+      if (length (_tmp) = 0)
+	goto next_url;
+
+      _tmp := rfc1808_expand_uri (base, _tmp);
+      hi := rfc1808_parse_uri (_tmp);
+      sch := lower (hi[0]); 
+      if (sch = '') sch := 'http';
+      hi[4] := '';
+      hi[5] := '';
+      _tmp := WS.WS.VFS_URI_COMPOSE (hi);
+
+      if (sch = 'http')
 	    {
-	      WS.WS.SPLIT_URL (_host, _url, _tmp, _tmp_host, _tmp_url);
+	  _tmp_host := hi[1]; -- host part
+	  _tmp_url :=  hi[2]; -- local path part
 	      --dbg_obj_print ('LINK: ',_tmp_host,_tmp_url);
-	      if ((get_keyword (_tmp_url, frames) is not null or WS.WS.FOLLOW (_host, _root, _tmp_url))
-		  and _tmp_host = _host)
-		{
-		  select count (*) into _count from VFS_URL where
-		      VU_HOST = _tmp_host and VU_URL = _tmp_url and VU_ROOT = _root for update;
-		  if (_count is null or _count = 0)
-		    {
-		      select count (*) into _count from VFS_QUEUE where
-			  VQ_HOST = _tmp_host and VQ_URL = _tmp_url and VQ_ROOT = _root for update;
-		      if (_count is null or _count = 0)
+	  if ((get_keyword (_tmp_url, frames) is not null or WS.WS.FOLLOW (_host, _root, _tmp_url)) and _tmp_host = _host)
 			{
-			  insert into VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL)
-			      values (_tmp_host, now (), _tmp_url, 'waiting', _root, lev);
-			}
-		    }
+	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL)
+		  values (_host, now (), _tmp_url, 'waiting', _root, lev);
 		}
 	      else if (WS.WS.FOLLOW (_host, _root, _tmp_url) and _tmp_host <> _host and _other = 'checked')
 		{
@@ -682,14 +672,74 @@ nf_img:
 			      values (_tmp_host, now (), _tmp_url, 'waiting', _tmp_host, 'other', lev);
 		    }
 		}
-	    }
+      next_url:
       _inx := _inx + 1;
     }
+no_site_rec:  
   return;
 }
 ;
 
 
+create procedure WS.WS.SITEMAP_PROCESS (in _host varchar, in _url varchar, in _root varchar, inout _content varchar, in _c_type varchar, in lev int)
+{
+  declare xt, xp any;
+  xt := null;
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      return;
+    };
+  if (_url like '%.xml.gz')
+    {
+      if (length (_content) > 2)
+	{
+	  declare magic varchar;
+	  magic := subseq (_content, 0, 2);
+	  if (magic[0] = 0hex1f and magic[1] = 0hex8b) 
+	    _content := gzip_uncompress (_content);
+	}
+    }
+  if (_url like '%.xml' or _url like '%.xml.gz' or _c_type = 'text/xml' or _c_type = 'application/xml')
+    {
+      xt := xtree_doc (_content);
+      if (xpath_eval ('/urlset/dataset', xt) is not null)
+	{
+	  declare ts any;
+	  xp := xpath_eval ('/urlset/dataset/dataDumpLocation/text()', xt, 0);
+	  ts := xpath_eval ('/urlset/dataset/lastmod/text()', xt);
+	  if (ts is not null)
+	    {
+	      declare ar any;
+	      declare i int;
+	      i := 0;
+	      ts := cast (cast (ts as varchar) as datetime);
+	      ar := make_array (length (xp), 'any');
+	      foreach (any x in xp) do
+		{
+		  ar[i] := vector (cast (x as varchar), ts);
+		  i := i + 1;
+		}
+	      xp := ar;
+	    }
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	}
+      else if (xpath_eval ('/sitemapindex/sitemap/loc', xt) is not null)
+	{
+	  --xp := xpath_eval ('/sitemapindex/sitemap/loc/text()', xt, 0);
+	  xp := WS.WS.SITEMAP_GET_LOC (xt, '/sitemapindex/sitemap', './loc/text()', './lastmod/text()');
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	}
+      else if (xpath_eval ('/urlset/url/loc', xt) is not null)
+	{
+	  --xp := xpath_eval ('/urlset/url/loc/text()', xt, 0);
+	  xp := WS.WS.SITEMAP_GET_LOC (xt, '/urlset/url', './loc/text()', './lastmod/text()');
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 1);
+	}
+    }
+  return;
+}
+;
 
 create procedure WS.WS.MAKE_URL (in _host varchar, in _url varchar)
 {
@@ -704,7 +754,7 @@ create procedure WS.WS.MAKE_URL (in _host varchar, in _url varchar)
 }
 ;
 
-
+-- obsolete function
 create procedure WS.WS.SPLIT_URL (in _host varchar, in _url varchar, in _parent_url varchar,
     out _o_host varchar, out _o_url varchar)
 {
@@ -958,17 +1008,14 @@ create procedure WS.WS.REPLACE_HREF (in _host varchar, in _url varchar, in _root
 
 
 create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
-    in _host varchar, in _url varchar, out frames any)
+    in _host varchar, in _url varchar, in xp_exp varchar, out frames any)
 {
   declare _len, _inx integer;
   declare xe, arr, arr1, ha, sa, ia, fr, ifr, sty, js any;
-  declare elm, _tmp_host, _tmp_url varchar;
+  declare elm, _tmp_host, _tmp_url, base varchar;
   declare _xml_tree any;
 
   frames := vector ();
-
--- XXX: old behavior
---  return WS.WS.GET_HREF_IN_ARRAY (_content, _d_imgs);
 
   if (not isstring (_content))
     return vector ();
@@ -981,6 +1028,21 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
 
   xe := xml_tree_doc (_xml_tree);
 
+  arr1 := vector ();
+  if (length (xp_exp))
+    {
+      arr := xpath_eval (xp_exp, xe, 0);
+      _inx := 0; _len := length (arr);
+      while (_inx < _len)
+	{
+	  elm := cast (arr[_inx] as varchar);
+	  if (isstring (elm) and strstr (http_mime_type (elm), 'image/') is null or _d_imgs is not null)
+	    arr1 := vector_concat (arr1, vector (elm));
+	  _inx := _inx + 1;
+	}
+    }
+  else
+    {
   ha := xpath_eval ('//@href', xe, 0);
   sa := xpath_eval ('//@src', xe, 0);
   ia := xpath_eval ('//@background', xe, 0);
@@ -993,8 +1055,6 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
   arr := vector_concat (ha, sa, ia);
 
   _inx := 0; _len := length (arr);
-
-  arr1 := vector ();
 
   while (_inx < _len)
     {
@@ -1019,13 +1079,21 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
 
   fr := vector_concat (fr, ifr, sty, js);
   _inx := 0; _len := length (fr);
+      if (_len > 0)
+        base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
   while (_inx < _len)
     {
+	  declare hi any;
       elm := cast (fr[_inx] as varchar);
-      WS.WS.SPLIT_URL (_host, _url, elm, _tmp_host, _tmp_url);
+	  elm := rfc1808_expand_uri (base, elm);
+	  hi := rfc1808_parse_uri (elm);
+	  _tmp_host := hi[1];
+	  hi[0] := ''; hi[1] := '';
+	  _tmp_url := WS.WS.VFS_URI_COMPOSE (hi);
       if (_host = _tmp_host)
         frames := vector_concat (frames, vector (_tmp_url, ''));
       _inx := _inx + 1;
+    }
     }
   return arr1;
 }
@@ -1574,6 +1642,28 @@ done:
 }
 ;
 
+create procedure WS.WS.VFS_RECOVER_QUEUE_STAT (in host varchar, in coll varchar)
+{
+  declare next_url varchar;
+  declare last_ts datetime;
+  declare secs_last int;
+
+  secs_last := coalesce (sequence_set ('WEB_COPY_SSHUT', 0, 2), 0);
+  last_ts := dateadd ('second', secs_last, stringdate ('1980-01-01'));
+
+  whenever not found goto done;
+  declare cr cursor for select VQ_URL from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = coll and VQ_STAT = 'pending' and VQ_TS < last_ts for update;
+  open cr;
+  while (1)
+    {
+      fetch cr into next_url;
+      update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = host and VQ_ROOT = coll and VQ_URL = next_url;
+    }
+done:
+  close cr;
+}
+;
+
 
 --
 -- simple wrappers for command-line run
@@ -1656,6 +1746,8 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 
   html_start := null;
 
+  _graph := get_keyword ('rdf-graph', opts);
+  if (length (_graph) = 0)
   _graph := WS.WS.MAKE_URL (_host, _start_path);
   _base := WS.WS.MAKE_URL (_host, url);
 
@@ -1671,7 +1763,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
   if (1 and (get_keyword ('meta_rdf', opts, 0) = 1))
     {
       if (strstr (mime_type, 'application/rdf+xml') is not null)
-        DB.DBA.RDF_LOAD_RDFXML (content, url, _graph);
+        DB.DBA.RDF_LOAD_RDFXML (content, _base, _graph);
       else if (
        strstr (mime_type, 'text/rdf+n3') is not null or
        strstr (mime_type, 'text/rdf+ttl') is not null or
@@ -1680,7 +1772,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
        strstr (mime_type, 'application/turtle') is not null or
        strstr (mime_type, 'application/x-turtle') is not null
       )
-        DB.DBA.TTLP (content, url, _graph);
+        DB.DBA.TTLP (content, _base, _graph);
     }
 
   -- The rest is mappers work
@@ -1696,7 +1788,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
     }
       else if (RM_TYPE = 'URL' or RM_TYPE = 'HTTP')
     {
-	  val_match := url;
+	  val_match := _base;
     }
       else
 	val_match := null;
@@ -1712,18 +1804,16 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 	      goto try_next_mapper;
 	    };
 
-	  new_opts := RM_OPTIONS;
+	  new_opts := vector_concat (RM_OPTIONS, vector ('disable-clean', 'Y'));
 	  if (RM_TYPE <> 'HTTP')
         {
-	      rc := call (RM_HOOK) (_graph, url, null, content, aq, aq, RM_KEY, new_opts);
+	      rc := call (RM_HOOK) (_graph, _base, null, content, aq, aq, RM_KEY, new_opts);
 	}
           else
 	    {
 	      declare hf any;
 	      hf := rfc1808_parse_uri (url);
-	      hf[0] := '';
-	      hf[1] := '';
-	      hf[5] := '';
+	      hf[0] := ''; hf[1] := ''; hf[5] := '';
 	      tmp := 'GET '||WS.WS.VFS_URI_COMPOSE (hf)||' HTTP/1.1\r\nHost: ' || _host || '\r\n' || outhdr;
 	      tmp := replace (tmp, '\r', '\n');
 	      tmp := replace (tmp, '\n\n', '\n');
@@ -1792,6 +1882,8 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
 	    }
 	}
     }
+  if (length (xp))
+    update WS.WS.VFS_SITE set VS_IS_SITEMAP = 1 where VS_HOST = _host and VS_ROOT = _root and VS_IS_SITEMAP = 0;
   commit work;
 }
 ;
@@ -1830,7 +1922,13 @@ create procedure WS.WS.SITEMAP_XML_PARSE (in _host varchar, in _url varchar, in 
     };
   if (_url like '%.xml.gz')
     {
+      if (length (_content) > 2)
+	{
+	  declare magic varchar;
+	  magic := subseq (_content, 0, 2);
+	  if (magic[0] = 0hex1f and magic[1] = 0hex8b) 
       _content := gzip_uncompress (_content); 
+    }
     }
   if (_url like '%.xml' or _url like '%.xml.gz' or _c_type = 'text/xml' or _c_type = 'application/xml' or _c_type = 'application/sparql-results+xml')
     {
