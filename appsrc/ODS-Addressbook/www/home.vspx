@@ -1575,15 +1575,18 @@
             <div id="a" class="c1">
               <div class="tabs">
                   <vm:if test="self.abAction <> 'view'">
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="0" caption="Import" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="0" caption="Import" />
                   </vm:if>
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="1" caption="Main" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="2" caption="Contact" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="3" caption="Home" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="4" caption="Business" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="5" caption="Relationships" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="6" caption="Sharing" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="7" caption="X.509 Certificate" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="1" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="2" caption="Contact" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="3" caption="Home" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="4" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="5" caption="Relationships" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="6" caption="Sharing" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="7" caption="X.509 Certificate" />
+                  <vm:if test="(self.abAction = 'view') and (not isnull (__proc_exists ('QRcode encodeString8bit', 2)))">
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="8" caption="QRCode" />
+                  </vm:if>
               </div>
                 <div class="contents vcard">
                   <vm:if test="self.abAction <> 'view'">
@@ -2642,6 +2645,27 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="a_content_8" class="tabContent" style="display: none;">
+              		  <?vsp
+              		    declare vcard, qrcode any;
+
+        		          vcard := AB.WA.export_vcard (self.domain_id, vector (self.v_id));
+                      qrcode := ODS.ODS_API.qrcode (vcard);
+        		        ?>
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <th valign="top">
+                    		  <?vsp
+                            if (qrcode is not null)
+	                            http (sprintf ('<img id="qrcode" src="data:image/jpg;base64,%s"/>', qrcode));
+              		        ?>
+                        </th>
+                        <td valign="top">
+                          <pre><?vsp http (vcard); ?></pre>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
               </div>
             </div>
             <div class="new-form-footer">
@@ -2904,6 +2928,14 @@
                   ]]>
                 </v:on-post>
               </v:button>
+                <v:button action="simple" name="ab_edit" value="Edit" enabled="--case when (AB.WA.contact_rights (self.domain_id, self.v_id, self.account_rights) = 'W') and (self.abAction = 'view') then 1 else 0 end" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.abAction := 'edit';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
                 <v:button name="ab_cancel" action="simple" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
