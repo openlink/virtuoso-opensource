@@ -122,14 +122,14 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.filtersURI = [];
     this.filtersProperty = [];
 
-    this.items = [];
+    this.graphs = [];
 
     this.getTripleCount = function () {
 	return self.data.triples.length;
     }
 
-    this.getItemCount = function () {
-	return self.items.length;
+    this.getGraphCount = function () {
+	return self.graphs.length;
     }
 
     this.getLabelCount = function () {
@@ -177,12 +177,9 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    if (item.type.indexOf(t[2]) == -1) item.type.push(t[2]);
     }
 
-    //
-    // FIXME
-//
 
     this.nsPrefixPredHandler = function (item, t, opt) {
-	OAT.IRIDB.addNs (t[1], t[2]);
+	OAT.IRIDB.addNs (t[0], t[2].getValue());
     }
 
     this.dequeueURL = function (url, success)
@@ -369,20 +366,20 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    title:title
 	}
 	
-	self.items.push(o);
+	self.graphs.push(o);
 	self.rebuild(false);
     }
 
     this.findIndex = function(url) {
-	for (var i=0;i<self.items.length;i++) {
-	    var item = self.items[i];
+	for (var i=0;i<self.graphs.length;i++) {
+	    var item = self.graphs[i];
 	    if (item.href == url) { return i; }
 	}
 	return -1;
     }
 
     this.clear = function() {
-	self.items = [];
+	self.graphs = [];
 	self.rebuild(true);
 	OAT.MSG.send(self, "OAT_RDF_STORE_CLEARED",{});
     }
@@ -390,7 +387,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.remove = function(uri) {
 	var index = self.findIndex(uri);
 	if (index == -1) { return; }
-	self.items.splice(index,1);
+	self.graphs.splice(index,1);
 	self.rebuild(true);
 	OAT.MSG.send(self,"OAT_RDF_STORE_URI_REMOVED",{uri:uri});
     }
@@ -398,35 +395,35 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.enable = function(uri) {
 	var index = self.findIndex(uri);
 	if (index == -1) { return; }
-	self.items[index].enabled = true;
+	self.graphs[index].enabled = true;
 	self.rebuild(true);
 	OAT.MSG.send(self,"OAT_RDF_STORE_ENABLED",{uri:uri});
     }
 
     this.enableAll = function() {
-	for (var i=0;i<self.items.length;i++)
-	    self.enable(self.items[i].href);
+	for (var i=0;i<self.graphs.length;i++)
+	    self.enable(self.graphs[i].href);
     }
 
     this.disable = function(url) {
 	var index = self.findIndex(url);
 	if (index == -1) { return; }
-	self.items[index].enabled = false;
+	self.graphs[index].enabled = false;
 	self.rebuild(true);
 	OAT.MSG.send(self,"OAT_RDF_STORE_DISABLED",{uri:uri});
     }
 
     this.disableAll = function() {
-	for (var i=0;i<self.items.length;i++)
-	    self.disable(self.items[i].href);
+	for (var i=0;i<self.graphs.length;i++)
+	    self.disable(self.graphs[i].href);
     }
 
     this.invertSel = function() {
-	for (var i=0;i<self.items.length;i++)
-	    if (self.items[i].enabled) {
-		self.disable(self.items[i].href);
+	for (var i=0;i<self.graphs.length;i++)
+	    if (self.graphs[i].enabled) {
+		self.disable(self.graphs[i].href);
 	    } else {
-		self.enable(self.items[i].href);
+		self.enable(self.graphs[i].href);
 	    }
     }
 
@@ -512,8 +509,8 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 
 	if (complete) { /* complete = all */
 	    self.data.all = [];
-	    for (var i=0;i<self.items.length;i++) { // Item is sort-of synonymous to graph
-		var item = self.items[i];
+	    for (var i=0;i<self.graphs.length;i++) { // Item is sort-of synonymous to graph
+		var item = self.graphs[i];
 		if (item.enabled) { todo.push([item.triples,item.href,item.title]); }
 	    }
 	} else { /* not complete - only last item */
@@ -521,7 +518,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		var item = self.data.all[i];
 		conversionTable[item.uri] = item;
 	    }
-	    var item = self.items[self.items.length-1];
+	    var item = self.graphs[self.graphs.length-1];
 	    todo.push([item.triples,item.href,item.title]);
 	}
 	for (var i=0;i<todo.length;i++) {
@@ -545,7 +542,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		    }
 		}
 	    } /* predicates */
-	} /* items */
+	} /* graphs */
 
 	/* 3. apply filters: create self.data.structured + 4. convert filtered data back to triples */
 
@@ -626,6 +623,8 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	}
 
 	self.data.triples = [];
+	
+// XXX
 	
 	for (var i=0;i<self.data.structured.length;i++) {
 	    var item = self.data.structured[i];

@@ -152,6 +152,7 @@ OAT.IRIDB = {
 	    this._iri_a[iid] = [iri, (ns?ns:false)];
 	} else
 	    if (ns) {
+		if (typeof ns == "object") throw "InsertIRI error: Ciri cannot be an object.";
 		this._iri_a[iid][1] = ns;
 	    }
 	return iid;
@@ -160,7 +161,7 @@ OAT.IRIDB = {
     insertIRIArr: function (iri_arr) {
 	var r_a = []; 
 	for (var i=0;i<iri_arr.length;i++) {
-	    if (typeof iri_arr[i] == 'Object') {
+	    if (typeof iri_arr[i] == 'object') {
 		r_a.push (this.insertIRI (iri_arr[i][0], iri_arr[i][1]));
 	    } 
 	    else {
@@ -200,11 +201,6 @@ OAT.IRIDB = {
 	return (iri_id ? iri_id : false);
     },
 
-    getCIRIByID: function (iid) {
-	var i_a = this._iri_a[iid];
-	return ((i_a && i_a[1]) ? i_a[1] : false);
-    },
-
 //
 // Resolve an IRI to a CIRI representation
 //
@@ -237,6 +233,7 @@ OAT.IRIDB = {
 	if (pfx_iid)
 	    {
 		ciri = this._iri_a[pfx_iid][1] + ":" + i_a[0];
+		if (typeof ciri == "object") throw "resolveCIRI: invalid ciri - cannot have an object here";
 		this._iri_a[iid][1] = ciri; 
 
 		return ciri;
