@@ -427,7 +427,7 @@ iSPARQL.QBE = function (def_obj) {
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.canvas = self.svgsparql.toXML();
 	dataObj.defaultGraph = $v('qbe_graph');
-	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
+	dataObj.metaDataOpts = iSPARQL.mdOpts.getMetaDataObj();
 	dataObj.maxrows = iSPARQL.dataObj.maxrows;
 
 	if(qe.cacheIndex == -1) {

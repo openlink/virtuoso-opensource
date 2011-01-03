@@ -359,7 +359,7 @@ iSPARQL.Advanced = function () {
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.maxrows = iSPARQL.dataObj.maxrows;
 	dataObj.defaultGraph = $v('default-graph-uri');
-	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
+		dataObj.metaDataOpts = iSPARQL.mdOpts.getMetaDataObj();
 		
 	return(dataObj);
     }
@@ -1177,7 +1177,12 @@ iSPARQL.MetaDataOpts = function () {
 
     var self = this;
 
-    this.metadata = {};
+    this.metadata = {
+		title: '',
+		creator: '',
+		description: ''
+    };
+
     this.observers = {};
 
     this._init = function () {
@@ -1196,8 +1201,8 @@ iSPARQL.MetaDataOpts = function () {
 
     this.loadOpts = function (o) {
 	if (o.title) self.metadata.title       = o.title;
-	if (o.title) self.metadata.creator     = o.creator;
-	if (o.title) self.metadata.description = o.description;
+		if (o.creator) self.metadata.creator         = o.creator;
+		if (o.description) self.metadata.description = o.description;
     }
 
     this.changed = function (callerObj, reason) {
@@ -1328,17 +1333,25 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 
     this.connect = function (_user, _pass, caller) {
 	self.authObj.user = _user;
-	self.authObj.pass = _pass;
+		self.authObj.password = _pass;
 	self.connected = false;
 
-	OAT.AJAX.GET (self.authObj.endpoint, 'username=' + _user + '&pass=' + _pass,
+		if ((!!self.authObj.user) && self.authObj.user != '') 
+		  {
+			  OAT.AJAX.PROPFIND ('/DAV/home/' + _user,'',
 		      function (data, headers) {
-			  if (data == 'OK') self.connected = true;
-			  else self.error = data;
+									 self.connected = true;
 		      },
 		      		  {async:false,
+								  user: self.authObj.user,
+								  password: self.authObj.password,
 		      		   onstart:function() {return},
-		      		   onerror:function (xhr) { self.error = xhr.response; self.connected = false; }});
+								  onerror:function (xhr) { 
+									  var stat = xhr.getStatus();
+									  if (stat == 401)
+										  self.error = 'Invalid Credentials';
+									  else self.error = 'Unknown error';
+									  self.connected = false; }});
 
 	if (self.connected) {
 	    self.saveAuth ();
@@ -1346,13 +1359,14 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 	    					 imagePath:toolkitImagesPath,
 	    					 silentStart:true,
 	    					 user:self.authObj.user,
-	    					 pass:self.authObj.pass,
+	    						   pass:self.authObj.password, 
 	    					 isDav:true});
-	}
 
 	self.detectServerProperties ();
 
 	OAT.MSG.send (self, "iSPARQL_SERVER_CONNECTED", self);
+    }
+		  }
     }
 
     this.detectServerProperties = function() {
@@ -1529,7 +1543,7 @@ iSPARQL.Common = {
 			    var iridbstats = OAT.IRIDB.getStats();
 			    $('iridb_stats').innerHTML = iridbstats.iriCount;
 			    $('triple_count').innerHTML = m.getTripleCount();
-			    $('item_count').innerHTML = m.getItemCount();
+							$('item_count').innerHTML = m.getGraphCount();
 			    $('label_count').innerHTML = m.getLabelCount();
 			    $('label_proc_count').innerHTML = m.getLabelProcCount();
 			});

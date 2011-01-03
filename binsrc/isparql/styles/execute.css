@@ -19,7 +19,10 @@ div.grid table,
 table.grid {
 	border-collapse: collapse;
 	font: menu;
+  width: 100%;
 }
+
+div.grid { width: 100%}
 
 /* ---------------- rows -------------- */
 
@@ -144,6 +147,9 @@ body {
   color: #335;
   margin:0px;
 }
+
+.result_plnk_ctr { width: 40%; float: left; }
+.anchor_pref_ctr { width: 20%; float: right;}
 
 p.copyright {
 font-size: 8pt;
