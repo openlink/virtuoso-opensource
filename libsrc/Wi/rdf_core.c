@@ -601,8 +601,7 @@ void
 ttlp_free (ttlp_t *ttlp)
 {
   dk_free_box (ttlp->ttlp_default_ns_uri);
-  while (NULL != ttlp->ttlp_namespaces)
-    dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
+  dk_free_box (ttlp->ttlp_namespaces_prefix2iri);
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
@@ -766,7 +765,7 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_
 {
   char *lname = strchr (qname, ':');
   dk_set_t ns_dict;
-  caddr_t ns_pref, ns_uri, res;
+  caddr_t ns_pref, ns_uri, *ns_uri_ptr, res;
   int ns_uri_len, local_len, res_len;
   if (NULL == lname)
     {
@@ -810,10 +809,12 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
       goto ns_uri_found; /* see below */
     }
   lname++;
-  ns_dict = ttlp_arg[0].ttlp_namespaces;
+  ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
   ns_pref = box_dv_short_nchars (qname, lname - qname);
-  ns_uri = (caddr_t) dk_set_get_keyword (ns_dict, ns_pref, NULL);
-  if (NULL == ns_uri)
+  ns_uri_ptr = (caddr_t *) id_hash_get (ns_dict, &ns_pref);
+  if (NULL != ns_uri_ptr)
+    ns_uri = ns_uri_ptr[0];
+  else
     {
       if (!strcmp (ns_pref, "rdf:"))
         ns_uri = uname_rdf_ns_uri;
