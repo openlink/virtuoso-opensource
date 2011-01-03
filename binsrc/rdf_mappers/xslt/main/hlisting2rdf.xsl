@@ -21,22 +21,35 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<xsl:stylesheet xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rss="http://purl.org/rss/1.0/"
-    xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:admin="http://webns.net/mvcb/" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:review="http:/www.purl.org/stuff/rev#" xmlns:hlisting="http://www.openlinksw.com/schemas/hlisting/"
-    xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.w3.org/2006/vcard/ns#"
+<xsl:stylesheet
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:rss="http://purl.org/rss/1.0/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+	xmlns:foaf="http://xmlns.com/foaf/0.1/"
+	xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+    xmlns:admin="http://webns.net/mvcb/" xmlns:h="http://www.w3.org/1999/xhtml" 
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:review="http:/www.purl.org/stuff/rev#" 
+	xmlns:hlisting="http://www.openlinksw.com/schemas/hlisting/"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+	xmlns:v="http://www.w3.org/2006/vcard/ns#"
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     version="1.0">
     <xsl:output indent="yes" omit-xml-declaration="yes" method="xml" />
     <xsl:param name="baseUri" />
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>	
     <xsl:template match="/h:html/h:body">
         <rdf:RDF>
             <xsl:apply-templates />
         </rdf:RDF>
     </xsl:template>
     <xsl:template match="//*[@class='hlisting']">
-        <hlisting:Listing rdf:about="{$baseUri}">
+      <rdf:Description rdf:about="{$docproxyIRI}">
+        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hlisting')}" />
+      </rdf:Description>	
+        <hlisting:Listing rdf:about="{vi:proxyIRI ($baseUri, '', 'hlisting')}">
             <xsl:apply-templates mode="hlisting" />
         </hlisting:Listing>
     </xsl:template>

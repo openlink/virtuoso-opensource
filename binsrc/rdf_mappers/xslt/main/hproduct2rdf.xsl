@@ -69,14 +69,9 @@
 
   <xsl:if test="$hproduct != 0">
 	<rdf:Description rdf:about="{$docproxyIRI}">
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{$resourceURL}"/>
-		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-		<foaf:topic rdf:resource="{$resourceURL}"/>
-		<dcterms:subject rdf:resource="{$resourceURL}"/>
+        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hproduct')}" />
 	</rdf:Description>
-  
-    <gr:ProductOrService rdf:about="{$resourceURL}">
+    <gr:ProductOrService rdf:about="{vi:proxyIRI ($baseUri, '', 'hproduct')}">
       <xsl:apply-templates mode="extract-hproduct"/>
     </gr:ProductOrService>
   </xsl:if>

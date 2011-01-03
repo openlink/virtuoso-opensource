@@ -50,12 +50,11 @@ version="1.0">
     </rdf:RDF>
   </xsl:template>
 
-
   <xsl:template match="*[contains(@class, 'hnews hentry')]">
     <rdf:Description rdf:about="{$docproxyIRI}">
-      <foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri)}"/>
+        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hnews')}" />
     </rdf:Description>
-    <bibo:Article rdf:about="{vi:proxyIRI ($baseUri)}">
+    <bibo:Article rdf:about="{vi:proxyIRI ($baseUri, '', 'hnews')}">
       <xsl:apply-templates mode="hnews"/>
     </bibo:Article>
   </xsl:template>
