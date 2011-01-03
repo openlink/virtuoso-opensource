@@ -313,9 +313,9 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("list", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-	snprintf (message, sizeof (message), "3 LIST \"\" %s", folder_id);
+			snprintf (message, sizeof (message), "3 LIST \"\" \"%s\"", folder_id);
       else
-	snprintf (message, sizeof (message), "3 LIST \"\" %%");
+			snprintf (message, sizeof (message), "3 LIST \"\" \"%%\"");
       SEND (ses, rc, message, "");
       message_begin = 0;
       strses_flush (msg);
@@ -375,7 +375,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("delete", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-	snprintf (message, sizeof (message), "3 DELETE %s", folder_id);
+		snprintf (message, sizeof (message), "3 DELETE \"%s\"", folder_id);
       else
 	{
 	  strcpy_ck (err_code, "IM011");
@@ -407,7 +407,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("create", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-	snprintf (message, sizeof (message), "3 CREATE %s", folder_id);
+		snprintf (message, sizeof (message), "3 CREATE \"%s\"", folder_id);
       else
 	{
 	  strcpy_ck (err_code, "IM015");
@@ -440,9 +440,9 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("select", mode) || !stricmp ("expunge", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-	snprintf (message, sizeof (message), "4 SELECT %s", folder_id);
+		snprintf (message, sizeof (message), "4 SELECT \"%s\"", folder_id);
       else
-	snprintf (message, sizeof (message), "4 SELECT INBOX");
+		snprintf (message, sizeof (message), "4 SELECT \"INBOX\"");
       SEND (ses, rc, message, "");
       while (1)
 	{
@@ -594,7 +594,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	  strcpy_ck (err_text, "There must be 2 string items in vector of argument 7 (old folder name to rename and a new name)");
 	  goto logout;
 	}
-      snprintf (message, sizeof (message), "4 RENAME %s %s", in[0], in[1]);
+		snprintf (message, sizeof (message), "4 RENAME \"%s\" \"%s\"", in[0], in[1]);
       SEND (ses, rc, message, "");
       while (1)
 	{
@@ -616,7 +616,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("fetch", mode) || !stricmp ("message_delete", mode) || !stricmp ("message_copy", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-	snprintf (message, sizeof (message), "4 SELECT %s", folder_id);
+		snprintf (message, sizeof (message), "4 SELECT \"%s\"", folder_id);
       else
 	snprintf (message, sizeof (message), "4 SELECT INBOX");
       SEND (ses, rc, message, "");
@@ -664,7 +664,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      if (!stricmp ("message_delete", mode))
 		snprintf (message, sizeof (message), "5 UID STORE %d +FLAGS(\\Deleted)", in[br]);
 	      if (!stricmp ("message_copy", mode))
-		snprintf (message, sizeof (message), "5 UID COPY %d %s", in[br], target_folder_id);
+					snprintf (message, sizeof (message), "5 UID COPY %d \"%s\"", in[br], target_folder_id);
 	      SEND (ses, rc, message, "");
 	      while (1)
 		{
