@@ -331,18 +331,6 @@ vsp_ua_match_hdr (inout lines any, in match_str varchar)
 
 
 
-create procedure
-vsp_ua_prop_init ()
-{
---  dbg_printf ('vsp_ua_prop_init');
-  return (vector ('has_basic_auth', 'has_digest_auth',
-		  'is_msie', 'has_frames',
-		  'has_tables', 'has_css1',
-		  'has_css2', 'has_xml',
-		  'browser_level', 'ua_platform',
-		  'is_robot', 'is_dav_client'));
-}
-;
 
 --!AWK PUBLIC
 create procedure
@@ -375,6 +363,19 @@ vsp_calculate_digest (in username varchar, in pass varchar, in auth_vec any)
       gen_resp := md5 (gen_resp);
     }
   return gen_resp;
+}
+;
+
+create procedure
+vsp_ua_prop_init ()
+{
+--  dbg_printf ('vsp_ua_prop_init');
+  return (vector ('has_basic_auth', 'has_digest_auth',
+		  'is_msie', 'has_frames',
+		  'has_tables', 'has_css1',
+		  'has_css2', 'has_xml',
+		  'browser_level', 'ua_platform',
+		  'is_robot', 'is_dav_client'));
 }
 ;
 
@@ -418,14 +419,14 @@ vsp_ua_vec_init ()
 			  2, 'Win32',
 			  'False', 'False'),
 		  'Mozilla/4.*Windows*',
-		  vector ('True', 'False',
+		  vector ('True', 'True',
 			  'False', 'True',
 			  'True', 'True',
 			  'False', 'False',
 			  4, 'Win32',
 			  'False', 'False'),
 		  'Mozilla/5.*Windows*',
-		  vector ('True', 'False',
+		  vector ('True', 'True',
 			  'False', 'True',
 			  'True', 'True',
 			  'False', 'True',
@@ -438,8 +439,15 @@ vsp_ua_vec_init ()
                           'False', 'False',
                           4, 'Linux',
                           'False', 'False'),
+		  'Mozilla/5.*AppleWebKit/5*',
+		  vector ('True', 'True',
+			  'False', 'True',
+			  'True', 'True',
+			  'True', 'True',
+			  5, 'NA',
+			  'False', 'False'),
                   'Mozilla/5.*Linux*',
-                  vector ('True', 'False',
+                  vector ('True', 'True',
                           'False', 'True',
                           'True', 'True',
                           'False', 'True',
@@ -453,7 +461,7 @@ vsp_ua_vec_init ()
                           4, 'Mac',
                           'False', 'False'),
                   'Mozilla/5.*Macintosh*',
-                  vector ('True', 'False',
+                  vector ('True', 'True',
                           'False', 'True',
                           'True', 'True',
                           'False', 'True',
@@ -495,18 +503,12 @@ vsp_ua_vec_init ()
 			  0, 'NA',
 			  'False', 'False'),
     		  'WebDAVFS/*',
-          vector ('True', 
-                  'True',
-                  'False', 
-                  'True',
-                  'True', 
-                  'True',
-                  'False', 
-                  'False',
-                  0, 
-                  'Mac',
-                  'False', 
-                  'True'),
+		  vector ('True', 'True',
+			  'False', 'True',
+			  'True',  'True',
+			  'False', 'False',
+			  0, 'Mac',
+			  'False', 'True'),
 		  '*',
 		  vector ('False', 'False',
 			  'False', 'False',
