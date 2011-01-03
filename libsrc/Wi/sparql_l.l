@@ -424,6 +424,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{D}{I}{S}{T}{I}{N}{C}{T}	{ return DISTINCT_L	; }
 <SPARQL>{D}{R}{O}{P}			{ return DROP_L		; }
 <SPARQL>{E}{X}{C}{L}{U}{S}{I}{V}{E}	{ return EXCLUSIVE_L	; }
+<SPARQL>{E}{X}{I}{S}{T}{S}		{ return EXISTS_L	; }
 <SPARQL>{F}{A}{L}{S}{E}			{ return false_L	; }
 <SPARQL>{F}{I}{L}{T}{E}{R}		{ return FILTER_L	; }
 <SPARQL>{F}{R}{O}{M}			{ return FROM_L		; }
@@ -453,6 +454,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{M}{A}{P}			{ return MAP_L		; }
 <SPARQL>{M}{A}{X}			{ return MAX_L		; }
 <SPARQL>{M}{I}{N}			{ return MIN_L		; }
+<SPARQL>{M}{I}{N}{U}{S}			{ return MINUS_L	; }
 <SPARQL>{M}{O}{D}{I}{F}{Y}		{ return MODIFY_L	; }
 <SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
 <SPARQL>{N}{I}{L}			{ return NIL_L		; }
@@ -509,6 +511,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{U}{N}{B}{O}{U}{N}{D}		{ return UNBOUND_L	; }
 <SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L	; }
 <SPARQL>{U}{S}{I}{N}{G}			{ return USING_L	; }
+<SPARQL>{W}{I}{T}{H}			{ return WITH_L		; }
 
 <SPARQL>{T}{E}{X}{T}			{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return TEXT_BL	; }
 <SPARQL>{X}{M}{L}			{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return XML_BL	; }

@@ -5445,8 +5445,13 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         rv->_.retval.vname = eq->e_varnames[0];
         if (NULL == native)
           native = sparp_equiv_native_valmode (ssg->ssg_sparp, gp, eq);
-        if ((native == needed) || (SSG_VALMODE_AUTO == needed))
+        if (SSG_VALMODE_AUTO == native)
+          {
+            if (native == needed)
           name_as_expn = rv->_.retval.vname;
+            else if (rv->_.retval.rvr.rvrRestrictions & SPART_VARR_ALWAYS_NULL)
+              native = SSG_VALMODE_NUM;
+          }
         if (flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)
           rv->_.retval.optional_makes_nullable = 1;
         ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);

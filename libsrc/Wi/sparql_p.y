@@ -163,6 +163,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DISTINCT_L	/*:: PUNCT_SPAR_LAST("DISTINCT") ::*/
 %token DROP_L		/*:: PUNCT_SPAR_LAST("DROP") ::*/
 %token EXCLUSIVE_L	/*:: PUNCT_SPAR_LAST("EXCLUSIVE") ::*/
+%token EXISTS_L		/*:: PUNCT_SPAR_LAST("EXISTS") ::*/
 %token false_L		/*:: PUNCT_SPAR_LAST("false") ::*/
 %token FILTER_L		/*:: PUNCT_SPAR_LAST("FILTER") ::*/
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
@@ -193,6 +194,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token MAP_L		/*:: PUNCT_SPAR_LAST("MAP") ::*/
 %token MAX_L		/*:: PUNCT_SPAR_LAST("MAX") ::*/
 %token MIN_L		/*:: PUNCT_SPAR_LAST("MIN") ::*/
+%token MINUS_L		/*:: PUNCT_SPAR_LAST("MINUS") ::*/
 %token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
@@ -250,6 +252,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token UNION_L		/*:: PUNCT_SPAR_LAST("UNION") ::*/
 %token USING_L		/*:: PUNCT_SPAR_LAST("USING") ::*/
 %token WHERE_L		/*:: PUNCT("WHERE"), SPAR, LAST1("WHERE {"), LAST1("WHERE ("), LAST1("WHERE #cmt\n{"), LAST1("WHERE\r\n("), ERR("WHERE"), ERR("WHERE bad") ::*/
+%token WITH_L		/*:: PUNCT_SPAR_LAST("WITH") ::*/
 %token __SPAR_PUNCT_END	/* Delimiting value for syntax highlighting */
 
 %token START_OF_SPARQL_TEXT	/*:: FAKE("the beginning of SPARQL text"), SPAR, NULL ::*/
@@ -349,6 +352,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_quad_map_gp
 %type <tree> spar_group_or_union_gp
 %type <tree> spar_constraint
+%type <tree> spar_constraint_exists_int
+%type <token_type> spar_exists_or_not_exists
 %type <tree> spar_service_req
 %type <backstack> spar_service_options_list_opt
 %type <backstack> spar_service_options
@@ -989,6 +994,40 @@ spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltIn
 	: FILTER_L _LPAR spar_expn _RPAR	{ $$ = $3; }
 	| FILTER_L spar_built_in_call	{ $$ = $2; }
 	| FILTER_L spar_function_call	{ $$ = $2; }
+	| FILTER_L spar_exists_or_not_exists spar_constraint_exists_int {		/*... | 'NOT'? 'EXISTS' DatasetClause* WhereClause */
+		if ($2)
+		  $$ = $3;
+		else
+		  SPAR_BIN_OP ($$, BOP_NOT, $3, NULL); }
+	| MINUS_L spar_constraint_exists_int {		/*... | 'NOT'? 'EXISTS' DatasetClause* WhereClause */
+		/*!!! Dirty hack! Works wrong if MINUS is at the middle of the GP (before smth or not a 2-nd item) */
+		  SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
+	;
+
+spar_exists_or_not_exists
+	: EXISTS_L		{ $$ = 1; }
+	| NOT_L EXISTS_L	{ $$ = 0; }
+	;
+
+spar_constraint_exists_int
+	: {
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "SPARQL 1.1 FILTER EXISTS / FILTER NOT EXISTS test");
+		spar_gp_init (sparp_arg, SELECT_L);
+		spar_env_push (sparp_arg);
+		spar_selid_push (sparp_arg);
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
+		sparp_arg->sparp_allow_aggregates_in_expn <<= 1; }
+	    spar_dataset_clauses_opt
+	    spar_wherebindings_clause
+	    spar_triple_optionlist_opt {
+		SPART *subselect_top;
+		SPART *where_gp;
+		where_gp = spar_gp_finalize (sparp_arg, NULL);
+		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
+		  where_gp, NULL, NULL, NULL, (SPART *)t_box_num(1), (SPART *)t_box_num(0) );
+		spar_env_pop (sparp_arg);
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, $4, subselect_top);
+		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	;
 
 spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionList? GroupGraphPattern	*/
