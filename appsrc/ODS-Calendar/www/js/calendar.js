@@ -140,7 +140,7 @@ function dateUpdate(srcField, dstFields, format) {
   function dp(v, f) {
     var dt = dateParse(v, f);
     if (dt)
-      dt = new Date(dt[0], dt[1], dt[2]);
+      dt = new Date(dt[0], dt[1]-1, dt[2]);
 
     return dt;
   }
@@ -162,7 +162,7 @@ function dateUpdate(srcField, dstFields, format) {
     if (!dstDate) {continue;}
 
     dstDate = new Date(dstDate.getFullYear(), dstDate.getMonth(), dstDate.getDate()+delta);
-    dst.value = dateFormat([dstDate.getFullYear(), dstDate.getMonth(), dstDate.getDate()], format);
+    dst.value = dateFormat([dstDate.getFullYear(), dstDate.getMonth()+1, dstDate.getDate()], format);
 
     var dstSave = $(dstFields[i]+'_save');
     if (!dstSave) {continue;}

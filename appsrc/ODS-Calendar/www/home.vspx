@@ -3243,8 +3243,16 @@
               <div class="form-header">
                 <v:label format="%s" value="--self.eventHeader (self.v_id, 'event')" />
         </div>
-              <div class="new-form-body vevent" typeof="sioct:EventCalendar" about="<?V SIOC..calendar_event_iri (self.domain_id, self.v_id) ?>">
-          <table cellspacing="0">
+              <div id="t" class="c1">
+                <div class="tabs">
+                  <div onclick="javascript: showTab('t', 2, 0);" class="tab " id="t_tab_0">Main</div>
+                  <vm:if test="not isnull (__proc_exists ('QRcode encodeString8bit', 2))">
+                  <div onclick="javascript: showTab('t', 2, 1);" class="tab " id="t_tab_1">QRCode</div>
+                  </vm:if>
+                </div>
+                <div class="contents vevent" typeof="sioct:EventCalendar" about="<?V SIOC..calendar_event_iri (self.domain_id, self.v_id) ?>">
+                  <div id="t_content_0" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
             <tr>
               <th width="25%">
                 Name
@@ -3336,6 +3344,29 @@
             </tr>
           </table>
         </div>
+                  <div id="t_content_1" class="tabContent" style="display: none;">
+              		  <?vsp
+              		    declare vcard, qrcode any;
+
+        		          vcard := CAL.WA.export_vcal (self.domain_id, vector (self.v_id));
+                      qrcode := ODS.ODS_API.qrcode (vcard);
+        		        ?>
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <th valign="top">
+                    		  <?vsp
+                            if (qrcode is not null)
+	                            http (sprintf ('<img id="qrcode" src="data:image/jpg;base64,%s"/>', qrcode));
+              		        ?>
+                        </th>
+                        <td valign="top">
+                          <pre><?vsp http (vcard); ?></pre>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
               <div class="form-footer">
                 <v:button action="simple" name="ev_edit" value="Edit" enabled="--case when CAL.WA.event_rights (self.domain_id, self.v_id, self.account_rights) = 'W' then 1 else 0 end" xhtml_class="form-button">
                   <v:on-post>
@@ -3797,8 +3828,16 @@
               <div class="form-header">
                 <v:label format="%s" value="--self.eventHeader (self.v_id, 'task')" />
         </div>
-              <div class="new-form-body vevent" typeof="sioct:EventCalendar" about="<?V SIOC..calendar_event_iri (self.domain_id, self.v_id) ?>">
-                <table cellspacing="0">
+              <div id="t" class="c1">
+                <div class="tabs">
+                  <div onclick="javascript: showTab('t', 2, 0);" class="tab " id="t_tab_0">Main</div>
+                  <vm:if test="not isnull (__proc_exists ('QRcode encodeString8bit', 2))">
+                  <div onclick="javascript: showTab('t', 2, 1);" class="tab " id="t_tab_1">QRCode</div>
+                  </vm:if>
+                </div>
+                <div class="contents vevent" typeof="sioct:EventCalendar" about="<?V SIOC..calendar_event_iri (self.domain_id, self.v_id) ?>">
+                  <div id="t_content_0" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
             <tr>
               <th width="25%">
                 Name
@@ -3881,6 +3920,29 @@
             </tr>
           </table>
         </div>
+                  <div id="t_content_1" class="tabContent" style="display: none;">
+              		  <?vsp
+              		    declare vcard, qrcode any;
+
+        		          vcard := CAL.WA.export_vcal (self.domain_id, vector (self.v_id));
+                      qrcode := ODS.ODS_API.qrcode (vcard);
+        		        ?>
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <th valign="top">
+                    		  <?vsp
+                            if (qrcode is not null)
+	                            http (sprintf ('<img id="qrcode" src="data:image/jpg;base64,%s"/>', qrcode));
+              		        ?>
+                        </th>
+                        <td valign="top">
+                          <pre><?vsp http (vcard); ?></pre>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
               <div class="form-footer">
                 <v:button action="simple" name="tv_edit" value="Edit" enabled="--case when CAL.WA.event_rights (self.domain_id, self.v_id, self.account_rights) = 'W' then 1 else 0 end" xhtml_class="form-button">
                   <v:on-post>
