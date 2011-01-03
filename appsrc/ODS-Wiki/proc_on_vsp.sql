@@ -440,10 +440,13 @@ create function WV.WIKI.VSPTOPICREFERERS (
 {
   declare _uid integer;
   declare _base_adjust varchar;
-  _uid := get_keyword ('uid', params);
-  _base_adjust := get_keyword ('baseadjust', params);
   declare _report any;
   declare _text varchar;
+  declare _ext_params any;
+
+  _uid := get_keyword ('uid', params);
+  _base_adjust := get_keyword ('baseadjust', params);
+
   -- _topic.ti_http_debug_print('VspTopicReferers: info about current topic');
   if (get_keyword ('command', params) = 'refby') 
     {
@@ -452,14 +455,18 @@ create function WV.WIKI.VSPTOPICREFERERS (
 					     XMLELEMENT ('Link',
 							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
 									n.LocalName as "LOCALNAME",
+                            u.U_NAME as "AUTHOR",
+                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED",
 									n.Abstract as "ABSTRACT") ) ) )
-		  from (
-			select distinct n2.LocalName, n2.Abstract, n2.ClusterId
-			from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
+                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.Abstract, n2.ClusterId
+                          from WV.WIKI.LINK as l
+                                 inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
 			 where l.DestId = _topic.ti_id
 			 and n2.ClusterId = _topic.ti_cluster_id
 			) as n
-		  inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) );
+                        inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId)
+                        inner join DB.DBA.SYS_USERS as u on (u.U_ID = n.AuthorId)
+                 order by c.ClusterName, n.LocalName);
     }
   else
     {
@@ -468,20 +475,22 @@ create function WV.WIKI.VSPTOPICREFERERS (
 					     XMLELEMENT ('Link',
 							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
 									n.LocalName as "LOCALNAME",
+                            u.U_NAME as "AUTHOR",
+                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED",
 									n.Abstract as "ABSTRACT") ) ) )
-		  from (
-			select distinct n2.LocalName, n2.Abstract, n2.ClusterId
-			from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
+                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.Abstract, n2.ClusterId
+                          from WV.WIKI.LINK as l
+                                 inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
 			 where l.DestId = _topic.ti_id 
 			) as n
-		  inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) );
+                        inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId)
+                        inner join DB.DBA.SYS_USERS as u on (u.U_ID = n.AuthorId)
+                 order by c.ClusterName desc, n.LocalName desc);
     }
-  declare _ext_params any;
-  _ext_params := vector_concat (_topic.ti_xslt_vector(params),
-  	vector ('donotresolve', 1));
+
+  _ext_params := vector_concat (_topic.ti_xslt_vector(params), vector ('donotresolve', 1));
   http_value (WV.WIKI.VSPXSLT ( 'PostProcess.xslt', 
-    WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
-      _ext_params),
+                               WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report, _ext_params),
    _ext_params,
    coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
 }

@@ -26,15 +26,11 @@
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:xhtml="http://www.w3.org/TR/xhtml1/strict"
                 xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" >
-<xsl:output
-   method="html"
-   encoding="utf-8"
-/>
+
+  <xsl:output method="html" encoding="utf-8"/>
 
 <xsl:include href="common.xsl"/>
 <xsl:include href="template.xsl"/>
-<xsl:param name="sid"/>
-<xsl:param name="realm"/>
 
 <xsl:param name="sid"/>
 <xsl:param name="realm"/>
@@ -46,6 +42,18 @@
   </xsl:copy>
 </xsl:template>
   
+  <xsl:template match="Referers">
+    <h3>Topics that link to
+    <xsl:call-template name="wikiref">
+      <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></xsl:with-param>
+    </xsl:call-template>:</h3>
+    <ul>
+      <xsl:apply-templates select="Link">
+        <xsl:sort select="@LOCALNAME"/>
+      </xsl:apply-templates>
+    </ul>
+  </xsl:template>
+
 <xsl:template match="Link">
 <li>
   <xsl:call-template name="wikiref">
@@ -54,18 +62,8 @@
     <xsl:with-param name="wikiref_cont"><xsl:value-of select="@CLUSTERNAME"/>.<xsl:value-of select="@LOCALNAME"/></xsl:with-param>
   </xsl:call-template>
 <xsl:if test="@Abstract"> -- <xsl:value-of select="@Abstract"/></xsl:if>
+      <xsl:if test="@CREATED"> (<i>created by <b><xsl:value-of select="@AUTHOR"/></b> on <b><xsl:value-of select="@CREATED"/></b></i>)</xsl:if>
 </li>
-</xsl:template>
-
-<xsl:template match="Referers">
- <h3>Topics that link to 
- <xsl:call-template name="wikiref">
-   <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></xsl:with-param>
- </xsl:call-template>:</h3>
- <ul>
-   <xsl:apply-templates>
-   </xsl:apply-templates>
- </ul>
 </xsl:template>
 
 <xsl:template match="ClusterIndex">
