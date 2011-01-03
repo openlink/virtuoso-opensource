@@ -76,13 +76,9 @@
 	    <xsl:if test="//*[contains(concat(' ',normalize-space(@class),' '),' vevent ')] or //*[contains(concat(' ', normalize-space(@class), ' '),' vtodo ')]">
 	<rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{$resourceURL}"/>
-		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-		<foaf:topic rdf:resource="{$resourceURL}"/>
-		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcalendar')}"/>
 	</rdf:Description>
-
-		<c:Vcalendar rdf:about="{$resourceURL}">
+		<c:Vcalendar rdf:about="{vi:proxyIRI ($baseUri, '', 'hcalendar')}">
 		    <c:prodid>-//connolly.w3.org//palmagent 0.6 (BETA)//EN</c:prodid>
 		    <c:version>2.0</c:version>
 		    <xsl:apply-templates />
