@@ -3042,8 +3042,7 @@ CLI_WRAPPER (sf_sql_get_data_ac,
 #define sf_sql_get_data_ac sf_sql_get_data_ac_w
 #endif
 
-SERVICE_1 (s_sql_no_threads, ssqlnth, "no_threads", DA_FUTURE_REQUEST,
-		DV_SEND_NO_ANSWER, DV_LONG_INT, 1)
+SERVICE_1 (s_sql_no_threads, ssqlnth, "no_threads", DA_FUTURE_REQUEST, DV_SEND_NO_ANSWER, DV_LONG_INT, 1);
 
 #define NO_THREADS_REPORT_PERIOD   10 * 60 /* 10 min */
 
