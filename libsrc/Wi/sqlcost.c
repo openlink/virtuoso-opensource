@@ -1567,8 +1567,8 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	{
 	  int64 c;
 	  sample_opt_t sop;
-	  memset (&sop, 0, sizeof (sop));
 	  caddr_t sc_key = NULL;
+	  memset (&sop, 0, sizeof (sop));
 	  sop.sop_ric = empty_ric;
 	  sop.sop_sc_key_ret = &sc_key;
 	  c = sqlo_inx_sample_1 (key, lowers, uppers, n_parts, &sop);
