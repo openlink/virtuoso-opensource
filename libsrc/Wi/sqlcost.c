@@ -1230,8 +1230,10 @@ typedef struct sample_opt_s
   caddr_t *		sop_sc_key_ret;
   char			sop_is_cl;
   char			sop_res_from_ric_cache;
+  char			sop_use_sc_cache;
 } sample_opt_t;
 
+extern rdf_inf_ctx_t * empty_ric;
 
 #define SMPL_QUEUE 1
 #define SMPL_RESULT 2
@@ -1306,7 +1308,7 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
   itc_free (itc);
   tb_count = dbe_key_count (key->key_table->tb_primary_key);
   res = MIN (tb_count, res);
-  if (!sop || !sop->sop_ric)
+  if (!sop || sop->sop_ric || sop->sop_use_sc_cache)
     {
       num = box_num (res);
       if (so->so_sc->sc_sample_cache)
@@ -1314,6 +1316,20 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
     }
   return res;
 }
+
+
+void
+ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est)
+{
+  text_count_t tc;
+  memset (&tc, 0, sizeof (tc));
+  tc.tc_estimate = est;
+  tc.tc_time = approx_msec_real_time ();
+  mutex_enter (ctx->ric_mtx);
+  id_hash_set (ctx->ric_samples, (caddr_t)&sc_key, (caddr_t)&tc);
+  mutex_leave (ctx->ric_mtx);
+}
+
 
 extern caddr_t rdfs_type;
 
@@ -1378,13 +1394,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
     {
       if (any_est)
 	{
-	  text_count_t tc;
-	  memset (&tc, 0, sizeof (tc));
-	  tc.tc_estimate = est;
-	  tc.tc_time = approx_msec_real_time ();
-	  mutex_enter (sop.sop_ric->ric_mtx);
-	  id_hash_set (ctx->ric_samples, (caddr_t)&sc_key, (caddr_t)&tc);
-	  mutex_leave (sop.sop_ric->ric_mtx);
+	  ric_set_sample (sop.sop_ric, sc_key, est);
 	}
       else
 	dk_free_tree (sc_key);
@@ -1546,13 +1556,30 @@ int64
 sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, index_choice_t * ic)
 {
   rdf_inf_ctx_t * ctx = ic->ic_ric;
-  if (ctx && 0 == stricmp ("DB.DBA.RDF_QUAD", tb_dfe->_.table.ot->ot_table->tb_name))
+  if (0 == stricmp ("DB.DBA.RDF_QUAD", tb_dfe->_.table.ot->ot_table->tb_name))
     {
       rdf_sub_t * sub;
       caddr_t p_const = NULL, o_const = NULL;
       int inx;
       df_elt_t * o_dfe = NULL, *p_dfe = NULL;
       ST * org_o = NULL, * org_p = NULL;
+      if (!ctx)
+	{
+	  int64 c;
+	  sample_opt_t sop;
+	  memset (&sop, 0, sizeof (sop));
+	  caddr_t sc_key = NULL;
+	  sop.sop_ric = empty_ric;
+	  sop.sop_sc_key_ret = &sc_key;
+	  c = sqlo_inx_sample_1 (key, lowers, uppers, n_parts, &sop);
+	  if (!sop.sop_res_from_ric_cache && c > 1000)
+	    {
+	      ric_set_sample (empty_ric, sc_key, c);
+	    }
+	  else
+	    dk_free_tree (sc_key);
+	  return c;
+	}
       for (inx = 0; inx < n_parts; inx++)
 	{
 	  dbe_column_t * left_col = cp_left_col (lowers[inx]);

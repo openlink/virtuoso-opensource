@@ -736,19 +736,11 @@ rdf_inf_ctx (char * name)
 
 
 rdf_inf_ctx_t *
-bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int create)
-{
-  caddr_t ctx_name = bif_string_arg (qst, args, nth, name);
-  rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name), * ctx;
-  if (!place && !create)
-    sqlr_new_error ("42000", "RDFI.", "No RDF inference rule set '%.200s' specified as argument #%d of %.200s()", ctx_name, nth, name);
-  if (!place)
+ric_allocate (caddr_t n2)
     {
-      caddr_t n2 = box_copy (ctx_name);
-      NEW_VARZ (rdf_inf_ctx_t, c1);
-      c1->ric_name = n2;
-      id_hash_set (rdf_name_to_ric, (caddr_t)&n2, (caddr_t)&c1);
-      ctx = c1;
+  NEW_VARZ (rdf_inf_ctx_t, ctx);
+  ctx->ric_name = n2;
+  id_hash_set (rdf_name_to_ric, (caddr_t)&n2, (caddr_t)&ctx);
       ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
@@ -760,9 +752,25 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
       id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
       id_hash_set_rehash_pct (ctx->ric_samples, 200);
       id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
-      /*id_hash_set_rehash_pct (ctx->ric_prop_props, 200);*/
+  ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
       ctx->ric_mtx = mutex_allocate ();
+  ctx->ric_samples = id_hash_allocate (61, sizeof (caddr_t), sizeof (text_count_t), treehash, treehashcmp);
+  id_hash_set_rehash_pct (ctx->ric_samples, 200);
       return ctx;
+    }
+
+rdf_inf_ctx_t *
+bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int create)
+{
+  caddr_t ctx_name = bif_string_arg (qst, args, nth, name);
+  rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name), * ctx;
+  if (!place && !create)
+    sqlr_new_error ("42000", "RDFI.", "No RDF inference rule set '%.200s' specified as argument #%d of %.200s()", ctx_name, nth, name);
+  if (!place)
+    {
+      caddr_t n2 = box_copy (ctx_name);
+      NEW_VARZ (rdf_inf_ctx_t, c1);
+      return ric_allocate (n2);
     }
   else
     return * place;
@@ -1431,7 +1439,7 @@ cl_rdf_bif_check_init (bif_t bif)
 	}
     }
 }
-
+rdf_inf_ctx_t * empty_ric;
 
 void
 rdf_inf_init ()
@@ -1461,6 +1469,7 @@ rdf_inf_init ()
   bif_define ("rdf_inf_dump", bif_rdf_inf_dump);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);
   sas_init ();
+  empty_ric = ric_allocate (box_dv_short_string ("__ empty"));
 }
 
 
