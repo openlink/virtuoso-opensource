@@ -245,52 +245,52 @@ typedef struct
 } service_desc_t;
 
 #define SERVICE_0(name1, str, send, ret_dtp) \
-  service_desc_t name1 = { str, 0, NULL, send, ret_dtp };
+  service_desc_t name1 = { str, 0, NULL, send, ret_dtp }
 
 #define SERVICE_1(name1, name2, str, send, ret_dtp, a1, n1) \
   static long _args_##name1 [1] = { a1 }; \
   static char _args_null_##name1 [1] = { n1 }; \
-  service_desc_t name1 = { str, 1, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = { str, 1, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_2(name1, name2, str, send, ret_dtp, a1, n1, a2, n2) \
   static long _args_##name1 [2] = { a1,a2 }; \
   static char _args_null_##name1 [2] = { n1,n2 }; \
-  service_desc_t name1 = { str, 2, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = { str, 2, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_3(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3) \
   static long _args_##name1 [3] = { a1,a2,a3 }; \
   static char _args_null_##name1 [3] = { n1,n2,n3 }; \
-  service_desc_t name1 = { str, 3, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = { str, 3, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_4(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3,a4,n4) \
   static long _args_##name1 [4] = { a1,a2,a3,a4 }; \
   static char _args_null_##name1 [4] = { n1,n2,n3,n4 }; \
-  service_desc_t name1 = { str, 4, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = { str, 4, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_5(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3,a4,n4,a5,n5) \
   static long _args_##name1 [5] = { a1,a2,a3,a4,a5 }; \
   static char _args_null_##name1 [5] = { n1,n2,n3,n4,n5 }; \
-  service_desc_t name1 = { str, 5, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = { str, 5, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_6(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3,a4,n4,a5,n5,a6,n6) \
   static long _args_##name1 [6] = { a1,a2,a3,a4,a5,a6 }; \
   static char _args_null_##name1 [6] = { n1,n2,n3,n4,n5,n6 }; \
-  service_desc_t name1 = { str, 6, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = { str, 6, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_7(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3,a4,n4,a5,n5,a6,n6,a7,n7) \
   static long _args_##name1 [7] = { a1,a2,a3,a4,a5,a6,a7 }; \
   static char _args_null_##name1 [7] = { n1,n2,n3,n4,n5,n6,n7 }; \
-  service_desc_t name1 = {str, 7, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = {str, 7, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_8(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3,a4,n4,a5,n5,a6,n6,a7,n7,a8,n8) \
   static long _args_##name1 [8] = { a1,a2,a3,a4,a5,a6,a7,a8 }; \
   static char _args_null_##name1 [8] = { n1,n2,n3,n4,n5,n6,n7,n8 }; \
-  service_desc_t name1 = {str, 8, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = {str, 8, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 #define SERVICE_9(name1, name2, str, send, ret_dtp, a1,n1,a2,n2,a3,n3,a4,n4,a5,n5,a6,n6,a7,n7,a8,n8,a9,n9) \
   static long _args_##name1 [9] = { a1,a2,a3,a4,a5,a6,a7,a8,a9 }; \
   static char _args_null_##name1 [9] = { n1,n2,n3,n4,n5,n6,n7,n8,n9 }; \
-  service_desc_t name1 = {str, 9, _args_##name1, send, ret_dtp, _args_null_##name1 };
+  service_desc_t name1 = {str, 9, _args_##name1, send, ret_dtp, _args_null_##name1 }
 
 
 /*
