@@ -551,12 +551,11 @@ cl_exec ('registry_set (''fct_timeout_max'', ''20000'')');
 create procedure
 fct_set_default_qry (inout tree any)
 {
---  dbg_printf ('fct_set_default_qry:');
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_default.xsl',
                 tree,
 		vector ('pos', 1, 'op', 'class', 'iri', 'http://www.w3.org/2000/01/rdf-schema#Class'));
---  dbg_obj_print (tree);
+
 }
 ;
 

@@ -512,8 +512,13 @@ div#dbg_output {
   font-size: 8pt;
 }
 
-span.pivot_pg a { text-decoration: none; }
-span.pivot_pg a:hover { text-decoration: underline; }
+span.pivot_pg a, 
+span.pivot_qrcode_opts a,
+span.pivot_link_opts a { text-decoration: none; }
+
+span.pivot_pg a:hover,
+span.pivot_qrcode_opts a:hover,
+span.pivot_link_opts a:hover { text-decoration: underline; }
 
 div#nav {
     float: left;

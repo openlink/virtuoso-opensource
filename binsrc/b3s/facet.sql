@@ -936,9 +936,13 @@ fct_text (in tree any,
 
   if (n = 'text')
     {
-      declare prop, sc_opt, v varchar;
+      declare prop, sc_opt, v, txs_qr varchar;
+      declare txs_arr any;
+      declare wlimit int;
+
       v := cast (xpath_eval ('//view/@type', tree) as varchar);
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
+
       if ('text' = v or 'text-d' = v)
         sc_opt := ' option (score ?sc) ';
       else
@@ -948,8 +952,15 @@ fct_text (in tree any,
       else
 	prop := sprintf ('?s%dtextp', this_s);
 
-      http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s,
-		     fti_make_search_string (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), sc_opt), txt);
+      wlimit := registry_get ('fct_text_query_limit');
+      if (isstring (wlimit))
+        wlimit := atoi (wlimit);
+      if (0 = wlimit)
+        wlimit := 100;	
+      txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);	
+      if (length (txs_arr) > wlimit)
+	signal ('22023', 'The request is too large');
+      http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s, txs_qr, sc_opt), txt);
     }
 
   if ('property' = n)

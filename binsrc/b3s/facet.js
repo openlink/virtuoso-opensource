@@ -391,3 +391,30 @@ function fct_set_pivot_page_size()
   href = href.replace(/limit=\d+/, 'limit='+pg_size);
   a.setAttribute("href", href);
 }
+
+function fct_set_pivot_qrcode_opt()
+{
+  var qrcode_flag = $('pivot_qrcode').checked ? 1 : 0;
+  var a = $('pivot_a_mpc');
+  var href = a.href;
+  href = href.replace(/qrcodes=\d+/, 'qrcodes='+qrcode_flag);
+  a.setAttribute("href", href);
+}
+
+function fct_set_pivot_subj_uri_opt()
+{
+  var opt = $('CXML_redir_for_subjs').value;
+  var a = $('pivot_a_mpc');
+  var href = a.href;
+  href = href.replace(/CXML_redir_for_subjs=[^&]*&/, 'CXML_redir_for_subjs='+opt+'&');
+  a.setAttribute("href", href);
+}
+
+function fct_set_pivot_href_opt()
+{
+  var opt = $('CXML_redir_for_hrefs').value;
+  var a = $('pivot_a_mpc');
+  var href = a.href;
+  href = href.replace(/CXML_redir_for_hrefs=[^&]*&/, 'CXML_redir_for_hrefs='+opt+'&');
+  a.setAttribute("href", href);
+}

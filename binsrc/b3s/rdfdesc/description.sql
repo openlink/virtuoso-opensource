@@ -734,6 +734,10 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
   sprintf ('<%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="Structured Descriptor Document (OData/Atom format)",', desc_link);
   links := links || 
   sprintf ('<%s&output=application%%2Fodata%%2Bjson>; rel="alternate"; type="application/odata+json"; title="Structured Descriptor Document (OData/JSON format)",', desc_link);
+  links := links || 
+  sprintf ('<%s&output=text%%2Fcxml>; rel="alternate"; type="text/cxml"; title="Structured Descriptor Document (CXML format)",', desc_link);
+  links := links || 
+  sprintf ('<%s&output=text%%2Fcsv>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)",', desc_link);
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
@@ -752,6 +756,14 @@ create procedure fct_links_mup (in subj any, in desc_link any)
   sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
   links := links || repeat (' ', 5) ||
   sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bjson" rel="alternate" type="application/rdf+json" title="Structured Descriptor Document (RDF/JSON format)" />\n', desc_link);
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bxml" rel="alternate" type="application/atom+xml" title="Structured Descriptor Document (OData/Atom format)" />\n', desc_link);
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bjson" rel="alternate" type="application/atom+json" title="Structured Descriptor Document (OData/JSON format)" />\n', desc_link);
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=text%%2Fcxml" rel="alternate" type="text/cxml" title="Structured Descriptor Document (CXML format)" />\n', desc_link);
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=text%%2Fcsv" rel="alternate" type="text/csv" title="Structured Descriptor Document (CSV format)" />\n', desc_link);
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rev="describedby" />\n', subj);
   http (links);
@@ -784,3 +796,16 @@ create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 12
   return mixed_content;
 }
 ;
+
+create procedure fct_make_curie (in url varchar, in lines any)
+{
+  declare curie, chost, dhost varchar;
+  if (__proc_exists ('WS.CURI.curi_make_curi') is null)
+    return url;
+  curie := WS.CURI.curi_make_curi (url);
+  dhost := registry_get ('URIQADefaultHost');
+  chost := http_request_header(lines, 'Host', null, dhost);
+  return sprintf ('http://%s/c/%s', chost, curie);
+}
+;
+

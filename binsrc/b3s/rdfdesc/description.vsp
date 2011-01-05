@@ -215,7 +215,7 @@
 <head>
     <base href="http://<?V host ?>/fct/rdfdesc/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
-    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
     <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
     <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
@@ -285,7 +285,7 @@
 <?vsp
   } 
   declare qrimg any;
-  qrimg := fct_make_qr_code ('http://' || host || b3s_http_url (page_resource_uri));
+  qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri), lines));
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
 ?>
 	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
@@ -424,7 +424,9 @@ if (_subject <> '') {
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">RDF/XML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">RDF/JSON</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">OData/Atom</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">OData/JSON</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">OData/JSON</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">

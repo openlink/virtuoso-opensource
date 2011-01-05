@@ -32,7 +32,7 @@ create procedure fct_init ()
       WS.WS.host_meta_add ('FCT.service', '<Link rel="http://openlinksw.com/virtuoso/fct/service" href="http://%{WSHost}s/fct/service"/>');
       WS.WS.host_meta_add ('FCT.browser', '<Link rel="http://openlinksw.com/virtuoso/fct/browser" href="http://%{WSHost}s/fct/"/>');
       WS.WS.host_meta_add ('FCT.describe', 
-      	'<link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
+      	'<Link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
     }
 }
 ;

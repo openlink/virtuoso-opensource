@@ -218,12 +218,36 @@ function init(){
 <script type="text/javascript">
   if ($('pivot_a_ctr')) {
 	  var pivot_a = OAT.Dom.create('a',{}, 'pivot_a');
-      pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=100&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
+      pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=75&amp;qrcodes=0&amp;CXML_redir_for_subjs=&amp;CXML_redir_for_hrefs=&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
 	  pivot_a.innerHTML = 'Make Pivot collection';
       pivot_a.id = 'pivot_a_mpc';
+
       var pivot_pg = OAT.Dom.create('span', {}, 'pivot_pg');
-      pivot_pg.innerHTML = '&nbsp;&nbsp;(&nbsp;<a  href="#" title="Sets the maximum number of entities displayed in a PivotViewer page. Entities on other pages are accessible via Related Collections links. A value of 0 disables paging, displaying all entities in a single PivotViewer page. Range: 0..1000">Page size</a>&nbsp;<input type="text" onblur="fct_set_pivot_page_size()" id="pivot_pg_size" size="4" maxlength="4" value="100" />&nbsp;&nbsp;)';
-      OAT.Dom.append (['pivot_a_ctr',pivot_a,pivot_pg]);
+      pivot_pg.innerHTML = '&nbsp;&nbsp;(&nbsp;<a  href="#" title="Sets the maximum number of entities displayed in a PivotViewer page. Entities on other pages are accessible via Related Collections links. A value of 0 disables paging, displaying all entities in a single PivotViewer page. Range: 0..1000">Page size</a>&nbsp;<input type="text" onblur="fct_set_pivot_page_size()" id="pivot_pg_size" size="4" maxlength="4" value="75" />&nbsp;&nbsp;)';
+	  var pivot_qrcode_opts = OAT.Dom.create('span', {}, 'pivot_qrcode_opts');
+	  pivot_qrcode_opts.innerHTML = '&nbsp;&nbsp;<a href="#" title="Include a QRcode adjacent to each item\'s image">with QRcodes</a><input type="checkbox" onclick="fct_set_pivot_qrcode_opt()" id="pivot_qrcode" />';
+
+	  var pivot_link_opts = OAT.Dom.create('span', {}, 'pivot_link_opts');
+	  pivot_link_opts.innerHTML = '&nbsp;&nbsp;\
+	  <a href="#" title="Sets the CXML type of subject URIs to String or Link, optionally performing a DESCRIBE on the subject">Style&nbsp;for&nbsp;RDF&nbsp;subjects</a>&nbsp;\
+	  <select id="CXML_redir_for_subjs" onchange="fct_set_pivot_subj_uri_opt()">\
+	  		<option value="" selected="true">Convert to string facets</option>\
+			<option value="121">Make plain links</option>\
+			<option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\
+			<option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\
+			<option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\
+		</select>\
+		&nbsp;&nbsp;\
+		<a href="#" title="Sets the CXML type of resource URIs to String or Link, optionally performing a DESCRIBE on the resource">Style&nbsp;for&nbsp;other&nbsp;links</a>&nbsp;\
+		<select id="CXML_redir_for_hrefs" onchange="fct_set_pivot_href_opt()">\
+			<option value="" selected="true">Convert to string facets</option>\
+			<option value="121">Make plain links</option>\
+			<option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\
+			<option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\
+			<option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\
+		</select>';
+
+      OAT.Dom.append (['pivot_a_ctr',pivot_a,pivot_pg,pivot_qrcode_opts,pivot_link_opts]);
   }
 </script>
 </xsl:if>
