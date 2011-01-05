@@ -1,3 +1,131 @@
+2011-01-05 13:58  source
+
+	* Fixed search and page load behaviour
+	* Fixed RefByAll result page
+
+2011-01-05 12:45  source
+
+	* Fixed align at 8 when double align defined
+	* Fixed always return NULL when allocation failed
+
+2011-01-05 12:44  source
+
+	* Fixed compiler warnings
+
+2011-01-05 12:36  source
+
+	* Added OWL mime type
+
+2011-01-05 01:58  source
+
+	* Fixed stats on inference
+
+2011-01-03 23:37  source
+
+	* Added client-based HTTP auth support in OAT.Ajax
+	* Fixed bug in RDFStore handling of hasNamespacePrefix that caused
+	  corruption
+	* Fixed error in dialog button handler
+	* Fixed typo in insertIRIArr
+	* Fixed several issues in RDFTabs related to RDFStore changes
+
+2011-01-03 21:23  source
+
+	* Fixed json tcn
+
+2011-01-03 21:22  source
+
+	* Added optional vCal QRCode
+	* Fixed date change in events/tasks
+
+2011-01-03 21:21  source
+
+	* Added optional vCard QRCode
+
+2011-01-03 21:21  source
+
+	* Fixed UI of maintenance page
+	* Fixed ref-by command output
+
+2011-01-03 21:14  source
+
+	* Fixed detect iSPARQL Server Connection using PROPFIND
+	* Fixed link behaviour in SPARQL result set view is now
+	  controlled by dropdown
+	* Fixed Save/serialize in .ldr/.isparql file types
+
+2011-01-03 21:11  source
+
+	* Added option for crawl depth
+	* Added check for gzip magic header
+	* Fixed use sitemaps for default crawling
+	* Fixed no clean opt
+	* Fixed optmimize queue recovery
+	* Fixed when */xml reported butthe content is gziped, the client
+	  will decode on the fly
+
+2011-01-03 21:09  source
+
+	* Added properties to enable HTTP DIGEST auth on some browsers
+
+2011-01-03 21:02  source
+
+	file eol2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-01-03 23:40:02 +0000
+
+2011-01-03 21:02  source
+
+	file groupon2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-01-03 23:40:02 +0000
+
+2011-01-03 21:02  source
+
+	* Added Groupon cartridge
+	* Added RDFohloh cartridge
+	* Added EOL cartridge
+	* Fixed use common API to delete target
+	* Fixed minor issues
+
+2011-01-03 10:21  source
+
+	* Added support for FILTER EXISTST and FILTER NOT EXISTS
+	* Added partial support for MINUS
+
+2011-01-03 10:18  source
+
+	* FIxed minor issues
+
+2011-01-03 10:17  source
+
+	* Fixed issue with large number of namespace declarations
+
+2010-12-23 16:33  source
+
+	* Fixed JSON tcn for host-meta
+
+2010-12-22 20:58  source
+
+	* Fixed default options
+
+2010-12-22 10:31  source
+
+	* Fixed issue with aggregates and ORDER BY
+
+2010-12-22 10:27  source
+
+	* Fixed issue with DATATYPE
+
+2010-12-22 10:25  source
+
+	* Fixed string is aligned to 8
+	* Fixed wide data must be presented as UTF8 before hash chksum
+
+2010-12-21 12:27  source
+
+	* Fixed whitespace
+
+2010-12-21 10:42  source
+
+	* Added retry on deadlock when sponging on multiple threads
+
 2010-12-20 21:43  source
 
 	* Updated version to 6.1.3-rc2
