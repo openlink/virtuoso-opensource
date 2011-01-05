@@ -455,10 +455,12 @@ create function WV.WIKI.VSPTOPICREFERERS (
 					     XMLELEMENT ('Link',
 							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
 									n.LocalName as "LOCALNAME",
-                            u.U_NAME as "AUTHOR",
-                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED",
+                            u.U_NAME as "CREATED_BY",
+                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED_ON",
+                            u2.U_NAME as "UPDATED_BY",
+                            WV.WIKI.DATEFORMAT (r.RES_MOD_TIME) as "UPDATED_ON",
 									n.Abstract as "ABSTRACT") ) ) )
-                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.Abstract, n2.ClusterId
+                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.RESID, n2.Abstract, n2.ClusterId
                           from WV.WIKI.LINK as l
                                  inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
 			 where l.DestId = _topic.ti_id
@@ -466,6 +468,8 @@ create function WV.WIKI.VSPTOPICREFERERS (
 			) as n
                         inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId)
                         inner join DB.DBA.SYS_USERS as u on (u.U_ID = n.AuthorId)
+                        inner join WS.WS.SYS_DAV_RES r on (n.RESID = r.RES_ID)
+                        inner join DB.DBA.SYS_USERS as u2 on (u2.U_ID = r.RES_OWNER)
                  order by c.ClusterName, n.LocalName);
     }
   else
@@ -475,19 +479,22 @@ create function WV.WIKI.VSPTOPICREFERERS (
 					     XMLELEMENT ('Link',
 							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
 									n.LocalName as "LOCALNAME",
-                            u.U_NAME as "AUTHOR",
-                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED",
+                            u.U_NAME as "CREATED_BY",
+                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED_ON",
+                            u2.U_NAME as "UPDATED_BY",
+                            WV.WIKI.DATEFORMAT (r.RES_MOD_TIME) as "UPDATED_ON",
 									n.Abstract as "ABSTRACT") ) ) )
-                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.Abstract, n2.ClusterId
+                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.RESID, n2.Abstract, n2.ClusterId
                           from WV.WIKI.LINK as l
                                  inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
 			 where l.DestId = _topic.ti_id 
 			) as n
                         inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId)
                         inner join DB.DBA.SYS_USERS as u on (u.U_ID = n.AuthorId)
+                        inner join WS.WS.SYS_DAV_RES r on (n.RESID = r.RES_ID)
+                        inner join DB.DBA.SYS_USERS as u2 on (u2.U_ID = r.RES_OWNER)
                  order by c.ClusterName desc, n.LocalName desc);
     }
-
   _ext_params := vector_concat (_topic.ti_xslt_vector(params), vector ('donotresolve', 1));
   http_value (WV.WIKI.VSPXSLT ( 'PostProcess.xslt', 
                                WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report, _ext_params),

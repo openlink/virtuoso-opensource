@@ -62,7 +62,8 @@
     <xsl:with-param name="wikiref_cont"><xsl:value-of select="@CLUSTERNAME"/>.<xsl:value-of select="@LOCALNAME"/></xsl:with-param>
   </xsl:call-template>
 <xsl:if test="@Abstract"> -- <xsl:value-of select="@Abstract"/></xsl:if>
-      <xsl:if test="@CREATED"> (<i>created by <b><xsl:value-of select="@AUTHOR"/></b> on <b><xsl:value-of select="@CREATED"/></b></i>)</xsl:if>
+      <xsl:if test="@UPDATED_ON"> (<i>last updated by <b><xsl:value-of select="@UPDATED_BY"/></b> on <b><xsl:value-of select="@UPDATED_ON"/></b></i>)</xsl:if>
+      <!--<xsl:if test="@CREATED_ON"> (<i>created by <b><xsl:value-of select="@CREATED_BY"/></b> on <b><xsl:value-of select="@CREATED_ON"/></b></i>)</xsl:if>-->
 </li>
 </xsl:template>
 

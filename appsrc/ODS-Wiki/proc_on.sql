@@ -155,12 +155,7 @@ create method ti_fill_cluster_by_id () returns any for WV.WIKI.TOPICINFO
 
 create method ti_find_id_by_local_name () returns any for WV.WIKI.TOPICINFO
 {
-  declare _colon, _dot integer;
-  declare _id integer;
-  self.ti_id := coalesce (
-    (select TopicId from WV.WIKI.TOPIC where LocalName = self.ti_local_name and ClusterId = self.ti_cluster_id),
-    (select TopicId from WV.WIKI.TOPIC where LocalName2 = self.ti_local_name and ClusterId = self.ti_cluster_id),
-    0 );
+  self.ti_id := coalesce ((select TopicId from WV.WIKI.TOPIC where LocalName = self.ti_local_name and ClusterId = self.ti_cluster_id), 0 );
 }
 ;
 
@@ -184,7 +179,7 @@ create method ti_find_id_by_raw_title () returns any for WV.WIKI.TOPICINFO
 
 create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
 {
-  for (select top 1 ClusterId, ResId, ResXmlId, TopicTypeId, LocalName, LocalName2, TitleText, Abstract, MailBox, ParentId, AuthorId
+  for (select top 1 ClusterId, ResId, ResXmlId, TopicTypeId, LocalName, TitleText, Abstract, MailBox, ParentId, AuthorId
          from WV.WIKI.TOPIC
         where TopicId = self.ti_id) do
   {
@@ -192,7 +187,7 @@ create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
     self.ti_res_id := ResId;
     self.ti_type_id := TopicTypeId;
     self.ti_local_name := LocalName;
-    self.ti_local_name_2 := LocalName2;
+    self.ti_local_name_2 := LocalName;
     self.ti_title_text := TitleText;
     self.ti_abstract := Abstract;
     self.ti_e_mail := MailBox;
@@ -391,31 +386,20 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
         concat (_diskdumpdir, '/', self.ti_cluster_name, '/', self.ti_local_name, '.txt'),
         coalesce (self.ti_text, ''), -2);
     }
-  --dbg_obj_print ('ti_compile_page 2');
-
   if (self.ti_author_id is null or 0 = self.ti_author_id)
     self.ti_author_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME=connection_get ('vspx_user')), http_dav_uid());
   if (dosioc)
     sioc..wiki_sioc_post (self);
 
-  self.ti_local_name_2 := WV.WIKI.SINGULARPLURAL (self.ti_local_name);
-  --dbg_obj_print ('ti_compile_page 3');
-
+  self.ti_local_name_2 := self.ti_local_name;
   self.ti_curuser_wikiname := 'WikiGuest';
-  --dbg_obj_print ('ti_compile_page 4');
   self.ti_curuser_username := 'WikiGuest';
-  --dbg_obj_print ('ti_compile_page 5');
   self.ti_base_adjust := '';
-  --dbg_obj_print ('ti_compile_page 6');
   _ent := self.ti_get_entity (null,1);
-  --dbg_obj_print ('ti_compile_page 7', _ent);
   _abstract := xpath_eval ('string(//abstract)', _ent);
-  --dbg_obj_print ('ti_compile_page 8');
   if (_abstract = N'')
     _abstract := null;
-  --dbg_obj_print ('ti_compile_page 9');
   
-  --dbg_obj_print ('ti_compile_page 4444');
   delete from WV.WIKI.TOPIC where TopicId = self.ti_id;
   insert into WV.WIKI.TOPIC (TopicId, ClusterId, ResId, LocalName, LocalName2, Abstract, MailBox)
   values (self.ti_id, self.ti_cluster_id, self.ti_res_id, self.ti_local_name, self.ti_local_name_2, _abstract, self.ti_e_mail);
@@ -513,9 +497,11 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
 	  }
 	_ctr := _ctr + 1;
       }
-    update WV.WIKI.LINK set DestId = self.ti_id
-    where DestId = 0 and DestClusterName = self.ti_cluster_name and
-      (DestLocalName = self.ti_local_name or DestLocalName = self.ti_local_name_2 );
+    update WV.WIKI.LINK
+       set DestId = self.ti_id
+     where DestId = 0
+       and DestClusterName = self.ti_cluster_name
+       and DestLocalName = self.ti_local_name;
 
     if ((_categories <> '') and
 	(WV.WIKI.CLUSTERPARAM (self.ti_cluster_id, 'delicious_enabled', 2) = 1))
@@ -2438,8 +2424,6 @@ create procedure WV.WIKI.GETATTCOLID (in _topic WV.WIKI.TOPICINFO)
   _col_path := DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C');
   _attachment_col_id := DB.DBA.DAV_SEARCH_ID ( _col_path || _topic.ti_local_name || '/', 'C');
 
-  if (_attachment_col_id < 0)
-	_attachment_col_id := DB.DBA.DAV_SEARCH_ID ( _col_path || _topic.ti_local_name_2 || '/', 'C');
   return _attachment_col_id;
 }
 ;
