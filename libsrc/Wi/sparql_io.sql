@@ -2167,7 +2167,7 @@ http('</html>\n');
         {
 	  format := pvalue;
 	}
-      else if ('timeout' = pname)
+      else if ('timeout' = pname and length (pvalue))
         {
           declare t integer;
           t := cast (pvalue as integer) * 1000;
