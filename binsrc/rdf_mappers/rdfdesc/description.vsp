@@ -231,11 +231,9 @@
    if (length (data)) _subject := data[0][0];
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
+   rdfdesc_links_hdr (_S, rdf_link);
 
-   links := sprintf ('Link: <http://%s%s&output=rdf>; rel="alternate"; type="application/rdf+xml"; title="Metadata in RDF/XML format", ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=n3>; rel="alternate"; type="text/n3"; title="Metadata in N3/Turtle format", ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Fjson>; rel="alternate"; type="application/json"; title="Metadata in RDF/JSON format", ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="OData (Atom feed) format"\r\n', host, rdf_link); 
+   links := '';
    for select HS_EXPIRATION from SYS_HTTP_SPONGE where HS_ORIGIN_URI = _G do 
      {
        if (HS_EXPIRATION is not null)
@@ -268,11 +266,7 @@
 <head profile="http://www.w3.org/1999/xhtml/vocab">
     <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
-    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>&output=rdf" title="Metadata in RDF/XML format" />
-    <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />
-    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in RDF/JSON format" />
-    <link rel="alternate" type="application/json" href="<?=rdf_link?>&output=application%2Fjson" title="Metadata in RDF/JSON format" />
-    <link rel="alternate" type="application/atom+xml" href="<?=rdf_link?>&output=application%2Fatom%2Bxml" title="OData (Atom feed) format" />
+    <?vsp rdfdesc_links_mup (_S, rdf_link);  ?>
     <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -454,11 +448,14 @@
        Explore alternative Linked Data Views via this <a title="OpenLink Data Explorer" href="/ode/?uri=<?vsp http_url (_S); ?>">OpenLink Data Explorer</a> link
        &nbsp; &nbsp;
        &nbsp; &nbsp; Raw Linked Data formats:
-       <a href="<?=rdf_link || '&output=n3'?>">N3/Turtle</a> |
-       <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">RDF/JSON</a> |
-       <a href="<?=rdf_link || '&output=application%2Fatom%2Bxml'?>">ODATA/ATOM</a> |
-       <a href="<?=rdf_link || '&output=application%2Fodata%2Bjson'?>">ODATA/JSON</a> |
-       <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> )
       </div> <!-- #ft_t -->
       <?vsp } ?>
       <div id="ft_b">
