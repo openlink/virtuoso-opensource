@@ -6214,7 +6214,7 @@ ws_mime_header_field (caddr_t * head, char * f, char *subf, int initial_mode)
   DO_BOX (caddr_t, line, inx, head)
     {
       int rfc822 = initial_mode, offset = 0, override_to_mime = (subf ? 1 : 0);
-      char szName[1024], szValue[1024];
+      char szName[1024], szValue[1024*16];
       if (!DV_STRINGP (line))
 	continue;
       while (0 <=  (offset =
@@ -6224,8 +6224,8 @@ ws_mime_header_field (caddr_t * head, char * f, char *subf, int initial_mode)
 	    ':',
 	    &rfc822,
 	    &override_to_mime,
-	    szName, 1024,
-	    szValue, 1024
+	    szName, sizeof (szName),
+	    szValue, sizeof (szValue)
 	  ))
 	 )
 	{
@@ -6237,7 +6237,7 @@ ws_mime_header_field (caddr_t * head, char * f, char *subf, int initial_mode)
 	      if (subf)
 		{
 		  while (-1 != (offset = mime_get_attr (line,
-			  offset, '=', &rfc822, &override_to_mime, szName, 1024, szValue, 1024)))
+			  offset, '=', &rfc822, &override_to_mime, szName, sizeof (szName), szValue, sizeof (szValue))))
 		    if (!stricmp (szName, subf))
 		      break;
 		  if (offset == -1)
