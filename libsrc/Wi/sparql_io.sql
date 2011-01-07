@@ -2405,6 +2405,11 @@ host_found:
   rset := null;
   if (save_mode is not null and save_mode <> 'display')
     client_supports_partial_res := 0; -- because result is not sent at all in this case
+
+  if (format <> '')
+    {
+      full_query := '\n#output-format:' || format || '\n' || full_query;
+    }
   if (not client_supports_partial_res) -- partial results do not work with chunked encoding
     {
     -- No need to choose accurately if there are no variants.
