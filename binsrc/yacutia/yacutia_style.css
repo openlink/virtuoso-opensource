@@ -699,7 +699,10 @@ td.dav_br_lst_perms
   font-family: courier, fixed;
 }
 
-
+table.listing_ctr {
+  width: 100%;
+  text-align: left;
+}
 
 table.dav_listing
 {
@@ -1744,7 +1747,7 @@ div.validator_err_ctr p
 {
   color: red;
 }
-#nav_seperator {
+#nav_separator {
         left: 0px;
         top: 0px;
         width: 100%;
