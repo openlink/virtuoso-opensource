@@ -1583,6 +1583,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   sc->sc_any_clb = 1;
   tn->clb.clb_itcl = ssl_new_variable (sc->sc_cc, "itcl", DV_ANY);
   tn->tn_state = cc_new_instance_slot (sc->sc_cc);
+  tn->tn_nth_cache_result = cc_new_instance_slot (sc->sc_cc);
   tn->tn_relation = ssl_new_variable (sc->sc_cc, "rel", DV_ANY);
   tn->tn_input_sets = cc_new_instance_slot (sc->sc_cc);
   tn->tn_to_fetch = ssl_new_variable (sc->sc_cc, "to_fetch", DV_ANY);

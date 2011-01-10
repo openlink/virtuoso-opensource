@@ -1316,6 +1316,8 @@ cfg_setup (void)
     c_sparql_result_set_max_rows = 0;
   if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
     c_sparql_max_mem_in_use = 0;
+  if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
+    tn_cache_enable = 0;
 
   /* Now open the HTTP log */
   if (http_log_file)

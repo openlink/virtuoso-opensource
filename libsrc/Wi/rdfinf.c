@@ -361,6 +361,12 @@ query_t * tn_ifp_no_graph_qr;
 query_t * tn_ifp_dist_qr;
 query_t * tn_ifp_dist_no_graph_qr;
 
+id_hash_t * sas_tn_ht;
+id_hash_t * sas_tn_no_graph_ht;
+id_hash_t * tn_ifp_ht;
+id_hash_t * tn_ifp_no_graph_ht;
+dk_mutex_t * tn_cache_mtx;
+
 void
 sas_ensure ()
 {
@@ -375,9 +381,24 @@ sas_ensure ()
       tn_ifp_no_graph_qr = sql_compile (tn_ifp_no_graph_text, bootstrap_cli, &err, SQLC_DEFAULT);
       tn_ifp_dist_qr = sql_compile (tn_ifp_dist_text, bootstrap_cli, &err, SQLC_DEFAULT);
       tn_ifp_dist_no_graph_qr = sql_compile (tn_ifp_dist_no_graph_text, bootstrap_cli, &err, SQLC_DEFAULT);
+
+      sas_tn_ht = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      sas_tn_no_graph_ht = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      tn_ifp_ht = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      tn_ifp_no_graph_ht = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      tn_cache_mtx = mutex_allocate ();
     }
 }
 
+id_hash_t *
+tn_hash_table_get (trans_node_t * tn)
+{
+  if (sas_tn_qr == tn->tn_prepared_step) return sas_tn_ht;
+  if (sas_tn_no_graph_qr == tn->tn_prepared_step) return sas_tn_no_graph_ht;
+  if (tn_ifp_qr == tn->tn_prepared_step) return tn_ifp_ht;
+  if (tn_ifp_no_graph_qr == tn->tn_prepared_step) return tn_ifp_no_graph_ht;
+  return NULL;
+}
 
 caddr_t same_as_iri;
 caddr_t owl_sub_class_iri = NULL;
@@ -763,7 +784,7 @@ rdf_inf_ctx_t *
 bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int create)
 {
   caddr_t ctx_name = bif_string_arg (qst, args, nth, name);
-  rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name), * ctx;
+  rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name);
   if (!place && !create)
     sqlr_new_error ("42000", "RDFI.", "No RDF inference rule set '%.200s' specified as argument #%d of %.200s()", ctx_name, nth, name);
   if (!place)
@@ -1419,6 +1440,26 @@ cl_rdf_inf_init_1 (caddr_t * qst)
     sqlr_resignal (err);
 }
 
+#define TN_HASH_CLEANUP(ht) \
+      DO_IDHASH (caddr_t, k, caddr_t, d, ht) \
+	{ \
+	  dk_free_tree (k); \
+	  dk_free_tree (d); \
+	} \
+      END_DO_IDHASH; \
+      id_hash_clear (ht)
+
+caddr_t
+bif_tn_cache_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  mutex_enter (tn_cache_mtx);
+  TN_HASH_CLEANUP (sas_tn_ht);
+  TN_HASH_CLEANUP (sas_tn_no_graph_ht);
+  TN_HASH_CLEANUP (tn_ifp_ht);
+  TN_HASH_CLEANUP (tn_ifp_no_graph_ht);
+  mutex_leave (tn_cache_mtx);
+  return NULL;
+}
 
 void
 cl_rdf_bif_check_init (bif_t bif)
@@ -1467,6 +1508,7 @@ rdf_inf_init ()
   bif_define ("rdf_super_sub_list", bif_rdf_super_sub_list);
   bif_define ("rdf_is_sub", bif_rdf_is_sub);
   bif_define ("rdf_inf_dump", bif_rdf_inf_dump);
+  bif_define ("tn_cache_clear", bif_tn_cache_clear);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);
   sas_init ();
   empty_ric = ric_allocate (box_dv_short_string ("__ empty"));

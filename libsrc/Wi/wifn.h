@@ -1041,6 +1041,8 @@ void plugin_loader_init(void);
 
 /* rdfinf.c */
 void sas_ensure (void);
+/* trans.c */
+extern int32 tn_cache_enable;
 /*  rdfbox.c */
 void print_short (short s, dk_session_t * ses);
 

@@ -186,6 +186,7 @@ struct trans_node_s
   ptrlong		tn_max_memory;
   caddr_t		tn_ifp_ctx_name;
   state_slot_t *	tn_ifp_g_list;
+  int	        tn_nth_cache_result;
 };
 
 #define TN_DEFAULT_MAX_MEMORY 100000000
@@ -215,6 +216,8 @@ rdf_inf_ctx_t * rdf_inf_ctx (char * name);
 rdf_sub_t * rit_next (ri_iterator_t * rit);
 ri_iterator_t * ri_iterator (rdf_sub_t * rs, int mode, int distinct);
 void sas_ensure ();
+id_hash_t * tn_hash_table_get (trans_node_t * tn);
+extern dk_mutex_t * tn_cache_mtx;
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
 #endif

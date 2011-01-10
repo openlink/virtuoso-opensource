@@ -1035,6 +1035,94 @@ tn_lowest_sas_result (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
   qn_send_output ((data_source_t*)tn, inst);
 }
 
+int32 tn_cache_enable = 0;
+
+void
+tn_cache_results (trans_node_t * tn, caddr_t * inst)
+{
+  int nth;
+  itc_cluster_t * itcl = ((cl_op_t*)qst_get (inst, tn->clb.clb_itcl))->_.itcl.itcl;
+  id_hash_t * ht = tn_hash_table_get (tn);
+  caddr_t key = qst_get (inst, tn->tn_input[0]), data;
+  dk_set_t set = NULL;
+  if (!ht || !tn_cache_enable || cl_run_local_only != CL_RUN_LOCAL)
+    return;
+  for (nth = 0; nth < QST_INT (inst, tn->clb.clb_fill); nth ++)
+    {
+      int inx;
+      caddr_t * arr = NULL;
+      trans_set_t * ts = (trans_set_t*) itcl->itcl_param_rows[nth][0];
+      if (ts->ts_result)
+	{
+	  DO_SET (trans_state_t *,  tst, &ts->ts_result)
+	    {
+	      arr = dk_alloc_box (BOX_ELEMENTS (tn->tn_output) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	      DO_BOX (state_slot_t *, out, inx, tn->tn_output)
+		{
+		  caddr_t v = ((caddr_t*)tst->tst_value)[inx];
+		  arr[inx] = box_copy_tree (v);
+		}
+	      END_DO_BOX;
+	      dk_set_push (&set, (void *) arr);
+	    }
+	  END_DO_SET ();
+	}
+      else
+	{
+	  dk_set_push (&set, (void *) arr);
+	}
+    }
+  key = box_copy_tree (key);
+  data = list_to_array (dk_set_nreverse (set));
+  mutex_enter (tn_cache_mtx);
+  id_hash_set (ht, (caddr_t) &key, (caddr_t) &data);
+  mutex_leave (tn_cache_mtx);
+}
+
+long tn_n_cache_hits;
+
+int
+tn_cache_lookup (trans_node_t * tn, caddr_t * inst, caddr_t * state)
+{
+  int nth;
+  id_hash_t * ht = tn_hash_table_get (tn);
+  caddr_t key = qst_get (inst, tn->tn_input[0]);
+  caddr_t ** place;
+  if (!tn_cache_enable || !ht || cl_run_local_only != CL_RUN_LOCAL)
+    return 0;
+  mutex_enter (tn_cache_mtx);
+  place = (caddr_t **) id_hash_get (ht, (caddr_t) &key);
+  mutex_leave (tn_cache_mtx);
+  if (!place || !place[0])
+    return 0;
+  if (state && !SRC_IN_STATE ((data_source_t *)tn, inst))
+    {
+      /* init */
+      SRC_IN_STATE ((data_source_t*)tn, inst) = inst;
+      QST_INT (inst, tn->tn_nth_cache_result) = 0;
+    }
+  for (nth = QST_INT (inst, tn->tn_nth_cache_result); nth < BOX_ELEMENTS (place[0]); nth ++)
+    {
+      int inx;
+      caddr_t * row = (caddr_t *) (place[0][nth]);
+      if (!row)
+	{
+	  QST_INT (inst, tn->tn_nth_cache_result)++;
+	  continue;
+	}
+      DO_BOX (state_slot_t *, out, inx, tn->tn_output)
+	{
+	  qst_set_over (inst, out, row[inx]);
+	}
+      END_DO_BOX;
+      QST_INT (inst, tn->tn_nth_cache_result)++;
+      TC (tn_n_cache_hits);
+      if (QST_INT (inst, tn->tn_nth_cache_result) == BOX_ELEMENTS (place[0]))
+	SRC_IN_STATE ((data_source_t*)tn, inst) = NULL; /* not continuable */
+      qn_send_output ((data_source_t*) tn, inst);
+    }
+  return 1;
+}
 
 void
 tn_results (trans_node_t * tn, caddr_t * inst)
@@ -1052,6 +1140,7 @@ tn_results (trans_node_t * tn, caddr_t * inst)
       SET_THR_TMP_POOL (NULL);
       QST_INT (inst, tn->clb.clb_nth_set) = 0;
     }
+  tn_cache_results (tn, inst);
   /* find the ts corresponding to the set now going and send its content */
   for (;;)
     {
@@ -1125,6 +1214,7 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state)
       qst_set (inst, tn->tn_relation, (caddr_t)rel);
       SRC_IN_STATE ((data_source_t*)tn, inst) = inst;
       QST_INT (inst, tn->clb.clb_nth_set) = -1;
+      QST_INT (inst, tn->tn_nth_cache_result) = 0;
       nth = 0;
     }
   else
@@ -1223,6 +1313,8 @@ trans_node_input (trans_node_t * tn, caddr_t * inst, caddr_t * state)
 {
   if (THR_TMP_POOL)
     GPF_T1 ("not supposed to run trans node with tmp pool set on entry");
+  if (tn_cache_lookup (tn, inst, state))
+    return;
   if (state)
     trans_node_start (tn, inst, state);
   else
@@ -1255,6 +1347,7 @@ sqlg_trans_node (sql_comp_t * sc)
   tn->tn_max_memory = TN_DEFAULT_MAX_MEMORY;
   tn->clb.clb_itcl = ssl_new_variable (sc->sc_cc, "itcl", DV_ANY);
   tn->tn_state = cc_new_instance_slot (sc->sc_cc);
+  tn->tn_nth_cache_result = cc_new_instance_slot (sc->sc_cc);
   tn->tn_relation = ssl_new_variable (sc->sc_cc, "rel", DV_ANY);
   tn->tn_input_sets = cc_new_instance_slot (sc->sc_cc);
   tn->tn_to_fetch = ssl_new_variable (sc->sc_cc, "to_fetch", DV_ANY);
