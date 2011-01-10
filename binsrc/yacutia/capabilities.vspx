@@ -46,7 +46,7 @@
 		if (ds is not null)
 		  ds.vc_data_bind (e);
 	      ]]></v:method>
-      <table align="left">
+      <table class="listing_ctr">
         <tr>
           <td>
             <v:form name="cap_form" type="simple" action="accounts_page.vspx?page=3" method="POST">

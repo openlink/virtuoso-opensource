@@ -66,7 +66,7 @@
 		if (ds is not null)
 		  ds.vc_data_bind (e);
 	      ]]></v:method>
-    <table align="left">
+    <table class="listing_ctr">
       <tr>
         <td>
           <v:form name="sf" type="simple" action="" method="POST">
