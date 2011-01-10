@@ -455,7 +455,7 @@ ldap_print_sresult (LDAP *ld, dk_set_t * s)
 	      case LDAP_RES_SEARCH_REFERENCE:
 		    { /* 'reference', (<ref>, ...) */
 		      char **refs = NULL;
-		      LDAPControl **ctrls;
+		      LDAPControl **ctrls = NULL;
 		      int rc, i;
 		      dk_set_t p = NULL;
 		      rc = LDAP_PARSE_REFERENCE (ld, msg, &refs, &ctrls, 0);
