@@ -6366,9 +6366,14 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
   ssg_puts ("SELECT");
   if (has_limofs)
     ssg_puts (limofs_strg);
-  ssg_putchar (' ');
+
+  if (SSG_VALMODE_LONG != retvalmode)
+    ssg_puts (" __box_flags_tweak (");
   ssg_prin_id_with_suffix (ssg, retselid, "~pview");
-  ssg_puts (".g_enum AS ");
+  ssg_puts (".g_enum");
+  if (SSG_VALMODE_LONG != retvalmode)
+    ssg_puts (", 1)");
+  ssg_puts (" AS ");
   ssg_prin_id (ssg, retname);
   ssg_puts (" FROM DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS(return_iris, lim) ");
   ssg_puts ((SSG_VALMODE_LONG == retvalmode) ? "(g_enum IRI_ID) " : "(g_enum varchar) ");
