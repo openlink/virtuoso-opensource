@@ -3508,7 +3508,7 @@ bif_xml_sign (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char err_buf[1024];
   int sign_err = 0;
   wsse_ser_ctx_t sctx;
-  caddr_t * opts = NULL, top, curr_nss, elem_copy = box_copy (top_elem), local;
+  caddr_t * opts = NULL, *top, curr_nss, elem_copy = box_copy (top_elem), local;
 
   memset (&sctx, 0, sizeof (wsse_ser_ctx_t));
 

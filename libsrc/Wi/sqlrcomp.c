@@ -1193,8 +1193,8 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	case SEARCHED_CASE:
 	  {
 	    int inx;
-	    id_hash_t *old_private_elts;
-	    df_elt_t * case_dfe;
+	    id_hash_t *old_private_elts = NULL;
+	    df_elt_t * case_dfe = NULL;
 	    if (sc->sc_so)
 	      case_dfe = sqlo_df (sc->sc_so, tree);
 	    sprintf_more (text, tlen, fill, "CASE ");

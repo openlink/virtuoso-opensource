@@ -3353,7 +3353,7 @@ sqlo_is_call_invertible_sprintf (ST *st)
     return NULL;
   if (2 > BOX_ELEMENTS (st->_.call.params))
     return NULL;
-  arg1 = st->_.call.params[0];
+  arg1 = (caddr_t) st->_.call.params[0];
   if (DV_STRING != DV_TYPE_OF (arg1))
     return NULL;
   if (!sprintff_is_proven_bijection (arg1))

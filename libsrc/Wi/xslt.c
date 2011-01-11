@@ -666,7 +666,7 @@ xslt_try_to_eval_var_fast (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * x
   XT * tree = xqr->xqr_tree;
   caddr_t name = tree->_.var.name;
   xqi_binding_t *xb;
-  caddr_t val;
+  caddr_t val = NULL;
   dtp_t val_dtp;
   for (xb = xp->xp_locals; (NULL != xb) && (NULL != xb->xb_name); xb = xb->xb_next)
     {
@@ -3769,7 +3769,7 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t key = bif_arg (qst, args, 1, "dict_dec_or_remove");
   boxint dec_val = bif_long_range_arg (qst, args, 2, "dict_dec_or_remove", 0, 0xffff);
   caddr_t *old_key_ptr, *old_val_ptr;
-  boxint res;
+  boxint res = 0;
   if (ht->ht_mutex)
     mutex_enter (ht->ht_mutex);
   old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
