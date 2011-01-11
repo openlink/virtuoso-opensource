@@ -80,6 +80,7 @@ gr:name owl:equivalentProperty foaf:name .
 <http://www.w3.org/2007/05/powder-s#describedby> owl:equivalentProperty <http://www.iana.org/assignments/relation/describedby> .
 <http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
 dv:photo owl:equivalentProperty foaf:depiction .
+dv:instructions owl:equivalentProperty dc:description .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
