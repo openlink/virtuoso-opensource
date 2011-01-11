@@ -933,7 +933,7 @@ identity_opt
 	;
 
 compression_spec
-: NO_L COMPRESS { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_NONE); }
+	: NO_L COMPRESS { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_NONE); }
 	| COMPRESS ANY { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_OFFSET); }
 	| COMPRESS TEXT_L { $$ = t_listst (2, CO_COMPRESS, (ptrlong)CC_PREFIX); }
 	;
@@ -991,7 +991,7 @@ table_constraint_def
 		  t_listst (5, UNIQUE_DEF, $1, NULL,
 		      sqlp_string_col_list ((caddr_t *) t_list_to_array ($4)),
 		      (ST *) t_list (1, t_box_string ("unique"))); }
-| opt_constraint_name GROUP opt_index_option_list '(' index_column_commalist ')' { $$ = t_listst (4, COLUMN_GROUP, $1, $3, sqlp_string_col_list (t_list_to_array ($5))); }
+	| opt_constraint_name GROUP opt_index_option_list '(' index_column_commalist ')' { $$ = t_listst (4, COLUMN_GROUP, $1, $3, sqlp_string_col_list (t_list_to_array ($5))); }
 	;
 
 opt_constraint_name
@@ -1808,12 +1808,12 @@ selectinto_statement
 
 
 colnum_commalist_2
-: INTNUM { $$ = t_CONS (sqlp_col_num ($1), NULL); }
-| colnum_commalist_2 ',' INTNUM { $$ = t_NCONC ($1, t_CONS (sqlp_col_num ($3), NULL)); }
+	: INTNUM { $$ = t_CONS (sqlp_col_num ($1), NULL); }
+	| colnum_commalist_2 ',' INTNUM { $$ = t_NCONC ($1, t_CONS (sqlp_col_num ($3), NULL)); }
 	;
 
 colnum_commalist
-: INTNUM { $$ = t_listbox (1, sqlp_col_num ($1)); }
+	: INTNUM { $$ = t_listbox (1, sqlp_col_num ($1)); }
 	| '(' colnum_commalist_2 ')' { $$ = t_list_to_array_box ($2); }
 	;
 
@@ -1829,7 +1829,7 @@ trans_opt
 	| T_SHORTEST_ONLY { global_trans->_.trans.shortest_only = 1; }
 	| T_IN colnum_commalist { global_trans->_.trans.in = (ptrlong*) $2; }
  	| T_OUT colnum_commalist { global_trans->_.trans.out = (ptrlong*) $2; }
-| T_END_FLAG  INTNUM { global_trans->_.trans.end_flag = (ptrlong)sqlp_col_num ($2); }
+	| T_END_FLAG  INTNUM { global_trans->_.trans.end_flag = (ptrlong)sqlp_col_num ($2); }
 	| T_FINAL_AS NAME { global_trans->_.trans.final_as = $2; }
 	| T_DIRECTION INTNUM { global_trans->_.trans.direction = unbox ($2); }
 	;
@@ -2031,7 +2031,7 @@ query_no_from_spec
 
 
 breakup_term
-: '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
+	: '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
 	| '(' select_scalar_exp_commalist WHERE search_condition ')' {
 	  ST * cond = (ST*) t_list (5, BOP_AS, t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0)), NULL, t_box_string ("__brkup_cond"), NULL);
 	  $$ = dk_set_conc ($2, t_CONS (cond, NULL)); }
@@ -2044,7 +2044,7 @@ breakup_list
 
 selection
 	: select_scalar_exp_commalist	{ $$ = (ST *) t_list_to_array ($1); }
-| BREAKUP breakup_list { $$ = (ST *) t_list_to_array (t_CONS (t_list (1, SELECT_BREAKUP), $2)); }
+	| BREAKUP breakup_list { $$ = (ST *) t_list_to_array (t_CONS (t_list (1, SELECT_BREAKUP), $2)); }
 	;
 
 non_final_table_exp
@@ -2429,7 +2429,7 @@ scalar_exp
 	| scalar_exp '/' scalar_exp	{ BIN_OP ($$, BOP_DIV, $1, $3) }
 	| '+' scalar_exp %prec UMINUS	{ $$ = $2; }
 	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ($2)) $$ = sqlp_minus ($2);
-				      else BIN_OP ($$, BOP_MINUS, (ST*) t_box_num (0), $2) }
+				          else BIN_OP ($$, BOP_MINUS, (ST*) t_box_num (0), $2) }
 	| assignment_statement
 	| string_concatenation_operator
 	| column_ref			{ $$ = (sql_tree_t *) $1; }
@@ -3388,7 +3388,7 @@ cost_number
 	;
 
 cost_number_list
-: cost_number { $$ = t_CONS ($1, NULL); }
+	: cost_number { $$ = t_CONS ($1, NULL); }
 	| cost_number_list ',' cost_number { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
 	;
 
@@ -4434,7 +4434,7 @@ host
 
 host_list
 	: host { $$ = t_CONS ($1, NULL); }
-| host_list ',' host { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	| host_list ',' host { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
 	;
 
 range
@@ -4443,7 +4443,7 @@ range
 
 range_list
 	: range { $$ = t_CONS ($1, NULL); }
-| range_list ',' range { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	| range_list ',' range { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
 	;
 
 
@@ -4455,7 +4455,7 @@ host_group
 
 host_group_list
 	: host_group { $$ = t_CONS ($1, NULL); }
-| host_group_list ',' host_group { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	| host_group_list ',' host_group { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
 	;
 
 opt_modulo
@@ -4469,7 +4469,7 @@ cluster_def
 	;
 
 col_part_commalist
-: NAME col_partition { $$ = t_CONS ($2, NULL); $2->_.col_part.col = $1; }
+	: NAME col_partition { $$ = t_CONS ($2, NULL); $2->_.col_part.col = $1; }
 	| col_part_list ',' NAME col_partition { $4->_.col_part.col = $3; $$ = t_NCONC ($1, $4);}
 	;
 
