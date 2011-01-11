@@ -2379,30 +2379,6 @@ host_found:
     }
   else
     qry_params := vector ();
-  state := '00000';
-  metas := null;
-  rset := null;
-  if (registry_get ('__sparql_endpoint_debug') = '1')
-    dbg_printf ('query=[%s]', full_query);
-
-  declare sc_max int;
-  declare sc decimal;
-  sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryCostEstimationTime'), '-1'));
-  if (sc_max < 0)
-    sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxExecutionTime'), '-1'));
-  if (sc_max > 0)
-    {
-      state := '00000';
-      sc := exec_score (concat ('sparql ', full_query), state, msg);
-      if ((sc/1000) > sc_max)
-	{
-	  signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
-	}
-    }
-
-  state := '00000';
-  metas := null;
-  rset := null;
   if (save_mode is not null and save_mode <> 'display')
     client_supports_partial_res := 0; -- because result is not sent at all in this case
 
@@ -2455,6 +2431,33 @@ host_found:
     {
       full_query := 'define sql:describe-mode "CBD" ' || full_query;
     }
+
+  state := '00000';
+  metas := null;
+  rset := null;
+  if (registry_get ('__sparql_endpoint_debug') = '1')
+    dbg_printf ('query=[%s]', full_query);
+
+  declare sc_max int;
+  declare sc decimal;
+  sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryCostEstimationTime'), '-1'));
+  if (sc_max < 0)
+    sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxExecutionTime'), '-1'));
+  if (sc_max > 0)
+    {
+      state := '00000';
+      full_query := concat ('define sql:big-data-const 0 ', full_query);
+      sc := exec_score (concat ('sparql ', full_query), state, msg);
+      if ((sc/1000) > sc_max)
+	{
+	  signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
+	}
+    }
+
+  state := '00000';
+  metas := null;
+  rset := null;
+
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);

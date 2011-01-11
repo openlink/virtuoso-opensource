@@ -3791,8 +3791,6 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
         return SSG_VALMODE_SQLVAL;
       spar_internal_error (sparp, "sparp_" "rettype_of_function(): unsupported SPECIAL");
     }
-  if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
-    return SSG_VALMODE_LONG;
   if (!strncmp (name, "bif:", 4))
     {
       caddr_t iduqname = sqlp_box_id_upcase (name+4);
@@ -3811,6 +3809,18 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
               default: return SSG_VALMODE_SQLVAL;
             }
         }
+    }
+  else if (!strncmp (name, XMLSCHEMA_NS_URI, XMLSCHEMA_NS_URI_LEN))
+    {
+      const char *localpart = name + XMLSCHEMA_NS_URI_LEN;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_boolean + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_BOOL;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_date + XMLSCHEMA_NS_URI_LEN))		return SSG_VALMODE_LONG;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_dateTime + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_LONG;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_decimal + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_NUM;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_double + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_NUM;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_float + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_NUM;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_string + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_LONG;
+      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_time + XMLSCHEMA_NS_URI_LEN))		return SSG_VALMODE_LONG;
     }
   return SSG_VALMODE_SQLVAL /* not "return res" */;
 }
@@ -4028,6 +4038,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
     {
       if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_DATATYPE_OF_LONG (^{tree}^)";
       if (SSG_VALMODE_SQLVAL	== native)	return " DB.DBA.RDF_DATATYPE_OF_SQLVAL (^{tree}^)";
+      if (SSG_VALMODE_NUM	== native)	return " DB.DBA.RDF_DATATYPE_OF_SQLVAL (^{tree}^)";
     }
   else if (SSG_VALMODE_LANGUAGE == needed)
     {
@@ -4392,7 +4403,19 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         parser_desc = function_is_xqf_str_parser (tree->_.funcall.qname);
         if (NULL != parser_desc)
           {
-            const char *cvtname = parser_desc->p_typed_bif_name;
+	    const char *cvtname;
+            if ((NULL != parser_desc->p_sql_cast_type) && (1 == arg_count))
+              {
+                ssg_puts (" CAST (");
+                ssg->ssg_indent++;
+                ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg->ssg_indent--;
+                ssg_puts (" AS ");
+                ssg_puts (parser_desc->p_sql_cast_type);
+                ssg_puts (")");
+                goto print_asname;
+              }
+            cvtname = parser_desc->p_typed_bif_name;
             if (NULL == cvtname)
               cvtname = "__xqf_str_parse";
             ssg_puts (cvtname);

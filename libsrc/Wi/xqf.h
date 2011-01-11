@@ -39,6 +39,7 @@ typedef struct xqf_str_parser_desc_s
   int p_rdf_boxed;
   dtp_t p_dest_dtp;
   const char *p_typed_bif_name;
+  const char *p_sql_cast_type;
 }
 xqf_str_parser_desc_t;
 

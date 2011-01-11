@@ -814,7 +814,7 @@ static const char *sparp_known_get_params[] = {
     "get:login", "get:method", "get:proxy", "get:query", "get:refresh", "get:soft", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
-    "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:log-enable", "sql:signal-void-variables", NULL };
+    "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", NULL };
 
 static const char *sparp_var_defines[] = { NULL };
 
@@ -1080,6 +1080,12 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           return; }
       if (!strcmp (param, "sql:describe-mode")) {
           sparp->sparp_env->spare_describe_mode = t_box_dv_uname_string (value);
+          return; }
+      if (!strcmp (param, "sql:big-data-const")) {
+          ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
+          if ((0 > val) || (1 < val))
+            spar_error (sparp, "define sql:big-data-const should have value 0 or 1");
+            sparp->sparp_disable_big_const = 1-val;
           return; }
       if (!strcmp (param, "sql:signal-void-variables")) {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
