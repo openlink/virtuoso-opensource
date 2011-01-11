@@ -2991,6 +2991,49 @@ mime_find_boundry (char *szMessage, long message_size, long offset,
   while (1);
 }
 
+caddr_t
+mime_parse_header (int *rfc822, caddr_t szMessage, long message_size, long offset)
+{
+  char szNewBoundry[1000], szHeaderLine[1000], szAttr[1000], szValue[1000];
+  long newOffset = offset, tempOffset = 0, lineOffset;
+  int new_mode = *rfc822;
+  int override_to_mime = 0;
+  dk_set_t attrs = NULL;
+  caddr_t result = NULL;
+
+  *szNewBoundry = 0;
+
+  /* skip the empty lines if in RFC822 header */
+  if (*rfc822)
+    while ((iswhite (szMessage + newOffset) || isendline (szMessage + newOffset)) && newOffset < message_size)
+      newOffset++;
+  while (0 < (tempOffset = mime_get_line (szMessage, message_size, newOffset, szHeaderLine, 1000)))
+    {
+      newOffset = tempOffset;
+      lineOffset = 0;
+      if (strlen (szHeaderLine) < 2)
+	break;
+      override_to_mime = 0;
+
+      lineOffset = mime_get_attr (szHeaderLine, 0, ':', rfc822, &override_to_mime, szAttr, 1000, szValue, 1000);
+      if (lineOffset == -1)
+	continue;
+      dk_set_push (&attrs, (void *) box_dv_short_string (szAttr));
+      dk_set_push (&attrs, (void *) box_dv_short_string (szValue));
+      if (override_to_mime || !*rfc822)
+	{
+	  new_mode = 0;
+	  while (-1 != (lineOffset = mime_get_attr (szHeaderLine, lineOffset, '=', rfc822, &override_to_mime, szAttr, 1000, szValue, 1000)))
+	    {
+	      dk_set_push (&attrs, (void *) box_dv_short_string (szAttr));
+	      dk_set_push (&attrs, (void *) box_dv_short_string (szValue));
+	    }
+	}
+    }
+  if (attrs)
+    result = list_to_array (dk_set_nreverse (attrs));
+  return result;
+}
 
 long
 get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
@@ -3771,6 +3814,19 @@ bif_mime_tree (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) result;
 }
 
+static caddr_t
+bif_mime_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *szMessage = bif_string_arg (qst, args, 0, "mime_header");
+  int rfc822 = 1;
+  caddr_t result = NULL;
+
+  if (BOX_ELEMENTS (args) > 1)
+    rfc822 = (int) bif_long_arg (qst, args, 1, "mime_header");
+
+  result = mime_parse_header (&rfc822, szMessage, box_length (szMessage) - 1, 0);
+  return result ? result : NEW_DB_NULL;
+}
 
 static voidpf
 zlib_dk_alloc (voidpf opaque, uInt items, uInt size)
@@ -6533,6 +6589,7 @@ bif_file_init (void)
     bif_define_typed ("system", bif_system, &bt_integer);
   bif_define_typed ("run_executable", bif_run_executable, &bt_integer);
   bif_define_typed ("mime_tree", bif_mime_tree, &bt_any);
+  bif_define_typed ("mime_header", bif_mime_header, &bt_any);
   bif_define_typed ("gz_compress", bif_gz_compress, &bt_varchar);
   bif_define_typed ("string_output_gz_compress",
       bif_string_output_gz_compress, &bt_integer);

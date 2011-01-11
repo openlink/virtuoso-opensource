@@ -171,6 +171,7 @@ caddr_t bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 long get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
     char *szBoundry, char *szType, size_t max_szType,
     caddr_t ** _result, long to_add);
+caddr_t mime_parse_header (int *rfc822, caddr_t szMessage, long message_size, long offset);
 
 #define MIME_POST_LIMIT 10000000
 #define MIME_SESSION_LIMIT 5000000
