@@ -8117,6 +8117,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('geospecies', 2);
   XML_REMOVE_NS_BY_PREFIX ('oplbb', 2);
   XML_REMOVE_NS_BY_PREFIX ('uClassify', 2);
+  XML_REMOVE_NS_BY_PREFIX ('taxconcept', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where
     	RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%/%.xsl' do
     {
@@ -8156,6 +8157,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_SET_NS_DECL ('cnet', 'http://api.cnet.com/rest/v1.0/', 2);
   XML_SET_NS_DECL ('geospecies', 'http://rdf.geospecies.org/ont/geospecies#', 2);
   XML_SET_NS_DECL ('uClassify', 'http://api.uclassify.com/1/ResponseSchema#', 2);
+  XML_SET_NS_DECL ('taxconcept', 'http://www.taxonconcept.org/ont/se_v01/seo.owl#', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
