@@ -60,7 +60,7 @@
 	      }
 	      }
 	    ]]></v:on-init>
-    <vm:help id="sec_pki" sect=""/>
+    <!--vm:help id="sec_pki" sect=""/-->
     <v:form name="form1" type="simple" method="POST">
 	<!-- top of security layout -->
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
