@@ -891,7 +891,7 @@ double_to_buf (double d, char *buf)
   unsigned char buf2[8];
   XDR x;
 
-  xdrmem_create (&x, (char *) buf, sizeof (buf2), XDR_ENCODE);
+  xdrmem_create (&x, (char *) buf2, sizeof (buf2), XDR_ENCODE);
   xdr_double (&x, &d);
   memcpy (buf, buf2, sizeof (double));
 #endif

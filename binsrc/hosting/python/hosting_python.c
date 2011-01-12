@@ -109,14 +109,15 @@ start_python_interpreter (char *err, int max_len)
 
   PyEval_AcquireLock();
   tstate = Py_NewInterpreter ();
-  define_virtuoso_module (tstate->interp);
 
   if (!tstate)
     {
       SET_ERR ("Unable to start the Python interpretter");
     }
-  else
+
     interp = tstate->interp;
+  define_virtuoso_module (interp);
+
   PyThreadState_Clear (tstate);
   PyEval_ReleaseThread(tstate);
   PyThreadState_Delete (tstate);

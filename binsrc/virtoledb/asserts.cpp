@@ -848,7 +848,7 @@ void
 OLEDB_Assert(LPSTR expression, LPSTR filename, long linenum)
 {
   char szbuff[350];
-  volatile int fAbort;
+  volatile int fAbort = 1;
 
   _snprintf(szbuff, sizeof (szbuff),
             "Assertion error!\n  File '%.50s', line '%ld'\n  Expression '%.200s'\n",

@@ -83,6 +83,7 @@ gr:name owl:equivalentProperty foaf:name .
 <http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
 dv:photo owl:equivalentProperty foaf:depiction .
 dv:instructions owl:equivalentProperty dc:description .
+dv:name rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');

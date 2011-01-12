@@ -4548,7 +4548,7 @@ bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len;
   caddr_t res;
   caddr_t str_in = bif_string_or_wide_or_null_arg (qst, args, 0, "__like_min");
-  caddr_t str;
+  caddr_t str = NULL;
   dtp_t dtp = DV_TYPE_OF (str_in);
   char esc = (char) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__like_min") : 0);
   char * ctr = NULL;
@@ -4604,7 +4604,7 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len;
   caddr_t res;
   caddr_t str_in = bif_string_or_wide_or_null_arg (qst, args, 0, "__like_max");
-  caddr_t str;
+  caddr_t str = NULL;
   dtp_t dtp = DV_TYPE_OF (str_in);
   char esc = (char) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__like_max") : 0);
   char * ctr;
@@ -9875,7 +9875,7 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *msg;
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t qual = bif_string_or_wide_or_null_arg (qst, args, 0, "set_qualifier");
-  caddr_t q;
+  caddr_t q = NULL;
   caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
   dtp_t dtp = DV_TYPE_OF (qual);

@@ -545,10 +545,10 @@ advance_ptr (vxml_parser_t * parser)
 	dk_free (old->data_begin, -1);
       else if (NULL != old->data_owner)
 	old->data_owner->data_refctr -= 1;
-      dk_free (old, sizeof (brick_t));
 #ifdef UNIT_DEBUG
       printf ("Releasing a buffer element. %x\n", old);
 #endif
+      dk_free (old, sizeof (brick_t));
     }
   leftmost_saved->prev = NULL;
   validate_parser_bricks(parser);
