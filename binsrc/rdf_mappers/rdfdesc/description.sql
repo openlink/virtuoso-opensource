@@ -1157,6 +1157,8 @@ create procedure rdfdesc_links_hdr (in subj any, in desc_link any)
 create procedure rdfdesc_links_mup (in subj any, in desc_link any)
 {
   declare links varchar;
+  if (desc_link = 0)
+    return;
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := '';
   links := links || repeat (' ', 5) ||
