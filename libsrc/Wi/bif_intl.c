@@ -38,6 +38,7 @@
 #include "multibyte.h"
 #include "srvmultibyte.h"
 #include "xml.h"
+#include "security.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1032,6 +1033,13 @@ bif_dbg_assert_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy_tree (box);
 }
 
+static caddr_t
+bif_dbg_set_lh_xany_normalization_flags (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "dbg_set_lh_xany_normalization_flags");
+  lh_xany_normalization_flags = bif_long_arg (qst, args, 0, "dbg_set_lh_xany_normalization_flags");
+}
+
 wcharset_t *
 wcharset_by_name_or_dflt (ccaddr_t cs_name, query_instance_t *qi)
 {
@@ -1152,6 +1160,7 @@ bif_intl_init (void)
   bif_define ("set_utf8_output", bif_set_utf8_output);
 #endif
   bif_define ("dbg_assert_encoding", bif_dbg_assert_encoding);
+  bif_define ("__dbg_set_lh_xany_normalization_flags", bif_dbg_set_lh_xany_normalization_flags);
   bif_define_typed ("langmatches_pct_http", bif_langmatches_pct_http, &bt_integer);
 }
 
