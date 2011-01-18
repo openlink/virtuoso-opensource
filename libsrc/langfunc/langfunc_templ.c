@@ -68,6 +68,12 @@ void LH_ITERATE_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_check_t *
   size_t hugeword_buf_size = 0;
   utf8char *word_end;
   int prop;
+#ifdef LH_ITERATOR_DEBUG
+  int wordctr = 0, wordcount = LH_COUNT_WORDS_NAME (buf, bufsize, check);
+#define wordctr_INC1 wordctr++
+#else
+#define wordctr_INC1
+#endif
   while (pos < bufsize)
     {
       prop = UNICHAR_GETPROPS_EXPN (buf, bufsize, pos);
@@ -84,6 +90,7 @@ void LH_ITERATE_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_check_t *
 	  if (NULL != word_end)
 	    {
 	      callback (word_buf, word_end-word_buf, userdata);
+              wordctr_INC1;
 	      continue;
 	    }
 	  if (hugeword_buf_size<(word_length*MAX_UTF8_CHAR))
@@ -95,6 +102,7 @@ void LH_ITERATE_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_check_t *
 	    }
 	  word_end = (utf8char *)eh_encode_buffer__UTF8 (buf+word_start, buf+pos, (char *)hugeword_buf, (char *)(hugeword_buf+hugeword_buf_size));
 	  callback (hugeword_buf, word_end-hugeword_buf, userdata);
+          wordctr_INC1;
 	  continue;
 	}
       if (prop & UCP_IDEO)
@@ -105,12 +113,17 @@ void LH_ITERATE_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_check_t *
 	    continue;
 	  word_end = (utf8char *)eh_encode_buffer__UTF8 (buf+word_start, buf+pos, (char *)(word_buf), (char *)(word_buf+BUFSIZEOF__UTF8_WORD));
 	  callback (word_buf, word_end-word_buf, userdata);
+          wordctr_INC1;
 	  continue;
 	}
       pos++;
     }
   if (hugeword_buf_size)
     dk_free (hugeword_buf, hugeword_buf_size);
+#ifdef LH_ITERATOR_DEBUG
+  if (wordctr != wordcount)
+    GPF_T;
+#endif
 }
 
 
@@ -127,6 +140,12 @@ void LH_ITERATE_PATCHED_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_c
   size_t hugeword_buf_size = 0;
   utf8char *word_end;
   int prop;
+#ifdef LH_ITERATOR_DEBUG
+  int wordctr = 0, wordcount = LH_COUNT_WORDS_NAME (buf, bufsize, check);
+#define wordctr_INC1 wordctr++
+#else
+#define wordctr_INC1
+#endif
   while (pos < bufsize)
     {
       prop = UNICHAR_GETPROPS_EXPN(buf,bufsize,pos);
@@ -160,6 +179,7 @@ void LH_ITERATE_PATCHED_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_c
 	  if (NULL != word_end)
 	    {
 	      callback (word_buf, word_end-word_buf, userdata);
+              wordctr_INC1;
 	      continue;
 	    }
 	  if (hugeword_buf_size<(word_length*MAX_UTF8_CHAR))
@@ -171,6 +191,7 @@ void LH_ITERATE_PATCHED_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_c
 	    }
 	  word_end = (utf8char *)eh_encode_buffer__UTF8 (arg_begin, arg_begin+arg_length, (char *)(hugeword_buf), (char *)(hugeword_buf+hugeword_buf_size));
 	  callback (hugeword_buf, word_end-hugeword_buf, userdata);
+          wordctr_INC1;
 	  continue;
 	}
       if (prop & UCP_IDEO)
@@ -199,11 +220,16 @@ void LH_ITERATE_PATCHED_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_c
 	    }
 	  word_end = (utf8char *)eh_encode_buffer__UTF8 (arg_begin, arg_begin+arg_length, (char *)(word_buf), (char *)(word_buf+BUFSIZEOF__UTF8_WORD));
 	  callback (word_buf, word_end-word_buf, userdata);
+          wordctr_INC1;
 	  continue;
 	}
       pos++;
     }
   if (hugeword_buf_size)
     dk_free (hugeword_buf, hugeword_buf_size);
+#ifdef LH_ITERATOR_DEBUG
+  if (wordctr != wordcount)
+    GPF_T;
+#endif
 }
 

@@ -23,7 +23,8 @@ noinst_LTLIBRARIES = liblangfunc.la
 noinst_HEADERS = \
 	langfunc.h latin1ctype.h ucm.h \
 	unicode3_all_chars.h unicode3_lowers.h  \
-	unicode3_spaces.h unicode3_uppers.h
+	unicode3_spaces.h unicode3_uppers.h \
+	unicode3_basechars.h
 
 liblangfunc_la_SOURCES = \
 	encoding_basic.c \
@@ -48,7 +49,7 @@ liblangfunc_la_LDFLAGS = -static
 
 .PHONY: generate
 generate: 
-	. ./unicodetab2h.sh
+	$(SHELL) ./unicodetab2h.sh
 
 
 .PHONY: rclean

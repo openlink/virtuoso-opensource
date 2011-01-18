@@ -314,6 +314,7 @@ void langfunc_plugin_connect (const unit_version_t *plugin)
 
 #endif
 
+extern void unicode3_init_char_combining_hashtables (void);
 extern eh_charset_t eh_generic_chardefs[];
 extern int eh_generic_chardefs_length;
 extern void connect__enUS (void *appdata);
@@ -328,6 +329,7 @@ void langfunc_kernel_init (void)
     return;
   done = 1;
   reset_work_uniblocks ();
+  unicode3_init_char_combining_hashtables ();
   eh_load_handler (&eh__UCS4);
   eh_load_handler (&eh__UCS4BE);
   eh_load_handler (&eh__UCS4LE);

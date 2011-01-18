@@ -434,10 +434,12 @@ encoding_handler_t * eh_create_ucm_handler (char *encoding_names, char *ucm_file
   ucm_file_len = ftell (ucm_file);
   fseek (ucm_file, 0, SEEK_SET);
   ucm_file_text = (char *) dk_alloc (ucm_file_len+1);
-  if (1 != fread (ucm_file_text, ucm_file_len, 1, ucm_file))
+  if (!ucm_file_text || 1 != fread (ucm_file_text, ucm_file_len, 1, ucm_file))
     {
       fclose (ucm_file);
       error_logger ("Unable to read %ld bytes from UCM file '%s' for reading", ucm_file_len, ucm_file_name);
+      if (ucm_file_text)
+        dk_free (ucm_file_text, ucm_file_len+1);
       return NULL;
     }
   fclose (ucm_file);

@@ -22,6 +22,7 @@
 */
 #include "langfunc.h"
 #include "latin1ctype.h"
+/*#define LH_ITERATOR_DEBUG 1*/
 
 static int unichar_getprops_stub (unichar uchr);
 
@@ -532,50 +533,117 @@ int lh_tolower_word__xany (const unichar *srcbuf, size_t srcbufsize, unichar *tg
   return 1;
 }
 
+int lh_xany_normalization_flags = 0;
 
 int lh_normalize_word__xany (const unichar *srcbuf, size_t srcbufsize, unichar *tgtbuf, size_t *tgtbufsize)
 {
-  size_t ctr;
+  size_t ctr, tgt_count = 0, srcsz1;
   /* int isspecial = 0; */
-  if (WORD_MAX_CHARS < srcbufsize)
+  if ((WORD_MAX_CHARS < srcbufsize) || (1 > srcbufsize))
     return 0;
+  switch (lh_xany_normalization_flags & (LH_XANY_NORMALIZATION_COMBINE | LH_XANY_NORMALIZATION_TOBASE))
+    {
+    case LH_XANY_NORMALIZATION_COMBINE | LH_XANY_NORMALIZATION_TOBASE:
+      tgt_count = 0;
+      srcsz1 = srcbufsize-1;
+      for (ctr = 0; ctr < srcsz1; ctr++)
+        {
+          unichar u = srcbuf[ctr];
+          unichar next = srcbuf[ctr+1];
+          unichar res;
+          if ((next >= unicode3_min_used_modif_char) && (next <= unicode3_max_used_modif_char))
+            {
+              res = unicode3_combine_base_and_modif_upper (u, next);
+              if (res)
+                {
+                  tgtbuf[tgt_count++] = unicode3_getupperbasechar (res);
+                  ctr++;
+                  continue;
+                }
+            }
+          res = unicode3_getupperbasechar (u);
+          tgtbuf[tgt_count++] = res;
+        }
+      if (ctr < srcbufsize)
+        tgtbuf[tgt_count++] = unicode3_getupperbasechar (srcbuf[ctr]);
+      break;
+    case LH_XANY_NORMALIZATION_COMBINE:
+      tgt_count = 0;
+      srcsz1 = srcbufsize-1;
+      for (ctr = 0; ctr < srcsz1; ctr++)
+        {
+          unichar u = srcbuf[ctr];
+          unichar next = srcbuf[ctr+1];
+          unichar res;
+          if ((next >= unicode3_min_used_modif_char) && (next <= unicode3_max_used_modif_char))
+            {
+              res = unicode3_combine_base_and_modif_upper (u, next);
+              if (res)
+                {
+                  tgtbuf[tgt_count++] = unicode3_getupperbasechar (res);
+                  ctr++;
+                  continue;
+                }
+            }
+          res = unicode3_getupperbasechar (u);
+          tgtbuf[tgt_count++] = res;
+        }
+      if (ctr < srcbufsize)
+        tgtbuf[tgt_count++] = unichar_getucase (srcbuf[ctr]);
+      break;
+    case LH_XANY_NORMALIZATION_TOBASE:
+      for (ctr = 0; ctr < srcbufsize; ctr++)
+        {
+          unichar u = srcbuf[ctr];
+          u = unicode3_getupperbasechar (u);
+          tgtbuf[ctr] = u;
+          /* if (u < 'A')
+            isspecial = 1; */
+        }
+      tgt_count = srcbufsize;
+      break;
+    case 0:
   for (ctr = 0; ctr < srcbufsize; ctr++)
     {
-      unichar ucased = unichar_getucase (srcbuf[ctr]);
-      tgtbuf[ctr] = ucased;
-      /* if (ucased < 'A')
+          unichar u = srcbuf[ctr];
+          u = unichar_getucase (u);
+          tgtbuf[ctr] = u;
+          /* if (u < 'A')
         isspecial = 1; */
     }
+      tgt_count = srcbufsize;
+      break;
+    }
 #if 0 /* This is commented out because this plural-to-single is not fully valid */
-  if (isspecial || (srcbufsize < 3) || ('S' != tgtbuf[srcbufsize - 1]) || ('S' == tgtbuf[srcbufsize - 2]))
+  if (isspecial || (tgt_count < 3) || ('S' != tgtbuf[tgt_count - 1]) || ('S' == tgtbuf[tgt_count - 2]))
     { /* Special or singular */
-      tgtbufsize[0] = srcbufsize;
+      tgtbufsize[0] = tgt_count;
       return 1;
     }
-  if ('E' == tgtbuf[srcbufsize - 2])
+  if ('E' == tgtbuf[tgt_count - 2])
     { /* "...ES"  plural */
-      if ((3 == srcbufsize) && ('Y' == tgtbuf[0]))
+      if ((3 == tgt_count) && ('Y' == tgtbuf[0]))
         { /* "YES" is singular */
-          tgtbufsize[0] = srcbufsize;
+          tgtbufsize[0] = tgt_count;
           return 1;
         }
-      if ('I' == tgtbuf[srcbufsize - 3])
+      if ('I' == tgtbuf[tgt_count - 3])
         { /* "...IES" plural */
-          tgtbuf[srcbufsize - 3] = 'Y';
-          tgtbufsize[0] = srcbufsize - 2;
+          tgtbuf[tgt_count - 3] = 'Y';
+          tgtbufsize[0] = tgt_count - 2;
           return 1;
         }
-      if ('S' == tgtbuf[srcbufsize - 3])
+      if ('S' == tgtbuf[tgt_count - 3])
         { /* "...SES" plural */
-          tgtbufsize[0] = srcbufsize - 2;
+          tgtbufsize[0] = tgt_count - 2;
           return 1;
         }
-      tgtbufsize[0] = srcbufsize - 1;
+      tgtbufsize[0] = tgt_count - 1;
       return 1;
     }  
-  tgtbufsize[0] = srcbufsize - 1; /* "...S"  plural */
+  tgtbufsize[0] = tgt_count - 1; /* "...S"  plural */
 #else
-  tgtbufsize[0] = srcbufsize;
+  tgtbufsize[0] = tgt_count;
 #endif
   return 1;
 }
