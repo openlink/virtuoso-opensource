@@ -243,8 +243,21 @@ unicode_block_t *ub_getblock(unichar uchr);
 extern unichar unicode3_getucase (unichar uchr);
 /*! \brief Returns given unichar lowercased, based on data from Unicode3 tables */
 extern unichar unicode3_getlcase (unichar uchr);
+/*! \brief Returns given unichar converted to a base char (i.e. remove umlauts, accents etc.) */
+extern unichar unicode3_getbasechar (unichar uchr);
+/*! \brief An accelerated superposition of unicode3_getbasechar and then unicode3_getucase */
+extern unichar unicode3_getupperbasechar (unichar uchr);
+/*! \brief Returns a char that is combination of a base char and NSM modifier, i.e. slightly "inverse" to unicode3_getbasechar */
+extern unichar unicode3_combine_base_and_modif (unichar base, unichar modif);
+/*! \brief An accelerated superposition of unicode3_combine_base_and_modif and then unicode3_getucase */
+extern unichar unicode3_combine_base_and_modif_upper (unichar base, unichar modif);
 /*! \brief Returns if given unichar is a 'logical space' character */
 extern int unicode3_isspace (unichar uchr);
+/*! \brief The minimal nonspacing modifier (NSM) char like umlaut or accent to modify other character */
+extern unichar unicode3_min_used_modif_char;
+/*! \brief The maximal nonspacing modifier (NSM) char like umlaut or accent to modify other character. Not every char between \c unicode3_min_used_modif_char and this one is an NSM, but all NSMs actually used as modifiers falls in this interval */
+extern unichar unicode3_max_used_modif_char;
+
 
 /*! \brief Returns properties of unichar */
 EXE_EXPORT (int, unichar_getprops, (unichar uchr));
@@ -656,6 +669,11 @@ extern eh_encode_char_t eh_encode_char__charset;
 extern eh_decode_buffer_t eh_decode_buffer__charset;
 extern eh_encode_buffer_t eh_encode_buffer__charset;
 
+/*! \brief x-any language handler can normalize combined characters in different ways, depending on this variable */
+extern int lh_xany_normalization_flags;
+#define LH_XANY_NORMALIZATION_COMBINE		0x1 /*!< Any pair of base char and combinig char (NSM, non-spacing modifier) is replaced with a single combined char */
+#define LH_XANY_NORMALIZATION_TOBASE		0x2 /*!< Any combined char is converted to its (smallest known) base. If bit LH_XANY_NORMALIZATION_COMBINE is also set, pair of base char and combinig char loses its second char */
+#define LH_XANY_NORMALIZATION_FULL 0xFF	/*!< More flags may appear in the future */
 /*! \brief Language handler for "x-any" language, used for unknown/unspecified languages */
 extern lang_handler_t lh__xany;
 /*! \brief Language handler for "x-ftq-x-any" language, used as free-text-query language for unknown/unspecified languages */
