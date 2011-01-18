@@ -1424,6 +1424,7 @@ extern char *run_as_os_uname;
 extern long dbe_auto_sql_stats; /* from search.c */
 
 extern int in_crash_dump;
+extern int32 tn_cache_enable;
 
 #if defined (WITH_PTHREADS) && !defined (MTX_DEBUG) && !defined (MTX_METER) && !defined (IN_ODBC_CLIENT)
 #undef mutex_enter

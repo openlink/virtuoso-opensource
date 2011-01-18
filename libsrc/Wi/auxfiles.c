@@ -97,6 +97,7 @@ long vd_opt_arrayparams = 0;
 int dive_cache_enable = 0;
 dp_addr_t crashdump_start_dp = 0;
 dp_addr_t crashdump_end_dp = 0;
+int32 tn_cache_enable = 0;
 
 unsigned long int cfg_thread_live_period = 0;
 unsigned long int cfg_thread_threshold = 10;

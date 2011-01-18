@@ -326,9 +326,11 @@ int32 c_http_thread_sz = 280000;
 int32 c_http_keep_hosting = 0;
 extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
+int32 c_lh_xany_normalization_flags = 0;
 int32 c_i18n_wide_file_names = 0;
 char *c_i18n_volume_encoding = NULL;
 char *c_i18n_volume_emergency_encoding = NULL;
+extern int lh_xany_normalization_flags;
 extern int i18n_wide_file_names;
 extern struct encoding_handler_s *i18n_volume_encoding;
 extern struct encoding_handler_s *i18n_volume_emergency_encoding;
@@ -1323,6 +1325,8 @@ cfg_setup (void)
     c_sparql_result_set_max_rows = 0;
   if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
     c_sparql_max_mem_in_use = 0;
+  if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
+    tn_cache_enable = 0;
 
   /* Now open the HTTP log */
   if (http_log_file)
@@ -1476,6 +1480,8 @@ cfg_setup (void)
   /* Initialization of national filesystems */
   
   section = "I18N";
+  if (cfg_getlong (pconfig, section, "XAnyNormalization", &c_lh_xany_normalization_flags) == -1)
+    c_lh_xany_normalization_flags = 0;
   if (cfg_getlong (pconfig, section, "WideFileNames", &c_i18n_wide_file_names) == -1)
     c_i18n_wide_file_names = 0;
   if (cfg_getstring (pconfig, section, "VolumeEncoding", &c_i18n_volume_encoding) == -1)
@@ -1738,6 +1744,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   sparql_max_mem_in_use = c_sparql_max_mem_in_use;
   cli_encryption_on_password = c_cli_encryption_on_password;
 
+  lh_xany_normalization_flags = c_lh_xany_normalization_flags;
   i18n_wide_file_names = c_i18n_wide_file_names;
   if (NULL != c_i18n_volume_encoding)
     {
