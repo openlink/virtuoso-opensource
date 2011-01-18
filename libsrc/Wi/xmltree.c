@@ -6579,7 +6579,6 @@ xte_word_range (xml_entity_t * xe, wpos_t * start, wpos_t * end)
   caddr_t * ent = xte->xte_current;
   xml_tree_doc_t * xtd = xte->xe_doc.xtd;
   xe_word_ranges_t *locals;
-  dbg_printf(("xte_word_range (%p)", (void *)xe));
   if (NULL == xtd->xtd_wrs)
     {
       char hider = '\0';
@@ -6596,7 +6595,12 @@ xte_word_range (xml_entity_t * xe, wpos_t * start, wpos_t * end)
       start[0] = locals->xewr_main_beg;
       end[0] = locals->xewr_main_end;
     }
-  dbg_printf(("=>(%lu,%lu)", (unsigned long)(start[0]), (unsigned long)(end[0])));
+  dbg_printf(("xte_word_range (%p:%s) => (%lu,%lu)\n",
+      (void *)xe,
+      ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (ent)) ?
+        XTE_HEAD_NAME (XTE_HEAD (ent)) :
+        ((DV_STRING == DV_TYPE_OF (ent)) ? (caddr_t)ent : "<weird>") ),
+      (unsigned long)(start[0]), (unsigned long)(end[0]) ));
 }
 
 
