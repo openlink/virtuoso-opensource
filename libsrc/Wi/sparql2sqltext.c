@@ -6283,7 +6283,19 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         parser_desc = function_is_xqf_str_parser (tree->_.funcall.qname);
         if (NULL != parser_desc)
           {
-            const char *cvtname = parser_desc->p_typed_bif_name;
+	    const char *cvtname;
+            if ((NULL != parser_desc->p_sql_cast_type) && (1 == arg_count))
+              {
+                ssg_puts (" CAST (");
+                ssg->ssg_indent++;
+                ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg->ssg_indent--;
+                ssg_puts (" AS ");
+                ssg_puts (parser_desc->p_sql_cast_type);
+                ssg_puts (")");
+                goto print_asname;
+              }
+            cvtname = parser_desc->p_typed_bif_name;
             if (NULL == cvtname)
               cvtname = "__xqf_str_parse";
             ssg_puts (cvtname);
