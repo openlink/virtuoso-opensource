@@ -3039,7 +3039,7 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 		-- Possible cause could be we're handling an atypical address and didn't decode it correctly
 	  	return 0;
 
-    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
+    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
     xd := serialize_to_UTF8_xml (xd);
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -3058,7 +3058,7 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 	if (api_ret is null or api_ret <> '0')
 	  return 1;
 
-    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
+    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
     xd := serialize_to_UTF8_xml (xd);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url2);
