@@ -1817,14 +1817,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   def_qry := get_keyword('qtxt', params, '');
 
-  if ('' = def_qry)
-    {
-  def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
-  if (def_qry is null)
-    def_qry := 'SELECT * WHERE {?s ?p ?o}';
-    }
-  else qtxt := 1;
-
+  if ('' <> def_qry)
+    qtxt := 1;
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   save_mode := get_keyword ('save', params, null);
@@ -1904,6 +1898,12 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
             http_header (sprintf ('Location: %s\r\n', redir));
             return;
          }
+      if (not qtxt)
+        {
+          def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
+          if (def_qry is null)
+            def_qry := 'SELECT * WHERE {?s ?p ?o}';
+        }
 http('<html xmlns="http://www.w3.org/1999/xhtml">\n');
 http('	<head>\n');
 http('		<title>Virtuoso SPARQL Query Form</title>\n');
