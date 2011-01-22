@@ -2680,6 +2680,10 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *res;
+  if (sparp->sparp_in_precode_expn)
+    spar_error (sparp, "Blank node '%.100s' is not allowed in a constant clause", name);
+  if (NULL == env->spare_selids)
+    spar_error (sparp, "Blank nodes (e.g., '%.100s') can not be used outside any group pattern or result-set list", name);
   res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_BLANK_NODE_LABEL, name,
       env->spare_selids->data, NULL,
