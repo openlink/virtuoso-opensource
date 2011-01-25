@@ -88,6 +88,7 @@
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_directory_name" type="varchar" default="''"/>
       <v:variable name="v_directory_id" type="varchar" default="'0'"/>
+      <v:variable name="v_graph" type="varchar" default="''"/>
       <v:variable name="v_psh" type="varchar" default="null"/>
       <v:variable name="v_psh_enabled" type="integer" default="1"/>
       <v:variable name="v_acl" type="varchar" default="null"/>
@@ -365,6 +366,7 @@
                       b.EF_PSH_SERVER,
                       b.EF_PSH_ENABLED,
                       a.EFD_TITLE,
+                      a.EFD_GRAPH,
                       a.EFD_TAGS,
                       a.EFD_FOLDER_ID,
                       c.EFD_DIRECTORY_ID,
@@ -378,6 +380,7 @@
                       self.v_psh,
                       self.v_psh_enabled,
                       self.v_title,
+                      self.v_graph,
                       self.v_tags,
                       self.v_folder_id,
                       self.v_directory_id,
@@ -507,6 +510,14 @@
             </v:template>
             <tr>
               <th>
+                    <v:label for="f_graph" value="RDF Graph"/>
+                  </th>
+                  <td>
+                    <v:text name="f_graph" null-value="''" value="--self.v_graph" xhtml_class="textbox" xhtml_size="70%"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
                 <v:label for="f_tags" value="Tags"/>
               </th>
               <td>
@@ -675,7 +686,7 @@
                 }
 
                 -- domain
-                ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
+                ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim (self.f_folder_id.ufl_value), self.f_graph.ufl_value);
                 self.v_acl := serialize (DB.DBA.wa_acl_params (params));
                 ENEWS.WA.channel_acl (self.v_id, self.v_acl);
 
