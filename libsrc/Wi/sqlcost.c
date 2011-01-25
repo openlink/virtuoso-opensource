@@ -524,7 +524,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
   else if (IS_BOX_POINTER (body))
     {
       df_elt_t *pred = (df_elt_t *) body;
-      if (pred->dfe_type == DFE_BOP_PRED || pred->dfe_type == DFE_BOP)
+      if (pred->dfe_type == DFE_BOP_PRED || (pred->dfe_type == DFE_BOP && pred->_.bin.op >= BOP_EQ && pred->_.bin.op <= BOP_GTE))
 	sqlo_pred_unit (pred, NULL, unit_ret, arity_ret);
       else
 	dfe_unit_cost ((df_elt_t *) body, 1, unit_ret, arity_ret, overhead_ret);
@@ -1949,7 +1949,6 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	}
       END_DO_SET();
     }
-  total_arity = arity_scale (total_arity);
   if (dfe->_.table.join_test)
     {
       dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
@@ -1980,8 +1979,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       *overhead_ret += fu1;
       total_cost = (float) HASH_LOOKUP_COST + HASH_ROW_COST * MAX (0,  total_arity - 1);
     }
-  total_cost += p_cost * total_arity;
+  total_cost += p_cost * arity_scale (total_arity);
   total_arity *= p_arity;
+  total_arity = arity_scale (total_arity);
   if (dfe->_.table.ot->ot_is_outer)
     total_arity = MAX (1, total_arity);
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
