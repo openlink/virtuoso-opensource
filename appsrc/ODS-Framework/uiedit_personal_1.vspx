@@ -430,7 +430,6 @@
                     control.ufl_selected := self.is_org;
                 </v:after-data-bind>
               </v:check-box>
-              <![CDATA[&nbsp;]]>
               <b>Organization</b>
             </label>
           </td>
@@ -444,6 +443,8 @@
               <v:item name="Mrs" value="Mrs"/>
               <v:item name="Dr" value="Dr"/>
               <v:item name="Ms" value="Ms"/>
+              <v:item name="Sir" value="Sir"/>
+
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.utitle;
@@ -489,8 +490,7 @@
         </tr>
         <tr>
           <th>
-            <label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-            <span class="explain"> (mandatory field)</span>
+            <label for="regmail">E-mail<span style="font-weight: normal; color:red;"> *</span><span class="small">Mandatory field, used for notifications, etc.</span></label>
           </th>
           <td class="listing_col" nowrap="nowrap">
             <v:text xhtml_id="regmail" name="regmail" value="--self.email" xhtml_class="_validate_ _mail_" xhtml_style="width:216px" xhtml_onblur="javascript: validateField(this);" />
@@ -569,7 +569,7 @@
            </td>
          </tr>
          <tr id="pers_17" class="initial_hidden">
-           <th><label for="m_sign">Mail Signature</label></th>
+           <th><label for="m_sign">Mail Signature<span class="small">Automatically added to mails sent by you</span></label></th>
            <td class="listing_col" nowrap="1">
              <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" fmt-function="wa_utf8_to_wide" error-glyph="*">
                <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
@@ -585,8 +585,8 @@
            </td>
          </tr>
          <tr>
-          <th><label for="s_tags">Tags</label>
-            <span class="explain"> (comma separated list of keywords)</span>
+          <th>
+            <label for="s_tags">Tags<span class="small">(comma separated list of keywords)</span></label>
           </th>
           <td class="listing_col" nowrap="1">
             <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_cols="50" xhtml_rows="5" />
@@ -597,7 +597,7 @@
          </tr>
          <tr>
            <th>
-             <label for="e_int">Web page URL indicating a topic of interest</label>
+             <label>Interest topics<span class="small">Web page URLs indicating topics of interest</span></label>
            </th>
            <td class="listing_col" nowrap="1">
              <table>
@@ -627,7 +627,7 @@
                      ?>
                 		   </script>
                   	 ]]>
-                     <tr id="x2_tr_no"><td colspan="3"><b>No Topic of Interests</b></td></tr>
+                     <tr id="x2_tr_no"><td colspan="3"><b>No Interests Defined</b></td></tr>
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
@@ -640,7 +640,7 @@
          </tr>
          <tr>
            <th>
-             <label for="e_int2">Resource URI indicating thing of interest</label>
+             <label>Interests<span class="small">Resource URIs indicating thing of interest</span></label>
            </th>
            <td class="listing_col" nowrap="1">
              <table>
@@ -670,7 +670,7 @@
                      ?>
                 		   </script>
                   	 ]]>
-                     <tr id="x3_tr_no"><td colspan="3"><b>No Thing of Interests</b></td></tr>
+                     <tr id="x3_tr_no"><td colspan="3"><b>No interest URIs</b></td></tr>
                    </table>
                  </td>
                  <td valign="top" nowrap="1">

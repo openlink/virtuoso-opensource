@@ -31,7 +31,7 @@ def login_form()
     <div id="lf" class="form">
       #{display_error()}
       <div class="header">
-        Identify Yourself
+        Please identify yourself
       </div>
       <ul id="lf_tabs" class="tabs">
         <li id="lf_tab_0" title="Digest">Digest</li>

@@ -278,7 +278,7 @@
                   control.ufl_selected := self.blatlng_def;
               </v:after-data-bind>
             </v:check-box>
-            <label for="set_blatlng_def">Default map location</label>
+            <label for="set_blatlng_def">Use as default map location</label>
           </td>
         </tr>
         <tr>

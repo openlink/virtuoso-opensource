@@ -1157,3 +1157,10 @@ table.form td {
 #lf_logo {
   margin: 50px 25px 25px 30px
 }
+
+label span.small {
+  font-size: smaller;
+  font-weight: normal;
+  display: block;
+  color: #666;
+}

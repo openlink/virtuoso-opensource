@@ -644,6 +644,7 @@ wa_exec_no_error(
    WS_REGISTER_OPENID integer default 1,
    WS_REGISTER_FACEBOOK integer default 1,
    WS_REGISTER_TWITTER integer default 1,
+   WS_REGISTER_LINKEDIN integer default 1,
    WS_REGISTER_SSL integer default 1,
    WS_REGISTER_AUTOMATIC_SSL integer default 1,
    WS_FEEDS_UPDATE_PERIOD varchar default \'hourly\',
@@ -731,6 +732,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_FACEBOOK', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_TWITTER', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_LINKEDIN', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL', 'integer default 1')
@@ -2016,6 +2020,7 @@ create procedure INIT_SERVER_SETTINGS ()
        WS_REGISTER_OPENID,
        WS_REGISTER_FACEBOOK,
        WS_REGISTER_TWITTER,
+       WS_REGISTER_LINKEDIN,
        WS_REGISTER_SSL,
        WS_REGISTER_AUTOMATIC_SSL,
   	   WS_MAIL_VERIFY,
@@ -2035,6 +2040,7 @@ create procedure INIT_SERVER_SETTINGS ()
   	  )
 	  values
 	    (
+	     1,
 	     1,
 	     1,
 	     1,

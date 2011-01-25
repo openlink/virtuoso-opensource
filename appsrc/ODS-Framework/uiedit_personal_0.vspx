@@ -65,7 +65,7 @@
       declare M integer;
       declare V any;
 
-      V := vector ('Mr', 'Mrs', 'Dr', 'Ms');
+      V := vector ('Mr', 'Mrs', 'Dr', 'Ms', 'Sir');
       for (M := 0; M < length (V); M := M + 1)
         if (lcase (title) like (lcase (V[M])|| '%'))
           return V[M];
@@ -412,7 +412,7 @@
                   ]]>
                 </v:before-render>
               </v:radio-button>
-                <b>Profile Document URL</b>
+                Profile Document URL
               </label>
             </td>
             <td>
@@ -614,7 +614,7 @@
         </table>
       </v:template>
       <br />
-      <div>
+      <div class="fm_btn_row clearfix">
         <v:button name="user_c_personal_0" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
           <v:on-post>
             self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));

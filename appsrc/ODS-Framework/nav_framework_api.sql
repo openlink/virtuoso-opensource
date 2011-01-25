@@ -916,8 +916,9 @@ create procedure checkApplication (
     http ('<name>' || wainstance_name || '</name>', resXml);
     http ('<url>' || application_url || '</url>',resXml);
     http ('</application>', resXml);
+
+    httpResXml (resXml, 'checkApplication');
   }
-  httpResXml (resXml, 'createApplication');
   return '';
 }
 ;
@@ -2248,7 +2249,7 @@ nf:
    declare errCode integer;
    declare errMsg  varchar;
    errCode := 1;
-   errMsg  := 'Authentication incorrect.';
+   errMsg  := 'Invalid or expired session.';
 
    httpErrXml(errCode,errMsg,'isSessionValid');
 
