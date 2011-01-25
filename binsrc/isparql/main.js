@@ -1479,7 +1479,10 @@ iSPARQL.Common = {
 	iSPARQL.dialogs.help = new OAT.Dialog("iSPARQL Help", "help_dlg", {width:400, modal:0, buttons:0});
 	OAT.Event.attach ("help_dlg_b_ok", "click", iSPARQL.dialogs.help.hide);
 
-		iSPARQL.dialogs.prefs = new OAT.Dialog("iSPARQL Preferences", "prefs_dlg", {width:600, modal:1, className: "prefs_dlg"});
+		iSPARQL.dialogs.prefs = new OAT.Dialog("iSPARQL Preferences", "prefs_dlg", {width:600, 
+																					modal:1, 
+																					def_layout: false, 
+																					className: "prefs_dlg"});
 	iSPARQL.dialogs.prefs.ok = iSPARQL.dialogs.prefs.hide;
 
 //		iSPARQL.pref_tabs = new OAT.Tab ("prefs_tabdeck");

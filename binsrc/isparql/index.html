@@ -620,13 +620,12 @@ ASK WHERE
         <li id="ptab_deref">Data Dereferencing</li>
       </ul-->
 	  <!--div id="prefs_tabdeck"> </div--> <!-- Browser DOM bug alert: do not make into a self-terminating tag -->
-      <div id="prefs_tab_services_ct">
+      <div id="prefs_tab_services_ct" class="prefs_tab_ctr">
         <h2>Services</h2>
 		<div id="endpoint"><label for="service">SPARQL Endpoint:</label></div> <!-- endpoint combo box container -->
         <div id="shortener">
 		  <input type="checkbox" id="shortener_ep_ckb">
-		  <label for="shortener_ep_ckb" class="ckb">Shorten URIs using:</label><input id="shortener_ep"></div>
-		  <div class="expln">Virtuoso c_uri service endpoint.</div>
+		  <label for="shortener_ep_ckb" class="ckb">Shorten URIs using:<br/><span class="expln">Virtuoso curi endpoint</span></label><input id="shortener_ep"></div>
       </div> <!-- #prefs_tab_services -->
       <!-- div id="prefs_tab_deref_ct">
         <h2>Dereferencing options</h2>

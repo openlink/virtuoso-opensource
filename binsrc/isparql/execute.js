@@ -838,9 +838,6 @@ var QueryExec = function(optObj) {
 			/* trap http codes */
 			item.dom.result_c.innerHTML = self.makeErrorMsg (data);
 			item.dom.response_c.innerHTML = self.makeErrorResp (data);
-	    self.tab.go(0); // buggy JS in FireFox...
-	    self.refreshNav();
-	    return;
 		} 
 		else {
 

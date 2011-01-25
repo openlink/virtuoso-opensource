@@ -22,30 +22,9 @@
 --
 --
 
-  declare _u_name varchar;
-  declare _u_password varchar;
+-- This page used to be evil. Full of goodness now.
 
-  _u_name := get_keyword ('username', params);
-  if (_u_name = '' or isnull (_u_name)) goto nf;
-
-  {
-    whenever not found goto nf;
-    select U_PWD
-      into _u_password from WS.WS.SYS_DAV_USER
-     where U_NAME = _u_name and U_ACCOUNT_DISABLED = 0;
-  }
-  if (_u_password is null) goto nf;
-
-  if (DB.DBA.vsp_auth_verify_pass (vector('authtype','basic',
-                                          'username',_u_name,
-                                          'pass',get_keyword ('pass', params,'')), 
-                                          _u_name,'','','','','','',_u_password))
-	{
-	  http('OK');
-	  return;
-  }
-
-  nf:;
-  http('Unauthorized');
-
+  http_rewrite();
+  http_request_status ('HTTP/1.1 400 Bad Request');
+  http('Not available. Begone.');
 ?>
