@@ -5656,7 +5656,7 @@ create procedure CAL.WA.export_vcal_privacy (
     return;
 
   V := vector (2, 'SHARED', 1, 'PUBLIC', 0, 'PRIVATE');
-  http (sprintf ('CLASS:%s\r\n', get_keyword (privacy, V)));
+  http (sprintf ('CLASS:%s\r\n', get_keyword (privacy, V)), sStream);
 }
 ;
 
