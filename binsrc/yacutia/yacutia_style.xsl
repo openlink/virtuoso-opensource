@@ -422,11 +422,11 @@
 </xsl:template>
 
 <xsl:template match="vm:help">
-    <span class="help_link">
+  <div class="help_button">
     <v:button action="browse" name="brws_{generate-id()}" selector="help.vspx?id={@id}&amp;name={@sect}"
-	child-window-options="" value="images/icons/help_24.png" style="image" text="Help">
+	child-window-options="" value="images/icons/help_16.png" style="image" text="Help">
     </v:button>
-</span>
+  </div>
 </xsl:template>
 
 <xsl:template match="vm:url">

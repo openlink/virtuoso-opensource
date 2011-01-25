@@ -59,7 +59,7 @@
       };
     </script>
       <v:form name="event_form3" type="simple" method="POST" action="">
-        <div class="listing_top_ctl_grp">
+        <div class="listing_top_ctl_grp clear">
           <v:button action="simple" value="Add table" name="data_set1_cr">
             <v:on-post>
               <v:script>

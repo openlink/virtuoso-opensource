@@ -343,6 +343,7 @@ conductor/sys_queues_edit.vspx
 conductor/sys_queues_error.vspx
 conductor/sys_queues_remove.vspx
 conductor/sys_queues.vspx
+conductor/tbl.js
 conductor/text_triggers.vspx
 conductor/uddi_remove.vspx
 conductor/uddi_serv_browse.vspx
