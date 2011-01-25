@@ -2650,18 +2650,20 @@
               		    declare vcard, qrcode any;
 
         		          vcard := AB.WA.export_vcard (self.domain_id, vector (self.v_id));
-                      qrcode := ODS.ODS_API.qrcode (vcard);
+                      qrcode := ODS.ODS_API.qrcode (vcard, 120, 120, 3);
         		        ?>
                     <table class="form-body" cellspacing="0">
                       <tr>
-                        <th valign="top">
+                        <td align="center">
                     		  <?vsp
                             if (qrcode is not null)
 	                            http (sprintf ('<img id="qrcode" src="data:image/jpg;base64,%s"/>', qrcode));
               		        ?>
-                        </th>
-                        <td valign="top">
-                          <pre><?vsp http (vcard); ?></pre>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center">
+                          <b>vCard Contact Data</b>
                         </td>
                       </tr>
                     </table>
