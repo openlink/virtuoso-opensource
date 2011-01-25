@@ -114,7 +114,7 @@
 				      ]]></v:on-post>
 			      </v:button>
 	      </th>
-	      <th>
+	      <th class="new_item">
 		<v:url name="cr_new_ev1" value="Create New Event" url="sys_queues_edit.vspx?mode=create"/>
 	      </th>
             </tr>

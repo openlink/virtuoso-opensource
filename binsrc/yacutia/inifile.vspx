@@ -39,6 +39,7 @@
       <vm:menuitem value="Initial parameters" />
     </vm:menu>
     <vm:header caption="Virtuoso server startup parameters">
+      <vm:help id="inifile" sect=""/>
     </vm:header>
     <vm:pagebody>
       <script type="text/javascript">
@@ -53,7 +54,12 @@
 	  return 'page_tab_selected';
 	return 'page_tab';
       </v:method>
-      <v:form name="virtini" action="inifile.vspx"  method="POST" type="simple" xmlns:xhtml="http://www.w3.org/1999/xhtml"  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/">
+      <v:form name="virtini" 
+              action="inifile.vspx"  
+              method="POST" 
+              type="simple" 
+              xmlns:xhtml="http://www.w3.org/1999/xhtml"  
+              fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/">
         <v:before-data-bind>
           <v:script>
             <![CDATA[
@@ -69,8 +75,7 @@
         </v:before-data-bind>
 	<v:template name="editor_template" type="simple" enabled="-- neq(self.to_del, 1)">
 	<input type="hidden" name="dd_sect" value="<?V self.pos ?>" />
-	<h3>Virtuoso configuration file "<?V adm_get_init_name() ?>"</h3>
-        <vm:help id="inifile" sect=""/>
+	<h3 class="clear">Virtuoso configuration file "<?V adm_get_init_name() ?>"</h3>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>

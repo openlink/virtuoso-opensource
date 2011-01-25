@@ -183,7 +183,7 @@
 				      ]]></v:on-post>
 			      </v:button>
 		   </th>
-                   <th>
+                   <th class="new_item">
                      <v:url name="account_create_ref"
                             format="%s"
                             value="--'Create New Account'"

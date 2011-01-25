@@ -380,6 +380,9 @@ th
   text-align: left
 }
 
+.clear {
+  clear: both;
+}
 
 #copyright_ctr
 {
@@ -411,6 +414,8 @@ h1.page_title
   font-size: 24px;
   font-weight: bold;
   color: #aeaeaa;
+  width: 80%;
+  float: left;
 }
 
 td.page_title img
@@ -423,6 +428,10 @@ td.page_title img
 div.main_page_area
 {
 
+}
+
+div.main_page_area table {
+  clear: left;
 }
 
 .sub_page
@@ -848,6 +857,23 @@ td.listing_col_action a
   font-family: courier, fixed;
 }
 
+/* accounts.vspx, sys_queues.vspx, etc. unhide the "Add New Item" */
+
+th.new_item { }
+th.new_item img { display: inline }
+
+th.new_item a {
+  text-decoration: underline;
+  font-weight: normal;
+  vertical-align: middle;
+}
+th.new_item a:before {
+  content: url(images/icons/add_16.png);
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+/* sys_queues.vsp
 
 /* Various error message containers */
 
@@ -972,9 +998,14 @@ img.dialog_icon
   padding: 0px 10px 0px 10px;
 }
 
+div.dialog_text {
+  clear: both;
+}
+
 div.confirm_dialog
 {
-  border: 4px dashed red;
+  clear:both
+  border: 4px solid red;
   padding: 10px;
 }
 
@@ -1849,6 +1880,7 @@ table.home th
   width: auto;
   margin-right:12px;
   overflow: auto;
+  clear: left;
 }
 
 .banner1
@@ -1867,10 +1899,27 @@ table.home th
   margin-left: 20px;
 }
 
-span.help_link a
+div.help_button
 {
-    text-decoration: none;
+    border: 1px solid #666;
+    background-color: #ddd;
+    margin-right: 8px;
+    padding: 5px;
+    float: right;    
 }
+
+div.help_button:hover {
+  background-color: #aaa;
+  border: 1px solid #ddd;
+}
+
+div.help_button a {
+    text-decoration: none;
+    color: #333;
+    vertical-align: middle;
+}
+
+div.help_button img { vertical-align: middle; margin-right: 3px;}
 
 .login_info
 {

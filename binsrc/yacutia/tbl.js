@@ -20,6 +20,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
 var TBL = new Object();
 TBL.selectOption = function(fld, fldValue, optionName, optionValue) {
 	var o = OAT.Dom.option(optionName, optionValue, fld);
@@ -332,7 +333,7 @@ TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
 
 TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {
   TBL.createCell52(td, prefix, fldName, No, fldOptions, true);
-  }
+}
 
 TBL.clickCell52 = function (fld)
 {
