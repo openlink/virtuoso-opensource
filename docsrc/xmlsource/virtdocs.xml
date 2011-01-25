@@ -309,6 +309,7 @@
 <!ENTITY rdf_graph_group_ins                    SYSTEM  "funcref/rdf_graph_group_ins.xml">
 <!ENTITY rdfs_rule_set                          SYSTEM  "funcref/rdfs_rule_set.xml">
 
+<!ENTITY rdf_load_rdfa                          SYSTEM  "funcref/rdf_load_rdfa.xml">
 <!ENTITY rdf_load_rdfxml        		SYSTEM "funcref/rdf_load_rdfxml.xml">
 <!ENTITY rdf_load_rdfxml_mt     		SYSTEM "funcref/rdf_load_rdfxml_mt.xml">
 

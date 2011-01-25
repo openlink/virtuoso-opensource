@@ -56,6 +56,7 @@
 		directly without any hint of replacement.
 		</para>
   </sect1>
+  
   <sect1 id="virtwhydoi">
     <title>Why Do I Need Virtuoso?</title>
     <para>You need Virtuoso because Knowledge is power or competitive advantage (depending on how
@@ -706,4 +707,77 @@ Such models are not currently used by default, but they are achievable with our 
 </para>
 	   </sect2>
 	</sect1>
+	
+	<sect1 id="virtuosotipsandtricks">
+          <title>Tips and Tricks</title>
+    <sect2 id="virtuosotipsandtricksspchar">
+          <title>How Can I execute SPARQL queries containing '$' character using ISQL?</title>                
+      <para>Assuming a SPARQL query should filter on the length of labels:</para>
+<programlisting><![CDATA[
+SELECT ?label
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?s ?p ?label
+    FILTER(regex(str(?label), "^.{1,256}$") )
+  } 
+]]></programlisting>      
+      <para>ISQL uses '<emphasis>$</emphasis>' character as a prefix for macro names of its preprocessor. 
+      When '<emphasis>$</emphasis>' character is used in SPARQL query to be executed in ISQL, the character 
+      should be replaced with '<emphasis>$$</emphasis>' notation or an escape char + numeric code:</para>
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT ?label
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?s ?p ?label
+    FILTER(REGEX(str(?label), "^.{1,256}$$") )
+  } 	
+]]></programlisting>      
+      <para>Note also that the FILTER written in this way, finds <emphasis>?label-s</emphasis> with length 
+      less than 256.</para>
+      <para>To achieve fast results, <emphasis>REGEX</emphasis> should be replaced with the 
+      <emphasis>bif:length</emphasis> function:</para>      
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT ?label
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?s ?p ?label
+    FILTER (bif:length(str(?label))<= 256)
+  } 	
+]]></programlisting>      
+      <para>In this way the SPARQL query execution can work much faster if the interoperability is 
+      	not required and <emphasis>?label-s</emphasis> are numerous.</para>
+    </sect2>          
+    <sect2 id="virtuosotipsandtricksfinddeadlockstables">
+      <title>How can I find on which table deadlocks occur?</title>
+      <para>One possible way to find on which table deadlocks occur is to execute the following statement:</para>    
+<programlisting><![CDATA[
+SELECT TOP 10 * 
+FROM SYS_L_STAT 
+ORDER BY deadlocks DESC	
+]]></programlisting>      
+    </sect2>       
+    <sect2 id="virtuosotipsandtricksoutotmemoryerror">
+      <title>How Can I configure parameters to avoid out of memory error?</title>
+      <para>In order to avoid out of memory error, you should make sure the values for the paramaters 
+      	<emphasis>NumberOfBuffers</emphasis> and <emphasis>MaxCheckpointRemap</emphasis> are not set with the same values.</para>    
+      <para>For example, the following configuration will cause an error out of memory:</para>	
+<programlisting><![CDATA[
+# virtuoso.ini
+
+...
+[Parameters]
+NumberOfBuffers = 246837
+MaxDirtyBuffers = 18517
+MaxCheckpointRemap = 246837
+...
+]]></programlisting>      
+       <para>Changing the value of the parameter <emphasis>MaxCheckpointRemap</emphasis> with let's 
+       say 1/4 of the DB size will resolve the issue.</para>
+    </sect2>                  
+  </sect1>    
 </chapter>

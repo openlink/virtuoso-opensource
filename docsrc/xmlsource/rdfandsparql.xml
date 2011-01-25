@@ -698,7 +698,7 @@ At present this uses additional query parameters.</para>
 </itemizedlist>
 </sect3>
 
-<sect3 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint</title>
+<sect3 id="rdfsupportedprotocolendpoint"><title>Service Endpoint</title>
 <para>Virtuoso uses the pre-assigned endpoints "/sparql" and "/SPARQL" as the
 defaults for exposing its REST based SPARQL Web Services.</para>
 <para>The port number associated with the SPARQL services is determined by the 'ServerPort' key value
@@ -4630,33 +4630,29 @@ session to the caller</title>
 <para>so sometimes you may meet them in SQL debuggers output and the like.
 </para>
 </sect3>
-
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-<para>
-</para>
-
+</sect2>
+<sect2 id="rdfsparqlbif"><title>Built-in bif functions</title>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>bif:__rdf_long_from_batch_params(i_nt integer, st_value, st2_value)</emphasis>
+    <itemizedlist mark="bullet">
+      <listitem>For value URI, the params values should be: 1, value.stringValue(), NULL</listitem>
+      <listitem>For value BNODE, the params values should be: 1, "_:"+((BNode)value).getID(), NULL</listitem>
+      <listitem>For value Literal with Language!=NULL, the params values should be: 5, lit.stringValue(), lit.getLanguage()</listitem>
+      <listitem>For value Literal with Datatype!=NULL, the params values should be: 4, lit.stringValue(), lit.getDatatype().toString()</listitem>
+      <listitem>For value Literal with Datatype==NULL &amp;&amp; Language==NULL, the params values should be: 3, lit.stringValue(), NULL</listitem>
+      <listitem>For value any value exclude above, the params values should be: 3, value.stringValue(), NULL</listitem>
+      <listitem>For string value (without Datatype and Language), the params values should be: 3, value.stringValue(), NULL</listitem>
+    </itemizedlist>  
+    <para><emphasis>Example:</emphasis></para>
+<programlisting><![CDATA[
+SPARQL SELECT * 
+WHERE 
+  { graph ?g { `iri(??)` `iri(??)`
+    `bif:__rdf_long_from_batch_params(3,value.stringValue(),NULL)` }
+  }
+]]></programlisting>
+  </listitem>
+</itemizedlist>
 </sect2>
 </sect1>
 
