@@ -37,8 +37,10 @@ create table WS.WS.VFS_URL (
     VU_ETAG	varchar,
     VU_CPTIME	datetime,
     VU_OTHER	varchar,
+    VU_RES_ID   int,
     primary key (VU_HOST, VU_URL, VU_ROOT))
 create index VU_HOST_ROOT on WS.WS.VFS_URL (VU_HOST, VU_ROOT)
+create index VFS_URL_RES_ID on WS.WS.VFS_URL (VU_RES_ID)    
 ;
 
 
@@ -175,4 +177,10 @@ alter table WS.WS.VFS_QUEUE add VQ_LEVEL int default 0
 ;
 
 alter table WS.WS.VFS_QUEUE add VQ_VIA_SITEMAP int default 0
+;
+
+alter table WS.WS.VFS_QUEUE add VQ_DT timestamp
+;
+
+alter table WS.WS.VFS_URL add VU_RES_ID int
 ;
