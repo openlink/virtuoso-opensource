@@ -1,3 +1,197 @@
+2011-01-25 14:39  source
+
+	* Fixed allocate space for \0 terminator
+
+2011-01-25 14:38  source
+
+	* Fixed memory leak
+
+2011-01-25 14:36  source
+
+	* Fixed compiler warning
+
+2011-01-25 14:35  source
+
+	* Added configurable normalization of accented characters
+
+2011-01-25 14:33  source
+
+	* Fixed compiler warnings
+
+2011-01-25 14:32  source
+
+	* Fixed wrong buffer
+
+2011-01-25 14:30  source
+
+	* Fixed crawling aside of the target
+	* Fixed no more need of dummy targets
+	* Fixed decrease use of lock on site table
+
+2011-01-25 14:29  source
+
+	* Fixed python initialization
+
+2011-01-25 14:11  source
+
+	* Aded linkedIn login/register
+	* Fixed bad profile UI
+	* FIxed hyperlink session expire issue
+
+2011-01-25 14:09  source
+
+	* Fixed use base as origin on zillow
+
+2011-01-25 14:09  source
+
+	* Fixed do not try to put headers when an error is detected
+
+2011-01-25 14:07  source
+
+	* Fixed connection check page
+	* Fixed error message generation in execute
+	* Fixed Preferences dialog
+
+2011-01-25 14:00  source
+
+	* Fixed cosmetics and layout
+
+2011-01-25 13:53  source
+
+	* Added RDF graph property for links
+
+2011-01-25 13:52  source
+
+	* Added IMAP support
+
+2011-01-25 13:51  source
+
+	* Fixed install issue with new DB
+	* Fixed parent
+
+2011-01-25 13:50  source
+
+	* Fixed UI
+
+2011-01-25 13:17  source
+
+	* Updated documentation
+
+2011-01-22 14:12  source
+
+	* Fixed check for blank node in wrong places
+
+2011-01-21 13:43  source
+
+	* Fixed no need to access .cfg file for plain ?query= call
+
+2011-01-19 13:17  source
+
+	* Fixed codegen for xsd:decimal() and similar cast operations
+
+2011-01-18 14:36  source
+
+	* Added configurable normalization of accented characters
+
+2011-01-18 14:32  source
+
+	file unicode3_basechars.h was added on branch V6_0_0-DEVEL on 2011-01-18 14:36:37 +0000
+
+2011-01-18 10:41  source
+
+	* Added normalization of accented characters
+
+2011-01-18 10:32  source
+
+	* Fixed debug code
+
+2011-01-18 10:31  source
+
+	* Fixed more debug output for xte_word_range
+
+2011-01-11 22:41  source
+
+	* Fixed compiler warnings
+
+2011-01-11 22:38  source
+
+	* Fixed whitespace
+
+2011-01-11 13:18  source
+
+	* Added mime_header function to parse rfc header of mail message
+
+2011-01-11 13:14  source
+
+	* Fixed commented out bogus help button
+
+2011-01-11 13:13  source
+
+	* Added more prefixes
+
+2011-01-11 13:12  source
+
+	* Added new entries to virtrdf-label
+
+2011-01-11 10:33  source
+
+	* Added new SPARQL-to-SQL codegen for type cast functions
+
+2011-01-11 10:32  source
+
+	* Fixed set box flags to BF_IRI in this special case as graphs are IRIs
+
+2011-01-10 20:49  source
+
+	* Added transitivity cache
+
+2011-01-10 16:56  source
+
+	* Fixed bifs returning int or date should use same cast as auto
+
+2011-01-10 13:23  source
+
+	* Fixed width of users, capabilities listings
+
+2011-01-10 13:22  source
+
+	* Fixed use sitemaps for default crawling, option for depth
+	* Fixed links conversion should be off by default
+	* Fixed issue with listing
+
+2011-01-10 11:51  source
+
+	* FIxed missing initialization
+
+2011-01-07 17:18  source
+
+	* Fixed set timeout only when non empty
+
+2011-01-07 15:42  source
+
+	* Fixed when explicit output format is give, make it part of the
+	  query text so don't cache eventual internal guess to turtle output
+
+2011-01-07 15:08  source
+
+	* Added cxml and csv links
+	* Fixed link layout
+
+2011-01-07 14:12  source
+
+	* Fixed allow bigger header values to be returned
+
+2011-01-05 20:58  source
+
+	* Added optional QRcode
+	* Added CXML link typing dropdowns to fct UI
+	* Added search query limit of 100 words
+	* Added CXML and CSV links on describe page
+
+2011-01-05 20:14  source
+
+	* Fixed declaration after statement warning
+
 2011-01-05 13:58  source
 
 	* Fixed search and page load behaviour
