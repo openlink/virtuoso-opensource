@@ -65,11 +65,22 @@ function lfInit() {
   if (regData.twitterEnable)
     OAT.Dom.show('lf_tab_4');
   lfTab.add("lf_tab_4", "lf_page_4");
+  if (regData.linkedinEnable)
+    OAT.Dom.show('lf_tab_5');
+  lfTab.add("lf_tab_5", "lf_page_5");
   lfTab.go(0);
   var uriParams = OAT.Dom.uriParams();
   if (uriParams['oid-form'] == 'lf') {
     OAT.Dom.show('lf');
-    if (uriParams['oid-mode'] != 'twitter') {
+    if (uriParams['oid-mode'] == 'twitter') {
+      lfTab.go(4);
+      $('lf_login').click();
+    }
+    else if (uriParams['oid-mode'] == 'linkedin') {
+      lfTab.go(5);
+      $('lf_login').click();
+    }
+    else {
       $('lf_openId').value = uriParams['openid.identity'];
     lfTab.go(1);
     if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
@@ -80,9 +91,6 @@ function lfInit() {
     {
       alert('OpenID Authentication Failed');
     }
-    } else {
-      lfTab.go(4);
-      $('lf_login').click();
     }
   }
 
@@ -140,6 +148,8 @@ function lfCallback(oldIndex, newIndex) {
     $('lf_login').value = 'WebID Login';
   else if (newIndex == 4)
     $('lf_login').value = 'Twitter';
+  else if (newIndex == 5)
+    $('lf_login').value = 'LinkedIn';
 
   pageFocus('lf_page_'+newIndex);
 }
@@ -197,9 +207,20 @@ function lfLoginSubmit(cb) {
       twitterAuthenticate('lf');
       return false;
     }
-    q +='twitterSid=' + encodeURIComponent(uriParams['sid'])
-      + '&twitterOAuthVerifier=' + encodeURIComponent(uriParams['oauth_verifier'])
-      + '&twitterOAuthToken=' + encodeURIComponent(uriParams['oauth_token']);
+    q +='oauthMode=twitter'
+      + '&oauthSid=' + encodeURIComponent(uriParams['sid'])
+      + '&oauthVerifier=' + encodeURIComponent(uriParams['oauth_verifier'])
+      + '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']);
+  } else if (mode == 5) {
+    var uriParams = OAT.Dom.uriParams();
+	  if ((typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
+      linkedinAuthenticate('lf');
+      return false;
+    }
+    q +='oauthMode=linkedin'
+      + '&oauthSid=' + encodeURIComponent(uriParams['sid'])
+      + '&oauthVerifier=' + encodeURIComponent(uriParams['oauth_verifier'])
+      + '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']);
   } else {
     if (($(prefix+'_uid').value.length == 0) || ($(prefix+'_password').value.length == 0))
       return showError('Invalid User ID or Password');
@@ -316,6 +337,19 @@ function twitterAuthenticate(prefix) {
     document.location = data;
   }
   OAT.AJAX.POST ("/ods/api/twitterServer?hostUrl="+encodeURIComponent(thisPage), null, x);
+}
+
+function linkedinAuthenticate(prefix) {
+  var thisPage  = document.location.protocol +
+    '//' +
+    document.location.host +
+    document.location.pathname +
+    '?oid-mode=linkedin&oid-form=' + prefix;
+
+  var x = function (data) {
+    document.location = data;
+  }
+  OAT.AJAX.POST ("/ods/api/linkedinServer?hostUrl="+encodeURIComponent(thisPage), null, x);
 }
 
 function lfLoadFacebookData(cb) {

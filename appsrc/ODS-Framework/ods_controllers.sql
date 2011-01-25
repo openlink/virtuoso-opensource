@@ -1131,24 +1131,29 @@ create procedure ODS.ODS_API."server.getInfo" (
   }
   else if (info = 'regData')
   {
-    for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
+    for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_TWITTER, WS_REGISTER_LINKEDIN, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
     {
-      declare facebookEnable, twitterEnable integer;
+      declare facebookEnable, twitterEnable, linkedinEnable integer;
       declare facebookOptions any;
 
       facebookEnable := WS_REGISTER_FACEBOOK;
       if ((facebookEnable = 1) and (not DB.DBA._get_ods_fb_settings (facebookOptions)))
         facebookEnable := 0;
 
-      twitterEnable := 1;
+      twitterEnable := WS_REGISTER_TWITTER;
       if ((twitterEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'Twitter API')))
         twitterEnable := 0;
+
+      linkedinEnable := WS_REGISTER_LINKEDIN;
+      if ((linkedinEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'LinkedIn API')))
+        linkedinEnable := 0;
 
   	  retValue := vector (
   	                      'register', WS_REGISTER,
   	                      'openidEnable', WS_REGISTER_OPENID,
   	                      'facebookEnable', facebookEnable,
   	                      'twitterEnable', twitterEnable,
+  	                      'linkedinEnable', linkedinEnable,
   	                      'sslEnable', WS_REGISTER_SSL,
   	                      'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL
   	                     );
@@ -1244,6 +1249,15 @@ create procedure ODS.ODS_API."user.register" (
 
     "password" := uuid ();
 	}
+	else if (mode = 5)
+	{
+	  -- LinkedIn
+    xmlData := xml_tree_doc (data);
+    if (xpath_eval ('string(/person/first-name)', xmlData))
+      name := cast (xpath_eval ('string(/person/first-name)', xmlData) as varchar);
+
+    "password" := uuid ();
+	}
   if (name is null or length (name) < 1 or length (name) > 20)
     signal ('23023', 'Login name cannot be empty or longer then 20 chars');
 
@@ -1327,6 +1341,13 @@ create procedure ODS.ODS_API."user.register" (
     insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
       values (rc, 'P', 'Twitter', sprintf ('http://twitter.com/%U', name));
   }
+  else if (mode = 5)
+  {
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'    , xpath_eval ('string(/person/first-name)', xmlData));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'     , xpath_eval ('string(/person/last-name)', xmlData));
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
+      values (rc, 'P', 'LinkedIn', cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar));
+  }
 
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
@@ -1384,6 +1405,52 @@ create procedure ODS.ODS_API.twitterVerify (
 }
 ;
 
+create procedure ODS.ODS_API.linkedinServer (
+  in hostUrl varchar) __SOAP_HTTP 'text/plain'
+{
+  declare token, result, url, sid, oauth_token, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+  sid := md5 (datestring (now ()));
+  return_url := sprintf ('%s&sid=%U', hostUrl, sid);
+  url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+
+  OAUTH..set_session_data (sid, vector());
+  oauth_token := OAUTH..get_auth_token (sid);
+
+  return sprintf ('https://www.linkedin.com/uas/oauth/authenticate?oauth_token=%U', oauth_token);
+}
+;
+
+create procedure ODS.ODS_API.linkedinVerify (
+  in sid varchar,
+  in oauth_verifier varchar,
+  in oauth_token varchar) __SOAP_HTTP 'text/xml'
+{
+  declare tmp, header, auth any;
+  declare token, result, url, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+  url := OAUTH..sign_request (
+    'GET',
+    'https://api.linkedin.com/uas/oauth/accessToken',
+    sprintf ('oauth_token=%U&oauth_verifier=%U', oauth_token, oauth_verifier),
+    token,
+    sid,
+    1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+
+  url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,public-profile-url,date-of-birth)', '', token, sid, 1);
+  result := http_get (url);
+  OAUTH..session_terminate (sid);
+
+  return result;
+}
+;
+
 --! Authenticate ODS account using name & password hash
 --! Will estabilish a session in VSPX_SESSION table
 create procedure ODS.ODS_API."user.authenticate" (
@@ -1392,9 +1459,10 @@ create procedure ODS.ODS_API."user.authenticate" (
 	in facebookUID integer := null,
 	in openIdUrl varchar := null,
 	in openIdIdentity varchar := null,
-  in twitterSid varchar := null,
-  in twitterOAuthVerifier varchar := null,
-  in twitterOAuthToken varchar := null) __soap_http 'text/xml'
+  in oauthMode varchar := null,
+  in oauthSid varchar := null,
+  in oauthVerifier varchar := null,
+  in oauthToken varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare sid, tmp varchar;
@@ -1424,19 +1492,21 @@ create procedure ODS.ODS_API."user.authenticate" (
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     }
-  else if (not isnull (twitterSid))
+  else if (not isnull (oauthMode))
   {
-    declare tmp, url, token, result, screen_name any;
+    declare tmp, url, token, result, screen_name, profile_url any;
 
+    if (oauthMode = 'twitter')
+    {
     token := ODS.ODS_API.get_oauth_tok ('Twitter API');
     url := OAUTH..sign_request ('GET',
                                 'http://twitter.com/oauth/access_token',
-		                            sprintf ('oauth_token=%U&oauth_verifier=%U', twitterOAuthToken, twitterOAuthVerifier),
+  		                            sprintf ('oauth_token=%U&oauth_verifier=%U', oauthToken, oauthVerifier),
 		                            token,
-		                            twitterSid,
+  		                            oauthSid,
 		                            1);
     result := http_get (url);
-    OAUTH..parse_response (twitterSid, token, result);
+      OAUTH..parse_response (oauthSid, token, result);
     tmp := split_and_decode (result, 0);
     screen_name := get_keyword ('screen_name', tmp);
 
@@ -1445,6 +1515,29 @@ create procedure ODS.ODS_API."user.authenticate" (
                      DB.DBA.WA_USER_OL_ACCOUNTS
                where WUO_U_ID = U_ID
                  and WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
+  }
+    else if (oauthMode = 'linkedin')
+    {
+      token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+      url := OAUTH..sign_request ('GET',
+                                  'https://api.linkedin.com/uas/oauth/accessToken',
+  		                            sprintf ('oauth_token=%U&oauth_verifier=%U', oauthToken, oauthVerifier),
+  		                            token,
+  		                            oauthSid,
+  		                            1);
+      result := http_get (url);
+      OAUTH..parse_response (oauthSid, token, result);
+      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,public-profile-url,date-of-birth)', '', token, oauthSid, 1);
+      result := http_get (url);
+      profile_url := cast (xpath_eval ('/person/public-profile-url', xtree_doc (result)) as varchar);
+
+      uname := (select U_NAME
+                  from DB.DBA.SYS_USERS,
+                       DB.DBA.WA_USER_OL_ACCOUNTS
+                 where WUO_U_ID = U_ID
+                   and WUO_URL = profile_url);
+    }
+    OAUTH..session_terminate (oauthSid);
   }
   else
   {
@@ -5433,6 +5526,9 @@ grant execute on ODS.ODS_API."address.geoData" to ODS_API;
 
 grant execute on ODS.ODS_API."twitterServer" to ODS_API;
 grant execute on ODS.ODS_API."twitterVerify" to ODS_API;
+
+grant execute on ODS.ODS_API."linkedinServer" to ODS_API;
+grant execute on ODS.ODS_API."linkedinVerify" to ODS_API;
 
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;

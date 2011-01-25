@@ -86,7 +86,7 @@
  <br/>
   <div id="b" class="c1">
     <div class="tabs">
-      <v:url name="sec_url_0" value="Password Settings" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_0" value="Password" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="sec_url_3" value="Password recovery" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="sec_url_1" value="OpenID" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
     <vm:if test="not isnull (self.fb)">
@@ -100,14 +100,17 @@
        {
 	 declare svc_url varchar;
 	 svc_url := (select  top 1 WS_CERT_GEN_URL from DB.DBA.WA_SETTINGS);
-         if (length (svc_url)) {
-         for select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY from SYS_USERS, VSPX_SESSION, WA_USER_INFO
-      	 where VS_SID = self.sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID do
+
+          if (length (svc_url))
+          {
+            for (select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY
+                   from SYS_USERS, VSPX_SESSION, WA_USER_INFO
+                  where VS_SID = self.sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID) do
             {
             declare url, webid varchar;
+
             webid := sioc..person_iri (sioc..user_obj_iri (U_NAME));
-            url := sprintf ('%s?uri=%U&name=%U&email=%U&organization=%U',
-		svc_url, webid, coalesce (U_FULL_NAME, U_NAME), coalesce (U_E_MAIL, ''), coalesce (WAUI_BORG, ''));
+              url := sprintf ('%s?uri=%U&name=%U&email=%U&organization=%U', svc_url, webid, coalesce (U_FULL_NAME, U_NAME), coalesce (U_E_MAIL, ''), coalesce (WAUI_BORG, ''));
 
      ?>
  	  <a name="sec_url" href='<?vsp http (url); ?>' class="tabX">Certificate Generator</a>
@@ -116,7 +119,8 @@
 	   }
 	 }
 	 else
-	 { ?>
+        {
+      ?>
       <v:url name="sec_url_6" value="Certificate Generator" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=6')" xhtml_class="--case when self.tabNo = 6 then 'tabX activeTabX' else 'tabX' end"/>
       <?vsp
           }
@@ -128,12 +132,12 @@
   <v:form name="usr_pwd" type="simple" method="POST" action="uiedit_sec.vspx?page=3">
       <v:template name="sec_tmpl_0" type="simple" enabled="-- equ (self.tab_no, 0)">
 	  <input type="hidden" value="0" name="tabNo" /> 
-    <fieldset>
-			<legend><b>Password Settings</b></legend>
+          <h2>Change login password</h2>
+          <p class="fm_expln">For your security, please use a password not found in a dictionary, consisting of both letters, and numbers or non-alphanumeric characters.</p>
 			<table>
 	      <?vsp if (not self.no_pwd) { ?>
               <tr>
-                <th><label for="opwd1">Old password</label></th>
+                <th width="135px"><label for="opwd1">Old password</label></th>
                 <td>
                   <v:text xhtml_id="opwd1" name="opwd1" value="" type="password" error-glyph="*"/>
                 </td>
@@ -219,15 +223,15 @@
                 </td>
               </tr>
       </table>
-    </fieldset>
       </v:template>
       <v:template name="sec_tmpl_1" type="simple" enabled="-- equ (self.tab_no, 1)">
 	  <input type="hidden" value="1" name="tabNo" /> 
-    <fieldset>
-			<legend><b>OpenID</b></legend>
+          <br />
 			<table>
               <tr>
-                <th><label for="oid_url1">OpenID URL</label></th>
+              <th width="135px">
+                <label for="oid_url1">OpenID URL</label>
+              </th>
                 <td nowrap="nowrap">
             <v:text error-glyph="*" xhtml_id="oid_url1" name="oid_url1" value="--self.oid_urlv" xhtml_size="100" xhtml_class="_validate_ _uri_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
                   <div style="display:inline; color:red;"><v:error-summary match="oid_url1" /></div>
@@ -259,16 +263,16 @@
                 </td>
               </tr>
       </table>
-    </fieldset>
       </v:template>
     <vm:if test="not isnull (self.fb)">
       <v:template name="sec_tmpl_2" type="simple" enabled="-- equ (self.tab_no, 2)">
 	  <input type="hidden" value="2" name="tabNo" /> 
-      <fieldset>
-  			<legend><b>Facebook</b></legend>
+            <br />
   			<table>
         <tr>
-          <th><label>Saved Facebook ID</label></th>
+                <th width="135px">
+                  <label>Saved Facebook ID</label>
+                </th>
           <td nowrap="nowrap">
             <?vsp
               if (DB.DBA.is_empty_or_null (self.fbLoginID))
@@ -342,16 +346,17 @@
                 </td>
               </tr>
         </table>
-      </fieldset>
 </v:template>
     </vm:if>
       <v:template name="sec_tmpl_3" type="simple" enabled="-- equ (self.tab_no, 3)">
 	  <input type="hidden" value="3" name="tabNo" /> 
-    <fieldset>
-			<legend><b>Password Recovery</b></legend>
+          <h2>Password recovery questions</h2>
+          <p class="fm_expln">Manage password recovery procedure. Set verification question / answer.</p>
 			<table>
               <tr>
-                <th><label for="sec_question">Secret question</label></th>
+              <th width="135px">
+                <label for="sec_question">Secret question</label>
+              </th>
                 <td nowrap="nowrap">
                   <v:text error-glyph="*" name="sec_question" xhtml_id="sec_qst" value="--self.secretq">
                     <v:validator test="length" min="0" max="800" message="Security question cannot be longer then 800 chars" empty-allowed="1" name="vv_secq1"/>
@@ -404,15 +409,13 @@
                 </td>
               </tr>
       </table>
-    </fieldset>
   </v:template>
       <v:template name="sec_tmpl_4" type="simple" enabled="-- equ (self.tab_no, 4)">
 	  <input type="hidden" value="4" name="tabNo" /> 
-    <fieldset>
-			<legend><b>Applications restrictions</b></legend>
+          <h2>Applications restrictions</h2>
 			<table>
               <tr>
-                <th><label for="sioc_limit1">SIOC query result limit</label></th>
+              <th width="135px"><label for="sioc_limit1">SIOC query result limit</label></th>
                 <td nowrap="nowrap">
             <v:text error-glyph="*" xhtml_id="sioc_limit1" name="sioc_limit1" value="--self.sioc_limit" />
                   <div style="display:inline; color:red;"><v:error-summary match="sioc_limit" /></div>
@@ -446,9 +449,10 @@
                 </td>
               </tr>
       </table>
-    </fieldset>
   </v:template>
       <v:template name="sec_tmpl_5" type="simple" enabled="-- equ (self.tab_no, 5)">
+          <h2>User Certificates</h2>
+          <p>Manage certificates used for authentication.</p>
 	  <input type="hidden" value="5" name="tabNo" /> 
 	  <table class="listing">
 	      <tr class="listing_header_row">
@@ -461,7 +465,9 @@
 		  <?vsp 
 		  if (self.cert_del is not null)
 		    delete from WA_USER_CERTS where UC_ID = self.cert_del and UC_U_ID = self.u_id;
-		  for select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT, UC_TS from WA_USER_CERTS where UC_U_ID = self.u_id order by UC_TS desc do {
+
+              for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT, UC_TS from WA_USER_CERTS where UC_U_ID = self.u_id order by UC_TS desc) do
+              {
 		  ?>
 		  <tr>
 		      <td><?vsp http_value (get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), 'b'); ?></td>
@@ -478,8 +484,7 @@
 		  ?>
 	  </table>
 	  <br/>
-    <fieldset>
-			<legend><b>X.509 Certificate</b></legend>
+          <h3>X.509 Certificate</h3>
 			<table width="100%">
       <tr>
 	  <td colspan="2" align="left">
@@ -525,9 +530,11 @@
         <td colspan="2" class="ctrl">
           <span class="fm_ctl_btn">
               <v:button name="bt_cncl_6" value="Cancel" action="simple" >
-		  <v:on-post><![CDATA[
+                      <v:on-post>
+                        <![CDATA[
                     self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=5');
-		    ]]></v:on-post>
+                        ]]>
+                      </v:on-post>
             </v:button>
             <v:button name="bt_set2" value="Save Certificate" action="simple">
               <v:on-post>
@@ -551,7 +558,8 @@
 		      }
 		    else
 		      {
-		        update WA_USER_CERTS set UC_CERT = self.cert1.ufl_value, 
+                            update WA_USER_CERTS
+                               set UC_CERT = self.cert1.ufl_value,
 			 	UC_FINGERPRINT = get_certificate_info (6, self.cert1.ufl_value, 0, ''),
 				UC_LOGIN = self.cert_login.ufl_selected
 				where UC_U_ID = self.u_id and UC_ID = self.cert_edit ;
@@ -566,16 +574,13 @@
         </td>
       </tr>
     </table>
-    </fieldset>
   </v:template>
       <v:template name="sec_tmpl_6" type="simple" enabled="-- equ (self.tab_no, 6)">
 	  <input type="hidden" value="6" name="tabNo" />
-    <fieldset>
-	<legend><b>X.509 Certificate Parameters</b></legend>
+            <h3>X.509 Certificate Parameters</h3>
   	          <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="650" height="270" frameborder="0" scrolling="no">
   	            <p>Your browser does not support iframes.</p>
   	          </iframe>
-  </fieldset>
   </v:template>
       <v:template name="sec_tmpl_7" type="simple" enabled="-- equ (self.tab_no, 7)">
 	  <input type="hidden" value="7" name="tabNo" />
@@ -596,7 +601,8 @@
 		    }
 		  key_no := 0;
 		  sk := (select WAUI_SALMON_KEY from WA_USER_INFO where WAUI_U_ID = self.u_id);
-		  for select xenc_key, xenc_type from ods_user_keys (username) (xenc_key varchar, xenc_type varchar) x where username = self.u_name do {
+              for (select xenc_key, xenc_type from ods_user_keys (username) (xenc_key varchar, xenc_type varchar) x where username = self.u_name) do
+              {
 		  ?>
 		  <tr>
 		      <td>
@@ -622,65 +628,69 @@
 	  <br/>
             <span class="fm_ctl_btn">
               <v:button name="bt_def_1" value="Remove Default" action="simple" >
-		  <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 		      update WA_USER_INFO set WAUI_SALMON_KEY = null where WAUI_U_ID = self.u_id;
 		      self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=7');
-		    ]]></v:on-post>
+                ]]>
+              </v:on-post>
               </v:button>
               <v:button name="bt_def_2" value="Set Default" action="simple" >
-		  <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 		    declare k any;
+
 		    k := get_keyword ('defk', params, null);
 		      update WA_USER_INFO set WAUI_SALMON_KEY = k where WAUI_U_ID = self.u_id;
                     self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=7');
-		    ]]></v:on-post>
+                ]]>
+              </v:on-post>
 	    </v:button>
 	</span>
-	    <br/>
+          <br/><br/>
     <fieldset>
 			<legend><b>Private Key</b></legend>
-			<table width="100%">
+            <table>
         <tr>
-	      <td>
-		  <label>
+                <th width="135px">
 		Key Name
-	    </label>
-	      </td>
+                </th>
 	      <td align="left">
 		  <v:text name="kn" value="">
 		  </v:text>
   	      </td>
         </tr>
         <tr>
-	    <td colspan="2">
+                <td></td>
+                <td>
+                  <label>
 		<v:check-box name="inpsel" value="1" xhtml_id="inpsel" auto-submit="1">
-		    <v:after-data-bind><![CDATA[
+                      <v:after-data-bind>
+                        <![CDATA[
 			if (e.ve_is_post and e.ve_initiator is not null and e.ve_initiator.vc_name = control.vc_name)
 			  {
                             control.ufl_selected := atoi (get_keyword ('inpsel', e.ve_params, '0')); 
 			  }
-			]]></v:after-data-bind>
+                        ]]>
+                      </v:after-data-bind>
 		</v:check-box>
-		<label for="inpsel">
 		    Import key from local file
 		</label>
 	    </td>
 	</tr>
 	<v:template type="simple" condition="self.inpsel.ufl_selected">
         <tr>
-	      <td>
-		  <label>
+                  <th>
 		File to import	
-	    </label>
-	      </td>
+                  </th>
 	      <td align="left">
 		  <input type="file" name="k_value" value="Select Key"/>
   	      </td>
         </tr>
         <tr>
-	      <td>
-		  <label>File Password</label>
-	      </td>
+                  <th>
+                    File Password
+                  </th>
   	      <td align="left">
 		  <v:text name="k_pwd" type="password" value="" /><br/>
 	      </td>
@@ -688,11 +698,9 @@
       </v:template>
 	<v:template type="simple" condition="not self.inpsel.ufl_selected">
         <tr>
-	      <td>
-		  <label>
+                  <th>
 		Key Type
-	    </label>
-	      </td>
+                  </th>
   	      <td align="left">
 		  <v:select-list name="kt">
 		      <v:item name="RSA" value="RSA"/>
@@ -701,11 +709,9 @@
   	      </td>
         </tr>
         <tr>
-	      <td>
-		  <label>
+                  <th>
 		Key Length
-	    </label>
-	      </td>
+                  </th>
   	      <td align="left">
 		  <v:select-list name="kl">
 		      <v:item name="512" value="512"/>
@@ -719,9 +725,11 @@
           <td colspan="2" class="ctrl">
             <span class="fm_ctl_btn">
               <v:button name="bt_cncl_7" value="Cancel" action="simple" >
-		  <v:on-post><![CDATA[
+                      <v:on-post>
+                        <![CDATA[
                     self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=7');
-		    ]]></v:on-post>
+                        ]]>
+                      </v:on-post>
               </v:button>
               <v:button name="bt_gen7" value="Generate Key" action="simple" enabled="--equ (self.inpsel.ufl_selected, 0)">
                 <v:on-post>
@@ -746,7 +754,6 @@
 		    declare kl int;
                     
 		    kl := atoi (self.kl.ufl_value);
---		    dbg_obj_print (self.kt.ufl_value, kl, self.kn.ufl_value);
 		    set_user_id (self.u_name); 
 		    set_qualifier ('DB');
 		    if (self.kt.ufl_value = 'RSA')

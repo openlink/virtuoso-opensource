@@ -875,7 +875,7 @@
                   }
                 ?>
                 <div class="header">
-                  Identify Yourself
+                  Please identify yourself
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="Digest">Digest</li>
@@ -883,6 +883,7 @@
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
+                  <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content"></div>
@@ -949,6 +950,19 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="lf_page_5" class="tabContent" style="display: none;">
+                    <table id="lf_table_5" class="form" cellspacing="5">
+                      <tr>
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <span id="lf_linkedin" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="lf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
@@ -970,6 +984,7 @@
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
+                  <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
@@ -1048,6 +1063,19 @@
                           <span id="rf_twitter" style="min-height: 20px;"></span>
                           <br />
                           <img id="rf_twitterButton" src="/ods/images/sign-in-with-twitter-d.png" border="0"/></a>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_5" class="tabContent" style="display: none;">
+                    <table id="rf_table_5" class="form" cellspacing="5">
+                      <tr>
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <span id="rf_linkedin" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="rf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
                         </td>
                       </tr>
                     </table>
@@ -1179,7 +1207,7 @@
                           <select name="pf_title" id="pf_title">
                                 <option></option>
                             <?php
-                              $X = array ("Mr", "Mrs", "Dr", "Ms");
+                                  $X = array ("Mr", "Mrs", "Dr", "Ms". "Sir");
                               for ($N = 0; $N < count ($X); $N += 1)
                                 print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->title) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
                             ?>
@@ -1681,7 +1709,7 @@
                               <input type="text" name="pf_homelng" value="<?php print($_xml->homeLongitude); ?>" id="pf_homelng" style="width: 110px;" />
                               <label>
                                 <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                                Default Map Location
+                                Use as default map location
                               </label>
                         </td>
                       </tr>
@@ -3024,7 +3052,7 @@
                               <input type="text" name="pf_businesslng" value="<?php print($_xml->businessLongitude); ?>" id="pf_businesslng" style="width: 110px;" />
                               <label>
                                 <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
-                                Default Map Location
+                                Use as default map location
                               </label>
                         </td>
                       </tr>
@@ -3222,7 +3250,7 @@
                   ?>
                   <div id="pf_page_2" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_2" class="tabs">
-                      <li id="pf_tab_2_0" title="Password Settings">Password Settings</li>
+                      <li id="pf_tab_2_0" title="Password">Password</li>
                       <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
                       <li id="pf_tab_2_2" title="OpenID">OpenID</li>
                       <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
@@ -3239,6 +3267,8 @@
                         <?php
                           print $_xml->noPassword;
                         ?>
+                        <h2>Change login password</h2>
+                        <p class="fm_expln">For your security, please use a password not found in a dictionary, consisting of both letters, and numbers or non-alphanumeric characters.</p>
                     <table class="form" cellspacing="5">
                       <tr>
                         <td align="center" colspan="2">
@@ -3288,6 +3318,8 @@
                       {
                       ?>
                       <div id="pf_page_2_1" class="tabContent" style="display:none;">
+                        <h2>Password recovery questions</h2>
+                        <p class="fm_expln">Manage password recovery procedure. Set verification question / answer.</p>
                         <table class="form" cellspacing="5">
                       <tr>
                         <th>
