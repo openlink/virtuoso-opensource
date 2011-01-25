@@ -258,7 +258,7 @@
                               {
                                 for (n := 0; n < length(topics); n := n + 1)
                                 {
-                              msg := msg || (sprintf ('<br /><a href="%s">%s</a>', WV.WIKI.READONLYWIKIWORDHREF2 (self.topic.ti_cluster_name, topics[n], self.sid, self.realm,'',''), topics[n]));
+                                  msg := msg || (sprintf ('<br /><a href="%s">%s</a>', WV.WIKI.READONLYWIKIWORDHREF2 (self.topic.ti_cluster_name, topics[n], self.sid, self.realm), topics[n]));
                             }
                           }
                           self.set_message (e, msg);
