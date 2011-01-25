@@ -109,14 +109,16 @@ start_python_interpreter (char *err, int max_len)
 
   PyEval_AcquireLock();
   tstate = Py_NewInterpreter ();
-  define_virtuoso_module (tstate->interp);
 
   if (!tstate)
     {
-      SET_ERR ("Unable to start the Python interpretter");
+      SET_ERR ("Unable to start the Python interpreter");
     }
-  else
-    interp = tstate->interp;
+
+  interp = tstate->interp;
+
+  define_virtuoso_module (interp);
+
   PyThreadState_Clear (tstate);
   PyEval_ReleaseThread(tstate);
   PyThreadState_Delete (tstate);
@@ -131,7 +133,7 @@ init_python_thread (PyInterpreterState *istate, char *err, int max_len)
 
   if (!tstate)
     {
-      SET_ERR ("Unbale to make a thread state");
+      SET_ERR ("Unable to make a thread state");
       return NULL;
     }
   PyEval_AcquireThread(tstate);
