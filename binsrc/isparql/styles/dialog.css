@@ -96,9 +96,10 @@ div.btn_row {
 
 /* preferences dialog */
 
-#prefs_dlg { margin: 0 } 
+#prefs_dlg { margin: 5px } 
 
 #prefs_dlg label {
+  font-weight: bold;
   display: block;
   float: left;
   clear: left;
@@ -108,13 +109,28 @@ div.btn_row {
 #prefs_dlg label.ckb { 
   clear: none;
   width: auto;
+  margin-right: 5px;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 
-#profs_dlg div.expln {
-  margin-left: 150px;
+div.prefs_tab_ctr {
+  margin-bottom: 2ex;
 }
 
 #shortener { margin-top: 10px; vertical-align: middle;}
+
+#shortener label span.expln {
+  font-size: smaller;
+  font-weight: normal;
+}
+
+div.dialog_btnbar {
+  width: 100%;
+  margin-top: 1ex;
+  padding-top: 1ex;
+  border-top: 1px solid #666;
+}
 
 #shortener_ep { width: 150px }
 
