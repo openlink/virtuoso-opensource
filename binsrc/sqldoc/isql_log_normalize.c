@@ -217,7 +217,7 @@ void cut_substitute_all (cut_env_t *env, cut_buf_t *tgt, cut_buf_t *src)
       if (
 	(hit1 = strstr (srcline, "Connected to OpenLink Virtuoso VDBMS")) )
 	{
-	  tgtline = malloc (strlen (srcline));
+	  tgtline = malloc (strlen (srcline)+1);
 	  strcpy (tgtline, srcline);
 	  strcpy (tgtline + (hit1 - srcline), hit1 + strlen ("Connected to OpenLink Virtuoso VDBMS"));
 	  srcline = tgtline;
@@ -227,7 +227,7 @@ void cut_substitute_all (cut_env_t *env, cut_buf_t *tgt, cut_buf_t *src)
 	(hit2 = strstr (hit1, " OpenLink Virtuoso ODBC Driver")) &&
 	stralphabet (hit1 + strlen ("Driver: "), hit2, "0123456789.") )
 	{
-	  tgtline = malloc (strlen (srcline));
+	  tgtline = malloc (strlen (srcline)+1);
 	  strcpy (tgtline, srcline);
 	  strcpy (tgtline + (hit1 - srcline), hit2 + strlen (" OpenLink Virtuoso ODBC Driver"));
 	  srcline = tgtline;
