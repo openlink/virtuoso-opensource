@@ -81,6 +81,7 @@ gr:name owl:equivalentProperty foaf:name .
 <http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
 dv:photo owl:equivalentProperty foaf:depiction .
 dv:instructions owl:equivalentProperty dc:description .
+dv:name rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -1154,6 +1155,8 @@ create procedure rdfdesc_links_hdr (in subj any, in desc_link any)
 create procedure rdfdesc_links_mup (in subj any, in desc_link any)
 {
   declare links varchar;
+  if (desc_link = 0)
+    return;
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := '';
   links := links || repeat (' ', 5) ||
