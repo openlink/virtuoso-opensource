@@ -103,7 +103,9 @@ ENEWS.WA.exec_no_error('
 
     if ((O.EF_UPDATE_PERIOD <> N.EF_UPDATE_PERIOD) or (O.EF_UPDATE_FREQ <> N.EF_UPDATE_FREQ))
       ENEWS.WA.channel_trigger (N.EF_ID, N.EF_UPDATE_PERIOD, N.EF_UPDATE_FREQ);
-    if ((isnull(O.EF_LAST_UPDATE) and not isnull(N.EF_LAST_UPDATE)) or (O.EF_LAST_UPDATE <> N.EF_LAST_UPDATE)) {
+
+    if ((isnull(O.EF_LAST_UPDATE) and not isnull(N.EF_LAST_UPDATE)) or (O.EF_LAST_UPDATE <> N.EF_LAST_UPDATE))
+    {
       id := N.EF_ID;
       for (select EFD_DOMAIN_ID from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = id) do {
         ENEWS.WA.domain_ping (EFD_DOMAIN_ID);
@@ -387,6 +389,8 @@ ENEWS.WA.exec_no_error('
   	EFD_FEED_ID integer not null,
     EFD_TITLE varchar,
     EFD_TAGS varchar,
+    EFD_GRAPH varchar,
+    EFD_FAVOURITE integer,
   	EFD_FOLDER_ID integer,
     EFD_ACL long varchar,
 
@@ -400,6 +404,10 @@ ENEWS.WA.exec_no_error('
 
 ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED_DOMAIN add EFD_FAVOURITE integer', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_FAVOURITE'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED_DOMAIN add EFD_GRAPH varchar', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_GRAPH'
 );
 
 ENEWS.WA.exec_no_error (

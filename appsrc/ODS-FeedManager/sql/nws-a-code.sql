@@ -1511,10 +1511,17 @@ _start:
   item_tags := case when isnull (tags) then ENEWS.WA.tags_item (item_id) else tags end;
 
   -- domain tags
-  for (select EFD_DOMAIN_ID, EFD_TAGS from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id) do
+  for (select EFD_DOMAIN_ID, EFD_GRAPH, EFD_TAGS from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id) do
   {
+    -- schedule RDF Graph
+    if (not is_empty_or_null (EFD_GRAPH) and not is_empty_or_null (link) and __proc_exists ('DB.DBA.RDF_SPONGER_QUEUE_ADD'))
+      DB.DBA.RDF_SPONGER_QUEUE_ADD (link, vector ('get:soft', 'soft', 'get:destination', EFD_GRAPH));
+
+    -- update NNTP
     if (ENEWS.WA.conversation_enable(EFD_DOMAIN_ID))
       ENEWS.WA.nntp_root (EFD_DOMAIN_ID, item_id);
+
+    -- updates tags
     ENEWS.WA.tags_domain_item2 (EFD_DOMAIN_ID, item_id, ENEWS.WA.tags_join(EFD_TAGS, item_tags));
   }
 }
@@ -2295,7 +2302,8 @@ create procedure ENEWS.WA.channel_domain(
   in title any,
   in tags any,
   in folder_name any,
-  in folder_id any)
+  in folder_id any,
+  in graph any := null)
 {
   folder_name := trim(folder_name);
   if (folder_name <> '')
@@ -2310,13 +2318,14 @@ create procedure ENEWS.WA.channel_domain(
     id := coalesce((select EFD_ID from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = feed_id and coalesce(EFD_FOLDER_ID, 0) = coalesce(folder_id, 0)), -1);
   if (id = -1)
   {
-    insert replacing ENEWS.WA.FEED_DOMAIN (EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EFD_TAGS, EFD_FOLDER_ID)
-      values (domain_id, feed_id, title, tags, folder_id);
+    insert replacing ENEWS.WA.FEED_DOMAIN (EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EFD_GRAPH, EFD_TAGS, EFD_FOLDER_ID)
+      values (domain_id, feed_id, title, graph, tags, folder_id);
     id := (select max (EFD_ID) from ENEWS.WA.FEED_DOMAIN);
     ENEWS.WA.channel_reindex(feed_id);
   } else {
     update ENEWS.WA.FEED_DOMAIN
        set EFD_TITLE = title,
+           EFD_GRAPH = graph,
            EFD_TAGS = tags,
            EFD_FOLDER_ID = folder_id
      where EFD_ID = id;
