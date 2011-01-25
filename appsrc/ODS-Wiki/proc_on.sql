@@ -1324,60 +1324,38 @@ create function WV.WIKI.READONLYWIKIWORDLINK (
 }
 ;
 
-create function WV.WIKI.READONLYWIKIWORDHREF (
-  inout _default_cluster varchar, 
-  inout _href varchar,
-  in _sid varchar,
-  in _realm varchar,
-  in _base_adjust varchar,
-  in _params any
-) returns varchar
-{ -- Converts dirty WikiLink into path of form Cluster/LocalName
-  declare _topic WV.WIKI.TOPICINFO;
-  _topic := WV.WIKI.TOPICINFO ();
-  _topic.ti_raw_name := _href;
-  _topic.ti_default_cluster := _default_cluster;
-  _topic.ti_parse_raw_name ();
-  declare url_params varchar;
-  if (isstring(_params))  
-    url_params :=  WV.WIKI.URL_PARAMS (_params); --WV.WIKI.COLLECT_PAIRS (_params)); --, WV.WIKI.COLLECT_PAIRS (WV.WIKI.PAIR ('sid', _sid), WV.WIKI.PAIR('realm', _realm))));
-  if (url_params <> '')
-    return sprintf ('%s%U/%U?%s', _base_adjust, _topic.ti_cluster_name, _topic.ti_local_name, url_params);
-  return sprintf ('%s%U/%U', _base_adjust, _topic.ti_cluster_name, _topic.ti_local_name);
-}
-;
-
 create function WV.WIKI.READONLYWIKIWORDHREF2 (
   inout _cluster_name varchar,
   inout _topic_name varchar,
   in _sid varchar,
   in _realm varchar,
-  in _base_adjust varchar,
-  in _params any
+  in _params any := ''
 ) returns varchar
 {
   declare url_params varchar;
-  if (isstring(_params)) {
+
+  if (isstring (_params))
     url_params :=  WV.WIKI.URL_PARAMS (_params);
-  }
-  if (url_params = '') {
+
+  if (url_params = '')
+  {
     if (isstring(_sid) and _sid <> '')
       url_params := 'sid=' || _sid;
     if (isstring(_realm) and _realm <> '')
-      if (url_params <> '') {
+      if (url_params <> '')
+      {
         url_params := url_params || '&realm=' || _realm;
       } else {
       url_params := 'realm=' || _realm;
     }
   }
---  if (url_params <> '')
---    return sprintf ('%s/%s?%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name, url_params);
---  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
   if (url_params <> '')
     return sprintf ('%s%s?%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name, url_params);
+
   return sprintf ('%s%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
 
-};
+}
+;
 
 create function WV.WIKI.READONLYWIKIIRI (
   in _cluster_name varchar,
@@ -1547,10 +1525,7 @@ in user_id integer)
 }
 ;
 
-
 grant execute on WV.WIKI.READONLYWIKIWORDLINK to public
-;
-grant execute on WV.WIKI.READONLYWIKIWORDHREF to public
 ;
 grant execute on WV.WIKI.READONLYWIKIWORDHREF2 to public
 ;
@@ -1562,8 +1537,6 @@ grant execute on WV.WIKI.wiki_cluster_uri to public
 ;
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink', 'WV.WIKI.READONLYWIKIWORDLINK')
-;
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF', 'WV.WIKI.READONLYWIKIWORDHREF')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF2', 'WV.WIKI.READONLYWIKIWORDHREF2')
 ;
