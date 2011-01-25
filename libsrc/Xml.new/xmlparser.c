@@ -278,10 +278,10 @@ VXmlParserDestroy (vxml_parser_t * parser)
       parser->eptr.buf = old->prev;
       if (NULL != old->data_begin)
 	dk_free (old->data_begin, -1);
-      dk_free (old, sizeof (brick_t));
 #ifdef UNIT_DEBUG
       printf ("Releasing a buffer element. %x\n", old);
 #endif
+      dk_free (old, sizeof (brick_t));
     }
 
   if (parser->feed_buf)
