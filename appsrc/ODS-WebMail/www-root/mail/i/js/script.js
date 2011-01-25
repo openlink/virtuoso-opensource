@@ -451,8 +451,37 @@ function davBrowse (fld)
   OAT.WebDav.open(options);
 }
 
-var OMAIL = new Object();
+function accountChange (obj)
+{
+  if (obj.name == 'type') {
+    if (obj.value == 'pop3') {
+      $('connect_type').value = 'none';
+      $('port').value = '110';
+      $('folder_id').value = '100';
 
+      $('connect_type').disabled = false;
+      $('folder_id').disabled = false;
+    }
+    if (obj.value == 'imap') {
+      $('connect_type').value = 'none';
+      $('port').value = '143';
+      $('folder_id').value = '0';
+
+      $('connect_type').disabled = true;
+      $('folder_id').disabled = true;
+    }
+  }
+  if (obj.name == 'connect_type') {
+    if (obj.value == 'ssl') {
+      $('port').value = '995';
+    }
+    if (obj.value == 'none') {
+      $('port').value = '110';
+    }
+  }
+}
+
+var OMAIL = new Object();
 OMAIL.forms = new Object();
 
 OMAIL.trim = function (sString, sChar)

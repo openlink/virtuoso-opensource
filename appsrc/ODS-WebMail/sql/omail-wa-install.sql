@@ -113,6 +113,7 @@ create procedure OMAIL.WA.omail_install()
                ses_vars   => 1
               );
 
+  if ((select count(*) from DB.DBA.WA_DOMAINS) = 0)
   insert replacing DB.DBA.WA_DOMAINS(WD_DOMAIN) values('domain.com');
 }
 ;

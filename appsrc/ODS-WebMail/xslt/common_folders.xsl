@@ -209,12 +209,49 @@
     <xsl:param name="scope" select="'N'" />
     <xsl:param name="selectID" select="-1" />
     <xsl:param name="skipID" select="-1" />
+    <xsl:param name="disabled">-1</xsl:param>
     <xsl:param name="style" />
     <select>
       <xsl:attribute name="name"><xsl:value-of select="$ID"/></xsl:attribute>
       <xsl:attribute name="id"><xsl:value-of select="$ID"/></xsl:attribute>
       <xsl:if test="$style">
         <xsl:attribute name="style"><xsl:value-of select="$style" /></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$disabled != -1">
+        <xsl:attribute name="disabled"><xsl:value-of select="$disabled" /></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$startOption != ''">
+        <option value="0"><xsl:value-of select="$startOption"/></option>
+      </xsl:if>
+      <xsl:apply-templates select="folder" mode="combo">
+        <xsl:with-param name="path" select="$path" />
+        <xsl:with-param name="showPath" select="$showPath" />
+        <xsl:with-param name="scope" select="$scope" />
+        <xsl:with-param name="selectID" select="$selectID" />
+        <xsl:with-param name="skipID" select="$skipID" />
+      </xsl:apply-templates>
+    </select>
+  </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template match="foldersCombo" mode="combo">
+    <xsl:param name="ID" select="'fid'" />
+    <xsl:param name="path" />
+    <xsl:param name="showPath" select="0" />
+    <xsl:param name="startOption" select="''" />
+    <xsl:param name="scope" select="'N'" />
+    <xsl:param name="selectID" select="-1" />
+    <xsl:param name="skipID" select="-1" />
+    <xsl:param name="disabled">-1</xsl:param>
+    <xsl:param name="style" />
+    <select>
+      <xsl:attribute name="name"><xsl:value-of select="$ID"/></xsl:attribute>
+      <xsl:attribute name="id"><xsl:value-of select="$ID"/></xsl:attribute>
+      <xsl:if test="$style">
+        <xsl:attribute name="style"><xsl:value-of select="$style" /></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$disabled != -1">
+        <xsl:attribute name="disabled"><xsl:value-of select="$disabled" /></xsl:attribute>
       </xsl:if>
       <xsl:if test="$startOption != ''">
         <option value="0"><xsl:value-of select="$startOption"/></option>

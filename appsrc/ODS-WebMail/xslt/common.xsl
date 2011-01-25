@@ -99,7 +99,7 @@
                     <xsl:call-template name="make_href">
                         <xsl:with-param name="params" />
                       <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-                      <xsl:with-param name="label">External POP3 Accounts</xsl:with-param>
+                        <xsl:with-param name="label">External Accounts</xsl:with-param>
                     </xsl:call-template>
                   </li>
                 </ul>

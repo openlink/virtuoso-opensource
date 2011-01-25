@@ -604,7 +604,7 @@
           <tr>
             <th class="left">
               <label for="fid">Move to folder</label>
-              <xsl:apply-templates select="folders" mode="combo"/>
+              <xsl:apply-templates select="foldersCombo" mode="combo" />
               <xsl:call-template name="make_href">
                 <xsl:with-param name="url">javascript: formSubmit('fa_move.x', '1'); </xsl:with-param>
                 <xsl:with-param name="title">Move</xsl:with-param>
