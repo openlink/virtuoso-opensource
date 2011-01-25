@@ -414,7 +414,7 @@
           <tr>
             <td>
               <xsl:call-template name="nbsp"/>Move selected to
-              <xsl:apply-templates select="folders" mode="combo" />
+              <xsl:apply-templates select="foldersCombo" mode="combo" />
               <xsl:call-template name="make_href">
                 <xsl:with-param name="url">javascript: if (anySelected(document.f1, 'ch_msg', 'No messages were selected to be moved.')) formSubmit('fa_move.x', '1'); </xsl:with-param>
                 <xsl:with-param name="title">Move</xsl:with-param>

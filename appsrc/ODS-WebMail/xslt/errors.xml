@@ -103,7 +103,7 @@
   </error>
   <error id="1902">
     <title>Bad recipient(s) e-mail address specified</title>
-    <descr>You typed an invalid email address in one of the address fields (TO, CC or BCC).  The format for email address is </descr>
+    <descr>You typed an invalid email address in one of the address fields (TO, CC or BCC).</descr>
     <decision>Please, go <back page="write.vsp" p="wp"/>, check or correct the email address in one of the address fields and re-send..</decision>
     <button page="write.vsp" p="wp"/>
   </error>

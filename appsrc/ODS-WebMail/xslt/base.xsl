@@ -291,6 +291,7 @@
   <!-- ========================================================================== -->
   <xsl:template name="make_select">
     <xsl:param name="name"/>
+    <xsl:param name="id" />
     <xsl:param name="selected"/>
     <xsl:param name="selected_def"/>
     <xsl:param name="list"/>
@@ -317,6 +318,9 @@
       <xsl:attribute name="size"><xsl:value-of select="$size"/></xsl:attribute>
 
       <!-- process conditional attributes -->
+      <xsl:if test="$id">
+        <xsl:attribute name="id"><xsl:value-of select="$id" /></xsl:attribute>
+      </xsl:if>
       <xsl:if test="$class">
         <xsl:attribute name="class"><xsl:value-of select="$class"/></xsl:attribute>
       </xsl:if>

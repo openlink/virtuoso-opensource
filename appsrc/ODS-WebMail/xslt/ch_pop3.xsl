@@ -32,18 +32,26 @@
       <xsl:attribute name="action"><xsl:value-of select="$iri" />/ch_pop3.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:apply-templates select="accounts"/>
-      <xsl:apply-templates select="account"/>
+      <xsl:apply-templates select="account" mode="update"/>
     </form>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="accounts">
   	<div>
 	    <xsl:call-template name="make_href">
 	      <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
 	      <xsl:with-param name="params">cp=-1</xsl:with-param>
-	      <xsl:with-param name="label">Create POP3 Account</xsl:with-param>
+	      <xsl:with-param name="label">Create Account</xsl:with-param>
 	      <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
-	      <xsl:with-param name="img_label"> Create POP3 Account</xsl:with-param>
+	      <xsl:with-param name="img_label"> Create Account</xsl:with-param>
+	      <xsl:with-param name="class">button2</xsl:with-param>
+	    </xsl:call-template>
+	    <xsl:call-template name="make_href">
+        <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
+        <xsl:with-param name="label">Check All</xsl:with-param>
+        <xsl:with-param name="title">Check all external mail accounts now</xsl:with-param>
+        <xsl:with-param name="params">cp=<xsl:value-of select="id"/>,2</xsl:with-param>
 	      <xsl:with-param name="class">button2</xsl:with-param>
 	    </xsl:call-template>
 	  </div>
@@ -51,58 +59,58 @@
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="content">
       <thead>
         <tr>
-          <th>Accounts</th>
+          <th>Account</th>
           <th>Options</th>
           <th width="10%">Action</th>
         </tr>
       </thead>
-      <xsl:apply-templates select="acc"/>
+      <xsl:apply-templates select="account" mode="list"/>
       <xsl:call-template name="empty_row">
-        <xsl:with-param name="count" select="count(acc)"/>
+        <xsl:with-param name="count" select="count(account)"/>
         <xsl:with-param name="colspan" select="3"/>
             </xsl:call-template>
     </table>
   </xsl:template>
 
   <!-- ====================================================================================== -->
-  <xsl:template match="acc">
+  <xsl:template match="account" mode="list">
     <tr class="msgRow">
       <td>
-        <b><xsl:value-of select="acc_name"/></b>
+        <b><xsl:value-of select="name"/></b>
       </td>
       <td>
         Checked <xsl:call-template name="intervals"/>
-        <xsl:if test="string(last_check) != ''">
-          <font size="-2">(last check <xsl:apply-templates select="last_check"/>
+        <xsl:if test="string(check_date) != ''">
+          <font size="-2">(last check <xsl:apply-templates select="check_date"/>
             <xsl:call-template name="nbsp"/>
             <xsl:call-template name="nbsp"/>
             <xsl:choose>
-              <xsl:when test="ch_error = 0">
+              <xsl:when test="check_error = 0">
                 <font color="#208D2A">successful</font>
               </xsl:when>
-              <xsl:when test="ch_error = 1">
+              <xsl:when test="check_error = 1">
                 <a href="javascript:alert('Click \'Edit\' and check you server name.');">
                   <font size="-2" color="#ff0000">error - bad server name</font>
                 </a>
               </xsl:when>
-              <xsl:when test="ch_error = 2">
+              <xsl:when test="check_error = 2">
                 <a href="javascript:alert('Click \'Edit\' and check you user name and password.');">
                   <font size="-2" color="#ff0000">error - bad user name or pass</font>
                 </a>
               </xsl:when>
-              <xsl:when test="ch_error = 3">
-                <a href="javascript:alert('Our server cannot connect to POP3 server. Click \'Edit\' and check server settings or contact your network administrator.');">
-                  <font size="-2" color="#ff0000">error - can't connect to POP3 server</font>
+              <xsl:when test="check_error = 3">
+                <a href="javascript:alert('Our server cannot connect to mail server. Click \'Edit\' and check server settings or contact your network administrator.');">
+                  <font size="-2" color="#ff0000">error - can't connect to mail server</font>
                 </a>
               </xsl:when>
               <xsl:otherwise>
-                <font color="#ff0000">error:<xsl:value-of select="ch_error"/>
+                <font color="#ff0000">error:<xsl:value-of select="check_error"/>
                 </font>
               </xsl:otherwise>
             </xsl:choose>
   	      )</font>
         </xsl:if>
-        <xsl:if test="acc_id = /page/ch_acc_id">
+        <xsl:if test="id = /page/ch_acc_id">
           <a>
             <xsl:attribute name="href">box.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;bp=<xsl:value-of select="folder_id"/></xsl:attribute>
             <font color="#FF0000">
@@ -117,16 +125,16 @@
       <td nowrap="nowrap">
         <xsl:call-template name="make_href">
           <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-          <xsl:with-param name="label">Check Now</xsl:with-param>
-          <xsl:with-param name="title">Check pop3 account now</xsl:with-param>
-          <xsl:with-param name="params">cp=<xsl:value-of select="acc_id"/>,1</xsl:with-param>
+          <xsl:with-param name="label">Check</xsl:with-param>
+          <xsl:with-param name="title">Check mail account now</xsl:with-param>
+          <xsl:with-param name="params">cp=<xsl:value-of select="id"/>,1</xsl:with-param>
           <xsl:with-param name="class">button2</xsl:with-param>
         </xsl:call-template>
         <xsl:call-template name="nbsp"/>
         <xsl:call-template name="make_href">
           <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-          <xsl:with-param name="params">cp=<xsl:value-of select="acc_id"/></xsl:with-param>
-          <xsl:with-param name="label">Edit POP3 Account</xsl:with-param>
+          <xsl:with-param name="params">cp=<xsl:value-of select="id"/></xsl:with-param>
+          <xsl:with-param name="label">Edit Account</xsl:with-param>
           <xsl:with-param name="img">/oMail/i/edit_16.png</xsl:with-param>
           <xsl:with-param name="img_label"> Edit</xsl:with-param>
           <xsl:with-param name="class">button2</xsl:with-param>
@@ -134,9 +142,9 @@
         <xsl:call-template name="nbsp"/>
         <xsl:call-template name="make_href">
           <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-          <xsl:with-param name="params">cp=<xsl:value-of select="acc_id"/>,3</xsl:with-param>
+          <xsl:with-param name="params">cp=<xsl:value-of select="id"/>,3</xsl:with-param>
           <xsl:with-param name="onclick">javascript: return confirm('Are you sure you want to delete this account?');</xsl:with-param>
-          <xsl:with-param name="label">Delete POP3 Account</xsl:with-param>
+          <xsl:with-param name="label">Delete Account</xsl:with-param>
           <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
           <xsl:with-param name="img_label"> Delete</xsl:with-param>
           <xsl:with-param name="class">button2</xsl:with-param>
@@ -147,7 +155,7 @@
   <!-- ====================================================================================== -->
   <xsl:template name="intervals">
     <xsl:choose>
-      <xsl:when test="intervals = 1">
+      <xsl:when test="check_interval = 1">
         daily
       </xsl:when>
       <xsl:otherwise>
@@ -164,48 +172,30 @@
   </xsl:template>
 
   <!-- ====================================================================================== -->
-  <xsl:template match="account">
+  <xsl:template match="account" mode="update">
     <table width="650" cellpadding="0" cellspacing="0" class="content">
-      <colgroup>
-        <col class="w160"/>
-        <col/>
-        <col/>
-      </colgroup>
       <caption>
-        <span>Manage your external mail box</span>
+        <span>
+          <xsl:choose>
+            <xsl:when test="id > 0">
+              Update external mail account
+            </xsl:when>
+            <xsl:otherwise>
+              Create external mail account
+            </xsl:otherwise>
+          </xsl:choose>
+        </span>
       </caption>
-      <xsl:apply-templates select="acc_edit"/>
-      <tfoot>
         <tr>
-          <th colspan="3">
-            <xsl:call-template name="make_submit">
-              <xsl:with-param name="name">fa_save</xsl:with-param>
-              <xsl:with-param name="value">Save</xsl:with-param>
-              <xsl:with-param name="alt">Save</xsl:with-param>
-            </xsl:call-template>
-            <xsl:call-template name="make_submit">
-              <xsl:with-param name="name">fa_cancel</xsl:with-param>
-              <xsl:with-param name="value">Cancel</xsl:with-param>
-              <xsl:with-param name="alt">Cancel</xsl:with-param>
-            </xsl:call-template>
-          </th>
-        </tr>
-      </tfoot>
-    </table>
-  </xsl:template>
-
-  <!-- ====================================================================================== -->
-  <xsl:template match="acc_edit">
-    <tr>
-      <th>
-        <label for="acc">Name</label>
+        <th width="25%">
+          <label for="name">Name</label>
       </th>
       <td>
-        <input type="hidden" name="acc_id">
-          <xsl:attribute name="value"><xsl:value-of select="acc_id"/></xsl:attribute>
+          <input type="hidden" name="id">
+            <xsl:attribute name="value"><xsl:value-of select="id"/></xsl:attribute>
         </input>
-        <input type="text" name="acc_name" id="acc" style="width: 300px;">
-          <xsl:attribute name="value"><xsl:value-of select="acc_name"/></xsl:attribute>
+          <input type="text" name="name" id="name" style="width: 300px;">
+            <xsl:attribute name="value"><xsl:value-of select="name"/></xsl:attribute>
         </input>
       </td>
       <td>
@@ -218,20 +208,49 @@
       </th>
       <td colspan="2">
         <xsl:call-template name="make_select">
-          <xsl:with-param name="name">pop_type</xsl:with-param>
-          <xsl:with-param name="selected"><xsl:value-of select="pop_type"/></xsl:with-param>
+            <xsl:with-param name="name">type</xsl:with-param>
+            <xsl:with-param name="id">type</xsl:with-param>
+            <xsl:with-param name="selected"><xsl:value-of select="type"/></xsl:with-param>
+            <xsl:with-param name="list">pop3:POP3;imap:IMAP;</xsl:with-param>
+            <xsl:with-param name="style">width: 100px;</xsl:with-param>
+            <xsl:with-param name="onchange">javascript: accountChange(this);</xsl:with-param>
+            <xsl:with-param name="disabled">
+              <xsl:choose>
+                <xsl:when test="type = 'imap'">1</xsl:when>
+                <xsl:otherwise>-1</xsl:otherwise>
+              </xsl:choose>
+            </xsl:with-param>
+          </xsl:call-template>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <label for="connect_type">Connection Type</label>
+        </th>
+        <td colspan="2">
+          <xsl:call-template name="make_select">
+            <xsl:with-param name="name">connect_type</xsl:with-param>
+            <xsl:with-param name="id">connect_type</xsl:with-param>
+            <xsl:with-param name="selected"><xsl:value-of select="connect_type"/></xsl:with-param>
           <xsl:with-param name="list">none:None;ssl:SSL/TSL;</xsl:with-param>
           <xsl:with-param name="style">width: 100px;</xsl:with-param>
+            <xsl:with-param name="onchange">javascript: accountChange(this);</xsl:with-param>
+            <xsl:with-param name="disabled">
+              <xsl:choose>
+                <xsl:when test="type = 'imap'">1</xsl:when>
+                <xsl:otherwise>-1</xsl:otherwise>
+              </xsl:choose>
+            </xsl:with-param>
         </xsl:call-template>
       </td>
     </tr>
     <tr>
       <th>
-        <label for="server">Server Address</label>
+          <label for="host">Server Address</label>
       </th>
       <td>
-        <input type="text" name="pop_server" id="server"  style="width: 300px;">
-          <xsl:attribute name="value"><xsl:value-of select="pop_server"/></xsl:attribute>
+          <input type="text" name="host" id="host" style="width: 300px;">
+            <xsl:attribute name="value"><xsl:value-of select="host"/></xsl:attribute>
         </input>
       </td>
       <td>
@@ -243,8 +262,8 @@
         <label for="port">Server Port</label>
       </th>
       <td>
-        <input type="text" name="pop_port" id="port"  style="width: 50px;">
-          <xsl:attribute name="value"><xsl:value-of select="pop_port"/></xsl:attribute>
+          <input type="text" name="port" id="port" style="width: 100px;">
+            <xsl:attribute name="value"><xsl:value-of select="port"/></xsl:attribute>
         </input>
       </td>
       <td>
@@ -256,8 +275,8 @@
         <label for="user">User Name</label>
       </th>
       <td>
-        <input type="text" name="user_name" id="user" style="width: 100px;">
-          <xsl:attribute name="value"><xsl:value-of select="user_name"/></xsl:attribute>
+          <input type="text" name="user" id="user" style="width: 100px;">
+            <xsl:attribute name="value"><xsl:value-of select="user" /></xsl:attribute>
         </input>
       </td>
       <td>
@@ -266,41 +285,48 @@
     </tr>
     <tr>
       <th>
-        <label for="pass">Password</label>
+          <label for="password">Password</label>
       </th>
       <td colspan="2">
-        <input type="password" name="user_pass" id="pass" style="width: 100px;">
-          <xsl:attribute name="value"><xsl:value-of select="user_pass"/></xsl:attribute>
+          <input type="password" name="password" id="password" style="width: 100px;">
+            <xsl:attribute name="value"><xsl:value-of select="password"/></xsl:attribute>
         </input>
       </td>
     </tr>
     <tr>
       <th>
-        <label for="fid">Store In</label>
+          <label for="folder_id">Store In</label>
       </th>
       <td colspan="2">
         <xsl:apply-templates select="folders" mode="combo">
-          <xsl:with-param name="ID" select="'fid'" />
+            <xsl:with-param name="ID" select="'folder_id'" />
           <xsl:with-param name="showPath" select="1" />
-          <xsl:with-param name="selectID" select="/page/account/acc_edit/folder_id" />
+            <xsl:with-param name="selectID" select="folder_id" />
           <xsl:with-param name="style">min-width: 100px;</xsl:with-param>
-        </xsl:apply-templates> / <input type="text" name="fname"/>
+            <xsl:with-param name="startOption">&nbsp;</xsl:with-param>
+            <xsl:with-param name="disabled">
+              <xsl:choose>
+                <xsl:when test="type = 'imap'">1</xsl:when>
+                <xsl:otherwise>-1</xsl:otherwise>
+              </xsl:choose>
+            </xsl:with-param>
+          </xsl:apply-templates> / <input type="text" name="folder_name" style="width: 185px" />
       </td>
     </tr>
     <tr>
       <th>Check Interval</th>
       <td colspan="2">
         <label>
-        <input type="radio" name="ch_interval" value="1" id="ed">
-          <xsl:if test="intervals = 1">
+            <input type="radio" name="check_interval" value="1" id="ed">
+              <xsl:if test="check_interval = 1">
             <xsl:attribute name="checked"/>
           </xsl:if>
         </input>
           Every Day
         </label>
         <label>
-        <input type="radio" name="ch_interval" value="2" id="eh">
-          <xsl:if test="intervals = 2">
+            <input type="radio" name="check_interval" value="2" id="eh">
+              <xsl:if test="check_interval != 1">
             <xsl:attribute name="checked"/>
           </xsl:if>
         </input>
@@ -323,7 +349,7 @@
         </label>
         <label>
         <input type="radio" name="mcopy" value="0">
-          <xsl:if test="mcopy = 0">
+              <xsl:if test="mcopy != 1">
             <xsl:attribute name="checked"/>
           </xsl:if>
           </input>
@@ -331,6 +357,23 @@
         </label>
 	    </td>
     </tr>
+      <tfoot>
+        <tr>
+          <th colspan="3">
+            <xsl:call-template name="make_submit">
+              <xsl:with-param name="name">fa_save</xsl:with-param>
+              <xsl:with-param name="value">Save</xsl:with-param>
+              <xsl:with-param name="alt">Save</xsl:with-param>
+            </xsl:call-template>
+            <xsl:call-template name="make_submit">
+              <xsl:with-param name="name">fa_cancel</xsl:with-param>
+              <xsl:with-param name="value">Cancel</xsl:with-param>
+              <xsl:with-param name="alt">Cancel</xsl:with-param>
+            </xsl:call-template>
+          </th>
+        </tr>
+      </tfoot>
+    </table>
   </xsl:template>
 
   <!-- ====================================================================================== -->
