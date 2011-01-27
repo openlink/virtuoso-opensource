@@ -920,7 +920,7 @@ bif_smime_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int inx;
   char err_buf[512];
   char *ptr = NULL;
-  int flags = PKCS7_STREAM;
+  int flags = 0;
   const EVP_CIPHER *cipher = NULL;
 
   cipher = EVP_get_cipherbyname (cipher_name);
@@ -990,7 +990,7 @@ bif_smime_decrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t cert = bif_string_arg (qst, args, 1, me);
   caddr_t privatekey = bif_string_arg (qst, args, 2, me);
   caddr_t privatepass = bif_string_or_null_arg (qst, args, 3, me);
-  int flags = PKCS7_DETACHED;
+  int flags = 0;
   caddr_t ret = NULL;
   BIO *out_bio = NULL, *in_bio = NULL, *data_bio = NULL;
   PKCS7 *p7 = NULL;
