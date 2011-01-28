@@ -1486,7 +1486,7 @@ numeric_error (int code, char *sqlstate, int state_len, char *sqlerror, int erro
 int
 numeric_from_string (numeric_t n, const char *s)
 {
-  const char *cp;
+  const char *cp=s;
   const char *dot;
   char *dp;
   int error;
@@ -1497,8 +1497,12 @@ numeric_from_string (numeric_t n, const char *s)
   int rc;
 
   /* strip leading whitespace */
-  for (cp = s; isspace (*cp) || *cp == '$'; cp++)
-    ;
+  while (isspace (*cp)) cp++;
+  if ('$' == *cp)
+    {
+      cp++;
+      while (isspace (*cp)) cp++;
+    }
 
   /* get sign */
   if (*cp == '-')
@@ -1514,7 +1518,7 @@ numeric_from_string (numeric_t n, const char *s)
     }
 
   /* accept space between the sign & the digits - as M$ SQL does */
-  while (*cp && isspace (*cp))
+  while (isspace (*cp))
     cp++;
 
   /* handles cases for numeric_from_double */
@@ -1646,6 +1650,57 @@ numeric_from_string (numeric_t n, const char *s)
     }
 
   return (error == NUMERIC_STS_SUCCESS) ? rc : error;
+}
+
+
+/*
+ *  Returns NULL if numeric_from_string would return an error, first significant char of the string otherwise
+ */
+const char *
+numeric_from_string_is_ok (const char *s)
+{
+  const char *cp = s;
+  const char *first_significant_char;
+  int plain_digits = 0;
+  /* strip leading whitespace */
+  while (isspace (cp[0])) cp++;
+  if ('$' == cp[0])
+    {
+      cp++;
+      while (isspace (cp[0])) cp++;
+    }
+  first_significant_char = cp;
+  /* get sign */
+  if ((cp[0] == '-')|| (cp[0] == '+'))
+    cp++;
+  /* accept space between the sign & the digits - as M$ SQL does */
+  while (isspace (cp[0]))
+    cp++;
+  /* handles cases for numeric_from_double */
+  if (!isdigit (cp[0]) && (!strcmp (cp, "Inf") || !strcmp (cp, "Infinity") || !strcmp (cp, "NaN")))
+    return first_significant_char;
+  while (isdigit (cp[0])) { plain_digits++; cp++; }
+  if (cp[0] == '.')
+    {
+      cp++;
+      while (isdigit (cp[0])) { plain_digits++; cp++; }
+    }
+  if (0 == plain_digits)
+    return NULL;
+  if (('E' == cp[0]) || ('e' == cp[0]))
+    {
+      int exp_digits = 0;
+      cp++;
+      if ((cp[0] == '-')|| (cp[0] == '+'))
+        cp++;
+      while (isdigit (cp[0])) { exp_digits++; cp++; }
+      if (!exp_digits)
+        return NULL;
+    }
+  while (isspace (cp[0])) cp++;
+  if (cp[0])
+    return NULL;
+  return first_significant_char;
 }
 
 

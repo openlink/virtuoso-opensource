@@ -126,6 +126,7 @@ int numeric_error (int code, char *sqlstate, int state_len, char *sqlerror, int 
 
 /* conversion */
 int numeric_from_string (numeric_t n, const char *s);
+const char *numeric_from_string_is_ok (const char *s);
 int numeric_from_int32 (numeric_t n, int32 i);
 int numeric_from_int64 (numeric_t n, int64 i);
 int numeric_from_double (numeric_t n, double d);
