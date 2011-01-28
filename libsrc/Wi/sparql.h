@@ -521,7 +521,7 @@ typedef struct spar_tree_s
         ptrlong ft_type;
         ptrlong src_serial;	/*!< Assigned once at parser and preserved in all clone operations */
       } triple;
-    struct { /* Note that all first members of \c retval case should match to \c var case */
+    struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
         /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
         /* #define SPAR_VARIABLE		(ptrlong)1013 */
         caddr_t vname;
@@ -531,7 +531,18 @@ typedef struct spar_tree_s
         ptrlong equiv_idx;
         rdf_val_range_t rvr;
       } var;
-    struct { /* Note that all first members of \c retval case should match to \c var case */
+    struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
+        /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
+        /* #define SPAR_VARIABLE		(ptrlong)1013 */
+        caddr_t vname;
+        caddr_t selid;
+        caddr_t tabid;
+        ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
+        ptrlong equiv_idx;
+        rdf_val_range_t rvr;
+        ptrlong bracketed;  /*!< 0 for plain, 1 for [...], 2 for fake and bnodes made for default graphs */
+      } bnode;
+    struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
         /* #define SPAR_RETVAL		(ptrlong)1008 */
         caddr_t vname;
         caddr_t selid;

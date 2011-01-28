@@ -472,6 +472,11 @@ spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g)
 int
 spar_find_sc_for_big_ssl_const (sparp_t *sparp, sql_comp_t **sc_ret)
 {
+  if (sparp->sparp_disable_big_const)
+    {
+      sc_ret[0] = NULL;
+      return 0;
+    }
   sc_ret[0] = sparp->sparp_sparqre->sparqre_super_sc;
   if (NULL == sc_ret[0])
     {
@@ -611,8 +616,8 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
       {
         if (NULL == bnode_emulation)
 #ifdef DEBUG
-          bnode_emulation = box_copy_tree (spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
-            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS ) );
+          bnode_emulation = box_copy_tree (spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
+            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS, NULL ) );
 #else
           bnode_emulation = box_copy_tree (spartlist (sparp, 1, SPAR_BLANK_NODE_LABEL));
 #endif

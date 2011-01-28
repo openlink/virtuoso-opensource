@@ -46,10 +46,15 @@ extern "C" {
 #include "sqlo.h" /* to load rdfinf.h :) */
 #include "rdfinf.h"
 #include "rdf_mapping_jso.h"
+#include "xpf.h"
 
 #ifdef MALLOC_DEBUG
 const char *spartlist_impl_file="???";
 int spartlist_impl_line;
+#endif
+
+#ifdef DEBUG
+#define SPAR_ERROR_DEBUG
 #endif
 
 extern void jsonyyerror_impl(const char *s);
@@ -61,7 +66,7 @@ spart_count_specific_elems_by_type (ptrlong type)
   switch (type)
     {
     case SPAR_ALIAS:		return sizeof (sample._.alias);
-    case SPAR_BLANK_NODE_LABEL:	return sizeof (sample._.var);
+    case SPAR_BLANK_NODE_LABEL:	return sizeof (sample._.bnode);
     case SPAR_BUILT_IN_CALL:	return sizeof (sample._.builtin);
     case SPAR_CONV:		return sizeof (sample._.conv);
     case SPAR_FUNCALL:		return sizeof (sample._.funcall);
@@ -301,11 +306,17 @@ spar_error (sparp_t *sparp, const char *format, ...)
 int
 spar_audit_error (sparp_t *sparp, const char *format, ...)
 {
+#ifdef SPAR_ERROR_DEBUG
+  const char *txt;
+#endif
   va_list ap;
   caddr_t msg;
   va_start (ap, format);
   msg = t_box_vsprintf (1500, format, ap);
-  fprintf (stderr, "%s\n", msg);
+#ifdef SPAR_ERROR_DEBUG
+  txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
+  printf ("Internal SPARQL audit error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
+#endif
 #ifdef DEBUG
   if (sparp->sparp_internal_error_runs_audit)
     return 1;
@@ -320,18 +331,10 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
 void
 spar_internal_error (sparp_t *sparp, const char *msg)
 {
-#if 0
-  const char *txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
-  FILE *core_reason1;
-  fprintf (stderr, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
-  core_reason1 = fopen ("core_reason1","wt");
-  fprintf (core_reason1, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
-  fclose (core_reason1);
-  GPF_T1(msg);
-#else
-#ifdef DEBUG
-  const char *txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
-  printf ("Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
+#ifdef SPAR_ERROR_DEBUG
+  const char *txt;
+  txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
+  printf ("Internal SPARQL error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
   if ((NULL != sparp) && !sparp->sparp_internal_error_runs_audit)
     {
       sparp->sparp_internal_error_runs_audit = 1;
@@ -343,7 +346,6 @@ spar_internal_error (sparp_t *sparp, const char *msg)
   sqlr_new_error ("37000", "SP031",
     "%.400s: Internal error: %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
-#endif
 }
 
 void
@@ -2392,7 +2394,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     object = (SPART *)t_box_copy_tree (env->spare_context_objects->data);
   if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp))
     {
-      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
       goto plain_triple_in_ctor; /* see below */
     }
 #if 1
@@ -2534,7 +2536,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
       dflts = env->spare_default_graphs;
       if ((NULL == dflts) && (NULL != env->spare_named_graphs))
         { /* Special case: if no FROM clauses specified but there are some FROM NAMED then default graph is totally empty */
-          graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+          graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
           graph->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           break;
         }
@@ -2546,7 +2548,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
             {
               caddr_t iri_arg = single_dflt->_.graph.iri;
               SPART *eq;
-              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
               eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL));
               spar_gp_add_filter (sparp, eq);
               graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
@@ -2558,7 +2560,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
             break;
         }
       else
-        graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+        graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
       spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
       break;
     }
@@ -2680,14 +2682,14 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *res;
-  if (sparp->sparp_in_precode_expn)
+  if ((sparp->sparp_in_precode_expn) && !(bracketed & 0x2))
     spar_error (sparp, "Blank node '%.100s' is not allowed in a constant clause", name);
   if (NULL == env->spare_selids)
     spar_error (sparp, "Blank nodes (e.g., '%.100s') can not be used outside any group pattern or result-set list", name);
-  res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+  res = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_BLANK_NODE_LABEL, name,
       env->spare_selids->data, NULL,
-      (ptrlong)(bracketed), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+      (ptrlong)0, SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)bracketed );
   res->_.var.rvr.rvrRestrictions = /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL;
   return res;
 }
@@ -2695,10 +2697,10 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 SPART *spar_make_fake_blank_node (sparp_t *sparp)
 {
   SPART *res;
-  res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+  res = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_BLANK_NODE_LABEL, uname__ref,
       uname__ref, NULL,
-      (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+      (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)0x2 );
   res->_.var.rvr.rvrRestrictions = /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL;
   return res;
 }

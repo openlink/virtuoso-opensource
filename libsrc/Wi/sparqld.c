@@ -835,13 +835,13 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         SPART *curr_graph = tree->_.triple.tr_graph;
         int new_g_is_dflt = 0;
         int should_close_graph, need_new_graph, place_qm;
-        int option_ctr, option_count;
+        int option_count;
         if (ssg->ssg_sd_graph_gp_nesting <= ssg->ssg_sd_forgotten_graph)
           {
             switch (SPART_TYPE (curr_graph))
               {
               case SPAR_BLANK_NODE_LABEL:
-                if (!strncmp (curr_graph->_.var.vname, "_::default", 10))
+                if (curr_graph->_.bnode.bracketed & 0x2)
                   new_g_is_dflt = 1;
                 break;
               case SPAR_QNAME:
