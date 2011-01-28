@@ -50,7 +50,9 @@ shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t key, int key_is_const, str
       mutex_leave (vt->shcompo_cache_mutex);
       if (NULL != res->shcompo_comp_mutex)
         {
+	  IO_SECT (qi);
           SHC_ENTER (res);
+	  END_IO_SECT (err_ret);
 	  shc_waits ++;
           if (NULL != res->shcompo_error)
             {
