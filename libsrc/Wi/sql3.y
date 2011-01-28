@@ -2428,7 +2428,7 @@ scalar_exp
 	| scalar_exp '*' scalar_exp	{ BIN_OP ($$, BOP_TIMES, $1, $3) }
 	| scalar_exp '/' scalar_exp	{ BIN_OP ($$, BOP_DIV, $1, $3) }
 	| '+' scalar_exp %prec UMINUS	{ $$ = $2; }
-	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ($2)) $$ = sqlp_minus ($2);
+	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ((caddr_t)($2))) $$ = sqlp_minus ((caddr_t)($2));
 				          else BIN_OP ($$, BOP_MINUS, (ST*) t_box_num (0), $2) }
 	| assignment_statement
 	| string_concatenation_operator
