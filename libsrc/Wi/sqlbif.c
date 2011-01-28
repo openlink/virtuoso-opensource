@@ -7278,11 +7278,11 @@ cleanup:
   scn3split_pop_all_buffers ();
   MP_DONE();
   SCS_STATE_POP;
+  dk_free_box (scn3split_ses); /* must be released inside semaphore */
+  scn3split_ses = NULL;
   semaphore_leave (parse_sem);
   sc_free (&sc);
-  dk_free_box (scn3split_ses);
   dk_free_box (start_filename);
-  scn3split_ses = NULL;
   return revlist_to_array (res);
 }
 
