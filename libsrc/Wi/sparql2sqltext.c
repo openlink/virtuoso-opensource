@@ -4434,6 +4434,21 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             ssg_putchar (')');
             goto print_asname;
           }
+        if (!strncmp (tree->_.funcall.qname, "xpath:", 6))
+          {
+            ssg_puts ("xpath_funcall ('");
+            ssg_puts (tree->_.funcall.qname + 6);
+            ssg_puts ("', null");
+            ssg->ssg_indent++;
+            for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
+              {
+                ssg_puts (", ");
+                ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[arg_ctr], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              }
+            ssg->ssg_indent--;
+            ssg_putchar (')');
+            goto print_asname;
+          }
         ssg_putchar (' ');
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
@@ -6310,6 +6325,21 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
               }
             if (1 == arg_count)
               ssg_puts (", 1");
+            ssg->ssg_indent--;
+            ssg_putchar (')');
+            goto print_asname;
+          }
+         if (!strncmp (tree->_.funcall.qname, "xpath:", 6))
+          {
+            ssg_puts ("xpath_funcall ('");
+            ssg_puts (tree->_.funcall.qname + 6);
+            ssg_puts ("', null");
+            ssg->ssg_indent++;
+            for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
+              {
+                ssg_puts (", ");
+                ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[arg_ctr], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              }
             ssg->ssg_indent--;
             ssg_putchar (')');
             goto print_asname;
