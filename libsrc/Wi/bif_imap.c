@@ -660,11 +660,11 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  goto logout;
 		}
 	      if (!stricmp ("fetch", mode))
-		snprintf (message, sizeof (message), "5 UID FETCH %d BODY.PEEK[]", in[br]);
+					snprintf (message, sizeof (message), "5 UID FETCH %d BODY.PEEK[]", (int)(in[br]));
 	      if (!stricmp ("message_delete", mode))
-		snprintf (message, sizeof (message), "5 UID STORE %d +FLAGS(\\Deleted)", in[br]);
+					snprintf (message, sizeof (message), "5 UID STORE %d +FLAGS (\\Deleted)", (int)(in[br]));
 	      if (!stricmp ("message_copy", mode))
-					snprintf (message, sizeof (message), "5 UID COPY %d \"%s\"", in[br], target_folder_id);
+					snprintf (message, sizeof (message), "5 UID COPY %d \"%s\"", (int)(in[br]), target_folder_id);
 	      SEND (ses, rc, message, "");
 	      while (1)
 		{

@@ -1033,11 +1033,13 @@ bif_dbg_assert_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy_tree (box);
 }
 
-static caddr_t
+static
+caddr_t
 bif_dbg_set_lh_xany_normalization_flags (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   sec_check_dba ((query_instance_t *)qst, "dbg_set_lh_xany_normalization_flags");
   lh_xany_normalization_flags = bif_long_arg (qst, args, 0, "dbg_set_lh_xany_normalization_flags");
+  return box_num (lh_xany_normalization_flags);
 }
 
 wcharset_t *
