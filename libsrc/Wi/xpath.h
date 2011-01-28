@@ -89,6 +89,7 @@ extern "C" {
 #define XP_STAR		(ptrlong) 1106	/*!< This is a wildcard for part of name, not a node test */
 #define XP_ELT		(ptrlong) 1107	/*!< This is a node test for any element but not a wildcard for part of name */
 #define XP_ELT_OR_ROOT	(ptrlong) 1108
+#define XP_FAKE_VAR	(ptrlong) 1109
 
 /*
 #define XP_HTTP		(ptrlong) 1200

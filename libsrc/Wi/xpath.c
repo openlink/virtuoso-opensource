@@ -2327,6 +2327,8 @@ xv_label_tree (xpp_t *xpp, xv_join_elt_t * start, XT * tree, dk_set_t * paths)
 	    END_DO_SET();
 	    if (!next)
 	      dk_free_tree ((caddr_t) path);
+            else
+              dk_set_free (next);
 	  }
 	END_DO_SET();
 	dk_set_free (*paths);
@@ -4859,6 +4861,54 @@ shuric_t *xqr_shuric_retrieve (query_instance_t *qi, caddr_t uri, caddr_t *err_r
   xpp_free (xpp);
   return res;
 }
+
+xp_query_t *
+xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount)
+{
+  int argctr;
+  xp_env_t l_xe;
+  xpp_t l_xpp;
+  xp_query_t *xqr = (xp_query_t *) dk_alloc_box_zero (sizeof (xp_query_t), DV_XPATH_QUERY);
+  int n_slots, fill = 0;
+  ptrlong *map;
+  XT **arg_array = dk_alloc_box (argcount * sizeof (XT *), DV_ARRAY_OF_POINTER);
+  XT *var = NULL;
+  memset (&l_xe, 0, sizeof (xp_env_t));
+  memset (&l_xpp, 0, sizeof (xpp_t));
+  l_xpp.xpp_xp_env = &l_xe;
+  l_xe.xe_xqr = xqr;
+  l_xe.xe_xqst_ctr = (sizeof (xp_instance_t) / sizeof (caddr_t)) + 1;
+  l_xe.xe_for_interp = 1;
+  if (XPDV_NODESET == metas->xpfm_res_dtp)
+    var = xp_make_variable_ref (&l_xpp, "result of funcall");
+  for (argctr = argcount; argctr--; /* no step */)
+    {
+      char buf[20]; sprintf (buf, "arg%d", argctr);
+      arg_array[argctr] = xp_make_variable_ref (&l_xpp, buf);
+      arg_array[argctr]->type = XP_FAKE_VAR;
+    }
+  xqr->xqr_tree = xtlist_with_tail (&l_xpp, 8, (caddr_t)arg_array, CALL_STMT,
+    box_dv_uname_string (metas->xpfm_name),
+    box_num((ptrlong)(metas->xpfm_executable)),
+    (ptrlong)(metas->xpfm_res_dtp),
+    xe_new_xqst (&l_xpp, XQST_REF),
+    xe_new_xqst (&l_xpp, XQST_REF),
+    var );
+  xqr->xqr_instance_length = sizeof (caddr_t) * l_xe.xe_xqst_ctr;
+
+  n_slots = dk_set_length (xqr->xqr_state_map);
+  map = (ptrlong *) dk_alloc_box (sizeof (ptrlong) * n_slots, DV_SHORT_STRING);
+  DO_SET (ptrlong, pos, &xqr->xqr_state_map)
+    {
+      map[fill++] = (pos);
+    }
+  END_DO_SET();
+  xqr->xqr_slots = map;
+  xqr->xqr_n_slots = n_slots;
+  xqr->xqr_base_uri = uname___empty;
+  return xqr;
+}
+
 
 xp_query_t *xp_query_parse (query_instance_t * qi, char * str, ptrlong predicate_type, caddr_t * err_ret, xp_query_env_t *xqre)
 {
