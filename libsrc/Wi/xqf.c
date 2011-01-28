@@ -3191,7 +3191,7 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"decimal"		, __numeric_from_string		, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
     {	"double"		, __float_from_string		, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
     {	"duration"		, __duration_from_string	, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"float"			, __float_from_string		, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "FLOAT"		},
+    {	"float"			, __float_from_string		, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "REAL"		},
     {	"gDay"			, __datetime_from_string	, XQ_DAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"gMonth"		, __datetime_from_string	, XQ_MONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"gMonthDay"		, __datetime_from_string	, XQ_MONTHDAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
