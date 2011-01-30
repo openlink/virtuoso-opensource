@@ -962,9 +962,10 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  else
 	    sqlr_resignal (err);
 	}
-
       ITC_SEARCH_PARAM (itc, data);
       ITC_OWNS_PARAM (itc, data);
+      if (DV_DB_NULL == DV_TYPE_OF (data))
+        return KS_CAST_NULL;
     }
   return KS_CAST_OK;
 }

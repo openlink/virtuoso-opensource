@@ -8718,6 +8718,7 @@ num_check_prec (boxint val, int prec, char *title, caddr_t *err_ret)
 caddr_t
 box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
 {
+  caddr_t err;
   if (arg_dtp == DV_DB_NULL)
     return (dk_alloc_box (0, DV_DB_NULL));
   if (!ARRAYP (dtp) || 0 == BOX_ELEMENTS (dtp))
@@ -8851,14 +8852,14 @@ do_long_string:
 		  ret = blob_to_string (qi->qi_trx, data);
 		  if (!DV_STRINGP (ret))
 		    {
-		      caddr_t err = NULL, ret1;
-
+		      caddr_t ret1;
+                      err = NULL;
 		      ret1 = box_cast_to (qst, ret, DV_TYPE_OF (ret), DV_SHORT_STRING,
 			  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
 
 		      dk_free_box (ret);
 		      if (err)
-			sqlr_resignal (ret);
+			goto inner_error;
 		      ret = ret1;
 		    }
 		  return ret;
@@ -8877,6 +8878,7 @@ do_long_string:
 		  caddr_t *subresults = (caddr_t *)dk_alloc_box_zero(els * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
 		  size_t res_len = 0, res_fill = 0;
 		  caddr_t res = NULL;
+                  err = NULL;
 		  QR_RESET_CTX
 		    {
 		      for (ctr = 0; ctr < els; ctr++)
@@ -8892,12 +8894,12 @@ do_long_string:
 		  QR_RESET_CODE
 		    {
 		      du_thread_t *self = THREAD_CURRENT_THREAD;
-		      caddr_t err = thr_get_error_code (self);
-		      POP_QR_RESET;
-		      dk_free_tree ((box_t) subresults);
-		      sqlr_resignal (err);
+		      err = thr_get_error_code (self);
+                      dk_free_tree (subresults);
 		    }
 		  END_QR_RESET;
+                  if (err)
+                    goto inner_error;
 		  res = dk_alloc_box (res_len+1, DV_SHORT_STRING);
 		  for (ctr = 0; ctr < els; ctr++)
 		    {
@@ -8938,6 +8940,8 @@ do_long_string:
                     snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(iid) );
 		  break;
 		}
+	case DV_GEO:
+	  snprintf (tmp, sizeof (tmp), "<geometry>");
 	  default:
 	      goto cvt_error;
 	}
@@ -8946,6 +8950,7 @@ do_long_string:
 
 do_long_int:
     {
+      err = NULL;
       int prec = BOX_ELEMENTS (dtp) > 1 ? (int) (unbox (((caddr_t *) dtp)[1])) : 0;
       boxint val;
       switch (arg_dtp)
@@ -8958,17 +8963,15 @@ do_long_int:
 	  case DV_DOUBLE_FLOAT:
 	      val = (boxint) unbox_double (data); break;
 	  case DV_STRING:
-	      val = safe_atoi (data, NULL); break;
+		val = safe_atoi (data, &err);
+                break;
 #ifdef BIF_XML
 	  case DV_XML_ENTITY:
 		{
 		  caddr_t tmp_res = NULL;
-		  caddr_t err = NULL;
 		  xe_sqlnarrow_string_value ((xml_entity_t *)(data), &tmp_res, DV_LONG_STRING);
 		  val = safe_atoi (tmp_res, &err);
 		  dk_free_box (tmp_res);
-		  if (NULL != err)
-		    sqlr_resignal (err);
 		  break;
 		}
 #endif
@@ -8984,12 +8987,14 @@ do_long_int:
 		{
 		  char narrow [512];
 		  box_wide_string_as_narrow (data, narrow, 512, qst ? QST_CHARSET (qst) : NULL);
-		  val = safe_atoi (narrow, NULL);
+		  val = safe_atoi (narrow, &err);
 		  break;
 		}
 	  default:
 	      goto cvt_error;
 	}
+      if (err)
+        goto inner_error;
       return box_num (num_check_prec (val, prec, "CONVERT", NULL));
     }
 
@@ -9005,7 +9010,13 @@ do_single_float:
 	  case DV_DOUBLE_FLOAT:
 	      return (box_float ((float) unbox_double (data)));
 	  case DV_STRING:
-	      return (box_float ((float) safe_atof (data, NULL)));
+            {
+              err = NULL;
+              double d = safe_atof (data, &err);
+              if (err)
+                goto inner_error;
+              return (box_float ((float)d));
+            }
 	  case DV_NUMERIC:
 		{
 		  double dt;
@@ -9016,8 +9027,12 @@ do_single_float:
 	  case DV_LONG_WIDE:
 		{
 		  char narrow [512];
+              err = NULL;
 		  box_wide_string_as_narrow (data, narrow, 512, qst ? QST_CHARSET (qst) : NULL);
-		  return (box_float ((float) safe_atof (narrow, NULL)));
+              double d = safe_atof (narrow, &err);
+              if (err)
+                goto inner_error;
+              return (box_float ((float)d));
 		}
 	  default:
 	      goto cvt_error;
@@ -9038,8 +9053,12 @@ do_double_float:
 	  case DV_LONG_STRING:
 		{
 		  double d = 0.0;
-		  sscanf (data, "%lf", &d);
+                  const char *start = numeric_from_string_is_ok (data);
+                  if (NULL == start)
+                    goto cvt_error;
+		  if (1 == sscanf (start, "%lf", &d))
 		  return (box_double (d));
+		  goto cvt_error;
 		}
 	  case DV_NUMERIC:
 		{
@@ -9051,8 +9070,16 @@ do_double_float:
 	  case DV_LONG_WIDE:
 		{
 		  char narrow [512];
+		  double d = 0.0;
+                  const char *start;
 		  box_wide_string_as_narrow (data, narrow, 512, qst ? QST_CHARSET (qst) : NULL);
-		  return (box_double (atof (narrow)));
+		  /* return (box_double (atof (narrow)));*/
+                  start = numeric_from_string_is_ok (narrow);
+                  if (NULL == start)
+                    goto cvt_error;
+		  if (1 == sscanf (start, "%lf", &d))
+		    return (box_double (d));
+		  goto cvt_error;
 		}
 	  default:
 	      goto cvt_error;
@@ -9062,12 +9089,11 @@ do_double_float:
 do_numeric:
     {
       numeric_t res = numeric_allocate ();
-      caddr_t err;
       err = numeric_from_x (res, data, (int) unbox (((caddr_t*)dtp)[1]), (int) unbox (((caddr_t*)dtp)[2]), "CAST", 0, NULL);
       if (err)
 	{
 	  numeric_free (res);
-	  sqlr_resignal (err);
+          goto inner_error;
 	}
       return ((caddr_t) res);
     }
@@ -9228,17 +9254,15 @@ do_bin_again:
 do_wide:
     {
       char tmp[NUMERIC_MAX_STRING_BYTES + 100];
-      caddr_t err = NULL;
+      err = NULL;
       caddr_t ret;
       switch (arg_dtp)
 	{
 	  case DV_STRING:
-		{
 	          ret = box_narrow_string_as_wide ((unsigned char *) data, NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 1);
 		  if (err)
-		    sqlr_resignal (err);
+            goto inner_error;
 		  return ret;
-		}
 	  case DV_UNAME:
             {
               unsigned char *utf8 = (unsigned char *) data;
@@ -9315,7 +9339,7 @@ do_wide:
 			  NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 1);
 		      dk_free_box (ret);
 		      if (err)
-			sqlr_resignal (err);
+                        goto inner_error;
 		      return wide_ret;
 		    }
 		  return ret;
@@ -9329,9 +9353,18 @@ do_wide:
 	sqlr_resignal (err);
       return ret;
     }
+  goto cvt_error;
 
+inner_error:
+  if ((NULL == qst) || !(((query_instance_t *)qst)->qi_no_cast_error))
+    sqlr_resignal (err);
+  dk_free_tree (err);
+  return NEW_DB_NULL;
 
 cvt_error:
+  if ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error))
+    return NEW_DB_NULL;
+signal_error:
 #ifdef DEBUG
   sqlr_new_error ("22023", ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (%s -> %s)", dv_type_title(arg_dtp), dv_type_title((int) (dtp->type)));
 #else
