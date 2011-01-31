@@ -657,7 +657,8 @@ as (
 ;
 
 wiki_exec_no_error ('
-alter type WV.WIKI.TOPICINFO add method ti_register_for_upstream (in optype varchar(1)) returns any')
+  alter type WV.WIKI.TOPICINFO add method ti_register_for_upstream (in optype varchar(1)) returns any'
+)
 ;
 
 wiki_exec_no_error ('
@@ -672,6 +673,11 @@ create table WV..UPSTREAM (
        UP_WIKIWORD_CONV_CONTEXT varchar,
        primary key (UP_ID)
 )')
+;
+
+wiki_exec_no_error ('
+  alter table WV..UPSTREAM add UP_RCLUSTER varchar
+')
 ;
 
 wiki_exec_no_error ('

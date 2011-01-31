@@ -24,13 +24,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-wiki_exec_no_error ('
-   alter table WV..UPSTREAM add UP_RCLUSTER varchar
-')
-;
-
-use WV
-;
+use WV;
 
 -------------------------------------------------------------------------------
 --
@@ -43,30 +37,30 @@ create method ti_register_for_upstream (in action varchar(1)) returns any for WV
     {
     if (action = 'D')
     {
-      if (exists (select 1 from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'I' and UE_STATUS is null))
+      if (exists (select 1 from WV..UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'I' and UE_STATUS is null))
       {
-        delete from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_STATUS is null;
+        delete from WV..UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_STATUS is null;
       }
       else 
       {
-        if (exists (select 1 from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null))
+        if (exists (select 1 from WV..UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null))
         {
-          delete from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null;
+          delete from WV..UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null;
         }
-        insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
+        insert into WV..UPSTREAM_ENTRY (UE_STREAM_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
           values (UP_ID, self.ti_cluster_name, self.ti_local_name, action);
       }
     }
     else if (action = 'I')
     {
-      insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
+      insert into WV..UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
         values (UP_ID, self.ti_id, self.ti_cluster_name, self.ti_local_name, action);
     }
     else if (action = 'U')
     {
-      if (not exists (select 1 from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and (UE_OP = 'I' or UE_OP = 'U') and UE_STATUS is null))
+      if (not exists (select 1 from WV..UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and (UE_OP = 'I' or UE_OP = 'U') and UE_STATUS is null))
       {
-        insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
+        insert into WV..UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
           values (UP_ID, self.ti_id, self.ti_cluster_name, self.ti_local_name, action);
       }
     }
@@ -78,7 +72,7 @@ create method ti_register_for_upstream (in action varchar(1)) returns any for WV
 --
 create procedure WV..PROCESS_UPSTREAMS ()
 {
-  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_TOPIC_ID, UE_LOCAL_NAME, UE_OP from UPSTREAM_ENTRY where UE_STATUS is null order by UE_ID;
+  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_TOPIC_ID, UE_LOCAL_NAME, UE_OP from WV..UPSTREAM_ENTRY where UE_STATUS is null order by UE_ID;
   
   declare id, streamID, topicID, res int;
   declare localName, action varchar;
@@ -94,7 +88,7 @@ _again:
   close cr;
 
   res := WV..PROCESS_UPSTREAM_ENTRY (action, streamID, topicID, localName);
-  update UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id;
+  update WV..UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id;
   commit work;
   open cr (exclusive, prefetch 1);
   fetch cr bookmark bm into id, streamID, topicID, localName, action;
@@ -109,10 +103,10 @@ _complete:
 --
 create procedure WV..UPSTREAM_SCHEDULED_JOB ()
 {
-  delete from UPSTREAM_ENTRY where UE_STATUS = 1;
+  delete from WV..UPSTREAM_ENTRY where UE_STATUS = 1;
   commit work;
   PROCESS_UPSTREAMS();
-  update UPSTREAM_ENTRY set UE_STATUS = null where UE_STATUS <> 1;
+  update WV..UPSTREAM_ENTRY set UE_STATUS = null where UE_STATUS <> 1;
 }
 ;
 
@@ -121,10 +115,10 @@ create procedure WV..UPSTREAM_SCHEDULED_JOB ()
 create procedure WV.WIKI.UPSTREAM_TOPIC_NOW (
   in topicID integer)
 {
-  delete from UPSTREAM_ENTRY where UE_STATUS = 1 and UE_TOPIC_ID = topicID;
+  delete from WV..UPSTREAM_ENTRY where UE_STATUS = 1 and UE_TOPIC_ID = topicID;
   commit work;
 
-  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_LOCAL_NAME, UE_OP from UPSTREAM_ENTRY where UE_STATUS is null and UE_TOPIC_ID = topicID order by UE_ID;
+  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_LOCAL_NAME, UE_OP from WV..UPSTREAM_ENTRY where UE_STATUS is null and UE_TOPIC_ID = topicID order by UE_ID;
 
   declare id, streamID, res integer;
   declare localName, action varchar;
@@ -140,7 +134,7 @@ _again:
   close cr;
 
   res := WV..PROCESS_UPSTREAM_ENTRY (action, streamID, topicID, localName);
-  update UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id and UE_TOPIC_ID = topicID;
+  update WV..UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id and UE_TOPIC_ID = topicID;
   commit work;
   open cr (exclusive, prefetch 1);
   fetch cr bookmark bm into id, streamID, localName, action;
@@ -148,7 +142,7 @@ _again:
 
 _complete:
   close cr;
-  update UPSTREAM_ENTRY set UE_STATUS = null where UE_STATUS <> 1 and UE_TOPIC_ID = topicID;
+  update WV..UPSTREAM_ENTRY set UE_STATUS = null where UE_STATUS <> 1 and UE_TOPIC_ID = topicID;
 }
 ;
 
@@ -184,7 +178,7 @@ create procedure WV..PROCESS_UPSTREAM_ENTRY (
     }
     else if (action = 'U')
     {
-      rc := WV..PROCESS_ATOM_ENTRY ('PUT', streamID, topic, coalesce (topic.ti_local_name, localName));
+      rc := WV..PROCESS_ATOM_ENTRY ('POST', streamID, topic, coalesce (topic.ti_local_name, localName));
     }
   }
 _next:
@@ -369,7 +363,7 @@ create procedure WV..UPSTREAM_ALL (
 {
   for (select topicID from WV.WIKI.TOPIC, UPSTREAM where CLUSTERID = UP_CLUSTER_ID and UP_ID = streamID) do
 {
-      insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_OP)
+    insert into WV..UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_OP)
       values (streamID, topicID, 'I');
   }
 }
@@ -377,10 +371,6 @@ create procedure WV..UPSTREAM_ALL (
 
 
 insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL) values ('wiki upstream', now(), 'WV..UPSTREAM_SCHEDULED_JOB()', 5)
-;
-
-
-use DB
 ;
 
 create trigger WIKI_UPSTREAM_D before delete on WV..UPSTREAM order 10 referencing old as O

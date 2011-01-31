@@ -372,9 +372,7 @@ create procedure WV.WIKI.gdata (
         }
       }
     }
-    else
-    {
-    if (_content_type in ('application/atom+xml', 'application/x.atom+xml', 'text/xml', 'application/xml'))
+    else if (_content_type in ('application/atom+xml', 'application/x.atom+xml', 'text/xml', 'application/xml'))
     {
       _content := string_output_string (http_body_read ());
       if (length (_content))
@@ -382,7 +380,6 @@ create procedure WV.WIKI.gdata (
         xt := xml_tree_doc (xml_tree (_content));
         xml_tree_doc_encoding (xt, 'utf-8');
     }      
-    }
     _atomVersion := cast (xpath_eval ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:version', xt) as varchar);
       if (isnull (_atomVersion) or (_atomVersion not in ('2.0', '3.0')))
     {
@@ -399,15 +396,11 @@ create procedure WV.WIKI.gdata (
         if (topic.ti_id)
           topic.ti_find_metadata_by_id ();
 
-        if ((_method in ('PUT', 'DELETE')) and (topic.ti_id = 0))
-    {
-          _status := 'HTTP/1.1 404 Not Found';
-        }
-        else if (_method in ('PUT', 'POST'))
+        if (_method in ('PUT', 'POST'))
         {
       content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
           WV.WIKI.UPLOADPAGE (topic.ti_col_id, topic.ti_local_name || '.txt', content, _user);
-          if (_method = 'POST')
+          if (topic.ti_id = 0)
       _status := 'HTTP/1.1 201 Created';
 
           -- update attachments
@@ -449,6 +442,8 @@ create procedure WV.WIKI.gdata (
     }
     else if (_method = 'DELETE')
     {
+          if (topic.ti_id <> 0)
+          {
           declare attachment_path varchar;
 
           attachment_path := DB.DBA.DAV_SEARCH_PATH (topic.ti_col_id, 'C') || topic.ti_local_name || '/';
@@ -457,6 +452,7 @@ create procedure WV.WIKI.gdata (
       }
         }
     }
+  }
   }
 
 _exit:;
