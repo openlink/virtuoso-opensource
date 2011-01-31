@@ -961,47 +961,11 @@ create method ti_get_tags () for WV.WIKI.TOPICINFO
 }
 ;
 
-
 -- Triggers
-
-create trigger "Wiki_ClusterInsert" after insert on WS.WS.SYS_DAV_PROP order 100 referencing new as N
-{
-  declare exit handler for sqlstate '*' {
- 	resignal;
-  }; 
-  declare _cname varchar;
-  declare _src_col integer;
-  declare _owner integer;
-  declare _group integer;
-  if (N.PROP_NAME = 'WikiCluster')
-    {
-      _cname := N.PROP_VALUE;
-      _src_col := N.PROP_PARENT_ID;
-      select COL_OWNER, COL_GROUP into _owner, _group from WS.WS.SYS_DAV_COL where COL_ID = _src_col;
-      if (_group is null)
-	_group := WV.WIKI.WIKIADMINGID();
-      WV.WIKI.CREATECLUSTER (_cname, _src_col, _owner, _group);
-    }
-}
-;
-
-create trigger "Wiki_ClusterDelete" before delete on WS.WS.SYS_DAV_PROP order 100 referencing old as O
-{
-  declare exit handler for sqlstate '*' {
- 	resignal;
-  }; 
-  if (O.PROP_NAME = 'WikiCluster')
-    {
-      for select ClusterId as _cid, ColId as _col_id from WV.WIKI.CLUSTERS where ClusterName = O.PROP_VALUE or ColId = O.PROP_PARENT_ID do {
-	  DeleteCluster (_cid);
-	}
-    }  
-}
-;
-
 create trigger "Wiki_ClusterDeleteContent" before delete on WV.WIKI.CLUSTERS referencing old as O
 {
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+{
  	resignal;
   }; 
   DB.DBA.DAV_DELETE (WS.WS.COL_PATH(O.ColId), 1, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()));
@@ -1014,44 +978,152 @@ create trigger "Wiki_ClusterDeleteContent" before delete on WV.WIKI.CLUSTERS ref
 }
 ;
 
-
-create trigger "Wiki_ClusterUpdate" before update on WS.WS.SYS_DAV_PROP order 100 referencing old as O, new as N
-{
-  if (O.PROP_NAME = 'WikiCluster' or N.PROP_NAME = 'WikiCluster')
+create procedure WV.WIKI.SIOC_ADD_ATTACHMENT (inout _topic WV.WIKI.TOPICINFO, in att varchar)
     {
-      WV.WIKI.APPSIGNAL (11001, 'Cluster "&ClusterName;" can not be changed by updating DAV property WikiCluster',
-	 vector ('ClusterName', O.PROP_VALUE) );
-    }
+   sioc..wiki_sioc_attachment (_topic, att);
 }
 ;
 
-create trigger "Wiki_TopicTextInsertPerms" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
-{
-  declare _cluster_name varchar;
-  _cluster_name :=  (select ClusterName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS
-	where ResId = N.RES_ID);
-  if (_cluster_name is null)
-   return;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_ClusterInsert')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_ClusterUpdate')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_ClusterDelete')
+;
 
+-- new triggers
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_PROP_AI')
+;
+create trigger "WIKI_SYS_DAV_PROP_AI" after insert on WS.WS.SYS_DAV_PROP order 100 referencing new as N
+{
+  declare exit handler for sqlstate '*' {
+ 	resignal;
+  }; 
+
+  if ((N.PROP_NAME <> 'WikiCluster') or (N.PROP_TYPE <> 'C'))
+    return;
+
+  for (select COL_OWNER, COL_GROUP from WS.WS.SYS_DAV_COL where COL_ID = N.PROP_PARENT_ID) do
+    WV.WIKI.CREATECLUSTER (N.PROP_VALUE, N.PROP_PARENT_ID, COL_OWNER, coalesce (COL_GROUP, WV.WIKI.WIKIADMINGID()));
+}
+;
+
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_PROP_BU')
+;
+create trigger "WIKI_SYS_DAV_PROP_BU" before update on WS.WS.SYS_DAV_PROP order 100 referencing old as O, new as N
+{
+  if ((O.PROP_NAME = 'WikiCluster' or N.PROP_NAME = 'WikiCluster') and (N.PROP_TYPE = 'C'))
+    WV.WIKI.APPSIGNAL (11001, 'Cluster "&ClusterName;" can not be changed by updating DAV property WikiCluster', vector ('ClusterName', O.PROP_VALUE));
+}
+;
+
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_PROP_BD')
+;
+create trigger "WIKI_SYS_DAV_PROP_BD" before delete on WS.WS.SYS_DAV_PROP order 100 referencing old as O
+{
+  declare exit handler for sqlstate '*'
+    {
+    resignal;
+  };
+
+  if ((O.PROP_NAME <> 'WikiCluster') or (O.PROP_TYPE <> 'C'))
+    return;
+
+  for (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = O.PROP_VALUE or ColId = O.PROP_PARENT_ID) do
+    DeleteCluster (ClusterId);
+}
+;
+
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextInsertMeta')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextInsert')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextInsertPerms')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextAttachment')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextSparql_AI')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextUpdate')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextUpdatePerms')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextSparql_AU')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextDelete')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_TopicTextAttachment_D')
+;
+wiki_exec_no_error ('drop trigger WS.WS.Wiki_AttachmentDelete')
+;
+
+-- new triggers
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_RES_AI')
+;
+create trigger "WIKI_SYS_DAV_RES_AI" after insert on WS.WS.SYS_DAV_RES order 1 referencing new as N
+{
+  declare _id any;
+  declare _cluster_name varchar;
+  declare _topic WV.WIKI.TOPICINFO;
+  declare exit handler for sqlstate '*'
+  {
+    -- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    rollback work;
+   return;
+  };
+
+  _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ColId = N.RES_COL);
+  if (not isnull (_cluster_name))
+  {
+    if (N.RES_NAME like '%.txt')
+    {
+      -- Topic Insert
+      _topic := WV.WIKI.TOPICINFO ();
+      _topic.ti_cluster_name := _cluster_name;
+      _topic.ti_fill_cluster_by_name ();
+      _topic.ti_id := WV.WIKI.NEWPLAINTOPICID ();
+      _topic.ti_res_id := N.RES_ID;
+      _topic.ti_default_cluster := _cluster_name;
+      _topic.ti_local_name := WV.WIKI.FILENAMETOWIKINAME (cast (N.RES_NAME as varchar));
+      _topic.ti_text := cast (N.RES_CONTENT as varchar);
+      _topic.ti_e_mail := WV.WIKI.MAILBOXFORTOPICNEW (_topic.ti_id, _cluster_name, _topic.ti_local_name);
+      _topic.ti_compile_page ();
+      _topic.ti_register_for_upstream('I');
+      WV..ADD_HIST_ENTRY (_topic.ti_cluster_name, _topic.ti_local_name, 'N', '1.0');
+
+      if (exists (select * from DB.DBA.WA_MEMBER where WAM_INST = _topic.ti_cluster_name and WAM_APP_TYPE = 'oWiki' and WAM_IS_PUBLIC = 1) and __proc_exists ('DB.DBA.WA_NEW_WIKI_IN'))
+      {
+        for (select U_FULL_NAME, U_NAME from DB.DBA.SYS_USERS where U_ID = N.RES_OWNER) do
+        {
+          _topic.ti_fill_url();
+          DB.DBA.WA_NEW_WIKI_IN (WV.WIKI.NORMALIZEWIKIWORDLINK (_topic.ti_cluster_name, _topic.ti_local_name), _topic.ti_url || '?', _topic.ti_id);
+          insert into WV.WIKI.DASHBOARD (WD_TIME, WD_TITLE, WD_UNAME, WD_UID, WD_URL)
+            values (now(), subseq (_topic.ti_text, 0, 200), U_FULL_NAME, U_NAME, _topic.ti_url || '?');
+        }
+      }
+
+      -- Topic Update Permissions
   SET TRIGGERS OFF;
   WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
   SET TRIGGERS ON;
-}
-;
 
+      -- Topic Sparql
+      if (N.RES_TYPE = 'application/sparql-query')
+        WV.WIKI.TopicTextSparql (N.RES_COL, N.RES_FULL_PATH, N.RES_OWNER);
+    }
+  }
 
-create trigger "Wiki_TopicTextAttachment" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
-{
-  declare _id any;
+  -- attachment
   _id :=  DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(N.RES_COL, 'C', 'oWiki:topic-id', 0));
-  if (_id is not null)
+  if (not isnull(_id))
     {
-      _id := deserialize (_id);
       declare _topic WV.WIKI.TOPICINFO;
+
       _topic := WV.WIKI.TOPICINFO();
-      _topic.ti_id := _id;
+    _topic.ti_id := deserialize (_id);
       _topic.ti_find_metadata_by_id ();
-      if (_topic.ti_res_id) {
+    if (_topic.ti_res_id)
+    {
         WV.WIKI.SIOC_ADD_ATTACHMENT (_topic, N.RES_NAME);
         WV..ADD_HIST_ENTRY(_topic.ti_cluster_name, _topic.ti_local_name, 'A', N.RES_NAME);
       }
@@ -1059,129 +1131,83 @@ create trigger "Wiki_TopicTextAttachment" after insert on WS.WS.SYS_DAV_RES orde
 }
 ;
 
-create procedure WV.WIKI.SIOC_ADD_ATTACHMENT (inout _topic WV.WIKI.TOPICINFO, in att varchar)
-    {
-      sioc..wiki_sioc_attachment (_topic, att);
-    }
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_RES_AU')
 ;
-
-create trigger "Wiki_TopicTextAttachment_D" before delete on WS.WS.SYS_DAV_RES order 10 referencing old as O
+create trigger "WIKI_SYS_DAV_RES_AU" after update on WS.WS.SYS_DAV_RES order 1 referencing old as O, new as N
 {
-  declare _id any;
-  _id :=  DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(O.RES_COL, 'C', 'oWiki:topic-id', 0));
-  if (_id is not null)
-    {
-      _id := deserialize (_id);
-      declare _topic WV.WIKI.TOPICINFO;
-      _topic := WV.WIKI.TOPICINFO();
-      _topic.ti_id := _id;
-      _topic.ti_find_metadata_by_id ();
-      if (_topic.ti_res_id)
-	{
-	  sioc..wiki_sioc_attachment_delete (_topic, O.RES_NAME);
-          WV..ADD_HIST_ENTRY(_topic.ti_cluster_name, _topic.ti_local_name, 'a', O.RES_NAME);
-	}
-    }
-}
-;
-
-
-
-create trigger "Wiki_TopicTextUpdatePerms" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
-{
-  declare _cluster_name varchar;
-  _cluster_name :=  (select ClusterName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS
-	where ResId = N.RES_ID);
-  if (_cluster_name is null)
-   return;
-
-  SET TRIGGERS OFF;
-  WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
-  SET TRIGGERS ON;
-}
-;
-
-
-create trigger "Wiki_TopicTextInsertMeta" after insert on WS.WS.SYS_DAV_RES order 1 referencing new as N
-{
-  declare _cluster_name varchar;
-  whenever not found goto skip;
-  select ClusterName into _cluster_name from WV.WIKI.CLUSTERS where ColId = N.RES_COL;
-  connection_set ('oWiki Topic', N.RES_NAME);
-  connection_set ('oWiki Cluster', _cluster_name);
-  skip: ;
-}
-;
-
-
-create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 100 referencing new as N
-{
-  declare exit handler for sqlstate '*' {
+  declare _id integer;
+  declare _cluster_name, _local_name varchar;
+  declare _topic WV.WIKI.TOPICINFO;
+  declare exit handler for sqlstate '*'
+  {
     --dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
     resignal;
   };
+  if (N.RES_NAME like '%.txt')
+  {
+    _id := coalesce ((select TopicId from WV.WIKI.TOPIC where ResId = O.RES_ID), 0);
+    if (((O.RES_ID <> N.RES_ID) or (O.RES_COL <> N.RES_COL)) and (_id <> 0))
+      WV.WIKI.DELETETOPIC (_id);
 
-  if (N.RES_NAME not like '%.txt')
-    return;
-  declare _newtopic WV.WIKI.TOPICINFO;
-  declare _cluster_name varchar;
-  whenever not found goto skip;
-  select ClusterName into _cluster_name from WV.WIKI.CLUSTERS where ColId = N.RES_COL;
-  _newtopic := WV.WIKI.TOPICINFO ();
-  _newtopic.ti_cluster_name := _cluster_name;
-  _newtopic.ti_fill_cluster_by_name ();
-  _newtopic.ti_id := WV.WIKI.NEWPLAINTOPICID ();
-  _newtopic.ti_res_id := N.RES_ID;
-  _newtopic.ti_default_cluster := _cluster_name;
-  _newtopic.ti_local_name := WV.WIKI.FILENAMETOWIKINAME (cast (N.RES_NAME as varchar));
-  _newtopic.ti_text := cast (N.RES_CONTENT as varchar);
-  _newtopic.ti_e_mail := WV.WIKI.MAILBOXFORTOPICNEW (_newtopic.ti_id, _cluster_name, _newtopic.ti_local_name);
-  _newtopic.ti_compile_page ();
-  _newtopic.ti_register_for_upstream('I');
-  WV..ADD_HIST_ENTRY(_newtopic.ti_cluster_name, _newtopic.ti_local_name, 'N', '1.0');
-  connection_set ('oWiki Topic', N.RES_NAME);
-  connection_set ('oWiki Cluster', _cluster_name);
-  declare _perms varchar;
-  _perms := N.RES_PERMS;
-  --dbg_obj_princ ( WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
-  declare exit handler for sqlstate '*' {
-    --dbg_obj_princ (__SQL_STATE, ' ', __SQL_MESSAGE);
-    rollback work;
-    return;
-  };
-  --dbg_obj_princ (1, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
-  -- notify wa dashboard about the stuff
-  if (exists (select * from DB.DBA.WA_MEMBER where
-  	WAM_INST = _newtopic.ti_cluster_name
-	and WAM_APP_TYPE = 'oWiki'
-	and WAM_IS_PUBLIC = 1))
-  if (__proc_exists ('DB.DBA.WA_NEW_WIKI_IN'))
-     {
-       declare _uname, _uid varchar;
-       select U_FULL_NAME, U_NAME into _uname, _uid from DB.DBA.SYS_USERS where U_ID = N.RES_OWNER;
-       _newtopic.ti_fill_url();
-       DB.DBA.WA_NEW_WIKI_IN (WV.WIKI.NORMALIZEWIKIWORDLINK (_newtopic.ti_cluster_name, _newtopic.ti_local_name), _newtopic.ti_url || '?', _newtopic.ti_id);
-       insert into WV.WIKI.DASHBOARD (WD_TIME, WD_TITLE, WD_UNAME, WD_UID, WD_URL)
-	  values (now(), subseq (_newtopic.ti_text, 0, 200), _uname, _uid, _newtopic.ti_url || '?');
-     }
-  --dbg_obj_princ (2,  WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
-  skip: ;
+    _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ColId = N.RES_COL);
+    if (not isnull (_cluster_name))
+{
+      if (O.RES_CONTENT <> N.RES_CONTENT)
+    {
+      _topic := WV.WIKI.TOPICINFO();
+        _topic.ti_cluster_name := _cluster_name;
+        _topic.ti_fill_cluster_by_name ();
+        _local_name := WV.WIKI.FILENAMETOWIKINAME (cast (N.RES_NAME as varchar));
+        if (_id = 0)
+	{
+          _id := WV.WIKI.NEWPLAINTOPICID ();
+          _topic.ti_e_mail := WV.WIKI.MAILBOXFORTOPICNEW (_id, _cluster_name, _local_name);
+          WV..ADD_HIST_ENTRY(_cluster_name, _local_name, 'N', '');
+	}
+        else
+        {
+          _topic.ti_e_mail := (select MailBox from WV.WIKI.TOPIC where TopicId = _id);
+          WV..ADD_HIST_ENTRY(_cluster_name, _local_name, 'U', sprintf ('1.%d', (select max(RV_ID) from ws.ws.sys_dav_res_version where RV_RES_ID = N.RES_ID)));
+    }
+        _topic.ti_id := _id;
+        _topic.ti_res_id := N.RES_ID;
+        _topic.ti_default_cluster := _cluster_name;
+        _topic.ti_local_name := _local_name;
+        _topic.ti_text := cast (N.RES_CONTENT as varchar);
+        _topic.ti_compile_page ();
+        _topic.ti_register_for_upstream ('U');
+}
+
+      -- Topic Update Permissions
+  SET TRIGGERS OFF;
+  WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
+  SET TRIGGERS ON;
+
+      -- Topic Sparql
+      if (N.RES_TYPE = 'application/sparql-query')
+        WV.WIKI.TopicTextSparql (N.RES_COL, N.RES_FULL_PATH, N.RES_OWNER);
+    }
+  }
 }
 ;
 
-create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 100 referencing old as O
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_RES_BD')
+;
+create trigger "WIKI_SYS_DAV_RES_BD" before delete on WS.WS.SYS_DAV_RES order 1 referencing old as O
 {
-  --dbg_obj_princ ('Wiki_TopicTextDelete: ', O.RES_ID, ' >  ', O.RES_FULL_PATH);
-  declare exit handler for sqlstate '*' {
-	--dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
-  	resignal;
-  };
-  if (O.RES_NAME not like '%.txt')
-    return;
   declare _id integer;
-  whenever not found goto skip;
-  select TopicId into _id from WV.WIKI.TOPIC where ResId = O.RES_ID;
+  declare _cluster_name varchar;
   declare _topic WV.WIKI.TOPICINFO;
+  declare exit handler for sqlstate '*'
+{
+    --dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    resignal;
+  };
+  if (O.RES_NAME like '%.txt')
+  {
+    _id := (select TopicId from WV.WIKI.TOPIC where ResId = O.RES_ID);
+    if (not isnull (_id))
+{
   _topic := WV.WIKI.TOPICINFO();
   _topic.ti_id := _id;
   _topic.ti_find_metadata_by_id ();
@@ -1191,113 +1217,36 @@ create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 1
   delete from WV.WIKI.SEMANTIC_OBJ where SO_OBJECT_ID = _id;
   WV.WIKI.DELETETOPIC (_id);
   WV.WIKI.DELETE_INLINE_MACRO_FUNCS_1 (_topic);
-  for select P_NAME from DB.DBA.SYS_PROCEDURES 
-    where P_NAME like WV.WIKI.INLINE_MACRO_NAME (_topic.ti_cluster_name, _topic.ti_local_name, null) do {
+      for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like WV.WIKI.INLINE_MACRO_NAME (_topic.ti_cluster_name, _topic.ti_local_name, null)) do
+      {
     exec ('drop procedure ' || P_NAME);
   }
-  skip: ;
 }
-;
-
-create trigger "Wiki_TopicTextUpdate" after update on WS.WS.SYS_DAV_RES order 100 referencing old as O, new as N
-{
-  --dbg_obj_print ('Wiki_TopicTextUpdate', N.RES_FULL_PATH, connection_get ('oWiki trigger'));
-  declare exit handler for sqlstate '*' {
-	--dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
- 	resignal;
-  }; 
-  if (N.RES_NAME not like '%.txt')
-    return;
-  declare _id integer;
-  _id := coalesce ((select TopicId from WV.WIKI.TOPIC where ResId = O.RES_ID), 0);
-  if (O.RES_ID <> N.RES_ID or O.RES_COL <> N.RES_COL)
-    {
-      if (_id <> 0)
-        WV.WIKI.DELETETOPIC (_id);
     }
-  if (O.RES_CONTENT = N.RES_CONTENT)
-    return;
-  declare _newtopic WV.WIKI.TOPICINFO;
-  declare _cluster_name, _local_name varchar;
-  --dbg_obj_princ (1);
-  whenever not found goto skip_insert;
-  select ClusterName into _cluster_name from WV.WIKI.CLUSTERS where ColId = N.RES_COL;
-  --dbg_obj_princ (2);
-  _newtopic := WV.WIKI.TOPICINFO ();
-  _newtopic.ti_cluster_name := _cluster_name;
-  _newtopic.ti_fill_cluster_by_name ();
-  _local_name := WV.WIKI.FILENAMETOWIKINAME (cast (N.RES_NAME as varchar));
-  if (_id = 0)
+  _id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (O.RES_COL, 'C', 'oWiki:topic-id', 0));
+  if (not isnull (_id))
     {
-      _id := WV.WIKI.NEWPLAINTOPICID ();
-      _newtopic.ti_e_mail := WV.WIKI.MAILBOXFORTOPICNEW (_id, _cluster_name, _local_name);
-      WV..ADD_HIST_ENTRY(_cluster_name, _local_name, 'N', '');
-    }
-  else
+    _topic := WV.WIKI.TOPICINFO();
+    _topic.ti_id := deserialize (_id);
+    _topic.ti_find_metadata_by_id ();
+    if (_topic.ti_res_id)
     {
-    _newtopic.ti_e_mail := (select MailBox from WV.WIKI.TOPIC where TopicId = _id);
-      WV..ADD_HIST_ENTRY(_cluster_name, _local_name, 'U', sprintf ('1.%d', (select max(RV_ID) from ws.ws.sys_dav_res_version where RV_RES_ID = N.RES_ID)));
+      sioc..wiki_sioc_attachment_delete (_topic, O.RES_NAME);
+      WV..ADD_HIST_ENTRY(_topic.ti_cluster_name, _topic.ti_local_name, 'a', O.RES_NAME);
     }
-      
-  _newtopic.ti_id := _id;
-  _newtopic.ti_res_id := N.RES_ID;
-  _newtopic.ti_default_cluster := _cluster_name;
-  _newtopic.ti_local_name := _local_name;
-  _newtopic.ti_text := cast (N.RES_CONTENT as varchar);
---  dbg_obj_princ (3, _newtopic);
-  _newtopic.ti_compile_page ();
-  _newtopic.ti_register_for_upstream ('U');
-  connection_set ('oWiki Topic', _local_name);
-  connection_set ('oWiki Cluster', _cluster_name);
-  skip_insert: ;
-  --dbg_obj_princ (4);
 }
-;
-
-wiki_exec_no_error ('drop trigger WS.WS.Wiki_AttachemntDelete')
-;
-
-create trigger "Wiki_AttachmentDelete" before delete on WS.WS.SYS_DAV_RES order 100 referencing old as O
-{
 	delete from WV.WIKI.ATTACHMENTINFONEW where ResPath = O.RES_FULL_PATH;
 }
 ;
 
-wiki_exec_no_error ('drop trigger DB.DBA.Wiki_TopicTextSparql_AI')
-;
-wiki_exec_no_error ('drop trigger DB.DBA.Wiki_TopicTextSparql_AU')
-;
-create trigger "Wiki_TopicTextSparql_AI" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
-{
-  if (N.RES_TYPE <> 'application/sparql-query')
-    return;
-
-  if (not exists (select 1 from WV.WIKI.CLUSTERS where ColID = N.RES_COL))
-    return;
-
-  WV.WIKI.TopicTextSparql (N.RES_COL, N.RES_FULL_PATH, N.RES_OWNER);
-}
-;
-
-create trigger "Wiki_TopicTextSparql_AU" after update on WS.WS.SYS_DAV_RES order 999 referencing new as N
-{
-  if (N.RES_TYPE <> 'application/sparql-query')
-    return;
-
-  if (not exists (select 1 from WV.WIKI.CLUSTERS where ColID = N.RES_COL))
-    return;
-
-  WV.WIKI.TopicTextSparql (N.RES_COL, N.RES_FULL_PATH, N.RES_OWNER);
-}
-;
-
-
 -- Rendering routines
-
 create function WV.WIKI.NORMALIZEWIKIWORDLINK (
-  inout _default_cluster varchar, inout _href varchar) returns varchar
-{ -- Converts dirty WikiLink to a proper normalized qualified WikiLink.
+  inout _default_cluster varchar,
+  inout _href varchar) returns varchar
+{
+  -- Converts dirty WikiLink to a proper normalized qualified WikiLink.
   declare _topic WV.WIKI.TOPICINFO;
+
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_raw_name := _href;
   _topic.ti_default_cluster := _default_cluster;
@@ -1310,9 +1259,12 @@ grant execute on WV.WIKI.NORMALIZEWIKIWORDLINK to public
 ;
 
 create function WV.WIKI.READONLYWIKIWORDLINK (
-  in _default_cluster varchar, in _href varchar) returns varchar
-{ -- Converts dirty WikiLink into link in form Cluster/LocalName
+  in _default_cluster varchar,
+  in _href varchar) returns varchar
+{
+  -- Converts dirty WikiLink into link in form Cluster/LocalName
   declare _topic WV.WIKI.TOPICINFO;
+
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_raw_name := _href;
   _topic.ti_default_cluster := _default_cluster;
@@ -1329,8 +1281,7 @@ create function WV.WIKI.READONLYWIKIWORDHREF2 (
   inout _topic_name varchar,
   in _sid varchar,
   in _realm varchar,
-  in _params any := ''
-) returns varchar
+  in _params any := '') returns varchar
 {
   declare url_params varchar;
 
@@ -1359,12 +1310,11 @@ create function WV.WIKI.READONLYWIKIWORDHREF2 (
 
 create function WV.WIKI.READONLYWIKIIRI (
   in _cluster_name varchar,
-  in _topic_name varchar
-) returns varchar
+  in _topic_name varchar) returns varchar
 {
---  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
   return sprintf ('%s%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
-};
+}
+;
 
 create procedure WV.WIKI.wiki_cluster_uri (in cluster_name varchar)
 {
