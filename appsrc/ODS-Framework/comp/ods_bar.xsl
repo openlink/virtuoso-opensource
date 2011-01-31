@@ -545,6 +545,8 @@ function showSSLLink()
             curr_location:=curr_location||site_settings_url||'Member Registration > ';
                 else if (locate ('/app.vspx', _http_path))
             curr_location:=curr_location||site_settings_url||'Application Agreements > ';
+                else if (locate ('/login_leys.vspx', _http_path))
+                  curr_location  :=  curr_location || site_settings_url || 'Login Authentication Keys > ';
                 else if (locate ('/map_svc.vspx', _http_path))
             curr_location:=curr_location||site_settings_url||'Mapping Services > ';
                 else if (locate ('/accounts.vspx', _http_path))
