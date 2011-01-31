@@ -8950,9 +8950,9 @@ do_long_string:
 
 do_long_int:
     {
-      err = NULL;
       int prec = BOX_ELEMENTS (dtp) > 1 ? (int) (unbox (((caddr_t *) dtp)[1])) : 0;
       boxint val;
+      err = NULL;
       switch (arg_dtp)
 	{
 	  case DV_LONG_INT:
@@ -9011,8 +9011,9 @@ do_single_float:
 	      return (box_float ((float) unbox_double (data)));
 	  case DV_STRING:
             {
+	      double d;
               err = NULL;
-              double d = safe_atof (data, &err);
+              d = safe_atof (data, &err);
               if (err)
                 goto inner_error;
               return (box_float ((float)d));
@@ -9027,9 +9028,10 @@ do_single_float:
 	  case DV_LONG_WIDE:
 		{
 		  char narrow [512];
+	      double d;
               err = NULL;
 		  box_wide_string_as_narrow (data, narrow, 512, qst ? QST_CHARSET (qst) : NULL);
-              double d = safe_atof (narrow, &err);
+              d = safe_atof (narrow, &err);
               if (err)
                 goto inner_error;
               return (box_float ((float)d));
@@ -9254,8 +9256,8 @@ do_bin_again:
 do_wide:
     {
       char tmp[NUMERIC_MAX_STRING_BYTES + 100];
-      err = NULL;
       caddr_t ret;
+      err = NULL;
       switch (arg_dtp)
 	{
 	  case DV_STRING:
