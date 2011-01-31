@@ -945,7 +945,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
     cast_param_up:
       data = box_cast_to (itc->itc_out_state, data, dtp, target_dtp,
 			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
-      if (err)
+      if (err || (DV_DB_NULL == DV_TYPE_OF (data)))
 	{
 	  query_instance_t * qi = (query_instance_t *) itc->itc_out_state;
 	  if (qi->qi_no_cast_error)
@@ -957,6 +957,8 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 		dtp = DV_LONG_INT;
 	      if (IS_NUM_DTP (target_dtp))
 		target_dtp = DV_LONG_INT;
+              if (DV_DB_NULL == DV_TYPE_OF (data))
+                dk_free_box (data);
 	      return (dtp < target_dtp ? KS_CAST_DTP_LT : KS_CAST_DTP_GT);
 	    }
 	  else
@@ -964,8 +966,6 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	}
       ITC_SEARCH_PARAM (itc, data);
       ITC_OWNS_PARAM (itc, data);
-      if (DV_DB_NULL == DV_TYPE_OF (data))
-        return KS_CAST_NULL;
     }
   return KS_CAST_OK;
 }
