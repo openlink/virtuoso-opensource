@@ -38,6 +38,7 @@ TTLP (
 @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
 @prefix og: <http://opengraphprotocol.org/schema/> .
 @prefix dv: <http://rdf.data-vocabulary.org/> .
+@prefix c: <http://www.w3.org/2002/12/cal/icaltzd#> .
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -84,6 +85,8 @@ gr:name owl:equivalentProperty foaf:name .
 dv:photo owl:equivalentProperty foaf:depiction .
 dv:instructions owl:equivalentProperty dc:description .
 dv:name rdfs:subPropertyOf virtrdf:label .
+c:summary rdfs:subPropertyOf virtrdf:label .
+c:description owl:equivalentProperty dc:description .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
