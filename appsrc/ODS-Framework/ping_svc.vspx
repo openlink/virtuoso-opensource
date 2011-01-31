@@ -56,8 +56,7 @@
 		  <th>Endpoint</th>
 		  <th>Action</th>
 	      </tr>
-	      <v:data-set name="maps" sql="select SH_URL, SH_NAME, SH_PROTO, SH_ID, SH_METHOD from ODS..SVC_HOST where SH_ID > 0"
-		  scrollable="1" editable="1" nrows="1000">
+          <v:data-set name="maps" sql="select SH_URL, SH_NAME, SH_PROTO, SH_ID, SH_METHOD from ODS..SVC_HOST where SH_ID > 0" scrollable="1" editable="1" nrows="0">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_svc is not null)
 {
@@ -115,9 +114,9 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_svc)
 	      <fieldset>
 		  <label for="endp1">Endpoint URL</label>
 		  <v:text name="endp1" value="" xhtml_id="endp1" error-glyph="*" xhtml_size="110">
-		      <v:validator name="v_httphost" test="regexp" regexp="^http[s]?://[0-9A-Za-z_:.-][/]*[^ ]*+\$"
-			  message="You should provide a valid host name."/>
-		  </v:text><br/>
+              <v:validator name="v_httphost" test="regexp" regexp="^http[s]?://[0-9A-Za-z_:.-][/]*[^ ]*+\$" message="You should provide a valid host name."/>
+            </v:text>
+            <br/>
 		  <label for="ps1">Notification Service</label>
 		  <v:text name="ps1" xhtml_id="ps1" error-glyph="*" value="" />
 		  <br />
@@ -127,10 +126,11 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_svc)
 			<v:item name="soap" value="soap"/>
 			<v:item name="REST" value="REST"/>
 			<v:item name="PubSubHub" value="PubSubHub"/>
-		  </v:select-list><br />
+            </v:select-list>
+            <br />
 		  <label for="meth1">Method</label>
-		  <v:text name="meth1" value="" xhtml_size="110" xhtml_id="meth1" error-glyph="*" default_value="weblogUpdates.ping">
-		  </v:text><br />
+            <v:text name="meth1" value="" xhtml_size="110" xhtml_id="meth1" error-glyph="*" default_value="weblogUpdates.ping" />
+            <br />
 	      <span class="fm_ctl_btn">
 		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_svc),0)">
 		      <v:on-post>
@@ -160,13 +160,12 @@ declare exit handler for sqlstate '23000'
 if (self.edit_svc is null)
 {
   insert into ODS..SVC_HOST (SH_URL,SH_NAME,SH_PROTO,SH_METHOD)
-  values (self.endp1.ufl_value, self.ps1.ufl_value, self.proto1.ufl_value, self.meth1.ufl_value)
-  ;
+                      values (self.endp1.ufl_value, self.ps1.ufl_value, self.proto1.ufl_value, self.meth1.ufl_value);
 }
 else
 {
-  update ODS..SVC_HOST set
-    SH_URL = self.endp1.ufl_value,
+                    update ODS..SVC_HOST 
+                       set SH_URL = self.endp1.ufl_value,
     SH_NAME = self.ps1.ufl_value,
     SH_PROTO = self.proto1.ufl_value,
     SH_METHOD = self.meth1.ufl_value
@@ -177,6 +176,7 @@ self.ps1.ufl_value := '';
 self.proto1.ufl_value := '';
 self.meth1.ufl_value := '';
 self.edit_svc := null;
+                  
 control.vc_data_bind (e);
 self.maps.vc_data_bind (e);
 		      </v:on-post>

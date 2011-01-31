@@ -93,9 +93,9 @@
 	<tr>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl7" value="Mapping Services" url="map_svc.vspx" render-only="1" />
+              <v:url name="appl7" value="Login Authentication Keys" url="login_keys.vspx" render-only="1" />
 	    <div>
-	      Mapping services providers.
+                Login authentication keys.
 	    </div>
 	  </td>
 	  <td>
@@ -109,9 +109,9 @@
 	<tr>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl9" value="Users Administration" url="accounts.vspx" render-only="1" />
+              <v:url name="appl7" value="Mapping Services" url="map_svc.vspx" render-only="1" />
 	    <div>
-	     Enable or disable user accounts.
+                Mapping services providers.
 	    </div>
 	  </td>
 	  <td>
@@ -125,9 +125,9 @@
 	<tr>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl11" value="RDF Data" url="rdf_storage.vspx" render-only="1" />
+              <v:url name="appl9" value="Users Administration" url="accounts.vspx" render-only="1" />
 	    <div>
-	      RDF Data Administration
+                Enable or disable user accounts.
 	    </div>
 	  </td>
 	  <td>
@@ -141,12 +141,17 @@
 	<tr>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl11" value="Semantic Pingback Log" url="semping_log.vspx" render-only="1" />
+              <v:url name="appl11" value="RDF Data" url="rdf_storage.vspx" render-only="1" />
 	    <div>
-	      Semantic Pingback
+                RDF Data Administration
 	    </div>
 	  </td>
 	  <td>
+              <img src="images/icons/go_16.png" border="0" alt="" />
+              <v:url name="appl11" value="Semantic Pingback Log" url="semping_log.vspx" render-only="1" />
+              <div>
+                Semantic Pingback
+              </div>
 	  </td>
 	</tr>
       </table>
