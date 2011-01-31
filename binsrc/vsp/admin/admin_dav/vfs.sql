@@ -626,7 +626,7 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
       hi := rfc1808_parse_uri (_tmp);
       sch := lower (hi[0]); 
       if (sch = '') sch := 'http';
-      hi[4] := '';
+      -- hi[4] := ''; if so prevents pages traversal
       hi[5] := '';
       _tmp := WS.WS.VFS_URI_COMPOSE (hi);
 
