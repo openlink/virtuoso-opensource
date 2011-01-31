@@ -360,6 +360,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('http://(www\\.)?overstock.com/.*\\.(html|htm)(\\?.*)?',
 	'URL', 'DB.DBA.RDF_LOAD_OVERSTOCK', null, 'Overstock');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://www.csnstores.com/.*|http://www.bifter.co.uk/.*|http://www.hingly.com/.*|http://www.gnoss.com/.*',
+	'URL', 'DB.DBA.RDF_LOAD_RDFA_CARTRIDGE', null, 'RDFa');
+
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
@@ -2421,6 +2425,42 @@ create procedure DB.DBA.RDF_LOAD_OVERSTOCK (in graph_iri varchar, in new_origin_
   DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 2);
   --DB.DBA.RDF_QUAD_URI (thisgr, new_origin_uri, 'http://xmlns.com/foaf/0.1/primaryTopic', new_origin_uri || '#product');
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_RDFA_CARTRIDGE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare thisgr, cont varchar;
+
+  thisgr := coalesce (dest, graph_iri);
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+  if (get_keyword ('use_tidy', opts) = 'yes') 
+    cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+  else  
+    cont := ret_body;
+  if (dest is null)
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+  {
+    declare exit handler for sqlstate '*';
+    DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 0);
+    goto rdfa_end;
+  }
+  {
+    declare exit handler for sqlstate '*';
+    DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 1);
+    goto rdfa_end;
+  }
+  {
+    declare exit handler for sqlstate '*';
+    DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 2);
+    rdfa_end:;
+  }
+ return 1;
 }
 ;
 
