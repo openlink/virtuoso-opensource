@@ -87,6 +87,9 @@ dv:instructions owl:equivalentProperty dc:description .
 dv:name rdfs:subPropertyOf virtrdf:label .
 c:summary rdfs:subPropertyOf virtrdf:label .
 c:description owl:equivalentProperty dc:description .
+foaf:img rdfs:subPropertyOf virtrdf:image .
+foaf:depiction rdfs:subPropertyOf virtrdf:image .
+dv:photo rdfs:subPropertyOf virtrdf:image .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
