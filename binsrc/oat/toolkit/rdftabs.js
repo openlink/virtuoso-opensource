@@ -1331,12 +1331,13 @@ OAT.RDFTabs.map = function(parent,optObj) {
     this.elm.style.position = "relative";
     this.elm.style.height = "600px";
 
-    // Various properties used to obtain ICBM address
+    // Various properties used to obtain @ICBM.mil address
     //
 
     this.keyProperties    = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/based_near",
 						    "http://www.w3.org/2003/01/geo/wgs84_pos",
-						    "http://www.w3.org/2003/01/geo/geometry"]); /* containing coords */
+						     "http://www.w3.org/2003/01/geo/geometry",
+						     "http://www.w3.org/2003/01/geo/wgs84_pos#geometry"]); /* containing coords */
 
     this.locProperties    = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/location", 
 						     "http://www.w3.org/2006/vcard/ns#Locality",
@@ -1363,7 +1364,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
     this.pointTypes = OAT.IRIDB.insertIRIArr (["http://www.w3.org/2003/01/geo/Point", 
 					       "http://www.w3.org/2003/01/geo/wgs84_pos#Point",
-					       "http://www.georss.org/georss/point"]);
+					       "http://www.georss.org/georss/point",
+					       "http://www.openlinksw.com/schemas/virtrdf#Geometry"]);
 
     this.usedBlanknodes = [];
     this.pointList = new OAT.RDFTabs.PointList({uniqueInsert:true});
