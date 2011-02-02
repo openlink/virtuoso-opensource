@@ -45,7 +45,16 @@ iSPARQL.Defaults = {
     endpoint:     '/sparql',
     pivotInstalled: false,
 
+    locOpts: {             /* XXX all except minAcc not implemented yet */
+	cacheLocTO:  2000, /* Milliseconds timeout to improve non-expired cached location accuracy */
+	coarseLocTO: 2000, /* Milliseconds to wait for coarse loc in last cached location validation attempt */
+	minAcc:      500,  /* default min. accuracy requested for location queries, in metres, after which the query fires */
+	autoApply:   true, /* Automatically execute location query when min. accuracy is achieved. */
+	cacheExpiry: 10    /* minutes a cached location is deemed accurate */
+    },
+
  /* See maps.js indexed by OAT.Map.TYPE_* */
+
     mapProviderNames: [
 	"None", 
 	"Google Maps", 

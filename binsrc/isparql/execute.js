@@ -612,9 +612,9 @@ var QueryExec = function(optObj) {
 		anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
 		anchor_label.innerHTML = "Anchor behavior:";
 		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
-		anchor_pref_sel.add (new Option ("Describe"));
-		anchor_pref_sel.add (new Option ("Get Data Items"));
-		anchor_pref_sel.add (new Option ("Open Web Page"));
+		anchor_pref_sel.options.add (new Option ("Describe",0));
+		anchor_pref_sel.options.add (new Option ("Get Data Items",1));
+		anchor_pref_sel.options.add (new Option ("Open Web Page",2));
 
 		OAT.Event.attach(anchor_pref_sel, 'change', function () {
 			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);

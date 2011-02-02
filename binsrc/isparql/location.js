@@ -12,6 +12,16 @@
 // XXX this should end up in OAT
 //
 
+/*
+   Acquiring a location:
+
+   If empty cache, acquire location according to accuracy mode
+     
+   If last cache entry age < LocOpts.
+
+*/
+
+
 if (typeof iSPARQL == 'undefined') iSPARQL = {};
 
 iSPARQL.Location = function (o) {
@@ -134,7 +144,7 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
 	switch (e.code) {
 	case e.TIMEOUT:
 	    self._timed_out = true;
-	    OAT.MSG.send (self, "LOCATION_ERROR", e);
+	    OAT.MSG.send (self, "LOCATION_TIMEOUT", e);
 	    break;
 	case e.PERMISSION_DENIED:
 	    self._acquire_denied = true;
@@ -146,15 +156,19 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
     this.acquireCurrent = function () {
 	if (navigator.geolocation) {
 	    if (!self._acquiring) {
-		navigator.geolocation.getCurrentPosition (self._locAcquireHandler, self._locErrorHandler, self._locOpts);
+		navigator.geolocation.getCurrentPosition (self._locAcquireHandler, 
+							  self._locErrorHandler, 
+							  self._locOpts);
 		self._acquiring = true;
 	    }
 	}
     }
 
-    this.startTracking= function (interval) {
+    this.startTracking = function () {
 	if (navigator.geolocation) {
-	    navigator.geoLocation.watchPosition (self._locAcquireHandler, self._locErrorHandler, {maxAge: 10000});
+	    navigator.geoLocation.watchPosition (self._locAcquireHandler, 
+						 self._locErrorHandler, 
+						 {maxAge: 10000});
 	}
     }
 
@@ -225,6 +239,10 @@ iSPARQL.locationAcquireUI = function (o) {
 	self._lc.acquireCurrent();
     }
 
+    this.getCtr = function () {
+	return this._ctr;
+    }
+
     this._locHandler = function (m,s,l) {
 	self._latC.innerHTML = l.getLat();
 	self._lonC.innerHTML = l.getLon();
@@ -234,6 +252,11 @@ iSPARQL.locationAcquireUI = function (o) {
 	self._refBtn.innerHTML = "Refresh";
 	OAT.Dom.hide(self._thr);
 	OAT.Dom.hide(self._err);
+	if (l.getAcc() > o.minAcc) {
+	    self.refresh ();
+	} else {
+	    self._useHandler();
+	}
     }
 
     this._errHandler = function () {
