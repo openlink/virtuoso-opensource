@@ -3959,12 +3959,20 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   boxint destructive = bif_long_arg (qst, args, 1, "dict_to_vector");
   id_hash_t *ht;
   caddr_t *res, *tail, *keyp, *valp;
+  size_t box_len;
   if (NULL == hit1)
     return list (0);
   ht = hit1->hit_hash;
   if (ht->ht_mutex)
     mutex_enter (ht->ht_mutex);
-  res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  box_len = (ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t);
+  if (box_len >= MAX_BOX_LENGTH)
+    {
+      if (ht->ht_mutex)
+	mutex_leave (ht->ht_mutex);
+      sqlr_new_error ("22023", ".....", "The result array too large");
+    }
+  res = (caddr_t *)dk_alloc_box (box_len, DV_ARRAY_OF_POINTER);
   tail = res;
   id_hash_iterator (&hit, ht);
   if (1 != ht->ht_dict_refctr)
