@@ -357,7 +357,7 @@ sticker_init() {
   echo "  <name package=\"Demo\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Demo Database\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/demo/download\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/demo/download\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
