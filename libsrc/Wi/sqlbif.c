@@ -8734,7 +8734,7 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
         }
       if (0 == rb->rb_is_complete)
 #ifdef DEBUG
-        sqlr_new_error ("22023", ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
+        sqlr_new_error ("22023", (IS_BOX_POINTER (qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
 #else
         sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
 #endif
@@ -9358,17 +9358,17 @@ do_wide:
   goto cvt_error;
 
 inner_error:
-  if ((NULL == qst) || !(((query_instance_t *)qst)->qi_no_cast_error))
+  if (!IS_BOX_POINTER (qst) || !(((query_instance_t *)qst)->qi_no_cast_error))
     sqlr_resignal (err);
   dk_free_tree (err);
   return NEW_DB_NULL;
 
 cvt_error:
-  if ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error))
+  if (IS_BOX_POINTER (qst) && (((query_instance_t *)qst)->qi_no_cast_error))
     return NEW_DB_NULL;
 signal_error:
 #ifdef DEBUG
-  sqlr_new_error ("22023", ((NULL != qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (%s -> %s)", dv_type_title(arg_dtp), dv_type_title((int) (dtp->type)));
+  sqlr_new_error ("22023", (IS_BOX_POINTER (qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (%s -> %s)", dv_type_title(arg_dtp), dv_type_title((int) (dtp->type)));
 #else
   sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (%s -> %s)", dv_type_title(arg_dtp), dv_type_title((int) (dtp->type)));
 #endif
