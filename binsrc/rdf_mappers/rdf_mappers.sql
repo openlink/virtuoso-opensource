@@ -364,6 +364,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('http://www.csnstores.com/.*|http://www.bifter.co.uk/.*|http://www.hingly.com/.*|http://www.gnoss.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_RDFA_CARTRIDGE', null, 'RDFa');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+	values ('text/html',
+	'MIME', 'DB.DBA.RDF_LOAD_RDFA_NP_CARTRIDGE', null, 'RDFa (no translation)', 0);
+
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
@@ -2464,6 +2468,41 @@ create procedure DB.DBA.RDF_LOAD_RDFA_CARTRIDGE (in graph_iri varchar, in new_or
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_RDFA_NP_CARTRIDGE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare thisgr, cont varchar;
+
+  thisgr := coalesce (dest, graph_iri);
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+  if (get_keyword ('use_tidy', opts) = 'yes') 
+    cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+  else  
+    cont := ret_body;
+  if (dest is null)
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+  {
+    declare exit handler for sqlstate '*';
+    DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 0);
+    goto rdfa_end;
+  }
+  {
+    declare exit handler for sqlstate '*';
+    DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 1);
+    goto rdfa_end;
+  }
+  {
+    declare exit handler for sqlstate '*';
+    DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 2);
+    rdfa_end:;
+  }
+ return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
