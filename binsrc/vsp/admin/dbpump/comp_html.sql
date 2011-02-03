@@ -223,7 +223,7 @@ create procedure "PUMP"."DBA"."HTML_FOOTER_OUT" ( inout arr any )
   http ('<TR><TD CLASS="CopyrightBorder" COLSPAN="2"><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
   http ('<TR><TD ALIGN="right" COLSPAN="2"><P CLASS="Copyright">Virtuoso Server ');
   http (sys_stat('st_dbms_ver'));
-  http (' DBPUMP Interface - Copyright&copy; 1998-2010 OpenLink Software.</P></TD></TR>');
+  http (' DBPUMP Interface - Copyright&copy; 1998-2011 OpenLink Software.</P></TD></TR>');
   http ('</TABLE>\n</BODY>');
 }
 ;
