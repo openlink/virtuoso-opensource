@@ -2711,6 +2711,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   caddr_t parsed_value = NULL;
   sql_tree_tmp *tgt_dtp_tree;
   SPART *res;
+  caddr_t * qst;
   if (NULL != lang)
     return spartlist (sparp, 4, SPAR_LIT, strg, type, lang);
   if (uname_xmlschema_ns_uri_hash_boolean == type)
@@ -2763,8 +2764,11 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
 
 do_sql_cast:
+  qst = (caddr_t *)(sparp->sparp_sparqre->sparqre_qi);
+  if (!IS_BOX_POINTER (qst)) /* CALLER_LOCAL */
+    qst = NULL;
   tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, (ptrlong)NUMERIC_MAX_PRECISION, (ptrlong)NUMERIC_MAX_SCALE);
-  parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, DV_STRING);
+  parsed_value = box_cast (qst, strg, tgt_dtp_tree, DV_STRING);
   res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
   dk_free_tree (parsed_value);
   return res;
