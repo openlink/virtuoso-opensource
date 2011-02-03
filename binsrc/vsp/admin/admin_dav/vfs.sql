@@ -87,7 +87,7 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
   declare _udata, ext_hook, store_hook, _header_arr, _resps, xp_exp any;
-  declare n_urls, conv_html, is_sitemap int;
+  declare n_urls, conv_html, is_sitemap, accept_rdf int;
 
   conv_html := 1;
   n_urls := position (0, _urls) - 1;
@@ -97,10 +97,12 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   whenever not found goto nf_opt;
   select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
          coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), 
-	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH
+	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), 
+	 VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF
       into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, 
       	 redir_flag, store_flag, try_to_get_rdf, 
-	 _udata, ext_hook, store_hook, _del, _other, conv_html, is_sitemap, xp_exp
+	 _udata, ext_hook, store_hook, _del, _other, 
+	 conv_html, is_sitemap, xp_exp, accept_rdf
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 nf_opt:
 
@@ -111,7 +113,7 @@ nf_opt:
   if (_upd = 1 and _since is not null)
     _header := concat (_header, 'If-Modified-Since: ', soap_print_box (_since, '', 1), '\r\n');
 
-  if (try_to_get_rdf)
+  if (accept_rdf)
     _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*\r\n'; -- /* rdf formats */
 
   if (_upd = 1)  
@@ -286,10 +288,11 @@ create procedure WS.WS.DELETE_LOCAL_COPY (in _host varchar, in _url varchar, in 
 
 create procedure WS.WS.VFS_RUN (in url varchar, in threads int := 1, in batch_size int := 1, in fn varchar := null, in dta any := null)
 {
-  declare h, host, root_collection  any;
+  declare h, host, s_url, root_collection  any;
   h := rfc1808_parse_uri (url);
   host := h[1];
-  root_collection := (select top 1 VS_ROOT from WS.WS.VFS_SITE where VS_HOST = host);
+  s_url := h[2];
+  root_collection := (select top 1 VS_ROOT from WS.WS.VFS_SITE where VS_HOST = host and VS_URL = s_url);
   WS.WS.SERV_QUEUE_TOP (host, root_collection, 0, 0, fn, dta, threads, batch_size);
 }
 ;
@@ -626,14 +629,15 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
       hi := rfc1808_parse_uri (_tmp);
       sch := lower (hi[0]); 
       if (sch = '') sch := 'http';
-      hi[4] := '';
+      -- hi[4] := ''; if so prevents pages traversal
       hi[5] := '';
       _tmp := WS.WS.VFS_URI_COMPOSE (hi);
 
       if (sch = 'http')
 	    {
 	  _tmp_host := hi[1]; -- host part
-	  _tmp_url :=  hi[2]; -- local path part
+	  hi[0] := ''; hi[1] := '';
+	  _tmp_url := WS.WS.VFS_URI_COMPOSE (hi);  -- local part & URL parameters
 	  if (_tmp_host <> _host)
 	    _tmp_url := _tmp;
 	      --dbg_obj_print ('LINK: ',_tmp_host,_tmp_url);
@@ -1732,8 +1736,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
   -- RDF/XML or RDF/N3 depends on option
   mime_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (url, ctype, content);
 
-  -- always true
-  if (1 and (get_keyword ('meta_rdf', opts, 0) = 1))
+  -- RDF formats 
     {
       if (strstr (mime_type, 'application/rdf+xml') is not null)
         DB.DBA.RDF_LOAD_RDFXML (content, _base, _graph);
@@ -1750,7 +1753,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 
   -- The rest is mappers work
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS, WS.WS.VFS_SITE_RDF_MAP
-    where RM_ENABLED = 1 and VM_RDF_MAP = RM_PID and VM_HOST = _host and VM_ROOT = _root
+    where VM_RDF_MAP = RM_PID and VM_HOST = _host and VM_ROOT = _root
     order by VM_SEQ
    do
     {

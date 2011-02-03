@@ -91,6 +91,7 @@ create table WS.WS.VFS_SITE (
     VS_XPATH    long varchar,
     VS_BOT	int default 1,
     VS_IS_SITEMAP int default 0,
+    VS_ACCEPT_RDF int default 0,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -171,6 +172,9 @@ alter table WS.WS.VFS_SITE add VS_BOT int default 1
 ;
 
 alter table WS.WS.VFS_SITE add VS_IS_SITEMAP int default 0
+;
+
+alter table WS.WS.VFS_SITE add VS_ACCEPT_RDF int default 0
 ;
 
 alter table WS.WS.VFS_QUEUE add VQ_LEVEL int default 0
