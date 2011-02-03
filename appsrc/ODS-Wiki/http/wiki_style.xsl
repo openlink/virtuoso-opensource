@@ -107,7 +107,7 @@
                  </tr>
               </table>
          </table>
-	 <div class="copyright">Copyright &amp;copy; 1998-2010 OpenLink Software</div>-->
+	 <div class="copyright">Copyright &amp;copy; 1998-2011 OpenLink Software</div>-->
 	 <xsl:processing-instruction name="vsp">
 		declare ht_stat varchar;
 		ht_stat := http_request_status_get ();
