@@ -307,7 +307,9 @@ iSPARQL.Advanced = function () {
 	    var locUI = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
                 cancelCB: false,
 		cbParm: o,
-		cache: iSPARQL.locationCache});
+														cache: iSPARQL.locationCache,
+													    minAcc: iSPARQL.Settings.locOpts.minAcc});
+			iSPARQL.StatusUI.absorb(locUI.getCtr);
 	    locUI.refresh();
 	} else {
 	qe.execute(o);
@@ -1553,7 +1555,8 @@ iSPARQL.Common = {
 
 	OAT.Anchor.zIndex = 1001;
 
-	OAT.MSG.attach ("*", "LOCATION_ACQUIRED", function (m,s,l) { $("ft_loc").innerHTML = "lat:" + l.getLat() + " lon:" + l.getLon();});
+		OAT.MSG.attach ("*", "LOCATION_ACQUIRED", 
+						function (m,s,l) { $("ft_loc").innerHTML = "lat:" + l.getLat() + " lon:" + l.getLon();});
 
 	iSPARQL.StatusUI.statMsg ("Initializing menu&#8230;");
 	iSPARQL.Common.initMenu();
