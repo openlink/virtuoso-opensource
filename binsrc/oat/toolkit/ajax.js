@@ -59,7 +59,7 @@ OAT.AJAX = {
 		while (OAT.AJAX.requests.length) { OAT.AJAX.requests[0].abort(); }
 	},
 
-	GET:function(url,data,callback,optObj) {
+    GET:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 		var url_ = url;
@@ -67,10 +67,10 @@ OAT.AJAX = {
 		if (url.match(/\?/)) {
 			url_ += "&";
 		} else {
-			if (data || !options.noSecurityCookie) { url_ += "?"; }
+	    if (dta || !options.noSecurityCookie) { url_ += "?"; }
 		}
 
-		if(data) { url_ += data; }
+	if(dta) { url_ += dta; }
 
 		if (!options.noSecurityCookie) {
 			url_ += "&";
@@ -82,52 +82,52 @@ OAT.AJAX = {
 		return xhr;
 	},
 
-	POST:function(url,data,callback,optObj) {
+    POST:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 	xhr.open("POST",url,options.async,options.user,options.password);
 		xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-		OAT.AJAX.send(xhr,data);
+	OAT.AJAX.send(xhr,dta);
 		return xhr;
 	},
 
-	PUT:function(url,data,callback,optObj) {
+    PUT:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 	xhr.open("PUT",url,options.async,options.user,options.password);
-		OAT.AJAX.send(xhr,data);
+	OAT.AJAX.send(xhr,dta);
 		return xhr;
 	},
 
-	SOAP:function(url,data,callback,optObj) {
+    SOAP:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 	xhr.open("POST",url,options.async,options.user,options.password);
-		OAT.AJAX.send(xhr,data);
+	OAT.AJAX.send(xhr,dta);
 		return xhr;
 	},
 
-	MKCOL:function(url,data,callback,optObj) {
+    MKCOL:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 	xhr.open("MKCOL",url,options.async,options.user,options.password);
-		OAT.AJAX.send(xhr,data);
+	OAT.AJAX.send(xhr,dta);
 		return xhr;
 	},
 
-	PROPFIND:function(url,data,callback,optObj) {
+    PROPFIND:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 	xhr.open("PROPFIND",url,options.async,options.user,options.password);
-		OAT.AJAX.send(xhr,data);
+	OAT.AJAX.send(xhr,dta);
 		return xhr;
 	},
 
-	PROPPATCH:function(url,data,callback,optObj) {
+    PROPPATCH:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 	xhr.open("PROPPATCH",url,options.async,options.user,options.password);
-		OAT.AJAX.send(xhr,data);
+	OAT.AJAX.send(xhr,dta);
 		return xhr;
 	},
 
@@ -167,9 +167,9 @@ OAT.AJAX = {
 		return xhr;
 	},
 
-	send:function(xhr,data) {
+    send:function(xhr,body) {
 		function go() {
-			xhr.send(data);
+	    xhr.send(body);
 			try {
 				if (OAT.Browser.isGecko && !xhr.options.async) {
 					OAT.AJAX.response(xhr);
@@ -186,7 +186,8 @@ OAT.AJAX = {
 				go();
 			}
 			OAT.Loader.load("crypto", cb);
-		} /* if auth needed */ else go();
+	} /* if (BASIC) auth needed */ 
+	else go();
 	},
 
 	response:function(xhr) {
@@ -327,7 +328,7 @@ OAT.AJAX = {
 				OAT.AJAX.checkEnd();
 			}
 		}
-		this.send = function(data) { if (!self.aborted) { self.obj.send(data); } }
+	this.send = function(body) { if (!self.aborted) { self.obj.send(body); } }
 		this.setResponse = function(callback) { self.obj.onreadystatechange = callback; }
 		this.getResponseText = function() { return self.obj.responseText; }
 		this.getResponseXML = function() { return self.obj.responseXML;	}
