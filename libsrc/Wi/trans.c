@@ -1520,6 +1520,7 @@ sqlg_distinct_same_as_1 (sqlo_t * so, data_source_t ** q_head,
       END_DO_SET();
 
       tn = sqlg_trans_node (so->so_sc);
+      sqlg_pre_code_dpipe (so, pre_code, (data_source_t *) tn);
       tn->tn_input = (state_slot_t **) list (1, scalar_exp_generate (so->so_sc, col_dfe->dfe_tree, pre_code));
       tn->tn_output = (state_slot_t**)list (1, tn->tn_input[0]);
       if (!g_dfe)
