@@ -1072,6 +1072,8 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
     {
       int newsize = res_buf_len ? res_buf_len : 1;
       do newsize *= 2; while (newsize < max_reslen);
+      if (newsize >= MAX_BOX_ELEMENTS)
+	spar_internal_error (sparp, "The maximum number of elements in array too long");
       res = sparp->sparp_sprintff_isect_buf = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
       res_buf_len = newsize;
     }
