@@ -1628,7 +1628,7 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
     }
   http_request_status (sprintf ('HTTP/1.1 %s %s', httpcode, httpstatus));
   http_header ('Content-Type: text/plain\r\n');
-  http (concat (state, ' Error ', msg));
+  http (concat ('Virtuoso ', state, ' Error ', msg));
   if (query is not null)
     {
       http ('\n\nSPARQL query:\n');
