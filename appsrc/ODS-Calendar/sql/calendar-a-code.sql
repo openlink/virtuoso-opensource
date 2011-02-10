@@ -2431,6 +2431,26 @@ create procedure CAL.WA.dt_reformat(
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.dt_convert (
+  in pString varchar,
+  in pDefault any := null)
+{
+  if (isnull (pString))
+    goto _end;
+
+  declare exit handler for sqlstate '*' { goto _next; };
+  return stringdate (pString);
+_next:
+  declare exit handler for sqlstate '*' { goto _end; };
+  return http_string_date (pString);
+
+_end:
+  return pDefault;
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_formatTemplate (
@@ -5897,7 +5917,14 @@ create procedure CAL.WA.import_vcal (
   declare vcalVersion, vcalImported any;
   declare tzDict, tzID, tzOffset any;
 
+  if (not isstring (content))
+    content := cast (content as varchar);
+
+  if (strstr (content, '<?xml') = 0)
+    return CAL.WA.import_feed (domain_id, content, options, exchange_id, updatedBefore);
+
   vcalImported := vector ();
+
   -- options
   oEvents := 1;
   oTasks := 1;
@@ -5914,13 +5941,7 @@ create procedure CAL.WA.import_vcal (
   }
 
   -- using DAV parser
-  if (not isstring (content))
-  {
-    xmlData := DB.DBA.IMC_TO_XML (cast (content as varchar));
-  } else {
-    xmlData := DB.DBA.IMC_TO_XML (content);
-  }
-  xmlData := xml_tree_doc (xmlData);
+  xmlData := xml_tree_doc (DB.DBA.IMC_TO_XML (content));
   xmlItems := xpath_eval ('/*', xmlData, 0);
   foreach (any xmlItem in xmlItems) do
   {
@@ -6049,32 +6070,30 @@ create procedure CAL.WA.import_vcal (
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
         updated := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTAMP/', N), tzDict);
           notes := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/X-OL-NOTES/val', N), xmlItem, 1) as varchar);
-          connection_set ('__calendar_import', '1');
-          id := CAL.WA.task_update
-          (
-            id,
-            uid,
-            domain_id,
-            subject,
-            description,
-            null,
-            privacy,
-            eventTags,
-            eEventStart,
-            eEventEnd,
-            priority,
-            status,
-            complete,
-            completed,
-            notes,
-            updated
-          );
-          if (not isnull (exchange_id))
-            update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
           attendees := CAL.WA.import_vcal_attendees (xmlItem, sprintf ('IMC-VTODO[%d]/ATTENDEE', N));
-          if (length (attendees))
-            CAL.WA.attendees_update2 (id, attendees, oMailAttendees);
-          connection_set ('__calendar_import', '0');
+          id := CAL.WA.import_task_update
+          (
+                  id,              -- id
+                  uid,             -- uid
+                  domain_id,       -- domain_id
+                  subject,         -- subject
+                  description,     -- description
+                  null,            -- attendees
+                  privacy,         -- privacy
+                  eventTags,       -- tags
+                  eEventStart,     -- eEventStart
+                  eEventEnd,       -- eEventEnd
+                  priority,        -- priority
+                  status,          -- status
+                  complete,        -- complete
+                  completed,       -- completed
+                  notes,           -- notes
+                  updated,         -- updated
+                  exchange_id,     -- exchange_id
+                  updatedBefore,   -- updatedBefore
+                  attendees,       -- attendees
+                  oMailAttendees   -- mailAttendees
+          );
           vcalImported := vector_concat (vcalImported, vector (id));
 
         _skip2:;
@@ -6121,6 +6140,238 @@ create procedure CAL.WA.import_vcal_attendees (
     }
   vectorbld_final (retValue);
   return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_feed (
+  in domain_id integer,
+  in content any,
+  in options any := null,
+  in exchange_id integer := null,
+  in updatedBefore integer := null)
+{
+  declare id integer;
+  declare tags any;
+  declare xt, items any;
+  declare vcalImported any;
+
+  vcalImported := vector ();
+
+  -- options
+  tags := '';
+  if (not isnull (options))
+    tags := get_keyword ('tags', options, '');
+
+  xt := CAL.WA.string2xml (content);
+  if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null)
+  {
+    -- RSS formats
+    items := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt, 0);
+    foreach (any item in items) do
+    {
+      id := CAL.WA.import_feed_rss_item (domain_id, exchange_id, updatedBefore, tags, xml_cut (item));
+      vcalImported := vector_concat (vcalImported, vector (id));
+    }
+  }
+  else if (xpath_eval ('/feed/entry', xt) is not null)
+  {
+    -- Atom format
+    items := xpath_eval ('/feed/entry', xt, 0);
+    foreach (any item in items) do
+    {
+      id := CAL.WA.import_feed_atom_item (domain_id, exchange_id, updatedBefore, tags, xml_cut (item));
+      vcalImported := vector_concat (vcalImported, vector (id));
+    }
+  }
+
+  return vcalImported;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_feed_rss_item (
+  in domain_id integer,
+  in exchange_id integer,
+  in updatedBefore integer,
+  in tags varchar,
+  inout xt any)
+{
+  declare id integer;
+  declare subject, description, link, uid, pubDate varchar;
+
+  subject := serialize_to_UTF8_xml (xpath_eval ('string(/item/title)', xt, 1));
+  description := xpath_eval ('[ xmlns:content="http://purl.org/rss/1.0/modules/content/" ] string(/item/content:encoded)', xt, 1);
+  if (is_empty_or_null (description))
+    description := xpath_eval ('string(/item/description)', xt, 1);
+  description := CAL.WA.string2xml (serialize_to_UTF8_xml (description));
+  link := cast (xpath_eval ('/item/link', xt, 1) as varchar);
+  if (isnull (link))
+  {
+    link := cast (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /item/@rdf:about', xt, 1) as varchar);
+    if ((isnull (link)) and isnull (cast(xpath_eval ('/item/guid[@isPermaLink = "false"]', xt, 1) as varchar)))
+      link := cast (xpath_eval ('/item/guid', xt, 1) as varchar);
+  }
+  uid := cast (xpath_eval ('/item/guid', xt, 1) as varchar);
+  pubDate := CAL.WA.dt_convert(cast (xpath_eval ('[ xmlns:dc="http://purl.org/dc/elements/1.1/" ] /item/dc:date', xt, 1) as varchar));
+  if (isnull (pubDate))
+    pubDate := CAL.WA.dt_convert(cast(xpath_eval('/item/pubDate', xt, 1) as varchar), now());
+
+  id := CAL.WA.import_task_update
+        (
+          id,                                   -- id
+          uid,                                  -- uid
+          domain_id,                            -- domain_id
+          subject,                              -- subject
+          description,                          -- description
+          null,                                 -- attendees
+          CAL.WA.domain_is_public (domain_id),  -- privacy
+          tags,                                 -- tags
+          pubDate,                              -- eEventStart
+          pubDate,                              -- eEventEnd
+          3,                                    -- priority
+          null,                                 -- status
+          null,                                 -- complete
+          null,                                 -- completed
+          null,                                 -- notes
+          null,                                 -- updated
+          exchange_id,                          -- exchange_id
+          updatedBefore                         -- updatedBefore
+        );
+  return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_feed_atom_item(
+  in domain_id integer,
+  in exchange_id integer,
+  in updatedBefore integer,
+  in tags varchar,
+  inout xt any)
+{
+  declare id integer;
+  declare subject, description, link, uid, pubDate varchar;
+  declare contents any;
+
+  subject := serialize_to_UTF8_xml (xpath_eval ('string(/entry/title)', xt, 1));
+  if (xpath_eval ('/entry/content[@type = "application/xhtml+xml" or @type="xhtml"]', xt) is not null)
+  {
+    contents := xpath_eval ('/entry/content/*', xt, 0);
+    if (length (contents) = 1)
+    {
+      description := CAL.WA.xml2string(contents[0]);
+    } else {
+      description := '<div>';
+      foreach (any content in contents) do
+        description := concat(description, CAL.WA.xml2string(content));
+      description := concat(description, '</div>');
+    }
+  } else {
+    description := xpath_eval ('string(/entry/content)', xt, 1);
+    if (is_empty_or_null(description))
+      description := xpath_eval ('string(/entry/summary)', xt, 1);
+    description := CAL.WA.string2xml (serialize_to_UTF8_xml (description));
+  }
+  link := cast (xpath_eval ('/entry/link[@rel="alternate"]/@href', xt, 1) as varchar);
+  uid := cast (xpath_eval ('/entry/id', xt, 1) as varchar);
+  pubDate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/created', xt, 1) as varchar), null);
+  if (isnull (pubDate))
+  {
+    pubdate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/modified', xt, 1) as varchar), null);
+    if (isnull (pubDate))
+    {
+      pubdate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/updated', xt, 1) as varchar), null);
+      if (isnull (pubDate))
+        pubdate := now();
+    }
+  }
+  id := CAL.WA.import_task_update
+        (
+          id,                                   -- id
+          uid,                                  -- uid
+          domain_id,                            -- domain_id
+          subject,                              -- subject
+          description,                          -- description
+          null,                                 -- attendees
+          CAL.WA.domain_is_public (domain_id),  -- privacy
+          tags,                                 -- tags
+          pubDate,                              -- eEventStart
+          pubDate,                              -- eEventEnd
+          3,                                    -- priority
+          null,                                 -- status
+          null,                                 -- complete
+          null,                                 -- completed
+          null,                                 -- notes
+          null,                                 -- updated
+          exchange_id,                          -- exchange_id
+          updatedBefore                         -- updatedBefore
+        );
+  return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_task_update (
+  in id integer,
+  in uid varchar,
+  in domain_id integer,
+  in subject varchar,
+  in description varchar,
+  in attendees varchar,
+  in privacy integer,
+  in tags varchar,
+  in eEventStart datetime,
+  in eEventEnd datetime,
+  in priority integer,
+  in status varchar,
+  in complete integer,
+  in completed datetime,
+  in notes varchar := null,
+  in updated datetime := null,
+  in exchange_id integer := null,
+  in updatedBefore integer := null,
+  in attendees any := null,
+  in mailAttendees any := null)
+{
+  id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
+  if ((id <> -1) and not isnull (updatedBefore))
+  {
+    if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
+      goto _exit;
+  }
+  connection_set ('__calendar_import', '1');
+  id := CAL.WA.task_update
+        (
+          id,
+          uid,
+          domain_id,
+          subject,
+          description,
+          null,
+          privacy,
+          tags,
+          eEventStart,
+          eEventEnd,
+          priority,
+          status,
+          complete,
+          completed,
+          notes,
+          updated
+        );
+  if (not isnull (exchange_id))
+    update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
+  if (length (attendees))
+    CAL.WA.attendees_update2 (id, attendees, mailAttendees);
+  connection_set ('__calendar_import', '0');
+
+_exit:;
+  return id;
 }
 ;
 
