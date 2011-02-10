@@ -90,6 +90,9 @@ c:description owl:equivalentProperty dc:description .
 foaf:img rdfs:subPropertyOf virtrdf:image .
 foaf:depiction rdfs:subPropertyOf virtrdf:image .
 dv:photo rdfs:subPropertyOf virtrdf:image .
+<http://www.openlinksw.com/schemas/virtcxml#Custom-Screen%20Name> owl:equivalentProperty foaf:nick.
+<http://www.openlinksw.com/schemas/virtcxml#Custom-Real%20Name> owl:equivalentProperty foaf:name .
+<http://www.openlinksw.com/schemas/virtcxml#FacetDescription> owl:equivalentProperty dcterms:description .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -475,21 +478,21 @@ again:
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%% frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	 }
        else if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
-	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
+	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else if (_url like 'mailto:%')
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/mail.png" title="Send Mail" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
+	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/mail.png" title="Send Mail" style="border-width:0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
 	 }
        else if (_url like 'tel:%')
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/phone.gif" title="Make Call" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
+	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/phone.gif" title="Make Call" style="border-width:0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
 	 }
        else
 	 {
 	   usual_iri:
 	   http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 	   if (rdfdesc_is_external (_url, prop))
-	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" style="border-width:0"/></a>', _url));
 	 }
 
      }
@@ -1168,7 +1171,7 @@ create procedure rdfdesc_links_mup (in subj any, in desc_link any)
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := '';
   links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
+  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml" title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
   links := links || repeat (' ', 5) ||
   sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
   links := links || repeat (' ', 5) ||
