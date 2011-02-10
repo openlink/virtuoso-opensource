@@ -6046,6 +6046,16 @@ signal_error:
   return NULL;
 }
 
+caddr_t
+bif_getenv (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t var = bif_string_arg (qst, args, 0, "getenv");
+  char * res = NULL;
+  sec_check_dba ((query_instance_t *)qst, "getenv");
+  res = getenv (var);
+  return res ? box_dv_short_string (res) : NEW_DB_NULL;
+}
+
 /* hooks for operating on gz stram via string session */
 
 OFF_T
@@ -6627,6 +6637,7 @@ bif_file_init (void)
   bif_define_typed ("file_open", bif_file_open, &bt_any);
   bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
   bif_define_typed ("get_csv_row", bif_get_csv_row, &bt_any);
+  bif_define_typed ("getenv", bif_getenv, &bt_varchar);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
