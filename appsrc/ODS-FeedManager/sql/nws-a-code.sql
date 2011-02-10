@@ -4397,14 +4397,18 @@ create procedure ENEWS.WA.make_dasboard_item (
   if (action = 'insert')
   {
     ret := sprintf (
-      '<post id="%d"><title><![CDATA[%s]]></title><dt>%s</dt><link>%V</link><from><![CDATA[%s]]></from><email>%V</email></post>',
-      id, ENEWS.WA.show_title(title), ENEWS.WA.dt_iso8601 (tim), SIOC..feed_item_iri (feed_id, id), ENEWS.WA.show_author(uname), coalesce(ENEWS.WA.process_authorEMail(data), ''));
+      '<post id="%d"><title>%V</title><dt>%s</dt><link>%V</link><from>%V</from><email>%V</email></post>',
+      id, ENEWS.WA.show_title(ENEWS.WA.utf2wide (title)), ENEWS.WA.dt_iso8601 (tim), SIOC..feed_item_iri (feed_id, id), ENEWS.WA.show_author(uname), coalesce(ENEWS.WA.process_authorEMail(data), ''));
     http (ret, ses);
     i := i + 1;
   }
 
   if (dash is not null)
   {
+    declare exit handler for sqlstate '*'
+    {
+      goto _end;
+    };
     declare xt, xp any;
 
     xt := xtree_doc (dash);
@@ -4456,6 +4460,10 @@ create procedure ENEWS.WA.dashboard_rs (
           and EFD_DOMAIN_ID = p0
           and EF_DASHBOARD is not null) do
   {
+    declare exit handler for sqlstate '*'
+    {
+      goto _skipBad;
+    };
       xt := xtree_doc (EF_DASHBOARD);
       xp := xpath_eval ('/feed-db/*', xt, 0);
     for (N := 0; N < length (xp); N := N + 1)
@@ -4472,6 +4480,7 @@ create procedure ENEWS.WA.dashboard_rs (
       mail  := serialize_to_UTF8_xml (xpath_eval ('string(./email)', xp[N]));
       result (EF_ID, cast (id as integer), title, dt, autor, mail);
       }
+  _skipBad:;
     }
 }
 ;
