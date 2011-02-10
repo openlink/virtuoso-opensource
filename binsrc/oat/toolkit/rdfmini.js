@@ -103,12 +103,32 @@ OAT.RDFMini = function(div,optObj) {
 			}
 			OAT.Event.attach(s,"change",self.redraw);
 			self.select = s;
-			OAT.Dom.append([self.parent,OAT.Dom.text("Visualization: "),s]);
+
+	    var sel_ctr = OAT.Dom.create("div",{className:"rdfmini_view_sel_ctr"});
+	    var sel_lbl = OAT.Dom.create("label");
+
+	    OAT.Dom.append([self.parent,sel_ctr],[sel_ctr,sel_lbl,s]);
+	    sel_lbl.innerHTML = "View:";
 		} else {
 			var t = self.options.tabs[0];
 			var obj = new OAT.RDFTabs[t[0]](self,t[2]);
 			self.tabs.push(obj);
 		}
+
+	var ua = navigator.userAgent;
+
+	if (ua.indexOf('iPhone') != -1 || ua.indexOf('Android') != -1 ) {
+	    vp = OAT.Dom.getViewport();
+
+	    self.content.style.width = vp[1]+'px';
+	    self.content.style.height = vp[0]+'px';
+	    console.info ('viewport: '+vp[1]+'x'+vp[0]);
+	    self.content.scrollIntoView(true);
+	}
+	else {
+	    self.content.style.height = '600px';
+	}
+
 		self.parent.appendChild(self.content);
 	}
 

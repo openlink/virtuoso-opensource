@@ -1645,13 +1645,18 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		var item = self.parent.data.structured[i];
 		self.trySimple(item);
 	    }
+
+	    var useragent = navigator.userAgent;
+	    
 	    self.addMarkers();
+	    
 	}
 
 	if (!self.map_loaded) {
 	    self.map = new OAT.Map(self.elm,
 				   self.options.provider,
-				   {fix:self.options.fix,markerIcon:"toolkit/images/markers/01.png",markerIconSize:[18,41]},
+				   {fix:self.options.fix,markerIcon:"toolkit/images/markers/01.png",
+				    markerIconSize:[18,41]},
 				   self.options.specificOpts);
 	    OAT.Map.loadApi(self.options.provider,{callback: cb});
 	}
