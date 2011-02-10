@@ -161,8 +161,7 @@
       </head>
       <body style="margin: 5px; font-size: 9pt;">
         <div style="padding: 0 0 0.5em 0;">
-          <img src="/oMail/i/close_16.png" border="0" onClick="javascript: if (opener != null) opener.focus(); window.close();" alt="Close" title="Close" /><a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"  alt="Close" title="Close">&nbsp;Close</a>
-          <hr/>
+          <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
         </div>
         <xsl:apply-templates/>
         <div id="FT">

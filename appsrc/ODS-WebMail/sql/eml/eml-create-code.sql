@@ -257,9 +257,9 @@ create procedure OMAIL.WA.omail_address2xml(
     if (_count = 2)
       return trim (_addr);
     if (length(_name) > 0)
-      _name  := sprintf ('<name><![CDATA[%s]]></name>',OMAIL.WA.utl_decode_field (trim (_name)),_x);
+      _name  := sprintf ('<name>%V</name>',OMAIL.WA.utl_decode_field (trim (_name)),_x);
     if (length(_addr) > 0)
-      _addr  := sprintf('<email><![CDATA[%s]]></email>',_addr);
+      _addr  := sprintf ('<email>%V</email>',_addr);
 
     _rs := sprintf('%s<%s>%s%s</%s>',_rs,_node,_name,_addr,_node);
   }
@@ -3211,7 +3211,7 @@ create procedure OMAIL.WA.imap_message_info (
 {
   declare _server, _password, _buffer, _folder, _retCode any;
 
-  for (select FOLDER_ID, MSG_SOURCE, UNIQ_MSG_ID from OMAIL.WA.MESSAGES where DOMAIN_ID = _domain_id and USER_ID = _user_id and MSG_ID = _msg_id) do
+  for (select FOLDER_ID, MSG_SOURCE, UNIQ_MSG_ID from OMAIL.WA.MESSAGES where DOMAIN_ID = _domain_id and USER_ID = _user_id and MSG_ID = _msg_id and MSG_SOURCE > 0) do
   {
     _folder_id := FOLDER_ID;
     _source_id := MSG_SOURCE;
@@ -3280,9 +3280,7 @@ create procedure OMAIL.WA.imap_message_move (
 
   _buffer := 10000000;
   _retCode := imap_get (_server, _user, _password, _buffer, 'message_copy', _folder, vector (_move, cast (_unique_id as integer)));
-  -- dbg_obj_print ('imap_message_move0: ', _retCode);
   _retCode := imap_get (_server, _user, _password, _buffer, 'message_delete', _folder, vector (cast (_unique_id as integer)));
-  -- dbg_obj_print ('imap_message_move1: ', _retCode);
 
   return 1;
 }
@@ -5727,7 +5725,6 @@ create procedure OMAIL.WA.omail_receive_message(
 
   _msg_id        := sequence_next ('OMAIL.WA.omail_seq_eml_msg_id');
   _freetext_id   := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
-  _subject       := OMAIL.WA.utl_decode_field (get_keyword_ucase ('Subject',_attrs,''));
   _from          := get_keyword_ucase('From',_attrs,'');
   _returnPath    := get_keyword_ucase ('Return-Path',_attrs, '');
   _to            := get_keyword_ucase('To',_attrs,'');
@@ -5746,6 +5743,31 @@ create procedure OMAIL.WA.omail_receive_message(
   _attached      := 0;
   _tags          := '';
   _settings      := OMAIL.WA.omail_get_settings (_domain_id, _user_id, 'base_settings');
+
+  -- encrypted
+  --
+  if (_mime_type = 'application/x-pkcs7-mime')
+  {
+    declare _decrypted, _keys any;
+
+    _keys := OMAIL.WA.certificate (_domain_id, _user_id);
+    _source := smime_decrypt (_source, _keys[0], _keys[1], null);
+    _message := mime_tree (_source);
+    if (not (isarray (_message)) and _mode)
+      _message := vector (mime_header (_source), vector (3, 0), 0);
+
+    if (not (isarray (_message)))
+      return 0;
+
+    if (not (isarray(_message[0])))
+      return 0;
+
+    _attrs := _message[0];
+    _bodys := _message[1];
+    _parts := _message[2];
+  }
+  _mime_type := get_keyword_ucase ('Content-Type', _attrs, '');
+  _subject   := OMAIL.WA.utl_decode_field (get_keyword_ucase ('Subject',_attrs,''));
 
   -- signature
   --
@@ -6067,6 +6089,7 @@ create procedure OMAIL.WA.omail_save_msg(
 
   _options := vector ();
   OMAIL.WA.omail_setparam ('securitySign', _options, get_keyword ('ssign', _params, '0'));
+  if (not isnull (VAD_CHECK_VERSION ('Addressbook')))
   OMAIL.WA.omail_setparam ('securityEncrypt', _options, get_keyword ('sencrypt', _params, '0'));
 
   if (_msg_id = 0)
@@ -6547,7 +6570,7 @@ create procedure OMAIL.WA.omail_send_msg(
 {
   declare _sql_result1, _sql_result2, _xslt_url, _xslt_url2, _xslt_url3, _tmp, _body any;
   declare _sender, _rec, _smtp_server any;
-  declare _sid, _realm, _fields, _settings, _signed, _type_id, _replyTo, _displayName, _dloadUrl any;
+  declare _sid, _realm, _fields, _settings, _signed, _sencrypt, _type_id, _replyTo, _displayName, _dloadUrl any;
   declare exit handler for SQLSTATE '2E000'
   {
     _error := 1901;
@@ -6650,7 +6673,31 @@ create procedure OMAIL.WA.omail_send_msg(
   if (not isnull (_skip))
   {
     _rec := replace(_rec, sprintf('<%s>', _skip), '');
-    _rec := trim (trim (trim (_rec), ','));
+    _rec := trim (trim (_rec), ',');
+  }
+  _rec := trim (_rec);
+  _sencrypt := OMAIL.WA.omail_getp ('sencrypt', _params);
+  if (_sencrypt = '1')
+  {
+    declare N integer;
+    declare _addr, _addrs, _cert, _certs any;
+
+    _certs := vector ();
+    _addrs := split_and_decode (_rec, 0, '\0\0,');
+    for (N := 0; N < length (_addrs); N := N + 1)
+    {
+      _addr := _addrs[N];
+      _addr := replace (_addr, '<', '');
+      _addr := replace (_addr, '>', '');
+      _addr := replace (_addr, '\t', '');
+      _addr := trim (_addr);
+      _cert := AB.WA.contact_certificate (_user_id, _addr);
+      if (isnull (_cert) or (get_certificate_info (10, _cert, 0, '', 'emailAddress') <> _addr))
+        signal ('08006', '');
+
+      _certs := vector_concat (_certs, vector (_cert));
+    }
+    _body := smime_encrypt (_body, _certs, 'aes256');
   }
   _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
   smtp_send(_smtp_server, _sender, _rec, _body);
@@ -7945,13 +7992,14 @@ create procedure OMAIL.WA.omail_mails (
   _rs := sprintf ('%s<mails>', _rs);
 
   declare S, name varchar;
-  declare st, msg, meta, rows any;
+  declare IRIs, st, msg, meta, rows any;
 
+  IRIs := vector ();
   S := 'sparql
-        PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-        select ?nick, ?firstName, ?family_name, ?mbox, ?mbox_sha1sum
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+        select ?nick, ?firstName, ?family_name, ?mbox, ?mbox_sha1sum, ?x
         from <%s>
-        WHERE
+        where
         {
           <%s> foaf:knows ?x.
           optional { ?x foaf:nick ?nick}.
@@ -7963,17 +8011,51 @@ create procedure OMAIL.WA.omail_mails (
 	S := sprintf (S, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (_user_id)));
   st := '00000';
   exec (S, st, msg, vector (), 0, meta, rows);
-  if ('00000' = st) {
-    foreach (any row in rows) do {
+  if ('00000' = st)
+  {
+    foreach (any row in rows) do
+    {
       name := '';
       if (not isnull (row[0]))
         name := row[0];
       if ((not isnull (row[1])) and (not isnull (row[2])))
         name := row[1] || ' ' || row[2];
       if (not isnull (row[3]))
+      {
         _rs := sprintf ('%s<mail><name>%s</name><email>%s</email></mail>', _rs, name, OMAIL.WA.xml2string (OMAIL.WA.omail_composeAddr (name, row[3])));
-      if (not isnull (row[4]))
+      }
+      else if (not isnull (row[4]))
+      {
         _rs := sprintf ('%s<mail><name>%s</name><email>%s</email></mail>', _rs, name, OMAIL.WA.xml2string (OMAIL.WA.omail_composeAddr (name, row[4])));
+    }
+      IRIs := vector_concat (IRIs, vector (row[5]));
+    }
+  }
+  S := 'select P_NAME, P_FIRST_NAME, P_LAST_NAME, P_MAIL, P_ID, P_DOMAIN_ID
+          from AB.WA.PERSONS
+         where DB.DBA.is_empty_or_null (P_MAIL) = 0
+           and P_DOMAIN_ID in (select WAI_ID
+                                 from DB.DBA.WA_MEMBER,
+                                      DB.DBA.WA_INSTANCE
+                                where WAM_USER = ?
+                                  and WAM_MEMBER_TYPE = 1
+                                  and WAM_INST = WAI_NAME)
+       ';
+  st := '00000';
+  exec (S, st, msg, vector (_user_id), 0, meta, rows);
+  if ('00000' = st)
+  {
+    foreach (any row in rows) do
+    {
+      if (not OMAIL.WA.vector_contains (IRIs, SIOC..socialnetwork_contact_iri (row[5], row[4])))
+      {
+        name := '';
+        if (not DB.DBA.is_empty_or_null (row[0]))
+          name := row[0];
+        if ((not DB.DBA.is_empty_or_null (row[1])) and (not DB.DBA.is_empty_or_null (row[2])))
+          name := row[1] || ' ' || row[2];
+        _rs := sprintf ('%s<mail><name>%s</name><email>%s</email></mail>', _rs, name, OMAIL.WA.xml2string (OMAIL.WA.omail_composeAddr (name, row[3])));
+      }
     }
   }
   _rs := sprintf ('%s</mails>', _rs);
@@ -10498,5 +10580,24 @@ create procedure OMAIL.WA.certificateList (
   http ('</certificates>', stream);
 
   return string_output_string (stream);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.certificate (
+  in _domain_id integer,
+  in _user_id integer)
+{
+  declare _settings, _name, _certificate, _pem, _key varchar;
+
+  _settings := OMAIL.WA.omail_get_settings (_domain_id, _user_id, 'base_settings');
+  _name := OMAIL.WA.omail_getp ('security_encrypt', _settings);
+  set_user_id (OMAIL.WA.account_name (_user_id));
+  _pem := xenc_pem_export(_name);
+  _key := xenc_pem_export(_name, 1);
+  set_user_id ('dba');
+
+  return vector (_pem, _key);
 }
 ;

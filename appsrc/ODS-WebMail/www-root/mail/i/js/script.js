@@ -364,7 +364,7 @@ function coloriseRow(obj, checked) {
 function windowShow(sPage, width, height)
 {
   if (width == null)
-    width = 500;
+    width = 520;
   if (height == null)
     height = 420;
   sPage = sPage + '&return=F1&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
