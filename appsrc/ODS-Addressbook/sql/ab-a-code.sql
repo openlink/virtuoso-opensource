@@ -3539,6 +3539,25 @@ create procedure AB.WA.contact_share (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.contact_certificate (
+  in account_id integer,
+  in mail varchar)
+{
+  return (select TOP 1 P_CERTIFICATE
+            from AB.WA.PERSONS
+           where P_MAIL = mail
+             and length (P_CERTIFICATE) <> 0
+             and P_DOMAIN_ID in (select WAI_ID
+                                   from DB.DBA.WA_INSTANCE,
+                                        DB.DBA.WA_MEMBER
+                                  where WAM_USER = account_id
+                                    and WAM_MEMBER_TYPE = 1
+                                    and WAM_INST = WAI_NAME));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.value2str (
   in data any,
   in labels any,
