@@ -308,6 +308,15 @@ ASK WHERE
 			{
 			?s ?p ?o .
 			}">Ask</option>
+                  <option value="CONSTRUCT { ?thing rdfs:type ?type;
+              foaf:name ?name;
+              geo:geometry ?geo .}
+WHERE     {	?thing a ?type;
+              foaf:name ?name; 
+              geo:geometry ?geo .
+			  FILTER (bif:st_intersects (?geo, bif:st_point (__P_LAT__,__P_LON__), 200))
+          } 
+">Proximity query</option>
 		</select>
 		<select name="tool" id="tool" onchange="tool_invoke()">
 		  <option value="">-- Statement Help --</option>
@@ -330,8 +339,14 @@ ASK WHERE
 		  <option value="tool_put('FILTER regex( str(?name), &quot;Jane&quot;, &quot;i&quot; ) .')">put Regexp Filter</option>
 		  <option value="tool_put('FILTER ( bound(?x) ) .')">put Bound Filter</option>
 		  <option value="tool_put('FILTER ( ?date > &quot;2005-01-01T00:00:00Z&quot;^^xsd:dateTime ) .')">put Date Filter</option>
+		          <option value="tool_put('FILTER ( bif:st_intersects (?geo, bif:st_point(__P_LAT__, __P_LON__),200)) .')">put Proximity Filter</option>
+		          <option value="tool_put('__P_LAT__')">insert Latitude Macro</option>
+		          <option value="tool_put('__P_LON__')">insert Longitude Macro</option>
 		</select>
-		<a href="#" onclick="tools_popup()"><img src="images/cr16-action-window_new.png" alt="Statement Help" title="Statement Help" border="0"/></a>
+
+		        <a href="#" onclick="tools_popup()">
+                  <img src="images/cr16-action-window_new.png" alt="Statement Help" title="Statement Help" border="0"/>
+                </a>
 	      </div> <!-- #topbox_ctl -->
 	      <label for="query">SPARQL Query</label><br/>
 	      <div style="clear:both;">
@@ -365,24 +380,12 @@ ASK WHERE
         <input type="text" id="maxrows" size="4"/> rows
         <span class="maxrows_expln">Leave empty for server maximum setting.</span>
       </fieldset>
-        <div class="controls" id="queryMetaData">
-        <h3 id="mdtoggler" class="ctl_tgl"><span class="tgl_indicator" id="mdoptstogglerarrow">&#9656;</span>Query Metadata</h3>
-        <div id="mdopts_ctr" class="ctl_ctr" style="display: none">
-          <fieldset class="md_opts" id="mdopts">
-              <label for="mdtitle">Title:</label><input type="text" id="mdtitle"/><br/>
-	      <label for="mddescription">Description:</label><input type="text" id="mddescription"/><br/>
-	      <label for="mdcreator">Creator:</label><input type="text" id="mdcreator"/><br/>
-	      <!--div class="expln">This metadata will be saved together with the query in a .rq file.</div-->
-            </fieldset>
-          </div> <!-- #mdopts_ctr -->
-        </div> <!-- #queryMetaData -->
         <div class="controls" id="controls">
         <h3 id="endpoint_opts_toggler" class="ctl_tgl">
-          <span class="tgl_indicator" id="endpointoptstogglerarrow">&#9656;</span>Endpoint Options <span id="epvirtuosoindicator" style="display: none">(Virtuoso)</span>
+          <span class="tgl_indicator" id="endpointoptstogglerarrow">&#9656;</span>Sponger <span id="epvirtuosoindicator" style="display: none">(Virtuoso)</span>
           </h3>
 	    <div id="endpoint_opts" class="ctl_ctr" style="display:none">
-	      <fieldset class="deref_opts" id="derefOpts" style="display:none">
-	      <legend>Data Dereferencing Options</legend>
+	      <fieldset class="deref_opts" id="derefOpts">
               <table>
                 <tr>
 	          <td class="cachingOpts" style="padding-right: 8px;">
@@ -475,6 +478,17 @@ ASK WHERE
 	    <br style="clear:both;"/>
           </div> <!-- endpoint_options -->
 	</div> <!-- #controls -->
+      <div class="controls" id="queryMetaData">
+        <h3 id="mdtoggler" class="ctl_tgl"><span class="tgl_indicator" id="mdoptstogglerarrow">&#9656;</span>Query Metadata</h3>
+        <div id="mdopts_ctr" class="ctl_ctr" style="display: none">
+          <fieldset class="md_opts" id="mdopts">
+            <label for="mdtitle">Title:</label><input type="text" id="mdtitle"/><br/>
+	        <label for="mddescription">Description:</label><input type="text" id="mddescription"/><br/>
+	        <label for="mdcreator">Creator:</label><input type="text" id="mdcreator"/><br/>
+	        <!--div class="expln">This metadata will be saved together with the query in a .rq file.</div-->
+          </fieldset>
+        </div> <!-- #mdopts_ctr -->
+      </div> <!-- #queryMetaData -->
 	<div class="main_col_page" id="page_results"></div>
         <div id="foot">
           <div class="foot_l" id="foot_l">
@@ -610,6 +624,8 @@ ASK WHERE
                     <span id="item_count">N/A</span> items
                     <span id="label_count">N/A</span> labels chosen
                     <span id="label_proc_count">N/A</span> labels processed
+      LOCATION:     <span id="about_loc"></span>
+
       </pre>
       <div class="btn_row"><button id="about_dlg_b_ok">OK</button></div>
     </div> <!-- #about_dlg -->

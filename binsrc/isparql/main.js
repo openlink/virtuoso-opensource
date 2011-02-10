@@ -557,7 +557,8 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	/* main display toggling */
 	OAT.Event.attach (self.togglerElm, "click", self.toggle);
 
-	if (typeof sessionStorage.iSPARQLEpOptsUIVisible != 'undefined' && sessionStorage.iSPARQLEpOptsUIVisible == 'true')
+		if (typeof sessionStorage.iSPARQLEpOptsUIVisible != 'undefined' && 
+            sessionStorage.iSPARQLEpOptsUIVisible == 'true')
 	    self.show();
 	else
 	    self.hide();
@@ -1755,6 +1756,8 @@ iSPARQL.Common = {
 						iSPARQL.dataObj.maxrows = isNaN(n) ? 0 : n;
 						});
 
+		enable_if_ubiq ($('ubiq_gem'));
+		
         iSPARQL.StatusUI.statMsg ("UI Initialization complete.");
     },
 
@@ -2301,19 +2304,26 @@ var toolswin = null;
 function tools_popup(){
     if (toolswin == null) {
 	var topbox_ctl_xy = OAT.Dom.getLT('topbox_ctl');
-	toolswin = new OAT.Window({close:1,min:0,max:0,x:topbox_ctl_xy[0] + 200,y:topbox_ctl_xy[1] + 50,width:200,height:440,title:"Statement Help"});
-	toolswin.div.style.zIndex = 1013;
-	$("page_query").appendChild(toolswin.div);
-	toolswin.onclose = function() { OAT.Dom.hide(toolswin.div); }
+		toolswin = new OAT.Win({buttons:"cs",
+								x:topbox_ctl_xy[0] + 200,
+								y:topbox_ctl_xy[1] + 50,
+								innerWidth:210,
+//								innerHeight:440,
+								title:"Statement Help"});
+
+		//		$("page_query").appendChild(toolswin.div);
 
 	var tools = $('tool').options;
-	toolswin.content.innerHTML = '';
+		
+		var t_ctr = toolswin.getInnerContainer();
+		t_ctr.innerHTML = '';
+		
 	for (i = 0;i<tools.length;i++) {
 	    if (tools[i].value)
-		toolswin.content.innerHTML += '<button class="tools_but" onclick="' + tools[i].value.replace(/\"/g,'&quot;') + '">' + tools[i].text + '</button>';
+				t_ctr.innerHTML += '<button class="tools_but" onclick="' + tools[i].value.replace(/\"/g,'&quot;') + '">' + tools[i].text + '</button>';
 	}
     }
-    OAT.Dom.show(toolswin.div);
+    toolswin.open();
 }
 
 function add_named_graph(graph) {

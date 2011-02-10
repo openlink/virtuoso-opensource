@@ -141,6 +141,7 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
     }
 
     this._locErrorHandler = function (e) {
+        self._acquiring = false;
 	switch (e.code) {
 	case e.TIMEOUT:
 	    self._timed_out = true;
@@ -182,10 +183,73 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
     if (getCurrent) {
 	self.acquireCurrent ();
     }
+
+    this.addLocation = function (l) {
+	self._locationCache.append (l);
+    }
+
 }
 
-// Requires HTML template. IDs
-// #locAcquireUI - outer ctr
+//
+// Use (GOOG) geoCoder Api - only by address, no bounds atm...
+//
+
+iSPARQL.Geocoder = function (o) {
+    var self = this;
+
+    this._options = {
+	retries: 2,
+	retry_to_ms:2500 // msec between retries upon server error
+    };
+
+    this._retries_left = 0;
+    this._request = {};
+    this._retry_to = false;
+
+    for (var p in o) { this._options[p] = o[p]; }
+
+    this._geocoder = new google.maps.Geocoder();
+
+    this._geocode = function () {
+	self._geocoder.geocode (self._request, self.handleResult); 
+    }
+
+    this._retry_geocode = function () {
+	OAT.MSG.send (self,"GEOCODE_RETRYING",null);
+	self._geocode();
+    }
+
+    this.geocode = function (addr) {
+	self._retries_left = self._options.retries;
+	self._request = {address: addr};
+	self._geocode ();
+    }
+
+    this.handleResult = function (results, stat) {
+	var s = google.maps.GeocodeStatus;
+	switch (stat) {
+	case m.OK:
+	    if (self._retry_to) window.clearTimeout (self._retry_to);
+	    OAT.MSG.send (self,"GEOCODE_RESULT",results);
+	    break;
+	case m.UNKNOWN_ERROR:
+	    if (self._retries_left) {
+		self._retries_left--;
+		OAT.MSG.send (self,"GEOCODE_FAIL_RETRYING",stat);
+		if (!self._retry_to) 
+		    self._retry_to = setTimeout (self._retry_geocode(), self._options.retry_to_ms);
+		break;
+	    }
+	default:
+	    if (self._retry_to) window.clearTimeout (self._retry_to);
+	    OAT.MSG.send (self,"GEOCODE_FAIL",stat);
+	}
+    }
+}
+
+//
+// Requires HTML template. IDs:
+// #locAcquireUI - outer ctr - shown when loc being acquired
 // #locAcquireMsg
 // #locAcquireBtnCtr
 // #locAcquireLonCtr
@@ -193,9 +257,6 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
 // #locAcquireAccCtr
 // #locAcquireUseBtn
 // #locAcquireCancelBtn
-//
-
-
 //
 // o.useCB - use button callback
 // o.cancelCB - cancel callback
@@ -285,6 +346,11 @@ iSPARQL.locationAcquireUI = function (o) {
     this.init = function () {
 	OAT.MSG.attach ("*","LOCATION_ACQUIRED", self._locHandler);
 	OAT.MSG.attach ("*","LOCATION_ERROR", self._errHandler);
+	OAT.MSG.attach ("*","LOCATION_TIMEOUT", self._errHandler);
+	OAT.MSG.attach ("*","GEOCODE_RESULT", self._geocodeHandler);
+	OAT.MSG.attach ("*","GEOCODE_RETRYING", self._geocodeRetryingH);
+	OAT.MSG.attach ("*","GEOCODE_FAIL", self._geocodeFailH);
+	OAT.MSG.attach ("*","GEOCODE_FAIL_RETRYING",self._geocodeFailRetryH);
 	OAT.Event.attach (self._useBtn, "click", self._useHandler);
 	OAT.Event.attach (self._refBtn, "click", self._refreshHandler);
 	OAT.Event.attach (self._cancelBtn, "click", self._cancelHandler);
