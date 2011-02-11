@@ -50,6 +50,7 @@
 #include "sqlcstate.h"
 #include "sqlo.h"
 #include "rdfinf.h"
+#include "rdf_core.h"
 
 /* sqlprt.c */
 void trset_start (caddr_t *qst);
@@ -60,6 +61,28 @@ void trset_end (void);
 
 static void qr_print (query_t * qr);
 static void node_print (data_source_t * node);
+
+
+
+caddr_t
+dv_iri_short_name (caddr_t x)
+{
+  caddr_t pref, local, r;
+  iri_id_t iid = unbox_iri_id (x);
+  caddr_t name = key_id_to_iri ((query_instance_t*)THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST), iid);
+  if (!name)
+    return NULL;
+  if (iri_split (name, &pref, &local))
+    {
+      dk_free_box (name);
+      dk_free_box (pref);
+      r = box_dv_short_string (local + 4);
+      dk_free_box (local);
+      return r;
+    }
+  dk_free_box (name);
+  return NULL;
+}
 
 
 static void
@@ -90,6 +113,7 @@ ssl_print (state_slot_t * ssl)
 
     case SSL_CONSTANT:
 	{
+	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
 	  caddr_t err_ret = NULL;
 	  if (DV_TYPE_OF (ssl->ssl_constant) == DV_DB_NULL)
 	    stmt_printf (("<constant DB_NULL>"));
@@ -100,7 +124,26 @@ ssl_print (state_slot_t * ssl)
 		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
 		  &err_ret);
 	      if (!err_ret && strval)
-		stmt_printf (("<constant (" EXPLAIN_LINE_MAX_STR_FORMAT ")>", strval));
+		{
+		  switch (dtp)
+		    {
+		      case DV_IRI_ID:
+			    {
+			      caddr_t str = dv_iri_short_name (ssl->ssl_constant);
+			      if (str)
+				{
+				  stmt_printf ((" #" EXPLAIN_LINE_MAX_STR_FORMAT " ", str));
+				  dk_free_box (str);
+				  break;
+				}
+			    }
+		      case DV_LONG_INT: case DV_NUMERIC: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
+			  stmt_printf ((" " EXPLAIN_LINE_MAX_STR_FORMAT " ", strval));
+			  break;
+		      default:
+			  stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
+		    }
+		}
 	      else
 		stmt_printf (("<constant>"));
 	      if (err_ret)
