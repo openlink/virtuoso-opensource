@@ -1,3 +1,254 @@
+2011-02-14 13:05  source
+
+	* Updated version to 6.1.3-rc5
+
+2011-02-14 13:04  source
+
+	* Fixed certificates
+
+2011-02-14 13:03  source
+
+	* Fixed page load bug
+
+2011-02-14 13:03  source
+
+	* Added RSS and Atom imports
+
+2011-02-14 13:03  source
+
+	* Fixed issue with dashboard
+
+2011-02-14 13:03  source
+
+	* Fixed mail selection from private instances
+	* Fixed encrypted emails
+
+2011-02-14 12:51  source
+
+	* Added rudimentary geocoder support module
+	* Fixed endpoints options tolle menu
+	* Fixed title to "Sponger"
+	* Fixed header margins
+	* Fixed ordering of Sponger and Query Metadata
+	* Fixed location error handler failure to change aquire state
+	* Fixed statement help popup window
+
+2011-02-14 12:49  source
+
+	* Fixed try to resize map in a more mobile friendly way
+
+2011-02-14 12:48  source
+
+	* Added more properties to virtlabel ontology
+	* Fixed issues reported by W3C Validator
+
+2011-02-14 12:33  source
+
+	* Fixed compiler warnings on SOlaris with openssl 1.0
+
+2011-02-14 11:48  source
+
+	* Fixed when P is known get stats on it to make better decision on
+	  execution plan
+
+2011-02-14 11:48  source
+
+	* Fixed infinite loop when dealing with string like abc&def and no token
+
+2011-02-14 01:25  source
+
+	* Fixed dump all mem references before dying
+
+2011-02-14 01:14  source
+
+	* Fixed issue when client disconnects inside compile where no reset ctx
+
+2011-02-11 13:19  source
+
+	* Added ssl const decoration in explain
+
+2011-02-10 20:58  source
+
+	* Added new bif getenv
+
+2011-02-07 15:07  source
+
+	* Fixed attribution
+
+2011-02-04 15:36  source
+
+	* Added check for max number of elements
+
+2011-02-03 13:30  source
+
+	* Fixed check if there is dpipes to be placed before trans node
+
+2011-02-03 11:27  source
+
+	* Fixed when compiling statement with sparqre_qi == CALLER_LOCAL, do
+	  not pass this value to box_cast
+
+2011-02-03 10:32  source
+
+	* Fixed issue with namespace pollution in FireFox
+
+2011-02-03 10:30  source
+
+	* Added separate sponge and ack for rdf flags
+	* Fixed copyright year
+
+2011-02-03 10:29  source
+
+	* Added pure RDFa cartridge
+	* Fixed copyright year
+
+2011-02-03 10:28  source
+
+	* Fixed geolocation to automatically use a location if a minimum
+	  accuracy is reached. Default=500m
+	* Fixed creation of options in anchor which did not work with FireFox
+	* Fixed copyright year
+
+2011-02-03 09:26  source
+
+	* Fixed box_cast when qst is CALLER_LOCAL
+
+2011-02-03 09:25  source
+
+	* Fixed copyright year
+
+2011-02-02 15:36  source
+
+	* Fixed make sure boxlen is within limits
+
+2011-02-02 12:06  source
+
+	* Added separate sponge and ack for rdf flags
+
+2011-02-02 11:28  source
+
+	* Added new location properties and datatypes
+
+2011-02-01 00:07  source
+
+	* Fixed use origin as base
+
+2011-02-01 00:07  source
+
+	* Added support for virtrdf:image
+
+2011-01-31 20:47  source
+
+	* Fixed declaration after statement
+
+2011-01-31 15:23  source
+
+	* Fixed to follow http redirects
+
+2011-01-31 15:23  source
+
+	* Fixed memory leak if QUIETCAST query operates with ill formed
+	  data such as invalid date/time
+
+2011-01-31 11:17  source
+
+	* Fixed problem with upstreaming of updated and deleted posts
+	* Fixed problem with triggers
+
+2011-01-31 11:16  source
+
+	* Added virtrdf-label for iCalendar
+
+2011-01-31 11:15  source
+
+	* Fixed CSS of execution grid
+
+2011-01-31 10:48  source
+
+	* Fixed RDFa cartridge
+
+2011-01-31 10:45  source
+
+	* Added UI for Login Authentication Keys
+
+2011-01-30 15:23  source
+
+	* Fixed box_cast so QUIETCAST mode returns NULL instead of error
+	  even if the problem is detected in some nested function
+
+2011-01-28 17:34  source
+
+	* Fixed when on a queue, i.e. waiting for compile to finish, we freeze
+	  the thread so cpt can proceed
+
+2011-01-28 13:35  source
+
+	* Added namespace prefix 'fn' for 'http://www.w3.org/2005/xpath-functions/#'
+	  for XPATH 2.0 and XQuery 1.0 Core Functions library
+
+2011-01-28 13:34  source
+
+	* Fixed detection of bad blank nodes
+
+2011-01-28 13:32  source
+
+	* Fixed compiler warnings
+
+2011-01-28 13:31  source
+
+	* Added numeric_from_string_is_ok to do quick syntax check on string
+	  without actual parsing
+
+2011-01-28 13:29  source
+
+	* Added support for "xpath:function_IRI" syntax, which is usally an
+	  internal syntax for functions automatically recognized as XPATH
+
+2011-01-28 13:28  source
+
+	* Fixed compiler warning
+
+2011-01-28 13:28  source
+
+	* Added xqr_stub_for_funcall
+	* Fixed memory leak
+
+2011-01-28 13:26  source
+
+	* Fixed cast to xsd:float
+
+2011-01-28 13:26  source
+
+	* Fixed moved free inside of semaphore
+
+2011-01-27 14:19  source
+
+	* Fixed use default smime
+
+2011-01-27 13:30  source
+
+	* Fixed wrong condition check
+
+2011-01-27 12:43  source
+
+	* Added support for S/MIME encrypt and decrypt
+
+2011-01-26 17:52  source
+
+	* Fixed missing namespace in </results>
+
+2011-01-25 19:15  source
+
+	* Fixed cost model to count inx cond and scale card at end
+
+2011-01-25 18:54  source
+
+	* Fixed in log replay we can drop the old objects to free memory
+
+2011-01-25 14:51  source
+
+	* Updated version to 6.1.3-rc4
+
 2011-01-25 14:39  source
 
 	* Fixed allocate space for \0 terminator
