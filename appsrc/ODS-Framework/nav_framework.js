@@ -1059,7 +1059,7 @@ ODS.Nav = function(navOptions) {
 
 	this.appCheck = function(xmlDoc) {
 		var url = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-				'/createApplication_response/application/url', {})[0]);
+				'/createApplication_response/application/url|/checkApplication_response/application/url', {})[0]);
 	self.loadVspx (self.expandURL (url));
 	self.wait ();
     };
@@ -4140,8 +4140,7 @@ ODS.Nav = function(navOptions) {
 	if (applicationType == 'InstantMessenger')
 	    applicationType = 'Instant Messenger';
 
-		var data = 'sid=' + self.session.sid + '&application='
-				+ encodeURIComponent(applicationType);
+		var data = 'sid=' + self.session.sid + '&application=' + encodeURIComponent(applicationType);
 		var callback = function(xmlString) {
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 			if (!self.session.isErr(xmlDoc)) {
