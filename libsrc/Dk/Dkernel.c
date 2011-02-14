@@ -4311,7 +4311,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 	  SSL *ssl = NULL;
 	  int ssl_err = 0;
 	  int dst = tcpses_get_fd (session->dks_session);
-	  SSL_METHOD *ssl_method = SSLv23_client_method ();
+	  const SSL_METHOD *ssl_method = SSLv23_client_method ();
 	  SSL_CTX *ssl_ctx = SSL_CTX_new (ssl_method);
 	  ssl = SSL_new (ssl_ctx);
 	  SSL_set_fd (ssl, dst);
@@ -4846,7 +4846,7 @@ dk_ssl_free (void *old)
 static void
 ssl_server_init ()
 {
-  SSL_METHOD *ssl_server_method = NULL;
+  const SSL_METHOD *ssl_server_method;
   unsigned char tmp[1024];
 #ifndef NO_THREAD
   char err_buf[1024];
@@ -4940,12 +4940,12 @@ ssl_server_init ()
       SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 
       skCAList = SSL_CTX_get_client_CA_list (ssl_server_ctx);
-      if (sk_X509_ALGOR_num (skCAList) == 0)
+      if (sk_X509_NAME_num (skCAList) == 0)
 	log_warning ("ODBC X509 Client authentication requested but no CA known for verification");
-      for (i = 0; i < sk_X509_ALGOR_num (skCAList); i++)
+      for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
 	{
 	  char ca_buf[1024];
-	  X509_NAME *ca_name = (X509_NAME *) sk_X509_ALGOR_value (skCAList, i);
+	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
 	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 	    log_debug ("ODBC Server Using X509 Client CA %s", ca_buf);
 	}
@@ -5110,7 +5110,7 @@ ssl_setup:
 
   if (ca && ca[0] != 0)
     {
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
+      sk_X509_pop_free (ca_list, X509_free);
       ca_list = NULL;
       ca_list = PEM_load_certs (ca, passwd);
     }
@@ -5119,30 +5119,30 @@ ssl_setup:
     {
       X509_free (cert);
       EVP_PKEY_free (pkey);
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
+      sk_X509_pop_free (ca_list, X509_free);
       return 0;
     }
   EVP_PKEY_free (pkey);
   if (!SSL_use_certificate (ssl, cert))
     {
       X509_free (cert);
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
+      sk_X509_pop_free (ca_list, X509_free);
       return 0;
     }
   X509_free (cert);
 
   if (!SSL_check_private_key (ssl))
     {
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
+      sk_X509_pop_free (ca_list, X509_free);
       return 0;
     }
-  for (i = 0; i < sk_X509_ALGOR_num (ca_list); i++)
+  for (i = 0; i < sk_X509_num (ca_list); i++)
     {
-      X509 *ca = (X509 *) sk_X509_ALGOR_value (ca_list, i);
+      X509 *ca = (X509 *) sk_X509_value (ca_list, i);
       SSL_add_client_CA (ssl, ca);
       X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
     }
-  sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
+  sk_X509_pop_free (ca_list, X509_free);
   return 1;
 }
 
