@@ -143,6 +143,58 @@ bm_print (db_buf_t bm, short bm_len, bitno_t bm_start, int all)
 }
 
 
+caddr_t *
+itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  dk_set_t res = NULL;
+  db_buf_t bm, ce;
+  int off;
+  short bm_len;
+  bitno_t bm_start;
+  dbe_key_t * key = itc->itc_insert_key;
+  dtp_t dtp = key->key_bit_cl->cl_sqt.sqt_dtp;
+  BIT_COL (bm_start, buf, itc->itc_row_data, key);
+  KEY_PRESENT_VAR_COL (itc->itc_insert_key, itc->itc_row_data, (*key->key_bm_cl), off, bm_len);
+  ce = bm = itc->itc_row_data + off;
+  while (ce < bm + bm_len)
+    {
+      int ce_len = CE_LENGTH (ce);
+      bitno_t ce_start = bm_start + CE_OFFSET (ce);
+      if (!ce_len)
+	{
+	  printf ("Error: 0 length ce\n");
+	  break;
+	}
+      if (CE_IS_SINGLE (ce))
+	{
+	  dk_set_push (&res, box_iri_int64 (bm_start + (LONG_REF_NA (ce) & 0x7fffffff), dtp));
+	}
+      else if (CE_IS_ARRAY (ce))
+	{
+	  int inx;
+	  for (inx = 0; inx < (ce_len - 4) / 2; inx++)
+	    {
+	      dk_set_push (&res, box_iri_int64 (ce_start + SA_REF (ce + 4, inx), dtp));
+	    }
+	}
+      else
+	{
+	  short bit = 0;
+	  for (;;)
+	    {
+	      bit = ce_bitmap_value (ce + 4, bit, 1);
+	      if (bit == CE_N_VALUES)
+		break;
+	      dk_set_push (&res, box_iri_int64 (ce_start + bit, dtp));
+	      bit++;
+	    }
+	}
+      ce += ce_len;
+    }
+  return (caddr_t*)list_to_array (dk_set_nreverse (res));
+}
+
+
 void
 ce_array_to_bitmap (db_buf_t ce)
 {

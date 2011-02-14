@@ -281,6 +281,8 @@ struct df_elt_s
     struct {
       dbe_column_t *	col;
       op_virt_col_t *   vc;
+      float		card; /* if from rdf quad, card is given by p stats and is not the card of the dbe_column_t */
+      bitf_t		is_fixed:1; /* col eq to param or col imported from other dt, if all group cols fixed, gb can be dropped */
     } col;
     struct {
       int 	op;
@@ -742,6 +744,7 @@ void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_
 #define NEXT_PAGE_COST 5
 #define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
 #define HASH_ROW_INS_COST 1.6 /* cost of adding a row to hash */
+#define HASH_MEM_INS_COST 0.7
 #define HASH_LOOKUP_COST 0.9
 #define HASH_ROW_COST 0.3
 #define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
@@ -794,6 +797,9 @@ float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, c
 data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe);
 int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);
 int sqlo_has_col_ref (ST * tree);
+
+float dfe_exp_card (sqlo_t * so, df_elt_t * dfe);
+void sqlo_rdf_col_card (sqlo_t * so, df_elt_t * td_dfe, df_elt_t * dfe);
 
 
 #endif /* _SQLO_H */

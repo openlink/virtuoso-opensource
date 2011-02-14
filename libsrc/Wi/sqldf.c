@@ -1052,6 +1052,13 @@ sqlo_mark_oby_crossed (sqlo_t * so, df_elt_t * dfe)
 }
 
 
+void
+sqlo_dt_col_card (sqlo_t * so, df_elt_t * col_dfe, df_elt_t * exp)
+{
+  col_dfe->_.col.card += dfe_exp_card (so, exp);
+}
+
+
 df_elt_t *
 sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_elt_t * col_dfe, int is_qexp_term)
 {
@@ -1078,7 +1085,11 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	{
 	  df_elt_t * exp = sqlo_df (so, (ST*) dt_dfe->_.sub.ot->ot_dt->_.select_stmt.selection[inx]);
 	  if (exp)
+	    {
+	      if (!col_dfe->_.col.card)
+		sqlo_dt_col_card (so, col_dfe, exp);
 	    sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
+	    }
 	  col_dfe->dfe_locus = dt_dfe->dfe_locus;
 	  col_alias = ((ST**)(dt_dfe->_.sub.ot->ot_left_sel->_.select_stmt.selection))[inx]->_.as_exp.name;
 	  exp_alias = sqlo_df (so, (ST*) t_list (3, COL_DOTTED, dt_dfe->_.sub.ot->ot_new_prefix, col_alias));
@@ -1099,7 +1110,10 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  sqlo_place_exp (so, dt_dfe, exp);
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 0);
 	  if (exp)
+	    {
+	      sqlo_dt_col_card (so, col_dfe, exp);
 	    sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
+	    }
 	  if (so->so_place_code_forr_cond)
 	    sqlo_post_oby_ref (so, dt_dfe, exp, inx);
 
@@ -1181,8 +1195,11 @@ sqlo_place_col (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
     case DFE_TABLE:
       if (!dk_set_member (tb_dfe->_.table.out_cols, (void*) dfe))
 	{
+	  dfe->_.col.card = 0;
+	  dfe->_.col.is_fixed = 0;
 	  if (!dfe->_.col.vc)
 	    t_set_push (&tb_dfe->_.table.out_cols, (void*) dfe);
+	  sqlo_rdf_col_card (so, tb_dfe, dfe);
 	  if (HR_REF == tb_dfe->_.table.hash_role)
 	    {
 	      df_elt_t * old_pt = so->so_gen_pt;

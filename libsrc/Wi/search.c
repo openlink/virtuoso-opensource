@@ -2865,24 +2865,40 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 void
 itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 {
+  int n_data = 1;
   db_buf_t row = BUF_ROW (buf, itc->itc_map_pos);
+  dbe_key_t * key = itc->itc_insert_key;
   key_ver_t kv = IE_KEY_VERSION (row);
+  int len_limit = -1, first_match = 0;
   if (!kv ||  KV_LEFT_DUMMY == kv)
     return;
-  itc->itc_st.n_sample_rows++;
   itc->itc_row_data = row;
   itc->itc_row_key = itc->itc_insert_key->key_versions[kv];
   DO_SET (dbe_column_t *, col, &itc->itc_row_key->key_parts)
     {
       col_stat_t * col_stat;
+      caddr_t * data_col = NULL;
       caddr_t data = NULL;
       dbe_column_t * current_col;
       int len, is_data = 0;
       ptrlong * place;
-      dbe_col_loc_t *cl  = key_find_cl (itc->itc_row_key, col->col_id);
+      dbe_col_loc_t *cl;
+      if (key->key_is_col)
+	cl = cl_list_find (key->key_row_var, col->col_id);
+      else
+	cl = key_find_cl (itc->itc_row_key, col->col_id);
       if (!IS_BLOB_DTP (col->col_sqt.sqt_dtp))
 	{
+	  if (key->key_bit_cl && col->col_id == key->key_bit_cl->cl_col_id)
+	    {
+	      data_col = itc_bm_array (itc, buf);
+	    }
+	  else
+	    {
 	  data = itc_box_column (itc, buf, col->col_id, cl);
+	      if (col == (dbe_column_t*)key->key_parts->data && 1 == itc->itc_search_par_fill && !box_equal (data, itc->itc_search_params[0]))
+		return;
+	    }
 	  is_data = 1;
 	}
       current_col = sch_id_to_column (wi_inst.wi_schema, col->col_id);
@@ -2898,7 +2914,20 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 
       if (is_data)
 	{
-	  if (cl->cl_fixed_len > 0)
+	  int data_inx;
+	  n_data = data_col ? BOX_ELEMENTS (data_col) : 1;
+	  if (-1 != len_limit)
+	    n_data = MIN (BOX_ELEMENTS (data_col), len_limit);
+	  for (data_inx = first_match; data_inx < n_data; data_inx++)
+	    {
+	      if (data_col)
+		{
+		  data = data_col[data_inx];
+		  data_col[data_inx] = NULL;
+		}
+	      if (key->key_is_col && dtp_is_fixed (col->col_sqt.sqt_dtp))
+		len = 4;
+	      else if (cl->cl_fixed_len > 0)
 	    len = cl->cl_fixed_len;
 	  else
 	    len = IS_BOX_POINTER (data) ? box_length (data) : 8;
@@ -2920,9 +2949,47 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	      id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
 	    }
 	}
+	  if (data_col)
+	    dk_free_box ((caddr_t)data_col);
+	}
     }
   END_DO_SET();
+  itc->itc_st.n_sample_rows += n_data;
 }
+
+
+void
+itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int *last)
+{
+  /* in column wise inx sample can hit a seg with many different values of the 1st key part.  If so, count how many there are. */
+  caddr_t param = itc->itc_search_params[0];
+  int len = BOX_ELEMENTS (data_col);
+  int inx = 0;
+  for (inx = 0; inx < len; inx++)
+    {
+      if (box_equal (param, data_col[inx]))
+	{
+	  *first = inx;
+	  break;
+	}
+    }
+  if (inx == len)
+    {
+      *last = *first = 0;
+      return;
+    }
+  for (inx = len - 1; inx >= 0; inx--)
+	{
+	  if (box_equal (param, data_col[inx]))
+	    {
+	      *last = inx + 1;
+	      break;
+	    }
+	  if (inx == -1)
+	    *first = *last = 0;
+}
+}
+
 
 void
 itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
@@ -3299,6 +3366,54 @@ samples_stddev (int64 * samples, int n_samples, float * mean_ret, float * stddev
   *mean_ret = mean;
 }
 
+int enable_p_stat = 1;
+
+int
+itc_sample_is_rdf_p (it_cursor_t * itc)
+{
+  return enable_p_stat && strstr (itc->itc_insert_key->key_table->tb_name, "RDF_QUAD")
+    &&  0 == strcmp  (((dbe_column_t*)itc->itc_insert_key->key_parts->data)->col_name, "P")
+    && itc->itc_key_spec.ksp_spec_array && !itc->itc_key_spec.ksp_spec_array->sp_next
+    && CMP_EQ == itc->itc_key_spec.ksp_spec_array->sp_min_op;
+}
+
+
+
+
+void
+itc_record_rdf_p (it_cursor_t * itc, int64 est)
+{
+  /* store the stats of the sog fpr the given p. */
+  dbe_key_t * key = itc->itc_insert_key;
+  float distincts[4];
+  iri_id_t p = unbox_iri_id (itc->itc_search_params[0]);
+  int fill = 1;
+  mutex_enter (alt_ts_mtx); /*any mtx that is never enterd, not worth one of its own */
+  if (!key->key_p_stat)
+    {
+      key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
+      id_hash_set_rehash_pct (key->key_p_stat, 200);
+    }
+  distincts[0] = est;
+  DO_SET (dbe_column_t *, col, &key->key_parts->next)
+    {
+      col_stat_t * cs = gethash ((void*)col, itc->itc_st.cols);
+      distincts[fill++] = (float)cs->cs_distinct->ht_count * (float)est / itc->itc_st.n_sample_rows;
+      DO_IDHASH (caddr_t, k, caddr_t, ign,  cs->cs_distinct)
+	dk_free_box (k);
+      END_DO_IDHASH;
+      id_hash_free (cs->cs_distinct);
+      dk_free ((caddr_t)cs, sizeof (col_stat_t));
+      if (fill >= 4)
+	break;
+    }
+  END_DO_SET();
+  hash_table_free (itc->itc_st.cols);
+  itc->itc_st.cols = NULL;
+  id_hash_set (key->key_p_stat, (caddr_t)&p, (caddr_t)&distincts);
+  mutex_leave (alt_ts_mtx);
+}
+
 #define MAX_SAMPLES 20
 
 int64
@@ -3309,6 +3424,7 @@ itc_local_sample (it_cursor_t * itc)
   float mean, stddev;
   int64 samples[MAX_SAMPLES];
   int64 n_leaves, sample, tb_count;
+  int is_rdf_p = itc_sample_is_rdf_p (itc);
   dbe_table_t * tb = itc->itc_insert_key->key_table;
   int n_samples = 1;
   itc->itc_random_search = RANDOM_SEARCH_ON;
@@ -3326,6 +3442,10 @@ itc_local_sample (it_cursor_t * itc)
     return samples[0];
   {
     int angle, step = 248, offset = 5;
+    if (is_rdf_p)
+      {
+	itc->itc_st.cols = hash_table_allocate (11);
+      }
     for (;;)
       {
 	for (angle = step + offset; angle < 1000; angle += step)
@@ -3352,6 +3472,8 @@ itc_local_sample (it_cursor_t * itc)
   }
   if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only && itc->itc_insert_key->key_partition && itc->itc_insert_key->key_partition->kpd_map != clm_replicated)
     mean *= key_n_partitions (itc->itc_insert_key);
+  if (is_rdf_p)
+    itc_record_rdf_p (itc, mean);
   return ((int64) mean);
 }
 
