@@ -641,7 +641,11 @@ __string_from_string (caddr_t *n, const char *str, int do_what, const char *wher
 		case 0x9:
 		case 0xd:
 		  if (XQ_NORM_STRING == do_what || XQ_TOKEN == do_what)
+		    {
+		      strses_free (ses); /* the bellow will jump outside */
+		      ses = NULL;
 		    sqlr_new_error ("42001", "XPQ??", "Symbol '#x%x' is not allowed in %s constructor:\"%s\"", val, where, str);
+		    }
 		  break;
 		case 0xa:
 		  if (XQ_NORM_STRING == do_what)
@@ -657,7 +661,7 @@ __string_from_string (caddr_t *n, const char *str, int do_what, const char *wher
 	    }
 	}
       session_buffered_write (ses, (char *)(p), strlen (p));
-      p = pp;
+      break; /* all is written */
     }
 
   *n = strses_string (ses);
