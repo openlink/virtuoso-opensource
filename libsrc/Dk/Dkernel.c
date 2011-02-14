@@ -5331,6 +5331,9 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
 #endif
+#ifdef MALLOC_DEBUG
+      dbg_dump_mem();
+#endif
       GPF_T1 ("Out of memory");
     }
   return thing;
@@ -5348,6 +5351,9 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
     {
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
+#endif
+#ifdef MALLOC_DEBUG
+      dbg_dump_mem();
 #endif
       GPF_T1 ("Out of memory");
     }
