@@ -1765,8 +1765,9 @@ re_search:
     }
   ITC_FAILED
       {
+	du_thread_t * self = THREAD_CURRENT_THREAD;
 	itc_free (itc);
-	if (!lt)
+	if (!lt || !self->thr_reset_ctx)
 	  return NULL;
       }
   END_FAIL (itc);
