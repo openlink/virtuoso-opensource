@@ -770,7 +770,10 @@ dk_alloc (size_t c)
 {
   void *thing = dbg_malloc (__FILE__, __LINE__, c);
   if (NULL == thing)
-    GPF_T1 ("Out of memory");
+    {
+      dbg_dump_mem();
+      GPF_T1 ("Out of memory");
+    }
   return thing;
 }
 
@@ -780,7 +783,10 @@ dbg_dk_alloc (DBG_PARAMS size_t c)
 {
   void *thing = dbg_malloc (DBG_ARGS c);
   if (NULL == thing)
-    GPF_T1 ("Out of memory");
+    {
+      dbg_dump_mem();
+      GPF_T1 ("Out of memory");
+    }
   return thing;
 }
 
