@@ -25,3 +25,9 @@ function gen_sparql_bookmarklet () {
   $('sparql_bookmarklet_a').href = 'javascript: (function () { location="'+ l + '" + encodeURIComponent(document.location) + "' + w + '";})()';
 }
 
+function enable_if_ubiq (elm_id) {
+    var ua = navigator.userAgent;
+    if (ua.indexOf ('Firefox') != -1) {
+	OAT.Dom.show(elm_id)
+    }
+}
