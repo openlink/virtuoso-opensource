@@ -420,7 +420,7 @@
                 <xsl:with-param name="title">Move</xsl:with-param>
                 <xsl:with-param name="img">/oMail/i/move_16.png</xsl:with-param>
                 <xsl:with-param name="img_label"> Move</xsl:with-param>
-                <xsl:with-param name="class">button</xsl:with-param>
+                <xsl:with-param name="class">button2</xsl:with-param>
               </xsl:call-template>
             </td>
             <td class="right">
@@ -431,7 +431,7 @@
                   <xsl:with-param name="label">Delete All</xsl:with-param>
                   <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
                   <xsl:with-param name="img_label"> Delete All</xsl:with-param>
-                  <xsl:with-param name="class">button</xsl:with-param>
+                  <xsl:with-param name="class">button2</xsl:with-param>
                 </xsl:call-template>
               </xsl:if>
               <xsl:call-template name="make_href">
@@ -439,7 +439,7 @@
                 <xsl:with-param name="lable">Delete Selected</xsl:with-param>
                 <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
                 <xsl:with-param name="img_label"> Delete</xsl:with-param>
-                <xsl:with-param name="class">button</xsl:with-param>
+                <xsl:with-param name="class">button2</xsl:with-param>
               </xsl:call-template>
             </td>
           </tr>

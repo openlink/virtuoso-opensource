@@ -30,7 +30,7 @@ export LANG LC_ALL
 
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.5.116"
+VERSION="1.5.117"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -45,7 +45,7 @@ VAD_DAV="$VAD_NAME"_dav.vad
 VAD_FS="$VAD_NAME"_filesystem.vad
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
-NEED_VERSION=04.50.2905
+NEED_VERSION=06.01.3127
 
 if [ "x$HOST_OS" != "x" ]
 then
