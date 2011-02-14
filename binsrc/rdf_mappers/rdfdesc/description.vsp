@@ -339,7 +339,7 @@
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
     
 ?>
-	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
+	<img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
 
       </div> <!-- hd_r -->
