@@ -312,6 +312,8 @@ do_again:
       rollback work;
       goto do_again;
     }
+  if (_stat <> '00000')
+    signal (_stat, _msg);
   commit work;
   --dbg_obj_print ('COMPLETED WITH STATUS: ', _stat, ' ', _msg);
 }
