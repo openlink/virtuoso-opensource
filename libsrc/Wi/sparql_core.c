@@ -2851,6 +2851,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
       group_members_ptr = (caddr_t **)id_hash_get (rdf_graph_group_dict_htable, (caddr_t)(&iid));
           mutex_leave (rdf_graph_group_dict_htable->ht_mutex);
         }
+      dk_free_tree (iid);
     }
   else
     group_members_ptr = NULL;

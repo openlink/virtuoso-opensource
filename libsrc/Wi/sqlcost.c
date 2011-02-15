@@ -1014,6 +1014,7 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  if (err)
 	    {
 	      dk_free_tree (err);
+	      dk_free_box (data);
 	      return KS_CAST_UNDEF;
 	    }
 	  ITC_SEARCH_PARAM (itc, any_data);
@@ -1497,6 +1498,8 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
 	  ic->ic_inf_type = RI_SUBCLASS;
 	  ic->ic_inf_dfe = o_dfe_2;
 	  ic->ic_n_lookups = rs_sub_count (sub);
+	  dk_free_box (p_const);
+	  dk_free_box (o_const);
 	  return;
 	}
       if (p_const && (sub = ric_iri_to_sub (ctx, p_const, RI_SUBPROPERTY, 0))
@@ -1506,8 +1509,12 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
 	  ic->ic_inf_dfe = p_dfe_2;
 	  ic->ic_inf_type = RI_SUBPROPERTY;
 	  ic->ic_n_lookups = rs_sub_count (sub);
+	  dk_free_box (p_const);
+	  dk_free_box (o_const);
 	  return;
 	}
+      dk_free_box (p_const);
+      dk_free_box (o_const);
     }
   return;
 }
@@ -1607,6 +1614,8 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  /* the p is rdfstype and o given.  See about counts of subcs */
 	  ic->ic_inf_type = RI_SUBCLASS;
 	  ic->ic_inf_dfe = o_dfe;
+	  dk_free_box (p_const);
+	  dk_free_box (o_const);
 	  return sqlo_inx_inf_sample (tb_dfe, key, lowers, uppers, n_parts, ctx, sub, (caddr_t*)&o_dfe->dfe_tree, ic);
 	}
       if (p_const && (sub = ric_iri_to_sub (ctx, p_const, RI_SUBPROPERTY, 0))
@@ -1615,8 +1624,12 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  /* the p is given and has subproperties */
 	  ic->ic_inf_dfe = p_dfe;
 	  ic->ic_inf_type = RI_SUBPROPERTY;
+	  dk_free_box (p_const);
+	  dk_free_box (o_const);
 	  return sqlo_inx_inf_sample (tb_dfe, key, lowers, uppers, n_parts, ctx, sub, (caddr_t*)&p_dfe->dfe_tree, ic);
 	}
+      dk_free_box (p_const);
+      dk_free_box (o_const);
     }
   ic->ic_n_lookups = 1;
   return sqlo_inx_sample_1 (key, lowers, uppers, n_parts, NULL);
@@ -1792,6 +1805,7 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
     return 0;
   mutex_enter (alt_ts_mtx);
   place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0]);
+  dk_free_box (p);
   if (!place)
     {
       mutex_leave (alt_ts_mtx);

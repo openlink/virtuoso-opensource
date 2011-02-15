@@ -1136,6 +1136,7 @@ bif_rdf_inf_ifp_exclude_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   iri_id_t ifp = bif_iri_id_arg (qst, args, 1, "rdf_inf_ifp_exclude_list");
   caddr_t box = box_iri_id (ifp);
   caddr_t *place = (caddr_t *)id_hash_get (ctx->ric_ifp_exclude, (void *)(&box));
+  dk_free_tree (box);
   if (NULL == place)
     return list (0);
   return box_copy_tree (place[0]);
@@ -2070,7 +2071,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t * ctx, **place, *sas_ctx;
   rdf_inf_pre_node_t * sas_s = NULL, * sas_o = NULL, * sas_p = NULL;
-  caddr_t const_s = NULL, const_p = NULL, const_o = NULL;
+  caddr_t /*const_s = NULL,*/ const_p = NULL, const_o = NULL;
   df_elt_t * g_dfe = NULL, * s_dfe = NULL, * p_dfe = NULL, * o_dfe = NULL;
   if (!IS_TS (((table_source_t*)ts))
       && (qn_input_fn)hash_source_input != ts->src_input)
@@ -2113,7 +2114,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
 	}
     }
   END_DO_SET();
-  const_s = dfe_iri_const (s_dfe);
+  /*const_s = dfe_iri_const (s_dfe);*/
   const_p = dfe_iri_const (p_dfe);
   const_o = dfe_iri_const (o_dfe);
   memset (&ris, 0, sizeof (ris));
@@ -2186,6 +2187,8 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     }
   else
     GPF_T1 (" all possibilities of spo already covered");
+  dk_free_box (const_p);
+  dk_free_box (const_o);
   sc->sc_rdf_inf_slots = NULL;
 }
 

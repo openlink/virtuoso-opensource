@@ -2897,7 +2897,10 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	    {
 	  data = itc_box_column (itc, buf, col->col_id, cl);
 	      if (col == (dbe_column_t*)key->key_parts->data && 1 == itc->itc_search_par_fill && !box_equal (data, itc->itc_search_params[0]))
+		{
+		  dk_free_tree (data);
 		return;
+	    }
 	    }
 	  is_data = 1;
 	}
@@ -2951,7 +2954,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	}
 	  if (data_col)
 	    {
-	      dk_free_box ((caddr_t)data_col);
+	      dk_free_tree ((caddr_t)data_col);
 	      data_col = NULL;
 	    }
 	}
@@ -3391,6 +3394,7 @@ itc_record_rdf_p (it_cursor_t * itc, int64 est)
   float distincts[4];
   iri_id_t p = unbox_iri_id (itc->itc_search_params[0]);
   int fill = 1;
+  col_stat_t * cs;
   mutex_enter (alt_ts_mtx); /*any mtx that is never enterd, not worth one of its own */
   if (!key->key_p_stat)
     {
@@ -3400,7 +3404,7 @@ itc_record_rdf_p (it_cursor_t * itc, int64 est)
   distincts[0] = est;
   DO_SET (dbe_column_t *, col, &key->key_parts->next)
     {
-      col_stat_t * cs = gethash ((void*)col, itc->itc_st.cols);
+      cs = gethash ((void*)col, itc->itc_st.cols);
       distincts[fill++] = (float)cs->cs_distinct->ht_count * (float)est / itc->itc_st.n_sample_rows;
       DO_IDHASH (caddr_t, k, caddr_t, ign,  cs->cs_distinct)
 	dk_free_box (k);
@@ -3411,6 +3415,14 @@ itc_record_rdf_p (it_cursor_t * itc, int64 est)
 	break;
     }
   END_DO_SET();
+  /* free stats on P */
+  cs = gethash (key->key_parts->data, itc->itc_st.cols);
+  DO_IDHASH (caddr_t, k, caddr_t, ign,  cs->cs_distinct)
+      dk_free_box (k);
+  END_DO_IDHASH;
+  id_hash_free (cs->cs_distinct);
+  dk_free ((caddr_t)cs, sizeof (col_stat_t));
+
   hash_table_free (itc->itc_st.cols);
   itc->itc_st.cols = NULL;
   id_hash_set (key->key_p_stat, (caddr_t)&p, (caddr_t)&distincts);

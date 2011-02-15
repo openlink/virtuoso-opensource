@@ -375,6 +375,7 @@ sqlc_check_const_call (sql_comp_t * sc, ST * tree)
 	  dk_free_box (data);
 	  return ssl;
 	}
+      dk_free_box (data);
     }
   return NULL;
 }
