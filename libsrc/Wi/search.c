@@ -2950,7 +2950,10 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	    }
 	}
 	  if (data_col)
-	    dk_free_box ((caddr_t)data_col);
+	    {
+	      dk_free_box ((caddr_t)data_col);
+	      data_col = NULL;
+	    }
 	}
     }
   END_DO_SET();

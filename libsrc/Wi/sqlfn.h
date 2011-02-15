@@ -1289,4 +1289,6 @@ void itc_assert_no_reg (it_cursor_t * itc);
 #define itc_assert_no_reg(itc)
 #endif
 
+caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
+
 #endif /* _SQLFN_H */
