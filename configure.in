@@ -608,23 +608,32 @@ AC_SYS_RESTARTABLE_SYSCALLS
 ##									##
 ##########################################################################
 
+CCOPT=""
+CCDEFS=""
+CCWARN=""
+CCDEBUG=""
+CCLIBS=""
+
+AC_CHECKING([default compiler values])
+if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs binsrc/config/ccdefs.c" ; then
+    eval `binsrc/config/ccdefs`
+fi
+
 AC_ARG_WITH(debug, [dnl
 AC_HELP_STRING([--with-debug], [debugging code])dnl
 ], [ with_debug="$withval" ],
    [ with_debug="no" ])
 if test "x$with_debug" = "xyes"; then
+    changequote({,})
+    CFLAGS=`echo "$CFLAGS" | $SED -e 's/-O[0-9s]*//g'`
+    CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-O[0-9s]*//g'`
+    changequote([,])
+
     CCOPT="-g"
     AM_LDFLAGS="-g"
+    CCDEBUG=""
 else
-    CCOPT=""
     AM_LDFLAGS="-s"
-fi
-
-AC_CHECKING([default compiler values])
-if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs binsrc/config/ccdefs.c" ; then
-    eval `binsrc/config/ccdefs`
-else
-    CCOPT=-O
 fi
 
 
@@ -1591,8 +1600,8 @@ AC_HELP_STRING([--with-malloc-debug], [extra malloc debugging code])],
 if test "x$with_malloc_debug" = "xyes"; then
     BUILD_OPTS="$BUILD_OPTS malloc_debug"
     CCDEBUG="$CCDEBUG -DMALLOC_DEBUG"
-    CCOPT="$CCOPT -g"
-    AM_LDFLAGS="$AM_LDFLAGS -g"
+    CCOPT="-g"
+    AM_LDFLAGS="-g"
 fi
 
 
