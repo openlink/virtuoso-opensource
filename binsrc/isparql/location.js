@@ -321,6 +321,7 @@ iSPARQL.locationAcquireUI = function (o) {
     }
 
     this._errHandler = function () {
+	iSPARQL.Common.log('Loc error handler');
 	self._err.innerHTML = "Cannot acquire location.";
 	self._refBtn.innerHTML = "Retry";
 	OAT.Dom.show (self._err);
@@ -341,6 +342,22 @@ iSPARQL.locationAcquireUI = function (o) {
 	OAT.Dom.show(self._useBtn);
 	self.hide();
 	if (self.o.cancelCB) self.o.cancelCB(self.o.cbParm);
+    }
+
+    this._geocodeHandler = function (e,s) {
+	return;
+    }
+
+    this._geocodeRetryingH = function (e,s) {
+	return;
+    }
+
+    this._geocodeFailRetryH = function (e,s) {
+	return;
+    }
+
+    this._geocodeFailH = function (e,s) {
+	return;
     }
 
     this.init = function () {

@@ -30,6 +30,8 @@
   <meta name="viewport" content="width=device-width"/>
 
   <link rel="apple-touch-icon" href="/isparql/images/mob_home_icon.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-status-bar-style" content="black-translucent" />
 
   <link type="text/css" rel="stylesheet" href="/isparql/styles/style.css"/>
   <link type="text/css" rel="stylesheet" href="/isparql/styles/execute.css"/>
@@ -492,7 +494,7 @@ WHERE     {	?thing a ?type;
 	<div class="main_col_page" id="page_results"></div>
         <div id="foot">
           <div class="foot_l" id="foot_l">
-            <div class="ubiq_gem">
+          <div class="ubiq_gem" style="display: none">
               <a onclick="javascript:gen_ubiq_meta()">
                 <img src="images/ubiq_icon_16.png" alt="Ubiquity icon"/><span class="text">Ubiquity</span>
               </a>

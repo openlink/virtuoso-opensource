@@ -225,6 +225,13 @@ iSPARQL.QueryExec = function(optObj) {
     self.go(optObj);
 }
 
+iSPARQL.LayoutMgr = {
+	resize_h: function () {
+		
+	},
+	
+}
+
 iSPARQL.Advanced = function () {
     var self = this;
 
@@ -309,8 +316,9 @@ iSPARQL.Advanced = function () {
 		cbParm: o,
 														cache: iSPARQL.locationCache,
 													    minAcc: iSPARQL.Settings.locOpts.minAcc});
-			iSPARQL.StatusUI.absorb(locUI.getCtr);
+//			iSPARQL.StatusUI.absorb(locUI.getCtr());
 	    locUI.refresh();
+//			iSPARQL.StatusUI.show();
 	} else {
 	qe.execute(o);
     }
@@ -1744,7 +1752,6 @@ iSPARQL.Common = {
 	/* build info */
 	$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
-	page_w = OAT.Dom.getWH('page')[0] - 20;
 
 	$('default-graph-uri').value = iSPARQL.Defaults.graph;
 	$('query').value = iSPARQL.Defaults.query;
@@ -1757,6 +1764,8 @@ iSPARQL.Common = {
 						});
 
 		enable_if_ubiq ($('ubiq_gem'));
+		
+		page_w = OAT.Dom.getWH('page')[0] - 20;
 		
         iSPARQL.StatusUI.statMsg ("UI Initialization complete.");
     },
