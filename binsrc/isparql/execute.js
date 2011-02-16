@@ -763,9 +763,12 @@ var QueryExec = function(optObj) {
 
     this.makeErrorResp = function (data) {
 	var txt = OAT.Xml.serializeXmlDoc(data);
-	 if (txt.length == 0 || txt == false) 
-	    txt = data;
-	txt = "<pre>"+txt+"</pre>";
+
+		if (txt.length == 0 || txt == false) txt = data;
+
+		txt = txt.replace(/</g,"&lt;");
+		txt = txt.replace(/>/g,"&gt;");
+
 	return txt;
     };
 
@@ -1061,6 +1064,7 @@ var QueryExec = function(optObj) {
 
     this.executeWithLocation = function (optObj, loc) {
 	optObj.procQuery = self.processLocationMacros (optObj.query, loc);
+		
 	self.execute (optObj)
     }
 

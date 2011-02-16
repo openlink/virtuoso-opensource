@@ -358,6 +358,12 @@ label.load { font-size: 8pt; font-weight: normal}
   margin-right: 6px;
 }
 
+#page_content {
+  width: 100%;
+  float:left;
+  clear: both;
+}
+
 #page_results{
   padding:10px 0px 0px 0px;
 }
