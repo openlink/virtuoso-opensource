@@ -788,6 +788,8 @@ create procedure DB.DBA.RM_ADD_PRV (in proc varchar, in base varchar, in graph v
     return;
   if (not isstring (service_url))
     service_url := base;
+  if (length (service_url) > 1880)
+    return;  
   h := rfc1808_parse_uri (service_url);
   h [3] := ''; h [4] := ''; h [5] := '';
   service_url := DB.DBA.vspx_uri_compose (h);
