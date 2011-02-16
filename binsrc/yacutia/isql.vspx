@@ -137,7 +137,9 @@
 		   <v:error-summary/>
 		 </div>
 	       </v:template>
+	       <div style="clear:left;">
 	       <v:include url="isql_main_inc.vspx"/>
+	       </div>
 	     </v:template>
 	   </vm:popup_page_wrapper>
     </v:page>
