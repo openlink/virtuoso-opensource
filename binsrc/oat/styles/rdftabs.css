@@ -118,17 +118,19 @@
 	float: left;
 }
 
-h3.rdf_nav_title {clear: both; font-weight: bold;}
+h3.rdf_nav_title {clear: both; font-weight: bold;margin-bottom: 0;}
 
 #rdf_nav_breadcrumbs a { font-size: bigger; text-decoration: none }
 #rdf_nav_breadcrumbs a:hover { text-decoration: underline; }
+
+.rdf_nav_content { float: left; width: 100%}
 
 /* navigation - spotlight table */
 
 .rdf_nav_spotlight {
 	width: 100%;
 	border-collapse: collapse;
-	margin: 1em 0em;
+	margin: 0;
 }
 
 .rdf_nav_spotlight td {

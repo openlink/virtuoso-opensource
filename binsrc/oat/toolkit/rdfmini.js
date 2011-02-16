@@ -125,9 +125,9 @@ OAT.RDFMini = function(div,optObj) {
 	    console.info ('viewport: '+vp[1]+'x'+vp[0]);
 	    self.content.scrollIntoView(true);
 	}
-	else {
-	    self.content.style.height = '600px';
-	}
+//	else {
+//	    self.content.style.height = '600px';
+//	}
 
 		self.parent.appendChild(self.content);
 	}

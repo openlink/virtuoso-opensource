@@ -50,7 +50,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
     if (options.buttons) {
 	var btn_bar = OAT.Dom.create("div",
 				     options.def_layout ? 
-				     {marginTop:"1em", width:"90%", textAlign:"center", className: "dialog_btnbar"} : 
+				     {marginTop:"1em", textAlign:"center", className: "dialog_btnbar"} : 
 				     {className: "dialog_btnbar"});
 
 	if (options.buttons & 1) {
