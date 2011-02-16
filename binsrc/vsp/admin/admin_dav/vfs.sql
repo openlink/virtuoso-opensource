@@ -195,6 +195,14 @@ get_again:
       {
 	declare _resp, _content any;
         _content := http_get (_t_urls[0], _resp, 'GET', case when _upd = 1 then _header_arr[0] else _header_arr end);
+	-- when single request we can check here and re-try if no header is received
+	if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
+	  {
+	    if (retr <= 0)
+	      signal ('2E000', 'Bad header received');
+	    else
+	      goto get_again;
+	  }
 	_resps := vector (vector (_content, _resp));
       }
   else
@@ -297,6 +305,22 @@ create procedure WS.WS.VFS_RUN (in url varchar, in threads int := 1, in batch_si
 }
 ;
 
+create procedure WS.WS.VFS_STATUS_GET (in _tgt varchar, in _root varchar)
+{
+  declare rc any;
+  rc := registry_get (sprintf ('__VFS_%s_%s', _tgt, _root));
+  if (not isstring (rc))
+    rc := 'not started';
+  return rc;  
+}
+;
+
+create procedure WS.WS.VFS_STATUS_SET (in _tgt varchar, in _root varchar, in _stat varchar)
+{
+  return registry_set (sprintf ('__VFS_%s_%s', _tgt, _root), _stat);
+}
+;
+
 -- /* top level procedure for processing queues */
 create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _upd integer,
     in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := 1, in batch_size int := 1)
@@ -305,6 +329,8 @@ create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _up
 do_again:
   _stat := '00000';
   _msg := '';
+  WS.WS.VFS_STATUS_SET (_tgt, _root, 'running');
+  commit work;
   exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
       vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads, batch_size));
   if (_stat = '40001')
@@ -313,8 +339,14 @@ do_again:
       goto do_again;
     }
   if (_stat <> '00000')
-    signal (_stat, _msg);
+    {
+      WS.WS.VFS_STATUS_SET (_tgt, _root, 'error');
+      signal (_stat, _msg);
+    }
   commit work;
+  if (WS.WS.VFS_STATUS_GET (_tgt, _root) = 'running' and 
+      not exists (select 1 from WS.WS.VFS_QUEUE where VQ_STAT = 'waiting' and VQ_HOST = _tgt and VQ_ROOT = _root))
+    WS.WS.VFS_STATUS_SET (_tgt, _root, 'done');
   --dbg_obj_print ('COMPLETED WITH STATUS: ', _stat, ' ', _msg);
 }
 ;
@@ -397,6 +429,8 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 	    goto fn_end;
 	  };
 	found_one := 0; ndone := 0;
+	if (WS.WS.VFS_STATUS_GET (_tgt, _root) = 'stopped')
+	  goto fn_end;
 	for (declare i int, i := 0; i < batch_size; i := i + 1)
 	      {
 	     _rc := call (url_fn) (_tgt, _root, _next_url, _clnt_data);
