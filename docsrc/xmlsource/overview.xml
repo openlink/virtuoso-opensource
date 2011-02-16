@@ -779,5 +779,441 @@ MaxCheckpointRemap = 246837
        <para>Changing the value of the parameter <emphasis>MaxCheckpointRemap</emphasis> with let's 
        say 1/4 of the DB size will resolve the issue.</para>
     </sect2>                  
+    <sect2 id="virtuosotipsandtricksrdftriggersoptions">
+      <title>What are "Generate RDB2RDF triggers" and "Enable Data Syncs with Physical Quad Store" RDF Views options?</title>
+      <para>These RDF Views options basically persist the triples in the transient View Graph in the Native Quad Store. The Data Sync is how you keep the transient views in sync with the persisted triples.</para>	      
+      <para>Without this capability you cannot exploit faceted browsing without severe performance overhead when using Linked Data based conceptual views over ODBC or JDBC accessible data sources.</para>	
+      <para>Note: Using these options when the RFViews have already been created is not currently possible via the Conductor UI. Instead you should be able to add them manually from isql:</para>	            
+<orderedlist>
+  <listitem>Drop the RDF View graph and Quad Map.</listitem>
+  <listitem>Create it again with the RDB2RDF Triggers options enabled.</listitem>
+</orderedlist>  
+     <tip><title>See Also:</title>
+       <para><link linkend="rdb2rdftriggers">RDB2RDF Triggers</link></para>
+     </tip>    
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksmanagedaterangequery">
+      <title>How to Manage Date Range SPARQL queries?</title>
+      <para>The following examples demonstrate how to manage date range in a SPARQL query:</para>	
+      <para><emphasis>Example with date range</emphasis></para> 
+<programlisting><![CDATA[
+SELECT ?s ?date 
+FROM <http://dbpedia.org> 
+WHERE 
+  { 
+    ?s ?p ?date . FILTER ( ?date >= "19450101"^^xsd:date && ?date <= "19451231"^^xsd:date )  
+  } 
+LIMIT 100
+]]></programlisting>      
+      <para><emphasis>Example with bif:contains</emphasis></para> 
+      <para>Suppose there is the following query using bif:contains for date:</para>
+      <para>If ?date is of type xsd:date or xsd:dateTime and of valid syntax then 
+      	bif:contains(?date, '"1945*"' ) will not found it, because it will be parsed at load/create and 
+      	stored as SQL DATE value.
+      </para>	
+      <para>So if data are all accurate and typed properly then the filter is:</para>
+<programlisting><![CDATA[
+(?date >= xsd:date("1945-01-01") && ?date < xsd:date("1946-01-01"))	
+]]></programlisting>      
+      <para>i.e. the query should be:</para>
+<programlisting><![CDATA[
+SELECT DISTINCT ?s ?date
+FROM <http://dbpedia.org>
+WHERE
+  {
+    ?s ?p ?date . FILTER( ?date >= xsd:date("1945-01-01") && ?date < xsd:date("1946-01-01")  && (str(?p) != str(rdfs:label)) )
+  }
+LIMIT 10	
+]]></programlisting>      
+      <para>If data falls, then the free-text will be OK for tiny examples but not for "big" cases because 
+      	<emphasis>bif:contains(?date, '"1945*"')</emphasis> would require that less than 200 words in the 
+      	table begins with 1945. Still, some data can be of accurate type and syntax so range comparison 
+      	should be used for them and results aggregated via UNION.</para>
+      <para>If dates mention timezones then the application can chose the beginning and the end of the 
+      	year in some timezones other than the default.</para>	
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksquadstorageinternally">
+      <title>How can I see which quad storages exist and in which quad storage a graph resides?</title>
+      <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created RDF view from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
+      </para>	
+<programlisting><![CDATA[
+http://localhost:8890/rdfv_demo/quad_storage/default	
+]]></programlisting>      
+      <para>Also the RDF is accessible over the SPARQL endpoint with the following query:
+      </para>	
+<programlisting><![CDATA[
+define input:storage <http://localhost:8890/rdfv_demo/quad_storage/default>
+SELECT * 
+WHERE 
+  { 
+    ?s ?p ?o 
+  }	
+]]></programlisting>      
+      <para>Now one could ask is there a way to define internally (once) that the quad storage should be 
+      	included in queries to the SPARQL endpoint? So that the user does not have to define the 
+      	<emphasis>input:storage</emphasis> explicitly in each query, like this:</para>	
+<programlisting><![CDATA[
+http://localhost:8890/sparql?query=select * where { ?s ?p ?o }&default-graph-uri=NULL&named-graph-uri=NULL	
+]]></programlisting>      
+      <para>All metadata about all RDF storages are kept in "system" graph 
+      	&lt;http://www.openlinksw.com/schemas/virtrdf#&gt; ( namespace prefix <emphasis>virtrdf:</emphasis> ). 
+      	Subjects of type <emphasis>virtrdf:QuadStorage</emphasis> are RDF storages. There are three of them by default:
+      </para>	
+<programlisting><![CDATA[
+SQL> SPARQL SELECT * FROM virtrdf: WHERE { ?s a virtrdf:QuadStorage };
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage
+http://www.openlinksw.com/schemas/virtrdf#DefaultServiceStorage
+http://www.openlinksw.com/schemas/virtrdf#SyncToQuads
+
+3 Rows. -- 3 msec.	
+]]></programlisting>
+      <itemizedlist mark="bullet">
+        <listitem><emphasis>virtrdf:DefaultQuadStorage</emphasis> is what's in use if no input:storage specified.</listitem>
+        <listitem><emphasis>virtrdf:DefaultServiceStorage</emphasis> will be used for SPARQL federation.</listitem>
+        <listitem><emphasis>virtrdf:SyncToQuads</emphasis> is to keep the list of RDF Views that are translated into RDB2RDF triggers.</listitem>        
+      </itemizedlist>      
+      <para>There are two ways of using the RDF View from above in SPARQL endpoint without 
+      	<emphasis>define input:storage</emphasis>:</para>	
+      <orderedlist>
+        <listitem>Create RDF View right in <emphasis>virtrdf:DefaultQuadStorage</emphasis> or add the 
+        view in other storage and then copy it from there to <emphasis>virtrdf:DefaultQuadStorage</emphasis>.
+          <itemizedlist mark="bullet">
+            <listitem>In any of these two variants, use: 
+<programlisting><![CDATA[
+SPARQL ALTER QUAD STORAGE virtrdf:DefaultQuadStorage . . .	
+]]></programlisting>                  	
+            </listitem>
+          </itemizedlist>        	
+        </listitem>
+        <listitem>Use <emphasis>SYS_SPARQL_HOST</emphasis> table as described 
+        <link linkend="rdfdefaultgraph">here</link> and set <emphasis>SH_DEFINES</emphasis> so it 
+        contains your favorite <emphasis>define input:storage</emphasis>.</listitem>
+      </orderedlist>      	
+    </sect2>      
+    <sect2 id="virtuosotipsandtricksdroprecrdefstrg">
+      <title>Can I drop and re-create the DefaultQuadStorage?</title>                    
+      <para>Currently system metadata consist of three "levels":</para>
+      <orderedlist>
+        <listitem><emphasis>QuadMapFormats</emphasis> are used to describe transformations of individual 
+        SQL values (or types of SQL values),</listitem>
+        <listitem><emphasis>QuadMaps</emphasis> refers to <emphasis>QuadMapFormats</emphasis> (via 
+        <emphasis>QuadMapValues</emphasis>) and describe some "minimal" independent RDB2RDF 
+        transformations,</listitem>
+        <listitem><emphasis>QuadStorages</emphasis> organizes <emphasis>QuadMaps</emphasis>.</listitem>
+      </orderedlist>      
+      <para><emphasis>QuadStorages</emphasis> contains only "symlinks" to maps, if you drop a storage 
+      you don't drop all mappings inside. If you drop the <emphasis>DefaultQuadStorage</emphasis> or 
+      some other built-in thing, it can be safely recovered by 
+      <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>, 
+      with first parameter set to 1. This will keep your own data intact. However we recommend to write 
+      a script that declares all your formats, RDF Views and storages, to be able to reproduce the 
+      configuration after any failures.</para>
+    </sect2>    
+    <sect2 id="virtuosotipsandtricksgraphsecurity">
+      <title>How to display only some information from RDF graph?</title>                    
+      <para>Virtuoso supports graph-level security, as described <link linkend="rdfgraphsecurity">here</link> 
+      but not subject-level or predicate-level. When exposing data that needs protected access, triples 
+      should be confined to private  name graphs which are protected by ACLs using WebID.</para>
+      <para>Note, how you can use <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthPolicyFOAFSSL">WebID to protect Virtuoso SPARQL endpoints</ulink>.</para>  
+      <tip><title>See Also:</title>
+        <para><link linkend="rdfgraphsecurity">RDF Graphs Security</link></para>
+      </tip>
+    </sect2>   
+    <sect2 id="virtuosotipsandtrickssparqlcondport">
+      <title>Is it possible to have the SPARQL endpoint on a different port than the Conductor?</title>                    
+      <para>Virtuoso Web Server has the capability to create extra listeners using the <link linkend="admui.internetdomains">Conductor interface</link>.</para>
+      <orderedlist>
+        <listitem>At install time you have your HTTP Server port in your virtuoso.ini set to 8890, which 
+        	you want to keep in your local network as this contains ALL the endpoints that you have 
+        	registered in Virtuoso. So as long as you do not open this port in your firewall, you can 
+        	only get at it from the local machine.</listitem>
+        <listitem>Next you should create a new vhost entry using the EXTERNAL name of your machine and 
+        	use port 80 (or a higher port if you do not want to run as root) for ex.:
+<programlisting><![CDATA[
+Interface: 0.0.0.0
+Port: 8080
+Http Host:  my.example.com	
+]]></programlisting>        	
+        </listitem>
+        <listitem>Next you add a "New directory to this line", click on "Type" radio button and choose 
+        	"Sparql access point" from the drop-down list and press Next button. Set "Path" to /sparql 
+        	and press the "Save Changes" button to store.</listitem>
+        <listitem>At this point you have created: http://my.example.com:8080/sparql which functions 
+        	exactly the same as your internal http://localhost:8890/sparql. You can now open your firewall 
+        	and allow outside machines to connect to port 8080 so people can use your SPARQL endpoint 
+        	without access to any other endpoint on your Virtuoso installation.</listitem>
+        <listitem>You should probably also change your virtuoso.ini so:
+<programlisting><![CDATA[
+[URIQA]
+DefaultHost = my.example.com:8080	
+]]></programlisting>        	
+        </listitem>
+        <listitem>If you use port 80, you do not have to add :80 at the end of this setting, although 
+        	it should not make any difference.</listitem>
+        <listitem>You can now add other directories / endpoints to the new <emphasis>my.example.com</emphasis> 
+          interface you just created e.g. a nice / directory that points to a index.html which describes 
+          your site etc.</listitem>
+      </orderedlist>
+      <tip><title>See Also:</title>
+        <para><link linkend="admui.internetdomains">Internet Domains</link></para>
+      </tip>
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksenableadonetvs2010">
+      <title>How to enable the Virtuoso Entity Framework 3.5 ADO.Net Provider in Visual Studio 2010?</title>                    
+      <para>The Virtuoso Entity Framework 3.5 ADO.Net Provider is current only list as a Visible control 
+      	in the Visual Studio 2008 IDE as the current installers only create the necessary registry 
+      	entries for Visual Studio 2008. To make it visible in the Visual Studio 2010's IDE the 
+      	following registry settings need to be manually updated and manual addtions to some of 
+      	the VS 2010 XML configuration files:</para>
+      <orderedlist>
+        <listitem>Export following registry keys to .reg files and using a text editor, such as Wordpad, edit the Visual Studio version numbers from 8.0 or 9.0 to 10.0:
+<programlisting><![CDATA[
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\8.0\DataProviders\{EE00F82B-C5A4-4073-8FF1-33F815C9801D}
+- and -
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\8.0\DataSources\{90FBCAF2-8F42-47CD-BF1A-88FF41173060}
+]]></programlisting>        	
+        </listitem>
+        <listitem>Once edited, save and double click them to create the new registry entries under:
+<programlisting><![CDATA[
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\10.0....	
+]]></programlisting>        	
+        </listitem>
+        <listitem>In addition, locate the file C:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\CONFIG\machine.config, 
+        locate the node, then locate the <emphasis>&lt;add name="VirtuosoClient3? Data Provider" ...</emphasis> 
+        node within it: 
+<programlisting><![CDATA[
+<add name="VirtuosoClient3 Data Provider" invariant="OpenLink.Data.Virtuoso"
+    description=".NET Framework Data Provider for Virtuoso" type="OpenLink.Data.Virtuoso.VirtuosoClientFactory, virtado3, Version=6.2.3128.2, Culture=neutral, PublicKeyToken=391bf132017ae989" />	
+]]></programlisting>        	
+        </listitem>
+      </orderedlist>
+      <para>and copy is to the equivalent C:\WINDOWS\Microsoft.NET\Frameworks\v4.0.30128\CONFIG\machine.config location.</para>
+      <para>Visual Studio 2010 will then have the necessary information to locate and load the Virtuoso ADO.Net provider in its IDE.</para>
+      <para>The registry should typically contain the following entries for Visual Studio 2010 as a result:</para>
+<programlisting><![CDATA[
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}]
+@=".NET Framework Data Provider for Virtuoso"
+"AssociatedSource"="{4D90D7C5-69A6-43EE-83ED-59A0E442D260}"
+"CodeBase"="C:\\Windows\\assembly\\GAC_MSIL\\virtado3\\6.2.3128.1__391bf132017ae989\\virtado3.dll"
+"Description"="Provider_Description, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+"DisplayName"="Provider_DisplayName, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+"InvariantName"="OpenLink.Data.Virtuoso"
+"PlatformVersion"="2.0"
+"ShortDisplayName"="Provider_ShortDisplayName, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+"Technology"="{77AB9A9D-78B9-4ba7-91AC-873F5338F1D2}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IDSRefBuilder]
+@="Microsoft.VisualStudio.Data.Framework.DSRefBuilder"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataAsyncCommand]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataCommand]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionProperties]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataConnectionProperties"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionSupport]
+@="Microsoft.VisualStudio.Data.Framework.AdoDotNet.AdoDotNetConnectionSupport"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionUIControl]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataConnectionUIControl"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionUIProperties]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataConnectionProperties"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataMappedObjectConverter]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataObjectIdentifierResolver]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataObjectIdentifierResolver"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataObjectSupport]
+@="Microsoft.VisualStudio.Data.Framework.DataObjectSupport"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+"XmlResource"="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoObjectSupport"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataSourceInformation]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataSourceInformation"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataTransaction]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataViewSupport]
+@="Microsoft.VisualStudio.Data.Framework.DataViewSupport"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+"XmlResource"="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoViewSupport"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataSources\{4D90D7C5-69A6-43EE-83ED-59A0E442D260}]
+@="OpenLink Virtuoso Data Source"
+"DefaultProvider"="{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataSources\{4D90D7C5-69A6-43EE-83ED-59A0E442D260}\SupportingProviders]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataSources\{4D90D7C5-69A6-43EE-83ED-59A0E442D260}\SupportingProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}]
+"Description"="DataSource_Description, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989" 	
+]]></programlisting>      
+      <para>The next Virtuoso releases, 6.3+ will support this new Visual Studio 2010 release out of the box.</para>                  
+    </sect2> 
+    <sect2 id="virtuosotipsandtrickscontrolunicode3">
+      <title>How Can I Control the normalization of UNICODE3 accented chars in free-text index?</title>                    
+<para>
+The normalization of UNICODE3 accented chars in free-text index can be controlled by setting up the 
+configuration parameter <emphasis>XAnyNormalization</emphasis> in the
+virtuoso.ini config file, section [I18N]. This parameter controls whether accented
+UNICODE characters should be converted to their non-accented base
+variants at the very beginning of free-text indexing or parsing a
+free-text query string. The parameter's value is an integer that is bitmask with
+only 2 bits in use atm:
+</para>
+<orderedlist>
+  <listitem>0: the default behavior, do not normalize anything, so "Jose" and
+"José" are two distinct words.
+</listitem>
+  <listitem>2: Any combined char is converted to its (smallest known) base. So
+"é" will lose its accent and become plain old ASCII "e".</listitem>
+  <listitem>3: This is equl to 1|2 and when set then performs both conversions. 
+As a result, pair of base char and combinig char loses its second char and chars with accents will lose
+accents.</listitem>
+</orderedlist>
+     <para>If the parameter is required at all, the needed value is probably 3. So
+the fragment of virtuoso.ini is:</para>
+<programlisting><![CDATA[
+[I18N]
+XAnyNormalization=3
+]]></programlisting>
+     <para>In some seldom case the value of 1 can be appropriate. The parameter
+should be set once before creating the database. If changed on the
+existing database, all free-text indexes that may contain non-ASCII data
+should be re-created. On a typical system, the parameter affects all
+text columns, XML columns, RDF literals and queries.</para>
+<para>Strictly speaking, it affects not all of them but only items that use
+default "x-any" language or language derived from x-any such as "en" and
+"en-US" but if you haven't tried writing new C plugins for custom
+languages you should not look so deep.</para>
+     <para>As an example, with <emphasis>XAnyNormalization=3</emphasis> once can get the following:</para>
+<programlisting><![CDATA[
+SQL>SPARQL 
+
+INSERT IN <http://InternationalNSMs/>
+   { <s> <sp> "Índio João Macapá Júnior Tôrres Luís Araújo José" ; 
+     <ru> "Он добавил картошки, посолил и поставил аквариум на огонь" . }
+
+INSERT INTO <http://InternationalNSMs/>, 2 (or less) triples -- done
+
+
+SQL> DB.DBA.RDF_OBJ_FT_RULE_ADD (null, null, 'InternationalNSMs.wb');
+
+Done. -- 0 msec.
+
+SQL>vt_inc_index_db_dba_rdf_obj();
+
+Done. -- 26 msec.
+
+SQL>SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE 
+  {
+    ?s ?p ?o 
+  }
+ORDER BY ASC (str(?o))
+
+s  sp  Índio João Macapá Júnior Tôrres Luís Araújo José
+s  ru  Он добавил картошки, посолил и поставил аквариум на огонь
+
+2 Rows. -- 2 msec.
+
+SQL> SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE 
+  { 
+    ?s ?p ?o . ?o bif:contains "'Índio João Macapá Júnior Tôrres Luís Araújo José'" . 
+  }
+
+s  sp  Índio João Macapá Júnior Tôrres Luís Araújo José
+
+1 Rows. -- 2 msec.
+
+SQL>SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE
+  { 
+    ?s ?p ?o . ?o bif:contains "'Indio Joao Macapa Junior Torres Luis Araujo Jose'" . }
+
+s  sp  Índio João Macapá Júnior Tôrres Luís Araújo José
+
+1 Rows. -- 1 msec.
+
+SQL> SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE 
+  { 
+    ?s ?p ?o . ?o bif:contains "'поставил аквариум на огонь'" . }
+
+s  ru  Он добавил картошки, посолил и поставил аквариум на огонь
+
+]]></programlisting>
+     <para>There was also request for function that normalizes characters in
+strings as free-text engine will do with XAnyNormalization=3 , the function will be provided as a separate patch and depends on this
+specific patch.
+    </para>
+    <tip><title>See Also:</title>
+       <para><link linkend="VIRTINI">Virtuoso Configuration File</link></para>
+    </tip>
+    </sect2>               
+    <sect2 id="virtuosotipsandtricksdefinegraphwithspongeroption">
+      <title>How Can I define graph with virt:rdf_sponger option set to "on"?</title>                    
+      <para>Suppose we have the following scenario:</para>
+      <orderedlist>
+        <listitem>Create Virtuoso user using Conductor.</listitem>
+        <listitem>Create for the user a RDF Sink folder.</listitem>        
+        <listitem>In the properties of the RDF sink folder add the following 
+          <emphasis>virt:rdf_graph</emphasis> option: 
+<programlisting><![CDATA[
+http://localhost:8080/DAV/home/dba/rdf_sink/	
+]]></programlisting>
+        </listitem>
+        <listitem>Set <emphasis>virt:rdf_sponger</emphasis> to "on".</listitem>
+        <listitem>Upload RDF files to the RDF Sink folder.</listitem>        
+        <listitem>As result the RDF data should be stored in graph 
+        	for ex. (depending on your folder name etc.): 
+<programlisting><![CDATA[
+http://local.virt/DAV/home/wa_sink/rdf_sink/wa_address_agents.rdf	
+]]></programlisting>
+        </listitem>
+        <listitem>In order to define any graph you want with the option from above, you should execute:
+<programlisting><![CDATA[
+SQL>DAV_PROP_SET (davLocation,  'virt:rdf_graph', iri, _uid, _pwd);	
+]]></programlisting>
+          <itemizedlist mark="bullet">
+            <listitem>Calling this function uses the given IRI as the graph IRI when sponging stuff 
+            	put in the rdf_sink/ collection davLocation.</listitem>
+          </itemizedlist>            
+        </listitem>
+        <listitem>Finally you should execute the following command to get the RDF data from the new graph:
+<programlisting><![CDATA[
+SQL>SELECT DAV_PPROP_GET ('/DAV/home/dba/rdf_sink/', 'virt:rdf_graph','dba', 'dba');	
+]]></programlisting>
+        </listitem>
+        </orderedlist>
+    </sect2>                     
   </sect1>    
 </chapter>
+
+

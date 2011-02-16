@@ -101,7 +101,7 @@
     <para>If the signer_certs is supplied, an array of PEM encoded certificates
     of the signers is returned.</para>
   </refsect1>
-  <refsect1 id="errors_smime_verify"><title>Errors</title>
+  <!--refsect1 id="errors_smime_verify"><title>Errors</title>
     <table><title>Errors signalled by <function>smime_verify</function></title>
       <tgroup cols="4">
         <thead>
@@ -122,7 +122,7 @@
 	</tbody>
       </tgroup>
     </table>
-  </refsect1>
+  </refsect1-->
   <refsect1 id="examples_smime_verify"><title>Examples</title>
     <example id="ex_smime_verify"><title>Verifying a Signed MIME Message</title>
 <para>Example (where signed.eml contains the output from smime_sign.</para>
@@ -138,6 +138,8 @@ _______________________________________________________________________________
   </refsect1>
   <refsect1 id="seealso_smime_verify"><title>See Also</title>
     <para><link linkend="fn_smime_sign">smime_sign</link></para>
+    <para><link linkend="fn_smime_encrypt">smime_encrypt</link></para>  
+    <para><link linkend="fn_smime_decrypt">smime_decrypt</link></para>          
 		<para><link linkend="fn_pem_certificates_to_array">pem_certificates_to_array</link></para>
  </refsect1>
 </refentry>

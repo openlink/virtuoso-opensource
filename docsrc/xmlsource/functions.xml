@@ -211,7 +211,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &serv_queue_top; &ses_connect; &ses_disconnect;
 &ses_read_line; &ses_write; &set_row_count; &set_user_id; &set_identity_column; &sign; &signal;
 &sinv_create_key_mapping; &sinv_create_inverse; &sinv_drop_inverse;
-&smime_sign; &smime_verify; &smtp_send; &soap_box_xml_entity; &soap_dt_define;
+&smime_sign; &smime_verify; &smime_encrypt; &smime_decrypt; &smtp_send; &soap_box_xml_entity; &soap_dt_define;
 &soap_call; &soap_client; &soap_make_error; &soap_print_box; &soap_sdl;
 &soap_server; &soap_wsdl; &soap_wsdl_import; &soap_box_structure; &soap_current_url;
 &space; &split_decode; &sprintf; &sprintf_inverse; &sprintf_iri; &sprintf_iri_or_null; &sprintf_or_null;

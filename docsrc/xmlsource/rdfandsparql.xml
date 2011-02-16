@@ -7090,7 +7090,7 @@ permissions on all graphs.</listitem>
 set automatically.</para>
 <sect3 id="rdfgraphsecurityintconfsecuser"><title>Configuring New User</title>
 <itemizedlist mark="bullet">
-  <listitem>Step 1: Grant SPARQL_SELECT, SPARQL_SPONGE or SPAR_UPDATE to the user.</listitem>
+  <listitem>Step 1: Grant SPARQL_SELECT, SPARQL_SPONGE or SPARQL_UPDATE to the user.</listitem>
   <listitem>Step 2: Set user's permissions on all graphs.</listitem>
   <listitem>Step 3: Grant rights on some specific graphs.</listitem>
 </itemizedlist>
@@ -16932,7 +16932,7 @@ No. of rows in result: 10
   <sect2 id="rdfsparqlruletransoption"><title>Inference Rules and SPARQL with Transitivity Option</title>
 <itemizedlist mark="bullet">
   <listitem>See <link linkend="rdfsparqlimplementatiotransexamples7">example</link> with an
-inference rule to cater data being skos:broader based, which is no long transitive.</listitem>
+inference rule to cater data being skos:broader based, which is no longer transitive.</listitem>
   <listitem>See <link linkend="rdfsparqlimplementatiotransexamples8">example</link> with an
 inference rule to find entities that are subcategories of Protestant Churches, no deeper
 than 3 levels within the concept scheme hierarchy, filtered by a specific subcategory.</listitem>
@@ -18493,13 +18493,21 @@ create procedure dump_graphs (in dir varchar := 'dumps', in file_length_limit in
   set isolation = 'uncommitted';
   for (select * from (sparql define input:storage "" select distinct ?g { graph ?g { ?s ?p ?o } . filter ( ?g != virtrdf: ) } ) as sub option (loop)) do
     {
+
+      if (exists (sparql define input:storage "" ask where { ?:g <http://www.strigi.org/fields#indexGraphFor> ?r . }))
+	{
       dump_one_graph ("g", sprintf ('%s/graph%06d_', dir, inx), file_length_limit);
+        }
+      else
+	{
+	  dump_one_graph ("g", sprintf ('%s/graph%06d_', dir, inx), file_length_limit);
+	}
       inx := inx + 1;
     }
 }
 ;
 
-create procedure dump_one_graph (in srcgraph varchar, in out_file varchar, in file_length_limit integer := 1000000000)
+create procedure dump_one_graph (in srcgraph varchar, in out_file_prefix varchar, in file_length_limit integer := 1000000000)
 {
   declare file_name varchar;
   declare env, ses any;
@@ -18508,7 +18516,7 @@ create procedure dump_one_graph (in srcgraph varchar, in out_file varchar, in fi
   max_ses_len := 10000000;
   file_len := 0;
   file_idx := 1;
-  file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+  file_name := sprintf ('%s%06d.ttl', out_file_prefix, file_idx);
   string_to_file (file_name || '.graph', srcgraph, -2);
   string_to_file (file_name, sprintf ('# Dump of graph <%s>, as of %s\n', srcgraph, cast (now() as varchar)), -2);
   --env := vector (dict_new (16000), 0, '', '', '', 0, 0);
@@ -18527,9 +18535,9 @@ create procedure dump_one_graph (in srcgraph varchar, in out_file varchar, in fi
               string_to_file (file_name, ses, -1);
               file_len := 0;
               file_idx := file_idx + 1;
-              file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+              file_name := sprintf ('%s%06d.ttl', out_file_prefix, file_idx);
               string_to_file (file_name, sprintf ('# Dump of graph <%s>, as of %s (part %d)\n', srcgraph, cast (now() as varchar), file_idx), -2);
-              env := vector (dict_new (16000), 0, '', '', '', 0, 0);
+	      env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
             }
           else
             string_to_file (file_name, ses, -1);
@@ -18567,6 +18575,10 @@ create procedure load_graphs (in dir varchar := 'dumps/')
 }
 ;
 ]]></programlisting>
+   <sect3 id="rdfperfdumpandreloadgraphsexamples"><title>Examples for Dump and Reload Graphs</title>
+SQL>dump_one_graph ('http://daas.openlinksw.com/data#', './bbc_data_', 1000000000);
+SQL>dump_one_graph ('http://daas.openlinksw.com/data#', './bbc_data_');
+   </sect3>
 </sect2>
 <sect2 id="rdfperfdumpandreloadgraphsn3"><title>Dump RDF View Graph to n3</title>
 <para>The RDF_QM_TREE_DUMP procedure and its associated procedures below are used 
@@ -18933,7 +18945,7 @@ This is not overridden by the sql:select-option clause since an index
 intersection is always a safe guess, regardless of the correctness of
 the cardinality guesses of the patterns involved.</para>
 </sect2>
-    <sect2 id="rdfperfloading"><title>Loading</title>
+    <sect2 id="rdfperfloading"><title>Loading RDF</title>
 	<para>There are many functions for loading RDF text, in RDF/XML and Turtle.</para>
 	<para>For loading RDF/XML, the best way is to split the data to be loaded into
 multiple streams and load these in parallel using <link linkend="fn_rdf_load_rdfxml"><function>RDF_LOAD_RDFXML ()</function></link>.

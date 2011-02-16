@@ -326,7 +326,7 @@ forces Virtuoso to only run on one CPU in a multiprocessor environment.</para>
 				</listitem>
 				<listitem id="ini_Parameters_ServerPort">
 					<formalpara>
-						<title>ServerPort=[&lt;IP Address&gt;]&lt;port&gt;</title>
+						<title>ServerPort=[&lt;IP Address&gt;]:&lt;port&gt;</title>
 						<para>This is the IP Address and port number where the server will start listening.
 You do not need to specify the listening IP Address but can do in a situation that you want the server to bind to a specific address only.</para>
 					</formalpara>
@@ -1491,6 +1491,35 @@ impractical in all cases.
 		<sect5 id="ini_I18N">
                   <title>[I18N]</title>
                   <itemizedlist>
+                  	
+                  	<listitem id="ini_I18N_XAnyNormalization">
+                      <formalpara>
+                        <title>WideFileNames = 1/2/3/0</title>
+                        <para>0: default value. It means not to normalize anything, so for ex. 
+                        	"José" and "Jose" are two distinct words.</para>
+                        <para>1: Any pair of base char and combinig char (NSM, non-spacing
+modifier) is replaced with a single combined char, so if character "é" is written as a sequence 
+of "base" character "e" and a unicode char U +301 ("combining acute accent") then the pair will 
+be replaced with single U+00E9 ("latin small letter e acute").
+</para>
+                        <para>2: Any combined char is converted to its (smallest known) base. So
+"é" will lose its accent and become plain old ASCII "e".
+</para>
+                        <para>3: This is equl to 1|2 and when set then performs both conversions. 
+As a result, pair of base char and combinig char loses its second char and chars with accents will lose
+accents.</para>
+                        <para>If the parameter is required at all, the needed value is probably 3. 
+So the fragment of virtuoso.ini should be:</para>
+<programlisting><![CDATA[
+[I18N]
+XAnyNormalization=3	
+]]></programlisting>                        
+  <tip><title>See Also:</title>
+    <para><link linkend="virtuosotipsandtrickscontrolunicode3">How Can I Control the normalization of UNICODE3 accented chars in free-text index?</link></para>
+  </tip>
+                      </formalpara>
+                    </listitem>
+                    
                     <listitem id="ini_I18N_WideFileNames">
                       <formalpara>
                         <title>WideFileNames = 1/0</title>
