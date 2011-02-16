@@ -88,6 +88,7 @@ namespace OpenLink.Data.Virtuoso
 		DV_IRI_ID_8 = 244,
 		DV_INT64    = 247,
 		DV_RDF	= 246,
+		DV_ANY	= 242,
                 
 	}
 
