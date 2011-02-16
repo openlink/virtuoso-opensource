@@ -101,7 +101,7 @@
         <td valign="top">
           <div id="rf" class="form">
             <div class="header">
-              User Register <img id="rf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
+              User Registration <img id="rf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
         </div>
             <ul id="rf_tabs" class="tabs">
               <li id="rf_tab_0" title="Digest">Digest</li>
