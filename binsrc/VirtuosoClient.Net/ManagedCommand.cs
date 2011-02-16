@@ -325,7 +325,7 @@ namespace OpenLink.Data.Virtuoso
 				  Cancel ();
             }
 
-			if (pendingFuture != null)
+			if (pendingFuture != null && connection.futures != null)
 			{
 				connection.futures.Remove (pendingFuture);
 				pendingFuture = null;
@@ -372,6 +372,9 @@ namespace OpenLink.Data.Virtuoso
 			else
 			{
 				Debug.Assert (column.bufferType != null);
+				if (data is DateTimeMarshaler)
+                                  data = ((IConvertData)data).ConvertData(typeof(DateTime));
+				else
 				data = column.bufferType.ConvertValue (data);
 			}
 			return data;

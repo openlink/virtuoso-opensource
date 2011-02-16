@@ -845,13 +845,36 @@ namespace OpenLink.Data.Virtuoso
                 		if (column.data is IConvertData)
                     			return ((IConvertData)column.data).ConvertData(type);
                 		else if (column.data is IConvertible)
+                          {
+                            switch (column.data.GetType().FullName)
+                            {
+                                case "System.Int32":
+                                case "System.Single":
+                                case "System.Double":
+                                case "System.Decimal":
+                                case "System.DateTime":
+                                case "System.TimeSpan":
+                                    return column.data;
+                                default:
                     			return Convert.ChangeType(column.data, type);
+                            }
+                          }
                         	else if (column.data is SqlExtendedString)
                                 	return column.data;
                         	else if (column.data is SqlRdfBox)
                                 	return column.data;
                 		else
+                          {
+                            switch (column.data.GetType().FullName)
+                            {
+                                case "System.DateTime":
+                                case "System.DateTimeOffset":
+                                case "System.TimeSpan":
+                                    return column.data;
+                                default:
                     			return column.data.ToString();
+            		}
+                          }
             		}
             		else
 				return column.data;
