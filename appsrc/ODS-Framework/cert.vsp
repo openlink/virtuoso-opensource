@@ -90,10 +90,15 @@
      	     
      <?vsp
        }
-         } else {  ?>Certificate & Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead <?vsp } 
+	 } 
+	else if (regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
+	  goto make_cert;
+        else 
+	 {  ?>Certificate & Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead <?vsp } 
        }
        else
        {
+ 	 make_cert:;
          for select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY from SYS_USERS, VSPX_SESSION, WA_USER_INFO
       	    where VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID do 
 	    {
