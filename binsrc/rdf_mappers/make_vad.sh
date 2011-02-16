@@ -330,6 +330,7 @@ if [ "$ISDAV" = "1" ] ; then
 else
   echo "	registry_set('_"$VAD_NAME"_path_', 'file://vad/vsp/$VAD_NAME/');" >> $STICKER
 fi
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/virt_rdf_label.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/description.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/yelp_categories.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "	DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/rdf_mappers.sql', 0, 'report', $ISDAV);" >> $STICKER
@@ -359,6 +360,7 @@ fi
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/iso_country_codes.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/virt_rdf_label.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/nyt_people.nt.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
   for file in `find xslt/main -type f -print | grep -v CVS | sort`
