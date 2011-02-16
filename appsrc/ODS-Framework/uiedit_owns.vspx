@@ -32,7 +32,7 @@
   <v:variable name="ow_mode" type="varchar" default="'OW/browse'"/>
 
 	<v:variable name="ow_id" type="any" default="null" />
-	<v:variable name="ow_type" type="varchar" default="3" />
+	<v:variable name="ow_type" type="varchar" default="'3'" />
 	<v:variable name="ow_properties" type="any" default="null" />
 	<v:variable name="ow_newProperties" type="any" default="null" />
 

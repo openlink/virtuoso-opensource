@@ -32,7 +32,7 @@
   <v:variable name="ol_mode" type="varchar" default="'OL/browse'"/>
 
 	<v:variable name="ol_id" type="any" default="null" />
-	<v:variable name="ol_type" type="varchar" default="1" />
+	<v:variable name="ol_type" type="varchar" default="'1'" />
 	<v:variable name="ol_properties" type="any" default="null" />
 	<v:variable name="ol_newProperties" type="any" default="null" />
 
