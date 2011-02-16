@@ -114,22 +114,24 @@
         <tr class="listing_header_row">
           <th>Description</th>
           <th>URL</th>
-          <th>Total pages</th>
+	  <th>Pages (downloaded/total)</th>
           <th>Action</th>
         </tr>
         <?vsp
-          declare _count, idx integer;
+          declare _count, _all, idx integer;
           _count := idx := 0;
+	  set isolation='uncommitted';
           for select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE do
           {
             idx := 1;
-            select count (*) into _count from WS.WS.VFS_URL where VU_HOST = VS_HOST and VU_ROOT = VS_ROOT;
+            select count (*) into _count from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_STAT = 'retrieved';
+            select count (*) into _all from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT;
           self.r_count := self.r_count + 1;
           http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
         ?>
               <td class="listing_col"><?V VS_DESCR ?></td>
 	      <td class="listing_col"><?V y_trunc_uri ('http://' || VS_HOST || VS_URL) ?></td>
-              <td class="listing_col_num"><?V cast(_count as varchar) ?></td>
+	      <td class="listing_col_num"><?V cast(_count as varchar) ?>/<?V _all ?></td>
               <td class="listing_col_action">
                 <?vsp
                   http(concat('<a href="robot_urls_list.vspx?host=', VS_HOST, '&sid=', self.sid, '&realm=', self.realm, '&root='));
