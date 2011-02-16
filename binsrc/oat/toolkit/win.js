@@ -277,8 +277,15 @@ OAT.Win = function(optObj) {
 
 	/* size & title & position */
 	this.moveTo(this.options.x, this.options.y);
-	if (this.options.outerWidth || this.options.outerHeight) { this.outerResizeTo(this.options.outerWidth, this.options.outerHeight); }
-	if (this.options.innerWidth || this.options.innerHeight) { this.innerResizeTo(this.options.innerWidth, this.options.innerHeight); }
+
+	if (this.options.outerWidth || this.options.outerHeight) { 
+	    this.outerResizeTo(this.options.outerWidth, this.options.outerHeight); 
+	}
+
+	if (this.options.innerWidth || this.options.innerHeight) { 
+	    this.innerResizeTo(this.options.innerWidth, this.options.innerHeight); 
+	}
+
 	if (this.dom.caption) { this.dom.caption.innerHTML = this.options.title; }
 
 	/* nearly ready... */
@@ -329,7 +336,9 @@ OAT.Win.Template = function(obj) {
  */
 OAT.Win.MS = function(obj) {
 	OAT.Style.include('winms.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute",className:"oat_winms_container oat_win_container"});
+	obj.dom.container = OAT.Dom.create("div",
+					   {position:"absolute",
+					    className:"oat_winms_container oat_win_container"});
 	obj.dom.content = OAT.Dom.create("div",{className:"oat_winms_content"});
 	obj.dom.title = OAT.Dom.create("div",{className:"oat_winms_title"});
 	obj.dom.caption = OAT.Dom.create("span",{className:"oat_winms_caption"});
@@ -428,7 +437,8 @@ OAT.Win.Rect = function(obj) {
 OAT.Win.Round = function(obj) {
 	OAT.Style.include('winround.css');
 
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute", className:"oat_winround_container oat_win_container"});
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute", 
+						  className:"oat_winround_container oat_win_container"});
 
 	obj.dom.table = OAT.Dom.create("table",{className:"oat_winround_wrapper"});
 	obj.dom.tr_t = OAT.Dom.create("tr",{});

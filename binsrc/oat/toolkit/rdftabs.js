@@ -394,9 +394,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
     this.waiting = false;
     this.mlCache = [];
     this.topDiv = OAT.Dom.create("div",{className:"rdf_nav"});
-    this.mainDiv = OAT.Dom.create("div");
+    this.mainDiv = OAT.Dom.create("div",{className:"rdf_nav_content"});
     this.description = self.options.description;
     this.desc = self.options.desc;
+
     OAT.Dom.append([self.elm,self.topDiv,self.mainDiv]);
 
     this.gd = new OAT.GhostDrag();
@@ -1329,7 +1330,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
     this.description = self.options.description;
     this.desc = self.options.desc;
     this.elm.style.position = "relative";
-    this.elm.style.height = "600px";
+//    this.elm.style.height = "600px";
 
     // Various properties used to obtain @ICBM.mil address
     //
@@ -1504,12 +1505,20 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    break;
 	case OAT.RDFTabsData.MARKER_MODE_EXPLICIT:
 	    mpred = item.preds[m_p_iid];
-	    if (typeof (mpred) != 'undefined')
+	    if (typeof (mpred) != 'undefined') {
+		if (mpred.toupper().match(/^HTTP(S?):\/\/.*/)) 
+		    markerfile = mpred;
+		else
 		markerFile = markerPath + mpred + '.png';
+	    }
 	    break;
 	case OAT.RDFTabsData.MARKER_MODE_AUTO:
 	    mpred = item.preds[m_p_iid];
+
 	    if (typeof (mpred) != 'undefined') { // explicit marker def takes precedence
+		if (mpred.toupper().match(/^HTTP(S?):\/\/.*/))
+		    markerfile = mpred;
+		else
 		markerFile = markerPath + mpred + '.png';
 		break;
 	    }
