@@ -117,9 +117,12 @@
      <?vsp
 	     }
 	   }
+	  else if (regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
+	  goto no_gen_svc;
 	 }
 	 else
         {
+	  no_gen_svc:;
       ?>
       <v:url name="sec_url_6" value="Certificate Generator" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=6')" xhtml_class="--case when self.tabNo = 6 then 'tabX activeTabX' else 'tabX' end"/>
       <?vsp
