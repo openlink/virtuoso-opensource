@@ -32,7 +32,7 @@
   <v:variable name="wl_mode" type="varchar" default="'WL/browse'"/>
 
 	<v:variable name="wl_id" type="any" default="null" />
-	<v:variable name="wl_type" type="varchar" default="2" />
+	<v:variable name="wl_type" type="varchar" default="'2'" />
 	<v:variable name="wl_properties" type="any" default="null" />
 	<v:variable name="wl_newProperties" type="any" default="null" />
 
