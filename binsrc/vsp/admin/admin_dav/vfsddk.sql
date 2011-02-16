@@ -55,6 +55,7 @@ create table WS.WS.VFS_QUEUE (
     VQ_ERROR	long varchar,
     VQ_LEVEL	int default 0,
     VQ_VIA_SITEMAP int default 0,
+    VQ_DT	timestamp,
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
 create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS, VQ_URL)
