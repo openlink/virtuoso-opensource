@@ -1601,7 +1601,10 @@ pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, i
 {
   db_buf_t ce = bm + itc->itc_bp.bp_ce_offset;
   if (!itc->itc_bp.bp_is_pos_valid)
-    GPF_T1 ("next/prev of non-valid bit pos");
+    {
+      log_error ("Invalid bit position on index: %s", itc->itc_tree->it_key->key_name);
+      GPF_T1 ("next/prev of non-valid bit pos");
+    }
   switch (itc->itc_bp.bp_ce_type)
     {
     case CE_SINGLETON_ROW:
