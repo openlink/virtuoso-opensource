@@ -183,7 +183,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
    *
    * @exception SQLException if a database access error occurs
    */
-  public void close() throws java.sql.SQLException {
+  public synchronized void close() throws java.sql.SQLException {
     SQLException ex = null;
     if (connWrapper != null) {
       try {
