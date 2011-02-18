@@ -907,7 +907,34 @@ bif_dbg_obj_princ (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int inx;
   int prev_is_strg_const = 1;
-
+  dk_set_t iri_labels = NULL;
+  static dk_mutex_t *mtx = NULL;
+  static void *prev_thread = NULL;
+  void *curr_thread;
+  if (NULL == mtx)
+    mtx = mutex_allocate ();
+  DO_BOX_FAST_REV (state_slot_t *, arg, inx, args)
+  {
+    caddr_t val = qst_get (qst, arg);
+    if (DV_IRI_ID == DV_TYPE_OF (val))
+      {
+	iri_id_t iid = unbox_iri_id (val);
+	if ((0L != iid) && ((min_bnode_iri_id () > iid) || (min_named_bnode_iri_id () < iid)))
+	  {
+	    caddr_t iri = key_id_to_iri ((query_instance_t *) qst, iid);
+	    dk_set_push (&iri_labels, iri);
+	  }
+      }
+  }
+  END_DO_BOX_FAST_REV;
+/* At this point any use if indexes is complete so the function can enter its own internal mutex w/o the risk of deadlock */
+  mutex_enter (mtx);
+  curr_thread = THREAD_CURRENT_THREAD;
+  if (curr_thread != prev_thread)
+    {
+      printf ("[THREAD %p]:\n", curr_thread);
+      prev_thread = curr_thread;
+    }
   DO_BOX (state_slot_t *, arg, inx, args)
   {
     caddr_t val = qst_get (qst, arg);
@@ -918,36 +945,35 @@ bif_dbg_obj_princ (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       printf ("%s", val);
     else
       {
-      dbg_print_box (val, stdout);
-        if (DV_IRI_ID == DV_TYPE_OF (val))
-          {
-            iri_id_t iid = unbox_iri_id (val);
-            if (0L == iid)
-              goto done_iid; /* see below */
-            if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
-              {
-                caddr_t iri = BNODE_IID_TO_LABEL (iid);
-                printf ("=%s", iri);
-                dk_free_box (iri);
-              }
-            else
-              {
-                caddr_t iri = key_id_to_iri ((query_instance_t *) qst, iid);
-                if (!iri)
-                  goto done_iid; /* see below */
-                printf ("=<%s>", iri);
-                dk_free_box (iri);
-              }
-done_iid: ;
-          }
+	dbg_print_box (val, stdout);
+	if (DV_IRI_ID == DV_TYPE_OF (val))
+	  {
+	    iri_id_t iid = unbox_iri_id (val);
+	    if (0L == iid)
+	      goto done_iid;	/* see below */
+	    if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+	      {
+		caddr_t iri = BNODE_IID_TO_LABEL (iid);
+		printf ("=%s", iri);
+		dk_free_box (iri);
+	      }
+	    else
+	      {
+		caddr_t iri = dk_set_pop (&iri_labels);
+		if (!iri)
+		  goto done_iid;	/* see below */
+		printf ("=<%s>", iri);
+		dk_free_box (iri);
+	      }
+	  done_iid:;
+	  }
       }
     prev_is_strg_const = this_is_strg_const;
   }
   END_DO_BOX;
-
-  printf ("\n");		/* Added by AK, 16-JAN-1997 for nicer output. */
+  printf ("\n");
   fflush (stdout);
-
+  mutex_leave (mtx);
   return NULL;
 }
 
