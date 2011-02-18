@@ -151,6 +151,26 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
   sa_preds := get_keyword ('sa_preds', env);
   sa_graphs := get_keyword ('sa_graphs', env);
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO (', subj, opt_g, ') in graphs ', sa_graphs, ' with preds ', sa_preds);
+  if (sa_graphs is null)
+    {
+      foreach (varchar pred in sa_preds) do
+        {
+          for (sparql define input:storage "" select ?val where { ?:subj ?:pred ?val . filter (isIRI(?val)) } ) do
+            {
+              -- dbg_obj_princ ('found { ?g, ', subj, pred, val, '}');
+              if ("val" like 'http://%')
+                {
+                  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                  --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
+                  aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
+                  if (dict_size (grabbed) > doc_limit)
+                    goto out_of_limit;
+                }
+            }
+        }
+    }
+  else
+    {
   foreach (varchar pred in sa_preds) do
     {
       foreach (varchar graph in sa_graphs) do
@@ -168,6 +188,7 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
                 }
             }
         }
+    }
     }
   if (opt_g is not null)
     {
@@ -218,7 +239,7 @@ DB.DBA.RDF_GRAB (
 {
   declare rctr, rcount, colcount, iter_ctr integer;
   declare stat, msg varchar;
-  declare grab_params, all_params any;
+  declare grab_params, all_params, sa_params any;
   declare grabbed, metas, rset, aq any;
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB (..., ', ret_limit, const_iris, depth, doc_limit, base_iri, destination, group_destination, resolver, loader, plain_ret, ')');
   grab_params := vector ('sa_graphs', sa_graphs, 'sa_preds', sa_preds,
@@ -228,9 +249,11 @@ DB.DBA.RDF_GRAB (
     'resolver', resolver, 'loader', loader,
     'refresh_free_text', refresh_free_text,
     'flags', flags, 'grabbed', dict_new() );
-  all_params := vector_concat (vector (grab_params), app_params);
+  all_params := vector_concat (grab_params, app_params);
   aq := async_queue (8);
   grabbed := dict_new ();
+  if (sa_preds is not null)
+    sa_params := vector_concat (all_params, vector ('grabbed', grabbed));
   foreach (any val in const_iris) do
     {
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB: const IRI', val);
@@ -239,6 +262,11 @@ DB.DBA.RDF_GRAB (
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () aq_request ', vector (val, '...', grab_params, doc_limit));
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
           aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
+          if (sa_preds is not null)
+            {
+              -- dbg_obj_princ ('DB.DBA.RDF_GRAB () grabs seealso for ', val);
+              DB.DBA.RDF_GRAB_SEEALSO (val, null, sa_params);
+            }
         }
     }
   commit work;
@@ -266,12 +294,21 @@ DB.DBA.RDF_GRAB (
             {
               declare val any;
               declare dest varchar;
+              if (dict_size (grabbed) >= doc_limit)
+                goto final_exec;
               val := rset[rctr][colctr];
               if (is_named_iri_id (val) and __rgs_ack_cbk (val, uid, 4))
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, ', row ', rctr, ', col ', colctr, ', vector (', val, '=<', id_to_iri(val), ',..., ', grab_params, doc_limit, ')');
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
+                  if (dict_size (grabbed) >= doc_limit)
+                    goto final_exec;
+                  if (sa_preds is not null)
+                    {
+                      -- dbg_obj_princ ('DB.DBA.RDF_GRAB () grabs seealso for ', val);
+                      DB.DBA.RDF_GRAB_SEEALSO (val, null, sa_params);
+                    }
                   if (dict_size (grabbed) >= doc_limit)
                     goto final_exec;
                 }
@@ -283,7 +320,10 @@ DB.DBA.RDF_GRAB (
       DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
       commit work;
       if (old_doc_count = dict_size (grabbed))
+        {
+          -- dbg_obj_princ ('DB.DBA.RDF_GRAB () has reached a stable point with ', old_doc_count, ' grabbed docs');
         goto final_exec;
+    }
     }
 
 final_exec:
@@ -1102,7 +1142,7 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 -- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest, groupdest, cset, base varchar;
+  declare dest, groupdest, cset, base, first_stat, first_msg varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
@@ -1159,7 +1199,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
        strstr (ret_content_type, 'application/turtle') is not null or
        strstr (ret_content_type, 'application/x-turtle') is not null )
     {
-      whenever sqlstate '*' goto load_grddl;
+      whenever sqlstate '*' goto load_grddl_after_error;
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
@@ -1291,6 +1331,13 @@ load_grddl:;
 --          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 300)
           subseq (ret_body, 0, 300) ) );
     }
+  if (isstring (first_stat))
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal first error re. ', graph_iri, new_origin_uri, ret_content_type, first_stat, first_msg);
+      signal ('RDFZZ', sprintf (
+          'Unable to load RDF graph <%.200s> from <%.200s> with Content-Type ''%.50s'': %.6s: %.1000s',
+          graph_iri, new_origin_uri, ret_content_type, first_stat, first_msg ) );
+    }
   -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal generic error re. ', graph_iri, new_origin_uri, ret_content_type);
   signal ('RDFZZ', sprintf (
       'Unable to load RDF graph <%.500s> from <%.500s>: returned unsupported Content-Type ''%.300s''',
@@ -1299,6 +1346,11 @@ resignal_parse_error:
 --  log_enable (saved_log_mode, 1);
   -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will resignal ', __SQL_STATE, __SQL_MESSAGE);
   resignal;
+
+load_grddl_after_error:
+  first_stat := __SQL_STATE;
+  first_msg := __SQL_MESSAGE;
+  goto load_grddl;
 }
 ;
 
