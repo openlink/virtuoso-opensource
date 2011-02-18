@@ -57,6 +57,8 @@ int spartlist_impl_line;
 #define SPAR_ERROR_DEBUG
 #endif
 
+/*#define SPAR_ERROR_DEBUG*/
+
 extern void jsonyyerror_impl(const char *s);
 
 size_t
@@ -1863,7 +1865,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
     (SPART **)t_list_to_array (vars) );
   if (need_limofs_trick)
     {
-      limofs_name = t_box_dv_short_string (":\"limofs\".\"describe-1\"");
+      limofs_name = t_box_dv_short_string ("@\"limofs\".\"describe-1\"");
       var_vector_arg = spar_make_variable (sparp, limofs_name);
     }
   else
@@ -2668,6 +2670,8 @@ spar_make_variable (sparp_t *sparp, caddr_t name)
     selid = env->spare_selids->data;
   else if (is_global) /* say, 'insert in graph ?:someglobalvariable {...} where {...} */
     selid = t_box_dv_uname_string ("(global)");
+  else if (SPART_VARNAME_IS_SPECIAL(name)) /* say, '@"limofs"."describe-1"' */
+    selid = t_box_dv_uname_string ("(special)");
   else
     spar_internal_error (sparp, "non-global variable outside any group pattern or result-set list");
   res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
@@ -2711,7 +2715,6 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   caddr_t parsed_value = NULL;
   sql_tree_tmp *tgt_dtp_tree;
   SPART *res;
-  caddr_t * qst;
   if (NULL != lang)
     return spartlist (sparp, 4, SPAR_LIT, strg, type, lang);
   if (uname_xmlschema_ns_uri_hash_boolean == type)
@@ -2764,11 +2767,8 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
 
 do_sql_cast:
-  qst = (caddr_t *)(sparp->sparp_sparqre->sparqre_qi);
-  if (!IS_BOX_POINTER (qst)) /* CALLER_LOCAL */
-    qst = NULL;
   tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, (ptrlong)NUMERIC_MAX_PRECISION, (ptrlong)NUMERIC_MAX_SCALE);
-  parsed_value = box_cast (qst, strg, tgt_dtp_tree, DV_STRING);
+  parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, DV_STRING);
   res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
   dk_free_tree (parsed_value);
   return res;

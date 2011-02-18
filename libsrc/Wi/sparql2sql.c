@@ -6244,6 +6244,8 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   ssg_puts ("vector (");
   DO_SET (caddr_t, vname, &(ssg->ssg_sparp->sparp_env->spare_global_var_names))
     {
+      if ('@' == vname[1])
+        continue;
       if (need_comma)
         ssg_puts (", ");
       else

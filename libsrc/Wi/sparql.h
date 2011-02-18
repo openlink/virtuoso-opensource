@@ -646,6 +646,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
    ((SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? (tree)->_.lit.val : NULL )
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
+#define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
 #define SPART_IS_DEFAULT_GRAPH_BLANK(g) ( \

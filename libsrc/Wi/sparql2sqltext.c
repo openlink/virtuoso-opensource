@@ -1827,9 +1827,9 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         sparp_t *sub_sparp;
         SPART *subq = tree->_.gp.subquery;
         ssg_valmode_t res;
-        if (ASK_L != tree->_.gp.subtype)
-          return SSG_VALMODE_SQLVAL;
-        if (SELECT_L != tree->_.gp.subtype)
+        if (ASK_L == subq->_.req_top.subtype)
+          return SSG_VALMODE_NUM;
+        if (SELECT_L != subq->_.req_top.subtype)
           break;
         if (1 != BOX_ELEMENTS (subq->_.req_top.retvals))
           break;
@@ -2004,7 +2004,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case SPAR_GP:
       if (tree->_.gp.subtype != SELECT_L)
         spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
-      return sparp_restr_bits_of_expn (sparp, tree->_.gp.subquery->_.req_top.retvals[0]);
+      return sparp_restr_bits_of_expn (sparp, tree->_.gp.subquery->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
     default: spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported case");
     }
   return 0; /* Never reached, to keep compiler happy */
@@ -4670,6 +4670,22 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         goto print_asname;
       }
     case SPAR_GP:
+      if ((ASK_L == tree->_.gp.subquery->_.req_top.subtype) &&
+        (!IS_BOX_POINTER (needed) || needed->qmfIsSubformatOfLongWhenEqToSql) )
+        {
+          if (SSG_VALMODE_BOOL == needed)
+            {
+              ssg_puts (" EXISTS (");
+              ssg->ssg_indent++;
+            }
+          ssg_print_scalar_subquery_exp (ssg, tree->_.gp.subquery, tree, SSG_VALMODE_LONG);
+          if (SSG_VALMODE_BOOL == needed)
+            {
+              ssg_putchar (')');
+              ssg->ssg_indent--;
+            }
+          goto print_asname;
+        }
       if ((SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         {
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, asname);
@@ -5317,6 +5333,11 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
     asname = NULL;
   if (NULL == eq)
     goto try_write_null; /* see below */
+  if (SPART_VARNAME_IS_SPECIAL(eq->e_varnames[0]))
+    {
+      ssg_puts (eq->e_varnames[0]+1);
+      goto write_assuffix;
+    }
   if (SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions)
     {
 #ifdef NDEBUG
