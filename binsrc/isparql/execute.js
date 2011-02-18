@@ -853,6 +853,18 @@ var QueryExec = function(optObj) {
 			
 			OAT.Dom.append ([item.dom.response_c, resp_p]);
 
+			var ua = navigator.userAgent.toLowerCase();
+		
+			if (ua.search ("iphone") || 
+				ua.search ("ipod") ||
+				ua.search ("android") ||
+				ua.search ("symbian") ||
+				ua.search ("S60"))
+				
+				map_h = OAT.Dom.getViewport()[1].toString()+'px';
+			else 
+				map_h = "600px";
+
 			//	generate Result
 			
 			if (item.resType == iSPARQL.ResultType.GRAPH) { // Use RDFMini to show Graphs
@@ -868,7 +880,8 @@ var QueryExec = function(optObj) {
 		      {provider:iSPARQL.Defaults.map_type, 
 					markerMode:OAT.RDFTabsData.MARKER_MODE_AUTO,
 					clickPopup:true,
-					hoverPopup:false}] 
+					  hoverPopup:false,
+					  height: map_h}] 
 				];
 
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
@@ -877,14 +890,15 @@ var QueryExec = function(optObj) {
 				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
 		self.miniplnk = OAT.Dom.create ("a");
 		self.miniplnk.innerHTML = "Permalink";
-				item.content = OAT.Dom.create ("div",{className: "mini_rdf_ctr"});
+
+//				item.content = OAT.Dom.create ("div",{className: "rdf_mini_ctr"});
 				
 				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
 
 				if (iSPARQL.Settings.pivotInstalled) 
 					self.makePivotPermalink(self.plnk_ctr);
 
-				var mini_c = OAT.Dom.create("div");
+				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_ctr"});
 				
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,

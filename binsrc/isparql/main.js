@@ -1312,7 +1312,7 @@ iSPARQL.AuthUI = function (conn) {
 
     this._init(conn);
 
-} // AuthUI
+} // AuthUI - should probably called session rather than connection...
 
 iSPARQL.ServerConnection = function (uri, authObj) {
     var self = this;
@@ -2124,6 +2124,17 @@ iSPARQL.Common = {
 	for (var i=0;i<iSPARQL.dataObj.namedGraphs.length;i++) {
 	    add_named_graph(iSPARQL.dataObj.namedGraphs[i]);
 	}
+    },
+
+	isMobileBrowser: function () {
+		var ua = navigator.userAgent.toLowerCase();
+		
+		if (ua.search ("iphone") || 
+			ua.search ("ipod") ||
+			ua.search ("android") ||
+			ua.search ("symbian") ||
+			ua.search ("S60"))
+			return true;
     }
 }
 

@@ -14,9 +14,8 @@ body {
   font-family: Helvetica,sans-serif;
 }
 
-/*#rdf_tab { height: device-height}*/
+#rdf_mini_ctr { height: device-height}
 #splash_inner {width: 320px;}
 #locAcquireUI {margin-top: 10px;}
 
-#result_ctr {width: 100%; height: 100%}
-
+#result_ctr {width: device-width; height: device-width;}
