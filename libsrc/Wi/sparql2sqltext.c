@@ -4686,7 +4686,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             }
           goto print_asname;
         }
-      if ((SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
+      if ((SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed) && (SSG_VALMODE_NUM != needed))
         {
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, asname);
           return;
@@ -7458,7 +7458,7 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   subq_ssg->ssg_indent = ssg->ssg_indent;
   if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_AUTO == needed))
     sub_sparp->sparp_env->spare_output_valmode_name = t_box_dv_short_string ("LONG");
-  else if (SSG_VALMODE_SQLVAL == needed)
+  else if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_NUM == needed))
     sub_sparp->sparp_env->spare_output_valmode_name = NULL;
   else
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_scalar_subquery_exp: unsupported valmode");
