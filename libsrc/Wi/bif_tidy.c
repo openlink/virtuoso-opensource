@@ -51,7 +51,9 @@ static dk_mutex_t *tidy_mtx;
 static void *
 tidy_malloc (size_t len)
 {
-  return dk_alloc_box (len, DV_CUSTOM);
+  if (len >= MAX_BOX_LENGTH)
+    return NULL;
+  return t_alloc_box (len, DV_CUSTOM);
 }
 
 static void *
@@ -59,25 +61,26 @@ tidy_realloc (void * buf, size_t len)
 {
   int buf_size = IS_BOX_POINTER (buf) ? box_length (buf) : 0;
   int copy_size = buf_size > len ? len : buf_size;
-  void *new = dk_alloc_box (len, DV_CUSTOM);
+  void *new;
+  if (len >= MAX_BOX_LENGTH)
+    return NULL;
+  new = t_alloc_box (len, DV_CUSTOM);
   if (buf && copy_size)
     memcpy (new, buf, copy_size);
-  if (buf)
-    dk_free_box (buf);
   return new;
 }
 
 static void
 tidy_free (void * buf)
 {
-  dk_free_box ((caddr_t) buf);
+  /* void, will release on MP_DONE */
 }
 
 static void
 tidy_panic (const char * err)
 {
-  log_error ("Tidy panic: %s", err);
-  GPF_T;
+  /* log_error ("Tidy panic: %s", err); */
+  sqlr_new_error ("42000", "TIDYE", "Tidy panic: %s", err);
 }
 
 #define READING_NAME 1
@@ -163,7 +166,7 @@ bif_tidy_html (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   mutex_leave (tidy_mtx);
   if (NULL != tidy_errout.tio_data.lm_memblock)
     dk_free (tidy_errout.tio_data.lm_memblock, -1);
-  if ((NULL == html_output) || (2 == res)) /* errors */
+  if ((NULL == html_output) || (2 == res))	/* errors */
     {
       dk_free_box (html_output);
       sqlr_new_error ("42000", "HT076", "HTML Tidy failed, try tidy_list_errors(...) to get more information");
@@ -171,26 +174,44 @@ bif_tidy_html (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #else
   TidyBuffer output;
   TidyBuffer errbuf;
-  TidyDoc doc = tidyCreate();
-  tidyBufInit (&output);
-  tidyBufInit (&errbuf);
-  tidySetErrorBuffer (doc, &errbuf);
-  /* cannot load cfg file here, must parse the config string */
-  tidy_parse_config (doc, config_input);
-  res = tidyParseString (doc, html_input);
-  if (res >= 0)
-    res = tidyCleanAndRepair (doc);
-  if (res >= 0)
-    res = tidyRunDiagnostics (doc);
-  if (res > 1)
-    res = (tidyOptSetBool(doc, TidyForceOutput, yes) ? res : -1);
-  if (res >= 0)
-    res = tidySaveBuffer(doc, &output);
-  if (res >= 0)
-    html_output = box_dv_short_string ((char *) output.bp);
-  tidyBufFree( &output );
-  tidyBufFree( &errbuf );
-  tidyRelease (doc);
+  TidyDoc doc;
+
+  MP_START ();
+  QR_RESET_CTX
+  {
+    doc = tidyCreate ();
+    tidyBufInit (&output);
+    tidyBufInit (&errbuf);
+    tidySetErrorBuffer (doc, &errbuf);
+    /* cannot load cfg file here, must parse the config string */
+    tidy_parse_config (doc, config_input);
+    res = tidyParseString (doc, html_input);
+    if (res >= 0)
+      res = tidyCleanAndRepair (doc);
+    if (res >= 0)
+      res = tidyRunDiagnostics (doc);
+    if (res > 1)
+      res = (tidyOptSetBool (doc, TidyForceOutput, yes) ? res : -1);
+    if (res >= 0)
+      res = tidySaveBuffer (doc, &output);
+    if (res >= 0)
+      html_output = box_dv_short_string ((char *) output.bp);
+  }
+  QR_RESET_CODE
+  {
+    caddr_t err;
+    POP_QR_RESET;
+    err = thr_get_error_code (THREAD_CURRENT_THREAD);
+    MP_DONE ();
+    sqlr_resignal (err);
+  }
+  END_QR_RESET;
+  MP_DONE ();
+  /*
+     tidyBufFree( &output );
+     tidyBufFree( &errbuf );
+     tidyRelease (doc);
+   */
   if (res < 0)
     {
       dk_free_box (html_output);
@@ -217,7 +238,7 @@ bif_tidy_list_errors (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   errout = NULL;
   mutex_leave (tidy_mtx);
   if (NULL == tidy_errout.tio_data.lm_memblock)
-    errlist = box_dv_short_string("");
+    errlist = box_dv_short_string ("");
   else
     {
       errlist = box_dv_short_nchars (tidy_errout.tio_data.lm_memblock, tidy_errout.tio_pos);
@@ -226,24 +247,42 @@ bif_tidy_list_errors (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #else
   int res = -1;
   TidyBuffer errbuf;
-  TidyDoc doc = tidyCreate();
-  tidyBufInit (&errbuf);
-  tidySetErrorBuffer (doc, &errbuf);
-  /* cannot load cfg file here, must parse the config string */
-   tidy_parse_config (doc, config_input);
-   res = tidyParseString (doc, html_input);
-  if (res >= 0)
-    res = tidyCleanAndRepair (doc);
-  if (res >= 0)
-    res = tidyRunDiagnostics (doc);
-  if (res > 1)
-    res = (tidyOptSetBool(doc, TidyForceOutput, yes) ? res : -1);
-  if (res >= 0)
-    errlist = box_dv_short_string ((char *) errbuf.bp);
-  else
-    errlist = box_dv_short_string("");
-  tidyBufFree( &errbuf );
-  tidyRelease (doc);
+  TidyDoc doc;
+
+  MP_START ();
+  QR_RESET_CTX
+  {
+    doc = tidyCreate ();
+    tidyBufInit (&errbuf);
+    tidySetErrorBuffer (doc, &errbuf);
+    /* cannot load cfg file here, must parse the config string */
+    tidy_parse_config (doc, config_input);
+    res = tidyParseString (doc, html_input);
+    if (res >= 0)
+      res = tidyCleanAndRepair (doc);
+    if (res >= 0)
+      res = tidyRunDiagnostics (doc);
+    if (res > 1)
+      res = (tidyOptSetBool (doc, TidyForceOutput, yes) ? res : -1);
+    if (res >= 0)
+      errlist = box_dv_short_string ((char *) errbuf.bp);
+    else
+      errlist = box_dv_short_string ("");
+  }
+  QR_RESET_CODE
+  {
+    caddr_t err;
+    POP_QR_RESET;
+    err = thr_get_error_code (THREAD_CURRENT_THREAD);
+    MP_DONE ();
+    sqlr_resignal (err);
+  }
+  END_QR_RESET;
+  MP_DONE ();
+  /*
+     tidyBufFree( &errbuf );
+     tidyRelease (doc);
+   */
 #endif
   return errlist;
 }
