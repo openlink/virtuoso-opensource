@@ -1,3 +1,131 @@
+2011-02-18 15:49  source
+
+	* Updated version to 6.1.3-rc6
+
+2011-02-18 15:49  source
+
+	* Fixed issue with scalar subq with SSG_VALMODE_NUM output as in TPCD
+
+2011-02-18 15:37  source
+
+	* Updated version
+
+2011-02-18 15:36  source
+
+	* Added language and type options for offers
+
+2011-02-18 15:32  source
+
+	* Fixed issues with map sizing
+
+2011-02-18 15:30  source
+
+	* Fixed rdftab height for maps
+
+2011-02-18 11:19  source
+
+	* Added initial codegen for ASK subquery
+	* Fixed issue with sponging options and DESCRIBE on /sparql endpoint
+
+2011-02-18 11:16  source
+
+	* Fixed "serialize" debugging output of many threads and label
+	  messages of different threads
+
+2011-02-18 11:14  source
+
+	* Added better support of "seealso" predicate in case of recursive
+	  sponging
+
+2011-02-18 10:37  source
+
+	* Fixed use mem pool to release all objects if an error occurs
+
+2011-02-18 10:24  source
+
+	* Regenerated drivers
+
+2011-02-18 10:24  source
+
+	* Fixed issue with closing XAConnection and connectionpool
+
+2011-02-17 15:23  source
+
+	* Fixed more log info
+
+2011-02-16 21:08  source
+
+	* Updated documentation
+
+2011-02-16 20:55  source
+
+	* Fixed iSPARQL icons placed on Home screen on iPhone/iPod now have the
+	  WebApp appearance (i.e. no URL bar, etc. controls.)
+	* Fixed a regression causing reappearance of Ubiq gem on non-firefox browsers
+	* Fixed missing message candlers for geocoding module
+	* Disabled buggy location UI absorbing into statusui
+	* Improved formatting of errors in response tab somewhat
+
+2011-02-16 20:53  source
+
+	* FIxed avoid long URLs to generate wacky error
+
+2011-02-16 20:51  source
+
+	* Fixed missing line
+
+2011-02-16 17:33  source
+
+	* Fixed offers SIOC data
+
+2011-02-16 17:33  source
+
+	file login_keys.vspx was added on branch V6_0_0-DEVEL on 2011-02-16 20:58:16 +0000
+
+2011-02-16 17:32  source
+
+	* Fixed if no svc and FF then show generator page
+
+2011-02-16 17:32  source
+
+	* Fixed typo
+
+2011-02-16 17:31  source
+
+	* Fixed missing case
+
+2011-02-16 17:25  source
+
+	* Fixed status controls
+
+2011-02-16 17:25  source
+
+	* Fixed proper position
+
+2011-02-16 17:20  source
+
+	* Added support for map marker URLs in OAT.RDFTabs.map
+	* Fixed OAT.RDFTab.map control height on iPhone
+	* Fixed bug causing OAT.RDFTABs.navigator layout flowing into footer
+	* Fixed navigator layout
+
+2011-02-16 17:16  source
+
+	* Fixed separate virtrdf:label into own file
+
+2011-02-16 17:16  source
+
+	file virt_rdf_label.sql was added on branch V6_0_0-DEVEL on 2011-02-16 20:53:22 +0000
+
+2011-02-16 17:08  source
+
+	* Fixed ADO.NET datatype handling
+	* Fixed null pointer exception
+
+2011-02-15 14:45  source
+
+	* Fixed memory leaks
+
 2011-02-15 14:11  source
 
 	* Fixed signal errors other than deadlock
