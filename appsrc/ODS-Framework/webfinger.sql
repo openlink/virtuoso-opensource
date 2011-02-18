@@ -218,6 +218,9 @@ create procedure WF_PROFILE_GET (in acct varchar)
   declare xt, xd any;
 
   xd := WF_USER_XRD_GET (acct);
+  if (isnull (xd))
+    return null;
+
   xt := cast (xpath_eval ('/XRD/Link[@rel="http://webfinger.net/rel/profile-page"]/@href', xd) as varchar);
   return xt;
 }

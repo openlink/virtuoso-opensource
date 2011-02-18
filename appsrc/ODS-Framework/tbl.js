@@ -629,7 +629,34 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
     propertyType = 'object';
   }
   else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
-    var fld = OAT.Dom.create('input');
+    var fldClassName = '';
+    propertyType = ontologyClassProperty.datatypeProperties;
+    if ((propertyType == 'xsd:byte')    ||
+        (propertyType == 'xsd:short')   ||
+        (propertyType == 'xsd:int')     ||
+        (propertyType == 'xsd:integer') ||
+        (propertyType == 'xsd:long')) {
+      fldClassName = '_validate_ _int_';
+    } else if (propertyType == 'xsd:float') {
+      fldClassName = '_validate_ _float_';
+    } else if (propertyType == 'xsd:date') {
+      fldClassName = '_validate_ _date_';
+    } else if (propertyType == 'xsd:dateTime') {
+      fldClassName = '_validate_ _dateTime_';
+    } else if (propertyType == 'xsd:string') {
+    } else if (propertyType == 'xsd:boolean') {
+    } else if (propertyType == 'rdfs:Literal') {
+    } else {
+      propertyType = 'data';
+    }
+  	var fld;
+  	var fldLanguage;
+    if (propertyType == 'xsd:boolean') {
+    	fld = TBL.createCellSelect(fldName);
+      TBL.selectOption(fld, property.value, 'Yes', 'true');
+      TBL.selectOption(fld, property.value, 'No', 'false');
+    } else {
+      fld = OAT.Dom.create('input');
     fld.type = 'text';
     fld.id = fldName;
     fld.name = fld.id;
@@ -638,8 +665,17 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
       fld.defaultValue = fld.value;
     }
     fld.style.width = '95%';
+      if ((propertyType == 'xsd:date') || (propertyType == 'xsd:dateTime')) {
+        fld.onclick = function(){datePopup(fldName);};
+      }
+      if (fldClassName != '')
+        fld.className = fldClassName;
+    }
     td.appendChild(fld);
-    propertyType = 'data';
+    if (fldLanguage) {
+      td.appendChild(OAT.Dom.text(' '));
+      td.appendChild(fldLanguage);
+    }
   }
   var fld = OAT.Dom.create('input');
   fld.type = 'hidden';
@@ -671,7 +707,68 @@ TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
     td.innerHTML = 'URI';
   }
   else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
+    if (ontologyClassProperty.datatypeProperties == 'xsd:byte')  {
+      td.innerHTML = 'Byte';
+    } else if (ontologyClassProperty.datatypeProperties == 'xsd:short')  {
+      td.innerHTML = 'Short';
+    } else if ((ontologyClassProperty.datatypeProperties == 'xsd:int') ||
+               (ontologyClassProperty.datatypeProperties == 'xsd:integer')) {
+      td.innerHTML = 'Integer';
+    } else if (ontologyClassProperty.datatypeProperties == 'xsd:long') {
+      td.innerHTML = 'Long';
+    } else if (ontologyClassProperty.datatypeProperties == 'xsd:float') {
+      td.innerHTML = 'Float';
+    } else if (ontologyClassProperty.datatypeProperties == 'xsd:date') {
+      td.innerHTML = 'Date';
+    } else if (ontologyClassProperty.datatypeProperties == 'xsd:dateTime') {
+      td.innerHTML = 'DateTime';
+    } else if (ontologyClassProperty.datatypeProperties == 'xsd:boolean') {
+      td.innerHTML = 'Logical';
+    } else {
     td.innerHTML = 'Literal';
+  }
+}
+}
+
+TBL.createCell49 = function (td, prefix, fldName, No, fldOptions) {
+  if (!td) {return;}
+
+  // clear
+  td.innerHTML = '';
+
+  // get product
+  var item = fldOptions.item;
+  if (!item) {return;}
+
+  // get property
+  var property = fldOptions.value;
+  if (!property) {return;}
+
+  // get property data
+  var ontologyClassProperty = RDF.getOntologyClassProperty(item.className, property.name);
+  if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
+    var propertyType = ontologyClassProperty.datatypeProperties;
+    if ((propertyType != 'xsd:byte')    &&
+        (propertyType != 'xsd:short')   &&
+        (propertyType != 'xsd:int')     &&
+        (propertyType != 'xsd:integer') &&
+        (propertyType != 'xsd:long')    &&
+        (propertyType != 'xsd:float')   &&
+        (propertyType != 'xsd:date')    &&
+        (propertyType != 'xsd:dateTime')&&
+        (propertyType != 'xsd:boolean'))
+    {
+      var property = fldOptions.value;
+      fldOptions.value = null;
+      var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+      if (property.language) {
+        fld.value = property.language;
+      } else {
+        fld.value = '';
+      }
+      fld.defaultValue = fld.value;
+      fld.style.width = '20px';
+    }
   }
 }
 

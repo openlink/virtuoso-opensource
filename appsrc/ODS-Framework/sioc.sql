@@ -1269,18 +1269,23 @@ create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri v
     properties := get_keyword ('properties', product);
     foreach (any property in properties) do
     {
-      declare propertyType, propertyName, propertyValue any;
+      declare propertyType, propertyName, propertyValue, propertyLanguage any;
 
       propertyType := get_keyword ('type', property);
       propertyValue := get_keyword ('value', property);
       propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
-      if (propertyType = 'data')
+      if (propertyType = 'object')
+      {
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+      }
+      else if (propertyType = 'data')
       {
         DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
       }
-      else if (propertyType = 'object')
+      else
       {
-        DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+        propertyLanguage := get_keyword ('language', property);
+        DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, iri, propertyName, propertyValue, ODS.ODS_API."ontology.denormalize" (propertyType), propertyLanguage);
   }
     }
   }
@@ -4887,8 +4892,6 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
     rc := 1;
 	}
     }
---  dbg_obj_print (stat, data);
-  --dbg_obj_print (rc);
   return rc;
 }
 ;

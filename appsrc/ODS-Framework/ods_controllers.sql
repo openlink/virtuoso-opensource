@@ -662,7 +662,8 @@ create procedure ODS.ODS_API."ontology.classProperties" (
           properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
       property := vector (item[0], vector (), vector ());
     }
-    if (ODS.ODS_API."ontology.normalize"(item[1]) = 'owl:ObjectProperty')
+    tmp := ODS.ODS_API."ontology.normalize"(item[1]);
+    if (tmp = 'owl:ObjectProperty')
     {
       tmp := ODS.ODS_API."ontology.normalize"(item[2]);
       if (tmp not like 'nodeID:%')
@@ -672,7 +673,7 @@ create procedure ODS.ODS_API."ontology.classProperties" (
         property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
       }
     }
-    if (ODS.ODS_API."ontology.normalize"(item[1]) = 'owl:DatatypeProperty')
+    else if (tmp = 'owl:DatatypeProperty')
     {
       property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'xsd:string'))));
     }

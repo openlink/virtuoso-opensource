@@ -2569,12 +2569,13 @@ function preparePropertiesWork(prefix, ontologyNo, itemNo) {
         var propertyName = ctrl.value;
     var propertyType = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
     var propertyValue = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
+    var propertyLanguage = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_4_"+propertyNo);
         if (propertyType == 'object') {
           var item = RDF.getItemByName(propertyValue);
           if (item)
             propertyValue = item.id;
         }
-        itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType});
+    itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType, "language": propertyLanguage});
       }
   return itemProperties;
 }
