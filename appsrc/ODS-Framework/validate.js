@@ -27,6 +27,42 @@ function validateError(fld, msg)
   return false;
 }
 
+function validateInt(fld)
+{
+  var regex = /^[0-9]+$/
+  if (!regex.test(fld.value))
+    return validateError(fld, 'Invalid integer value: ' + fld.value);
+
+  return true;
+}
+
+function validateFloat(fld)
+{
+  var regex = /^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?$/
+  if (!regex.test(fld.value))
+    return validateError(fld, 'Invalid float value: ' + fld.value);
+
+  return true;
+}
+
+function validateDate(fld)
+{
+  var regex = /^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/
+  if (!regex.test(fld.value))
+    return validateError(fld, 'Invalid date value: ' + fld.value);
+
+  return true;
+}
+
+function validateDateTime(fld)
+{
+  var regex = /^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])( ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?)?$/
+  if (!regex.test(fld.value))
+    return validateError(fld, 'Invalid date value: ' + fld.value);
+
+  return true;
+}
+
 function validateMail(fld)
 {
   if ((fld.value.length == 0) || (fld.value.length > 40))
@@ -82,6 +118,14 @@ function validateField(fld)
 {
   if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
     return true;
+  if (OAT.Dom.isClass(fld, '_int_'))
+    return validateInt(fld);
+  if (OAT.Dom.isClass(fld, '_float_'))
+    return validateFloat(fld);
+  if (OAT.Dom.isClass(fld, '_date_'))
+    return validateDate(fld);
+  if (OAT.Dom.isClass(fld, '_dateTime_'))
+    return validateDateTime(fld);
   if (OAT.Dom.isClass(fld, '_mail_'))
     return validateMail(fld);
   if (OAT.Dom.isClass(fld, '_url_'))
