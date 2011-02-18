@@ -1319,7 +1319,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	description:"This module plots all geodata found in filtered resources onto a map.",
 	desc:"Plots all geodata onto a map",
 	clickPopup:true,
-	hoverPopup:true
+	hoverPopup:true,
+	height: "600px"
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -1330,7 +1331,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
     this.description = self.options.description;
     this.desc = self.options.desc;
     this.elm.style.position = "relative";
-//    this.elm.style.height = "600px";
+
+    this.elm.style.height = self.options.height;
 
     // Various properties used to obtain @ICBM.mil address
     //

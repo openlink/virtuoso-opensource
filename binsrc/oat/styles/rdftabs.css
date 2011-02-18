@@ -138,13 +138,14 @@ h3.rdf_nav_title {clear: both; font-weight: bold;margin-bottom: 0;}
 }
 
 .rdf_nav_header {
-	color: #fff;
+	color: #334;
 	font-weight: bold;
-	background: #677;
+	background: #fff;
 	height: 25px;
-	-moz-border-radius: 9px 9px 0px 0px;
+/*	-moz-border-radius: 9px 9px 0px 0px;
 	-webkit-border-radius: 9px 9px 0px 0px; 
-	border-bottom: 1px solid #fff;
+	border-bottom: 1px solid #fff; */
+	border-top: 1px dotted #aaa;
 	cursor: pointer;
 }
 
