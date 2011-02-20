@@ -698,6 +698,8 @@ iter_is_set:
     {
       ttlyylex_init (&scanner);
       ttlyyset_extra (ttlp, scanner);
+      if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
+        ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
 #ifdef MALLOC_DEBUG
       yy_push_state (INITIAL, scanner);
 #endif
