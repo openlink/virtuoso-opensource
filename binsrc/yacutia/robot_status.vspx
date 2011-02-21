@@ -117,7 +117,7 @@
 	  http('<table class="listing"><tr><td>Top pending URLs</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>');
 	  idx := 0;
 	  for select top 10 VQ_URL, VQ_TS, VQ_STAT from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT
-	  in ('waiting', 'pending', 'error') order by VQ_HOST, VQ_ROOT, VQ_TS do
+	  in ('waiting', 'pending') order by VQ_HOST, VQ_ROOT, VQ_TS do
 	    {
 	      idx := idx + 1;
 	  ?>
