@@ -2668,6 +2668,8 @@ parse_source:
 	config.dtd_config = dtd_config;
 	config.uri = ((NULL == uri) ? uname___empty : uri);
 	config.root_lang_handler = lh;
+        if (file_read == iter)
+          config.feed_buf_size = 0x10000;
 	context.xpc_parser = VXmlParserCreate (&config);
 	VXmlSetUserData (context.xpc_parser, &context);
 	VXmlSetElementHandler (context.xpc_parser, cb_element_start, cb_element_end);

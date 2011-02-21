@@ -75,8 +75,6 @@
 #define DTD_IN_ISREAD	2
 
 #define BRICK_SIZE	4076
-#define FEED_BUF_SIZE	8192
-#define UNI_BUF_SIZE	6*(BRICK_SIZE+FEED_BUF_SIZE)
 
 #define PM(member) (parser->member)
 
@@ -212,6 +210,7 @@ struct vxml_parser_s {
   buf_ptr_t		pptr;		/*!< it points past last parsed byte */
 
   char			* feed_buf;		/*!< buffer for getting new data */
+  int			feed_buf_size;		/*!< Allocated size of \c feed_buf */
   char			* feed_tail;		/*!< untranslated tail of \c feed_buf */
   char			* feed_end;		/*!< end of data in \c feed_buf */
   unichar		* uni_buf;		/*!< buffer for data in unicode */
