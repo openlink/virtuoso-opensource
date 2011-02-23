@@ -106,6 +106,11 @@ run-tests:
 endif
 
 
+.PHONY: version
+version: virt_sesame2.jar
+	$(JAVA) -jar virt_sesame2.jar
+
+
 clean-local:
 	-rm -rf out.driver out.examples doc
 

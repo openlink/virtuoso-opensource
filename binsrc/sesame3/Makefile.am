@@ -103,6 +103,11 @@ run-tests:
 endif
 
 
+.PHONY: version
+version: virt_sesame3.jar
+	$(JAVA) -jar virt_sesame3.jar
+
+
 clean-local:
 	-rm -rf out.driver out.examples doc
 
