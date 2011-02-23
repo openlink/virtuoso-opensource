@@ -2022,6 +2022,8 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     default_rdf_dtd_config = box_dv_short_string ("Validation=DISABLE SchemaDecl=DISABLE IdCache=DISABLE");
   config.dtd_config = default_dtd_config;
   config.root_lang_handler = lh;
+  if (file_read == xrie.xrie_iter)
+    config.feed_buf_size = 0x10000;
   parser = VXmlParserCreate (&config);
   parser->fill_ns_2dict = 0;
   context.xp_parser = parser;
