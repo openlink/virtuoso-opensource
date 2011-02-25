@@ -143,7 +143,9 @@ cpt_rollback (int may_freeze)
 #endif
 	  rdbg_printf (("trx %lx killed by checkpoint while closing\n", lt));
 	  lt_kill_other_trx (lt, NULL, NULL, may_freeze);
-	  goto next;
+	  if (lt->lt_threads)
+	    goto next;
+	  break;
 	case LT_FREEZE:
 	  if (!lt->lt_close_ack_threads && lt->lt_threads && !lt->lt_vdb_threads && !lt->lt_lw_threads)
 	    {
