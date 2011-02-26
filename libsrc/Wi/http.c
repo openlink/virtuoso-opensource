@@ -103,6 +103,9 @@ static id_hash_t * http_acls = NULL; /* ACL lists */
 static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
 
 long http_ses_trap = 0;
+int www_maintenance = 0;
+
+#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance))
 
 caddr_t
 temp_aspx_dir_get (void)
@@ -1221,7 +1224,7 @@ ws_url_rewrite (ws_connection_t *ws)
   int rc = LTE_OK, retc = 0;
   local_cursor_t * lc = NULL;
 
-  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule || (NULL != www_maintenance_page && wi_inst.wi_is_checkpoint_pending))
+  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule || MAINTENANCE)
     return 0;
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
@@ -3024,6 +3027,9 @@ ws_auth_check (ws_connection_t * ws)
   int rc = LTE_OK, retc = 0;
   query_t * proc;
 
+  if (MAINTENANCE)
+    return 1;
+
   if (!http_auth_qr)
     http_auth_qr = sql_compile_static ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
@@ -3298,7 +3304,7 @@ request_do_again:
   ws->ws_ignore_disconnect = 0;
   CHUNKED_STATE_CLEAR (ws);
 
-  if (NULL != www_maintenance_page && wi_inst.wi_is_checkpoint_pending)
+  if (MAINTENANCE)
     {
       int print_slash;
       size_t alen;
@@ -5070,6 +5076,67 @@ bif_http_pending_req (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_DO_SET ();
   LEAVE_TXN;
   return ((caddr_t) list_to_array (dk_set_nreverse (set)));
+}
+
+static void
+http_kill_all ()
+{
+  dk_set_t killed = NULL;
+  ws_connection_t * ws;
+  IN_TXN;
+again:
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_status == LT_PENDING && !dk_set_member (killed, (void*)lt) &&
+	  (lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && lt->lt_client->cli_ws)
+	{
+	  ws = lt->lt_client->cli_ws;
+	  CHECK_DK_MEM_RESERVE (lt);
+	  lt->lt_error = LTE_TIMEOUT;
+	  dk_set_push (&killed, (void*) lt);
+	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+	  goto again;
+	}
+    }
+  END_DO_SET ();
+  dk_set_free (killed);
+  LEAVE_TXN;
+}
+
+caddr_t
+bif_http_lock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pass = bif_string_arg (qst, args, 0, "http_lock");
+  user_t * user = sec_name_to_user ("dba");
+
+  if (strcmp (pass, user->usr_pass))
+    sqlr_new_error ("22023", "HT042", "Invalid DBA credentials");
+  sec_check_dba ((query_instance_t *) qst, "http_lock");
+
+  if (!MAINTENANCE)
+    {
+      www_maintenance = 1;
+      http_kill_all ();
+    }
+  else
+    sqlr_new_error ("42000", "HTERR", "Cannot enter in maintenance mode when it is already entered");
+  return NULL;
+}
+
+caddr_t
+bif_http_unlock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pass = bif_string_arg (qst, args, 0, "http_lock");
+  user_t * user = sec_name_to_user ("dba");
+
+  if (strcmp (pass, user->usr_pass))
+    sqlr_new_error ("22023", "HT042", "Invalid DBA credentials");
+  sec_check_dba ((query_instance_t *) qst, "http_unlock");
+  if (MAINTENANCE)
+    www_maintenance = 0;
+  else
+    sqlr_new_error ("42000", "HTERR", "Cannot leave maintenance mode when it is already left");
+  return NULL;
 }
 
 caddr_t
@@ -10144,6 +10211,8 @@ http_init_part_one ()
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
+  bif_define ("http_lock", bif_http_lock);
+  bif_define ("http_unlock", bif_http_unlock);
   bif_define ("http_request_header", bif_http_request_header);
   bif_define ("http_request_header_full", bif_http_request_header_full);
   bif_define_typed ("http_param", bif_http_param, &bt_any);
