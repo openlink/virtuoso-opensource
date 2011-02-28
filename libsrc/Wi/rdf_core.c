@@ -764,7 +764,7 @@ ttlp_bit_of_special_qname (caddr_t qname)
 caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname)
 {
   char *lname = strchr (qname, ':');
-  dk_set_t ns_dict;
+  id_hash_t *ns_dict;
   caddr_t ns_pref, ns_uri, *ns_uri_ptr, res;
   int ns_uri_len, local_len, res_len;
   if (NULL == lname)
@@ -811,7 +811,7 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
   lname++;
   ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
   ns_pref = box_dv_short_nchars (qname, lname - qname);
-  ns_uri_ptr = (caddr_t *) id_hash_get (ns_dict, &ns_pref);
+  ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
   if (NULL != ns_uri_ptr)
     ns_uri = ns_uri_ptr[0];
   else
