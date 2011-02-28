@@ -782,6 +782,19 @@ perform_actual_load:
           ret_304_not_modified := 1;
           goto resp_received;
         }
+      if (ret_hdr[0] like 'HTTP/1._ 5__ %' or ret_hdr[0] like 'HTTP/1._ 4__ %')
+	{
+	  rollback work;
+	  update DB.DBA.SYS_HTTP_SPONGE
+	      set HS_SQL_STATE = 'RDFXX',
+	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	      HS_EXPIRATION = now (),
+	      HS_EXP_IS_TRUE = 0
+		  where
+		  HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+	  commit work;
+	  signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+	}
       goto resp_received;
     }
   if (eraser is not null)
