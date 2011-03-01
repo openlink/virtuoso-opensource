@@ -2700,6 +2700,8 @@ ws_file (ws_connection_t * ws)
     }
   else if (n_ranges)
     strcpy_ck (head_beg, "HTTP/1.1 206 Partial content");
+  else if (MAINTENANCE)
+    strcpy_ck (head_beg, "HTTP/1.1 503 Service Temporarily Unavailable");
   else
     strcpy_ck (head_beg, "HTTP/1.1 200 OK");
 
@@ -2760,6 +2762,7 @@ ws_file (ws_connection_t * ws)
 	      "Server: %.1000s\r\n"
 	      "Connection: %s\r\n"
 	      "%s"
+	      "%s"
 	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
@@ -2769,6 +2772,7 @@ ws_file (ws_connection_t * ws)
 	      date_now,
 	      http_server_id_string,
 	      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+	      (MAINTENANCE) ? "Retry-After: 1800\r\n" : "",
 	      ws->ws_header ? ws->ws_header : "",
 	      ranges_buffer
 	      );
@@ -8239,7 +8243,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 {
   char err_buf [1024];
   SSL_CTX* ssl_ctx = NULL;
-  SSL_METHOD *ssl_meth = NULL;
+  const SSL_METHOD *ssl_meth = NULL;
   char * https_cvfile = NULL;
   char *cert = NULL;
   char *skey = NULL;
@@ -8324,13 +8328,13 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
       skCAList = SSL_CTX_get_client_CA_list(ssl_ctx);
 
-      if (sk_X509_ALGOR_num(skCAList) == 0)
+      if (sk_X509_NAME_num(skCAList) == 0)
 	log_warning ("HTTPS Client authentication requested but no CA known for verification");
 
-      for (i = 0; i < sk_X509_ALGOR_num(skCAList); i++)
+      for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
 	{
 	  char ca_buf[1024];
-	  X509_NAME *ca_name = (X509_NAME *) sk_X509_ALGOR_value (skCAList, i);
+	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
 	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 	    log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
 	}
@@ -10420,7 +10424,7 @@ http_init_part_two ()
     {
       char err_buf [1024];
       SSL_CTX* ssl_ctx = NULL;
-      SSL_METHOD *ssl_meth = NULL;
+      const SSL_METHOD *ssl_meth = NULL;
       ssl_meth = SSLv23_server_method();
       ssl_ctx = SSL_CTX_new (ssl_meth);
       if (!ssl_ctx)
@@ -10470,13 +10474,13 @@ http_init_part_two ()
 
 	  SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
 	  skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
-	  if (sk_X509_ALGOR_num(skCAList) == 0)
+	  if (sk_X509_NAME_num(skCAList) == 0)
 	    log_warning ("HTTPS Client authentication requested but no CA known for verification");
 
-	  for (i = 0; i < sk_X509_ALGOR_num(skCAList); i++)
+	  for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
 	    {
 	      char ca_buf[1024];
-	      X509_NAME *ca_name = (X509_NAME *) sk_X509_ALGOR_value (skCAList, i);
+	      X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
               if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 		log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
 	    }
