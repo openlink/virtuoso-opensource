@@ -1748,6 +1748,74 @@ create procedure DB.DBA.rdf_find_str (in x any)
 grant execute on DB.DBA.rdf_find_str to public
 ;
 
+create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_qrcode varchar, in params varchar, in qr varchar)
+{
+  declare opts any;
+  declare format varchar;
+  format := get_keyword ('format', params, get_keyword ('output', params, ''));
+  qr := lower (qr);
+  if (format <> '')
+  {
+    format := (
+      case lower(format)
+        when 'json' then 'application/sparql-results+json'
+        when 'js' then 'application/javascript'
+        when 'html' then 'text/html'
+        when 'sparql' then 'application/sparql-results+xml'
+        when 'xml' then 'application/sparql-results+xml'
+        when 'rdf' then 'application/rdf+xml'
+        when 'n3' then 'text/rdf+n3'
+        when 'cxml' then 'text/cxml'
+        when 'cxml+qrcode' then 'text/cxml+qrcode'
+        when 'csv' then 'text/csv'
+        else format
+      end);
+  }
+  if (
+      regexp_match ('\\bconstruct\\b', qr) is not null
+      or
+      regexp_match ('\\bdescribe\\b', qr) is not null
+      )
+    {
+      opts := vector (
+      		vector ('text/rdf+n3', 'N3/Turtle'),
+      		vector ('application/rdf+json', 'JSON'),
+      		vector ('application/rdf+xml', 'RDF/XML'),
+      		vector ('text/plain', 'NTriples'),
+      		vector ('application/xhtml+xml', 'XHTML+RDFa'),
+      		vector ('application/atom+xml', 'ATOM+XML'),
+      		vector ('application/odata+json', 'ODATA/JSON')
+      );
+    }
+  else
+    {
+      if (not length (format)) format := 'text/html';
+      opts := vector (
+      		vector ('auto', 'Auto'),
+      		vector ('text/html', 'HTML'),
+      		vector ('application/vnd.ms-excel', 'Spreadsheet'),
+      		vector ('application/sparql-results+xml', 'XML'),
+      		vector ('application/sparql-results+json', 'JSON'),
+      		vector ('application/javascript', 'Javascript'),
+      		vector ('text/plain', 'NTriples'),
+      		vector ('application/rdf+xml', 'RDF/XML')
+		);
+    }
+  foreach (any x in opts) do
+    {
+      http(sprintf ('<option value="%V" %s>%V</option>\n',
+	  x[0], case when format = x[0] then 'selected' else '' end , x[1]));
+    }
+  http('			    <option value="text/csv">CSV</option>\n');
+  if (can_cxml)
+    {
+      http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
+      if (can_qrcode)
+	http('			    <option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
+    }
+}
+;
+
 -- Web service endpoint.
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
@@ -2034,21 +2102,7 @@ http('&nbsp;<input name="timeout" type="text"' || case (isnull (timeout)) when 0
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
 http('			  <label for="format" class="n">Format Results As:</label>\n');
 http('			  <select name="format">\n');
-http('			    <option value="auto">Auto</option>\n');
-http('			    <option value="text/html" selected="selected">HTML</option>\n');
-http('			    <option value="application/vnd.ms-excel">Spreadsheet</option>\n');
-http('			    <option value="application/sparql-results+xml">XML</option>\n');
-http('			    <option value="application/sparql-results+json">JSON</option>\n');
-http('			    <option value="application/javascript">Javascript</option>\n');
-http('			    <option value="text/plain">NTriples</option>\n');
-http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
-http('			    <option value="text/csv">CSV</option>\n');
-if (can_cxml)
-  {
-  http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
-    if (can_qrcode)
-      http('			    <option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
-  }
+	WS.WS.sparql_enpoint_format_opts (can_cxml, can_qrcode, params, def_qry);
 http('			  </select>\n');
 if (can_cxml)
   {
