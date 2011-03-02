@@ -5581,6 +5581,8 @@ retry_preopt:
         continue;
       if (!SPARP_EQ_IS_USED(eq))
         continue;
+      if ((1 == eq->e_var_count) && SPART_VARNAME_IS_SPECIAL (eq->e_varnames[0]))
+        continue; /* Special variable is not assigned in SPARQL (by BGPs or externals) but it is assigned in SQL code by codegen. Can't check, just believe in the codegen :) */
       /* At this point we know that some variable is used but not assigned. It may be non-optional variable in FILTER inside OPTIONAL or an error. */
       if (sparp_dig_and_glue_loj_filter_for_eq (sparp, eq))
         goto retry_preopt; /* see above */
@@ -5989,6 +5991,8 @@ retry_after_reducing_optionals:
           (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) ) &&
         !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)) )
         {
+          if ((1 == eq->e_var_count) && SPART_VARNAME_IS_SPECIAL (eq->e_varnames[0]))
+            continue; /* Special variable can not be bound in SPARQL because they does not exist in SPARQL. Thus no restricitons can be ifrerred from SPARQL context. */
           if (!sparp->sparp_env->spare_signal_void_variables)
             eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           else if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
