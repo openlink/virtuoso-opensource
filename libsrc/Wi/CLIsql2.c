@@ -4450,16 +4450,16 @@ virtodbc__SQLForeignKeys (
       _szFkTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
       _szFkTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szFkTableName[KUBL_IDENTIFIER_MAX_LENGTH];
 
-  if (!szFkTableQualifier)
-    {
-      szFkTableQualifier = (SQLCHAR *) qual;
-      cbFkTableQualifier = SQL_NTS;
-    }
-
   if (!szPkTableQualifier)
     {
       szPkTableQualifier = (SQLCHAR *) qual;
       cbPkTableQualifier = SQL_NTS;
+
+      if (!szFkTableQualifier)
+        {
+          szFkTableQualifier = (SQLCHAR *) qual;
+          cbFkTableQualifier = SQL_NTS;
+        }
     }
 
   BIND_NAME_PART (hstmt, 1, szPkTableQualifier, _szPkTableQualifier, cbPkTableQualifier, l1);
