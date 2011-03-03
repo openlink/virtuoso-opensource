@@ -2328,8 +2328,8 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	  fprintf (out, "#N%s", temp);
 	  break;
 	case DV_DATETIME:
-	  dt_to_string(object, temp, sizeof (temp));
-	  fprintf (out, "{ts %s}", temp);
+	  dbg_dt_to_string (object, temp, sizeof (temp));
+	  fprintf (out, "%s", temp);
 	  break;
 	case DV_WIDE:
 	case DV_LONG_WIDE:

@@ -713,6 +713,47 @@ short_buf:
 }
 
 void
+dbg_dt_to_string (const char *dt, char *str, int len)
+{
+  TIMESTAMP_STRUCT ts;
+  int dt_type, tz;
+  char *tail = str;
+  dt_to_GMTimestamp_struct (dt, &ts);
+  tz = DT_TZ (dt);
+  dt_type = DT_DT_TYPE (dt);
+  if (len < 50)
+    {
+      snprintf (str, len, "??? short output buffer for dbg_dt_to_string()");
+      return;
+    }
+  switch (dt_type)
+    {
+      case DT_TYPE_DATE:	tail += snprintf (str, len, "{date "); break;
+      case DT_TYPE_TIME:	tail += snprintf (str, len, "{time "); break;
+      case DT_TYPE_DATETIME:	tail += snprintf (str, len, "{datetime "); break;
+      default:	tail += snprintf (str, len, "{BAD(%d) ", dt_type); break;
+    }
+  tail += snprintf (tail, (str + len) - tail, "%04d-%02d-%02d %02d:%02d:%02d",
+    ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
+  if (ts.fraction)
+    {
+      if (ts.fraction % 1000)
+        tail += snprintf (tail, (str + len) - tail, ".%09d", (int)ts.fraction);
+      else if (ts.fraction % 1000000)
+        tail += snprintf (tail, (str + len) - tail, ".%06d", (int)(ts.fraction / 1000));
+      else
+        tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+    }
+  if (tz)
+    tail += snprintf (tail, (str + len) - tail, "Z in %+02d:%02d}", tz/60, tz%60);
+  else
+    tail += snprintf (tail, (str + len) - tail, "Z}");
+  return;
+short_buf:
+  snprintf (str, len, "??? short output buffer for dt_to_string()");
+}
+
+void
 dt_to_iso8601_string (const char *dt, char *str, int len)
 {
   GMTIMESTAMP_STRUCT ts;

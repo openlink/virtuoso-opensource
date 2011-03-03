@@ -561,11 +561,13 @@ bif_timestampadd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong part = bif_long_arg (qst, args, 0, "timestampadd");
   int n = (int) bif_long_arg (qst, args, 1, "timestampadd");
   caddr_t dt = bif_date_arg (qst, args, 2, "timestampadd");
+  int saved_tz = DT_TZ (dt);
   GMTIMESTAMP_STRUCT ts;
   dt_to_GMTimestamp_struct (dt, &ts);
   ts_add (&ts, n, interval_odbc_to_text (part, "timestampadd"));
   res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, saved_tz);
   return res;
 }
 

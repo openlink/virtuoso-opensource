@@ -154,6 +154,19 @@ __boolean_from_string (caddr_t *n, const char *str, int do_what)
 }
 
 
+static int
+__boolean_rcheck (caddr_t *n, int do_what)
+{
+  boxint old_val = unbox (n[0]);
+  if ((0 != old_val) && (1 != old_val))
+    {
+      dk_free_tree (n[0]);
+      n[0] = box_num (old_val ? 1 : 0);
+    }
+  return 1;
+}
+
+
 static void
 __numeric_from_string (caddr_t *n, const char *str, int do_what)
 {
@@ -286,6 +299,49 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
       break;
   };
 }
+
+static int
+__integer_rcheck (caddr_t *n, int do_what)
+{
+  static int bits[]     = {7, 15, 31, 63, 8, 16, 32, 64};
+  static int issigned[] = {1, 1, 1, 1, 0, 0, 0, 0};
+  boxint val;
+  int64 v64;
+  assert (do_what >= 0 && do_what < COUNTOF__XQ_INT_TYPE);
+  if (DV_NUMERIC == DV_TYPE_OF (n[0]))
+    {
+      numeric_t num = (numeric_t)(n[0]);
+      switch (do_what)
+        {
+        case XQ_UINT8: case XQ_UINT16: case XQ_UINT32: case XQ_UINT64:
+          if (num->n_neg) return 0;
+          break;
+        case XQ_NNINT:
+          return !(num->n_neg);
+        case XQ_NINT:
+          return num->n_neg;
+        case XQ_NPINT:
+          return (num->n_neg || num_is_zero(num));
+        case XQ_PINT:
+          return !(num->n_neg || num_is_zero(num));
+        }
+      if (!numeric_to_int64 (num, &v64))
+        return 0;
+      val = v64;
+    }
+  else
+    val = unbox (n[0]);
+  if (val < 0)
+    {
+      if (!issigned[do_what])
+        return 0;
+      val = 1 - val;
+    }
+  if (val >> bits[do_what])
+    return 0;
+  return 1;
+}
+
 
 static void
 xqf_byte (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
@@ -548,6 +604,35 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
   sqlr_resignal (err);
 }
 
+static int
+__datetime_rcheck (caddr_t *n, int do_what)
+{
+  caddr_t dt = n[0];
+  int dttype = DT_DT_TYPE (dt);
+  switch (do_what)
+    {
+    case XQ_DATETIME: return (DT_TYPE_DATETIME == dttype);
+    case XQ_DATE: if (DT_TYPE_TIME == dttype) return 0; break;
+    case XQ_TIME: if (DT_TYPE_DATE == dttype) return 0; break;
+    case XQ_YEARMONTH: case XQ_YEAR: case XQ_MONTHDAY: case XQ_MONTH: case XQ_DAY: if (DT_TYPE_TIME == dttype) return 0;
+    }
+  if (DT_TYPE_DATETIME == dttype)
+    {
+      if (XQ_TIME == do_what)
+        {
+          DT_SET_DAY (dt, DAY_ZERO);
+          DT_SET_FRACTION (dt, 0);
+          DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
+        }
+      else
+        {
+          dt_date_round (dt);
+          DT_SET_DT_TYPE (dt, DT_TYPE_DATE);
+        }
+    }
+  return 1;
+}
+
 static void
 xqf_datetime (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -621,7 +706,7 @@ xqf_currentDateTime (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 static void
 __string_from_string (caddr_t *n, const char *str, int do_what, const char *where )
 {
-  dk_session_t *ses = strses_allocate ();
+  dk_session_t *ses = NULL;
   const char *p, *pp, *ppp;
   int val;
   char c;
@@ -631,6 +716,8 @@ __string_from_string (caddr_t *n, const char *str, int do_what, const char *wher
       pp = strchr(p, '&');
       if (NULL != pp)
 	{
+	  if (NULL == ses)
+            ses = strses_allocate ();
 	  ppp = strchr(pp, ';');
 	  if ('#' == pp[1] && 'x' == pp[2] && (isxdigit(pp[3])) && NULL != ppp)
 	    {
@@ -660,12 +747,76 @@ __string_from_string (caddr_t *n, const char *str, int do_what, const char *wher
 	      continue;
 	    }
 	}
+      else
+        {
+          if (NULL == ses)
+            {
+              n[0] = box_dv_short_string (str);
+              return;
+            }
+        }
       session_buffered_write (ses, (char *)(p), strlen (p));
       break; /* all is written */
     }
-
   *n = strses_string (ses);
   strses_free (ses);
+}
+
+static int
+__gen_string_rcheck (caddr_t *n, int do_what)
+{
+  dk_session_t *ses = NULL;
+  const char *p, *pp, *ppp;
+  int val;
+  char c;
+  for (p = n[0]; NULL != p;)
+    {
+      pp = strchr(p, '&');
+      if (NULL != pp)
+	{
+	  if (NULL == ses)
+            ses = strses_allocate ();
+	  ppp = strchr(pp, ';');
+	  if ('#' == pp[1] && 'x' == pp[2] && (isxdigit(pp[3])) && NULL != ppp)
+	    {
+	      session_buffered_write (ses, (char *)(p), pp-p);
+	      sscanf (pp + 3, "%x", (unsigned *)(&val));
+	      p = ppp + 1;
+	      switch (val) {
+		case 0x9:
+		case 0xd:
+		  if (XQ_NORM_STRING == do_what || XQ_TOKEN == do_what)
+		    {
+		      strses_free (ses); /* the bellow will jump outside */
+		      ses = NULL;
+		      return 0;
+		    }
+		  break;
+		case 0xa:
+		  if (XQ_NORM_STRING == do_what)
+		    continue;
+		  break;
+		case 0x20:
+		  ecm_isname (val);
+		  break;
+	      };
+	      c = (char)val;
+	      session_buffered_write (ses, &c, 1);
+	      continue;
+	    }
+	}
+      else
+        {
+          if (NULL == ses)
+            return 1;
+        }
+      session_buffered_write (ses, (char *)(p), strlen (p));
+      break; /* all is written */
+    }
+  dk_free_tree (n[0]);
+  *n = strses_string (ses);
+  strses_free (ses);
+  return 0;
 }
 
 
@@ -3185,40 +3336,40 @@ xqf_define_builtin (
 
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
 /* Keep these strings sorted alphabetically by p_name! */
-/*	p_name			| p_proc			| p_opcode		| null	| box	| p_dest_dtp	| p_typed_bif_name		| p_sql_cast_type */
-    {	"boolean"		, __boolean_from_string		, 0			, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
-    {	"byte"			, __integer_from_string		, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"currentDateTime"	, __cur_datetime		, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"date"			, __datetime_from_string	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, NULL			},
-    {	"dateTime"		, __datetime_from_string	, XQ_DATETIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"dayTimeDuration"	, __duration_from_string	, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"decimal"		, __numeric_from_string		, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
-    {	"double"		, __float_from_string		, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
-    {	"duration"		, __duration_from_string	, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"float"			, __float_from_string		, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "REAL"		},
-    {	"gDay"			, __datetime_from_string	, XQ_DAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonth"		, __datetime_from_string	, XQ_MONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonthDay"		, __datetime_from_string	, XQ_MONTHDAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYear"			, __datetime_from_string	, XQ_YEAR		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYearMonth"		, __datetime_from_string	, XQ_YEARMONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"int"			, __integer_from_string		, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"integer"		, __integer_from_string		, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
-    {	"long"			, __integer_from_string		, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
-    {	"negativeInteger"	, __integer_from_string		, XQ_NINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonNegativeInteger"	, __integer_from_string		, XQ_NNINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonPositiveInteger"	, __integer_from_string		, XQ_NPINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"normalizedString"	, __gen_string_from_string	, XQ_NORM_STRING	, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"positiveInteger"	, __integer_from_string		, XQ_PINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"precisionDecimal"	, __numeric_from_string		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
-    {	"short"			, __integer_from_string		, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"string"		, __gen_string_from_string	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
-    {	"time"			, __datetime_from_string	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, NULL			},
-    {	"token"			, __gen_string_from_string	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"unsignedByte"		, __integer_from_string		, XQ_UINT8		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedInt"		, __integer_from_string		, XQ_UINT32		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedLong"		, __integer_from_string		, XQ_UINT64		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedShort"		, __integer_from_string		, XQ_UINT16		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"yearMonthDuration"	, __duration_from_string	, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			} };
+/*	p_name			| p_proc			| p_rcheck		| p_opcode		| null	| box	| p_dest_dtp	| p_typed_bif_name		| p_sql_cast_type */
+    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
+    {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, "DATE"		},
+    {	"dateTime"		, __datetime_from_string	, __datetime_rcheck	, XQ_DATETIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	, "DATETIME"		},
+    {	"dayTimeDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"decimal"		, __numeric_from_string		, NULL			, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
+    {	"double"		, __float_from_string		, NULL			, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
+    {	"duration"		, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"float"			, __float_from_string		, NULL			, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "REAL"		},
+    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTHDAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_YEAR		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_YEARMONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
+    {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
+    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"normalizedString"	, __gen_string_from_string	, __gen_string_rcheck	, XQ_NORM_STRING	, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
+    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
+    {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
+    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, "DATETIME"		},
+    {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
+    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"yearMonthDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			} };
 
 /* No parsing or validation for
 hexBinary
@@ -3269,11 +3420,31 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (DV_STRING != arg_dtp)
         {
           if (desc->p_dest_dtp == arg_dtp)
-            return box_copy_tree (arg);
+            res = box_copy_tree (arg);
+          else
+            {
+              caddr_t err = NULL;
+              res = box_cast_to (qst, arg, arg_dtp, desc->p_dest_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+              if (err)
+                {
+                  dk_free_tree (err);
+                  goto cvt_error; /* see below */
+                }
+            }
+          if (NULL == desc->p_rcheck)
+            return res;
+          if (desc->p_rcheck (&res, desc->p_opcode))
+            return res;
           if (flags & 1)
             return NEW_DB_NULL;
           sqlr_new_error ("22023", "SR487",
-            "Function xqf_str_parse() can not use XQuery library function '%.300s' to process an arg of type %s (%d)",
+            "Function xqf_str_parse() has failed to convert an arg of type %s (%d) by XQuery library function xsd:%.300s() because the result does not fit the XSD range restrictions",
+            dv_type_title (arg_dtp), arg_dtp, p_name );
+cvt_error:
+          if (flags & 1)
+            return NEW_DB_NULL;
+          sqlr_new_error ("22023", "SR487",
+            "Function xqf_str_parse() can not use XQuery library function xsd:%.300s() to process an arg of type %s (%d)",
             p_name, dv_type_title (arg_dtp), arg_dtp);
         }
     }

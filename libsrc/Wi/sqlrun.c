@@ -899,50 +899,51 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
   if (dtp == target_dtp)
     {
       ITC_COPY_PARAM (itc, data);
+      return KS_CAST_OK;
     }
-  else
+  switch (target_dtp)
     {
-      if (IS_BLOB_DTP (target_dtp))
+    case DV_BLOB: case DV_BLOB_BIN: case DV_BLOB_WIDE: case DV_BLOB_XPER:
+      if (dtp != DV_DB_NULL)
 	{
 	  char* cl_name = __get_column_name (sp->sp_cl.cl_col_id,
 	      itc->itc_insert_key ? itc->itc_insert_key : itc->itc_row_key);
-	  if (dtp != DV_DB_NULL)
 	    sqlr_new_error ("22023", "SR347",
 		"The long varchar, long varbinary and long nvarchar "
 		"data types cannot be used in the WHERE, HAVING, or ON clause, "
 		"except with the IS NULL predicate for column '%s'", cl_name);
 	}
-
-      if (IS_NUM_DTP (dtp) && IS_NUM_DTP (target_dtp))
-	{
+      break;
 	  /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check.
 	  * if param is more precise, disable any inlined compare funcs since they do not cast. */
-	  switch (target_dtp)
-	    {
 	    case DV_LONG_INT:
+      if (!IS_NUM_DTP (dtp))
+        break;
 	      ITC_COPY_PARAM (itc, data); /* all are more precise, no cast down */
 	      itc->itc_key_spec.ksp_key_cmp = NULL;
-	      return 0;
+      return KS_CAST_OK;
 	    case DV_SINGLE_FLOAT:
-	      if (DV_LONG_INT == dtp)
-		goto cast_param_up;
+      if ((DV_LONG_INT == dtp) || !IS_NUM_DTP (dtp))
+        break;
 	      ITC_COPY_PARAM (itc, data);
 	      itc->itc_key_spec.ksp_key_cmp = NULL;
-	      return 0;
+      return KS_CAST_OK;
 	    case DV_DOUBLE_FLOAT:
-	      goto cast_param_up;
+      break;
 	    case DV_NUMERIC:
-	      if (DV_DOUBLE_FLOAT == dtp)
-		{
+      if (DV_DOUBLE_FLOAT != dtp)
+        break;
 		  ITC_COPY_PARAM (itc, data);
 		  itc->itc_key_spec.ksp_key_cmp = NULL;
-		  return 0;
-		}
-	      goto cast_param_up;
-	    }
-	  return 0;
+      return KS_CAST_OK;
+/* same is for dates/datetime pair */
+    case DV_DATE:
+      if (DV_DATETIME != dtp)
+        break;
+      ITC_COPY_PARAM (itc, data);
+      itc->itc_key_spec.ksp_key_cmp = NULL;
+      return KS_CAST_OK;
 	}
-    cast_param_up:
       data = box_cast_to (itc->itc_out_state, data, dtp, target_dtp,
 			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
       if (err || (DV_DB_NULL == DV_TYPE_OF (data)))
@@ -966,7 +967,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	}
       ITC_SEARCH_PARAM (itc, data);
       ITC_OWNS_PARAM (itc, data);
-    }
+
   return KS_CAST_OK;
 }
 

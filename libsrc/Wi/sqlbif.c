@@ -911,8 +911,7 @@ bif_dbg_obj_princ (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   static dk_mutex_t *mtx = NULL;
   static void *prev_thread = NULL;
   void *curr_thread;
-  if (NULL == mtx)
-    mtx = mutex_allocate ();
+  if (NULL == mtx) mtx = mutex_allocate ();
   DO_BOX_FAST_REV (state_slot_t *, arg, inx, args)
   {
     caddr_t val = qst_get (qst, arg);
@@ -9133,38 +9132,30 @@ do_datetime:
 	{
 	  case DV_STRING:
 	      res = string_to_dt_box (data);
-	      if (ST_P (dtp, DV_DATE))
-		{
-		  dt_date_round (res);
-		}
-	      else if (ST_P (dtp, DV_DATE) || ST_P (dtp, DV_TIME))
-		{
-		  DT_SET_FRACTION (res, 0);
-		}
-	      SET_DT_TYPE_BY_DTP (res, dtp->type);
-	      return res;
+          break;
 	  case DV_DATETIME:
 	  case DV_DATE:
 	  case DV_TIME:
 	      res = box_copy_tree (data);
-#ifdef DEBUG
-              DT_SET_DAY (res, DAY_ZERO+1);
-#endif
-	      SET_DT_TYPE_BY_DTP (res, dtp->type);
-	      return res;
+          break;
 	  case DV_BIN:
 	      if (dt_validate (data))
 		sqlr_new_error ("22003", "SR351",
 		    "Invalid data supplied in VARBINARY -> DATETIME conversion");
 	      res = box_copy (data);
 	      box_tag_modify (res, DV_DATETIME);
-	      return res;
+	  break;
 	  case DV_WIDE:
 	  case DV_LONG_WIDE:
 		{
 		  caddr_t narrow = box_wide_string_as_narrow (data, NULL, 0, qst ? QST_CHARSET (qst) : NULL);
 		  res = string_to_dt_box (narrow);
 		  dk_free_box (narrow);
+            break;
+	  }
+	default:
+	  goto cvt_error;
+	}
 		  if (ST_P (dtp, DV_DATE))
 		    {
 		      dt_date_round (res);
@@ -9176,11 +9167,6 @@ do_datetime:
 		  SET_DT_TYPE_BY_DTP (res, dtp->type);
 		  return res;
 		}
-
-	  default:
-	      goto cvt_error;
-	}
-    }
 
 do_time:
     {

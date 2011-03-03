@@ -1074,11 +1074,12 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
   DTP_NORMALIZE (target_dtp);
   if (IS_UDT_DTP (target_dtp))
     return KS_CAST_NULL;
-  else if (dtp == target_dtp)
+  if (dtp == target_dtp)
     {
       ITC_SEARCH_PARAM (itc, data);
+      return KS_CAST_OK;
     }
-  else if (DV_ANY == target_dtp)
+  if (DV_ANY == target_dtp)
     {
       data = box_to_any (data, &err);
       if (err)
@@ -1090,37 +1091,36 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
       ITC_OWNS_PARAM (itc, data);
       return KS_CAST_OK;
     }
-  else
-    {
       if (IS_BLOB_DTP (target_dtp))
 	return KS_CAST_NULL;
-
-      if (IS_NUM_DTP (dtp) && IS_NUM_DTP (target_dtp))
-	{
-	  /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check */
 	  switch (target_dtp)
 	    {
+/* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check */
 	    case DV_LONG_INT:
+      if (!IS_NUM_DTP (dtp))
+        break;
 	      ITC_SEARCH_PARAM (itc, data); /* all are more precise, no cast down */
-	      return 0;
+      return KS_CAST_OK;
 	    case DV_SINGLE_FLOAT:
-	      if (DV_LONG_INT == dtp)
-		goto cast_param_up;
+      if ((DV_LONG_INT == dtp) || (!IS_NUM_DTP (dtp)))
+        break;
 	      ITC_SEARCH_PARAM (itc, data);
-	      return 0;
+      return KS_CAST_OK;
 	    case DV_DOUBLE_FLOAT:
-	      goto cast_param_up;
+      break;
 	    case DV_NUMERIC:
 	      if (DV_DOUBLE_FLOAT == dtp)
 		{
 		  ITC_SEARCH_PARAM (itc, data);
-		  return 0;
-		}
-	      goto cast_param_up;
+          return KS_CAST_OK;
 	    }
-	  return 0;
+      break;
+    case DV_DATE:
+      if (DV_DATETIME != dtp)
+        break;
+      ITC_SEARCH_PARAM (itc, data);
+      return KS_CAST_OK;
 	}
-    cast_param_up:
       data = box_cast_to (NULL, data, dtp, target_dtp,
 			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
       if (err)
@@ -1130,7 +1130,6 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	}
       ITC_SEARCH_PARAM (itc, data);
       ITC_OWNS_PARAM (itc, data);
-    }
   return KS_CAST_OK;
 }
 

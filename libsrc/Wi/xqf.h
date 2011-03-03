@@ -27,6 +27,7 @@
 #define _XQF_H
 
 typedef void (*qpq_ctr_callback)(caddr_t *n, const char *str, int do_what);
+typedef int (*qpq_rangecheck_callback)(caddr_t *n, int do_what);
 typedef void (*qpq_oper_callback)(caddr_t *n, const char *arg1, const char *arg2, int do_what);
 typedef void (*qpq_teroper_callback)(caddr_t *n, const char *arg1, const char *arg2, const char *arg3, int do_what);
 
@@ -34,6 +35,7 @@ typedef struct xqf_str_parser_desc_s
 {
   const char *p_name;
   qpq_ctr_callback p_proc;
+  qpq_rangecheck_callback p_rcheck;
   int p_opcode;
   dtp_t p_can_default;
   int p_rdf_boxed;
