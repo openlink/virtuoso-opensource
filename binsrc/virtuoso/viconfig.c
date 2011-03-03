@@ -893,6 +893,16 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "SwapGuard", &swap_guard_on) == -1)
     swap_guard_on = 0;
 
+  /*  ExtentReadThreshold, ExtentReadWindow, ExtentReadStartupThreshold, ExtentReadStartupWindow */
+  if (cfg_getlong (pconfig, section, "ExtentReadThreshold", &em_ra_threshold) == -1)
+   em_ra_threshold = 2;
+  if (cfg_getlong (pconfig, section, "ExtentReadWindow", &em_ra_window) == -1)
+    em_ra_window = 1000;
+  if (cfg_getlong (pconfig, section, "ExtentReadStartupThreshold", &em_ra_startup_threshold) == -1)
+    em_ra_startup_threshold = 0;
+  if (cfg_getlong (pconfig, section, "ExtentReadStartupWindow", &em_ra_startup_window) == -1)
+   em_ra_startup_window = 40000;
+
   {
     int nbdirs;
     dk_set_t bd = NULL;

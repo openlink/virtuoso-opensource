@@ -2504,6 +2504,7 @@ itc_read_ahead1 (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
 
 long tc_read_aside;
+int enable_iq_always = 0;
 
 
 void
@@ -2511,7 +2512,7 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra, int flags)
 {
   int inx;
   buffer_pool_t * action_bp = NULL;
-  if (!itc || !ra || ra->ra_fill < 2)
+  if (!itc || !ra || (ra->ra_fill < 2 && !enable_iq_always))
     goto fin;
 
   if (!iq_is_on ())
@@ -2625,46 +2626,50 @@ itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 }
 
 int enable_read_aside = 1;
-int em_ra_window = 1000;
-int em_ra_threshold = 2;
+int32 em_ra_window = 1000;
+int32 em_ra_threshold = 2;
+int32 em_ra_startup_window = 40000;
+int32 em_ra_startup_threshold = 0;
 
-ra_req_t *
-itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
+
+int
+em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold)
 {
-  /* mark the read history of the extent.  If more than so many inside a short time, do the whole extent
-  * the buf is the parent of the dp. */
-  extent_map_t * em = itc->itc_tree->it_extent_map;
-  extent_t * ext;
-  int inx, fill = 0;
-  dp_addr_t leaves[EXTENT_SZ];
-  dp_addr_t ext_dp = EXT_ROUND (dp);
-  uint32 now, rh;
-  ra_req_t *ra=NULL;
-  if (!enable_read_aside || em == em->em_dbs->dbs_extent_map)
-    return NULL; /* do not apply to the sys ext map */
-  now = get_msec_real_time ();
+  ptrlong rh;
+  if (0 == threshold)
+    return 1;
   mutex_enter (&em->em_read_history_mtx);
   rh = (ptrlong) gethash (DP_ADDR2VOID(ext_dp), em->em_read_history);
   if (!rh)
     {
       sethash (DP_ADDR2VOID(ext_dp), em->em_read_history, (void*)(ptrlong)(now << 8));
       mutex_leave (&em->em_read_history_mtx);
-      return NULL;
+      return 0;
     }
-  if (now - (rh >> 8) > em_ra_window)
+  if (now - (rh >> 8) > window)
     {
       sethash (DP_ADDR2VOID(ext_dp), em->em_read_history, (void*)(ptrlong)(now << 8));
       mutex_leave (&em->em_read_history_mtx);
-      return NULL;
+      return 0;
     }
   if ((rh & 0xff) < em_ra_threshold)
     {
       sethash (DP_ADDR2VOID(ext_dp), em->em_read_history, (void*)(ptrlong)(rh + 1));
       mutex_leave (&em->em_read_history_mtx);
-      return NULL;
+      return 0;
     }
   remhash (DP_ADDR2VOID(ext_dp), em->em_read_history);
   mutex_leave (&em->em_read_history_mtx);
+  return 1;
+}
+
+int
+em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr_t * leaves, int max, dp_addr_t except_dp, dk_hash_t * except)
+{
+  extent_t * ext;
+  int fill = 0, inx;
+  if (max <= 0)
+    return 0;
   mutex_enter (em->em_mtx);
   ext = EM_DP_TO_EXT (em, ext_dp);
   if (!ext)
@@ -2675,7 +2680,7 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
       if (!ext)
 	log_error ("in read aside, ext for dp %d not in the ext map and not in sys ext map ", ext_dp);
       mutex_leave (em->em_dbs->dbs_extent_map->em_mtx);
-      return NULL;
+      return 0;
     }
 
   mutex_leave (em->em_mtx);
@@ -2687,7 +2692,9 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
 	{
 	  dp_addr_t other_dp = ext_dp + (BITS_IN_LONG * inx) + b_idx, phys_dp;
 	  int is_allocd = 0;
-	  if (dp == other_dp)
+	  if (except_dp == other_dp)
+	    continue;
+	  if (except && gethash (DP_ADDR2VOID (other_dp), except))
 	    continue;
 	  mutex_enter (em->em_mtx);
 	  if (0 == (ext->ext_pages[inx] & (1 << b_idx)))
@@ -2708,11 +2715,46 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
 	  if (phys_dp != other_dp)
 	    continue;
 	  leaves[fill++] = other_dp;
+	  if (fill >= max)
+	    break;
 	}
     }
+  return fill;
+}
+
+ra_req_t *
+itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
+{
+  /* mark the read history of the extent.  If more than so many inside a short time, do the whole extent
+  * the buf is the parent of the dp. */
+  int window, threshold;
+  extent_map_t * em = itc->itc_tree->it_extent_map;
+  int fill = 0;
+  dp_addr_t leaves[EXTENT_SZ];
+  dp_addr_t ext_dp = EXT_ROUND (dp);
+  uint32 now;
+  ra_req_t *ra=NULL;
+  if (disk_reads < main_bufs - 256)
+    {
+      threshold = em_ra_startup_threshold;
+      window = em_ra_startup_window;
+	}
+  else
+    {
+      threshold = em_ra_threshold;
+      window = em_ra_window;
+    }
+  if (!enable_read_aside || em == em->em_dbs->dbs_extent_map)
+    return NULL; /* do not apply to the sys ext map */
+  now = get_msec_real_time ();
+  if (!em_trigger_ra (em, ext_dp, now, window, threshold))
+    return NULL;
+  fill = em_ext_ra_pages (em, itc, ext_dp, leaves, EXTENT_SZ, dp, NULL);
   if (!fill)
     return NULL;
   tc_read_aside += fill;
+  if (itc->itc_ltrx)
+    itc->itc_ltrx->lt_client->cli_activity.da_spec_disk_reads += fill;
   ra= (ra_req_t *) dk_alloc_box(sizeof(ra_req_t),DV_CUSTOM);
   memset (ra, 0, sizeof (*ra));
   memcpy (&ra->ra_dp, leaves, fill * sizeof (dp_addr_t));
@@ -2724,6 +2766,7 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
 void
 dbs_timeout_read_history (dbe_storage_t * dbs)
 {
+  int window = disk_reads < main_bufs ? em_ra_startup_window : em_ra_window;
   int now = approx_msec_real_time (), inx, nth;
   if (wi_inst.wi_checkpoint_atomic)
     return;
@@ -2744,7 +2787,7 @@ dbs_timeout_read_history (dbe_storage_t * dbs)
       mutex_enter (&em->em_read_history_mtx);
       DO_HT (void*, dp, ptrlong, rh, em->em_read_history)
 	{
-      if (now - (rh >> 8)  > 4 * em_ra_window)
+      if (now - (rh >> 8)  > 4 * window)
 	{
 	  pages[fill++] = (dp_addr_t)((ptrlong)(dp));
 	  if (fill >= 100)

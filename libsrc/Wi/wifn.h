@@ -1224,4 +1224,10 @@ extern int32 dbs_check_extent_free_pages;
 #ifndef NDEBUG
 void ws_lt_trace (lock_trx_t * lt);
 #endif
+
+extern int32 em_ra_window;
+extern int32 em_ra_threshold;
+extern int32 em_ra_startup_window;
+extern int32 em_ra_startup_threshold;
+
 #endif /* _WIFN_H */
