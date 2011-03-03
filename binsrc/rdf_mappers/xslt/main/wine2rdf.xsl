@@ -112,7 +112,9 @@
     <xsl:template match="Product/PriceMax" mode="offering">
         <gr:hasPriceSpecification>
             <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_Max')}">
-                <rdfs:label>Max price</rdfs:label>
+                <rdfs:label>
+		<xsl:value-of select="concat('Max price: ', ., ' (USD)')"/>	
+		</rdfs:label>
                 <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
                 <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
                 <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
@@ -123,7 +125,9 @@
     <xsl:template match="Product/PriceMin" mode="offering">
         <gr:hasPriceSpecification>
             <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_Min')}">
-                <rdfs:label>Min price</rdfs:label>
+                <rdfs:label>
+		<xsl:value-of select="concat('Min price: ', ., ' (USD)')"/>	
+		</rdfs:label>
                 <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
                 <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
                 <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
@@ -134,7 +138,9 @@
     <xsl:template match="Product/PriceRetail" mode="offering">
         <gr:hasPriceSpecification>
             <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_Retail')}">
-                <rdfs:label>suggested retail price</rdfs:label>
+                <rdfs:label>
+		<xsl:value-of select="concat('suggested retail price: ', ., ' (USD)')"/>	
+		</rdfs:label>
                 <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
                 <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
                 <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>

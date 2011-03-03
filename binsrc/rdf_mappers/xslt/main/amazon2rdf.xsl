@@ -208,7 +208,9 @@
 		  		<gr:UnitPriceSpecification rdf:about="{concat ($base, '#', 'OfferPrice_', position())}">
 				-->
 		  		<gr:UnitPriceSpecification rdf:about="{concat(vi:proxyIRI ($base, '', 'OfferPrice_'), position())}">
-					<rdfs:label>Offer price</rdfs:label>
+					<rdfs:label>
+						<xsl:value-of select="concat('Offer price: ', ./amz:OfferListing/amz:Price/amz:Amount div 100, ' (', ./amz:OfferListing/amz:Price/amz:CurrencyCode ,')')"/>	
+					</rdfs:label>
 					<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="./amz:OfferListing/amz:Price/amz:Amount div 100"/></gr:hasCurrencyValue>
             		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="./amz:OfferListing/amz:Price/amz:CurrencyCode"/></gr:hasCurrency>
@@ -319,7 +321,9 @@
 		  	<gr:UnitPriceSpecification rdf:about="{concat ($base, '#', 'ListPrice')}">
 			-->
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($base, '', 'ListPrice')}">
-				<rdfs:label>List price</rdfs:label>
+				<rdfs:label>
+					<xsl:value-of select="concat('List price: ', amz:Amount div 100, ' (', amz:CurrencyCode ,')')"/>	
+				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
            		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="amz:Amount div 100"/></gr:hasCurrencyValue>
            		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="amz:CurrencyCode"/></gr:hasCurrency>

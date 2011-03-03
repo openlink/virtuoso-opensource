@@ -172,7 +172,9 @@
 	    	<gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
 			-->
 	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('UnitPriceSpecification_', position()))}">
-	    		<rdfs:label>sale price</rdfs:label>
+	    		<rdfs:label>
+				<xsl:value-of select="concat(span[@property='gr:hasCurrencyValue'], ' (', span[@property='gr:hasCurrency']/@content, ')' )" />
+			</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="span[@property='gr:hasCurrencyValue']" /></gr:hasCurrencyValue>
 				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="span[@property='gr:hasCurrency']/@content" /></gr:hasCurrency>

@@ -205,7 +205,7 @@
     <xsl:template match="price">
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-				<rdfs:label><xsl:value-of select="concat('List Price of ', ., ' USD')"/></rdfs:label>
+				<rdfs:label><xsl:value-of select="concat('List Price: ', ., ' (USD)')"/></rdfs:label>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 				<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			</gr:UnitPriceSpecification>
