@@ -61,6 +61,8 @@
       <v:variable name="_xp_exp" type="varchar" default="null" persist="0" />
       <v:variable name="_depth" type="int" default="null" persist="0" />
       <v:variable name="_accept_rdf" type="int" default="0" persist="0" />
+      <v:variable name="_bot" type="int" default="1" persist="0" />
+      <v:variable name="_thr" type="int" default="1" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -102,12 +104,12 @@
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
 		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
 		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
-		VS_ACCEPT_RDF
+		VS_ACCEPT_RDF, VS_BOT, VS_THREADS
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
 		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
 		self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
-		self._accept_rdf
+		self._accept_rdf, self._bot, self._thr
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 
               if (self._other is null) 
@@ -307,6 +309,13 @@
               </td>
             </tr>
             <tr>
+              <td/>
+              <td>
+                <v:check-box name="bot" value="1" initial-checked="--case when self._bot then 1 else 0 end" xhtml_id="bot"/>
+                <label for="bot">Use robots.txt</label>
+              </td>
+            </tr>
+            <tr>
 		<td>XPath expression for links extraction</td>
               <td>
                 <v:text name="xp_exp" value="--coalesce (self._xp_exp, '')"  xhtml_size="70"/>
@@ -322,6 +331,12 @@
               <td>Update Interval (minutes)</td>
               <td>
                 <v:text name="intv" value="--self._intv"  />
+              </td>
+            </tr>
+            <tr>
+              <td>Number of threads</td>
+              <td>
+                <v:text name="thr" value="--self._thr"  />
               </td>
             </tr>
             <tr>
@@ -605,6 +620,8 @@
 			self._ask_rdf := atoi (get_keyword ('ask_rdf', params, '0'));
 			self._accept_rdf := atoi (get_keyword ('accept_rdf', params, '0'));
 			self._convhtml := atoi (get_keyword ('convhtml', params, '0'));
+			self._bot := atoi (get_keyword ('bot', params, '0'));
+			self._thr := atoi (get_keyword ('thr', params, '1'));
 
 			if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
 			  {
@@ -710,7 +727,9 @@
 			      VS_CONVERT_HTML = self._convhtml,
 			      VS_DEPTH = self._depth,
 			      VS_XPATH = self._xp_exp,
-			      VS_ACCEPT_RDF = self._accept_rdf
+			      VS_ACCEPT_RDF = self._accept_rdf,
+			      VS_THREADS = self._thr,
+			      VS_BOT = self._bot
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
@@ -729,13 +748,15 @@
                             VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
 			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
 			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
-			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF)
+			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
+			    VS_THREADS, VS_BOT)
 			    values
 			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
 			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
 			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
 			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
-			    self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf);
+			    self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
+			    self._thr, self._bot);
 
 			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
 			    values (self._host, self._url, now(), 'waiting', self._root);
