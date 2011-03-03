@@ -118,6 +118,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_BESTBUY', null, 'BestBuy articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://.*productwiki.com/.*',
+	'URL', 'DB.DBA.RDF_LOAD_PRODUCTWIKI', null, 'Product Wiki articles');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
 	'(http://.*amazon.[^/]+/o/ASIN/.*)|'||
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
@@ -4555,7 +4559,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     if (host_part <> '' or img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos?vq=', img_id);
-    tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/main/atom2rdf.xsl';
   }
   else if (new_origin_uri like 'http://%.youtube.com/watch?v=%')
@@ -4568,7 +4572,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     if (img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos/', img_id);
-    tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/main/atomentry2rdf.xsl';
   }
    else if (new_origin_uri like 'http://%.youtube.com/%' or new_origin_uri like 'http://%.youtube.com/user/%')
@@ -4605,8 +4609,8 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
   }
   else
     return 0;
-  if (hdr[0] not like 'HTTP/1._ 200 %')
-    signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+  --if (hdr[0] not like 'HTTP/1._ 200 %')
+  --  signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || xsl2, xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
@@ -5786,12 +5790,56 @@ create procedure DB.DBA.RDF_LOAD_WEBCAL (in graph_iri varchar, in new_origin_uri
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+create procedure DB.DBA.RDF_LOAD_PRODUCTWIKI (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
 	declare pos, is_sku, is_store integer;
+	asin := null;
+	api_key := _key;
+	if (not isstring (api_key))
+		return 0;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.productwiki.com/%')
+	{
+		declare arr any;
+		arr := sprintf_inverse (new_origin_uri, 'http://www.productwiki.com/%s', 0);
+		asin := arr[0];
+		pos := strchr(asin, '/');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
+	}
+	else
+		return 0;
+	if (asin is null)
+		return 0;
+	url := sprintf ('http://api.productwiki.com/connect/api.aspx?op=search&q=%s&format=xml&key=%s&fields=skus,images,description', asin, api_key);
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/productwiki2rdf.xsl', xd, 
+		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts); 
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
 
+create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+	declare pos, is_sku, is_store integer;
   asin := null;
   is_sku := 0;
 	is_store := 0;
@@ -5812,6 +5860,22 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
 		if (pos is not null)
 			asin := left(asin, pos);
 		is_store := 1;
+	}
+	else if (new_origin_uri like 'http://%.bestbuy.com/%?skuId=%' or new_origin_uri like 'http://%.bestbuy.com/%&skuId=%')
+	{
+		declare arr any;
+		arr := sprintf_inverse (new_origin_uri, 'http://%s.bestbuy.com/%sskuId=%s', 0);
+		asin := arr[2];
+		pos := strchr(asin, '/');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '&');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
+		is_sku := 1;
 	}
 	else if (new_origin_uri like 'http://%.bestbuy.com/site/olspage.jsp?%' or new_origin_uri like 'http://%.bestbuy.com/%/%?%')
     {
