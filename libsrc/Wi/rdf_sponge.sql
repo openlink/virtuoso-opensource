@@ -1503,6 +1503,9 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
               -- dbg_obj_princ ('immutable');
               goto graph_is_ready;
 	    }
+	  -- Like pattern allowed
+	  if (dest like imm)
+	    goto graph_is_ready;
 	}
     }
   -- dbg_obj_princ ('will sponge...');
