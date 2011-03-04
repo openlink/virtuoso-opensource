@@ -1334,6 +1334,7 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
     }
   else
     ret = gethash ((void *)(ptrlong) key, ht);
+  LEAVE_CON (con);
 
   if (!ret) /* not in cache */
     {
@@ -1349,7 +1350,6 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
       rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, con, &hstmt);
       if (rc != SQL_SUCCESS)
 	{
-	  LEAVE_CON (con);
 	  return NULL;
 	}
       rc = virtodbc__SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_C_SSHORT,
@@ -1368,12 +1368,13 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
       if (SQL_SUCCESS != rc)
 	goto err_cleanup;
       ret = box_dv_short_string (buf);
+      IN_CON (con);
       sethash ((void*)(ptrlong)key, ht, (void*) ret);
+      LEAVE_CON (con);
 err_cleanup:
       virtodbc__SQLFreeStmt (hstmt, SQL_CLOSE);
       virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) hstmt);
     }
-  LEAVE_CON (con);
   return ret;
 }
 
