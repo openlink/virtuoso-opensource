@@ -521,7 +521,8 @@ will contain more than 1 row of a given key. No page contains rows from more tha
 blobs (when not inlined on the row) will be placed in consecutive DB pages (up
 to their size). In addition to the blob and key pages the Virtuoso DB will hold a number of
 pages containing internal data. So the sum of the pages occupied by the key rows and the blobs is
-leas then the amount of occupied pages (as reported by the <link linkend="fn_status"><function>status()</function></link> BIF).</para>
+less then the amount of occupied pages (as reported by the 
+<link linkend="fn_status"><function>status()</function></link> BIF).</para>
 
 <para>To provide detailed information about the space consumption of each key there's
 a system view:</para>
@@ -617,8 +618,9 @@ traversed 1 time per select, but still on large database files that may take som
     updates, deletes several million rows in a single transaction.
     If this is really needed and concurrency is no issue, use the
     atomic mode, effectively making the server single user for the
-    transaction, thus having no locking or rollback. See
-	<link linkend="fn___atomic"><function>__atomic()</function></link>.
+    transaction, thus having no locking or rollback. See the use of 
+    the <emphasis>__atomic()</emphasis> function in the 
+    <link linkend="faultfaulttoleradmapi">Cluster Administration API</link>.
 	  </listitem>
     </itemizedlist>
 
@@ -758,8 +760,7 @@ select s_quantity from stock where s_i_id = 111 for update;
   <sect4 id="ptunedotnetiso"><title>.Net</title>
 
     <para>In the VirtuosoClient.NET provider the isolation is set by the
-	  <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataidbconnectionclassbegintransactiontopic2.asp">System.Data.IDbConnection.BeginTransaction
-    Method (IsolationLevel)</ulink> function.</para>
+	  <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataidbconnectionclassbegintransactiontopic2.asp">System.Data.IDbConnection.BeginTransaction Method (IsolationLevel)</ulink> function.</para>
 	
 <programlisting>
   System.Data.IDBTransaction trx = conn.BeginTransaction (System.Data.IsolationLevel.ReadCommitted)

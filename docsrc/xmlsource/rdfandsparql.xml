@@ -1148,6 +1148,21 @@ public query service, this may also be handy when exploring a large data set wit
 set result_timeout == <expression>;
 ]]></programlisting>
    <para>Find more detailed information in the <link linkend="anytimequeries">Anytime Queries</link> section.</para>
+   <sect5 id="anytimequeriessparqlex"><title>Example Dump arbitrary query result as N-Triples</title>
+   <para>Assume the following arbitrary query:</para>
+<programlisting><![CDATA[
+SPARQL define output:format "NT" 
+CONSTRUCT { ?s a ?t } 
+FROM virtrdf:
+WHERE { ?s a ?t };	
+]]></programlisting>   
+      <para>For iteration over result-set of an arbitrary query, use 
+      	<link linkend="fn_exec_next"><function>exec_next()</function></link> in a loop that begins with 
+      	<link linkend="fn_exec"><function>exec()</function></link> with cursor output variable as 
+      	an argument and ends with <link linkend="fn_exec_close"><function>exec_close()</function></link> 
+      	after it is out of data.
+      </para>
+   </sect5>
    </sect4>
 </sect3>
 
@@ -3548,7 +3563,7 @@ create procedure DB.DBA.TTLP_MT (
     in flags int) -- flags, use 0
 </programlisting>
 </sect4>
-<sect4 id="rdfapidataimportttlpmt"><title>Using RDF_LOAD_RDFXML_MT</title>
+<sect4 id="rdfapidataimportxmlttlpmt"><title>Using RDF_LOAD_RDFXML_MT</title>
 <para>For loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction)
 you can use also the <emphasis>DB.DBA.RDF_LOAD_RDFXML_MT()</emphasis> procedure:</para>
 <programlisting>
@@ -8431,7 +8446,7 @@ system</listitem>
             <listitem>Note: use this function for loading triples from file on multiple threads</listitem>
            </itemizedlist>
 </listitem>
-        <listitem><link linkend="rdfapidataimportttlpmt">Using the DB.DBA.RDF_LOAD_RDFXML_MT() function</link>
+        <listitem><link linkend="rdfapidataimportxmlttlpmt">Using the DB.DBA.RDF_LOAD_RDFXML_MT() function</link>
           <itemizedlist mark="bullet">
             <listitem>Note: Use this function for loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction)</listitem>
            </itemizedlist>
@@ -18966,7 +18981,9 @@ restart since there is no roll forward log.</para>
 for example 6 streams for 4 cores. This means that if up to two threads wait for disk, there is still work
 for all cores.</para>
 <para>Having substantially more threads than processors or disks is not particularly useful.</para>
-<para>There exist multithreaded load functions which will load one file on multiple threads. Experience
+<para>There exist multithreaded load functions which will load one file on multiple threads: 
+<link linkend="rdfapidataimportttlpmt">the DB.DBA.TTLP_MT() function</link> and 
+<link linkend="rdfapidataimportxmlttlpmt">the DB.DBA.RDF_LOAD_RDFXML_MT() function</link>. Experience
 shows that loading multiple files on one thread per file is better.</para>
 <para>For loading Turtle, some platforms may have a non-reentrant Turtle parser. This means that only
 one load may run at a time. One can try this by calling
@@ -19443,11 +19460,19 @@ MaxDirtyBuffers = 1200000
 MaxCheckpointRemap = 1500000
 DefaultIsolation = 2
 ]]></programlisting>
-<para>Tip: Thus after loading all data you may wish to shutdown, tweak and start server again.
+<tip>
+	<title>See Also:</title>
+    <para><link linkend=""></link></para>
+    <para><ulink url="http://www.openlinksw.com/dataspace/dav/wiki/Main/VirtConfigScale#Configuration%20Options">Virtuoso Configuration Options</ulink></para>    	
+</tip>
+<tip>
+	<title>Tip:</title>
+<para>Thus after loading all data you may wish to shutdown, tweak and start server again.
 If you have ext2fs or ext3fs filesystem, then it's better to have enough free space on disk not to
 make it more than 80% full.  When it's almost full it may allocate database file badly, resulting
 in measurable loss of disk access speed. That is not Virtuoso-specific fact, but a common hint
 for all database-like applications with random access to big files.</para>
+</tip>
 <para>Here is an example of using awk file for splitting big file smaller ones:</para>
 <programlisting><![CDATA[
 BEGIN {
@@ -19668,7 +19693,7 @@ done
        </sect3>
     </sect2>
     <sect2 id="rdfperfsparul"><title>Using SPARUL</title>
-	<para>Since SPARUL updates are generally not ment to be transactional, it is
+	<para>Since SPARUL updates are generally not meant to be transactional, it is
 	    best to run these in <link linkend="fn_log_enable"><function>log_enable (2)</function></link> mode,
 	    which commits every operation as it is done. This prevents one from running out of rollback space. Also for bulk updates, transaction logging can be turned off. If so, one should do a manual checkpoint after the operation to ensure persistence across server restart since there is no roll forward log.</para>
 <para>To have a roll forward log and row by row autocommit, one may use <link linkend="fn_log_enable"><function>log_enable (3)</function></link>. This will write constantly into the log which takes extra time. Having no logging and doing a checkpoint when the whole work is finished is faster.</para>

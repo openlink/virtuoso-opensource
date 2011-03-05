@@ -1081,6 +1081,18 @@ This is a timeout in seconds before Virtuoso closes an idle HTTP 1.1 connection.
         outside world under any situation.</para>
         </note>
 				</listitem>
+				<listitem id="ini_HTTPServer_HTTPProxyServer">
+            <formalpara>
+        	<title>HTTPProxyServer = proxylocal:3128</title>
+        	<para>HTTP proxy server name and port</para>
+            </formalpara>
+        </listitem>
+        <listitem id="ini_HTTPServer_HTTPProxyExceptions">
+            <formalpara>
+        	<title>HTTPProxyExceptions = localhost:8890, 127.0.0.1:8890</title>
+        	<para>HTTP proxy exceptions name and port.</para>
+            </formalpara>
+        </listitem>   
                                 <listitem id="ini_HTTPServer_HTTPLogFile">
 				<formalpara><title>HTTPLogFile = log.out</title>
 <para>If specified, Virtuoso will produce an HTTP server log file with the date

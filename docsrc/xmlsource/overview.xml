@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -1213,6 +1213,245 @@ SQL>SELECT DAV_PPROP_GET ('/DAV/home/dba/rdf_sink/', 'virt:rdf_graph','dba', 'db
         </listitem>
         </orderedlist>
     </sect2>                     
+    <sect2 id="virtuosotipsandtricksconvprstr">
+      <title>How do I use SPARUL to change a selection of property values from URI References to Literals?</title>                    
+      <para>Assume a given graph where triples are comprised of property values that are mixed across URI References and Typed Literals as exemplified by the results of the query below:</para>
+<programlisting><![CDATA[
+SELECT DISTINCT ?sa ?oa 
+FROM <http://ucb.com/nbeabase>
+WHERE 
+  { 
+    ?sa a <http://ucb.com/nbeabase/resource/Batch> .
+    ?sa <http://ucb.com/nbeabase/resource/chemAbsNo> ?oa . FILTER regex(?oa, '-','i')
+  }
+
+]]></programlisting>
+      <para>You can use the following SPARUL pattern to harmonize the property values across relevant triples in a specific graph, as shown below:</para>
+<programlisting><![CDATA[
+SQL> SPARQL 
+INSERT INTO GRAPH <http://ucb.com/nbeabase> 
+  { 
+    ?sa <http://ucb.com/nbeabase/resource/sampleId> `str (?oa)` 
+  }  
+WHERE 
+  { 
+    ?sa <http://ucb.com/nbeabase/resource/chemAbsNo> ?oa . FILTER regex(?oa, '-','i')   
+  }	
+]]></programlisting>      
+    </sect2>   
+    <sect2 id="virtuosotipsandtricksbulkloadcl">
+      <title>How is a Checkpoint performed against a Virtuoso Clustered Server?</title>                    
+      <para>The cluster <link linkend="clusteroperationadmclexec"><function>cl_exec()</function></link> function is 
+      used to perform a checkpoint across all node of a Virtuoso cluster as follows:</para>
+<programlisting><![CDATA[
+SQL>cl_exec ('checkpoint'); 	
+]]></programlisting>      
+      <para>This typically needs to be run after loading RDF datasets into a Virtuoso cluster to prevent lose of data when the cluster is restarted.</para>
+
+    </sect2>   
+    <sect2 id="virtuosotipsandtrickconstrprst">
+      <title>How can I use CONSTRUCT with PreparedStatements?</title>                           
+      <para>Assume a given query which uses pragma <emphasis>output:format '_JAVA_'</emphasis> with CONSTRUCT:</para>
+<programlisting><![CDATA[
+SPARQL DEFINE output:format '_JAVA_'
+   CONSTRUCT { ?s ?p ?o }
+WHERE
+  { 
+    ?s ?p ?o . 
+    FILTER (?s = iri(?::0)) 
+  }
+LIMIT 1
+]]></programlisting>      
+      <para>In order to work correctly, the query should be modified to:</para>
+<programlisting><![CDATA[
+SPARQL DEFINE output:format '_JAVA_'
+   CONSTRUCT { `iri(?::0)` ?p ?o }
+WHERE
+  { 
+    `iri(?::0)` ?p ?o 
+  }
+LIMIT 1	
+]]></programlisting>      
+      <para>Equivalent variant of the query is also:</para>
+<programlisting><![CDATA[
+SPARQL DEFINE output:format '_JAVA_'
+  CONSTRUCT { ?s ?p ?o }
+WHERE
+  { 
+    ?s ?p ?o . 
+    FILTER (?s = iri(?::0)) 
+  }
+LIMIT 1	
+]]></programlisting>      
+    </sect2>       
+    <sect2 id="virtuosotipsandtrickssparulupdatestrl">
+      <title>How can perform SPARQL Updates without transactional log size getting exceed?</title>             
+      <para>Since SPARUL updates are generally not meant to be transactional, it is best to run these in:</para>
+<programlisting><![CDATA[
+SQL> log_enable (2);	
+]]></programlisting>      
+      <para>mode, which commits every operation as it is done. This prevents one from running out of 
+      	rollback space. Also for bulk updates, transaction logging can be turned off. If so, one 
+      	should do a manual checkpoint after the operation to ensure persistence across server restart 
+      	since there is no roll forward log.</para>
+      <para>Alternatively, the "<emphasis>TransactionAfterImageLimit</emphasis>" parameter can be set 
+      in the virtuoso.ini config file to a higher value than its 50MB default:</para>
+<programlisting><![CDATA[
+#virtuoso.ini
+...
+[Parameters]
+...
+TransactionAfterImageLimit = N bytes default 50000000
+...	
+]]></programlisting>      
+    <tip><title>See Also:</title>
+       <para><link linkend="rdfperfsparul">Using SPARUL</link></para>
+       <para><link linkend="ini_Parameters">Virtuoso INI Parameters</link></para>       
+    </tip>
+    </sect2>         
+    <sect2 id="virtuosotipsandtrickscrawlercustompl">
+      <title>How can I write custom crawler using PL?</title>
+      <para>The following code is an example of loading data via crawler with special function to generate link for downloading:</para>
+<programlisting><![CDATA[
+create procedure EUROPEANA_STORE ( 
+  in _host varchar, 
+  in _url varchar, 
+  in _root varchar, 
+  inout _content varchar, 
+  in _s_etag varchar, 
+  in _c_type varchar, 
+  in store_flag int := 1, 
+  in udata any := null, 
+  in lev int := 0)
+{
+   declare url varchar;
+   declare xt, xp any;
+   declare old_mode int;
+   xt := xtree_doc (_content, 2);
+   xp := xpath_eval ('//table//tr/td/a[@href]/text()', xt, 0);
+   commit work;
+   old_mode := log_enable (3,1);
+   foreach (any u in xp) do
+     {
+       u := cast (u as varchar);
+       url := sprintf ('http://semanticweb.cs.vu.nl/europeana/api/export_graph?graph=%U&mimetype=default&format=turtle', u);
+       dbg_printf ('%s', u);
+	 {
+	   declare continue handler for sqlstate '*' { 
+	     dbg_printf ('ERROR: %s', __SQL_MESSAGE);
+	   };
+	   SPARQL LOAD ?:url into GRAPH ?:u;
+	 }
+     }
+   log_enable (old_mode, 1);
+   return WS.WS.LOCAL_STORE (_host, _url, _root, _content, _s_etag, _c_type, store_flag, 0);
+}	
+]]></programlisting>      
+    <tip><title>See Also:</title>
+       <para><link linkend="contentcrawlerrdf">Set Up the Content Crawler to Gather RDF</link></para>
+    </tip>
+    </sect2>  
+    <sect2 id="virtuosotipsandtrickscrawlercustomde">
+      <title>How Can I Get an exact mapping for a date?</title> 
+      <para>Assume a given attempts to get an exact mapping for the literal "1950" using 
+      	<emphasis>bif:contains</emphasis>:</para>
+<programlisting><![CDATA[
+SPARQL
+SELECT DISTINCT ?s ?o 
+FROM <http://dbpedia.org> 
+WHERE 
+  {
+    ?s ?p ?o . 
+   FILTER( bif:contains (?o, '"1950"') 
+           && isLiteral(?o) 
+           && ( str(?p) ! = rdfs:label  || str(?p) !=  foaf:name 
+           && ( ?o='1950')
+         )
+  }	
+]]></programlisting>      
+      <para>As an integer 1950 or date 1950-01-01 are not texts, they are not in free-text index 
+      	and thus invisible for CONTAINS free-text predicate.</para>
+      <para>A possible way to make them visible that way is to introduce an additional RDF predicate 
+      	that will contain objects of the triples in question, converted to strings via str() function.</para>
+      <para>Thus better results will be approached: if searches about dates are frequent then a new 
+      	predicate can have date/datetime values extracted from texts, eliminating the need for bif:contains.</para>
+      <para>Therefor, the query from above should be changed to:</para>
+<programlisting><![CDATA[
+SPARQL
+SELECT DISTINCT ?s ?o 
+FROM <http://dbpedia.org> 
+WHERE 
+  {
+    ?s ?p ?o . 
+    FILTER (  isLiteral(?o) 
+              && (  str(?p) != str(rdfs:label) || str(?p) !=  foaf:name ) 
+              && str(?o) in ("1950", "1950-01-01"))
+  }
+]]></programlisting>                                       
+    </sect2>        	            	
+    <sect2 id="virtuosotipsandtricksgetcertattr">
+      <title>How Can I Get certificate attributes using SPARQL?</title>     
+      <para>The SPARQL query should use the <emphasis>cert:hex</emphasis> and 
+      <emphasis>cert:decimal</emphasis> in order to get to the values, so for ex:</para>
+<programlisting><![CDATA[
+PREFIX cert: <http://www.w3.org/ns/auth/cert#> 
+PREFIX rsa: <http://www.w3.org/ns/auth/rsa#> 
+
+SELECT ?webid 
+FROM <http://webid.myxwiki.org/xwiki/bin/view/XWiki/homepw4>
+WHERE 
+  {
+    [] cert:identity ?webid ;
+             rsa:modulus ?m ;
+     rsa:public_exponent ?e .
+     ?m cert:hex "b520f38479f5803a7ab33233155eeef8ad4e1f575b603f7780f3f60ceab1\n34618fbe117539109c015c5f959b497e67c1a3b2c96e5f098bb0bf2a6597\n779d26f55fe8d320de7af0562fd2cd067dbc9d775b22fc06e63422717d00\na6801dedafd7b54a93c3f4e59538475673972e524f4ec2a3667d0e1ac856\nd532e32bf30cef8c1adc41718920568fbe9f793daeeaeeaa7e8367b7228a\n895a6cf94545a6f6286693277a1bc7750425ce6c35d570e89453117b88ce\n24206afd216a705ad08b7c59\n"^^xsd:string .
+     ?e cert:decimal "65537"^^xsd:string
+  }	
+]]></programlisting>      
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksmultithreadjdbc">
+      <title>How can I make Multi Thread Virtuoso connection using JDBC??</title>     
+      <para>See details <link linkend="JDBCDriverhibernatesetupandtestingexmp4">here</link>.</para> 
+    </sect2>            
+    <sect2 id="virtuosotipsandtricksgetcertattr">
+      <title>How Do I Perform Bulk Loading of RDF Source Files into one or more Graph IRIs?</title>     
+      <para>See details <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtBulkRDFLoader">here</ulink>.</para>       
+    </sect2>      
+    <sect2 id="virtuosotipsandtricksrdfschowlinfrl">
+      <title>How to exploit RDF Schema and OWL Inference Rules with minimal effort?</title>     
+      <para>When you install Virtuoso, it's reasoner and highly scalable inference capabilities may not 
+      	be obvious. Typical cases involve using <emphasis>rdfs:subClassOf</emphasis> predicates in queries 
+      	and wondering why reasoning hasn't occurred in line with the semantics defined in RDF Schema.</para>
+      <para>The experience applies when using more sophisticated predicates from OWL such as 
+      	<emphasis>owl:equivalentProperty</emphasis>, <emphasis>owl:equivalentClass</emphasis>, 
+      	<emphasis>owl:sameAs</emphasis>, <emphasis>owl:SymmetricalProperty</emphasis>, 
+      	<emphasis>owl:inverseOf</emphasis> etc ...</para>
+      <para>Virtuoso implemented inference rules processing in a loosely coupled manner that allow 
+      	users to conditionally apply inference context (via rules) to SPARQL queries. Typically, you 
+      	have to create these rules following steps outlined <link linkend="rdfsparqlrule">here</link>.</para>
+      <para>This tips and tricks note provides a shortcut for setting up and exploring RDF Schema and 
+      	OWL reasoning once you've installed the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/fct_dav.vad">Virtuoso Faceted Browser VAD package</ulink>.</para>
+      <tip><title>See Also:</title>
+       <para><link linkend="rdfsparqlrule">Inference Rules and Reasoning</link></para>
+       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtFacetBrowserInstallConfig">Virtuoso Faceted Browser Installation and configuration</ulink></para>
+       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Facets Web Service</ulink></para>       
+     </tip>          
+    </sect2>   
+    <sect2 id="virtuosotipsandtricksdumparbqntr">
+      <title>How can I dump arbitrary query result as N-Triples?</title>     
+      <para>Assume the following arbitrary query:</para>
+<programlisting><![CDATA[
+SPARQL define output:format "NT" 
+CONSTRUCT { ?s a ?t } 
+FROM virtrdf:
+WHERE { ?s a ?t };	
+]]></programlisting>      
+      <para>For iteration over result-set of an arbitrary query, use 
+      	<link linkend="fn_exec_next"><function>exec_next()</function></link> in a loop that begins with 
+      	<link linkend="fn_exec"><function>exec()</function></link> with cursor output variable as 
+      	an argument and ends with <link linkend="fn_exec_close"><function>exec_close()</function></link> 
+      	after it is out of data.</para>
+    </sect2>               	            	      
   </sect1>    
 </chapter>
 

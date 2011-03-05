@@ -1304,6 +1304,162 @@ Total time: 5 seconds
   <listitem>Hibernate logging levels can be varied by changing the settings in the src/hibernate.cfg.xml and src/log4j.properties files.</listitem>
 </orderedlist>
       </sect5>
+      <sect5 id="JDBCDriverhibernatesetupandtestingexmp4"><title>Example 4</title>
+      <para>This example demonstrates how to make Multi Thread Virtuoso connection using JDBC.</para>
+      <para>It starts 3 threads: one thread executes SPARQL select and two threads execute SPARQL inserts:</para>
+<programlisting><![CDATA[
+import java.util.*;
+import java.sql.*;
+import java.math.*;
+
+public class MTtest extends Thread {
+
+  int mode = 0;
+  int startId = 0;
+
+  static  String urlDB = "jdbc:virtuoso://localhost:1111";
+
+ 
+ public MTtest(int _mode, int _init) {
+   mode = _mode;
+   startId = _init;
+ }
+
+
+
+ void prnRs(ResultSet rs)
+ {
+   try {
+     ResultSetMetaData rsmd;
+
+     System.out.println(">>>>>>>>");
+     rsmd = rs.getMetaData();
+     int cnt = rsmd.getColumnCount();
+
+       while(rs.next()) {
+         Object o;
+
+         System.out.print("Thread:"+Thread.currentThread().getId()+"  ");
+         for (int i = 1; i <= cnt; i++) {
+           o = rs.getObject(i);
+           if (rs.wasNull())
+             System.out.print("<NULL> ");
+           else
+             System.out.print("["+ o + "] ");
+         }
+         System.out.println();
+       }
+
+   } catch (Exception e) {
+     System.out.println(e);
+     e.printStackTrace();
+   }
+   System.out.println(">>>>>>>>");
+ }
+
+
+
+
+ public static void main(String argv[])
+ {
+  try {
+
+    Class.forName("virtuoso.jdbc3.Driver");
+
+    Connection conn = DriverManager.getConnection(urlDB,"dba","dba");
+    Statement st = conn.createStatement();
+
+    st.execute("sparql clear graph <mttest>");
+    st.execute("sparql insert into graph <mttest> { <xxx> <P01> \"test1\" }");
+    st.execute("sparql insert into graph <mttest> { <xxx> <P01> \"test2\" }");
+    st.execute("sparql insert into graph <mttest> { <xxx> <P01> \"test3\" }");
+    st.execute("sparql insert into graph <mttest> { <xxx> <P01> \"test4\" }");
+    st.execute("sparql insert into graph <mttest> { <xxx> <P01> \"test5\" }");
+    conn.close();
+
+
+    int init = 0;
+
+    for(int i=0; i < 2; i++) {
+      MTtest thr1 = new MTtest(1, init);
+      init+=10;
+
+      MTtest thr2 = new MTtest(0, init);
+      init+=10;
+
+      MTtest thr3 = new MTtest(0, init);
+      init+=10;
+
+      thr1.start();
+      thr2.start();
+      thr3.start();
+
+      thr1.join();
+      thr2.join();
+      thr3.join();
+    }
+
+    System.out.println("===End===");
+
+  } catch (Exception e) {
+    System.out.print(e);
+    e.printStackTrace();
+  }
+ }
+
+
+ public void run( ) 
+ {
+  try {
+
+    Connection conn = DriverManager.getConnection(urlDB,"dba","dba");
+    Statement st;
+
+    st = conn.createStatement();
+
+    if (mode == 1) 
+    {
+      String query = "sparql SELECT * from <mttest> WHERE {?s ?p ?o}";
+      ResultSet rs = st.executeQuery(query);
+      prnRs(rs);
+    }
+    else
+    {
+      long id = Thread.currentThread().getId();
+      for (int i =0; i < 5; i++)
+        st.execute("sparql insert into graph <mttest> { <xxx"+startId+"> <P"+id+"> \"test"+i+"\" }");
+
+      System.out.println("\nThread:"+Thread.currentThread().getId()+"  ===Rows Inserted===");
+    }
+
+
+    conn.close();
+  
+  } catch (SQLException e) {
+        System.out.println("===========================================================");
+        System.out.println(">>["+e.getMessage()+"]");
+        System.out.println(">>["+e.getErrorCode()+"]");
+        System.out.println(">>["+e.getSQLState()+"]");
+        System.out.println(e);
+        System.out.println("===========================================================");
+        e.printStackTrace();
+        System.exit(-1);
+  } catch (Exception e) {
+        System.out.println("===========================================================");
+        System.out.println(e);
+        System.out.println("===========================================================");
+        e.printStackTrace();
+        System.exit(-1);
+  }
+ } // run( )
+
+
+
+
+
+}	
+]]></programlisting>      
+      </sect5>      
       </sect4>
     </sect3>
   </sect2>
