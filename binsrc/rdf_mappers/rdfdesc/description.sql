@@ -149,6 +149,42 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 }
 ;
 
+create procedure rdfdesc_label_1 (in _S any, in lines any := null)
+{
+  declare best_str, meta, data, stat, msg any;
+  declare best_q, q float;
+  declare lang, langs varchar;
+
+  if (not (registry_get ('fct_desc_value_labels') = '1'))
+    return null;
+
+  langs := 'en';
+  if (lines is not null)
+    {
+      langs := http_request_header_full (lines, 'Accept-Language', 'en');
+    }
+  stat := '00000';
+  exec (sprintf ('sparql define input:inference "virtrdf-label" '||
+  'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  best_str := '';
+  best_q := 0;
+  if (stat = '00000' and length (data))
+    {
+      for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
+	{
+	  q := rdfdesc_get_lang_by_q (langs, data[i][1]);
+	  --dbg_obj_print (data[i][0], langs, data[i][1], q);
+          if (q > best_q)
+	    {
+	      best_str := data[i][0];
+	      best_q := q;
+	    }
+	}
+    }
+  return best_str;
+}
+;
+
 create procedure rdfdesc_buy_link (in _G varchar, in _S varchar)
 {
   declare ret any;
@@ -229,7 +265,8 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
   delim := -1;
   uriSearch := uri;
   nsPrefix := null;
-  if (not length (label))
+  if (length (label))
+    return label;
     label := null;
   ret := uri;
   while (nsPrefix is null and delim <> 0)
@@ -346,7 +383,7 @@ create procedure rdfdesc_is_external (in url varchar, in prop varchar)
 }
 ;
 
-create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any, in rel int := 1, inout acc any)
+create procedure rdfdesc_http_print_r (in _object any, in prop any, in lines any, in rel int := 1, inout acc any)
 {
    declare lang, rdfs_type, rdfa, prop_l, prop_n  any;
    declare visible int;
@@ -388,11 +425,7 @@ again:
        else
 	 _url := _object;
 
-       -- label for curie local part disabled
-       if (0 and prop = __id2in (rdf_sas_iri ()))
-	 _label := label;
-       else
-	 _label := null;
+	 _label := rdfdesc_label_1 (_url, lines);
 
        rdfa := rdfdesc_rel_print (prop, rel, _url, 0, null);
        if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
