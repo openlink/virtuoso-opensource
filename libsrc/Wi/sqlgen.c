@@ -2220,6 +2220,14 @@ dfe_unit_gb_dependant (sqlo_t *so, df_elt_t * dfe,
       dfe_list_gb_dependant (so, (df_elt_t *) dfe->_.setp.after_test, terminal, super, res, out, term_found);
       if (*term_found)
 	return;
+      DO_BOX (ST *, spec, inx, dfe->_.setp.specs)
+	{
+	  df_elt_t * exp = sqlo_df (so, dfe->_.setp.is_distinct ? (ST*)spec : spec->_.o_spec.col);
+	  dfe_list_gb_dependant (so, exp, terminal, super, res, out, term_found);
+	  if (*term_found)
+	    return;
+	}
+      END_DO_BOX;
       break;
 
     default:
