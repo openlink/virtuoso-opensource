@@ -150,7 +150,7 @@
 					<rdf:Description rdf:about="{vi:proxyIRI ($base, '', 'MakeAndModel')}">
 						<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 						<rdf:type rdf:resource="&oplamz;Product"/>
-
+						<rdfs:label><xsl:value-of select="//amz:ItemAttributes/amz:Brand"/></rdfs:label>
 						<xsl:variable name="brand" select="//amz:ItemAttributes/amz:Brand"/>
 						<xsl:variable name="model" select="//amz:ItemAttributes/amz:Model"/>
 		               	<rdfs:comment><xsl:value-of select="concat($brand, ' ', $model)"/> </rdfs:comment>
@@ -195,7 +195,7 @@
 		    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 			<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 			<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
-	    	<rdfs:label><xsl:value-of select="//amz:ItemAttributes/amz:Title"/></rdfs:label>
+	    	<rdfs:label><xsl:value-of select="concat('Offer ', position(), ':', //amz:ItemAttributes/amz:Title)"/></rdfs:label>
 			<gr:hasEAN_UCC-13><xsl:value-of select="//amz:ItemAttributes/amz:EAN"/></gr:hasEAN_UCC-13>
 			<oplamz:condition><xsl:value-of select="./amz:OfferAttributes/amz:Condition"/></oplamz:condition>
 			<oplamz:conditionNote><xsl:value-of select="./amz:OfferAttributes/amz:ConditionNote"/></oplamz:conditionNote>
@@ -308,7 +308,7 @@
     <xsl:template match="amz:ItemAttributes/amz:Title">
 		<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
 		<dc:title><xsl:value-of select="."/></dc:title>
-        <rdfs:label><xsl:value-of select="."/></rdfs:label>
+        <rdfs:label><xsl:value-of select="concat('Product:', .)"/></rdfs:label>
     </xsl:template>
     <xsl:template match="amz:ItemAttributes/amz:ProductGroup">
 		<oplamz:productGroup><xsl:value-of select="."/></oplamz:productGroup>
@@ -341,6 +341,7 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageHeight')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageHeight')}">
+				<rdfs:label><xsl:value-of select="'Package height'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -367,6 +368,7 @@
 	  		<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageWeight')}">
 			-->
 	  		<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageWeight')}">
+				<rdfs:label><xsl:value-of select="'Package weight'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-pounds')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -393,6 +395,7 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageLength')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageLength')}">
+				<rdfs:label><xsl:value-of select="'Package length'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -419,6 +422,7 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageWidth')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageWidth')}">
+				<rdfs:label><xsl:value-of select="'Package width'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -445,6 +449,7 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemHeight')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemHeight')}">
+				<rdfs:label><xsl:value-of select="'Item height'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -471,6 +476,7 @@
 	  		<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemWeight')}">
 			-->
 	  		<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemWeight')}">
+				<rdfs:label><xsl:value-of select="'Item weight'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-pounds')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -497,6 +503,7 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemLength')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemLength')}">
+				<rdfs:label><xsl:value-of select="'Item length'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -523,6 +530,7 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemWidth')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemWidth')}">
+				<rdfs:label><xsl:value-of select="'Item width'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">

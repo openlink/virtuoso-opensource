@@ -29,6 +29,7 @@ xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 xmlns:foaf="http://xmlns.com/foaf/0.1/"
 xmlns:dc="http://purl.org/dc/elements/1.1/"
 xmlns:sioc="http://rdfs.org/sioc/ns#"
+xmlns:wdrs="http://www.w3.org/2007/05/powder-s#"
 xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
   <xsl:output method="xml" encoding="utf-8" indent="yes" />
   <xsl:preserve-space elements="*" />
@@ -61,6 +62,8 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hrecipe')}" />
       </rdf:Description>
       <dv:Recipe rdf:about="{vi:proxyIRI ($baseUri, '', 'hrecipe')}">
+	<foaf:page rdf:resource="{$baseUri}"/>
+	<wdrs:describedBy rdf:resource="{$resourceURL}"/>
         <xsl:apply-templates mode="extract-recipe" />
       </dv:Recipe>
     </xsl:if>
