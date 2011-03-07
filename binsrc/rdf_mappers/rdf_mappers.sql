@@ -764,9 +764,9 @@ create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varc
 ;
 
 -- helper procedures
-create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar, in doc_iri_flag int := 1)
+create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar, in doc_iri_flag int := 1, in long_str int := 0)
 {
-  declare nss, ses any;
+  declare nss, ses, dict, triples, ntriples any;
   nss := xmlnss_get (xtree_doc (strg));
   ses := string_output ();
   http ('@prefix opl: <http://www.openlinksw.com/schema/attribution#> .\n', ses);
@@ -778,7 +778,25 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
       http (sprintf ('<%s> opl:isDescribedUsing <%s> .\n', case when doc_iri_flag then RDF_SPONGE_PROXY_IRI (graph) else graph end, nss[i+1]), ses);
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
+  if (long_str = 0)
+    {
+      dict := DB.DBA.RDF_RDFXML_TO_DICT (strg, base, graph);
+      triples := dict_list_keys (dict, 1);
+      DB.DBA.RDF_INSERT_TRIPLES (graph, triples);
+      ntriples := vector ();
+      foreach (any trip in triples) do
+	{
+	  if (trip[1] = iri_to_id ('http://xmlns.com/foaf/0.1/primaryTopic') or trip[1] = iri_to_id ('http://xmlns.com/foaf/0.1/topic'))
+	    {
+	      ntriples := vector_concat (ntriples, vector (vector (trip[2], iri_to_id ('http://www.w3.org/2007/05/powder-s#describedby'), trip[0])));
+	    }
+	}
+      DB.DBA.RDF_INSERT_TRIPLES (graph, ntriples);
+    }
+  else
+    {
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
+    }
   -- INFO: may be this should be done when primaryTopic is set
   DB.DBA.TTLP (ses, base, graph);
 }
@@ -899,6 +917,37 @@ create procedure DB.DBA.XSLT_STRING2ISO_DATE2 (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_SEPARATE_SEMI_VALUES (in val varchar)
+{
+	declare result_text, what_ varchar;
+	declare cur, len int;
+	declare xt any;
+	val := trim(val , '; ');
+	result_text := '<entities>';
+	len := length(val);
+	while (len > 0)
+	{
+		cur := strchr(val, ';');
+		if (cur is null or cur = 0)
+		{
+			what_ := val;
+			val := '';
+		}
+		else
+		{
+			what_ := subseq(val, 0, cur);
+			val := right(val, len - cur);
+			val := trim(val , '; ');
+		}
+		len := length(val);
+		if (what_ <> 'NULL')
+			result_text := concat(result_text, '<entity>', what_, '</entity>');
+	}
+	result_text := concat(result_text, '</entities>');
+	xt := xtree_doc(result_text, 2);
+	return xt;
+}
+;
 
 create procedure DB.DBA.XSLT_STRING2ISO_DATE (in val varchar)
 {
@@ -1051,6 +1100,17 @@ create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
   if (is_https_ctx ())
     return 'https';
   return 'http';
+}
+;
+
+create procedure DB.DBA.NS_URL_FROM_PREFIX (in ns_prefix varchar, in ns_default varchar)
+{
+  declare ns_url any;
+  declare prefix varchar;
+
+  prefix := ns_prefix;
+  ns_url := (select NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = prefix);
+  return coalesce(ns_url, ns_default);
 }
 ;
 
@@ -1535,7 +1595,9 @@ grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
+grant execute on DB.DBA.XSLT_SEPARATE_SEMI_VALUES to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
+grant execute on DB.DBA.NS_URL_FROM_PREFIX to public;
 grant execute on DB.DBA.RDF_PROXY_ENTITY_IRI to public;
 grant execute on DB.DBA.RM_SPONGE_DOC_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
@@ -1554,6 +1616,7 @@ grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:ns_from_prefix', 'DB.DBA.NS_URL_FROM_PREFIX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:getIRIbyCIK', fix_identifier_case ('DB.DBA.GET_XBRL_NAME_BY_CIK'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_label_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME'));
@@ -1572,6 +1635,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:separateSemiValues', 'DB.DBA.XSLT_SEPARATE_SEMI_VALUES');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_PROXY_ENTITY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
