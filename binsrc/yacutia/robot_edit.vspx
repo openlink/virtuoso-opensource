@@ -371,7 +371,7 @@
               </td>
             </tr>
             <tr>
-		<td>Graph IRI <small>empty to use document URL</small></td>
+		<td><small>If</small> Graph IRI <small>is unassigned use this Data Source URL:</small></td>
               <td>
                 <v:text name="rdf_graph" value="--self._rdf_graph"  xhtml_size="70"/>
               </td>
