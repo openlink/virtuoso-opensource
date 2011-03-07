@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE rdf:RDF [
+  <!ENTITY xsd     "http://www.w3.org/2001/XMLSchema#">
+  <!ENTITY rdf     "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <!ENTITY rdfs    "http://www.w3.org/2000/01/rdf-schema#">
+  <!ENTITY owl     "http://www.w3.org/2002/07/owl#">
+  <!ENTITY dcterms "http://purl.org/dc/terms/">
+  <!ENTITY dr      "http://www.w3.org/TR/powder-dr/">
+  <!ENTITY formal  "http://www.w3.org/TR/powder-formal/">
+  <!ENTITY wdrs    "http://www.w3.org/2007/05/powder-s#">
+]>
+
+
+<rdf:RDF xmlns:xsd     = "&xsd;"
+         xmlns:rdf     = "&rdf;"
+         xmlns:rdfs    = "&rdfs;"
+         xmlns:owl     = "&owl;"
+         xmlns:wdrs    = "&wdrs;"
+         xmlns:base    = "&wdrs;"
+         xmlns         = "http://www.w3.org/2007/05/powder-s#">
+
+   <owl:Ontology rdf:about="http://www.w3.org/2007/05/powder-s#">
+    <rdfs:label>POWDER-S Vocabulary</rdfs:label>
+    <rdfs:comment>This file specifies the set of classes and properties used in the RDF/OWL version of POWDER documents.</rdfs:comment>
+    <owl:versionInfo>8 November 2010</owl:versionInfo>
+    <owl:priorVersion rdf:resource=""/>
+  </owl:Ontology>  
+
+<!-- WDRS Classes -->  
+    
+  <rdfs:Class rdf:about="#Document">
+    <rdfs:label xml:lang="en">POWDER document</rdfs:label>
+    <rdfs:comment xml:lang="en">A POWDER document.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#structure" />
+    <rdfs:subClassOf rdf:resource="&owl;Ontology" />
+  </rdfs:Class>
+
+  <rdfs:Class rdf:about="#Processor">
+    <rdfs:label xml:lang="en">POWDER processor</rdfs:label>
+    <rdfs:comment xml:lang="en">A software agent able to process POWDER documents.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#powderprocessor" />
+    <rdfs:subClassOf rdf:resource="&dcterms;Agent" />
+  </rdfs:Class>
+
+<!-- WDRS Properties -->  
+    
+  <rdf:Property rdf:about="#text">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">text that may be displayed</rdfs:label>
+    <rdfs:comment xml:lang="en">This property provides a summary of the descriptorset that it annotates, suitable for display to end users.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#line13" />
+  </rdf:Property>
+  
+  <rdf:Property rdf:about="#issuedby">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">issued by</rdfs:label>
+    <rdfs:comment xml:lang="en">This property denotes the author of a POWDER document.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#line3" />
+  </rdf:Property>
+  
+  <rdf:Property rdf:about="#matchesregex">
+    <rdf:type rdf:resource="&owl;DatatypeProperty" />
+    <rdfs:label xml:lang="en">matches regular expression</rdfs:label>
+    <rdfs:comment xml:lang="en">This is the key 'include' property for IRI set definitions in POWDER-S. It is necessary to take account of the POWDER Semantic Extension to process this fully. The value is a regular expression that is matched against an IRI.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&formal;#regexSemantics" />
+    <rdfs:seeAlso rdf:resource="http://www.w3.org/TR/xpath-functions/#regex-syntax" />
+    <rdfs:domain rdf:resource="&rdfs;Resource" />
+    <rdfs:range rdf:resource="&xsd;string" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#notmatchesregex">
+    <rdf:type rdf:resource="&owl;DatatypeProperty" />
+    <rdfs:label xml:lang="en">matches regular expression</rdfs:label>
+    <rdfs:comment xml:lang="en">This is the key 'exclude' property for IRI set definitions in POWDER-S. It is necessary to take account of the POWDER Semantic Extension to process this fully. The value is a regular expression that is matched against an IRI.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&formal;#regexSemantics" />
+    <rdfs:seeAlso rdf:resource="http://www.w3.org/TR/xpath-functions/#regex-syntax" />
+    <rdfs:domain rdf:resource="&rdfs;Resource" />
+    <rdfs:range rdf:resource="&xsd;string" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#hasIRI">
+    <rdf:type rdf:resource="&owl;DatatypeProperty" />
+    <rdfs:label xml:lang="en">has IRI</rdfs:label>
+    <rdfs:comment xml:lang="en">This property is meant to be used in OWL2 instead of wdrs:matchesregex. It denotes the string data range corresponding to a set of IRIs.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&formal;#oxRegexSemantics" />
+    <rdfs:domain rdf:resource="&rdfs;Resource" />
+    <rdfs:range rdf:resource="&xsd;anyURI" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#tag">
+    <rdf:type rdf:resource="&owl;DatatypeProperty" />
+    <rdfs:label xml:lang="en">tag</rdfs:label>
+    <rdfs:comment xml:lang="en">Property linking to a free-text tag which may include spaces.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#tags" />
+    <rdfs:range rdf:resource="&xsd;token" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#notknownto">
+    <rdfs:label xml:lang="en">not known to</rdfs:label>
+    <rdfs:comment xml:lang="en">Property used in results returned from a POWDER Processor that has no data about the candidate resource. The value is the IRI of the processor.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#powderprocessor" />
+    <rdfs:range rdf:resource="#Processor" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#describedby">
+    <rdfs:label xml:lang="en">described by</rdfs:label>
+    <rdfs:comment xml:lang="en">An RDF property to exactly match the describedby relationship type introduced in http://www.w3.org/TR/powder-dr/#assoc-linking and formally defined in appendix D of the same document, i.e. the relationship A 'describedby' B asserts that resource B provides a description of resource A. There are no constraints on the format or representation of either A or B, neither are there any further constraints on either resource.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#semlink" />
+  </rdf:Property> 
+
+  <rdf:Property rdf:about="#authenticate">
+    <rdfs:label xml:lang="en">authenticate</rdfs:label>
+    <rdfs:comment xml:lang="en">A pointer to a document that describes how Description Resources created by a FOAF Agent or a DC Terms Agent may be authenticated</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#discover" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#validfrom">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">valid from</rdfs:label>
+    <rdfs:comment xml:lang="en">Provides a timestamp that a POWDER Processor may use when assessing trustworthiness of a POWDER document. Informally, a POWDER Processor should normally ignore data in the document before the given date.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#certification" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#validuntil">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">valid until</rdfs:label>
+    <rdfs:comment xml:lang="en">Provides a timestamp that a POWDER Processor may use when assessing trustworthiness of a POWDER document. Informally, a POWDER Processor should normally ignore data in the document after the given date.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#certification" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#logo">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">logo</rdfs:label>
+    <rdfs:comment xml:lang="en">Points to a graphic summary for the resources in a given class. Typically, it is a logo denoting conformance of a given (set of) resource(s) to a given set of criteria.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#line13" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#sha1sum">
+    <rdfs:label xml:lang="en">SHA-1 sum</rdfs:label>
+    <rdfs:comment xml:lang="en">Links to a Base64-encoded binary SHA-1 hash of the described resource. May be used by POWDER Processors when assessing trustworthiness of a DR.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#certification" />
+    <rdfs:range rdf:resource="&xsd;base64Binary" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#certified">
+    <rdfs:label xml:lang="en">certified</rdfs:label>
+    <rdfs:comment xml:lang="en">A property that takes a Boolean value to declare whether the author of the data certifies the described resource.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#certification" />
+    <rdfs:range rdf:resource="&xsd;boolean" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#certifiedby">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">certified by</rdfs:label>
+    <rdfs:comment xml:lang="en">A property that links a resource to a POWDER document that certifies it.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#certification" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#supportedby">
+    <rdf:type rdf:resource="&owl;AnnotationProperty" />
+    <rdfs:label xml:lang="en">supported by</rdfs:label>
+    <rdfs:comment xml:lang="en">A property that links a POWDER document to some other data source that supports the descriptions provided.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#supportedBy" />
+  </rdf:Property>
+
+  <rdf:Property rdf:about="#data_error">
+    <rdfs:label xml:lang="en">data error</rdfs:label>
+    <rdfs:comment xml:lang="en">A property denoting a description of the specific error found in a given POWDER document.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#ppErrorhandling" />
+    <rdfs:domain rdf:resource="#Document" />
+  </rdf:Property>
+  
+  <rdf:Property rdf:about="#proc_error">
+    <rdfs:label xml:lang="en">processing error</rdfs:label>
+    <rdfs:comment xml:lang="en">A property denoting a description of the specific software error.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#ppErrorhandling" />
+    <rdfs:domain rdf:resource="#Processor" />
+  </rdf:Property>
+  
+  <rdf:Property rdf:about="#error_code">
+    <rdfs:label xml:lang="en">error code</rdfs:label>
+    <rdfs:comment xml:lang="en">A property denoting the code of any error encountered by the POWDER processor.</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="&dr;#ppErrorhandling" />
+    <rdfs:range rdf:resource="&xsd;nonNegativeInteger" />
+  </rdf:Property>
+  
+</rdf:RDF>
