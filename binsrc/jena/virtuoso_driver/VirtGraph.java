@@ -350,7 +350,7 @@ public class VirtGraph extends GraphBase
       else if (n.isBlank()) 
         ps.setString(col, "_:"+n.toString());
       else 
-	ps.setString(col, n.toString());
+        throw new SQLException("Only URI or Blank nodes can be used as subject");
     }
 
 	
@@ -358,7 +358,10 @@ public class VirtGraph extends GraphBase
     {
       if (n == null)
         return;
+      if (n.isURI()) 
       ps.setString(col, n.toString());
+      else
+        throw new SQLException("Only URI nodes can be used as predicate");
     }
 
     void bindObject(PreparedStatement ps, int col, Node n) throws SQLException 
