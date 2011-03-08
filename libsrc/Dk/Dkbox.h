@@ -655,6 +655,10 @@ EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 #define DK_ALLOC_BOX_DEBUG
 #endif
 
+#ifdef DV_UNAME_UNIT_DEBUG
+#define DK_ALLOC_BOX_DEBUG
+#endif
+
 #ifdef MALLOC_DEBUG
 void dk_alloc_box_assert (box_t box);
 #else

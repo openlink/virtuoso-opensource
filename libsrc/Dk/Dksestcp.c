@@ -25,7 +25,7 @@
  *
  */
 
-#define NO_DBG_PRINTF
+#undef DBG_PRINTF
 
 #include "Dk.h"
 #include "Dksestcp.h"

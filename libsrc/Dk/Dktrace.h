@@ -31,12 +31,11 @@
 #define GPF_T1(tx) \
 	gpf_notice (__FILE__, __LINE__, tx)
 
-#ifndef DEBUG
-#undef NO_DBG_PRINTF
-#define NO_DBG_PRINTF
+#ifdef NDEBUG
+#undef DBG_PRINTF
 #endif
 
-#ifndef NO_DBG_PRINTF
+#ifdef DBG_PRINTF
 # ifdef __GNUC__
 /* This macro uses a gcc specific preprocessor extension */
 #  define _dbg_print(fmt, args...) \

@@ -27,7 +27,7 @@
 
 /* Sorry, this still is a mess - merge not complete yet - PmN */
 
-#define NO_DBG_PRINTF
+#undef DBG_PRINTF
 
 #include "Dk.h"
 #include "Dk/Dksystem.h"
