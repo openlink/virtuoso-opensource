@@ -114,6 +114,7 @@
       <v:variable name="v_mode" type="varchar" default="null" />
 
       <v:variable name="v_uid" param-name="uid" type="varchar" default="null" />
+      <v:variable name="v_action" param-name="a" type="varchar" default="null" />
       <v:variable name="v_id" param-name="id" type="integer" default="null" />
 
       <v:variable name="v_subject" type="varchar" default="''" />
@@ -142,9 +143,6 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
-          declare tmp any;
-
-          self.v_mode := '';
           if (not isnull (self.v_uid))
           {
             self.v_id := (select AT_EVENT_ID from CAL.WA.ATTENDEES where AT_UID = self.v_uid);
@@ -153,15 +151,9 @@
           {
             return;
           }
-          tmp := (select E_KIND from CAL.WA.EVENTS where E_ID = self.v_id);
-          if (tmp = 0)
-          {
-            self.v_mode := 'event';
-          }
-          else
-          {
-            self.v_mode := 'task';
-          }
+          self.v_mode := case when (select E_KIND from CAL.WA.EVENTS where E_ID = self.v_id) = 0 then 'event' else 'task' end;
+          if (self.v_action in ('A', 'D', 'T'))
+            CAL.WA.attendees_update_status (self.v_uid, self.v_action);
         ]]>
       </v:before-data-bind>
 

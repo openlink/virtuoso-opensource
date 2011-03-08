@@ -5109,42 +5109,43 @@ create procedure CAL.WA.attendees_mails ()
   declare save_id, account_id, domain_id, mailAttendees integer;
   declare T, H varchar;
   declare dateFormat, timeFormat varchar;
-  declare url, account_mail, subject, period, subject_mail, content_text, content_html varchar;
+  declare url, domain, account_mail, subject, period, subject_mail, content_text, content_html, content_ical varchar;
 
-  H := '<table cellspacing="0" cellpadding="0" border="0" width="100%%"> ' ||
+  H := '<table cellspacing="0" cellpadding="0" border="0" width="600px"> ' ||
        '  <tr> ' ||
-       '    <td nowrap="noswap"><b>ODS Calendar</b></td> ' ||
-       '    <td align="right" valign="bottom" nowrap="nowrap"><b>Meeting Request</b></td> ' ||
+       '    <td><b>ODS Calendar</b></td> ' ||
+       '    <td nowrap="nowrap">%V</td> ' ||
        '  </tr> ' ||
        '  <tr> ' ||
-       '    <td colspan="2" bgcolor="#800000" height="1"></td> ' ||
+       '    <td><b>Reason</b></td> ' ||
+       '    <td nowrap="nowrap">Meeting Request</td> ' ||
        '  </tr> ' ||
        '  <tr> ' ||
-       '    <td valign="top" width="100%%" colspan="2" style="padding-top:10px;"> ' ||
-       '      <br /><br /> ' ||
-       '      <table width="600" border="0" cellspacing="0" cellpadding="5"> ' ||
+       '    <td colspan="2"><br /></td> ' ||
+       '  </tr> ' ||
        '        <tr> ' ||
        '          <td><b>Subject</b></td>  ' ||
-       '          <td>%s</td> ' ||
+       '    <td>%V</td> ' ||
        '        </tr> ' ||
        '        <tr> ' ||
        '          <td><b>When</b></td> ' ||
-       '          <td>%s</td> ' ||
+       '    <td>%s<br /></td> ' ||
        '        </tr> ' ||
        '        <tr> ' ||
        '          <td><b>Please RSVP</b></td> ' ||
-       '          <td><a href="%s" target="new"><b>Respond to Meeting Request</b></a></td> ' ||
+       '    <td><a href="%s&a=A" target="new"><b>Accept</b></a>&nbsp;<a href="%s&a=D" target="new"><b>Decline</b></a>&nbsp;<a href="%s&a=T" target="new"><b>Tentative</b></a></td> ' ||
        '        </tr> ' ||
-       '      </table> ' ||
-       '      <br /><br /> ' ||
-       '    </td> ' ||
+       '  <tr> ' ||
+       '    <td></td> ' ||
+       '    <td><br /><a href="%s" target="new"><b>Details</b></a></td> ' ||
        '  </tr> ' ||
        '  <tr> ' ||
-       '    <td colspan="2" width="100%%"><br><font size="1"> ' ||
+       '    <td colspan="2"><br /><font size="1"> ' ||
+       '      <br />' ||
        '      If the link appears to be inactive, just cut and paste it into a browser location bar and click Enter ' ||
-       '      <br>----------------------<br> ' ||
+       '      <br />----------------------<br /> ' ||
        '      <a href="%s" target="new">%s</a> ' ||
-       '      <br>----------------------<br> ' ||
+       '      <br />----------------------<br /></font>' ||
        '	  </td> ' ||
        '  </tr> ' ||
        '</table> ';
@@ -5184,6 +5185,7 @@ create procedure CAL.WA.attendees_mails ()
         }
       }
       save_id := event_id;
+      domain := CAL.WA.domain_name (domain_id);
       account_id := CAL.WA.domain_owner_id (domain_id);
       account_mail := CAL.WA.account_mail (account_id);
     }
@@ -5197,9 +5199,11 @@ create procedure CAL.WA.attendees_mails ()
     };
 
     url := sprintf ('%sattendees.vspx?uid=%U', CAL.WA.calendar_url (domain_id), uid);
-    content_html := sprintf (H, subject, period, url, url, url);
+    content_html := sprintf (H, domain, subject, period, url, url, url, url, url, url);
     content_text := sprintf (T, subject, period, url);
-    CAL.WA.send_mail (account_mail, mail, subject_mail, content_text, content_html);
+    content_ical := CAL.WA.export_vcal (domain_id, vector (save_id));
+
+    CAL.WA.send_mail (account_mail, mail, subject_mail, content_text, content_html, content_ical);
     update CAL.WA.ATTENDEES
        set AT_DATE_REQUEST = now (),
            AT_STATUS = 'N'
@@ -5217,9 +5221,10 @@ create procedure CAL.WA.send_mail (
   in _to any,
   in _subject any,
   in _message_text any,
-  in _message_html any)
+  in _message_html any,
+  in _message_ical any)
 {
-  declare _smtp_server, _mail_body, _mail_body_text, _mail_body_html, _encoded, _date any;
+  declare _smtp_server, _mail_body, _mail_body_text, _mail_body_html, _mail_body_ical, _encoded, _date any;
 
   if ((select max(WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1)
   {
@@ -5233,7 +5238,8 @@ create procedure CAL.WA.send_mail (
   _date := sprintf ('Date: %s\r\n', date_rfc1123 (now ()));
   _mail_body_text := mime_part ('text/plain; charset=UTF-8', null, null, _message_text);
   _mail_body_html := mime_part ('text/html; charset=UTF-8', null, null, _message_html);
-  _mail_body := _date || _subject || mime_body (vector (_mail_body_html, _mail_body_text));
+  _mail_body_ical := mime_part ('application/ics; name="invite.ics"', 'attachment; filename="invite.ics"', 'base64', _message_ical);
+  _mail_body := _date || _subject || mime_body (vector (_mail_body_html, _mail_body_text, _mail_body_ical));
 
   if(not _smtp_server or length(_smtp_server) = 0)
     signal('WA002', 'The Mail Server is not defined. Mail can not be sent.');
