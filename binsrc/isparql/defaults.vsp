@@ -81,6 +81,10 @@
   if (DB.DBA.VAD_CHECK_VERSION('c_uri') is not NULL)
 	curi_installed := 'true';
 
+  declare addthis_key varchar;
+  addthis_key := registry_get ('iSPARQL_ADDTHIS_KEY');
+
+  if ('1' = addthis_key) addthis_key := 'xa-4ce13e0065cdadc0';
 ?>
 {  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
    query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
@@ -96,6 +100,11 @@
 ?>
    map_type: '<?= map_type ?>',
    api_key: '<?=api_key ?>',
+<?vsp if (0 = addthis_key) { ?>
+   addthis_key: false,
+<?vsp } else { ?>
+   addthis_key: '<?= addthis_key ?>',
+<?vsp } ?>
    pivotInstalled: <?= pivot_installed ?>,
    curiInstalled: <?= curi_installed ?>,
    setup_done: <?= setup_done ?>

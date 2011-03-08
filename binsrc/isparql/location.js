@@ -9,7 +9,7 @@
  *
  */
 
-// XXX this should end up in OAT
+// XXX all this should end up in OAT finally
 //
 
 /*
@@ -29,8 +29,8 @@ iSPARQL.Location = function (o) {
     this._lat = 0;
     this._lon = 0;
     this._alt = 0;
-    this._altacc = -1;
     this._acc = -1;
+    this._altacc    = -1;
     this._dir = 0;
     this._spd = 0;
     this._cdate = new Date ();
@@ -64,7 +64,8 @@ iSPARQL.Location = function (o) {
     }
 
     this.serialize = function () {
-	return ({lat:    self._lat,
+	return (OAT.JSON.serialize(
+	    {lat:    self._lat,
 		 lon:    self._lon,
 		 alt:    self._alt,
 		 acc:    self._acc,
@@ -72,7 +73,10 @@ iSPARQL.Location = function (o) {
 		 dir:    self._dir,
 		 spd:    self._spd,
 		 cate:   self._cdate.toUTCString(),
-		 mdate:  self._mdate.toUTCString()});
+	     mdate:  self._mdate.toUTCString()}));
+    }
+
+    this.initFromSerialized = function () {
     }
 
     this.parse = function (serLoc) {
@@ -113,13 +117,19 @@ iSPARQL.E_LocationException.prototype = iSPARQL.Exception.prototype;
 
 iSPARQL.LocationCache = function (size, initArr, getCurrent) {
     var self = this;
-    this._timeout = 5000; // milliseconds
+    this._timeout = 10000; // milliseconds
     this._currentLocation = [];
     this._locationCache = new iSPARQL.CircularBuffer (size);
     this._locOpts = {timeout: self._timeout, enableHighAccuracy: true};
     this._acquiring = false;
     this._acquire_denied = false;
     this._timed_out = false;
+
+    this._persistLocationCache = function () {
+	if (typeof localStorage != 'undefined') {
+	    localStorage.iSPARQL_locationCache = self._locationCache.serialize();
+	}
+    }
 
     this._locAcquireHandler = function (pos) {
 	self._acquiring = false;
@@ -136,7 +146,7 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
 	l = new iSPARQL.Location (o);
 	l.setCdate (new Date (pos.timestamp));
 	self._locationCache.append (l);
-
+	self._persistLocationCache();
 	OAT.MSG.send (self, "LOCATION_ACQUIRED", l);
     }
 
@@ -152,6 +162,7 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
 	    OAT.MSG.send (self, "LOCATION_ERROR", e);
 	    break;
 	}
+	OAT.MSG.send (self, "LOCATION_ERROR", e);
     }
 
     this.acquireCurrent = function () {
@@ -188,6 +199,25 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
 	self._locationCache.append (l);
     }
 
+    this.setManualLocation = function (l) {
+	self._locationCache.append(l);
+	self._acquiring = false;
+	OAT.MSG.send (self, "LOCATION_ACQUIRED", l);
+    }
+
+// XXX
+
+    this.serialize = function () {
+	return false;
+    }
+
+    this.initFromSerialized = function () {
+	return false;
+    }
+
+    this.cancelLocation = function () {
+	return false;
+    }
 }
 
 //
@@ -263,21 +293,39 @@ iSPARQL.Geocoder = function (o) {
 // o.cache - cache
 //
 
+iSPARQL.locAcquireUIMode = {
+    AUTO:   0,
+    GEOCODE:1,
+    MANUAL: 2
+}
+
 iSPARQL.locationAcquireUI = function (o) {
     var self = this;
 
-    this.o = o;
+    this.o = {useGeocoder:false,
+	      manualFallback:true,
+	      uiMode: iSPARQL.locAcquireUIMode.AUTO};
+
+    for (p in o)
+	this.o[p] = o[p];
+
     this._lc = o.cache;
 
     this._latC      = $("locAcquireLatCtr");
     this._lonC      = $("locAcquireLonCtr");
     this._accC      = $("locAcquireAccCtr");
+    this._titleT      = $("locAcquireTitleT");
     this._msg       = $("locAcquireMsg");
     this._err       = $("locAcquireErrMsg");
     this._useBtn    = $("locAcquireUseBtn");
     this._cancelBtn = $("locAcquireCancelBtn");
+    this._manualBtn   = $("locAcquireManualBtn");
+    this._geocodeBtn  = $("locAcquireGeocodeBtn");
     this._refBtn    = $("locAcquireRefreshBtn");
     this._thr       = $("locAcquireThrobber");
+    this._geocodeForm = $("locAcquireGeocodeForm");
+    this._latI        = $("locAcquireManualLatInput");
+    this._lonI        = $("locAcquireManualLonInput");
 
     this._ctr = $("locAcquireUI");
 
@@ -285,6 +333,8 @@ iSPARQL.locationAcquireUI = function (o) {
 
     this._useCB = self.o.useCB;
     this._cancelCB = self.o.cancelCB;
+
+    this._uiMode = self.o.uiMode;
 
     this.hide = function () {
 	OAT.Dom.hide (self._ctr);
@@ -295,6 +345,7 @@ iSPARQL.locationAcquireUI = function (o) {
     }
 
     this.refresh = function () {
+	
 	OAT.Dom.hide (self._err);
 	OAT.Dom.show (self._thr);
 	self._lc.acquireCurrent();
@@ -304,9 +355,13 @@ iSPARQL.locationAcquireUI = function (o) {
 	return this._ctr;
     }
 
+// "private" members
+
+    this._refresh_to = 0;    
+
     this._locHandler = function (m,s,l) {
-	self._latC.innerHTML = l.getLat();
-	self._lonC.innerHTML = l.getLon();
+	self._latI.value = l.getLat();
+	self._lonI.value = l.getLon();
 	self._accC.innerHTML = l.getAcc();
 	self._currL = l;
 	OAT.Dom.show (self._useBtn);
@@ -314,33 +369,145 @@ iSPARQL.locationAcquireUI = function (o) {
 	OAT.Dom.hide(self._thr);
 	OAT.Dom.hide(self._err);
 	if (l.getAcc() > o.minAcc) {
-	    self.refresh ();
+	    self._refresh_to = setTimeout(self.refresh, 5000);
 	} else {
-	    self._useHandler();
+	    self.hide();
+	    self.o.useCB(self.o.cbParm, self._currL);
 	}
     }
 
-    this._errHandler = function () {
-	iSPARQL.Common.log('Loc error handler');
-	self._err.innerHTML = "Cannot acquire location.";
+    this._errHandler = function (m,s,e) {
+	switch (e.code) {
+	case e.TIMEOUT:
+	    self._titleT.innerHTML = "Timed out";
+	    break;
+        case e.PERMISSION_DENIED:
+	    self._titleT.innerHTML = "Permission denied";
+	    break;
+        case e.POSITION_UNAVAILABLE:
+	    self._titleT.innerHTML = "Location failed";
+	    break;
+	}
+
+	if (e.message) self._err.innerHTML = e.message;
 	self._refBtn.innerHTML = "Retry";
+
 	OAT.Dom.show (self._err);
 	OAT.Dom.hide (self._thr);
 	OAT.Dom.hide (self._useBtn);
     }
 
-    this._useHandler = function (e,s) {
-	self.hide();
-	self.o.useCB(self.o.cbParm, self._currL);
-    }
-
     this._refreshHandler = function () {
+	self._reset();
 	self.refresh();
     }
 
-    this._cancelHandler = function (e,s) {
-	OAT.Dom.show(self._useBtn);
+    this._manualHandler = function () {
+	self._setManualMode();
+    }
+
+    this._geocodeHandler = function () {
+	self._setGeocodeMode();
+    }
+
+    this._reset = function () {
+	clearTimeout (self._refresh_to);
+	OAT.Dom.hide(self._geocodeForm);
+	OAT.Dom.hide(self._manualForm);
+
+	OAT.Dom.hide (self._err);
+	self._titleT.innerHTML = "Locating";
+	self._err.innerHTML = "";
+	self._refBtn.innerHTML = "Refresh";
+	self._useBtn.disabled = false;
+
+	if (!self.currL) OAT.Dom.hide (self._useBtn);
+
+	if (!self.o.manualFallback) 
+	    OAT.Dom.hide (self._manualBtn);
+	else
+	    OAT.Dom.show (self._manualBtn);
+
+	if (!self.o.useGeocoder) 
+	    OAT.Dom.hide (self._geocodeBtn);
+	else
+	    OAT.Dom.show (self._manualBtn);
+
+	self._lonI.disabled = true;
+	self._latI.disabled = true;
+
+	OAT.Event.detach (self._latI, "change", self._latLonIChangeHandler);
+	OAT.Event.detach (self._lonI, "change", self._latLonIChangeHandler);
+
+	OAT.Dom.show (self._thr);
+    }
+
+    this._setGeocodeMode = function () {
+	self._uiMode = iSPARQL.locAcquireUIMode.GEOCODE;
+	self._reset();
+	OAT.Dom.hide(self._useBtn);
+	OAT.Dom.hide(self._thr);
+	OAT.Dom.show(self._geocodeForm);
+    }
+
+    this._useHandler = function (e,s) {
 	self.hide();
+        self._reset();
+	switch (self._uiMode) {
+	case iSPARQL.locAcquireUIMode.MANUAL:
+	    var l = new iSPARQL.Location ({lat: self._latI.value, 
+					   lon: self._lonI.value});
+	    self._lc.setManualLocation(l);
+	    self._currL = l;
+	    self._uiMode = self.o.uiMode;
+	    break;
+	case iSPARQL.locAcquireUIMode.AUTO:
+	case iSPARQL.locAcquireUIMode.GEOCODE:
+	    self._uiMode = self.o.uiMode;
+	self.o.useCB(self.o.cbParm, self._currL);
+    }
+    }
+
+    this._latLonIChangeHandler = function () {
+	if (isNaN(self._latI.value) || isNaN(self._lonI.value))
+	    self._useBtn.disabled = true;
+        else
+	    self._useBtn.disabled = false;
+    }
+
+    this._setManualMode = function () {
+	self._uiMode = iSPARQL.locAcquireUIMode.MANUAL;
+	self._reset();
+
+	OAT.Dom.hide(self._thr);
+	OAT.Dom.show(self._useBtn);
+	OAT.Dom.hide(self._manualBtn);
+	OAT.Dom.show(self._manualForm);
+
+	self._lonI.disabled = false;
+	self._latI.disabled = false;
+
+	OAT.Event.attach (self._latI, "change", self._latLonIChangeHandler);
+	OAT.Event.attach (self._lonI, "change", self._latLonIChangeHandler);
+
+	self._latI.focus();
+    }
+
+    this._cancelHandler = function (e,s) {
+	switch (self._uiMode) {
+	case iSPARQL.locAcquireUIMode.AUTO:
+	    if (self.o.useGeocoder)
+		self._setGeocodeMode();
+	    else if (self.o.manualFallback)
+		self._setManualMode();
+	    return;
+	case iSPARQL.locAcquireUIMode.GEOCODE:
+	    if (self.o.manualFallback)
+		self._setManualMode();
+	    return;
+	}
+	self.hide();
+	self._reset();
 	if (self.o.cancelCB) self.o.cancelCB(self.o.cbParm);
     }
 
@@ -361,6 +528,12 @@ iSPARQL.locationAcquireUI = function (o) {
     }
 
     this.init = function () {
+	OAT.Event.attach (self._useBtn,    "click", self._useHandler);
+	OAT.Event.attach (self._refBtn,    "click", self._refreshHandler);
+	OAT.Event.attach (self._cancelBtn, "click", self._cancelHandler);
+        OAT.Event.attach (self._manualBtn, "click", self._manualHandler);
+	OAT.Event.attach (self._geocodeBtn,"click", self._geocodeHandler);
+
 	OAT.MSG.attach ("*","LOCATION_ACQUIRED", self._locHandler);
 	OAT.MSG.attach ("*","LOCATION_ERROR", self._errHandler);
 	OAT.MSG.attach ("*","LOCATION_TIMEOUT", self._errHandler);
@@ -368,14 +541,21 @@ iSPARQL.locationAcquireUI = function (o) {
 	OAT.MSG.attach ("*","GEOCODE_RETRYING", self._geocodeRetryingH);
 	OAT.MSG.attach ("*","GEOCODE_FAIL", self._geocodeFailH);
 	OAT.MSG.attach ("*","GEOCODE_FAIL_RETRYING",self._geocodeFailRetryH);
-	OAT.Event.attach (self._useBtn, "click", self._useHandler);
-	OAT.Event.attach (self._refBtn, "click", self._refreshHandler);
-	OAT.Event.attach (self._cancelBtn, "click", self._cancelHandler);
-	if (!self.currL) OAT.Dom.hide (self._useBtn);
-	OAT.Dom.hide (self._err);
-	OAT.Dom.show (self._thr);
-	self.show ();
+
+	self._reset();
+	
+	switch (self.o.uiMode) {
+	case iSPARQL.locAcquireUIMode.AUTO:
 	self.refresh();
+	    break;
+	case iSPARQL.locAcquireUIMode.GEOCODE:
+	    self._setGeocodeMode();
+	    break;
+	case iSPARQL.locAcquireUIMode.MANUAL:
+	    self._setManualMode();
+	    break;
+	}
+	self.show();
     }
 
     self.init ();

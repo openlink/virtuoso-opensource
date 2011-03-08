@@ -95,8 +95,9 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
         <noscript>
           <img src="/isparql/images/stop_32.png" alt="error"/>
           <div class="error statMsgError">
-            iSPARQL cannot work without JavaScript<br/>
-	    Either your browser has no JavaScript, or it is currently disabled.
+            iSPARQL is a JavaScript application.<br/>
+	        JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
+            or JavaScript is disabled. Please use a browser that supports JavaScript, or enable JavaScript for this page.
 	  </div>
         </noscript>
 
@@ -108,23 +109,49 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
       </div> <!-- #splash_inner -->
     </div> <!-- #splash -->
 
-    <div id="locAcquireUI" style="display:none;position:absolute">
+    <div id="locAcquireUI" style="display:none;position:absolute"> <!-- location acquire UI template. -->
       <div id="locAcquireUI_inner">
         <div id="locAcquireMsg">
-          <h3>Acquiring location <img id="locAcquireThrobber" src="/isparql/toolkit/images/throbber.gif"/></h3>
+          <div id="locAcquireTitleC">
+		    <h3 id="locAcquireTitleT">Locating</h3>
+            <img id="locAcquireThrobber" alt="throbber" src="/isparql/toolkit/images/throbber_small.gif"/>
+          </div>
           <table id="locAcquireCurrent">
-            <tr><th>Latitude</th><td id="locAcquireLatCtr">N/A</td></tr>
-            <tr><th>Longitude</th><td id="locAcquireLonCtr">N/A</td></tr>
-            <tr><th>Accuracy</th><td id="locAcquireAccCtr">N/A</td></tr>
+            <tr>
+              <td><label for="locAcquireManualLatInput">Latitude</label></td>
+              <td id="locAcquireLatCtr">
+	            <input type="text" 
+                       class="locAcquireForm" 
+                       id="locAcquireManualLatInput" />
+              </td>
+            </tr>
+            <tr>
+	          <td><label for="locAcquireManualLonInput">Longitude</label></td>
+	          <td id="locAcquireLonCtr">
+	            <input type="text" 
+                       class="locAcquireForm" 
+                       id="locAcquireManualLonInput" />
+              </td>
+            </tr>
+            <tr>
+              <td>Accuracy</td>
+              <td id="locAcquireAccCtr">N/A</td>
+            </tr>
           </table>
+        </div> <!-- #locAcquireMsg -->
+        <div id="locAcquireGeocodeForm" style="display:none">
+          <label for="locAcquireAddrInput">Address:</label>
+          <input type="text" class="locAcquireForm" id="locAcquireAddrInput"/>
         </div>
         <div id="locAcquireErrMsg"></div>
         <div id="locAcquireBtnCtr">
           <button id="locAcquireUseBtn">Use</button>
+	      <button id="locAcquireGeocodeBtn">Enter Address</button>
+	      <button id="locAcquireManualBtn">Manual</button>
           <button id="locAcquireRefreshBtn">Refresh</button>
           <button id="locAcquireCancelBtn">Cancel</button>
         </div>
-      </div> 
+      </div> <!-- #locAcquireUI_inner -->
     </div> <!-- #locAcquireUI -->
 
     <div id="page_content" style="display:none;">
