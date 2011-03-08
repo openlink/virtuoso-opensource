@@ -1288,7 +1288,7 @@ OAT.Event = {
     /**
      * attaches event to a given element, optionally with a callback
      * and/or scope from which the callback will be executed
-     * @param {node} elm atach the event to this element
+     * @param {node} elm attach the event to this element
      * @param {event} event event to be attached
      * @param {function} callback callback to execute when event fires up
      * @param {object} scope scope object

@@ -1332,7 +1332,14 @@ OAT.RDFTabs.map = function(parent,optObj) {
     this.desc = self.options.desc;
     this.elm.style.position = "relative";
 
+    var useragent = navigator.userAgent;
+    
+    if (useragent.indexOf('iPhone') != -1 || useragent.indexOf('Android') != -1 ) {
+	self.elm.style.width = '100%';
+	self.elm.style.height = '100%';
+    } else {
     this.elm.style.height = self.options.height;
+    }
 
     // Various properties used to obtain @ICBM.mil address
     //
@@ -1369,6 +1376,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 					       "http://www.w3.org/2003/01/geo/wgs84_pos#Point",
 					       "http://www.georss.org/georss/point",
 					       "http://www.openlinksw.com/schemas/virtrdf#Geometry"]);
+
+    this.markerPredBlacklist = OAT.IRIDB.insertIRIArr (["http://www.openlinksw.com/schemas/oat/rdftabs#useMarker"]);
 
     this.usedBlanknodes = [];
     this.pointList = new OAT.RDFTabs.PointList({uniqueInsert:true});
@@ -1506,20 +1515,34 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    return markerPath + '01.png';
 	    break;
 	case OAT.RDFTabsData.MARKER_MODE_EXPLICIT:
-	    mpred = item.preds[m_p_iid];
+	    mpred = item.preds[m_p_iid][0];
 	    if (typeof (mpred) != 'undefined') {
-		if (mpred.toupper().match(/^HTTP(S?):\/\/.*/)) 
-		    markerfile = mpred;
-		else
-		markerFile = markerPath + mpred + '.png';
+		if (mpred.constructor = OAT.RDFAtom) {
+		    if (mpred.isIRI())
+			markerFile = mpred.getIRI();
+		    else if (mpred.isLit()) {
+			markerFile = mpred.getValue();
+			if (!markerFile.toUpperCase().match(/HTTP(S?):\/\//)) {
+			    markerFile = markerPath + markerFile+'.png';
+			}
+		    }
+		}
 	    }
 	    break;
 	case OAT.RDFTabsData.MARKER_MODE_AUTO:
-	    mpred = item.preds[m_p_iid];
+	    mpred = item.preds[m_p_iid][0];
 
 	    if (typeof (mpred) != 'undefined') { // explicit marker def takes precedence
-		if (mpred.toupper().match(/^HTTP(S?):\/\/.*/))
-		    markerfile = mpred;
+		if (mpred.constructor = OAT.RDFAtom) {
+		    if (mpred.isIRI())
+			markerFile = mpred.getIRI();
+		    else if (mpred.isLit()) {
+			markerFile = mpred.getValue();
+			if (!markerFile.toUpperCase().match(/HTTP(S?):\/\//)) {
+			    markerFile = markerPath + markerFile+'.png';
+			}
+		    }
+		}
 		else
 		markerFile = markerPath + mpred + '.png';
 		break;
@@ -1547,6 +1570,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		return item.preds[p][0].getValue();
 	    }
 	}
+	return false;
 	}
 
 //
@@ -1558,6 +1582,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	var preds = item.preds;
 	for (var p in preds) {
 	    var pred = preds[p];
+	    if (pred in self.markerPredBlacklist) continue; // Not all predicates are created equal
 	    var simple = self.parent.store.getCIRIorSplit(p);
 	    if (pred.length == 1 || self.lookupProperties.find(simple) != -1) {
 		var predC = OAT.Dom.create("tr",{className:"predicate"});
@@ -1572,22 +1597,44 @@ OAT.RDFTabs.map = function(parent,optObj) {
     }
 
     this.drawMarker = function (item) {
-	var titleH = OAT.Dom.create("h2",{className:""});
+	var titleH = OAT.Dom.create("h2",{className:"markerTitle"});
+
 	var title = self.parent.getTitle(item);
+	var titleHref='';
+
 	if (title.match(/^http/i)) {
 	    self.parent.processLink(titleH,title);
 	    titleH.style.cursor = "pointer";
-	}
 	titleH.innerHTML = title;
+	} else {
+	    var titleHref = self.parent.getURI(item);
+	    if (titleHref) {
+		var titleA = OAT.Dom.create("a",{href:titleHref,target:"_blank"});
+		titleA.innerHTML = title;
+		OAT.Dom.append ([titleH, titleA]);
+	    } else {
+		titleH.innerHTML = title;
+	    }
+	}
+
 	var ctr = OAT.Dom.create("div",{overflow:"auto",className:'marker_ctr'});
+	var abstr = self.getAbstract(item);
+
+	if (abstr) {
 	var abstrC = OAT.Dom.create("div",{className:'abstract'});
-	abstrC.innerHTML = self.getAbstract(item);
+	    abstrC.innerHTML = abstr;
+	}	
 	
 	//	if (self.parent.store.itemHasType (item, "")) { }
 	//	if (self.parent.store.itemHasType (item, "")) { }
 
 	var ap = self.drawAllProps (item);
+
+	if (abstr)
 	OAT.Dom.append([ctr,titleH,abstrC,ap]);
+	else 
+	    OAT.Dom.append([ctr,titleH,ap]);
+
 	return ctr;
     }
 
@@ -1657,7 +1704,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		self.trySimple(item);
 	    }
 
-	    var useragent = navigator.userAgent;
 	    
 	    self.addMarkers();
 	    
