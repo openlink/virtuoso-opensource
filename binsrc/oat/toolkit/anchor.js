@@ -122,7 +122,8 @@ OAT.Anchor = {
 				if (OAT.AJAX && OAT.AJAX.requests.length) {
 					OAT.Anchor.fixSize(win);
 				} else {
-					if (win.dom.container.style.height=='auto' || win.dom.container.style.width=='auto') { /* if auto, keep auto */
+		if (win.dom.container.style.height=='auto' || 
+		    win.dom.container.style.width=='auto') { /* if auto, keep auto */
 					    return;
                                         }
 					var height = OAT.Dom.getWH(win.dom.content)[1];
@@ -130,7 +131,8 @@ OAT.Anchor = {
 						if (OAT.Dom.getWH(win.dom.container)[0] < 650)
 							win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]+100)+'px';
 						if (height == OAT.Dom.getWH(win.dom.content)[1]) {
-						if (OAT.Dom.getWH(win.dom.container)[0] > 100) win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]-100)+'px';
+			if (OAT.Dom.getWH(win.dom.container)[0] > 100) 
+			    win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]-100)+'px';
 							/* now adding scrollbar when too large window */
 							if (OAT.Dom.getWH(win.dom.content)[1] > 300) {
 								win.dom.content.style.height = '300px';
@@ -165,7 +167,8 @@ OAT.Anchor = {
 			type:OAT.Win.Rect,
 			buttons:"cr",
 			template:false, /* use with type:false - see win component documentation */
-			preload:false /* include the a++ node in the page DOM right at the assing time - do not use when large number of a++ windows on the page */
+	    preload:false /* include the a++ node in the page DOM right at the assing time - 
+                             do not use when large number of a++ windows on the page */
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
 
