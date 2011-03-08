@@ -581,7 +581,7 @@
       <v:template name="sec_tmpl_6" type="simple" enabled="-- equ (self.tab_no, 6)">
 	  <input type="hidden" value="6" name="tabNo" />
             <h3>X.509 Certificate Parameters</h3>
-  	          <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="650" height="270" frameborder="0" scrolling="no">
+            <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="650" height="270" frameborder="0" scrolling="auto">
   	            <p>Your browser does not support iframes.</p>
   	          </iframe>
   </v:template>

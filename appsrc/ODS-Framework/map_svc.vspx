@@ -55,10 +55,9 @@
 	      <tr class="listing_header_row">
 		  <th>Host</th>
 		  <th>Provider</th>
-		  <th>Action</th>
+      		  <th width="5%">Action</th>
 	      </tr>
-	      <v:data-set name="maps" sql="select WMH_HOST, WMH_SVC, WMH_KEY, WMH_ID from WA_MAP_HOSTS"
-		  scrollable="1" editable="1" nrows="1000">
+	        <v:data-set name="maps" sql="select WMH_HOST, WMH_SVC, WMH_KEY, WMH_ID from WA_MAP_HOSTS" scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_svc is not null)
 {
@@ -88,14 +87,14 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_svc)
 			      </td>
 			      <td>
 				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
-
 			      </td>
-			      <td>
-				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+          			  <td nowrap="nowrap">
+          				  <v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
 				      url="--sprintf ('map_svc.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
+          				      xhtml_class="img_button"
 				      />
 			      </td>
 			  </tr>
@@ -112,23 +111,28 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_svc)
 	      </v:data-set>
 	  </table>
 	  <div class="fm">
-	      <fieldset>
-		  <label for="host1">Host &amp; port</label>
+  	      <fieldset class="form">
+  	        <div>
+        		  <label class="form" for="host1">Host &amp; port</label>
 		  <v:text name="host1" value="" xhtml_id="host1" error-glyph="*">
-		      <v:validator name="v_httphost" test="regexp" regexp="^[0-9A-Za-z_:.-]+\$"
-			  message="You should provide a valid host name."/>
-		  </v:text><br/>
-		  <label for="sl1">Mapping Service</label>
+      		      <v:validator name="v_httphost" test="regexp" regexp="^[0-9A-Za-z_:.-]+\$" message="You should provide a valid host name."/>
+  		        </v:text>
+  	        </div>
+  	        <div>
+        		  <label class="form" for="sl1">Mapping Service</label>
 		  <v:select-list name="sl1" xhtml_id="sl1" error-glyph="*">
 		      <v:item name="Google" value="GOOGLE" />
 		      <v:item name="Yahoo" value="YAHOO" />
-		  </v:select-list><br />
-		  <label for="key1">Key</label>
-		  <v:text name="key1" value="" xhtml_size="110" xhtml_id="key1" error-glyph="*">
-		      <v:validator test="length" min="1" max="4096"
-			  message="Key can not be empty nor longer than 4000 characters"/>
-		  </v:text><br />
-	      <span class="fm_ctl_btn">
+        		  </v:select-list>
+  	        </div>
+  	        <div>
+        		  <label class="form" for="key1">Key</label>
+        		  <v:text name="key1" value="" xhtml_size="80" xhtml_id="key1" error-glyph="*">
+        		    <v:validator test="length" min="1" max="4096" message="Key can not be empty nor longer than 4000 characters"/>
+        		  </v:text>
+  	        </div>
+  	        <div>
+        		  <label class="form">&nbsp;</label>
 		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_svc),0)">
 		      <v:on-post>
 self.host1.ufl_value := '';
@@ -159,8 +163,8 @@ if (self.edit_svc is null)
 }
 else
 {
-  update wa_map_hosts set
-      WMH_HOST = self.host1.ufl_value,
+                    update wa_map_hosts
+                       set WMH_HOST = self.host1.ufl_value,
 	       WMH_SVC = self.sl1.ufl_value,
 	       WMH_KEY = self.key1.ufl_value
 		   where WMH_ID = self.edit_svc;
@@ -173,7 +177,7 @@ control.vc_data_bind (e);
 self.maps.vc_data_bind (e);
 		      </v:on-post>
 		  </v:button>
-	      </span>
+	          </div>
 	  </fieldset>
       </div>
       </vm:body>

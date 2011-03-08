@@ -1133,7 +1133,7 @@ table.form td {
 .tabs li {
 	display: inline;
 	padding: 1px 3px;
-	margin-left: 0.5em;
+	margin-left: 0.1em;
 	cursor: pointer;
   border-top: 1px solid #aaa;
   border-left: 1px solid #aaa;
@@ -1163,4 +1163,27 @@ label span.small {
   font-weight: normal;
   display: block;
   color: #666;
+}
+
+fieldset.form {
+  padding: 1em;
+}
+
+fieldset.form div {
+  clear: left;
+  display: block;
+  width: 800px;
+  zoom: 1;
+  margin: 5px 0 0 0;
+  padding: 1px 3px;
+}
+
+fieldset.form div label.form {
+  display: block;
+  float: left;
+  width: 200px;
+  padding: 3px 5px;
+  margin: 0 0 5px 0;
+  font-weight: bold;
+  text-align: right;
 }

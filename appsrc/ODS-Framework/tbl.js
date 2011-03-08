@@ -354,9 +354,10 @@ TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
   for (N = 0; N < serviceList.length; N = N + 1)
     fld.addOption('<img src="/ods/images/services/'+serviceList[N][0]+'"/> '+serviceList[N][2], serviceList[N][2]);
 
-	var ta = new TypeAhead(fld.input.id, 'onlineAccounts', '');
+	var ta = new TypeAhead(fld.input.id, 'onlineAccounts');
 	fld.input.onchange = TBL.setServiceUrl;
 	fld.input.form.onsubmit = CheckSubmit;
+	fld.input.setAttribute('autocomplete', 'off');
 	taVars[taVars.length] = ta;
 
   return fld.input;
@@ -886,6 +887,19 @@ TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
     img.style.cssText = fldOptions.imgCssText;
 
   td.appendChild(img);
+  return fld;
+}
+
+
+TBL.createCell54 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCell53 (td, prefix, fldName, No, fldOptions);
+
+	var ta = new TypeAhead(fld.id, 'webIDs', {checkMode: 1});
+	fld.setAttribute('autocomplete', 'off');
+	fld.form.onsubmit = CheckSubmit;
+	taVars[taVars.length] = ta;
+
   return fld;
 }
 

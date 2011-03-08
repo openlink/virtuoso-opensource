@@ -608,9 +608,10 @@ RDF.ontologies['rdfs'] =
           {"name": 'dc:subject', "datatypeProperties": 'rdfs:string'},
           {"name": 'dc:title', "datatypeProperties": 'rdfs:string'},
           {"name": 'dc:type', "datatypeProperties": 'rdfs:string'},
-          {"name": 'rdfs:label', "datatypeProperties": 'rdfs:string'},
+          {"name": 'owl:sameAs', "objectProperties": 'owl:Thing'},
           {"name": 'rdfs:comment', "datatypeProperties": 'rdfs:string'},
-          {"name": 'rdfs:seeAlso', "datatypeProperties": 'rdfs:string'}
+          {"name": 'rdfs:label', "datatypeProperties": 'rdfs:string'},
+          {"name": 'rdfs:seeAlso', "objectProperties": 'rdfs:Resource'}
         ]
 }
     ]

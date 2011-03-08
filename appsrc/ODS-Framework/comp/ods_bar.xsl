@@ -484,7 +484,7 @@ function showSSLLink()
         if(locate('/gtags.vspx',_http_path))
             curr_location:=curr_location||'Tags > ';
                 else if (locate ('/app_settings.vspx', _http_path))
-            curr_location:=curr_location||'Settings > ';
+                  curr_location := curr_location||'Application Settings > ';
 
         declare settings_url varchar;
 
@@ -525,6 +525,12 @@ function showSSLLink()
             curr_location:=curr_location||settings_url||'Edit Profile > ';
                 else if (locate ('/security.vspx', _http_path))
             curr_location:=curr_location||settings_url||'Site Security > ';
+                else if (locate ('/oauth_apps.vspx', _http_path))
+                  curr_location := curr_location || settings_url || 'OAuth Keys > ';
+                else if (locate ('/semping_app.vspx', _http_path))
+                  curr_location := curr_location || settings_url || 'Semantic Pingback > ';
+                else if (locate ('/uiedit_validation.vspx', _http_path))
+                  curr_location := curr_location || settings_url || 'Validation Fields > ';
                 else if (locate ('/search.vspx', _http_path))
             curr_location:=curr_location||'Search > ';
                 else if (locate ('/help.vspx', _http_path))
@@ -563,6 +569,10 @@ function showSSLLink()
             curr_location:=curr_location||site_settings_url||'RDF Data Administration > ';
                 else if (locate ('/app_instance_limits.vspx', _http_path))
             curr_location:=curr_location||site_settings_url||'Application Instances Limit > ';
+                else if (locate ('/login_keys.vspx', _http_path))
+                  curr_location := curr_location || site_settings_url || 'Login Authentication Keys > ';
+                else if (locate ('/semping_log.vspx', _http_path))
+                  curr_location := curr_location || site_settings_url || 'Semantic Pingback Log > ';
                 else if (locate ('/uhome.vspx', _http_path) and length(self.odsbar_u_name)=0)
               curr_location:=curr_location||' '||self.odsbar_fname||' > ';
                 else if (subseq(curr_location,length(curr_location)-3,length(curr_location)) = ' > ')

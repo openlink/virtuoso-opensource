@@ -694,8 +694,7 @@ ODS.session = function(customEndpoint) {
     };
 
 	this.invitationRemove = function(invitationId) {
-		self.invitationsId = self
-				.arrRemoveElm(self.invitationsId, invitationId);
+		self.invitationsId = self.arrRemoveElm(self.invitationsId, invitationId);
     };
 
     // XXX: Looks like generic util functions which should not be session methods
@@ -2631,6 +2630,16 @@ ODS.Nav = function(navOptions) {
 		  OAT.MSG.send(session, "WA_SES_VALIDBIND", {});
     } else {
       lfAttempts++;
+
+      var code = '';
+    	var error = xml.getElementsByTagName('failed')[0];
+      if (error) {
+        code = error.getElementsByTagName('code')[0];
+        if (code)
+          code = OAT.Xml.textValue(code);
+      }
+
+      if (code != '22000')
       OAT.Dom.show('lf_forget');
     }
     return false;
@@ -4739,7 +4748,10 @@ ODS.Nav = function(navOptions) {
 	else if (!self.session.sid && (typeof (uriParams['oauth_verifier']) != 'undefined' && uriParams['oauth_verifier'] != '') && (typeof (uriParams['oauth_token']) != 'undefined' && uriParams['oauth_token'] != ''))
 	{
 	  self.logIn();
+	  if (uriParams['oid-mode'] == 'twitter')
 		lfTab.go(4);
+		else
+		  lfTab.go(5);
 	}
 	else if (!self.session.sid && typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
 	{
@@ -4766,6 +4778,9 @@ ODS.Nav = function(navOptions) {
 	OAT.Event.attach($('vspxApp'), "load", function() {
 						if (!self.session.sid) {
 							var getParams = OAT.Browser.isIE ? $('vspxApp').contentWindow.location.href: $('vspxApp').contentDocument.location.search;
+		  if (getParams.indexOf('oid-mode=') > -1)
+		    return;
+
 							if (getParams.indexOf('sid=') > -1) {
 								var iframeSid = getParams.substring(getParams.indexOf('sid=') + 4, getParams.length);
 								iframeSid = iframeSid.substring(0, iframeSid.indexOf('&'));

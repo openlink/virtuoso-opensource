@@ -71,15 +71,9 @@
       <v:template name="fg_header" type="simple" name-to-remove="table" set-to-remove="bottom">
         <table id="groups" class="listing" cellspacing="0">
           <tr class="listing_header_row">
-            <th>
-              Name
-            </th>
-            <th>
-                Description
-            </th>
-            <th width="1%">
-              Actions
-            </th>
+              <th>Name</th>
+              <th>Description</th>
+              <th width="1%">Actions</th>
           </tr>
         </table>
       </v:template>
@@ -208,15 +202,9 @@
         <v:template name="fg2_header" type="simple" name-to-remove="table" set-to-remove="bottom">
           <table id="groups" class="listing" cellspacing="0">
             <tr class="listing_header_row">
-              <th>
-                Name
-              </th>
-              <th>
-                IRI
-              </th>
-              <th width="1%">
-                Actions
-              </th>
+              <th>Name</th>
+              <th>IRI</th>
+              <th width="1%">Actions</th>
             </tr>
           </table>
         </v:template>
@@ -301,11 +289,11 @@
   </vm:if>
 
   <vm:if test="self.fg_mode in ('fgCreate', 'fgUpdate')">
-    <v:label format="%s" value="--concat(initcap(subseq(self.fg_mode, 2)), ' ODS Group')"/>
+    <h4><v:label format="%s" value="--concat(initcap(subseq(self.fg_mode, 2)), ' ODS Group')"/></h4>
     <div id="fg_page" class="tabContent">
       <ul id="fg_tabs" class="tabs">
         <li id="fg_tab_0"><b>Main</b></li>
-        <li id="fg_tab_1"><b>WebIDs</b></li>
+        <li id="fg_tab_1"><b>Users</b></li>
       </ul>
       <div style="background-color: #fff; min-height: 150px; min-width: 650px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
         <div id="fg_content">
@@ -476,7 +464,7 @@
   </vm:if>
 
   <vm:if test="self.fg_mode in ('fg2Create', 'fg2Update')">
-    <v:label format="%s" value="--concat(initcap(subseq(self.fg_mode, 3)), ' ACL Group')"/>
+    <h4><v:label format="%s" value="--concat(initcap(subseq(self.fg_mode, 3)), ' ACL Group')"/></h4>
     <div id="fg2_page" class="tabContent">
       <ul id="fg2_tabs" class="tabs">
         <li id="fg2_tab_0"><b>Main</b></li>
@@ -531,7 +519,7 @@
                       for (N := 0; N < length (self.fg_members); N := N + 1)
                       {
                         if (length (self.fg_members[N]))
-                          http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 53, className: "_validate_ _uri_", value: "%s"}});});});', self.fg_members[N]));
+                          http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 54, className: "_validate_ _uri_", value: "%s"}});});});', self.fg_members[N]));
                       }
                     ?>
             		    </script>
@@ -540,7 +528,7 @@
                 </table>
               </td>
               <td valign="top" nowrap="nowrap">
-                <span class="button pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 53, className: '_validate_ _uri_'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span>
+                <span class="button pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 54, className: '_validate_ _uri_'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span>
               </td>
             </tr>
           </table>

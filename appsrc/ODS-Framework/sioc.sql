@@ -755,6 +755,8 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
 create procedure wa_user_check (inout txt varchar, inout flags varchar, in fld integer)
 {
+  declare exit handler for sqlstate '*' { return 0; };
+
   if (isnull (txt))
     return 0;
 
@@ -2362,7 +2364,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    }
 		  for select WUK_U_ID, WUK_ID, WUK_FLAG, WUK_URI, WUK_LABEL from DB.DBA.WA_USER_KNOWS where WUK_U_ID = U_ID do
 		    {
-		      sioc_knows_likes (WUK_U_ID, WUK_ID, WUK_FLAG, WUK_URI, WUK_LABEL);
+		      sioc_user_knows (WUK_U_ID, WUK_ID, WUK_FLAG, WUK_URI, WUK_LABEL);
 		    }
 		  fCreate := 1;
 		  for select WUF_U_ID, WUF_ID, WUF_FLAG, WUF_TYPE, WUF_LABEL, WUF_URI, WUF_CLASS, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
