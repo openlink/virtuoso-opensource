@@ -1,6 +1,8 @@
 if (typeof iSPARQL == 'undefined')
     iSPARQL = {};
 
+iSPARQL.addthis_loaded = false;
+
 iSPARQL.Defaults = {
     endpoints: [ "/sparql",
 		 "http://uriburner.com/sparql",
@@ -44,7 +46,7 @@ iSPARQL.Defaults = {
     maxrows:      50,
     endpoint:     '/sparql',
     pivotInstalled: false,
-
+    addthis_key: false,
     locOpts: {             /* XXX all except minAcc not implemented yet */
 	cacheLocTO:  2000, /* Milliseconds timeout to improve non-expired cached location accuracy */
 	coarseLocTO: 2000, /* Milliseconds to wait for coarse loc in last cached location validation attempt */
@@ -161,20 +163,4 @@ iSPARQL.Settings = {
     debug:true
 };
 
-// Should be taken care by init.
 
-/* var iSPARQL = {
-    dataObj:{
-	data:false,
-	query:"",
-	endpoint:"",
- 	defaultGraph:"",
-	graphs:[],
-	namedGraphs:[],
-	prefixes:[],			// FIXME: prefixes?
-	pragmas:[],
-	canvas:false,
-	metaData:false
-        maxrows: 0;
-    }
-};*/

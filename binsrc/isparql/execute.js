@@ -70,6 +70,28 @@ iSPARQL.CircularBuffer = function (len, initList) {
     this._ptr = 0;
     this._fill = 0;
 
+	this.serialize = function () {
+		var o = {
+			buf: self._buf,
+			length: self._length,
+			ptr: self._ptr,
+			fill: self._fill
+		}
+		return OAT.JSON.serialize (o);
+	}
+
+	this.initFromSerialized = function (s) {
+		var o = OAT.JSON.deserialize (s);
+		if (o != null) {
+			self._length = o.length;
+			self._buf = o.buf;
+			self._ptr = o.ptr;
+			self._fill = o.fill;
+			return true;
+		}
+		return false;
+	}
+
     this.append = function (item) {
 	if (self._fill < self._length) {
 	    self._buf.append(item);
@@ -439,6 +461,84 @@ var QueryExec = function(optObj) {
 				
     }
 
+    this._makeAddThisURL = function (o) {
+		var item = self.cache[self.cacheIndex];
+		var opts = item.opts;
+		var request = item.request;
+		var plnk = self.addthis_ctr;
+		
+		var nloca = document.location;
+		
+		var xparm = "?query=" + encodeURIComponent(opts.query);
+		
+		if (opts.endpoint)
+			xparm = xparm + "&endpoint="  + opts.endpoint;
+
+		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
+		xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		
+		plnk.target = "_blank";
+
+		var _u = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
+		var _t = 'iSPARQL execute';
+
+		try {
+//			var addthis_share = { 
+//				url: _u, 
+//				title: _t,
+//				description: 'iSPARQL Query Execution Permalink'
+//			};
+
+			$('addthis_ctr').setAttribute('addthis:url', _u);
+			$('addthis_ctr').setAttribute('addthis:title', _t);
+
+			addthis.update('share','url',_u);
+			addthis.update('share','title',_t);
+			addthis.update('config','ui_cobrand','iSPARQL');
+
+			addthis.button ('#addthis_ctr'); //,{pubid:iSPARQL.Settings.addthis_key},addthis_share);
+			addthis.init();
+			
+			// XXX		if (iSPARQL.Settings.shorten_uris) 
+			//			iSPARQL.Common.shortenURI (plnk);
+			
+		} catch (e) {};
+	}
+
+	this.makeLoadHandler = function (c,m,o) {
+		return (function (e) {
+			iSPARQL.addthis_loaded=true;
+			self._makeAddThisURL(o)
+		});
+	}
+
+	this.makeLoadRSHandler = function (c,m,o,_s) {
+		return (function (e) {
+			if (_s.readyState == 'loaded' || script.readyState == 'complete') {
+				iSPARQL.addthis_loaded=true;
+				self._makeAddThisURL(o)
+			}
+		});
+	}
+
+	this.makeAddThisURL = function (caller, msg, o) {
+		if (!iSPARQL.addthis_loaded) {
+			var _s = document.createElement("script");
+			_s.type = "text/javascript";
+			
+			if (_s.addEventListener) {
+				_s.addEventListener("load", self.makeLoadHandler(caller,msg,o), false);
+				_s.addEventListener("error", function() { iSPARQL.addthis_loaded=false; } ,false);
+			} else {
+				_s.attachEvent("onreadystatechange", self.makeLoadRSHandler(caller,msg,o,_s));
+			}
+
+			_s.src = "http://s7.addthis.com/js/250/addthis_widget.js#username="+iSPARQL.Settings.addthis_key;
+			document.getElementsByTagName("head")[0].appendChild(_s);
+		}
+		else self._makeAddThisURL(o);
+	}
+    
     this.parseTabIndex = function (rvVal, tabs) {
 	for (var i=0;i < tabs.length;i++) {
 	    if (rvVal == tabs[i][0]) return i;
@@ -891,9 +991,21 @@ var QueryExec = function(optObj) {
 		self.miniplnk = OAT.Dom.create ("a");
 		self.miniplnk.innerHTML = "Permalink";
 
+/*					self.addthis_ctr.innerHtml = '<div id="sharelink" class="addthis_toolbox addthis_default_style "' + 
+						'addthis:url=""' + 
+						'addthis:title="iSPARQL Execute">' +
+						'<a href="http://www.addthis.com/bookmark.php?v=250&username=' + iSPARQL.Settings.addthis_key + '"' +
+						'   class="addthis_button_compact">Share</a>' +
+						'<span class="addthis_separator">|</span>' +
+						'<a class="addthis_button_preferred_1"></a>' +
+						'<a class="addthis_button_preferred_2"></a>' +
+						'<a class="addthis_button_preferred_3"></a>' +
+						'<a class="addthis_button_preferred_4"></a>' +
+						'</div>'
+				}
+*/
 //				item.content = OAT.Dom.create ("div",{className: "rdf_mini_ctr"});
 				
-				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
 
 				if (iSPARQL.Settings.pivotInstalled) 
 					self.makePivotPermalink(self.plnk_ctr);
@@ -912,8 +1024,24 @@ var QueryExec = function(optObj) {
 				
 				item.mini.select.selectedIndex = lastIndex;
 				item.mini.redraw();
+				
+				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
+				
+				var ua = navigator.userAgent;
+				
+				if (iSPARQL.Settings.addthis_key && !OAT.Browser.isScreenOnly) {
+					self.addthis_ctr = OAT.Dom.create ("a",{id: "addthis_ctr",
+															className: "addthis_button"});
+					self.addthis_ctr.innerHTML='<img src="http://s7.addthis.com/static/btn/sm-plus.gif" alt="Share"/>';
+					OAT.Dom.append ([self.plnk_ctr, self.addthis_ctr]);
+					self.makeAddThisURL (false,false,{tabIndex:lastIndex});
+					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeAddThisURL);
+				}
+				
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
 				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
+				
+
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    

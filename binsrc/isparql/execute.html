@@ -29,6 +29,10 @@
 var featureList=["ajax","json","dimmer","grid","anchor","resize","xml","tab",
                  "sparql","rdfstore","rdfmini","map","ghostdrag"];
 
+function locCancelH() {
+  
+}
+
 function init() {
 
   OAT.Dom.hide("result");
@@ -73,6 +77,7 @@ function init() {
                                               cancelCB: false,
 					      cbParm: iSPARQL.Defaults,
 					      cache: iSPARQL.locationCache});
+      iSPARQL.StatusUI.hide();
       locUI.refresh();
   } else {
     qe.execute(iSPARQL.Defaults);
@@ -134,16 +139,41 @@ function init() {
   <div id="locAcquireUI" style="display:none">
     <div id="locAcquireUI_inner">
       <div id="locAcquireMsg">
-        <h3>Acquiring location <img id="locAcquireThrobber" src="/isparql/toolkit/images/throbber.gif"/></h3>
+        <div id="locAcquireTitleC">
+	  <h3 id="locAcquireTitleT">Locating</h3>
+          <img id="locAcquireThrobber" alt="throbber" src="/isparql/toolkit/images/throbber_small.gif"/>
+        </div>
         <table id="locAcquireCurrent">
-          <tr><th>Latitude</th><td id="locAcquireLatCtr">N/A</td></tr>
-          <tr><th>Longitude</th><td id="locAcquireLonCtr">N/A</td></tr>
-          <tr><th>Accuracy</th><td id="locAcquireAccCtr">N/A</td></tr>
+          <tr>
+            <td><label for="locAcquireManualLatInput">Latitude</label></td>
+            <td id="locAcquireLatCtr">
+	      <input type="text" 
+                     class="locAcquireForm" 
+                     id="locAcquireManualLatInput"/>
+            </td>
+          </tr>
+          <tr>
+	    <td><label for="locAcquireManualLonInput">Longitude</label></td>
+	    <td id="locAcquireLonCtr">
+	      <input type="text" 
+                     class="locAcquireForm" 
+                     id="locAcquireManualLonInput"/>
+            </td>
+          </tr>
+          <tr>
+            <td>Accuracy</td>
+            <td id="locAcquireAccCtr">N/A</td></tr>
         </table>
+      </div>
+      <div id="locAcquireGeocodeForm" style="display:none">
+        <label for="locAcquireAddrInput"></label>
+        <input type="text" class="locAcquireForm" id="locAcquireAddrInput"/>
       </div>
       <div id="locAcquireErrMsg"></div>
       <div id="locAcquireBtnCtr">
         <button id="locAcquireUseBtn">Use</button>
+	<button id="locAcquireGeocodeBtn">Enter Address</button>
+	<button id="locAcquireManualBtn">Manual</button>
         <button id="locAcquireRefreshBtn">Refresh</button>
         <button id="locAcquireCancelBtn">Cancel</button>
       </div>
