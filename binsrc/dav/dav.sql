@@ -3203,8 +3203,7 @@ not_found:
   -- delete all associated url entries
   if (O.RES_FULL_PATH <> full_path)
     {
-      update WS.WS.VFS_URL set VU_ETAG = '' where concat ('/DAV/', VU_ROOT, VU_URL) = O.RES_FULL_PATH;
---      delete from WS.WS.VFS_QUEUE where concat ('/DAV/', VQ_ROOT, VQ_URL) = O.RES_FULL_PATH;
+      update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = O.RES_ID;
     }
   -- end of urls removal
   WS.WS.DAV_VSP_DEF_REMOVE (O.RES_FULL_PATH);
@@ -3362,8 +3361,6 @@ nfg:;
       repl_text (pub, '"DB.DBA.DAV_COL_D" (?, 1)', old_col_path);
     }
 -- END REPLICATION
--- WebRobot URLs update
-  update WS.WS.VFS_URL set VU_ETAG = '' where substring (concat ('/DAV/', VU_ROOT, VU_URL), 1, length (old_col_path)) = old_col_path;
   WS.WS.UPDCHILD (res, full_path, _pflags, repl);
   set triggers on;
   if (ascii('R') = _pflags[9])
@@ -3391,8 +3388,12 @@ create procedure WS.WS.UPDCHILD (in col integer, in root_path varchar, in _pflag
   declare c_cur cursor for select COL_ID, COL_NAME, COL_MOD_TIME, COL_PERMS, COL_OWNER, COL_GROUP
       from WS.WS.SYS_DAV_COL where COL_PARENT = col;
 
-  for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = col and RES_NAME like '%.vsp' do
+  for select RES_ID, RES_NAME, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = col do
     {
+      -- WebRobot URLs update
+      update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = RES_ID;
+      -- drop VSPs
+      if (RES_NAME like '%.vsp')
       WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
     }
   -- dbg_obj_princ ('WS.WS.UPDCHILD (', col, root_path, _pflags, repl, ') updates RES_FULL_PATH');
@@ -3645,15 +3646,7 @@ create trigger SYS_DAV_RES_FULL_PATH_D after delete on WS.WS.SYS_DAV_RES
     }
 -- END REPLICATION
   -- delete all associated url entries
-  update WS.WS.VFS_URL set VU_ETAG = '' where concat ('/DAV/', VU_ROOT, VU_URL) = RES_FULL_PATH;
-  delete from WS.WS.VFS_QUEUE where concat ('/DAV/', VQ_ROOT, VQ_URL) = RES_FULL_PATH;
-  if (RES_NAME = 'index.html')
-    {
-      delete from WS.WS.VFS_URL  where concat ('/DAV/', VU_ROOT, VU_URL) = WS.WS.COL_PATH (RES_COL);
-      if (not exists (select 1 from WS.WS.VFS_SITE where
-	    concat ('/DAV/', VS_ROOT, VS_URL) = WS.WS.COL_PATH (RES_COL)))
-        delete from WS.WS.VFS_QUEUE where concat ('/DAV/', VQ_ROOT, VQ_URL) = WS.WS.COL_PATH (RES_COL);
-    }
+  update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = RES_ID;
   if (RES_TYPE = 'text/xsl')
     xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', RES_FULL_PATH));
   -- Properties of resource lives as it
@@ -3676,15 +3669,6 @@ create trigger SYS_DAV_COL_D before delete on WS.WS.SYS_DAV_COL order 100
     {
       -- dbg_obj_princ ('COLL DEL: ', pub, ' -> ' ,col_path);
       repl_text (pub, '"DB.DBA.DAV_COL_D" (?, 0)', col_path);
-    }
-  -- delete all associated url entries
-  if (COL_PARENT = 1)
-    {
-      update WS.WS.VFS_URL set VU_ETAG = ''  where VU_ROOT = COL_NAME;
-      delete from WS.WS.VFS_QUEUE where VQ_ROOT = COL_NAME
-	  and VQ_URL <> (select VS_URL from WS.WS.VFS_SITE where VS_ROOT = COL_NAME);
-      delete from DB.DBA.SYS_SCHEDULED_EVENT
-	  where "RIGHT"(SE_NAME, length (COL_NAME) + 2) = concat ('/', COL_NAME, ')');
     }
   -- Properties of collection lives as it
   delete from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_PARENT_ID = COL_ID;
