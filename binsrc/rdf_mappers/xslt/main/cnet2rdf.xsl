@@ -220,14 +220,17 @@
   <xsl:template match="cnet:LowPrice" mode="offering">
 	<gr:hasPriceSpecification>
 	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
-			<rdfs:label>sale price</rdfs:label>
 			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 			<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			<xsl:choose>
 				<xsl:when test="string(.) = string(../cnet:HighPrice)">
+                			<rdfs:label>
+                			<xsl:value-of select="concat('sale price: ', translate (., '$', ''), ' (USD)')"/>	
+                			</rdfs:label>
 					<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
 				</xsl:when>
 				<xsl:otherwise>
+                			<rdfs:label>sale price</rdfs:label>
 					<gr:hasMinCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasMinCurrencyValue>
 					<gr:hasMaxCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (../cnet:HighPrice, '$', '')"/></gr:hasMaxCurrencyValue>
 				</xsl:otherwise>
@@ -259,7 +262,9 @@
   <xsl:template match="cnet:Price">
 	<gr:hasPriceSpecification>
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-		<rdfs:label>sale price</rdfs:label>
+		<rdfs:label>
+      			<xsl:value-of select="concat('sale price: ', translate (., '$', ''), ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
 		<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>

@@ -233,7 +233,7 @@
 			</xsl:call-template>
 		</bibo:content>
 		<dc:source>
-			<xsl:value-of select="source" />
+			<xsl:value-of select="concat($baseUri, '#this')" />
 		</dc:source>
 		<xsl:if test="in_reply_to_status_id != ''">
 			<sioc:reply_of rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}"/>

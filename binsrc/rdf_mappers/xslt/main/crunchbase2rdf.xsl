@@ -259,6 +259,20 @@
 	</geo:long>
     </xsl:template>
 
+    <xsl:template match="created_at">
+	<xsl:element namespace="{$ns}" name="{name()}">
+	    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+	    <xsl:value-of select="vi:http_string_date (.)"/>
+	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="updated_at">
+	<xsl:element namespace="{$ns}" name="{name()}">
+	    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+	    <xsl:value-of select="vi:http_string_date (.)"/>
+	</xsl:element>
+    </xsl:template>
+
     <xsl:template match="image" priority="10">
 	<xsl:for-each select="available_sizes">
 	    <xsl:if test=". like '%.jpg' or . like '%.gif'">
@@ -342,6 +356,9 @@
 	    <xsl:element namespace="{$ns}" name="{name()}">
 		<xsl:if test="name() like 'date_%'">
 		    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+		</xsl:if>
+		<xsl:if test="name() like 'number_of_employees'">
+		    <xsl:attribute name="rdf:datatype">&xsd;integer</xsl:attribute>
 		</xsl:if>
 		<xsl:apply-templates select="@*|node()"/>
 	    </xsl:element>

@@ -118,6 +118,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_BESTBUY', null, 'BestBuy articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://.*productwiki.com/.*',
+	'URL', 'DB.DBA.RDF_LOAD_PRODUCTWIKI', null, 'Product Wiki articles');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
 	'(http://.*amazon.[^/]+/o/ASIN/.*)|'||
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
@@ -760,9 +764,9 @@ create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varc
 ;
 
 -- helper procedures
-create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar, in doc_iri_flag int := 1)
+create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar, in doc_iri_flag int := 1, in long_str int := 0)
 {
-  declare nss, ses any;
+  declare nss, ses, dict, triples, ntriples any;
   nss := xmlnss_get (xtree_doc (strg));
   ses := string_output ();
   http ('@prefix opl: <http://www.openlinksw.com/schema/attribution#> .\n', ses);
@@ -774,7 +778,25 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
       http (sprintf ('<%s> opl:isDescribedUsing <%s> .\n', case when doc_iri_flag then RDF_SPONGE_PROXY_IRI (graph) else graph end, nss[i+1]), ses);
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
+  if (long_str = 0)
+    {
+      dict := DB.DBA.RDF_RDFXML_TO_DICT (strg, base, graph);
+      triples := dict_list_keys (dict, 1);
+      DB.DBA.RDF_INSERT_TRIPLES (graph, triples);
+      ntriples := vector ();
+      foreach (any trip in triples) do
+	{
+	  if (trip[1] = iri_to_id ('http://xmlns.com/foaf/0.1/primaryTopic') or trip[1] = iri_to_id ('http://xmlns.com/foaf/0.1/topic'))
+	    {
+	      ntriples := vector_concat (ntriples, vector (vector (trip[2], iri_to_id ('http://www.w3.org/2007/05/powder-s#describedby'), trip[0])));
+	    }
+	}
+      DB.DBA.RDF_INSERT_TRIPLES (graph, ntriples);
+    }
+  else
+    {
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
+    }
   -- INFO: may be this should be done when primaryTopic is set
   DB.DBA.TTLP (ses, base, graph);
 }
@@ -788,7 +810,7 @@ create procedure DB.DBA.RM_ADD_PRV (in proc varchar, in base varchar, in graph v
     return;
   if (not isstring (service_url))
     service_url := base;
-  if (length (service_url) > 1880)
+  if (length (service_url) > 1500)
     return;  
   h := rfc1808_parse_uri (service_url);
   h [3] := ''; h [4] := ''; h [5] := '';
@@ -895,6 +917,37 @@ create procedure DB.DBA.XSLT_STRING2ISO_DATE2 (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_SEPARATE_SEMI_VALUES (in val varchar)
+{
+	declare result_text, what_ varchar;
+	declare cur, len int;
+	declare xt any;
+	val := trim(val , '; ');
+	result_text := '<entities>';
+	len := length(val);
+	while (len > 0)
+	{
+		cur := strchr(val, ';');
+		if (cur is null or cur = 0)
+		{
+			what_ := val;
+			val := '';
+		}
+		else
+		{
+			what_ := subseq(val, 0, cur);
+			val := right(val, len - cur);
+			val := trim(val , '; ');
+		}
+		len := length(val);
+		if (what_ <> 'NULL')
+			result_text := concat(result_text, '<entity>', what_, '</entity>');
+	}
+	result_text := concat(result_text, '</entities>');
+	xt := xtree_doc(result_text, 2);
+	return xt;
+}
+;
 
 create procedure DB.DBA.XSLT_STRING2ISO_DATE (in val varchar)
 {
@@ -1047,6 +1100,17 @@ create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
   if (is_https_ctx ())
     return 'https';
   return 'http';
+}
+;
+
+create procedure DB.DBA.NS_URL_FROM_PREFIX (in ns_prefix varchar, in ns_default varchar)
+{
+  declare ns_url any;
+  declare prefix varchar;
+
+  prefix := ns_prefix;
+  ns_url := (select NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = prefix);
+  return coalesce(ns_url, ns_default);
 }
 ;
 
@@ -1531,7 +1595,9 @@ grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
+grant execute on DB.DBA.XSLT_SEPARATE_SEMI_VALUES to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
+grant execute on DB.DBA.NS_URL_FROM_PREFIX to public;
 grant execute on DB.DBA.RDF_PROXY_ENTITY_IRI to public;
 grant execute on DB.DBA.RM_SPONGE_DOC_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
@@ -1550,6 +1616,7 @@ grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:ns_from_prefix', 'DB.DBA.NS_URL_FROM_PREFIX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:getIRIbyCIK', fix_identifier_case ('DB.DBA.GET_XBRL_NAME_BY_CIK'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_label_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME'));
@@ -1568,6 +1635,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:separateSemiValues', 'DB.DBA.XSLT_SEPARATE_SEMI_VALUES');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_PROXY_ENTITY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
@@ -4555,7 +4623,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     if (host_part <> '' or img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos?vq=', img_id);
-    tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/main/atom2rdf.xsl';
   }
   else if (new_origin_uri like 'http://%.youtube.com/watch?v=%')
@@ -4568,7 +4636,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     if (img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos/', img_id);
-    tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/main/atomentry2rdf.xsl';
   }
    else if (new_origin_uri like 'http://%.youtube.com/%' or new_origin_uri like 'http://%.youtube.com/user/%')
@@ -4605,8 +4673,8 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
   }
   else
     return 0;
-  if (hdr[0] not like 'HTTP/1._ 200 %')
-    signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+  --if (hdr[0] not like 'HTTP/1._ 200 %')
+  --  signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || xsl2, xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
@@ -5786,12 +5854,56 @@ create procedure DB.DBA.RDF_LOAD_WEBCAL (in graph_iri varchar, in new_origin_uri
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+create procedure DB.DBA.RDF_LOAD_PRODUCTWIKI (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
 	declare pos, is_sku, is_store integer;
+	asin := null;
+	api_key := _key;
+	if (not isstring (api_key))
+		return 0;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.productwiki.com/%')
+	{
+		declare arr any;
+		arr := sprintf_inverse (new_origin_uri, 'http://www.productwiki.com/%s', 0);
+		asin := arr[0];
+		pos := strchr(asin, '/');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
+	}
+	else
+		return 0;
+	if (asin is null)
+		return 0;
+	url := sprintf ('http://api.productwiki.com/connect/api.aspx?op=search&q=%s&format=xml&key=%s&fields=skus,images,description', asin, api_key);
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/productwiki2rdf.xsl', xd, 
+		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts); 
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
 
+create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+	declare pos, is_sku, is_store integer;
   asin := null;
   is_sku := 0;
 	is_store := 0;
@@ -5812,6 +5924,22 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
 		if (pos is not null)
 			asin := left(asin, pos);
 		is_store := 1;
+	}
+	else if (new_origin_uri like 'http://%.bestbuy.com/%?skuId=%' or new_origin_uri like 'http://%.bestbuy.com/%&skuId=%')
+	{
+		declare arr any;
+		arr := sprintf_inverse (new_origin_uri, 'http://%s.bestbuy.com/%sskuId=%s', 0);
+		asin := arr[2];
+		pos := strchr(asin, '/');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '&');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
+		is_sku := 1;
 	}
 	else if (new_origin_uri like 'http://%.bestbuy.com/site/olspage.jsp?%' or new_origin_uri like 'http://%.bestbuy.com/%/%?%')
     {

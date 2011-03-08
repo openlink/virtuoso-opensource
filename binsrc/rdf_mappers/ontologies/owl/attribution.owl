@@ -18,6 +18,7 @@
     <owl:Ontology rdf:about="&opl;">
         <creator xmlns="http://purl.org/dc/elements/1.1/"
             rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</creator>
+        <rdfs:label>OpenLink Sponger ontology for transformation attribution</rdfs:label>
     </owl:Ontology>
 
     <owl:Property rdf:about="&opl;providedBy">
@@ -50,7 +51,7 @@
         <rdfs:comment>The source ontology URI whcih is used for transformation</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;DataSource"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
-        <rdfs:label>isDescribedUsing</rdfs:label>
+        <rdfs:label>Is Described Using</rdfs:label>
         <rdfs:range rdf:resource="&owl;Thing"/>
     </owl:Property>
 
@@ -58,7 +59,7 @@
         <rdfs:comment>The prefix for given source ontology URI</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;DataSource"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
-        <rdfs:label>hasNamespacePrefix</rdfs:label>
+        <rdfs:label>Has Namespace Prefix</rdfs:label>
         <rdfs:range rdf:resource="&xsd;string"/>
     </owl:AnnotationProperty>
 
@@ -66,7 +67,7 @@
         <rdfs:comment>The errors, if any</rdfs:comment>
         <rdfs:domain rdf:resource="&owl;Thing"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
-        <rdfs:label>hasErrors</rdfs:label>
+        <rdfs:label>Has Errors</rdfs:label>
         <rdfs:range rdf:resource="&opl;TransformationErrors"/>
     </owl:Property>
 
@@ -74,7 +75,7 @@
         <rdfs:comment>A separate error</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;TransformationErrors"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
-        <rdfs:label>hasError</rdfs:label>
+        <rdfs:label>Has Error</rdfs:label>
         <rdfs:range rdf:resource="&opl;TransformationError"/>
     </owl:AnnotationProperty>
 
@@ -82,7 +83,7 @@
         <rdfs:comment>The description of error</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;TransformationError"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
-        <rdfs:label></rdfs:label>
+        <rdfs:label>Error Text</rdfs:label>
         <rdfs:range rdf:resource="&xsd;string"/>
     </owl:AnnotationProperty>
 </rdf:RDF>

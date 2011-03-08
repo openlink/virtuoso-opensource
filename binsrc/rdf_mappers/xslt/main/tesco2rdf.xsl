@@ -139,13 +139,13 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
 
-    <xsl:template match="PriceDescription">
+    <!--xsl:template match="PriceDescription">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
             <rdfs:label><xsl:value-of select="."/></rdfs:label>
           </gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
-    </xsl:template>
+    </xsl:template-->
 
     <xsl:template match="*[* and ../../*]">
 	<xsl:element namespace="{$ns}" name="{name()}">

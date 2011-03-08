@@ -138,19 +138,11 @@
 		<nfo:duration>
 			<xsl:value-of select="yt:duration/@seconds"/>
 		</nfo:duration>
-	</rdf:Description>
-	<xsl:apply-templates select="media:*" mode="media"/>
-</xsl:template>
-
-<xsl:template match="text()" mode="media"/>
-
-<xsl:template match="media:content[@yt:format='5']" mode="media">
-    <rdf:Description rdf:about="{$resourceURL}">
 	<content:encoded rdf:parseType="Literal">
 	    <object width="425" height="350" xmlns="">
-		<param name="movie" value="{@url}">
+				<param name="movie" value="{media:content[@yt:format='5']/@url}">
 		</param>
-		<embed src="{@url}" type="{@type}" width="425" height="350">
+				<embed src="{media:content[@yt:format='5']/@url}" type="{media:content[@yt:format='5']/@type}" width="425" height="350">
 		</embed>
 	    </object>
 	</content:encoded>
@@ -165,5 +157,8 @@
     <xsl:variable name="post" select="document-literal (., '', 2, 'UTF-8')"/>
     <xsl:value-of select="normalize-space(string($post))" />
 </xsl:template>
+
+<xsl:template match="text()" mode="media"/>
+
 
 </xsl:stylesheet>
