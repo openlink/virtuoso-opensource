@@ -79,7 +79,7 @@ doc:
 	$(JAVADOC) -d doc \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
-	
+
 #
 #  Run testsuite if WITH_JDK was found
 #
@@ -93,6 +93,12 @@ else
 run-tests:
 	@echo "***WARNING: Disabled Jena test suite"
 endif
+
+
+.PHONY: version
+version:
+	$(JAVA) -jar ./virt_jena.jar
+
 
 clean-local:
 	-rm -rf out.driver doc
