@@ -171,14 +171,14 @@ function init(){
       </xsl:when> <!-- multiple results -->
       <xsl:otherwise>
         <xsl:if test="/facets/result/@type='propval-list'">
-          <form>
+          <!--form>
             <input type="hidden" name="cmd" value="value_range"/>
             <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
             Value range between <input name="lo" type="text"/>
             and <input name="hi" type="text"/>
             <input type="submit" value="set"/>
             <span class="info">Plain integer, or RDF datatype (Ex: "1988-01-01"^^xsd:date, "Neubauten"@de)</span>
-          </form>                
+          </form-->                
         </xsl:if>
         <xsl:for-each select="/facets/result">
 	  <xsl:call-template name="render-result">
