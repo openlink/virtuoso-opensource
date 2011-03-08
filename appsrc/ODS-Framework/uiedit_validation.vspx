@@ -27,7 +27,22 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        fast-render="1">
+
+  <vm:page>
+    <vm:header>
+      <vm:title>Semantic Pingback Setup</vm:title>
+    </vm:header>
+    <vm:pagewrapper >
+      <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
+      <v:variable name="edit_semping" type="varchar" default="null" param-name="edit" />
+      <v:variable name="del_semping" type="varchar" default="null" param-name="del" />
+      <vm:rawheader caption="Edit your personal data"/>
+      <vm:navigation-new on="settings"/>
+      <vm:subnavigation-new on="site"/>
+      <vm:body>
+	      <vm:login redirect="index.vspx"/>
 
   <h3>Fields for validation</h3>
   <div style="height: 400px; overflow: auto;">
@@ -88,5 +103,7 @@
       </v:on-post>
     </v:button>
   </div>
-
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
 </v:page>

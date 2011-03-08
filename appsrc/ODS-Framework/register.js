@@ -418,7 +418,7 @@ function rfOpenIdAuthenticate(prefix) {
         + '&openid.ax.type.timezone=http://axschema.org/pref/timezone';
 
     document.location = S;
-  };
+  }
   OAT.AJAX.POST ("/ods_services/Http/openIdServer", q, x);
 }
 

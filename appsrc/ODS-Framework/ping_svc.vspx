@@ -27,7 +27,9 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        fast-render="1">
+
   <vm:page>
     <vm:header>
       <vm:title>Notification Services</vm:title>
@@ -54,7 +56,7 @@
 	      <tr class="listing_header_row">
 		  <th>Provider</th>
 		  <th>Endpoint</th>
-		  <th>Action</th>
+      		  <th width="5%">Action</th>
 	      </tr>
           <v:data-set name="maps" sql="select SH_URL, SH_NAME, SH_PROTO, SH_ID, SH_METHOD from ODS..SVC_HOST where SH_ID > 0" scrollable="1" editable="1" nrows="0">
 		  <v:before-data-bind>
@@ -87,14 +89,14 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_svc)
 			      </td>
 			      <td>
 				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
-
 			      </td>
-			      <td>
-				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+          			  <td nowrap="nowrap">
+                    <v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
 				      url="--sprintf ('ping_svc.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
+        				      xhtml_class="img_button"
 				      />
 			      </td>
 			  </tr>
@@ -111,27 +113,32 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_svc)
 	      </v:data-set>
 	  </table>
 	  <div class="fm">
-	      <fieldset>
-		  <label for="endp1">Endpoint URL</label>
-		  <v:text name="endp1" value="" xhtml_id="endp1" error-glyph="*" xhtml_size="110">
+          <fieldset class="form">
+            <div>
+              <label class="form" for="endp1">Endpoint URL</label>
+              <v:text name="endp1" value="" xhtml_id="endp1" error-glyph="*" xhtml_size="80">
               <v:validator name="v_httphost" test="regexp" regexp="^http[s]?://[0-9A-Za-z_:.-][/]*[^ ]*+\$" message="You should provide a valid host name."/>
             </v:text>
-            <br/>
-		  <label for="ps1">Notification Service</label>
+            </div>
+            <div>
+              <label class="form" for="ps1">Notification Service</label>
 		  <v:text name="ps1" xhtml_id="ps1" error-glyph="*" value="" />
-		  <br />
-		  <label for="proto1">Protocol</label>
+            </div>
+            <div>
+              <label class="form" for="proto1">Protocol</label>
 		  <v:select-list name="proto1" value="" xhtml_id="proto1" error-glyph="*">
 			<v:item name="xml-rpc" value="xml-rpc"/>
 			<v:item name="soap" value="soap"/>
 			<v:item name="REST" value="REST"/>
 			<v:item name="PubSubHub" value="PubSubHub"/>
             </v:select-list>
-            <br />
-		  <label for="meth1">Method</label>
-            <v:text name="meth1" value="" xhtml_size="110" xhtml_id="meth1" error-glyph="*" default_value="weblogUpdates.ping" />
-            <br />
-	      <span class="fm_ctl_btn">
+            </div>
+            <div>
+              <label class="form" for="meth1">Method</label>
+              <v:text name="meth1" value="" xhtml_size="80" xhtml_id="meth1" error-glyph="*" default_value="weblogUpdates.ping" />
+            </div>
+            <div>
+              <label class="form">&nbsp;</label>
 		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_svc),0)">
 		      <v:on-post>
 self.endp1.ufl_value := '';
@@ -181,7 +188,7 @@ control.vc_data_bind (e);
 self.maps.vc_data_bind (e);
 		      </v:on-post>
 		  </v:button>
-	      </span>
+            </div>
 	  </fieldset>
       </div>
       </vm:body>

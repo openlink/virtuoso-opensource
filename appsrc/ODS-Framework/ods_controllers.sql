@@ -926,7 +926,8 @@ _again:
 
 create procedure ODS.ODS_API."lookup.list" (
   in "key" varchar,
-  in "param" varchar := '')  __soap_http 'text/plain'
+  in "param" varchar := '',
+  in "depend" varchar := '')  __soap_http 'text/plain'
 {
   if ("key" = 'onlineAccounts')
   {
@@ -993,6 +994,34 @@ create procedure ODS.ODS_API."lookup.list" (
       || '\n'|| 'YouTube'
       || '\n'|| 'Zooomr'
     );
+  }
+  else if ("key" = 'webIDs')
+  {
+    declare uname, S varchar;
+
+    S := '';
+    if (ods_check_auth (uname))
+    {
+      declare uid integer;
+      declare paramTest varchar;
+      declare sql, st, msg, meta, rows any;
+
+      uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+      paramTest := '';
+      if ("param" <> '')
+        paramTest := sprintf (' and a.P_IRI like ''%%%s%%''', "param");
+
+      sql := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1 %s', uid, paramTest);
+      set_user_id ('dba');
+      st := '00000';
+      exec (sql, st, msg, vector (), 0, meta, rows);
+      if (st = '00000')
+      {
+        foreach (any row in rows) do
+          S := S || case when S <> '' then '\n' else '' end || row[1];
+      }
+    }
+    http (S);
   }
   else if ("key" = 'Industry')
   {
@@ -1470,17 +1499,19 @@ create procedure ODS.ODS_API."user.authenticate" (
   declare exit handler for sqlstate '*'
   {
     rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+    return ods_serialize_sql_error (__SQL_STATE, substring(__SQL_MESSAGE, 1, coalesce(strstr(__SQL_MESSAGE, '<>'), length(__SQL_MESSAGE))));
   };
 
   tmp := (select WAB_DISABLE_UNTIL from DB.DBA.WA_BLOCKED_IP where WAB_IP = http_client_ip ());
   --if (tmp is not null and tmp > now ())
-  --  signal ('22023', 'Too many failed attempts. Try again in an hour.');
+  --  signal ('22023', 'Too many failed attempts. Try again in an hour.<>');
 
   uname := null;
     if (not isnull (facebookUID))
     {
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
+    if (isnull (uname) and (oauthMode = 'linkedin'))
+      signal ('22023', 'The Facebook account is not registered.<>');
     }
   else if (not isnull (openIdUrl))
     {
@@ -1489,7 +1520,7 @@ create procedure ODS.ODS_API."user.authenticate" (
       commit work;
       vResult := http_client (openIdUrl);
       if (vResult not like '%is_valid:%true\n%')
-        signal ('22023', 'OpenID Authentication Failed');
+      signal ('22023', 'OpenID Authentication Failed.<>');
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     }
@@ -1539,6 +1570,12 @@ create procedure ODS.ODS_API."user.authenticate" (
                    and WUO_URL = profile_url);
     }
     OAUTH..session_terminate (oauthSid);
+
+    if (isnull (uname) and (oauthMode = 'twitter'))
+      signal ('22000', 'The Twitter account is not registered.\n Please enter your Twitter account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+
+    if (isnull (uname) and (oauthMode = 'linkedin'))
+      signal ('22000', 'The LinkedIn account is not registered.\n Please enter your LinkedIn account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
   }
   else
   {

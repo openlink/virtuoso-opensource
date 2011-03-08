@@ -24,6 +24,7 @@ var lfTab;
 var lfFacebookData;
 var lfOptions;
 var lfAjaxs = 0;
+var lfNotReturn = true;
 var lfAttempts = 0;
 
 function lfRowValue(tbl, label, value, leftTag) {
@@ -74,10 +75,12 @@ function lfInit() {
     OAT.Dom.show('lf');
     if (uriParams['oid-mode'] == 'twitter') {
       lfTab.go(4);
+      lfNotReturn = false;
       $('lf_login').click();
     }
     else if (uriParams['oid-mode'] == 'linkedin') {
       lfTab.go(5);
+      lfNotReturn = false;
       $('lf_login').click();
     }
     else {
@@ -147,9 +150,9 @@ function lfCallback(oldIndex, newIndex) {
   else if (newIndex == 3)
     $('lf_login').value = 'WebID Login';
   else if (newIndex == 4)
-    $('lf_login').value = 'Twitter';
+    $('lf_login').value = 'Twitter Login';
   else if (newIndex == 5)
-    $('lf_login').value = 'LinkedIn';
+    $('lf_login').value = 'LinkedIn Login';
 
   pageFocus('lf_page_'+newIndex);
 }
@@ -181,6 +184,8 @@ function lfEnd() {
 }
 
 function lfLoginSubmit(cb) {
+  var notReturn = lfNotReturn;
+  lfNotReturn = true;
   var mode = lfTab.selectedIndex;
   var prefix = 'lf';
   var q = '';
@@ -203,7 +208,7 @@ function lfLoginSubmit(cb) {
   } else if (mode == 3) {
   } else if (mode == 4) {
     var uriParams = OAT.Dom.uriParams();
-	  if ((typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
+	  if (notReturn || (typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
       twitterAuthenticate('lf');
       return false;
     }
@@ -213,7 +218,7 @@ function lfLoginSubmit(cb) {
       + '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']);
   } else if (mode == 5) {
     var uriParams = OAT.Dom.uriParams();
-	  if ((typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
+	  if ((notReturn || typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
       linkedinAuthenticate('lf');
       return false;
     }
