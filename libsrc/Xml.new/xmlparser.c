@@ -196,7 +196,7 @@ VXmlParserCreate (vxml_parser_config_t *config)
       if (parser->src_eh == NULL)
 	xmlparser_logprintf (parser, XCFG_ERROR, 300, "The specified name '%.100s' of the default encoding of the XML source text is not supported", parser->cfg.initial_src_enc_name);
     }
-
+  parser->feed_buf_size = config->feed_buf_size;
   parser->state = XML_ST_INITIAL;
   if (config->input_is_ge & GE_XML)
     parser->state |= XML_A_CHAR | XML_A_MISC;
@@ -614,9 +614,17 @@ VXmlParse (vxml_parser_t * parser, char * data, s_size_t data_size)
   parser->input_cost = 1000 + data_size / 16;
 
   if (parser->feeder != NULL)
-    parser->feed_tail = parser->feed_end = parser->feed_buf = dk_alloc (FEED_BUF_SIZE);
-
-  parser->uni_tail = parser->uni_end = parser->uni_buf = dk_alloc (UNI_BUF_SIZE);
+    {
+      if (0 == parser->feed_buf_size)
+        parser->feed_buf_size = 0x2000;
+      parser->feed_tail = parser->feed_end = parser->feed_buf = dk_alloc (parser->feed_buf_size);
+    }
+  else
+    { /* parser->feed_buf_size is needed even if (NULL == parser->feeder) befause it is used in calculating the size of parser->uni_buf */
+      if (0 == parser->feed_buf_size)
+        parser->feed_buf_size = MIN (data_size + 2, 0x2000);
+    }
+  parser->uni_tail = parser->uni_end = parser->uni_buf = dk_alloc (6 * (BRICK_SIZE + parser->feed_buf_size));
 
   if (!initialize_src_eh (parser))
     return 0;

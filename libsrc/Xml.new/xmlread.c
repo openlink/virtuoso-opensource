@@ -208,7 +208,7 @@ get_one_xml_char (vxml_parser_t * parser)
 	GPF_T;
       if (parser->feed_tail > parser->feed_end)
 	GPF_T;
-      if (parser->feed_end > parser->feed_buf+FEED_BUF_SIZE)
+      if (parser->feed_end > parser->feed_buf + parser->feed_buf_size)
 	GPF_T;
 #endif
       if (parser->feed_tail < parser->feed_end)
@@ -233,10 +233,10 @@ get_one_xml_char (vxml_parser_t * parser)
 	GPF_T;
       if (parser->feed_tail > parser->feed_end)
 	GPF_T;
-      if (parser->feed_end > parser->feed_buf+FEED_BUF_SIZE)
+      if (parser->feed_end > parser->feed_buf + parser->feed_buf_size)
 	GPF_T;
 #endif
-	  feed_result = parser->feeder (parser->read_cd, put_begin, parser->feed_buf+FEED_BUF_SIZE-put_begin);
+	  feed_result = parser->feeder (parser->read_cd, put_begin, parser->feed_buf + parser->feed_buf_size - put_begin);
 	  if (0 >= feed_result)
 	    goto fail;
 	  parser->input_weight += 1 + (feed_result / 16);
@@ -247,7 +247,7 @@ get_one_xml_char (vxml_parser_t * parser)
 	GPF_T;
       if (parser->feed_tail > parser->feed_end)
 	GPF_T;
-      if (parser->feed_end > parser->feed_buf+FEED_BUF_SIZE)
+      if (parser->feed_end > parser->feed_buf + parser->feed_buf_size)
 	GPF_T;
 #endif
 	} while (0);
