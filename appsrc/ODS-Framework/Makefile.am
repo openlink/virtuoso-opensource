@@ -73,6 +73,7 @@ EXTRA_DIST = \
 	ckeditor/plugins/smiley/dialogs/*.js \
 	ckeditor/plugins/smiley/images/*.gif \
 	ckeditor/plugins/specialchar/dialogs/*.js \
+	ckeditor/plugins/specialchar/lang/*.js \
 	ckeditor/plugins/styles/styles/*.js \
 	ckeditor/plugins/table/dialogs/*.js \
 	ckeditor/plugins/tabletools/dialogs/*.js \
@@ -127,13 +128,13 @@ EXTRA_DIST = \
 	tmpl/WS_TERM_BY_USER_TEMPLATE \
 	users/css/*.css \
 	users/*.html \
-	users/js/*.js \
 	users/*.php \
 	users/*.txt \
+	users/*.vsp \
+	users/*.xsl \
+	users/js/*.js \
 	users/users.jsp \
 	users/users.rb \
-	users/*.vsp \
 	vad_version \
 	version.base \
 	version.curr
-
