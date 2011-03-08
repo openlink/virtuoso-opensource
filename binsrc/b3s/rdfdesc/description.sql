@@ -216,7 +216,7 @@ b3s_render_inf_opts ()
     {
       if (RS_NAME = inf) 
         {
-          http (sprintf ('<option value="%s" selected="true">%s</option>', RS_NAME, RS_NAME));
+          http (sprintf ('<option value="%s" selected="selected">%s</option>', RS_NAME, RS_NAME));
           f := 1;
         }
       else 
@@ -224,7 +224,7 @@ b3s_render_inf_opts ()
     }
 
   if (f = 0)
-    http ('<option value="**none**" selected="true">None</option>');
+    http ('<option value="**none**" selected="selected">None</option>');
   else 
     http ('<option value="**none**">None</option>');
 }
@@ -314,9 +314,9 @@ b3s_render_ses_params ()
   s := connection_get ('sas');
   sid := connection_get ('sid');
 
-  if (i is not null) i := '&inf=' || i;
-  if (s is not null) i := i || '&sas=' || s;
-  if (sid is not null) i := i || '&sid=' || sid;
+  if (i is not null) i := '&inf=' || sprintf ('%V', i);
+  if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
+  if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
 
   if (i is not null) return i;
   else return '';
@@ -556,8 +556,35 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 }
 ;
 
+create procedure b3s_label (in _S any, in langs any)
+{
+  declare best_str, meta, data any;
+  declare best_q, q float;
+  declare lang varchar;
+
+  exec (sprintf ('sparql define input:inference "virtrdf-label" '||
+  'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), null, null, vector (), 0, meta, data);
+  best_str := '';
+  best_q := 0;
+  if (length (data))
+    {
+      for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
+	{
+	  q := rdfdesc_get_lang_by_q (langs, data[i][1]);
+	  --dbg_obj_print (data[i][0], langs, data[i][1], q);
+          if (q > best_q)
+	    {
+	      best_str := data[i][0];
+	      best_q := q;
+	    }
+	}
+    }
+  return best_str;
+}
+;
+
 create procedure 
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in rel int := 1, in acc any := null, in _from varchar := null)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null)
 {
    declare lang, rdfs_type, rdfa, visible any;
 
@@ -610,9 +637,17 @@ again:
 
        rdfa := b3s_rel_print (prop, rel, 0);
        if (http_mime_type (_url) like 'image/%')
-	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
+	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
        else
-         http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid, _from), b3s_uri_curie(_url)));
+	 {
+	   declare lbl any;
+	   lbl := '';
+	   if (registry_get ('fct_desc_value_labels') = '1')
+	     lbl := b3s_label (_url, langs);
+	   if ((not isstring(lbl)) or length (lbl) = 0)
+	     lbl := b3s_uri_curie(_url);
+	   http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
+	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
        --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>', 
        --	       b3s_http_url (_url, sid)));
@@ -751,7 +786,7 @@ create procedure fct_links_mup (in subj any, in desc_link any)
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := '';
   links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
+  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml"  title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
   links := links || repeat (' ', 5) ||
   sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
   links := links || repeat (' ', 5) ||

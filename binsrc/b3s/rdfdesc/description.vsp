@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" version="XHTML+RDFa 1.0">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" version="XHTML+RDFa 1.0">
 <?vsp
 --
 --
@@ -256,7 +257,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&sid=<?V sid ?>&sp=1" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity"/></a></h2>
+	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sp=1" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
@@ -275,20 +276,20 @@
 
   <a class="fct_sel_as_type" 
      title="Use as class in facets" 
-     href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?/ _ciri ?>">Constrain facet on this type</a>
+     href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?/ _ciri ?>">Constrain facet on this type</a>
 
 <?vsp 
   } else { ?>
   <a class="fct_sel_as_type" 
      title="Start new facet session with type" 
-     href="/fct/facet.vsp?cmd=new_with_class&iri=<?/ _ciri ?>">Start faceted browsing from this Type</a>
+     href="/fct/facet.vsp?cmd=new_with_class&amp;iri=<?/ _ciri ?>">Start faceted browsing from this Type</a>
 <?vsp
   } 
   declare qrimg any;
   qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri), lines));
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
 ?>
-	  <img id="qrcode" src="data:image/jpg;base64,<?V qrimg ?>"/>
+	  <img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
       </div>
         </div>
@@ -303,8 +304,8 @@ if (_subject <> '') {
 <?vsp 
 } 
 ?>
-<!--                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
-                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
+<!--            <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
+                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
                 <li><a href="">Choose <?V ''?> as Value (o)</a></li> -->
 <!-- proptable -->
       <table class="description">
@@ -370,7 +371,7 @@ if (_subject <> '') {
 	       b3s_http_print_l (PRED, odd_position, flag, sid);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_langs, _from);
+           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from);
 	   nxt1:;
 	   inx := inx + 1;
 	}
@@ -388,6 +389,7 @@ if (_subject <> '') {
       </table>
       <div id="nav">
 	  <form action="/describe/" method="get">
+	  <div>
 	      <input type="hidden" name="url" value="<?V gr ?>" />
 	      <input type="hidden" name="p" value="<?V page + 1 ?>"/>
 	      <?vsp if (sid is not null) { ?>
@@ -395,20 +397,21 @@ if (_subject <> '') {
 	      <?vsp } ?>
 	      <input type="hidden" name="lp" value="<?V _last ?>"/>
 	      <?vsp if (topof <> '' and _last > 0) {  if (1 or page > 0) { ?>   
-	      <button type="submit" value="" name="first" <?vsp if (page <= 0) { http ('disabled="true"'); } ?>>&#9666;&#9666; First</button>
+	      <button type="submit" value="" name="first" <?vsp if (page <= 0) { http ('disabled="disabled"'); } ?>>&#9666;&#9666; First</button>
 	      &nbsp;
 	      <input type="hidden" name="op" value="<?V page - 1 ?>"/>
-	      <button type="submit" value="" name="prev" <?vsp if (page <= 0) { http ('disabled="true"'); } ?>>&#9666; Prev</button>
+	      <button type="submit" value="" name="prev" <?vsp if (page <= 0) { http ('disabled="disabled"'); } ?>>&#9666; Prev</button>
 	      &nbsp;&nbsp;&nbsp;
 	<?vsp } if (1 or not dis_next) { ?>   
-	      <button type="submit" value="" name="next" <?vsp if (dis_next) { http ('disabled="true"'); } ?>>Next &#9656;</button>
+	      <button type="submit" value="" name="next" <?vsp if (dis_next) { http ('disabled="disabled"'); } ?>>Next &#9656;</button>
 	       &nbsp;
-	      <button type="submit" value="" name="last" <?vsp if (dis_next) { http ('disabled="true"'); } ?>>Last &#9656;&#9656;</button>
+	      <button type="submit" value="" name="last" <?vsp if (dis_next) { http ('disabled="disabled"'); } ?>>Last &#9656;&#9656;</button>
 	       &nbsp;&nbsp;&nbsp;
 	       Page <?V page + 1 ?> of <?V _last + 1 ?>  &nbsp;&nbsp;&nbsp;
 	       <input type="text" value="<?V page + 1 ?>" size="5" name="gp" /> &nbsp; 
 	       <button type="submit" value="" name="go">Go</button>
 	<?vsp } } ?>
+	</div>
 	</form>
       </div>
     </div> <!--  #MD -->
@@ -419,21 +422,21 @@ if (_subject <> '') {
         Explore alternative Linked Data Views &amp; Meshups using:
         <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
         &nbsp; &nbsp; Raw Data in:
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">NTriples</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">RDF/XML</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">RDF/JSON</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">OData/Atom</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">OData/JSON</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a>
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/cxml')?>">CXML</a> |
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/csv')?>">CSV</a> | RDF (
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/plain') ?>">N-Triples</a>
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/rdf+json')?>">JSON</a> 
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/atom+xml')?>">Atom</a> 
+        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/odata+json')?>">JSON</a> )
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
-        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" border="0"></a> &nbsp;
-        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" border="0"></a>
-        <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]"></a>
-        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" border="0"></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" style="border-width:0"/></a> &nbsp;
+        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
+        <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" style="border-width:0"/></a>
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" 
 	    src="/fct/images/creativecommons.png" /></a>
 	<span about=""

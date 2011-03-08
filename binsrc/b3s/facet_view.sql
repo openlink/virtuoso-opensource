@@ -1842,12 +1842,10 @@ create procedure fct_virt_info ()
 create procedure fct_page_head ()
 {
   http ('<div id="hd_l">
-    <h1>
-      <div id="logo">
+    <h1 id="logo">
         <a href="/fct/facet.vsp">
 	   <img src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
         </a>
-      </div>
     </h1>
     <div id="homelink"></div>
   </div> <!-- hd_l -->

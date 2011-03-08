@@ -1,4 +1,5 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
 --
@@ -144,18 +145,18 @@
 <!-- proptable -->
     <div id="TAB_ROW">
 	<div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&tp=1<?V ses_parms ?>">Referenced by Graphs</a>
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Referenced by Graphs</a>
         </div>
 	<div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&tp=2<?V ses_parms ?>">Source Graphs</a>
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Source Graphs</a>
         </div>
 	<div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
           <a title="A list of other identifiers for the current entity."
-           href="<?V http_path () ?>?g=<?U _S ?>&tp=3<?V ses_parms ?>">Direct coreferences</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Direct coreferences</a>
         </div>
 	<div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
           <a title="A list of indirect identifiers for the current entity based on Inverse Functional Property values."
-           href="<?V http_path () ?>?g=<?U _S ?>&tp=4<?V ses_parms ?>">Indirect coreferences</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Indirect coreferences</a>
         </div>
       </div> <!-- TAB_ROW -->
 
@@ -255,10 +256,10 @@
       </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
-        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" border="0"></a> &nbsp;
-        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" border="0"></a>
-        <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]"></a>
-        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" border="0"></a>
+      <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" style="border-width:0" /></a> &nbsp;
+      <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0" /></a>
+      <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0" /></a>
+      <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" style="border-width:0" /></a>
       <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="/fct/images/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. <br/>
       <?vsp fct_virt_info (); ?><br /> 
       <span class="copyright">Copyright &copy; 2009-2011 OpenLink Software</span>
