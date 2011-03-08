@@ -216,6 +216,8 @@ OMAIL.WA.res_mime_create(30540,'application/x-zip-compressed', '')
 ;
 OMAIL.WA.res_mime_create(30550,'application/x-gzip-compressed', '')
 ;
+OMAIL.WA.res_mime_create(30560,'application/ics', '')
+;
 
 -- audio - ID 40xxx ------------------------------------------------------------
 OMAIL.WA.res_mime_create(40100,'audio/basic', '')
