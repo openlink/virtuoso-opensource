@@ -481,10 +481,10 @@ try_http_get:
 	}
       else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)) or (timeout is not null and timeout > 0))
         {
-	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout);
+	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15);
  	}
       else
-        str := http_get (base_uri, head);
+        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15);
       if (aref (head, 0) not like '% 200%')
 	signal ('H0001', concat ('HTTP request failed: ', aref (head, 0), 'for URI ', base_uri));
     }
