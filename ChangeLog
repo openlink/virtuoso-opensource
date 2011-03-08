@@ -1,3 +1,89 @@
+2011-03-08 11:52  source
+
+	* Fixed size of input buffer of an XML parser is now adaptive
+
+2011-03-08 10:38  source
+
+	* Updated version to 6.1.3-rc7
+
+2011-03-07 21:49  source
+
+	* Fixed when there is a gb node, test the sort node for dep part in
+	  the sort spec
+
+2011-03-05 00:03  source
+
+	* Updated documentation
+
+2011-03-04 14:46  source
+
+	* Fixed moved mutex lock/unlock calls to avoid deadlock
+
+2011-03-03 17:12  source
+
+	* Added read-ahead on extent
+
+2011-03-03 17:10  source
+
+	* Fixed immutable graph setting can be a pattern, so we can disable
+	  sponging on all graphs
+
+2011-03-03 11:56  source
+
+	* Fixed DATETIME to DATE conversions
+
+2011-03-02 12:24  source
+
+	* Fixed issue with special sparql variables
+
+2011-03-02 12:24  source
+
+	* Fixed issue with qualifier in SQLForeignKeys
+
+2011-03-01 19:35  source
+
+	* Fixed initialization of defaults
+
+2011-03-01 19:32  source
+
+	* Fixed set HTTP status to 503 when showing maintenance page and
+	  added a Retry-After: 1800 (seconds) header as a hint to the remote
+
+2011-02-28 17:02  source
+
+	* Fixed issue if data did not generate prefix2iri hash
+
+2011-02-28 13:47  source
+
+	* Fixed check for 5xx or 4xx status codes
+
+2011-02-26 08:35  source
+
+	* Added http maintenance functions
+
+2011-02-25 17:31  source
+
+	* Fixed only start from the beginning when there is a thread else we
+	  could get into a busy loop
+
+2011-02-23 21:35  source
+
+	* Fixed bad regexp
+
+2011-02-23 17:31  source
+
+	* Fixed size of input buffer of an XML parser is made adaptive
+
+2011-02-21 13:36  source
+
+	* Added support for named parameters
+
+2011-02-20 16:14  source
+
+	* Fixed increase the size of the input buffer of the TURTLE lexer
+	  for file resources, in order to improve disk access pattern if many
+	  resources are loaded in parallel
+
 2011-02-18 15:49  source
 
 	* Updated version to 6.1.3-rc6
