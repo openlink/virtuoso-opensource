@@ -105,7 +105,7 @@
     </tr>
   </xsl:template>
   <!-- td ========================================================================== -->
-  <xsl:template match="td">
+  <xsl:template match="td|th">
     <td>
       <xsl:if test="@colspan != ''">
         <xsl:attribute name="colspan"><xsl:value-of select="@colspan"/></xsl:attribute>
@@ -163,6 +163,12 @@
     <br>
       <xsl:apply-templates/>
     </br>
+  </xsl:template>
+  <!-- hr ========================================================================== -->
+  <xsl:template match="hr">
+    <hr>
+      <xsl:apply-templates/>
+    </hr>
   </xsl:template>
   <!-- u ========================================================================== -->
   <xsl:template match="u">
