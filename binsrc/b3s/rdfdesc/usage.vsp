@@ -261,7 +261,7 @@
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" border="0"></a>
       <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="/fct/images/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. <br/>
       <?vsp fct_virt_info (); ?><br /> 
-      <span class="copyright">Copyright &copy; 2010 OpenLink Software</span>
+      <span class="copyright">Copyright &copy; 2009-2011 OpenLink Software</span>
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
  </body>
