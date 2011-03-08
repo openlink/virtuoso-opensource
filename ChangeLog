@@ -1,3 +1,151 @@
+2011-03-08 13:56  source
+
+	* Added workaround to tell _JAVA_ driver the input is string as it is
+	  confused on DV_ANY and breaks utf-8 support
+
+2011-03-08 13:44  source
+
+	* Added quick rule to check version string
+
+2011-03-08 13:44  source
+
+	* Rebuild driver
+
+2011-03-08 13:44  source
+
+	* Fixed only allow URI or Blank nodes as subjects
+
+2011-03-08 13:38  source
+
+	* Added additional crawler params
+	* Fixed show status without errors
+	* Fixed label
+
+2011-03-08 13:36  source
+
+	* Added Described By
+	* Added ProductWiki cartridge
+	* Fixed do not use triple dicts on long files
+	* Fixed OWL
+	* Fixed labels
+	* Fixed minor issues
+
+2011-03-08 13:24  source
+
+	* Updated to CKeditor version 3.5.2
+
+2011-03-08 13:08  source
+
+	* Added map markers for various types of things
+	* Added a smaller throbber animated gif
+	* Fixed resizing issue for mobile browsers
+	* Fixed bug in processing item title HREFs in map popup
+	* Fixed bugs in marker selection code using rtb:useMarker
+
+2011-03-08 12:48  source
+
+	* Fixed mime types
+	* Fixed mail rendering
+
+2011-03-08 12:47  source
+
+	* Fixed attendees
+
+2011-03-08 12:47  source
+
+	* Fixed Twitter and LinkedIn registration/login
+	* Fixed RDF object properties
+	* Fixed UI
+	* Fixed escape params
+	* Fixed scroll bars
+
+2011-03-08 12:44  source
+
+	file en.js was added on branch V6_0_0-DEVEL on 2011-03-08 13:24:39 +0000
+
+2011-03-08 12:35  source
+
+	* Added support for AddThis
+	* Added manual mode for entering location when automatic location fails
+	* Added more geocoding support
+	* Fixed location timeout to 10 sec
+	* Fixed location popup
+	* Fixed text when Javascript is not enabled
+	* Fixed bug in management of user settings
+	* Fixed bugs in session persistance
+
+2011-03-08 12:30  source
+
+	file football.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file house.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file info.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file mail.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file shield.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:17 +0000
+
+2011-03-08 12:30  source
+
+	file shoppingcart.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:17 +0000
+
+2011-03-08 12:30  source
+
+	file star.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:17 +0000
+
+2011-03-08 12:30  source
+
+	file book.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file camera.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file car.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file coffee.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file creditcards.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file dollar.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file drink.png was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:16 +0000
+
+2011-03-08 12:30  source
+
+	file throbber_small.gif was added on branch V6_0_0-DEVEL on 2011-03-08 13:08:15 +0000
+
+2011-03-08 12:24  source
+
+	* Fixed debug defines
+
+2011-03-08 12:19  source
+
+	* Added support for robots.txt
+
+2011-03-08 12:18  source
+
+	* Fixed update crawler entries using id and avoid table scans
+
 2011-03-08 11:52  source
 
 	* Fixed size of input buffer of an XML parser is now adaptive
@@ -11,6 +159,10 @@
 	* Fixed when there is a gb node, test the sort node for dep part in
 	  the sort spec
 
+2011-03-07 12:48  source
+
+	file powder-s.owl was added on branch V6_0_0-DEVEL on 2011-03-08 13:36:27 +0000
+
 2011-03-05 00:03  source
 
 	* Updated documentation
@@ -18,6 +170,10 @@
 2011-03-04 14:46  source
 
 	* Fixed moved mutex lock/unlock calls to avoid deadlock
+
+2011-03-03 22:34  source
+
+	file productwiki2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-03-08 13:36:28 +0000
 
 2011-03-03 17:12  source
 
