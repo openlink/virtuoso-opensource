@@ -1888,7 +1888,8 @@ badtype:
 }
 ;
 
-create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
+-- /* keep the input parameter as varchar in order to make jdbc happy and receive 182 instead of 242 on which it breaks the utf8 support */
+create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 {
   declare t int;
   t := __tag (v);
