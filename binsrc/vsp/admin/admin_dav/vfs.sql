@@ -294,7 +294,7 @@ create procedure WS.WS.DELETE_LOCAL_COPY (in _host varchar, in _url varchar, in 
 }
 ;
 
-create procedure WS.WS.VFS_RUN (in url varchar, in threads int := 1, in batch_size int := 1, in fn varchar := null, in dta any := null)
+create procedure WS.WS.VFS_RUN (in url varchar, in threads int := null, in batch_size int := 1, in fn varchar := null, in dta any := null)
 {
   declare h, host, s_url, root_collection  any;
   h := rfc1808_parse_uri (url);
@@ -323,7 +323,7 @@ create procedure WS.WS.VFS_STATUS_SET (in _tgt varchar, in _root varchar, in _st
 
 -- /* top level procedure for processing queues */
 create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := 1, in batch_size int := 1)
+    in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := null, in batch_size int := 1)
 {
   declare _msg, _stat, oq varchar;
 do_again:
@@ -356,24 +356,21 @@ do_again:
 -- /* processing crawler queue */
 -- _upd 0:init, 1:update site; _dbg 0:normal, 1:retrieve only one entry and stop, 2:retrieve options
 --                                  3:send retrieved status to http client
-create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any, in nthreads int := 1, in batch_size int := 1)
+create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd integer,
+    in _dbg integer, in _fn varchar, in _clnt_data any, in nthreads int := null, in batch_size int := 1)
 {
   declare _total, active_thread integer;
   declare _rc integer;
   declare _tgt_url varchar;
   declare url_fn varchar;
   declare _last_shut integer;
-  declare _tgt, _root varchar;
   declare _next_url varchar;
   declare _dav_method varchar;
   declare aq_list, aq, url_batch any;
   declare err any;
-  declare pid int;
+  declare pid, thr_conf, care_bot int;
 
   _total := 0;
-  _tgt := __tgt;
-  _root := __root;
   registry_set ('WEB_COPY', 'X __sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
   --_last_shut := coalesce (sequence_set ('WEB_COPY_SSHUT', 0, 2), 0);
   --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting'
@@ -383,7 +380,16 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
   commit work;
 
   whenever not found goto n_site;
-  select VS_URL, VS_METHOD into _tgt_url, _dav_method from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root;
+  select VS_URL, VS_METHOD, VS_THREADS, VS_BOT 
+      into _tgt_url, _dav_method, thr_conf, care_bot 
+      from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root with (exclusive);
+  if (thr_conf is not null and thr_conf > 0)
+    nthreads := thr_conf;
+  if (nthreads is null or nthreads < 0)
+    nthreads := 1;
+  if (care_bot)  
+    VFS_ROBOTS_GET (_tgt, _root);
+  commit work;
   -- if it is an update 
   if (_upd = 1)
     {
@@ -622,7 +628,7 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
 {
   declare _stag, _etag, _len, _inx, _htag, _sltag, _count, _t_tag1, _t_tag2, _urls_arr_len, depth integer;
   declare _tmp, _tmp_host, _tmp_url, _t_len, _d_imgs, _other, _start_url varchar;
-  declare _flw, _nflw, _method, _delete, xp_exp, base varchar;
+  declare _flw, _nflw, _method, _delete, xp_exp, base, robots, care_of_bot varchar;
   declare _newer datetime;
   declare _own integer;
   declare frames, _urls_arr any;
@@ -631,11 +637,11 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
     return;
 
   whenever not found goto no_site_rec;
-  select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER, VS_XPATH, VS_DEPTH, VS_URL
-      into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer, xp_exp, depth, _start_url
+  select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER, VS_XPATH, VS_DEPTH, VS_URL, VS_ROBOTS, VS_BOT
+      into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer, xp_exp, depth, _start_url, robots, care_of_bot
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   --dbg_obj_print ('OTHER SITES:', _other);
-  if (depth is not null and depth >= 0 and depth >= lev)
+  if (depth is not null and depth >= 0 and lev > depth)
     return;
   frames := vector ();
   if (isstring (_content))
@@ -648,6 +654,8 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
   else
     return;
 
+  if (care_of_bot)
+    _nflw := cast (robots as varchar) || _nflw;
   if ((isstring (_flw) and length (_flw) > 0) or (isstring (_nflw) and length (_nflw) > 0))
     frames := vector ();
 
@@ -2071,6 +2079,77 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
 	VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
   commit work;
+}
+;
+
+create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar)
+{
+  declare s any;
+  declare v1 any;
+  declare match, exact_match, fill int;
+  s := string_output ();
+  http (txt, s);
+  v1 := '';
+  while (1)
+    {
+      declare l, arr any;
+      next:	
+      l := ses_read_line (s, 0, 0, 1);
+      if (l = 0)
+	goto ex;
+      l := trim (l, '\r\n ');
+      arr := split_and_decode (l, 0, '\0\0:');
+      if (arr is null)
+	goto next;
+      if (lower (arr[0]) = 'user-agent')
+	{
+	  declare u any;
+	  u := trim (arr[1]);
+	  fill := 0;
+  	  if (match = 0 and exact_match = 0 and u = '*')
+	    {
+	      match := 1;
+	      fill := 1;
+	    }
+	  if (exact_match = 0 and u <> '*' and ua like u)
+	    {
+	      exact_match := 1;
+	      v1 := '';
+	      fill := 1;
+	    }
+	}
+      else if (fill and lower (arr[0]) = 'disallow')
+	{
+	  v1 := v1 || trim (arr[1]) || '%;';
+	}
+    }
+  ex:
+  v1 := trim (v1);
+  if (length (v1) = 0)
+    v1 := null;
+  return v1;
+}
+;
+
+create procedure VFS_ROBOTS_GET (in _host varchar, in _root varchar)
+{
+  declare url, ret, head, me, robots any;
+  url := vector ('http', _host, '/robots.txt', '', '', '');
+  url := vfs_uri_compose (url);
+  robots := null;
+  declare exit handler for sqlstate '*' 
+    {
+      goto en;
+    };
+  ret := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>head, n_redirects=>5);
+  if (not isvector (head) or length (head) = 0 or head[0] not like 'HTTP/1._ 200 %')
+    goto en;
+  me := coalesce (cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ClientIdString'), 
+  	'Mozilla/4.0 (compatible; OpenLink Virtuoso)');
+  robots := vfs_robots_parse (ret, me);
+  en:
+  update VFS_SITE set VS_ROBOTS = robots where VS_HOST = _host and VS_ROOT = _root;
+  return robots;
 }
 ;
 
