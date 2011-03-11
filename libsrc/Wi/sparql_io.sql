@@ -1831,7 +1831,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare accept, soap_action, user_id varchar;
   declare exec_time, exec_db_activity any;
   declare __debug_mode integer;
-  declare qtxt integer;
+  declare qtxt, deadl integer;
   declare save_mode, save_dir, fname varchar;
   declare save_dir_id any;
   declare help_topic varchar;
@@ -1873,6 +1873,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   dflt_graphs := vector ();
   named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
+  deadl := 0;
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
   hard_timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
@@ -2529,6 +2530,8 @@ host_found:
       set TRANSACTION_TIMEOUT=hard_timeout;
     }
   set_user_id (user_id, 1);
+  again:
+  state := '00000';
   start_time := msec_time();
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
@@ -2542,6 +2545,15 @@ host_found:
       --reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
       --                 xmlelement ("complete", cplete),
       --                 xmlelement ("db-activity", db_activity ()), res[0][0]);
+    }
+  else if ((not http_is_flushed ()) and state = '40001' and deadl < 6)
+    {
+      declare dt int;
+      rollback work;
+      dt := (rnd (5) + 1) / 10.0;
+      delay (dt);
+      deadl := deadl + 1;
+      goto again;
     }
   else
     {
