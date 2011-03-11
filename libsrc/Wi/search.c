@@ -2636,6 +2636,8 @@ int
 em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold)
 {
   ptrlong rh;
+  if (main_bufs < 10000)
+    return 0;
   if (em == em->em_dbs->dbs_extent_map)
     return 0;
   if (0 == threshold)
