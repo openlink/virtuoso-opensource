@@ -4702,6 +4702,8 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t * out = http_session_no_catch_arg (qst, args, 1, "http");
   dtp_t dtp = DV_TYPE_OF (string);
 
+  /* potentially long time when session is flushed or chunked, then should use io sect
+     for now as almost we using to go to string session we keep it w/o io sect */
   /* IO_SECT (qst); */
   if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING || dtp == DV_BIN)
     session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
