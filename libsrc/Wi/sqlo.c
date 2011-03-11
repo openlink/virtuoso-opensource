@@ -3088,6 +3088,7 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
       {
 	int inx;
 	ST *res;
+	char * call_name = tree->_.call.name;
 	if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree->_.call.name) && BOX_ELEMENTS (tree->_.call.name) == 1)
 	  {
 	    sqlo_scope (so, &(((ST **) tree->_.call.name)[0]));
@@ -3096,6 +3097,13 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	  {
 	    CHECK_METHOD_CALL (ptree);
 	  }
+	/* mark qr to do lock if it is for SPARQL insert/delete triples */
+	if (DV_STRINGP (call_name) &&
+	    (!casemode_strcmp (call_name, "DB.DBA.SPARQL_INSERT_DICT_CONTENT") ||
+	     !casemode_strcmp (call_name, "DB.DBA.SPARQL_DELETE_DICT_CONTENT") ||
+	     !casemode_strcmp (call_name, "DB.DBA.SPARUL_LOAD") ||
+	     !casemode_strcmp (call_name, "DB.DBA.SPARUL_CLEAR")))
+	  so->so_sc->sc_cc->cc_query->qr_lock_mode = PL_EXCLUSIVE;
 	_DO_BOX (inx, tree->_.call.params)
 	  {
 	    sqlo_scope (so, &(tree->_.call.params[inx]));

@@ -3016,6 +3016,9 @@ qi_initial_enter_trx (query_instance_t * qi)
   return rc;
 }
 
+#define QI_SERIALIZABLE(qi,qr) \
+  if ((qi)->qi_no_cast_error && PL_EXCLUSIVE == (qr)->qr_lock_mode && !(qi)->qi_autocommit && !(qi)->qi_non_txn_insert) \
+    (qi)->qi_isolation = ISO_SERIALIZABLE
 
 caddr_t
 qr_exec (client_connection_t * cli, query_t * qr,
@@ -3076,7 +3079,7 @@ qr_exec (client_connection_t * cli, query_t * qr,
       qi->qi_no_triggers = caller->qi_no_triggers;
     }
   was_autocommit = qi->qi_autocommit;
-
+  QI_SERIALIZABLE (qi, qr);
   if (stmt)
     {
       is_timeout = qi_initial_enter_trx (qi);
@@ -3299,7 +3302,7 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
   else
     GPF_T1 ("array exec only from client");
   was_autocommit = qi->qi_autocommit;
-
+  QI_SERIALIZABLE (qi, qr);
   if (stmt)
     {
       is_timeout = qi_initial_enter_trx (qi);
@@ -3504,7 +3507,7 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   qi->qi_no_triggers = caller->qi_no_triggers;
   qi->qi_isolation = caller->qi_isolation;
   qi->qi_lock_mode = caller->qi_lock_mode;
-
+  QI_SERIALIZABLE (qi, qr);
   if (lc)
     {
       memset (lc, 0, sizeof (local_cursor_t));

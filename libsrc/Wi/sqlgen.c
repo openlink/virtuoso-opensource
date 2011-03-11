@@ -3624,6 +3624,8 @@ sqlg_select_node (sqlo_t * so, df_elt_t * dfe, data_source_t ** head,
 
   if (table_exp)
     sel->sel_lock_mode = (char) TEXP_LOCK (table_exp);
+  /* if already set as exclusive don't change it */
+  if (sc->sc_cc->cc_query->qr_lock_mode != PL_EXCLUSIVE)
   sc->sc_cc->cc_query->qr_lock_mode = sel->sel_lock_mode;
   sqlc_select_top (sc, sel, tree, &code);
 
