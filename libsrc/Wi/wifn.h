@@ -433,7 +433,7 @@ void pg_move_cursors (it_cursor_t ** temp_itc, int fill, buffer_desc_t * buf_fro
 index_tree_t * it_allocate (dbe_storage_t *);
 index_tree_t * it_temp_allocate (dbe_storage_t *);
 void it_temp_free (index_tree_t * it);
-void it_temp_tree (index_tree_t * it);
+int it_temp_tree (index_tree_t * it);
 #if !defined (__APPLE__)
 void it_not_in_any (du_thread_t * self, index_tree_t * except);
 #endif

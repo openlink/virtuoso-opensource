@@ -2014,7 +2014,11 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
     {
       tree = it_temp_allocate (wi_inst.wi_temp);
       tree->it_key = ha->ha_key;
-      it_temp_tree (tree);
+      if (!it_temp_tree (tree))
+	{
+	  it_free (tree);
+	  sqlr_new_error ("42000", "SR...", "Can't allocate tree for temp space.");
+	}
       qst_set (qst, ha->ha_tree, (caddr_t) tree);
     }
   ins_itc = (it_cursor_t *) QST_GET_V (qst, ha->ha_ref_itc);

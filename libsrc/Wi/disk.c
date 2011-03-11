@@ -522,17 +522,20 @@ it_free (index_tree_t * it)
 }
 
 
-void
+int
 it_temp_tree (index_tree_t * it)
 {
   buffer_desc_t * buf = it_new_page (it, 0, DPF_INDEX, 0, 0);
   it_map_t * itm;
+  if (!buf)
+    return 0;
   pg_init_new_root (buf);
   it->it_root = buf->bd_page;
   itm = IT_DP_MAP (it, buf->bd_page);
   mutex_enter (&itm->itm_mtx);
   page_leave_inner (buf);
   mutex_leave (&itm->itm_mtx);
+  return 1;
 }
 
 
