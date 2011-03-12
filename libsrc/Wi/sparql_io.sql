@@ -2107,6 +2107,7 @@ http('			  <select name="format">\n');
 http('			  </select>\n');
 if (can_cxml)
   {
+http('<div style="display:none">\n');
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
 http('			  <label for="redir_for_subjs" class="n">Style&nbsp;for&nbsp;RDF&nbsp;subjects:</label>\n');
 http('			  <select name="CXML_redir_for_subjs">\n');
@@ -2117,15 +2118,17 @@ if (can_pivot is not null)
 http('			    <option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\n');
 http('			    <option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\n');
 http('			  </select>\n');
+http('</div>\n');
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
-http('			  <label for="redir_for_hrefs" class="n">Style&nbsp;for&nbsp;other&nbsp;links:</label>\n');
+-- http('			  <label for="redir_for_hrefs" class="n">Style&nbsp;for&nbsp;other&nbsp;links:</label>\n');
+http('			  <label for="redir_for_hrefs" class="n">CXML&nbsp;link&nbsp;behavior:</label>\n');
 http('			  <select name="CXML_redir_for_hrefs">\n');
-http('			    <option value="" selected="selected">Convert to string facets</option>\n');
-http('			    <option value="121">Make Plain Links</option>\n');
+http('			    <option value="" selected="selected">Local faceted navigation links</option>\n');
+http('			    <option value="121">External resource links</option>\n');
 if (can_pivot is not null)
-  http('			    <option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\n');
-http('			    <option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\n');
-http('			    <option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\n');
+  http('			    <option value="LOCAL_PIVOT">External faceted navigation links</option>\n');
+http('			    <option value="LOCAL_TTL">External description resource (TTL)</option>\n');
+http('			    <option value="LOCAL_CXML">External description resource (CXML)</option>\n');
 http('			  </select>\n');
   }
 if (not can_cxml)
