@@ -2553,9 +2553,9 @@ host_found:
     {
       declare dt int;
       rollback work;
-      dt := (rnd (5) + 1) / 10.0;
-      delay (dt);
       deadl := deadl + 1;
+      dt := ((rnd (5) + 1) / 10.0) * (2 * deadl);
+      delay (dt);
       goto again;
     }
   else
