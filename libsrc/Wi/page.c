@@ -2348,7 +2348,9 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 	    GPF_T1 ("unmoved non-deleted row lock");
 	  PL_RL_ADD (buf->bd_pl, rlocks[inx], ITC_AT_END);
 	  buf->bd_pl->pl_n_row_locks++;
+#ifndef NDEBUG
 	  log_info ("deleted rl kept around for page apply");
+#endif
 	}
     }
   if (pf.pf_left)
@@ -2363,7 +2365,8 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
   if (t_buf->bd_registered) GPF_T1 ("registrations are not supposed to go to the temp buf");
   if (PA_REWRITE_ONLY == op)
     return;
-  if (PA_AUTOCOMPACT == op)
+  if (PA_AUTOCOMPACT == op
+     )
     first_affected = 0;
   page_apply_parent (buf, &pf, first_affected, op, change, paf);
   dk_set_free (pf.pf_left);

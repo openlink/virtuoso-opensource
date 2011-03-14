@@ -103,7 +103,9 @@ pl_rlock_table (page_lock_t * pl, row_lock_t ** locks, int *fill_ret)
     }
   DO_RLOCK (rl, pl)
   {
+#ifndef NDEBUG
     if (ITC_AT_END == rl->rl_pos) log_info ("suspect to have deld rls on pl outside of transact");
+#endif
     locks[fill++] = rl;
   }
   END_DO_RLOCK;
@@ -156,8 +158,10 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 	  pl_to->pl_n_row_locks++;
 	  if (is_to_extend)
 	    {
+#ifndef NDEBUG
 	      if (ITC_AT_END == to)
 		log_info ("Unusual to shift a deleted rl to the right side of a split");
+#endif
 	      rl_add_pl_to_owners (itc, rl, pl_to);
 	    }
 	  return;
