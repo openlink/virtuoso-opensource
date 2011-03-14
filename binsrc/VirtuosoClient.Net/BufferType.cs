@@ -114,10 +114,12 @@ namespace OpenLink.Data.Virtuoso
 				    value.ToString ()));
 				return Convert.ChangeType (value, value.GetType());
 			  }
-                        if (value is SqlExtendedString)
+            if (value is SqlExtendedString)
 				return value;
-                        if (value is SqlRdfBox)
+            if (value is SqlRdfBox)
 				return value;
+            if (value is System.Byte[] && type != value.GetType())
+                return value;
 			if (type == typeof (string))
 				return value.ToString ();
 
