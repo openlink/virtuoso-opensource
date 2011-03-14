@@ -1242,7 +1242,7 @@ bif_vt_batch_feed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       return NULL;
     }
-  if (dtp == DV_BLOB_HANDLE)
+  if (dtp == DV_BLOB_HANDLE || dtp == DV_BLOB_BIN)
     {
       is_serialized_xml = blob_looks_like_serialized_xml (qi, (blob_handle_t *)(str));
       if (XE_XPER_SERIALIZATION == is_serialized_xml)
@@ -1298,7 +1298,7 @@ bif_vt_batch_feed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       temp_str = strses_string ((dk_session_t *) str);
       goto process_string;
     }
-  if (!DV_STRINGP (str))
+  if (!DV_STRINGP (str) && dtp != DV_BIN)
     return NULL;
 process_string:
   if (temp_str)
