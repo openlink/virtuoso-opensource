@@ -1718,7 +1718,13 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
       else if (CI_ROW == (ptrlong) col)
 	om[inx++].om_is_null = OM_ROW;
       else
-	om[inx++].om_cl = *key_find_cl (ks->ks_key, col->col_id);
+	{
+	  dbe_col_loc_t * cl = key_find_cl (ks->ks_key, col->col_id);
+	  if (cl)
+	    om[inx++].om_cl = *cl;
+	  else
+	    SQL_GPF_T1 (cc, "cannot find column in index");
+	}
     }
   END_DO_SET();
   ks->ks_out_map = om;
