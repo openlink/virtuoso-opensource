@@ -2027,23 +2027,23 @@ sqlo_opt_value (caddr_t * opts, int opt)
 }
 
 
-void
+int
 sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t *res)
 {
-  int inx;
+  int inx, has_expand = 0;
   if (!tree->_.select_stmt.table_exp || !SEL_IS_DISTINCT (tree))
-    return;
+    return 0;
   _DO_BOX (inx, tree->_.select_stmt.table_exp->_.table_exp.from)
     {
       ST **tbp = & (tree->_.select_stmt.table_exp->_.table_exp.from[inx]);
-      if (ST_P (*tbp, TABLE_REF))
+      while (ST_P (*tbp, TABLE_REF))
 	tbp = & (*tbp)->_.table_ref.table;
 
       if (ST_P (*tbp, JOINED_TABLE) && ((*tbp)->_.join.type == OJ_LEFT || (*tbp)->_.join.type == OJ_FULL))
 	{
-	  ST *rtb = (*tbp)->_.join.right;
+	  ST *rtb = (*tbp)->_.join.right, *ltp;
 	  op_table_t *ot = NULL;
-	  if (ST_P (rtb, TABLE_REF))
+	  while (ST_P (rtb, TABLE_REF))
 	    rtb = rtb->_.table_ref.table;
 	  if (ST_P (rtb, TABLE_DOTTED))
 	    ot = sqlo_cname_ot (so, rtb->_.table.prefix);
@@ -2067,11 +2067,16 @@ sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t 
 	      t_set_delete (&so->so_scope->sco_tables, ot);
 	      t_set_delete (res, (*tbp)->_.join.cond);
 	      t_set_delete (&sel_ot->ot_from_ots, ot);
-	      *tbp = (*tbp)->_.join.left;
+	      ltp = (*tbp)->_.join.left;
+	      if (ST_P (tree->_.select_stmt.table_exp->_.table_exp.from[inx], TABLE_REF) && ST_P (ltp, TABLE_REF))
+		ltp = ltp->_.table_ref.table;
+	      *tbp = ltp;
+	      has_expand ++;
 	    }
 	}
     }
   END_DO_BOX;
+  return has_expand;
 }
 
 
@@ -2763,8 +2768,16 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
     }
   /* end dt expansion */
 #endif
-  if (texp && SEL_IS_DISTINCT (tree))
-    sqlo_expand_distinct_joins (so, tree, ot, &res);
+  if (texp && SEL_IS_DISTINCT (tree) && sqlo_expand_distinct_joins (so, tree, ot, &res))
+    {
+      char old_rescope = so->so_is_rescope;
+      so->so_this_dt = old_dt;
+      so->so_is_rescope = 1;
+      so->so_scope = so->so_scope->sco_super;
+      sqlo_scope (so, ptree);
+      so->so_is_rescope = old_rescope;
+      return;
+    }
   DO_SET (ST *, jc, &res)
     {
       jc->_.join.cond = (ST *) STAR;
