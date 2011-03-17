@@ -5872,7 +5872,7 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
 {
   declare r, log_ses any;
   declare stmt, enc varchar;
-  declare inx, old_mode, num_cols, nrows, mode, log_error int;
+  declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols int;
   declare delim, quot char;
 
   delim := quot := enc := mode := null;
@@ -5884,6 +5884,7 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
       enc := get_keyword ('encoding', opts);
       mode := get_keyword ('mode', opts);
       log_error := get_keyword ('log', opts, 0);
+      import_first_n_cols := get_keyword ('lax', opts, 0);
     }
 
   stmt := csv_ins_stmt (tb, num_cols);
@@ -5895,6 +5896,8 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
     {
       if (inx >= _from)
 	{
+	  if (import_first_n_cols and length (r) > num_cols)
+            r := subseq (r, 0, num_cols);
 	  if (length (r) = num_cols)
 	    {
 	      declare stat, message varchar;
