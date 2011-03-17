@@ -337,7 +337,26 @@ shcompo_compile__qr(shcompo_t *shc, query_instance_t *qi, void *env)
   caddr_t txt = ((caddr_t *)(shc->shcompo_key))[0];
   long saved_mrows = qi->qi_client->cli_resultset_max_rows;
   qi->qi_client->cli_resultset_max_rows = -1;
-  shc->shcompo_data = sql_compile (txt, qi->qi_client, &(shc->shcompo_error), 0);
+  QR_RESET_CTX_T (qi->qi_thread)
+    {
+      shc->shcompo_data = sql_compile (txt, qi->qi_client, &(shc->shcompo_error), 0);
+    }
+  QR_RESET_CODE
+    {
+      POP_QR_RESET;
+      /* if it compiles possibly will have an non-empty mem pool */
+      if (THR_TMP_POOL)
+	MP_DONE ();
+      switch (reset_code)
+	{
+	  case RST_ERROR:
+	      shc->shcompo_error = thr_get_error_code (THREAD_CURRENT_THREAD);
+	      break;
+	  default:
+	      shc->shcompo_error = srv_make_new_error ("S1T00", "SR490", "Transaction timed out");
+	}
+    }
+  END_QR_RESET;
   qi->qi_client->cli_resultset_max_rows = saved_mrows;
 }
 
