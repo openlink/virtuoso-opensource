@@ -2726,6 +2726,8 @@ em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr
   return fill;
 }
 
+extern long tc_new_page;
+
 ra_req_t *
 itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
 {
@@ -2738,7 +2740,7 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
   dp_addr_t ext_dp = EXT_ROUND (dp);
   uint32 now;
   ra_req_t *ra=NULL;
-  if (disk_reads < main_bufs - 256)
+  if (disk_reads + tc_new_page < main_bufs)
     {
       threshold = em_ra_startup_threshold;
       window = em_ra_startup_window;

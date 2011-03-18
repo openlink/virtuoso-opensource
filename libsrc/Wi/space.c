@@ -191,6 +191,7 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
   return buf;
 }
 
+long tc_new_page;
 
 buffer_desc_t *
 it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
@@ -303,6 +304,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
   buf_set_dirty (buf);
   DBG_PT_PRINTF (("New page L=%d B=%p FL=%d K=%s \n", buf->bd_page, buf, type,
 		 it->it_key ? (it->it_key->key_name ? it->it_key->key_name : "unnamed key") : "no key"));
+  TC (tc_new_page);
   return buf;
 }
 
