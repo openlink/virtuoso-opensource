@@ -27,5 +27,10 @@
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
-    <pre><?vsp http_value (WS.WS.VFS_EXPORT_DEFS ()); ?></pre>
+  <?vsp 
+    http_rewrite ();
+    http_header ('Content-Type: text/plain\r\n');  
+    http (WS.WS.VFS_EXPORT_DEFS ()); 
+    return;
+  ?>
 </v:page>
