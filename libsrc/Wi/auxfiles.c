@@ -127,6 +127,11 @@ int c_use_aio = 0;
 extern int32 sqlo_compiler_exceeds_run_factor;
 
 int32 c_dense_page_allocation = 0;
+/* for v6 compatibility  */
+int32 em_ra_window = 1000;
+int32 em_ra_threshold = 2;
+int32 em_ra_startup_window = 40000;
+int32 em_ra_startup_threshold = 0;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
