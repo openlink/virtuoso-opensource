@@ -196,7 +196,13 @@ directory_init() {
      cp $f vad/vsp/rdf_mappers/$f  
   done
 
-  cp *.sql vad/code/rdf_mappers
+
+  #cp *.sql vad/code/rdf_mappers
+
+  cp rdf_mappers.sql vad/code/rdf_mappers
+  cp rdf_mappers_drop.sql vad/code/rdf_mappers
+  cp virt_rdf_label.sql vad/code/rdf_mappers
+
   cp data/*.sql vad/code/rdf_mappers
   cp data/*.gz vad/code/rdf_mappers
   cp rdfdesc/*.sql vad/code/rdf_mappers
@@ -373,7 +379,7 @@ fi
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
-  for file in `find ontologies/owl -type f -print | grep -v CVS | grep -v '.n3' | sort`
+  for file in `find ontologies/owl -type f -print | grep -v CVS | grep -v '.n3' | grep -v '.ttl'| sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
