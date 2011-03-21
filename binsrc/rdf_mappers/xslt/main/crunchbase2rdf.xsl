@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -38,6 +39,7 @@
     xmlns:dcterms= "http://purl.org/dc/terms/"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:sioc="&sioc;"
+    xmlns:rdfs="&rdfs;"
     xmlns:bibo="&bibo;"
     xmlns:gr="&gr;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
@@ -342,8 +344,49 @@
 		<xsl:element namespace="{$ns}" name="{name()}">
 		    <xsl:element name="{$nspace}" namespace="{$ns}">
 			<xsl:attribute name="rdf:about">
-			    <xsl:value-of select="vi:proxyIRI($baseUri, '', concat (name(), '-', position()))"/>
+			    <xsl:variable name="cur_suffix" select="name()"/>
+			    <xsl:if test="name() like 'funding_round'">
+				<xsl:variable name="cur_suffix" select="concat(name(), '_', company/permalink, '_', funded_year, '_', funded_month, '_', funded_day)"/>
+		            </xsl:if>
+			    <xsl:value-of select="vi:proxyIRI($baseUri, '', concat ($cur_suffix, '-', position()))"/>
 			</xsl:attribute>
+
+		<xsl:if test="name() like 'funding_round'">
+		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'funding_rounds'">
+		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'offices'">
+		    <rdfs:label><xsl:value-of select="concat(address1, ', ', city, ', ', state_code, ', ', zip_code, ', ', country_code, ' - ', description)"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'video_embeds'">
+		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'acquisitions'">
+		    <rdfs:label><xsl:value-of select="source_description"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'external_links'">
+		    <rdfs:label><xsl:value-of select="title"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'milestones'">
+		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'products'">
+		    <rdfs:label><xsl:value-of select="name"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'providerships'">
+		    <rdfs:label><xsl:value-of select="provider"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'relationships'">
+		    <rdfs:label><xsl:value-of select="title"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'investments'">
+		    <rdfs:label><xsl:value-of select="funding_round/company/name"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'competitions'">
+		    <rdfs:label><xsl:value-of select="competitor"/></rdfs:label>
+		</xsl:if>
 		    <xsl:apply-templates select="@*|node()"/>
 		</xsl:element>
 	    </xsl:element>

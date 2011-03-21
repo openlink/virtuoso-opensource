@@ -224,7 +224,7 @@
     </xsl:template>
 
     <xsl:template match="val">
-	<xsl:value-of select="normalize-space(.)"/>
+	<xsl:value-of select="vi:string2date3(normalize-space(.))"/>
     </xsl:template>
 
     <xsl:template match="URL|DIR" priority="1">

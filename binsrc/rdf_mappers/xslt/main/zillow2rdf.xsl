@@ -158,6 +158,23 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
 
+    <xsl:template match="zestimate" mode="offering">
+		<xsl:variable name="amount" select="amount" />
+		<gr:hasPriceSpecification>
+			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'ZestimatePrice')}">
+				<rdfs:label>
+				<xsl:value-of select="concat('Zestimate: ', $amount, ' (', amount/@currency, ')')"/>	
+				</rdfs:label>
+				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
+				<gr:hasMinCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="valuationRange/low"/></gr:hasMinCurrencyValue>
+				<gr:hasMaxCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="valuationRange/high"/></gr:hasMaxCurrencyValue>
+				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="amount/@currency"/></gr:hasCurrency>
+				<oplzllw:listingLastUpdated><xsl:value-of select="last-updated"/></oplzllw:listingLastUpdated>
+			</gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template>
+
 	<!-- Process GetUpdatedPropertyDetails response -->
 
 	<!--
