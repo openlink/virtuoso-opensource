@@ -3292,7 +3292,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
            SPART *source = esub_eq->e_vars[vctr];
            if (strcmp (source->_.var.vname, var->_.var.vname))
              continue;
-           if ((NULL == source->_.var.tabid) && (NULL != esub_res->_.var.tabid))
+           if ((NULL == source->_.var.tabid) && (NULL != esub_res) && (NULL != esub_res->_.var.tabid))
              continue;
            esub_res_eq = esub_eq;
            esub_res_gp = esub_gp;
