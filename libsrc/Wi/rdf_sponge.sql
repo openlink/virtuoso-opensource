@@ -1505,8 +1505,11 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
 	    }
 	  -- Like pattern allowed
 	  if (dest like imm)
-	    goto graph_is_ready;
-	}
+	    {
+	      res_graph_iri := local_iri;
+	      goto graph_is_ready;
+	    }
+        }
     }
   -- dbg_obj_princ ('will sponge...');
   if (lower (graph_iri) like 'file:%')
