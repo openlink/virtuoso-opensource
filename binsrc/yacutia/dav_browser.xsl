@@ -1350,9 +1350,20 @@ self.vc_data_bind (e);
                   {
                     whenever not found goto nf1;
                     if (is_dir = 1)
+                    {
                       select COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_INHERIT, COL_DET into _name, own_id, own_grp, perms, _inh, _fdet from WS.WS.SYS_DAV_COL where COL_ID = _res_id;
+                      if (isnull (_fdet))
+                      {
+                        if (DB.DBA.Y_DAV_PROP_GET (self.source_dir, 'virt:rdf_graph', '') <> '')
+                          _fdet := 'rdfSink';
+                        if (DB.DBA.Y_DAV_PROP_GET (self.source_dir, 'virt:Versioning-History', '') <> '')
+                          _fdet := 'UnderVersioning';
+                      }
+                    }
                     else
+                    {
                       select RES_NAME, RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE into _name, own_id, own_grp, perms, _res_type from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+                    }
                   nf1:;
                 ?>
                 <tr>
@@ -2129,7 +2140,8 @@ self.vc_data_bind (e);
                           _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
                           _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
 			  _fdet := get_keyword ('fdet', self.vc_page.vc_event.ve_params, '');
-			  if (_fdet = '') _fdet := null;
+                  			  if (_fdet = '')
+                  			    _fdet := null;
 
                           for (i := 0; i < 9; i := i + 1)
                           {
