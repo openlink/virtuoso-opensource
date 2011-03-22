@@ -107,6 +107,7 @@ extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;
 extern caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+extern caddr_t uname_virtrdf_ns_uri_rdf_repl_all;
 extern caddr_t uname_xhv_ns_uri;
 extern caddr_t uname_xhv_ns_uri_alternate;
 extern caddr_t uname_xhv_ns_uri_appendix;

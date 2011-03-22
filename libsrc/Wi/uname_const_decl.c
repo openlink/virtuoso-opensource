@@ -89,6 +89,7 @@ caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
 caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+caddr_t uname_virtrdf_ns_uri_rdf_repl_all;
 caddr_t uname_xhv_ns_uri;
 caddr_t uname_xhv_ns_uri_alternate;
 caddr_t uname_xhv_ns_uri_appendix;
@@ -214,6 +215,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_isSubclassOf		, VIRTRDF_NS_URI "isSubclassOf"	},
   { &uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	},
   { &uname_virtrdf_ns_uri_rdf_repl_graph_group	, VIRTRDF_NS_URI "rdf_repl_graph_group"	},
+  { &uname_virtrdf_ns_uri_rdf_repl_all		, VIRTRDF_NS_URI "rdf_repl_all"	},
   { &uname_xhv_ns_uri				, XHV_NS_URI			},
   { &uname_xhv_ns_uri_alternate			, XHV_NS_URI "alternate"	},
   { &uname_xhv_ns_uri_appendix			, XHV_NS_URI "appendix"		},
