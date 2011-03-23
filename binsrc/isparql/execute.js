@@ -63,6 +63,10 @@ iSPARQL.ResultType = {
     ERROR: 666
 };
 
+//
+// XXX any object put in CircularBuffer must have a serialize() method
+//
+
 iSPARQL.CircularBuffer = function (len, initList) {
     var self = this;
     this._length = len;
@@ -71,8 +75,15 @@ iSPARQL.CircularBuffer = function (len, initList) {
     this._fill = 0;
 
 	this.serialize = function () {
+		var ser_buf = [];
+		for (i = 1;i<self._buf.length;i++) {
+			if (typeof self._buf[i] == 'object')
+				ser_buf[i] = self._buf[i].serialize();
+			else ser_buf[i] = self._buf[i];
+		}
+
 		var o = {
-			buf: self._buf,
+			buf: self.ser_buf,
 			length: self._length,
 			ptr: self._ptr,
 			fill: self._fill
@@ -387,6 +398,8 @@ var QueryExec = function(optObj) {
 			return iSPARQL.ResultType.RESSET;
 		if (data.documentElement.localName == "RDF")
 			return iSPARQL.ResultType.GRAPH;
+		if (data.documentElement.localName == "parsererror")
+			return iSPARQL.ResultType.ERROR;
     };
 	
     //
@@ -399,15 +412,16 @@ var QueryExec = function(optObj) {
 		var rt;
         var to = false;
 		
-		if (!wasError) 
+		if (!wasError) {
 			rt = self.resultType (data);
+			if (rt == iSPARQL.ResultType.ERROR) wasError = true;
+		}
 		else {
 			rt = iSPARQL.ResultType.ERROR;
 			if (data.match (/Error SR171/))
 				to = true;
 		}
 		
-	if (self.isNew(opts) || (self.cache[self.cacheIndex].wasError && !wasError)) {
 			var cacheItem = {
 				resType: rt,
 				wasError:wasError,
@@ -425,16 +439,25 @@ var QueryExec = function(optObj) {
 			cacheItem.dom.request_c  = OAT.Dom.create ("div",{className: "request_c"});
 			cacheItem.dom.response_c = OAT.Dom.create ("div",{className: "response_c"});
 			
-			if (rt == iSPARQL.ResultType.GRAPH) {
-				cacheItem.store.addXmlDoc(data);
-			}
+		var req_href;
+		
+		if (opts.endpoint && !opts.endpoint.match (/^http/))
+			req_href = unescape(request.substring(4));
+		else
+			req_href = 
+			document.location.protocol + "//" +
+			document.location.host + "?" + request;
+		
+		if (rt == iSPARQL.ResultType.GRAPH)
+			var r_url = cacheItem.store.addXmlDoc(data, req_href); //, req_href);
 
 			var old = self.cacheIndex;
+		
 			self.cache.push(cacheItem);
 			self.cacheIndex = self.cache.length-1;
 
-		}
 		self.draw();
+
 		if (old>=0) self.nav(old);
     };
 
@@ -840,13 +863,19 @@ var QueryExec = function(optObj) {
 		}
     };
 
+	this.makeParserErrorMsg = function (data) {
+		var msg = '<h3 class="error">XML Parser error</h3>\n';
+		msg += '<p class="error_msg">'+data.documentElement.textContent+ '</p>\n';
+		return msg;
+	};
+
     this.makeErrorMsg = function (data) {
 	 var msg = '';
 	var r = data.match(/Error (..[0-9]{3})/);
 	if (r) {
-	    msg="<h3>SPARQL Processor Error ("+ r[1] + ")</h3>\n"
+			msg='<h3 class="error">SPARQL Processor Error ('+ r[1] + ')</h3>\n'
 	    if (r[1] == "HT404")
-		msg += "<p>Resource not found<br/>Check your query and try again</p>";
+				msg += "<p class=\"error_msg\">Resource not found<br/>Check your query and try again</p>";
 	}
 	else if (data.match(/Error HTCLI/)) {
 	    msg = "<h3>Proxy connection error</h3><p>The proxy could not connect to the endpoint ";
@@ -878,12 +907,6 @@ var QueryExec = function(optObj) {
 
 //		lastIndex = item.mini.select.selectedIndex;
 
-/*
-		self.dom.result.replaceChild (oldItem.dom.result_c, item.dom.result_c);
-		self.dom.request.replaceChild (oldItem.dom.request_c, item.dom.request_c);
-		self.dom.query.replaceChild (oldItem.dom.query_c, item.dom.query_c);
-		self.dom.response.replaceChild (oldItem.dom.response_c, item.dom.response_c);
-*/
 		OAT.Dom.clear(self.dom.result);
 		OAT.Dom.clear(self.dom.request);
 		OAT.Dom.clear(self.dom.query);
@@ -893,6 +916,21 @@ var QueryExec = function(optObj) {
 						[self.dom.request, item.dom.request_c],
 						[self.dom.query, item.dom.query_c],
 						[self.dom.response, item.dom.response_c]);
+
+//
+// TODO store full query context obj in cache and add functions to restore
+//
+
+		iSPARQL.dataObj.query        = item.opts.query;
+		iSPARQL.dataObj.defaultGraph = item.opts.defaultGraph;
+		iSPARQL.dataObj.maxrows      = item.opts.maxrows;
+		iSPARQL.dataObj.namedGraphs  = item.opts.namedGraphs;
+		iSPARQL.dataObj.pragmas      = item.opts.pragmas;
+
+		iSPARQL.endpointOpts.setEndpoint (null, item.opts.endpoint);
+
+		adv.redraw();
+		if (qbe) qbe.loadFromString(iSPARQL.dataObj.query);
 
 		self.refreshNav();
 	};
@@ -925,6 +963,7 @@ var QueryExec = function(optObj) {
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+		xparm += "&view=1";
 	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
 		a.target = "_blank";
 
@@ -936,14 +975,22 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.append([item.dom.query_c,a,q]);
 		
+		// Parsererror here applies only to FireFox. WebKit tries its best trying to parse the document 
+		// as far as it can, so in most cases we'll have a piece of graph to process and never get to the error.
 
-	if (wasError && !data.match(/Error SR171/)) { // Timeout SR171 means there may be data to display
+		if (wasError) {
+			if (typeof data != "string" && item.resType == iSPARQL.ResultType.ERROR) {
+				if (data.documentElement.localName == "parsererror") {
+					item.dom.result_c.innerHTML = self.makeParserErrorMsg (data);
+					item.dom.response_c.innerHTML = self.makeErrorResp (data);
+				}
+			}
+			else if (typeof data == "string" && !data.match(/Error SR171/)) { // Timeout SR171 means there may be data to displa
 			/* trap http codes */
 			item.dom.result_c.innerHTML = self.makeErrorMsg (data);
 			item.dom.response_c.innerHTML = self.makeErrorResp (data);
 		} 
-		else {
-
+		} else {
 			// Generate Response page 
 
 			var xmlTxt = item.txt; // Used if we have to draw a result set - need to remove namespace, etc.
@@ -988,6 +1035,7 @@ var QueryExec = function(optObj) {
 				var c_i = self.cacheIndex;
 				
 				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
+				
 		self.miniplnk = OAT.Dom.create ("a");
 		self.miniplnk.innerHTML = "Permalink";
 
@@ -1029,14 +1077,14 @@ var QueryExec = function(optObj) {
 				
 				var ua = navigator.userAgent;
 				
-				if (iSPARQL.Settings.addthis_key && !OAT.Browser.isScreenOnly) {
-					self.addthis_ctr = OAT.Dom.create ("a",{id: "addthis_ctr",
-															className: "addthis_button"});
-					self.addthis_ctr.innerHTML='<img src="http://s7.addthis.com/static/btn/sm-plus.gif" alt="Share"/>';
-					OAT.Dom.append ([self.plnk_ctr, self.addthis_ctr]);
-					self.makeAddThisURL (false,false,{tabIndex:lastIndex});
-					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeAddThisURL);
-				}
+				//				if (iSPARQL.Settings.addthis_key && !OAT.Browser.isScreenOnly) {
+				//					self.addthis_ctr = OAT.Dom.create ("a",{id: "addthis_ctr",
+				//															className: "addthis_button"});
+				//					self.addthis_ctr.innerHTML='<img src="http://s7.addthis.com/static/btn/sm-plus.gif" alt="Share"/>';
+				//					OAT.Dom.append ([self.plnk_ctr, self.addthis_ctr]);
+			//					self.makeAddThisURL (false,false,{tabIndex:lastIndex});
+				//					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeAddThisURL);
+				//				}
 				
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
 				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);

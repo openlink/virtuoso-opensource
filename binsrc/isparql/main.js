@@ -820,6 +820,16 @@ iSPARQL.EndpointOpts = function (optsObj) {
     // XXX add support for:
     // timeout
 
+	var _o = {
+		endpoint: '/sparql',
+		useProxy: true,
+		pragmas: [],
+	};
+
+	for (p in optsObj) {
+		self._o[p] = optsObj[p];
+	}
+	
     this.unSerialize = function (s) {
 		var o = OAT.JSON.deserialize(s);
 	this.loadObj (o);
@@ -852,12 +862,14 @@ iSPARQL.EndpointOpts = function (optsObj) {
     }
 
     this._init = function (o) {
-	if (o.sponge) {
+		if (!!o) {
+			if (!!o.sponge) {
 	    self.setGetOpt (self,o.sponge);
 	}
-	if (o.endpoint) {
+			if (!!o.endpoint) {
 	    self.setEndpoint(self, o.endpoint);
 	}
+		}
 	// retrieve state from persistent session storage if available
 	self.loadSes();
     }
@@ -866,7 +878,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	self.endpointPath = '/sparql';
 	self.useProxy = true;
 	self.pragmas = [];
-	OAT.Observer.notify (self.observers, callerObj, 'reset');
+		OAT.Observer.notify (self.observers, caller, 'reset');
 	self.saveSes();
     }
 
@@ -931,7 +943,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 		}
 	    }
 
-	iSPARQL.Common.log(self.pragmas);
+		OAT.Debug.log(0, "Pragmas: " + self.pragmas);
 	self.saveSes();
     }
 
@@ -1059,7 +1071,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	return false;
     }
 
-    this._init(optsObj);
+    this._init(self._o);
 
 }; // EndpointOpts
 
@@ -1388,13 +1400,12 @@ iSPARQL.Common = {
 
 	iSPARQL.mdOpts       = new iSPARQL.MetaDataOpts ();
 
-	iSPARQL.endpointOpts = new iSPARQL.EndpointOpts ({sponge:iSPARQL.Defaults.sponge, 
-							  endpoint:iSPARQL.Defaults.endpoint});
+		iSPARQL.endpointOpts = new iSPARQL.EndpointOpts ();
 
 	iSPARQL.StatusUI.statMsg ("Initializing server connection data&#8230;");
 
 	iSPARQL.serverConn   = new iSPARQL.ServerConnection (iSPARQL.endpointOpts.endpointPath,
-							     iSPARQL.Defaults.auth);
+															 iSPARQL.Settings.auth);
 
     },
 
@@ -1476,6 +1487,7 @@ iSPARQL.Common = {
 							  OAT.MSG.send (self,"iSPARQL_USER_PREF_CHANGE",false);
 						  });
 
+		if (iSPARQL.serverConn.isConnected) {
 	if (iSPARQL.serverConn.isVirtuoso) {
 	    $('about_version').innerHTML = iSPARQL.serverConn.serverVersion;
 	    $('about_date').innerHTML = iSPARQL.serverConn.serverBuildDate;
@@ -1484,6 +1496,11 @@ iSPARQL.Common = {
 	    $('about_version').innerHTML = 'N/A (Not Virtuoso)';
 	    $('about_date').innerHTML =  'N/A (Not Virtuoso)';
 	}
+		}
+		else {
+			$('about_version').innerHTML = 'unknown';
+			$('about_date').innerHTML = 'unknown';
+		}
 
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
@@ -1513,6 +1530,8 @@ iSPARQL.Common = {
 			iSPARQL.dialogs.qbe_unsupp.show();
 			return;
 	    }
+			iSPARQL.Settings.tab = newIndex;
+			iSPARQL.Common.saveSes();
 	    if (newIndex == 0) { // QBE
 			OAT.Dom.show ('qry_type_ctls');
  			OAT.Dom.show('queryopts');
@@ -1564,7 +1583,8 @@ iSPARQL.Common = {
 	tab_query =   tab.add ("tab_query",  "page_query");
 	tab_results = tab.add ("tab_results","page_results");
 
-	tab.go (0); /* is 0-based index... */
+		if (iSPARQL.Settings.tab == 2) iSPARQL.Settings.tab = 1;
+		tab.go (iSPARQL.Settings.tab); /* is 0-based index... */
 
 	var tabgraphs = new OAT.Tab ("tabgrph_content");
 	tabgraphs.add ("tabgrph_default","tabgrph_default_content");
@@ -1691,8 +1711,8 @@ iSPARQL.Common = {
 	$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
 
-	$('default-graph-uri').value = iSPARQL.Defaults.graph;
-	$('query').value = iSPARQL.Defaults.query;
+		$('default-graph-uri').value = iSPARQL.Settings.graph;
+		$('query').value = iSPARQL.Settings.query;
 
 		$('maxrows').value = iSPARQL.Settings.maxrows;
 	OAT.Event.attach ('maxrows', 'change',
@@ -1920,7 +1940,7 @@ iSPARQL.Common = {
 	if (index != -1) { return; }
 		iSPARQL.Settings.dataObj.push(graph);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
+		OAT.Debug.log(0,'addNamedGraph: ' + iSPARQL.dataObj.namedGraphs);
     },
 
     removeNamedGraph:function(graph) {
@@ -1928,7 +1948,7 @@ iSPARQL.Common = {
 	if (index == -1) { return; }
 	iSPARQL.dataObj.namedGraphs.splice(index,1);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
+		OAT.Debug.log(0,'removeNamedGraph: ' + iSPARQL.dataObj.namedGraphs);
     },
 
     addGraph:function(graph) {
@@ -1936,7 +1956,7 @@ iSPARQL.Common = {
 	if (index != -1) { return; }
 	iSPARQL.dataObj.graphs.push(graph);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.graphs);
+		OAT.Debug.log(0,'addGraph: ' + iSPARQL.dataObj.graphs);
     },
 
     addPrefix:function(prefix) {
@@ -1944,7 +1964,7 @@ iSPARQL.Common = {
 	if (index != -1) { return; }
 	iSPARQL.dataObj.prefixes.push(prefix);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.prefixes);
+		OAT.Debug.log(0,'addPrefix: ' + iSPARQL.dataObj.prefixes);
     },
 
     removeGraph:function(graph) {
@@ -1952,24 +1972,24 @@ iSPARQL.Common = {
 	if (index == -1) { return; }
 	iSPARQL.dataObj.graphs.splice(index,1);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.graphs);
+		OAT.Debug.log(0,'removeGraph:' + iSPARQL.dataObj.graphs);
     },
 
     setQuery:function(query) {
 	iSPARQL.dataObj.query = query;
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.query);
+		OAT.Debug.log(0,'setQuery: ' + iSPARQL.dataObj.query);
     },
 
     setDefaultGraph:function(graph) {
 	iSPARQL.dataObj.defaultGraph = graph;
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.defaultGraph);
+		OAT.Debug.log(0,'setDefaultGraph:' + iSPARQL.dataObj.defaultGraph);
     },
 
     setData:function(data) {
 	iSPARQL.dataObj.data = data;
-	iSPARQL.Common.log(iSPARQL.dataObj.data);
+		OAT.Debug.log(0,'setData:' + iSPARQL.dataObj.data);
     },
 
     // sessionStorage handling
@@ -1979,7 +1999,7 @@ iSPARQL.Common = {
     //
 
     persistList:["query", "defaultGraph", "graphs", "namedGraphs", 
-				 "prefixes", "pragmas", "maxrows","sponge","tab"],
+				 "prefixes", "pragmas", "maxrows","sponge","tab", "endpoint"],
 
     resetSes:function () {
 	sessionStorage.iSPARQLSes = '';
@@ -1995,6 +2015,7 @@ iSPARQL.Common = {
 		for (var i=0;i<iSPARQL.Common.persistList.length;i++) {
 			var mName = iSPARQL.Common.persistList[i];
 
+			storeObj.query = iSPARQL.dataObj.query;
 			if (typeof iSPARQL.Settings[mName] != 'undefined') {
 				if (typeof iSPARQL.Settings[mName] != 'object')
 					storeObj[mName] = iSPARQL.Settings[mName];
@@ -2011,7 +2032,8 @@ iSPARQL.Common = {
 
     loadSes: function () {
 		if (typeof sessionStorage.iSPARQLSes != 'undefined' && 
-			sessionStorage.iSPARQLSes != null) {
+			sessionStorage.iSPARQLSes != null && 
+			sessionStorage.iSPARQLSes != '') {
 			var s = OAT.JSON.deserialize(sessionStorage.iSPARQLSes);
 			for (i in s) {
 				if (typeof s[i] != 'object')
@@ -2021,6 +2043,34 @@ iSPARQL.Common = {
 			}
 	}
     },
+
+    handlePageParams:function () {
+	
+		var qp = false;
+		var p = OAT.Dom.uriParams();
+		
+		if (p['default-graph-uri']) { iSPARQL.Settings.graph  = p['default-graph-uri']; qp = true; }
+		if (p['defaultGraph'])      { iSPARQL.Settings.graph  = p['defaultGraph']; qp = true; }
+		if (p['query']) { 
+			iSPARQL.Settings.query  = p['query']; 
+			qp = true; 
+		}
+		if (p['sponge'])            { iSPARQL.Settings.sponge = p['sponge']; qp = true; }
+		if (p['should_sponge'])     { iSPARQL.Settings.sponge = p['should_sponge']; qp = true; }
+		if (p['view']) {
+			var tabInx = parseInt(p['view']);
+			if (!isNaN(tabInx) && tabinx >= 0 && tabInx < 3)
+				iSPARQL.Settings.tab = tabInx;
+			qp = true;
+		}
+		if (p['endpoint']) { iSPARQL.Settings.endpoint = p['endpoint']; qp = true;}
+		if (p['resultview']) { iSPARQL.Settings.resultView = p['resultview']; qp = true;}
+		if (qp) iSPARQL.Settings.qp_override = qp;
+		if (p['__DEBUG']) iSPARQL.Settings.debug = true;
+		if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
+    },
+
+
 
     //
     // Set program default options - will be overriden by server defaults if available
@@ -2049,26 +2099,28 @@ iSPARQL.Common = {
 			if (typeof iSPARQL.UserPreferences[i] != 'object') 
 			iSPARQL.Settings[i] = iSPARQL.UserPreferences[i];
 			else 
-				iSPARQL.Settings[i] = OAT.JSON.deserialize(OAT.JSON.serialize(UserPreferences[i]));
+				iSPARQL.Settings[i] = OAT.JSON.deserialize(OAT.JSON.serialize(iSPARQL.UserPreferences[i]));
 		}
 
+		this.loadSes();
+		this.handlePageParams(); // Page params always override session persistence
+
 	iSPARQL.dataObj.data = false;
-	iSPARQL.dataObj.query = iSPARQL.Defaults.query;
+		iSPARQL.dataObj.query = iSPARQL.Settings.query;
 	iSPARQL.dataObj.defaultGraph = "";
 	iSPARQL.dataObj.graphs = [];
 	iSPARQL.dataObj.namedGraphs = [];
 		iSPARQL.dataObj.prefixes = []; // XXX
 	iSPARQL.dataObj.pragmas = [];
-	iSPARQL.dataObj.maxrows = iSPARQL.Defaults.maxrows;
+		iSPARQL.dataObj.maxrows = iSPARQL.Settings.maxrows;
 	iSPARQL.dataObj.canvas = false;
-	iSPARQL.dataObj.sponge = iSPARQL.Defaults.sponge;
-	iSPARQL.dataObj.tab = iSPARQL.Defaults.tab;
+		iSPARQL.dataObj.sponge = iSPARQL.Settings.sponge;
+		iSPARQL.dataObj.tab = iSPARQL.Settings.tab;
 
 	if (typeof iSPARQL.endpointOpts != 'undefined') iSPARQL.endpointOpts.reset();
 	if (typeof iSPARQL.metaDataOpts != 'undefined') iSPARQL.metaDataOpts.reset();
 
-	this.loadSes ();
-	this.log(iSPARQL.dataObj);
+		OAT.Debug.log('reset: '+iSPARQL.dataObj);
 
     },
 

@@ -164,3 +164,12 @@ div.rdf_tab { width: 100%; height: 100%; }
 table.grid {
   clear: both;
 }
+
+div.rdf_data div.pager {
+  background-color: #ddd;
+  border: 1px solid #355;
+}
+
+div.pager div {
+  margin: 3px;
+}
