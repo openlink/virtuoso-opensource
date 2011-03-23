@@ -1171,9 +1171,12 @@ create procedure ENEWS.WA.feed_refresh (
   in id integer)
 {
   declare exit handler for not found { return 0; };
-
   declare uri, days, tag, retValue any;
-  select EF_URI, EF_STORE_DAYS, EF_TAG into uri, days, tag from ENEWS.WA.FEED where EF_ID = id;
+
+  select EF_URI, EF_STORE_DAYS, EF_TAG
+    into uri, days, tag
+    from ENEWS.WA.FEED
+   where EF_ID = id;
 
  	commit work;
   retValue := ENEWS.WA.feed_refresh_int (id, uri, days, tag);
@@ -1203,10 +1206,15 @@ create procedure ENEWS.WA.feed_refresh_int(
   declare N, L integer;
   declare new_tag, newUri, oldUri varchar;
 
+  if (not exists (select 1 from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = id))
+    return 0;
+
   delete
     from ENEWS.WA.FEED_ITEM
    where EFI_FEED_ID = id
-     and ((EFI_LAST_UPDATE is not null) and dateadd('day', days, EFI_LAST_UPDATE) < now());
+     and (EFI_LAST_UPDATE is not null)
+     and (dateadd ('day', days, EFI_LAST_UPDATE) < now())
+     and EFI_ID not in (select x._id from ENEWS.WA.feed_items_rs (p0)(_id integer) x where p0 = id);
 
   reqHdr := 'User-agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)\r\n';
   newUri := ENEWS.WA.url_schema_fix (uri);
@@ -1262,8 +1270,8 @@ again:
 
     set_user_id ('dba');
     graph := ENEWS.WA.graph_create ();
-    sql := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%s> where { ?s ?p ?o }', graph, uri);
-    -- sql := sprintf ('sparql load <%s> into graph <%s>', uri, graph);
+    -- sql := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%s> where { ?s ?p ?o }', graph, uri);
+    sql := sprintf ('sparql load <%s> into graph <%s>', uri, graph);
     ENEWS.WA.exec_sparql (sql, 1);
 
       sql := sprintf(
@@ -1284,6 +1292,19 @@ again:
     ENEWS.WA.graph_clear (graph);
   }
   return L;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.feed_items_rs (
+  in id integer)
+{
+  declare c0 integer;
+
+  result_names (c0);
+  for (select top 20 EFI_ID from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = id order by EFI_LAST_UPDATE desc) do
+    result (EFI_ID);
 }
 ;
 
