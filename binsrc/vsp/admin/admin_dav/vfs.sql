@@ -83,7 +83,7 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   declare _header, _etag, _http_resp_code, _start_url varchar;
   declare _del, _desc, _t_urls, _opts, _c_type varchar;
   declare _dav_method, _d_imgs, _opage varchar;
-  declare _dav_enabled, _other varchar;
+  declare _dav_enabled, _other, ua varchar;
   declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
   declare _udata, ext_hook, store_hook, _header_arr, _resps, xp_exp any;
@@ -115,6 +115,13 @@ nf_opt:
 
   if (accept_rdf)
     _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*\r\n'; -- /* rdf formats */
+  -- global setting for crawler UA  
+  ua := registry_get ('vfs_ua');
+  if (isstring (ua) and length (ua))
+    {
+      ua := trim (ua, ' \r\n');
+      _header := _header || 'User-Agent: ' || ua || '\r\n';
+    }
 
   if (_upd = 1)  
     {
@@ -254,7 +261,7 @@ get_again:
     {
       if (ext_hook is not null and __proc_exists (ext_hook))
 	    call (ext_hook) (_host, _url, _root, _content, _c_type, lev + 1);
-	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%' or _c_type like 'application/%+xml' or _c_type = 'text/xml' or _url like '%.xml' or _url like '%.xml.gz') 
+	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%' or _c_type like 'application/%xml' or _c_type = 'text/xml' or _url like '%.xml' or _url like '%.xml.gz') 
 	      and _dav_method <> 'checked' and _opage <> 'checked')
 	    WS.WS.GET_URLS (_host, _url, _root, _content, lev + 1, _c_type);
 
@@ -644,10 +651,10 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
   if (depth is not null and depth >= 0 and lev > depth)
     return;
   frames := vector ();
-  if (isstring (_content))
-    _urls_arr := WS.WS.FIND_URI (_content, _d_imgs, _host, _url, xp_exp, frames, ctype);
-  else if (__tag (_content) = 193)
+  if (__tag (_content) = 193)
     _urls_arr := _content;
+  else
+    _urls_arr := WS.WS.FIND_URI (_content, _d_imgs, _host, _url, xp_exp, frames, ctype);
 
   if (__tag (_urls_arr) = 193)
     _urls_arr_len := length (_urls_arr);
@@ -1035,7 +1042,7 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
 
   frames := vector ();
 
-  if (not isstring (_content))
+  if (not isstring (_content) and __tag (_content) <> 185)
     return vector ();
 
   if (tidy_external () and ctype like 'text/html')
@@ -1049,21 +1056,23 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
 
   xe := xml_tree_doc (_xml_tree);
 
-  arr1 := vector ();
   if (length (xp_exp))
     {
       arr := xpath_eval (xp_exp, xe, 0);
       _inx := 0; _len := length (arr);
+      vectorbld_init (arr1);
       while (_inx < _len)
 	{
 	  elm := cast (arr[_inx] as varchar);
 	  if (isstring (elm) and strstr (http_mime_type (elm), 'image/') is null or _d_imgs is not null)
-	    arr1 := vector_concat (arr1, vector (elm));
+	    vectorbld_acc (arr1, elm);
 	  _inx := _inx + 1;
 	}
+      vectorbld_final (arr1);
     }
   else
     {
+      arr1 := vector ();
   ha := xpath_eval ('//@href', xe, 0);
   sa := xpath_eval ('//@src', xe, 0);
   ia := xpath_eval ('//@background', xe, 0);
@@ -1244,6 +1253,8 @@ create procedure WS.WS.GET_HREF_IN_ARRAY (in _content varchar, in _d_imgs varcha
   declare _uri, _res any;
   declare _href_c integer;
 
+  if (not isstring (_content))
+    return vector ();
   _len := length (_content);
   _href_c := 0;
   _stag := 0;
@@ -1759,6 +1770,7 @@ WS.WS.VFS_URI_COMPOSE (in res any)
 }
 ;
 
+-- /* run rdf import & sponger */
 create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _start_path varchar, in opts any, in url varchar, inout content any, in ctype varchar, inout outhdr any, inout inhdr any)
 {
   declare mime_type, _graph, _base, out_arr, tmp varchar;
@@ -1777,6 +1789,16 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
     return;
   };
 
+  if (url like '*.gz')
+    {
+      if (length (content) > 2)
+	{
+	  declare magic varchar;
+	  magic := subseq (content, 0, 2);
+	  if (magic[0] = 0hex1f and magic[1] = 0hex8b) 
+	    content := gzip_uncompress (content);
+	}
+    }
   -- RDF/XML or RDF/N3 depends on option
   mime_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (url, ctype, content);
 
