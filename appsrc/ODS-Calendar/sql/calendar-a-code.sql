@@ -3885,6 +3885,32 @@ create procedure CAL.WA.settings_mailAttendees (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_taskFilter (
+  in settings any)
+{
+  return get_keyword ('taskFilter', settings, 'All');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_set (
+  in domain_id integer,
+  in _key varchar,
+  in _value any)
+{
+  declare settings any;
+
+  settings := CAL.WA.settings (domain_id);
+  CAL.WA.set_keyword (_key, settings, _value);
+
+  insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
+    values(domain_id, serialize (settings), CAL.WA.domain_owner_id (domain_id));
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 -- Events

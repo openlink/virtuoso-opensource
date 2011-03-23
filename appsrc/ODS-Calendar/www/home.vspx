@@ -1722,7 +1722,7 @@
         <div class="CE_container">
           <v:before-data-bind>
             <![CDATA[
-              self.tv_status := get_keyword('tvf_status', self.vc_page.vc_event.ve_params, 'All');
+                    self.tv_status := get_keyword ('tvf_status', self.vc_page.vc_event.ve_params, CAL.WA.settings_taskFilter (self.settings));
             ]]>
           </v:before-data-bind>
             <table width="100%" cellspacing="0">
@@ -2074,12 +2074,15 @@
                             sql := sql || sprintf (' and a.E_KIND = %d', case when (self.cScope = 'tasks') then 1 else 0 end);
                             if (self.cScope = 'tasks')
                             {
+                              CAL.WA.settings_set (self.domain_id, 'taskFilter', self.tv_status);
                               if (self.tv_status <> 'All')
-                                sql := sql || sprintf (' and a.E_STATUS = ''%s''', case when (self.tv_status = 'Not Completed') then 'Completed' else self.tv_status end);
+                                sql := sql || sprintf (' and a.E_STATUS %s', case when (self.tv_status = 'Not Completed') then '<> ''Completed''' else '= ''' || self.tv_status || '''' end);
 
                               self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 'ts_order', 'ts_direction', self.ds);
                               sql := sql || sprintf (' order by %s %s', self.ts_order, self.ts_direction);
-                            } else {
+                            }
+                            else
+                            {
                     self.sortChange (get_keyword ('e_sortColumn', e.ve_params), 'e_order', 'e_direction', self.ds);
                               sql := sql || sprintf (' order by %s %s', self.e_order, self.e_direction);
                           }
@@ -2575,7 +2578,7 @@
                           <v:textarea name="e_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                           <?vsp
                             if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
-                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?dst=m&params=e_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
+                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?form=F1&dst=mc&params=e_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
                             if (self.v_attendees_count)
                               http (sprintf ('<input type="button" value="Details" onclick="javascript: window.open (\'attendees.vspx?id=%d&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=768, width=1024\'); return false;" class="button">', self.v_id, self.sid, self.realm));
                           ?>
@@ -3609,7 +3612,7 @@
                           <v:textarea name="t_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                           <?vsp
                             if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
-                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?dst=m&params=t_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
+                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?form=F1&dst=mc&params=t_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
                             if (self.v_attendees_count)
                               http (sprintf ('<input type="button" value="Details" onclick="javascript: window.open (\'attendees.vspx?id=%d&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=768, width=1024\'); return false;" class="button">', self.v_id, self.sid, self.realm));
                           ?>
