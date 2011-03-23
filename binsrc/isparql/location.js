@@ -64,6 +64,7 @@ iSPARQL.Location = function (o) {
     }
 
     this.serialize = function () {
+	OAT.Debug.log (0,'Location.serialize');
 	return (OAT.JSON.serialize(
 	    {lat:    self._lat,
 		 lon:    self._lon,
@@ -127,11 +128,14 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
 
     this._persistLocationCache = function () {
 	if (typeof localStorage != 'undefined') {
-	    localStorage.iSPARQL_locationCache = self._locationCache.serialize();
+	    OAT.Debug.log (0,'LocationCache: in _persistLocationCache: DISABLED.');
+//	    localStorage.iSPARQL_locationCache = self._locationCache.serialize();
+//	    iSPARQL.Common.log ('LocationCache: in _persistLocationCache: saved');
 	}
     }
 
     this._locAcquireHandler = function (pos) {
+	OAT.Debug.log (0,'LocationCache: in _locAcquireHandler');
 	self._acquiring = false;
 	var o = {};
 
@@ -151,6 +155,7 @@ iSPARQL.LocationCache = function (size, initArr, getCurrent) {
     }
 
     this._locErrorHandler = function (e) {
+	OAT.Debug.log (0,'LocationCache: in _locErrorHandler');
         self._acquiring = false;
 	switch (e.code) {
 	case e.TIMEOUT:
@@ -360,6 +365,7 @@ iSPARQL.locationAcquireUI = function (o) {
     this._refresh_to = 0;    
 
     this._locHandler = function (m,s,l) {
+	OAT.Debug.log (0,'LocAcquireUI: in _locHandler');
 	self._latI.value = l.getLat();
 	self._lonI.value = l.getLon();
 	self._accC.innerHTML = l.getAcc();
@@ -487,6 +493,8 @@ iSPARQL.locationAcquireUI = function (o) {
 	self._lonI.disabled = false;
 	self._latI.disabled = false;
 
+	self._refBtn.innerHTML="Auto";
+
 	OAT.Event.attach (self._latI, "change", self._latLonIChangeHandler);
 	OAT.Event.attach (self._lonI, "change", self._latLonIChangeHandler);
 
@@ -546,12 +554,15 @@ iSPARQL.locationAcquireUI = function (o) {
 	
 	switch (self.o.uiMode) {
 	case iSPARQL.locAcquireUIMode.AUTO:
+	    OAT.Debug.log (0,'locAcquireUIMode: AUTO');
 	self.refresh();
 	    break;
 	case iSPARQL.locAcquireUIMode.GEOCODE:
+	    OAT.Debug.log (0,'locAcquireUIMode: GEOCODE');
 	    self._setGeocodeMode();
 	    break;
 	case iSPARQL.locAcquireUIMode.MANUAL:
+	    OAT.Debug.log (0,'locAcquireUIMode: MANUAL');
 	    self._setManualMode();
 	    break;
 	}

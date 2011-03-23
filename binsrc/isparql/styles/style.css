@@ -288,6 +288,10 @@ ul#nav_bar {
   background-color: #999;
 }
 
+div.rdf_data {
+  float: left;
+  clear: both;
+}
 
 img.corner {
   width: 15px;
@@ -304,9 +308,13 @@ img.corner {
 
 div.pager {
   float: left; clear: both;
-  background-color: #576;
-  width: 99%;
-  text-align: center;
+  background-color: #ddd;
+  width: 100%;
+  border: 1px solid #355;
+}
+
+div.pager div {
+  margin:3px;
 }
 
 div.pager a {

@@ -13,6 +13,7 @@ iSPARQL.Defaults = {
 		 "http://demo.openlinksw.com/sparql",
 		 "http://myopenlink.net:8890/sparql/",
 		 "http://linkedgeodata.org/sparql",
+		 "http://sparql.reegle.info/",
 //		 "http://www.govtrack.us/sparql",
 		 "http://services.data.gov.uk/education/sparql",
 		 "http://services.data.gov.uk/crime/sparql",
@@ -75,11 +76,14 @@ iSPARQL.Defaults = {
 	
 	if (p['default-graph-uri']) { iSPARQL.Defaults.graph = p['default-graph-uri']; qp = true; }
 	if (p['defaultGraph'])      { iSPARQL.Defaults.graph = p['defaultGraph']; qp = true; }
-	if (p['query'])             { iSPARQL.Defaults.query = p['query']; qp = true; }
+	if (p['query']) { 
+	    iSPARQL.Defaults.query  = p['query']; 
+	    qp = true; 
+	}
 	if (p['sponge'])            { iSPARQL.Defaults.sponge = p['sponge']; qp = true; }
 	if (p['should_sponge'])     { iSPARQL.Defaults.sponge = p['should_sponge']; qp = true; }
 	if (p['view']) {
-	    var tabInx = parseInt(page_params['view']);
+	    var tabInx = parseInt(p['view']);
 	    if (!isNaN(tabInx) && tabinx >= 0 && tabInx < 3)
 		iSPARQL.Defaults.tab = tabInx;
 	    qp = true;
