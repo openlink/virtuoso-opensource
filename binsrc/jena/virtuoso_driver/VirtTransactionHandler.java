@@ -95,14 +95,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase {
 			try {
 				Connection c = graph.getConnection();
 				c.commit();
-				try {
 					c.setAutoCommit(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				// not sure why read_uncommitted is set, below. commented
-				// out by kw.
-				// c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
 			} catch (SQLException e) {
 				throw new JenaException("Transaction commit failed: ", e);
 			}

@@ -2391,21 +2391,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = "";
+		StringBuffer ret = new StringBuffer("sparql\n ");
 
-/*****
 		while(tok.hasMoreTokens()) {
 		    s = tok.nextToken().toLowerCase();
 		    if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
 			break;
 		}
 
-		StringBuffer ret = new StringBuffer();
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			ret.append("sparql\n define output:format '_JAVA_'\n ");
-		else 
-			ret.append("sparql\n ");
-*******/
-		StringBuffer ret = new StringBuffer("sparql\n ");
+		    ret.append("define output:format '_JAVA_'\n ");
+
 
 		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
 		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
