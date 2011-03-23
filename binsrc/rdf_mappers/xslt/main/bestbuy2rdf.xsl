@@ -366,18 +366,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'lb'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'lb')), ' LBR')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'oz')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'oz'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'oz')), ' ONZ')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">ONZ</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' LBR')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -396,18 +399,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'lb'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'lb')), ' LBR')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'oz')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'oz'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'oz')), ' ONZ')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">ONZ</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' LBR')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -426,18 +432,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., $quote)), ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'in')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'in')), ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -456,18 +465,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., $quote)), ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'in')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'in')), ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -486,18 +498,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., $quote)), ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'in')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'in')), ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' INH')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>

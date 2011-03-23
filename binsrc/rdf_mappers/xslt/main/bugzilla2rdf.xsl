@@ -96,6 +96,7 @@
 				<dc:description>
 					<xsl:value-of select="thetext"/>
 				</dc:description>
+				<rdfs:label><xsl:value-of select="concat('Created by: ', who/@name, ' on ', issue_when)"/></rdfs:label>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="vi:http_string_date (issue_when)"/>
 				</dcterms:created>
@@ -137,6 +138,7 @@
 				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
 				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
+				<rdfs:label><xsl:value-of select="concat('Created by: ', who/@name, ' on ', bug_when)"/></rdfs:label>
 				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>

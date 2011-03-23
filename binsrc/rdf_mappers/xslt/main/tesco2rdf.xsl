@@ -80,7 +80,7 @@
 					<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
                     <gr:eligibleRegions>UK</gr:eligibleRegions>
-					<!--xsl:apply-templates mode="offering" /-->
+					<xsl:apply-templates mode="offering"/>
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
@@ -129,7 +129,7 @@
 		</gr:hasManufacturer>
     </xsl:template>
 
-    <xsl:template match="Price">
+    <xsl:template match="Price" mode="offering">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
             <rdfs:label><xsl:value-of select="concat('Price of ', ., ' GBP')"/></rdfs:label>
@@ -139,6 +139,16 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
 
+    <!--xsl:template match="Price">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
+            <rdfs:label><xsl:value-of select="concat('Price of ', ., ' GBP')"/></rdfs:label>
+            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
+            <gr:hasCurrency rdf:datatype="&xsd;string">GBP</gr:hasCurrency>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template-->
+    
     <!--xsl:template match="PriceDescription">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
@@ -162,4 +172,6 @@
 	</xsl:if>
     </xsl:template>
 
+    <xsl:template match="text()|@*" mode="offering" />
+    
 </xsl:stylesheet>
