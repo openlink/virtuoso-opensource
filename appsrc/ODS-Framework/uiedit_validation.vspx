@@ -48,33 +48,34 @@
   <div style="height: 400px; overflow: auto;">
     <table id="lvalidation" class="listing" cellspacing="0">
       <tr class="listing_header_row">
-        <td width="1%">
-          <input type="checkbox" name="cb_name_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
-        </td>
+              <td width="1%"></td>
+              <th>Field</th>
+              <th width="1%"></th>
         <th>Field</th>
       </tr>
       <?vsp
-        declare N integer;
+              declare N, M integer;
         declare fields, data any;
 
         fields := LDAP..contact_fields ();
         data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.u_id), vector());
-        for (N := 0; N < length (fields); N := N + 2)
+              M := length (fields) / 2;
+              for (N := 0; N < M; N := N + 2)
         {
   	  ?>
   	  <tr>
   	    <td width="1%">
-  	      <?vsp
-            declare S varchar;
-            S := '';
-            if (get_keyword (fields[N], data, '') <> '')
-              S := 'checked="checked"';
-            http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, fields[N]));
-          ?>
+        	      <?vsp http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', case when (get_keyword (fields[N], data, '') <> '') then 'checked="checked"' else '' end, fields[N])); ?>
   		  </td>
-  		  <td >
+        		  <td width="50%">
   		    <?V fields[N+1] ?>
   		  </td>
+        	    <td width="1%">
+        	      <?vsp http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', case when (get_keyword (fields[M+N], data, '') <> '') then 'checked="checked"' else '' end, fields[M+N])); ?>
+        		  </td>
+        		  <td width="50%">
+        		    <?V fields[M+N+1] ?>
+        		  </td>
       </tr>
   	  <?vsp
         }
