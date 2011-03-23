@@ -917,35 +917,28 @@ create procedure DB.DBA.XSLT_STRING2ISO_DATE2 (in val varchar)
 }
 ;
 
-create procedure DB.DBA.XSLT_SEPARATE_SEMI_VALUES (in val varchar)
+create procedure DB.DBA.XSLT_STRING2ISO_DATE3 (in val varchar)
 {
-	declare result_text, what_ varchar;
-	declare cur, len int;
-	declare xt any;
-	val := trim(val , '; ');
-	result_text := '<entities>';
-	len := length(val);
-	while (len > 0)
+  declare ret, tmp any;
+  if (val is null)
+    return null;
+  tmp := sprintf_inverse (val, '%sT%s', 0);
+  if (length(tmp) > 1)
 	{
-		cur := strchr(val, ';');
-		if (cur is null or cur = 0)
+	if (length(tmp[0]) = 8 and length(tmp[1]) = 6)	
 		{
-			what_ := val;
-			val := '';
+		tmp := left(val, 13);
+		ret := stringdate(tmp);
+		tmp := atoi(right(val, 2));
+		ret := dateadd('second', tmp, ret);
 		}
 		else
-		{
-			what_ := subseq(val, 0, cur);
-			val := right(val, len - cur);
-			val := trim(val , '; ');
-		}
-		len := length(val);
-		if (what_ <> 'NULL')
-			result_text := concat(result_text, '<entity>', what_, '</entity>');
+		return val;
+	ret := date_iso8601 (ret);
+    if (ret is not null)
+		return ret;
 	}
-	result_text := concat(result_text, '</entities>');
-	xt := xtree_doc(result_text, 2);
-	return xt;
+  return val;
 }
 ;
 
@@ -1100,17 +1093,6 @@ create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
   if (is_https_ctx ())
     return 'https';
   return 'http';
-}
-;
-
-create procedure DB.DBA.NS_URL_FROM_PREFIX (in ns_prefix varchar, in ns_default varchar)
-{
-  declare ns_url any;
-  declare prefix varchar;
-
-  prefix := ns_prefix;
-  ns_url := (select NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = prefix);
-  return coalesce(ns_url, ns_default);
 }
 ;
 
@@ -1595,9 +1577,8 @@ grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
-grant execute on DB.DBA.XSLT_SEPARATE_SEMI_VALUES to public;
+grant execute on DB.DBA.XSLT_STRING2ISO_DATE3 to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
-grant execute on DB.DBA.NS_URL_FROM_PREFIX to public;
 grant execute on DB.DBA.RDF_PROXY_ENTITY_IRI to public;
 grant execute on DB.DBA.RM_SPONGE_DOC_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
@@ -1616,7 +1597,6 @@ grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:ns_from_prefix', 'DB.DBA.NS_URL_FROM_PREFIX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:getIRIbyCIK', fix_identifier_case ('DB.DBA.GET_XBRL_NAME_BY_CIK'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_label_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME'));
@@ -1635,7 +1615,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:separateSemiValues', 'DB.DBA.XSLT_SEPARATE_SEMI_VALUES');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date3', 'DB.DBA.XSLT_STRING2ISO_DATE3');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_PROXY_ENTITY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
@@ -2637,8 +2617,9 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
   xt := DB.DBA.MQL_TREE_TO_XML (tree);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/crunchbase2rdf.xsl', xt,
-	  vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'base', base, 'suffix', suffix));
+	  vector ('baseUri', new_origin_uri, 'base', base, 'suffix', suffix));
   xd := serialize_to_UTF8_xml (xt);
+
   RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
@@ -4250,6 +4231,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM2 (in url varchar, in new_origin_uri varc
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/lastfm2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 	return 1;
@@ -5868,11 +5850,11 @@ create procedure DB.DBA.RDF_LOAD_PRODUCTWIKI (in graph_iri varchar, in new_origi
 		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
-	if (new_origin_uri like 'http://www.productwiki.com/%')
+	if (new_origin_uri like 'http://%.productwiki.com/%')
 	{
 		declare arr any;
-		arr := sprintf_inverse (new_origin_uri, 'http://www.productwiki.com/%s', 0);
-		asin := arr[0];
+		arr := sprintf_inverse (new_origin_uri, 'http://%s.productwiki.com/%s', 0);
+		asin := arr[1];
 		pos := strchr(asin, '/');
 		if (pos is not null)
 			asin := left(asin, pos);
@@ -5884,7 +5866,7 @@ create procedure DB.DBA.RDF_LOAD_PRODUCTWIKI (in graph_iri varchar, in new_origi
 		return 0;
 	if (asin is null)
 		return 0;
-	url := sprintf ('http://api.productwiki.com/connect/api.aspx?op=search&q=%s&format=xml&key=%s&fields=skus,images,description', asin, api_key);
+	url := sprintf ('http://api.productwiki.com/connect/api.aspx?op=search&q=%s&format=xml&key=%s&fields=skus,images,description,reviews', asin, api_key);
 	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
 	if (hdr[0] not like 'HTTP/1._ 200 %')
 		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
@@ -7031,6 +7013,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	  else
 	     DB.DBA.TTLP (content, new_origin_uri, coalesce (dest, graph_iri));
 	  mdta := mdta + 1;
+  
 	  --RDF_MAPPER_CACHE_REGISTER (rdf_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	  dict_put (dict, rdf_url, 1);
 	  rdf_url_inx := rdf_url_inx + 1;
@@ -7135,6 +7118,7 @@ try_grddl:
     }
   else if (mdta)
     goto ret;
+	
   try_grddl1:
   -- /* GRDDL - plan A, eRDF going here */
   foreach (any prof in profs) do
@@ -7155,10 +7139,12 @@ try_grddl:
 	}
       next_prof:;
     }
-
   -- brute force attack, scan w/o profile
   if (xt_xml is not null)
+  {
     xt := xt_xml;
+	}
+	
   if (mdta < 2)
     {
       -- currently no profile in RDFa and some similar, so we try it to extract directly
@@ -8777,3 +8763,4 @@ create procedure CLEAN_SPONGE (in d int := 30, in n int := 2000)
 }
 ;
 
+RDFS_RULE_SET ('http://www.w3.org/2000/01/rdf-schema#', 'http://www.w3.org/2000/01/rdf-schema#');
