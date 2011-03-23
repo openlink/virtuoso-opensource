@@ -39,7 +39,6 @@
       </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="js/ab.js"></script>
-      <script type="text/javascript" src="js/conversation.js"></script>
       <script type="text/javascript">
         function myInit()
         {

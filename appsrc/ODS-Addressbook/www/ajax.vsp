@@ -20,13 +20,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
-  declare exit handler for SQLSTATE '*'
-  {
-    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
-    resignal;
-  };
-
   declare domain_id, account_id integer;
   declare sid, realm, action, subAction any;
   declare aSession any;
@@ -37,13 +30,15 @@
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
 
+  -- dbg_obj_print ('action, subAction: ', action, subAction);
+
   aSession   := AB.WA.session_restore (params);
   domain_id  := cast (get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast (get_keyword('account_id', aSession, '0') as integer);
 
   if (action = 'load')
   {
-    declare progressID, progressIndex any;
+    declare progressID, progressIndex, progressPoll, progressPollData any;
 
     progressID := cast (get_keyword ('id', params, msec_time()) as varchar);
     progressIndex := registry_get ('addressbook_index_' || progressID);
@@ -58,9 +53,28 @@
         http_rewrite ();
         http_header ('Content-Type: text/xml\r\n');
         http('<root>');
+
         http(sprintf('<index>%s</index>', cast (progressIndex as varchar)));
+
+	      progressPoll := registry_get ('addressbook_poll_' || progressID);
+        if (not (isinteger (progressPoll) and (progressPoll = 0)))
+        {
+	        progressPollData := registry_get ('addressbook_poll_data_' || progressID);
+          http (sprintf ('<poll><action>%s</action><data>%s</data></poll>', cast (progressPoll as varchar), cast (progressPollData as varchar)));
+        }
+
         http('</root>');
       }
+	  }
+	  else if (subAction = 'poll')
+	  {
+	    declare pollValue any;
+
+	    pollValue := get_keyword ('value', params);
+	    if (not is_empty_or_null (pollValue))
+        registry_set ('addressbook_poll_' || progressID, pollValue);
+
+      registry_set ('addressbook_poll_time_' || progressID, cast (msec_time() as varchar));
 	  }
 	  else if (subAction = 'init')
 	  {

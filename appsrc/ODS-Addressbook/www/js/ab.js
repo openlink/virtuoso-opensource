@@ -589,6 +589,7 @@ function urlParam(fldName)
 
 // progress bar
 var progressTimer = null;
+var progressPollTimer = null;
 var progressID = null;
 var progressMax = null;
 var progressSize = 40;
@@ -633,12 +634,51 @@ function checkState()
 
     if ((progressIndex != null) && (progressIndex != progressMax)) {
       setTimeout("checkState()", 500);
+      if (!progressPollTimer) {
+        var progressPoll = xml.getElementsByTagName('poll')[0];
+        if (progressPoll) {
+          var progressPollAction = OAT.Xml.textValue(progressPoll.getElementsByTagName('action')[0]);
+          if (progressPollAction == 'ask') {
+            progressPollTimer = setTimeout("checkPollState()", 2000);
+            var progressPollData = OAT.Xml.textValue(progressPoll.getElementsByTagName('data')[0]);
+            if (!askDialog) {
+              askDialog = new OAT.Dialog("Select action", "askDiv", {width:400, resize:0, buttons: 1, modal:1});
+              OAT.Dom.show('askDiv');
+            }
+            OAT.MSG.attach(askDialog, "DIALOG_OK", function() {
+              askDialog.hide();
+              var pollValue = '';
+              if ($('i_ask_0').checked)
+                pollValue = 'answer:merge';
+              if ($('i_ask_1').checked)
+                pollValue = 'answer:override';
+              if ($('i_ask_2').checked)
+                pollValue = 'answer:skip';
+              OAT.AJAX.POST('ajax.vsp', "a=load&sa=poll&id="+progressID+'&value='+pollValue+urlParam("sid")+urlParam("realm"), function(){});
+              progressPollTimer = null;
+              askprogressPollTimer = null;
+            });
+            $('askDiv_data').innerHTML = progressPollData;
+            askDialog.show();
+          }
+        }
+      }
     } else {
       progressTimer = null;
+      progressPollTimer = null;
       $('btn_Stop').click();
     }
   }
   OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParam("sid")+urlParam("realm"), x);
+}
+
+function checkPollState()
+{
+  var x = function (data) {
+    if (progressTimer && progressPollTimer)
+      setTimeout("checkPollState()", 2000);
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=poll&id="+progressID+urlParam("sid")+urlParam("realm"), x);
 }
 
 function createProgressBar()

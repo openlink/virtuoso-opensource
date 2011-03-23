@@ -3244,6 +3244,8 @@ create procedure AB.WA.contact_update2 (
     update AB.WA.PERSONS set P_B_MAIL = pValue where P_ID = id;
   if (pName = 'P_B_WEB')
     update AB.WA.PERSONS set P_B_WEB = pValue where P_ID = id;
+  if (pName = 'P_B_INDUSTRY')
+    update AB.WA.PERSONS set P_B_INDUSTRY = pValue where P_ID = id;
   if (pName = 'P_B_ORGANIZATION')
     update AB.WA.PERSONS set P_B_ORGANIZATION = pValue where P_ID = id;
   if (pName = 'P_B_DEPARTMENT')
@@ -3300,16 +3302,23 @@ create procedure AB.WA.contact_update4 (
   in domain_id integer,
   in pFields any,
   in pValues any,
-  in tags varchar,
-  in validation any := null)
+  in tags varchar := null,
+  in options any := null,
+  in validation any := null,
+  in progress_id any := null)
 {
   declare L, N, M varchar;
   declare S varchar;
   declare tmp, V, F any;
 
-  tmp := AB.WA.contact_validation (domain_id, pFields, pValues, validation);
+  tmp := AB.WA.contact_validation (domain_id, pFields, pValues, options, validation, progress_id);
   if (not isnull (tmp))
+  {
+    if (length (pFields) = 0)
+      return 0;
+
     id := tmp;
+  }
 
   if ((isinteger (id)) and (id = -1))
   {
@@ -3400,11 +3409,13 @@ create procedure AB.WA.contact_validation (
   in domain_id integer,
   inout pFields any,
   inout pValues any,
-  in validation any := null)
+  in options any := null,
+  in validation any := null,
+  in progress_id any := null)
 {
   declare N, M varchar;
   declare S varchar;
-  declare id, st, msg, meta, rows, F, V any;
+  declare id, st, msg, meta, rows, F, V, T any;
 
   id := null;
   if (not isnull (validation) and length (validation))
@@ -3416,37 +3427,100 @@ create procedure AB.WA.contact_validation (
       M := AB.WA.vector_index (pFields, validation [N]);
       if (not isnull (M))
       {
-        if (not is_empty_or_null (pValues [M]))
-        {
-          S := S || sprintf (' and %s = ?', pFields [M]);
+        S := S || sprintf (' and coalesce(%s, '''') = coalesce(?, '''')', pFields[M]);
           V := vector_concat (V, vector (pValues [M]));
         }
       }
-    }
-    if (length (V) = length (validation))
-    {
       st := '00000';
-      exec (S, st, msg, V, 0, meta, rows);
+    exec (S, st, msg, V, vector ('use_cache', 1), meta, rows);
       if ((st = '00000') and (length (rows) > 0))
       {
-        V := vector ();
+      declare validationMode varchar;
+
+      id := vector ();
+      for (N := 0; N < length (rows); N := N + 1)
+      {
+        id := vector_concat (id, vector (rows [N][0]));
+      }
+      validationMode := get_keyword ('validationMode', options);
+      if (validationMode = 'ask')
+      {
+        declare pollValue, pollTime varchar;
+
+	      registry_set ('addressbook_poll_' || progress_id, 'ask');
+        registry_set ('addressbook_poll_time_' || progress_id, cast (msec_time() as varchar));
+        registry_set ('addressbook_poll_data_' || progress_id, (select P_NAME from AB.WA.PERSONS where P_ID = id[0]));
+	      while (1)
+	      {
+          delay(2);
+
+          -- has answer?
+          pollValue := registry_get ('addressbook_poll_' || progress_id);
+          if (pollValue like 'answer:%')
+          {
+            validationMode := replace (pollValue, 'answer:', '');
+    	      registry_remove ('addressbook_poll_' || progress_id);
+            registry_remove ('addressbook_poll_time_' || progress_id);
+            registry_remove ('addressbook_poll_data_' || progress_id);
+
+            goto _break;
+          }
+
+          -- no client interaction
+          -- stopped?
+          pollTime := cast (registry_get ('addressbook_poll_time_' || progress_id) as integer);
+          if (((msec_time() - pollTime) > 10000) or not AB.WA.import_check_progress_id (progress_id))
+          {
+    	      registry_remove ('addressbook_poll_' || progress_id);
+            registry_remove ('addressbook_poll_time_' || progress_id);
+            registry_remove ('addressbook_poll_data_' || progress_id);
+	          registry_set ('addressbook_action_' || progress_id, 'stop');
+            validationMode := 'skip';
+
+            goto _break;
+          }
+	      }
+	    _break:;
+      }
         F := vector ();
-        for (N := 0; N < length (pFields); N := N + 1) {
+      V := vector ();
+      if (validationMode = 'skip')
+      {
+        ;
+      }
+      else if (validationMode = 'merge')
+      {
+        for (N := 0; N < length (pFields); N := N + 1)
+        {
           if (not AB.WA.vector_contains (validation, pFields [N]))
           {
             F := vector_concat (F, vector (pFields [N]));
             V := vector_concat (V, vector (pValues [N]));
           }
         }
-        pFields := F;
-        pValues := V;
-
-        id := vector ();
-        for (N := 0; N < length (rows); N := N + 1)
+      }
+      else if (validationMode = 'override')
         {
-          id := vector_concat (id, vector (rows [N][0]));
+        for (N := 0; N < length (pFields); N := N + 1)
+        {
+          if (not AB.WA.vector_contains (validation, pFields[N]))
+          {
+            F := vector_concat (F, vector (pFields[N]));
+            V := vector_concat (V, vector (pValues[N]));
         }
       }
+        T := LDAP..contact_fields ();
+        for (N := 0; N < length (T); N := N + 2)
+        {
+          if ((T[N] <> 'P_NAME') and not AB.WA.vector_contains (pFields, T[N]))
+          {
+            F := vector_concat (F, vector (T[N]));
+            V := vector_concat (V, vector (null));
+          }
+        }
+      }
+      pFields := F;
+      pValues := V;
     }
   }
   return id;
@@ -3600,6 +3674,10 @@ create procedure AB.WA.import_count (
   -- LDAP
   if (type = 3)
     return AB.WA.import_ldap_count (data);
+
+  -- LinkedIn
+  if (type = 4)
+    return AB.WA.import_linkedin_count (data);
 }
 ;
 
@@ -3676,21 +3754,48 @@ create procedure AB.WA.import_ldap_count (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.import_progress_id (
+create procedure AB.WA.import_linkedin_count (
+  in content any)
+{
+  declare items any;
+
+  items := xml_tree_doc (content);
+  items := xpath_eval('/connections/person', items, 0);
+
+  return length (items);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_check_progress_id (
   in progress_id any)
 {
-  declare tmp any;
-
   if (is_empty_or_null (progress_id))
     return 1;
 
   if  (cast (registry_get ('addressbook_action_' || progress_id) as varchar) = 'stop')
     return 0;
 
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_inc_progress_id (
+  in progress_id any)
+{
+  declare tmp any;
+
+  if (is_empty_or_null (progress_id))
+    return;
+
+  if  (cast (registry_get ('addressbook_action_' || progress_id) as varchar) = 'stop')
+    return;
+
   tmp := cast (registry_get('addressbook_index_' || progress_id) as integer) + 1;
   registry_set ('addressbook_index_' || progress_id, cast (tmp as varchar));
-
-  return 1;
 }
 ;
 
@@ -3723,6 +3828,11 @@ create procedure AB.WA.import (
   {
     -- LDAP
     AB.WA.import_ldap (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 4)
+  {
+    -- LinkedIn
+    AB.WA.import_linkedin (domain_id, data, options, validation, progress_id);
   }
 }
 ;
@@ -3789,7 +3899,7 @@ create procedure AB.WA.import_vcard (
     itemName := xpath_eval ('name(.)', xmlItem);
     if (itemName = 'IMC-VCARD')
     {
-      if (not AB.WA.import_progress_id (progress_id))
+      if (not AB.WA.import_check_progress_id (progress_id))
         return;
 
       id := -1;
@@ -3862,10 +3972,11 @@ create procedure AB.WA.import_vcard (
           goto _skip;
       }
 
-      id := AB.WA.import_contact_update (id, domain_id, pFields, pValues, options, validation);
+      id := AB.WA.import_contact_update (id, domain_id, pFields, pValues, options, validation, progress_id);
       vcardImported := vector_concat (vcardImported, id);
 
     _skip:;
+      AB.WA.import_inc_progress_id (progress_id);
     }
   }
   return vcardImported;
@@ -3878,7 +3989,8 @@ create procedure AB.WA.import_rdf_data (
   in domain_id integer,
   in data  any,
   in options varchar,
-  in validation any := null)
+  in validation any := null,
+  in progress_id any := null)
   {
   declare M integer;
   declare meta, tags, pValue, pField, pFields, pValues any;
@@ -3940,7 +4052,7 @@ create procedure AB.WA.import_rdf_data (
     pFields := vector_concat (pFields, vector ('P_RELATIONSHIPS'));
     pValues := vector_concat (pValues, vector (pValue));
           }
-  AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation);
+  AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
           }
 ;
 
@@ -3974,7 +4086,7 @@ create procedure AB.WA.import_vcard2 (
     S := sprintf ('sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }', content, contentIRI);
     st := '00000';
         commit work;
-    exec (S, st, msg, vector (), 0, meta, Items);
+    exec (S, st, msg, vector (), vector ('use_cache', 1), meta, Items);
     if ('00000' <> st)
       signal (st, msg);
       }
@@ -3992,11 +4104,12 @@ create procedure AB.WA.import_vcard2 (
   items := AB.WA.ab_sparql (S);
   foreach (any item in items) do
   {
-    if (not AB.WA.import_progress_id (progress_id))
+    if (not AB.WA.import_check_progress_id (progress_id))
       return;
 
     data := AB.WA.import_vcard2_array (item[0], contentIRI);
-    AB.WA.import_rdf_data (domain_id, data, options, validation);
+    AB.WA.import_rdf_data (domain_id, data, options, validation, progress_id);
+    AB.WA.import_inc_progress_id (progress_id);
   }
 
 _delete:;
@@ -4127,11 +4240,12 @@ create procedure AB.WA.import_foaf (
   }
   foreach (any item in items) do
       {
-    if (not AB.WA.import_progress_id (progress_id))
+    if (not AB.WA.import_check_progress_id (progress_id))
       return;
 
     data := ODS.ODS_API.extractFOAFDataArray (item[0], contentIRI);
-    AB.WA.import_rdf_data (domain_id, data, options, validation);
+    AB.WA.import_rdf_data (domain_id, data, options, validation, progress_id);
+    AB.WA.import_inc_progress_id (progress_id);
   }
 
 _delete:;
@@ -4276,7 +4390,7 @@ create procedure AB.WA.import_csv (
   nLength := length (content);
   for (N := 1; N < nLength; N := N + 1)
   {
-    if (not AB.WA.import_progress_id (progress_id))
+    if (not AB.WA.import_check_progress_id (progress_id))
       return;
 
     pFields := vector ();
@@ -4292,7 +4406,8 @@ create procedure AB.WA.import_csv (
         pValues := vector_concat (pValues, vector (trim (data[M], '"')));
          }
       }
-    AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation);
+    AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+    AB.WA.import_inc_progress_id (progress_id);
   }
 }
 ;
@@ -4320,7 +4435,7 @@ create procedure AB.WA.import_ldap (
   {
     if (content [N] = 'entry')
     {
-      if (not AB.WA.import_progress_id (progress_id))
+      if (not AB.WA.import_check_progress_id (progress_id))
         return;
 
       data := content [N+1];
@@ -4335,8 +4450,60 @@ create procedure AB.WA.import_ldap (
             pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
           }
         }
-      AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation);
+      AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+      AB.WA.import_inc_progress_id (progress_id);
     }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_linkedin (
+  in domain_id integer,
+  in content any,
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
+{
+  declare N, M, id integer;
+  declare items, pFields, pValues any;
+  declare tmp, meta, mLength any;
+
+  if (isnull (options))
+    options := vector ();
+
+  Meta := vector
+    (
+      'P_NAME',           'string(./first-name)',
+      'P_FIRST_NAME',     'string(./first-name)',
+      'P_LAST_NAME',      'string(./last-name)',
+      'P_H_COUNTRY',      'string(./location/name)',
+      'P_B_INDUSTRY',     'string(./industry)'
+    );
+  mLength := length (Meta);
+
+  items := xml_tree_doc (content);
+  items := xpath_eval('/connections/person', items, 0);
+  foreach (any item in items) do
+  {
+    if (not AB.WA.import_check_progress_id (progress_id))
+      return;
+
+    pFields := vector ();
+    pValues := vector ();
+    for (M := 0; M < mLength; M := M + 2)
+    {
+      tmp := serialize_to_UTF8_xml (xpath_eval (Meta[M+1], item, 1));
+      if (not is_empty_or_null (tmp))
+      {
+        pFields := vector_concat (pFields, vector (Meta[M]));
+        pValues := vector_concat (pValues, vector (tmp));
+      }
+    }
+    AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+
+    AB.WA.import_inc_progress_id (progress_id);
   }
 }
 ;
@@ -4349,15 +4516,17 @@ create procedure AB.WA.import_contact_update (
   in pFields any,
   in pValues any,
   in options any,
-  in validation any)
+  in validation any,
+  in progress_id varchar)
 {
   declare N, noRelations inteher;
-  declare tmp, tags, name, firstName, lastName, fullName varchar;
+  declare tmp, tags, name, firstName, lastName, fullName, iri varchar;
 
   name := '';
   firstName := '';
   lastName := '';
   fullName := '';
+  iri := '';
   noRelations := 1;
   for (N := 0; N < length (pFields); N := N + 1)
   {
@@ -4376,6 +4545,10 @@ create procedure AB.WA.import_contact_update (
     else if (pFields[N] = 'P_FULL_NAME')
     {
       fullName := pValues[N];
+    }
+    else if (pFields[N] = 'P_IRI')
+    {
+      iri := pValues[N];
     }
     else if (pFields[N] = 'P_BIRTHDAY')
     {
@@ -4429,7 +4602,7 @@ create procedure AB.WA.import_contact_update (
 
       commit work;
       connection_set ('__addressbook_import', '1');
-  id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, tags, validation);
+  id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, tags, options, validation, progress_id);
   if (length (id))
   {
     tmp := get_keyword ('grants', options, '');
@@ -4439,6 +4612,11 @@ create procedure AB.WA.import_contact_update (
     tmp := get_keyword ('acls', options, '');
     if (tmp <> '')
       AB.WA.contact_update2 (id[0], domain_id, 'P_ACL', tmp);
+
+    tmp := get_keyword ('contentPings', options, vector());
+    if (AB.WA.vector_contains (tmp, iri))
+      SEMPING.DBA.CLI_PING (AB.WA.account_sioc_url (domain_id), iri);
+
   }
   connection_set ('__addressbook_import', '0');
 
@@ -7520,7 +7698,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
     {
       if (objectType = 'c')
       {
-        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues);
       } else {
         uname := AB.WA.domain_owner_name (domain_id);
         ocMap := AB.WA.vector_reverse (AB.WA.owner2contactMap ());
@@ -7533,7 +7711,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
       }
       signal ('__204', '');
     } else {
-      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues, null);
+      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues);
       signal ('__201', '');
     }
   }
@@ -8148,7 +8326,7 @@ create procedure AB.WA.yahoocontacts () __SOAP_HTTP 'text/xml'
       if ((apiMethod = 'PUT') and not exists (select 1 from AB.WA.PERSONS where P_ID = abID and P_DOMAIN_ID = domain_id))
         signal ('__404', '');
 
-      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues, null);
+      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues);
     }
   }
   if (apiCommand = 'contact')
@@ -8869,9 +9047,9 @@ create procedure AB.WA.googlecontacts () __SOAP_HTTP 'text/xml'
         objectID := (select P_ID from AB.WA.PERSONS where P_UID = abValues[M] and P_DOMAIN_ID = domain_id);
         if (isnull (objectID))
           signal ('__404', '');
-        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues);
       } else {
-        objectID := AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+        objectID := AB.WA.contact_update4 (objectID, domain_id, abFields, abValues);
         if (isarray (objectID) and length (objectID) = 1)
           objectID := objectID[0];
       }

@@ -73,6 +73,9 @@
       <script type="text/javascript" src="/ods/validate.js"></script>
       <script type="text/javascript" src="js/ab.js"></script>
       <script type="text/javascript">
+        // publicas
+        var askDialog;
+
         function myInit() {
           if (!OAT._loaded) {
             setTimeout(myInit, 50);

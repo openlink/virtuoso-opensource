@@ -401,6 +401,7 @@
       self.i_contentFollow := null;
       self.i_data := null;
       self.i_validation := null;
+      self.i_validationMode := 'ask';
       self.v_grants := '';
       self.v_acl := '';
 
@@ -501,7 +502,7 @@
       <v:variable name="abChars" type="integer" default="60" />
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
 
-      <v:variable persist="0" name="abStep" type="varchar" default="''" />
+      <v:variable persist="0" name="abStep" type="varchar" param-name="step" default="''" />
       <v:variable persist="0" name="abSteps" type="any" default="null" />
       <v:variable name="v_id" type="any" default="-1" />
 
@@ -593,7 +594,8 @@
       <v:variable name="i_contentDepth" type="integer" default="0" />
       <v:variable name="i_contentLimit" type="integer" default="100" />
       <v:variable name="i_contentFollow" type="any" default="null" />
-      <v:variable name="i_validation" type="varchar" default="null" />
+      <v:variable name="i_validation" type="any" default="null" />
+      <v:variable name="i_validationMode" type="varchar" default="'ask'" />
       <v:variable name="i_maps" type="any" default="null" />
       <v:variable name="i_number" type="integer" default="0" />
 
@@ -2964,7 +2966,7 @@
 	            <div class="new-form-body">
 	              <table cellspacing="0">
 	                <tr>
-                      <th rowspan="4" valign="top" width="45%">
+                      <th valign="top" width="45%">
 	                    <v:label for="i_file" value="Source type"/>
 	                  </th>
 	                  <td nowrap="nowarap">
@@ -2978,10 +2980,7 @@
 	                    </v:radio-button>
                           <b>File</b>
                         </label>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
+                        <br />
                         <label>
                           <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
@@ -2992,10 +2991,7 @@
 	                    </v:radio-button>
                           <b>WebDAV</b>
                         </label>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
+                        <br />
                         <label>
                           <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
@@ -3006,10 +3002,7 @@
 	                    </v:radio-button>
                           <b>URI</b>
                         </label>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td nowrap="nowarap">
+                        <br />
                         <label>
                           <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
                         <v:before-render>
@@ -3020,10 +3013,23 @@
                       </v:radio-button>
                           <b>LDAP Server</b>
                         </label>
+                        <br />
+                        <vm:if test="not isnull (ODS.ODS_API.get_oauth_tok ('LinkedIn API'))">
+                          <label>
+                            <v:radio-button name="i_source_4" xhtml_id="i_source_4" group-name="i_source" value="4" xhtml_onchange="javascript: destinationChange(this, {hide: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
+                              <v:before-render>
+                                <![CDATA[
+                                  control.ufl_selected := either (equ (self.i_source, 4), 1, 0);
+                                ]]>
+                              </v:before-render>
+                            </v:radio-button>
+                            <b>LinkedIn</b>
+                          </label>
+                        </vm:if>
 	                  </td>
 	                </tr>
                     <tr id="imp_tr_0">
-                      <th rowspan="3" valign="top" width="45%">
+                      <th valign="top" width="45%">
 	                    <v:label for="i_file" value="Content type"/>
 	                  </th>
 	                  <td nowrap="nowarap">
@@ -3037,10 +3043,7 @@
 	                    </v:radio-button>
                           <b>vCard</b>
                         </label>
-	                  </td>
-	                </tr>
-                    <tr id="imp_tr_1">
-	                  <td nowrap="nowarap">
+                        <br />
                         <label>
 	                    <v:radio-button name="i_type_1" xhtml_id="i_type_1" group-name="i_type" value="1">
 	                      <v:before-render>
@@ -3051,10 +3054,7 @@
 	                    </v:radio-button>
                           <b>FOAF</b>
                         </label>
-	                  </td>
-	                </tr>
-                    <tr id="imp_tr_2">
-	                  <td nowrap="nowarap">
+                        <br />
                         <label>
 	                    <v:radio-button name="i_type_2" xhtml_id="i_type_2" group-name="i_type" value="2">
 	                      <v:before-render>
@@ -3078,6 +3078,11 @@
                         {
                           self.i_source := 3;
                           self.i_type   := 3;
+                        }
+                        else if (self.i_source_4.ufl_selected)
+                        {
+                          self.i_source := 4;
+                          self.i_type   := 4;
                         }
                         else
                         {
@@ -3126,6 +3131,52 @@
 	          </v:template>
 
               <v:template name="t10" type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
+                <v:after-data-bind>
+                  <![CDATA[
+                    declare params, names any;
+                    declare token, result, url, my_sid, oauth_token, return_url any;
+
+                    params := self.vc_page.vc_event.ve_params;
+                    if (get_keyword ('oauth_verifier', params) is not null)
+                    {
+                      token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+
+                      my_sid := get_keyword ('my_sid', params);
+                      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/accessToken', sprintf ('oauth_token=%U&oauth_verifier=%U', get_keyword ('oauth_token', params), get_keyword ('oauth_verifier', params)), token, my_sid, 1);
+                      result := http_get (url);
+                      my_sid := OAUTH..parse_response (my_sid, token, result);
+
+                      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~/connections', '', token, my_sid, 1);
+                      result := http_get (url);
+                      OAUTH..session_terminate (my_sid);
+
+                      self.abStep := '5';
+                      self.i_source := 4;
+                      self.i_type   := 4;
+                      self.i_data := result;
+                      self.i_number := AB.WA.import_count (self.i_type, self.i_data);
+                      AB.WA.push (self.abSteps, '1');
+
+                      self.vc_data_bind(e);
+                    }
+                    else if (self.i_source = 4)
+                    {
+                      token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+
+                      my_sid := md5 (datestring (now ()));
+                      return_url := sprintf ('%shome.vspx?my_sid=%U&sid=%s&realm=%s&action=%s&step=%s', AB.WA.ab_url (self.domain_id), my_sid, self.sid, self.realm, self.abAction, self.abStep);
+                      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+                      result := http_get (url);
+                      my_sid := OAUTH..parse_response (my_sid, token, result);
+
+                      OAUTH..set_session_data (my_sid, vector ());
+                      oauth_token := OAUTH..get_auth_token (my_sid);
+                      url := sprintf ('https://www.linkedin.com/uas/oauth/authenticate?oauth_token=%U', oauth_token);
+                      self.vc_redirect (url);
+                    }
+                  ]]>
+                </v:after-data-bind>
+
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Source parameters"/>
 	            </div>
@@ -3572,8 +3623,8 @@
                       {
                         if (params[N] = 'cb_item')
                             self.i_contentItems := vector_concat (self.i_contentItems, vector (vector (params[N+1])));
-                          if (params[N] = 'cb_ping')
-                            self.i_contentPings := vector_concat (self.i_contentPings, vector (vector (params[N+1])));
+                          else if (params[N] = 'cb_ping')
+                            self.i_contentPings := vector_concat (self.i_contentPings, vector (params[N+1]));
                       }
 
                         self.i_number := length (self.i_contentItems);
@@ -3929,32 +3980,56 @@
                     </tr>
                     <tr>
                       <th valign="top">
-                      Validation Fields
+                        Duplicate entries mode
+                      </th>
+                      <td>
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_0" value="merge" %s />', case when (self.i_validationMode = 'merge') then 'checked="checked"' else '' end)); ?> Merge
+                        </label>
+                        <br />
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_1" value="override" %s />', case when (self.i_validationMode = 'override') then 'checked="checked"' else '' end)); ?>  Override
+                        </label>
+                        <br />
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_2" value="skip" %s />', case when (self.i_validationMode = 'skip') then 'checked="checked"' else '' end)); ?>  Skip
+                        </label>
+                        <br />
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_3" value="ask" %s />', case when (self.i_validationMode = 'ask') then 'checked="checked"' else '' end)); ?> Ask
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th valign="top">
+                        Specify fields to identify entries
                     </th>
                     <td>
                         <div style="height: 250px; overflow: auto;">
                         <table cellspacing="0" style="background-color: #fff;">
                           <?vsp
-                            declare N integer;
+                              declare N, M integer;
                             declare data, fields any;
 
                             data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.account_id), vector());
                             fields := LDAP..contact_fields ();
-                              for (N := 0; N < length (fields); N := N + 2)
+                              M := length (fields) / 2;
+                              for (N := 0; N < M; N := N + 2)
                               {
                       	  ?>
                       	  <tr>
                       	    <td width="1%">
-                      	      <?vsp
-                                declare S varchar;
-
-                                  S := case when (get_keyword(fields[N], data, '') <> '') then 'checked="checked"' else '' end;
-                                http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, fields[N]));
-                              ?>
+        	                      <?vsp http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', case when (get_keyword (fields[N], data, '') <> '') then 'checked="checked"' else '' end, fields[N])); ?>
                       		  </td>
-                      		  <td >
+                              <td width="50%">
                       		    <?V fields[N+1] ?>
                       		  </td>
+                              <td width="1%">
+        	                      <?vsp http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', case when (get_keyword (fields[M+N], data, '') <> '') then 'checked="checked"' else '' end, fields[M+N])); ?>
+                              </td>
+                              <td width="50%">
+                                <?V fields[M+N+1] ?>
+                              </td>
                           </tr>
                       	  <?vsp
                             }
@@ -3991,6 +4066,7 @@
                         }
                         resignal;
                       };
+                        params := e.ve_params;
 
                       -- test tags value
                       self.v_tags := trim (self.i_tags.ufl_value);
@@ -3999,8 +4075,7 @@
                       tmp := AB.WA.vector_unique (tmp);
                       self.v_tags := AB.WA.vector2tags (tmp);
 
-                      params := e.ve_params;
-
+                        self.i_validationMode := get_keyword ('i_validationMode', params, 'ask');
                       self.i_validation := vector ();
                         self.v_grants := '';
                         self.v_acl := '';
@@ -4071,12 +4146,19 @@
 			                -- LDAP
                     options := vector ('tags', self.v_tags, 'maps', self.i_maps);
                   }
+                  else if (self.i_type = 4)
+                  {
+                    -- LinkedIn
+                    options := vector ('tags', self.v_tags);
+                  }
 
                   if (self.v_grants <> '')
                     options := vector_concat (options, vector ('grants', self.v_grants));
 
                   if (self.v_acl <> '')
                     options := vector_concat (options, vector ('acls', self.v_acl));
+
+                  options := vector_concat (options, vector ('validationMode', self.i_validationMode));
 
                   http (sprintf ('<input type="hidden" name="i_type" id="i_type" value="%V" />', encode_base64 (serialize (self.i_type))));
                   http (sprintf ('<input type="hidden" name="i_data" id="i_data" value="%V" />', encode_base64 (serialize (self.i_data))));
@@ -4112,6 +4194,14 @@
 	              </v:button>
                   <input type="button" id="btn_Stop" value="Stop" onclick="javascript: stopState(); return false;" xhtml_class="form-button" />
 	            </div>
+                <div id="askDiv" style="display: none;">
+                  <br />
+                  <span style="margin-left: 50px;">Select action for duplicated contact "<span id="askDiv_data">XXL</span>":</span>
+                  <br /><br />
+                  <label><input type="radio" name="i_ask" id="i_ask_0" value="merge" checked="checked" style="margin-left: 110px;" />Merge</label><br />
+                  <label><input type="radio" name="i_ask" id="i_ask_1" value="override" style="margin-left: 110px;" />Override</label><br />
+                  <label><input type="radio" name="i_ask" id="i_ask_2" value="skip" style="margin-left: 110px;" />Skip</label><br />
+                </div>
                 <script type="text/javascript">
                   <![CDATA[
                     OAT.MSG.attach(OAT, "PAGE_LOADED", initState);
@@ -4310,28 +4400,14 @@
                       <v:label for="f_chars" value="Contact name display"/>
                     </th>
                     <td>
-                      <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
-                      ?>
+                            <?vsp http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', case when (cast(get_keyword('chars', self.settings, '0') as integer) = 0) then 'checked="checked"' else '' end)); ?>
                       <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
                     </td>
                   </tr>
                   <tr>
                     <th />
                     <td>
-                      <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
-                      ?>
+                            <?vsp http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', case when (cast(get_keyword('chars', self.settings, '0') as integer) = 0) then '' else 'checked="checked"' end)); ?>
                       <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
                       <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
                       <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
