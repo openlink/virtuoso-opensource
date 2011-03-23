@@ -2253,6 +2253,7 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
 	  http ('<td class="resdata"> &nbsp;');
 	  res_col := aref (res_row, jnx);
 	  col_type := aref (aref (dt_nfo, jnx), 1);
+	  again:
 	  if (__tag (res_col) = 193)
 	    http_value (concat ('(', vector_print (res_col), ')'));
 	  else if (__tag (res_col) = 230 and res_col is not null)
@@ -2261,6 +2262,13 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
 	      ses := string_output ();
 	      http_value (res_col, NULL, ses);
 	      http_value (string_output_string (ses));
+	    }
+	  else if (__tag (res_col) = 246 and res_col is not null)
+	    {
+	      declare dat any;
+	      dat := __rdf_sqlval_of_obj (res_col, 1);
+	      res_col := dat;
+	      goto again;
 	    }
 	  else
 	    {
