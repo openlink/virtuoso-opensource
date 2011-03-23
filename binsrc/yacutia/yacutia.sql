@@ -6730,7 +6730,8 @@ create procedure WS.WS.VFS_EXPORT_DEFS ()
       http (sprintf ('-- Crawling descriptor for %s\n', VS_DESCR), ses);
       http ('INSERT SOFT WS.WS.VFS_SITE (\n\tVS_DESCR,\n\tVS_HOST,\n\tVS_URL,\n\tVS_INX,\n\tVS_OWN,\n\tVS_ROOT,\n\tVS_NEWER,\n' ||
 		'\tVS_DEL,\n\tVS_FOLLOW,\n\tVS_NFOLLOW,\n\tVS_SRC,\n\tVS_OPTIONS,\n\tVS_METHOD,\n\tVS_OTHER,\n\tVS_OPAGE,\n\tVS_REDIRECT,\n'||
-		'\tVS_STORE,\n\tVS_UDATA,\n\tVS_DLOAD_META,\n\tVS_INST_ID,\n\tVS_EXTRACT_FN,\n\tVS_STORE_FN,\n\tVS_DEPTH)\n VALUES (\n',
+		'\tVS_STORE,\n\tVS_UDATA,\n\tVS_DLOAD_META,\n\tVS_INST_ID,\n\tVS_EXTRACT_FN,\n\tVS_STORE_FN,\n\tVS_DEPTH,'||
+		'\n\tVS_CONVERT_HTML,\n\tVS_XPATH,\n\tVS_BOT,\n\tVS_IS_SITEMAP,\n\tVS_ACCEPT_RDF,\n\tVS_THREADS,\n\tVS_ROBOTS)\n VALUES (\n',
             ses			 
 	  );
       http ('\t', ses);	  
@@ -6778,8 +6779,35 @@ create procedure WS.WS.VFS_EXPORT_DEFS ()
       http ('\t', ses);	  
       http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE_FN),ses); http (',\n', ses);
       http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEPTH),ses); http ('\n', ses);
-      http (');\n\n\n', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEPTH),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_CONVERT_HTML),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_XPATH),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_BOT),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_IS_SITEMAP),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ACCEPT_RDF),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_THREADS),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROBOTS),ses); http ('\n', ses);
+      http (');\n', ses);
+      for select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = VS_HOST and VM_ROOT = VS_ROOT order by VM_SEQ do 
+	{
+	  http ('\n', ses);
+	  http ('insert soft WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP) values (', ses);
+	  http (DB.DBA.SYS_SQL_VAL_PRINT (VM_HOST),ses); http (',', ses);	
+	  http (DB.DBA.SYS_SQL_VAL_PRINT (VM_ROOT),ses); http (',', ses);
+	  http ('(select RM_PID from SYS_RDF_MAPPERS where RM_HOOK = ', ses);
+	  http (DB.DBA.SYS_SQL_VAL_PRINT ((select RM_HOOK from SYS_RDF_MAPPERS where RM_PID = VM_RDF_MAP)),ses); 
+	  http ('));', ses);
+	}
+      http ('\n', ses);
+      http ('\n', ses);
+      http ('\n', ses);
     }
   http ('WS.WS.VFS_INIT_QUEUE ();\n', ses);
   return ses;

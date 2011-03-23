@@ -65,6 +65,7 @@
 		      <v:item name="Space" value='space'/>
 		      <v:item name=";" value=';'/>
 		      <v:item name=":" value=':'/>
+		      <v:item name="|" value='|'/>
 		  </v:select-list>
              </td>
           </tr>
