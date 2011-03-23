@@ -38,6 +38,7 @@ xmlns:bibo="http://purl.org/ontology/bibo/"
 xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
 xmlns:geo  ="http://www.w3.org/2003/01/geo/wgs84_pos#"
 xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+xmlns:hnews="http://ontologi.es/hnews#"
 version="1.0">
 
   <xsl:output indent="yes" omit-xml-declaration="yes" method="xml"/>
@@ -101,9 +102,9 @@ version="1.0">
       </xsl:when>
 
       <xsl:when test="contains($field, 'dateline')">
-        <vcard:locality>
+        <hnews:dateline-literal>
           <xsl:value-of select="."/>
-        </vcard:locality>
+        </hnews:dateline-literal>
       </xsl:when>
 
       <xsl:when test="$field='author vcard'">
@@ -116,6 +117,16 @@ version="1.0">
         </dcterms:creator>
       </xsl:when>
       
+      <xsl:when test="contains($field, 'source-org')">
+        <hnews:source-org>
+			<foaf:Organization rdf:about="{vi:proxyIRI ($baseUri, '', 'source_org')}">
+				<foaf:name>
+					<xsl:value-of select="." />
+				</foaf:name>
+			</foaf:Organization>
+        </hnews:source-org>
+      </xsl:when>
+      
       <xsl:when test="contains($field, 'entry-content')">
         <bibo:content>
           <xsl:value-of select="."/>
@@ -123,15 +134,23 @@ version="1.0">
       </xsl:when>
 
       <xsl:when test="contains($field, 'latitude')">
+		<hnews:geo>	  
+			<geo:Point rdf:about="{vi:proxyIRI ($baseUri, '', 'geo')}">
         <geo:lat rdf:datatype="http://www.w3.org/2001/XMLSchema#double">
           <xsl:value-of select="."/>
         </geo:lat>
+			</geo:Point>
+		</hnews:geo>	  
       </xsl:when>
 
       <xsl:when test="contains($field, 'longitude')">
+		<hnews:geo>	  
+			<geo:Point rdf:about="{vi:proxyIRI ($baseUri, '', 'geo')}">
         <geo:long rdf:datatype="http://www.w3.org/2001/XMLSchema#double">
           <xsl:value-of select="."/>
         </geo:long>
+			</geo:Point>
+		</hnews:geo>	  
       </xsl:when>
 
       <xsl:when test="contains($rel, 'item-license')">
@@ -141,7 +160,11 @@ version="1.0">
       </xsl:when>
 
       <xsl:when test="contains($rel, 'principles')">
-        <rdfs:seeAlso rdf:resource="{@href}"/>
+        <hnews:principles rdf:resource="{@href}"/>
+      </xsl:when>
+
+      <xsl:when test="contains($rel, 'follows-principles')">
+        <hnews:follows-principles rdf:resource="{@href}"/>
       </xsl:when>
       
     </xsl:choose>
