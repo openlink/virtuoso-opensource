@@ -2347,7 +2347,7 @@ typedef struct nt_env_s {
 } nt_env_t;
 
 void
-nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
+nt_http_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri, int esc)
 {
   caddr_t uri = ti->uri;
   if (NULL == uri)
@@ -2361,13 +2361,25 @@ nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t d
   if (NULL != ti->prefix)
     GPF_T;
 #endif
+  if (esc)
+    SES_PRINT (ses, "&lt;");
+  else
   session_buffered_write_char ('<', ses);
   dks_esc_write (ses, uri, box_length (uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+  if (esc)
+    SES_PRINT (ses, "&gt;");
+  else
   session_buffered_write_char ('>', ses);
 }
 
+void
+nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
+{
+  nt_http_write_ref_1 (ses, env, ti, dflt_uri, 0);
+}
+
 static void
-http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ptr)
+http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ptr, int esc_mode)
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
@@ -2399,7 +2411,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       }
     case DV_STRING:
       session_buffered_write_char ('"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, esc_mode);
       session_buffered_write_char ('"', ses);
       break;
     case DV_XML_ENTITY:
@@ -2413,7 +2425,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       break;
     case DV_STRING_SESSION:
       session_buffered_write_char ('"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, esc_mode);
       session_buffered_write_char ('"', ses);
       break;
     default:
@@ -2428,8 +2440,15 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
           {
             if (!IS_BOX_POINTER (iri))
               sqlr_new_error ("22023", "SR624", "Unsupported datatype %d in NT serialization of an object", obj_dtp);
-            SES_PRINT (ses, "^^<");
+            SES_PRINT (ses, "^^");
+	    if (esc_mode == DKS_ESC_PTEXT)
+	      SES_PRINT (ses, "&lt;");
+	    else
+	      session_buffered_write_char ('<', ses);
             dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+	    if (esc_mode == DKS_ESC_PTEXT)
+	      SES_PRINT (ses, "&gt;");
+	    else
             session_buffered_write_char ('>', ses);
           }
         break;
@@ -2450,7 +2469,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         {
           session_buffered_write (ses, "^^", 2);
-          nt_http_write_ref (ses, env, dt_ptr, NULL);
+          nt_http_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
         }
     }
 }
@@ -2499,7 +2518,7 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (obj_is_iri)
     nt_http_write_ref (ses, env, &(tii.o), obj);
   else
-    http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt);
+    http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
   SES_PRINT (ses, " .\n");
 fail:
   dk_free_box (tii.s.uri);
@@ -2515,7 +2534,7 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *)qst;
   nt_env_t env;
   caddr_t obj = bif_arg (qst, args, 0, "http_nt_object");
-  dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_ttl_triple");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_nt_object");
   int status = 0;
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
@@ -2541,7 +2560,47 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (obj_is_iri)
     nt_http_write_ref (ses, &env, &(tii.o), obj);
   else
-    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt);
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
+fail:
+  dk_free_box (tii.o.uri);
+  dk_free_box (tii.dt.uri);
+  return (caddr_t)(ptrlong)(status);
+}
+
+caddr_t
+bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  nt_env_t env;
+  caddr_t obj = bif_arg (qst, args, 0, "http_rdf_object");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_rdf_object");
+  int esc_mode = BOX_ELEMENTS (args) > 2 ? bif_long_arg (qst, args, 2, "http_rdf_object") : DKS_ESC_PTEXT;
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  ttl_iriref_items_t tii;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  env.ne_out_ses = ses;
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
+        goto fail; /* see below */
+    }
+  else
+    {
+      http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
+    }
+  if (obj_is_iri)
+    nt_http_write_ref (ses, &env, &(tii.o), obj);
+  else
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, esc_mode);
 fail:
   dk_free_box (tii.o.uri);
   dk_free_box (tii.dt.uri);
@@ -2967,7 +3026,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       if (col_ti->is_iri)
         nt_http_write_ref (ses, env, col_ti, obj);
       else
-        http_nt_write_obj (ses, env, qi, obj, obj_dtp, col_ti);
+        http_nt_write_obj (ses, env, qi, obj, obj_dtp, col_ti, DKS_ESC_TTL_DQ);
       SES_PRINT (ses, " .\n");
       dk_free_box (col_ti->uri); col_ti->uri = NULL;
     }
@@ -4176,6 +4235,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_talis_json_triple);
   bif_define ("http_nt_object", bif_http_nt_object);
   bif_set_uses_index (bif_http_nt_object);
+  bif_define ("http_rdf_object", bif_http_rdf_object);
+  bif_set_uses_index (bif_http_rdf_object);
   bif_define ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row);
   bif_set_uses_index (bif_sparql_rset_ttl_write_row);
   bif_define ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row);

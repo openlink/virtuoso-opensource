@@ -1133,6 +1133,8 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
               --else
                 --http_value (val, 0, ses);
 	    }
+	  else if (__tag of rdf_box = __tag (val))
+	      http_rdf_object (val, ses, 1);
           else
             {
               http_escape (__rdf_strsqlval (val), esc_mode, ses, 1, 1);
