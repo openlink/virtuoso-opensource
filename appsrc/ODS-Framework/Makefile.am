@@ -73,7 +73,8 @@ EXTRA_DIST = \
 	ckeditor/plugins/smiley/dialogs/*.js \
 	ckeditor/plugins/smiley/images/*.gif \
 	ckeditor/plugins/specialchar/dialogs/*.js \
-	ckeditor/plugins/stylescombo/styles/*.js \
+	ckeditor/plugins/specialchar/lang/*.js \
+	ckeditor/plugins/styles/styles/*.js \
 	ckeditor/plugins/table/dialogs/*.js \
 	ckeditor/plugins/tabletools/dialogs/*.js \
 	ckeditor/plugins/templates/dialogs/*.js \
