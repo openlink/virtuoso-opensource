@@ -94,9 +94,15 @@ OAT.RDFAtom = function (tag, value, ns) {
     }
 	
     this.toString = function () {
-	var _out = "#ATOM:\{" + self.tagString(self._tag) + " " + self._val + " "; 
-	if (self.getTag() == OAT.RDFTag.IRI) 
-	    _out = _out + "<" + OAT.IRIDB.getIRI (self._val) + ">";
+	var _out = "#ATOM:\{" + self.tagString(self._tag);
+	if (self.getTag() == OAT.RDFTag.IRI) {
+            _out += "IID:" + self._val + " " + "<" + OAT.IRIDB.getIRI (self._val) + ">";
+	}
+	if (self.getTag() == OAT.RDFTag.LIT) {
+	    _out += "\"" + self._val + "\"";
+	    var lang_tag = self.getLang();
+	    if (lang_tag) _out += "@" + lang_tag;
+	}
 	return _out + "\}";
     }
 
@@ -212,6 +218,7 @@ OAT.IRIDB = {
     },
 
     splitIRI:function (iri) {
+	if (typeof iri != "string") throw "splitIRI: invalid iri - must be string";
 	var r = iri.match(/([^\/#]+)[\/#]?$/);
 	if (r && r[1] == "this") {
 	    r = iri.match(/([^\/#]+)#[^#]*$/);
@@ -573,7 +580,21 @@ OAT.RDF = {
 	
 	for (var i=0;i<root.childNodes.length;i++) {
 	    var node = root.childNodes[i];
-	    if (node.nodeType == 1) { processNode(node); }
+	    if (node.nodeType == 1) { 
+		if (OAT.Xml.localName(node) == "parsererror") { // Handle WebKit Parse error
+		    var error_m = node.innerText ? node.innerText : "Unknown Error";
+
+		    // XXX: This is probably not a good idea - should just throw an exception?
+
+		    if (!url.match(/#[a-zA-Z0-9]*$/)) url += '#parseErrorInQueryResult';
+		    
+		    triples.push ([OAT.IRIDB.insertIRI(url),
+				   OAT.IRIDB.insertIRI("http://www.openlinksw.com/schema/oat/hasRdfParserError"),
+				   new OAT.RDFAtom (OAT.RDFTag.LIT, error_m)]);
+		} else {
+		    processNode(node); 
+		}
+	    }
 	}
 	return triples;
 	}

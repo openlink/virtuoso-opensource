@@ -317,8 +317,8 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     }
 
     this.addXmlDoc = function(xmlDoc,href) {
-	OAT.MSG.send(self,"OAT_RDF_STORE_LOADING",{url:xmlDoc.baseURI});
-	var triples = OAT.RDF.parse (xmlDoc);
+	OAT.MSG.send(self,"OAT_RDF_STORE_LOADING",{url:href});
+	var triples = OAT.RDF.parse (xmlDoc, href);
 	var ncount = 0;
 
 	if (!!window.console && !!window.__isparql_debug) window.console.log("addXmlDoc: Got " + triples.length + " triples.");
@@ -349,7 +349,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	if (!!window.console) window.console.log("numbers in o: " + ncount);
 */
 	self.addTriples(triples,href);
-	OAT.MSG.send(self,"OAT_RDF_STORE_LOADED",{url:xmlDoc.baseURI});
+	OAT.MSG.send(self,"OAT_RDF_STORE_LOADED",{url:href});
     }
 
     this.addTripleList = function(triples,href,title) {

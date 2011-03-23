@@ -1157,7 +1157,7 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 
 //
 // Ordered data structure for points
-// Not a R-Tree but should improve speed for some cases.
+// Not a R-Tree but may improve speed for some cases.
 //
 
 OAT.RDFTabs.PointList = function (opts) {
