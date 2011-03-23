@@ -1574,6 +1574,7 @@
                             http (self.option_prepare('rdfSink',          'RDF Upload Folder',             self.dav_detType));
                             http (self.option_prepare('RDFData',          'RDF Data',                      self.dav_detType));
                             http (self.option_prepare('S3',               'Amazon S3',                     self.dav_detType));
+                            http (self.option_prepare('DynaRes',          'Dynamic Resources',             self.dav_detType));
                           }
                         ?>
                       </select>
@@ -1875,7 +1876,7 @@
                         		  <![CDATA[
                         		    <script type="text/javascript">
                         		    <?vsp
-                                declare M, N, L integer;
+                                declare N, L integer;
                                 declare aci_values, aci_parents any;
 
                                 aci_parents := ODRIVE.WA.aci_parents (self.dav_path);
@@ -1884,14 +1885,12 @@
                                   aci_values := ODRIVE.WA.aci_load (aci_parents[L]);
                                   for (N := 0; N < length (aci_values); N := N + 1)
                                   {
-                                    M := M + 1;
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {value: "Inherited"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
                                 }
                                 aci_values := ODRIVE.WA.aci_load (self.dav_path);
                                 for (N := 0; N < length (aci_values); N := N + 1)
                                 {
-                                  M := M + 1;
                                   if (self.dav_enable)
                                   {
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
@@ -1902,7 +1901,7 @@
                         		    ?>
                         		    </script>
                         		  ]]>
-                            <tr id="f_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_enable then 3 else 4 end ?>"><b>No WebID Security</b></td></tr>
+                            <tr id="f_tr_no"><td colspan="<?V case when self.dav_enable then 3 else 4 end ?>"><b>No WebID Security</b></td></tr>
                           </table>
                         </td>
                         <vm:if test="self.dav_enable">
