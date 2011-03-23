@@ -63,24 +63,16 @@ public class VirtuosoExplicitString
 	    }
 	  else if (dtp == VirtuosoTypes.DV_STRING || dtp == VirtuosoTypes.DV_SHORT_STRING_SERIAL ||
 	      dtp == VirtuosoTypes.DV_STRICT_STRING || dtp == VirtuosoTypes.DV_C_STRING ||
-	      dtp == VirtuosoTypes.DV_BLOB)
+	      dtp == VirtuosoTypes.DV_BLOB || dtp == VirtuosoTypes.DV_ANY)
 	    {
 	      // If it's an narrow parameter
  	      if (con != null && con.charset_utf8)
 	        bytes = str.getBytes ("UTF8");
 	      else if (con != null && con.charset != null)
-		{
 		  bytes = con.charsetBytes(str);
-		  //System.out.println ("after charsetBytes len=" + bytes.length);
-		  //try {
-		  //  FileOutputStream fo = new FileOutputStream ("setstr.gb");
-		  //  fo.write (bytes);
-		  //  fo.flush();
-		  //  fo = null;
-		  //} catch (Exception e) {};
-		}
 	      else
 		cli_wide_to_narrow (str, con != null ? con.client_charset_hash : null);
+
 	      if (bytes.length < 256)
 		this.dtp = VirtuosoTypes.DV_SHORT_STRING_SERIAL;
 	      else
@@ -108,8 +100,11 @@ public class VirtuosoExplicitString
 		}
 	      else
 		{
-		  if (con != null && con.charset != null)
+ 	          if (con != null && con.charset_utf8)
+	            bytes = str.getBytes ("UTF8");
+	          else if (con != null && con.charset != null)
 		    bytes = con.charsetBytes(str);
+
 		  if (bytes.length < 256)
 		    this.dtp = VirtuosoTypes.DV_SHORT_STRING_SERIAL;
 		  else
@@ -141,24 +136,19 @@ public class VirtuosoExplicitString
 	  return (true);
 	}
 
-      //System.err.println ("cli_wide_to_narrow");
       bytes = new byte[str.length()];
-      if (charset_ht == null) {
-        for (int i = 0; i < str.length(); i++)
+      if (charset_ht == null) 
 	  {
+        for (int i = 0; i < str.length(); i++)
 	    bytes[i] = (byte)str.charAt(i);
 	  }
-      } else {
+      else 
+       {
         for (int i = 0; i < str.length(); i++)
 	  {
 	    Character ch = new Character (str.charAt(i));
 	    Byte b;
 	    b = (Byte)(charset_ht != null ? charset_ht.get (ch) : new Byte ((byte) (ch.charValue())));
-	    //System.err.print ("Searching " + ((int)str.charAt(i)) + "=");
-	    //if (b != null)
-	    //  System.err.println (b.intValue());
-	    //else
-	    //  System.err.println ("<not found>");
 	    if (b == null)
 	      {
 	        bytes[i] = (byte) '?';
@@ -235,21 +225,6 @@ public class VirtuosoExplicitString
 	os.write (bytes.length);
       else
 	os.writelongint (bytes.length);
-      if ((dtp == VirtuosoTypes.DV_WIDE || dtp == VirtuosoTypes.DV_LONG_WIDE)
-	  && str != null)
-	{
-	  for (int i = 0; i < str.length(); i++)
-	    {
-	      byte [] utf8;
-	      utf8 = str.substring(i, i + 1).getBytes("UTF8");
-	      if (utf8 != null)
-		{
-		  os.write (utf8, 0, utf8.length);
-		  os.flush();
-		}
-	    }
-	}
-      else
 	os.write (bytes, 0, bytes.length);
     }
 

@@ -239,6 +239,7 @@ class VirtuosoTypes
 
    public static final int DV_DATETIME = 211;
 
+   public static final int DV_ANY = 242;
    /*
     *  IRI
     */
