@@ -474,8 +474,6 @@ lt_done (lock_trx_t * lt)
   {
     int64 plt = 0;
     int inx;
-    if (local_cll.cll_id_to_trx)
-      gethash_64 (plt, lt->lt_trx_no, local_cll.cll_id_to_trx);
     if (plt)
       GPF_T1 ("lt in id to trx  at lt_done");
     for (inx = 0; inx < trx_rc->rc_fill; inx++)
