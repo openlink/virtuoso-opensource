@@ -97,6 +97,7 @@
 
         http (sprintf ('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', params)));
         http (sprintf ('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', params)));
+        http (sprintf ('<input type="hidden" name="form"  id="form"  value="%s"/>', get_keyword('form', params, 'page_form')));
         http (sprintf ('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', params, '')));
         http (sprintf ('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', params, 'sc')));
         http (sprintf ('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', params, '')));
@@ -160,7 +161,7 @@
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
                   <th class="checkbox" width="1%">
                     <?vsp
-                      http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this, ''cb_item''); "/>');
+                      http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this); updateChecked(this, ''cb_item''); "/>');
                     ?>
                   </th>
                 </v:template>
@@ -192,19 +193,15 @@
 
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
-              <tr>
+              <tr onclick="rowSelected(this);" class="pointer">
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
                   <td  align="center">
                     <?vsp
-                      declare pos integer;
                       declare S, name any;
 
                       name := (control.vc_parent as vspx_row_template).te_column_value('P_MAIL');
-                      S := '';
-                      pos := strstr (self.v_s1, concat(name, ','));
-                      if (not isnull (pos))
-                        S := 'checked="checked"';
-                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item''); " />', name, S));
+                      S := case when isnull (strstr(self.v_s1, concat(name, ','))) then '' else 'checked="checked"' end;
+                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item'', event); " />', name, S));
                     ?>
                   </td>
                 </v:template>
