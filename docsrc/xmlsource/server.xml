@@ -957,9 +957,59 @@ lite is 2 in 'normal' mode is 256 by default.
 		</para>
 	    </formalpara>
 	</listitem>
-
-
+	    <listitem id="ini_ExtentReadThreshold">
+	    <formalpara>
+		    <title>ExtentReadThreshold</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+        <para>ExtentReadThreshold parameter gives how many consecutive reads are needed to 
+        trigger this.</para>
+        <para>When is set to 0, this means that anytime a page is read, the whole extent is 
+        read along with it</para>
+        <para>When is set to 1, this means that if the first read is at time <emphasis>t</emphasis> 
+        and the next one at time <emphasis>t1</emphasis> and <emphasis>t1-t</emphasis> &lt; ini_ExtentReadWindow msec, 
+        then 2nd read triggers the speculative read.</para>
+        <para>Default is 2.</para> 
+        <para>Takes effect after the buffer pool is full.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ExtentReadWindow">
+	    <formalpara>
+		    <title>ExtentReadWindow</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+		    <para>ExtentReadWindow parameter gives the time within which the reads must fall.</para>
+		    <para>Default is 1000.</para>
+		    <para>Takes effect after the buffer pool is full.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ExtentReadStartupThreshold">
+	    <formalpara>
+		    <title>ExtentReadStartupThreshold</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+		    <para>ExtentReadStartupThreshold parameter value applies while the server is freshly 
+        started and the buffer pool is not yet full. It can be set to preread more aggressively.</para>
+		    <para>Default is 0.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ExtentReadStartupWindow">
+	    <formalpara>
+		    <title>ExtentReadStartupWindow</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+		    <para>ExtentReadStartupWindow parameter value applies while the server is freshly 
+        started and the buffer pool is not yet full. It can be set to preread more aggressively.</para>
+		    <para>Default is 40000.</para>
+	    </formalpara>
+	  </listitem>
           </itemizedlist>
+          <para>Note: The default for startup behavior is to always read full extents and the default for the normal 
+behavior is to trigger preread on the third read inside one second.</para>
 		</sect5>
   <sect5 id="ini_HTTPServer">
 			<title>[HTTPServer]</title>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_ld_dir">
+  <refmeta>
+    <refentrytitle>ld_dir</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>ld_dir</refname>
+    <refpurpose>Adds files to control list set up in the virtuoso.ini file.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ld_dir">
+      <funcprototype id="fproto_ld_dir">
+        <funcdef><function>ld_dir</function></funcdef>
+	      <paramdef>in <parameter>dir_path</parameter> varchar</paramdef>
+	      <paramdef>in <parameter>file_mask</parameter> varchar</paramdef>
+	      <paramdef>in <parameter>target_graph</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ld_dir">
+    <title>Description</title>
+    <para>Adds files to control list set up in the virtuoso.ini file.</para>
+  </refsect1>
+  <refsect1 id="params_ld_dir">
+    <title>Parameters</title>
+    <refsect2><title>dir_path</title>
+      <para>path to the folder where the files will be loaded</para>
+    </refsect2>
+    <refsect2><title>file_mask</title>
+      <para>SQL like pattern to match against the files in the directory</para>
+    </refsect2>
+    <refsect2><title>target_graph</title>
+      <para>target graph IRI, parsed triples will appear in that graph.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_ld_dir"><title>Return Types</title>
+    <para>The return value is not specified and may be changed in future versions.</para>
+  </refsect1>
+<!--  <refsect1 id="errors_ld_dir">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+-->
+  <refsect1 id="examples_ld_dir">
+    <title>Examples</title>
+    <example id="ex_ld_dir"><title></title>
+<programlisting><![CDATA[
+ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
+]]></programlisting>    
+      <para>would load the RDF in all files ending in .gz from the directory given as first parameter. 
+        The RDF would be loaded in the http://bsbm.org graph.</para>
+      <para>If NULL is given for the graph, each file may go to a different graph specified in a 
+        separate file with the name of the RDF source file plus the extension .graph.</para>
+      <para>A .graph file contains the target graph URI without any other content or whitespace.</para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_ld_dir">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="rdfperfloadingutility">RDF Bulk Load Utility</link></para>
+  </refsect1>
+</refentry>

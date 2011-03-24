@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+
+<sect2 id="rdfadm"><title>Conductor RDF Administration</title>
+  <para>From Conductor the RDF tab allows you to execute/save/load SPARQL queries, 
+	to add/edit RDF Mapping, to perform statistics and manage graphs, 
+	to import schemas and define namespaces, to generated RDF views and to upload to the RDF Store.
+	</para>
+  <sect3 id="rdfadmsparql"><title>SPARQL</title>  
+    <sect4 id="rdfadmsparqlex"><title>Query</title>  
+	    <para>"SPARQL -&gt; Query" offers form form SPARQL query execution:</para>
+	    <figure id="adminuirdf1" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf.png"/>
+	    </figure>
+	    <para>Also you can save the results in a query or load such:</para>
+	    <figure id="adminuirdf2" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf1.png"/>
+	    </figure>
+	  </sect4>
+	  <sect4 id="rdfadmsparqlqr"><title>Saved Queries</title>  
+	    <para>"SPARQL -&gt; Saved Queries" offers list of saved queries, which can be opened in the "Query" tab
+	    	in order to be executed:</para>
+	    <figure id="adminuirdf3" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf2.png"/>
+	    </figure>	 
+	  </sect4>  
+	</sect3>
+	<sect3 id="rdfadmsponger"><title>Sponger</title>
+	  <para></para>
+	  <sect4 id="rdfadmspongerexcatr"><title>Extractor Cartridges</title>  
+	    <para>Shows list of available extractor cartridges. They can be re-ordered by place 
+	    of appearance, edit or deleted:</para>
+	  	<figure id="adminuirdf4" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf3.png"/>
+	    </figure>  
+	    <para>You can also add a new extractor cartridge:</para>
+	  	<figure id="adminuirdf5" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf4.png"/>
+	    </figure>  	    
+	  </sect4>  	  
+	  <sect4 id="rdfadmspongermtcatr"><title>Meta Cartridges</title>  
+      <para>Shows list of available meta cartridges. They can be re-ordered by place 
+	    of appearance, edit or deleted:</para>	 
+	  	<figure id="adminuirdf6" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf5.png"/>
+	    </figure>	
+	    <para>You can also add a new meta cartridge:</para>
+	  	<figure id="adminuirdf7" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf6.png"/>
+	    </figure>  	         
+	  </sect4>  	  
+	  <sect4 id="rdfadmspongerstsh"><title>Stylesheets</title>  
+	    <para>Shows list of available stylesheets for processing cartridges. From here you 
+	    	can manage these stylesheets by adding new, editing existing ones or deleting them:</para>	
+	  	<figure id="adminuirdf8" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf7.png"/>
+	    </figure> 	    	
+	  </sect4>  	  
+	  <sect4 id="rdfadmspongercons"><title>Console</title>  
+	     <para>Offers tracking cartridges exection. By default is off. When enabled, shows list of 
+	     	sessions per cartridge:</para>
+	  	<figure id="adminuirdf9" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf8.png"/>
+	    </figure> 	     	
+	  </sect4>  	  
+	  <sect4 id="rdfadmspongerconf"><title>Configuration</title>  
+	    <para>Offers creation of secure endpoints for pre-defiend vitual host:</para>
+	  	<figure id="adminuirdf10" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf9.png"/>
+	    </figure>	    
+	  </sect4>  	  
+	</sect3>
+	<sect3 id="rdfadmstatst"><title>Statistics</title>
+	  <para>Offers interface for <link linkend="fn_rdf_void_store"><function>DB.DBA.RDF_VOID_STORE(graph, to_graph)</function></link>. In the new graph ( field "Publish to") 
+	  	will be saved the VoID statistics data when generated:</para>
+	  <figure id="adminuirdf11" float="1">
+      <title>RDF</title>
+		  <graphic fileref="rdf14.png"/>
+	  </figure>		  
+	  <figure id="adminuirdf12" float="1">
+      <title>RDF</title>
+		  <graphic fileref="rdf15.png"/>
+	  </figure>	
+	</sect3>
+	<sect3 id="rdfadmgraphs"><title>Graphs</title>
+	  <para>"Graphs" tab shows list of current graphs in the RDF Quad Store. From here 
+	  day can be renamed or deleted:</para>
+	  	<figure id="adminuirdf13" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf10.png"/>
+	    </figure>	  
+	</sect3>
+	<sect3 id="rdfadmschemas"><title>Schemas</title>
+	  <para>Shows list of available schemas IRI-s and offers a new schema IRI to be imported:</para>
+	  	<figure id="adminuirdf14" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf11.png"/>
+	    </figure>	  	  
+	</sect3>
+	<sect3 id="rdfadmnamesp"><title>Namespaces</title>
+	  <para>Shows list of namespace prefixes and offers a new namespace prefix to be imported:</para>
+	  	<figure id="adminuirdf15" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf12.png"/>
+	    </figure>	  	  
+	</sect3>
+	<sect3 id="rdfadmviews"><title>RDF Views</title>
+	  <para>Virtuoso uses a SPARQL-based Meta Schema Language to provide RDBMS-to-RDF mapping 
+	  	functionality (also described as, RDF Views of SQL data). The language is an extension of the SPARQL query language meshed with Virtuoso's SPASQL (SPARQL-inside-SQL) functionality. The language enables you to declaratively map relational database schema tables, columns, rows, and foreign key relationships to Classes, Attributes, Relationships, and Instances (Objects/Entities/Individuals) defined by RDF Schemas or OWL Ontologies. The mapping process uses a special built-in Virtuoso function to generate IRIs / URIs in "Subject" or "Object" position of a SPARQL graph pattern, en route to building a set of SQL compiler rules and optimizations for translating SPARQL queries into SQL on the fly.</para>
+	  	<figure id="adminuirdf16" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf13.png"/>
+	    </figure>		  	
+	    <tip><title>See Also:</title> 
+	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF#Mapping%20Process">Mapping Process steps.</ulink></para>
+	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF#Mapping%20Example">Mapping Example.</ulink></para>
+	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF">Mapping SQL Data to RDF.</ulink></para>	      
+	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtRdb2RDFViewsGeneration">Automated Generation of RDF Views over Relational Data Sources with Virtuoso.</ulink></para>	      	      
+	    </tip>
+	</sect3>
+	<sect3 id="rdfadm"><title>RDF Store Upoload</title>
+	  <para>Offers upload to RDF Quad Store from file or Resource URL:</para>
+	  	<figure id="adminuirdf17" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf16.png"/>
+	    </figure>		 	  
+	</sect3>
+	<sect3 id="rdfadm"><title>RDF Subscriptions</title>
+	  <para>This tab will be only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/pubsubhub_dav.vad">pubsubhub_dav.vad</ulink> 
+	    is installed.</para>	    
+	  <para>Offers Virtuoso's implementation of the <ulink url="http://pubsubhubbub.googlecode.com/svn/trunk/pubsubhubbub-core-0.3.html">PubSubHubBub Protocol</ulink> to handle Linked Data 
+	  	by subscribing to Linked Data resource URIs.</para>
+	  <para>Note: the Hub endpoint should be defined ACL in System Admin -&gt; Security -&gt; Access Control -&gt; PSH-SLL</para>
+    <tip><title>See Also:</title>	    
+      <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtPubSubHub">Example of Linked Data Usage of PubSubHubbub Implementation.</ulink></para>
+      <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtFeedPubSubHub">Feed subscription via PubSubHub Protocol.</ulink></para>
+      <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtODSPubSubHub">Setting up PubSubHub in ODS.</ulink></para>
+      <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtAuthPolicyFOAFSSL">WebID Protocol ACLs Tutorial.</ulink></para>
+    </tip>
+	</sect3>
+</sect2>

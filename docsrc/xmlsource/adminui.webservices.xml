@@ -171,6 +171,7 @@ http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp
 </listitem>
   <listitem>Choose the  "Local resources owner" for the collection from the list box available, for ex: user demo.</listitem>
   <listitem>Select the "Ask for RDF" check box.</listitem>      
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the "Create" button to create the import.</listitem>        
 </itemizedlist>
     <figure id="cr11" float="1">
@@ -399,6 +400,7 @@ create procedure WS.WS.SITEMAP_BB_STORE (
       <graphic fileref="ui/cr17.png"/>
     </figure>    
   </listitem>
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create". 
     <figure id="cr18" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
@@ -481,6 +483,7 @@ http://source.data.gov.uk/data/
       <graphic fileref="ui/d1.png"/>
     </figure>  	
 </listitem>
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create".</listitem>
 </itemizedlist>
   </listitem>

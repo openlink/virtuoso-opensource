@@ -321,6 +321,7 @@
 <!ENTITY sparql_rdb2rdf_list_tables             SYSTEM  "funcref/sparql_rdb2rdf_list_tables.xml">
 <!ENTITY sparql_select_known_graphs             SYSTEM  "funcref/sparql_select_known_graphs.xml">
 
+<!ENTITY ld_dir                                 SYSTEM  "funcref/ld_dir.xml">
 <!ENTITY ttlp                   		SYSTEM "funcref/ttlp.xml">
 <!ENTITY ttlp_mt                		SYSTEM "funcref/ttlp_mt.xml">
 <!ENTITY ttlp_mt_local_file                     SYSTEM  "funcref/ttlp_mt_local_file.xml">
@@ -909,6 +910,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY adminui 				SYSTEM "adminui.xml">
 <!ENTITY adminui.dbadmin  			SYSTEM "adminui.dbadmin.xml">
 <!ENTITY adminui.mailsrvadm  			SYSTEM "adminui.mailsrvadm.xml">
+  <!ENTITY adminui.newssrvadm  SYSTEM "adminui.rdfadm.xml">
 <!ENTITY adminui.newssrvadm  			SYSTEM "adminui.newssrvadm.xml">
 <!ENTITY adminui.querytools  			SYSTEM "adminui.querytools.xml">
 <!ENTITY adminui.replicationandsynchronization  SYSTEM "adminui.replicationandsynchronization.xml">

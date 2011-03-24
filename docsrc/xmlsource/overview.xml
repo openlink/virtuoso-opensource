@@ -1452,6 +1452,560 @@ WHERE { ?s a ?t };
       	an argument and ends with <link linkend="fn_exec_close"><function>exec_close()</function></link> 
       	after it is out of data.</para>
     </sect2>               	            	      
+   <sect2 id="virtuosotipsandtrickbindnmgrprst">         	            	      
+     <title>How do I bind named graph parameter in prepared statement?</title>        	
+     <para>Assume the following SPARQL query:</para>
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  } 
+FROM ?context 
+WHERE 
+  { 
+    ?s ?p ?o 
+  }	
+]]></programlisting>     
+     <para>To bind the named graph context of the query from above, the best solution due 
+     	to performance implications, is to change the syntax of the query as:</para>
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  } 
+WHERE 
+  { 
+    graph `iri(??)` { ?s ?p ?o } 
+  }	
+]]></programlisting>     
+     <para>Note: In case of using "FROM clause", it needs a constant in order to check at the 
+     	compile time whether the IRI refers to a graph or a graph group:</para>
+     <itemizedlist mark="bullet">
+       <listitem>Assume "FROM clause" is used as for ex:
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  } 
+FROM `iri(??)` 
+WHERE
+  { 
+    ?s ?p ?o
+  }	
+]]></programlisting>  
+         <itemizedlist mark="bullet">
+           <listitem>In this case can be made security checks at 
+           	the compile time (i.e., once) and not waste time at the run time.</listitem>
+         </itemizedlist>      	
+       </listitem>
+       <listitem>Assume "FROM clause" is used as for ex:
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  }
+FROM iri(??) 
+WHERE 
+  { 
+    ?s ?p ?o 
+  }	
+]]></programlisting>        	
+         <itemizedlist mark="bullet">
+           <listitem>In this case a compile-time check, a run-time check or 50/50 mix of them can 
+           	be performed, depending on the security policies.</listitem>
+         </itemizedlist>      	
+       </listitem>
+       <listitem>FROM without constant would mean that security rules, if they present in the storage, 
+       	are used at the run time, for every triple that matches every triple pattern in the default graph. 
+       	This issue can be reproduced if FROM is not specified at all: if security differs from default 
+       	then the effect is noticeably bad.</listitem>
+     </itemizedlist>
+   </sect2>          	
+    <sect2 id="virtuosotipsandtricksadonetinsb">
+      <title>How can I insert binary data to Virtuoso RDF storage in plain queries and with parameter binding via ADO.NET calls?</title>     
+      <para>The following example shows different methods for insert binary data to Virtuoso RDF storage in plain queries and with parameter binding via ADO.NET calls:</para>
+<programlisting><![CDATA[
+# Test_Bin.cs
+
+
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Data;
+using OpenLink.Data.Virtuoso;
+
+#if ODBC_CLIENT
+namespace OpenLink.Data.VirtuosoOdbcClient
+#elif CLIENT
+namespace OpenLink.Data.VirtuosoClient
+#else
+namespace OpenLink.Data.VirtuosoTest
+#endif
+{
+    class Test_Bin
+    {
+        [STAThread]
+        static void Main(string[] args)
+        {
+            IDataReader myread = null;
+            IDbConnection c;
+
+            c = new VirtuosoConnection("HOST=localhost:1111;UID=dba;PWD=dba;");
+
+            IDbCommand cmd = c.CreateCommand();
+            int ros;
+
+            try
+            {
+                c.Open();
+
+                cmd.CommandText = "sparql clear graph <ado.bin>";
+                cmd.ExecuteNonQuery();
+
+//insert binary as base64Binary
+                cmd.CommandText = "sparql insert into graph <ado.bin> { <res1> <attr> \"GpM7\"^^<http://www.w3.org/2001/XMLSchema#base64Binary> }";
+                cmd.ExecuteNonQuery();
+
+//insert binary as hexBinary
+                cmd.CommandText = "sparql insert into graph <ado.bin> { <res2> <attr> \"0FB7\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> }";
+                cmd.ExecuteNonQuery();
+
+
+//prepare for insert with parameter binding
+                cmd.CommandText = "sparql define output:format '_JAVA_' insert into graph <ado.bin> { `iri($?)` <attr> `bif:__rdf_long_from_batch_params($?,$?,$?)` }";
+
+//bind parameters for insert binary as base64Binary
+                IDbDataParameter param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = "res3";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = 4;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                param.DbType = DbType.AnsiString;
+                param.Value = "GpM7";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = "http://www.w3.org/2001/XMLSchema#base64Binary";
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Parameters.Clear();
+
+//bind parameters for insert binary as hexBinary
+                param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = "res4";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = 4;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                param.DbType = DbType.AnsiString;
+                param.Value = "0FB7";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = "http://www.w3.org/2001/XMLSchema#hexBinary";
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Parameters.Clear();
+
+//bind parameters for insert binary as byte[]
+                param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = "res5";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = 3;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                param.DbType = DbType.Binary;
+                byte[] bin_val = {0x01, 0x02, 0x03, 0x04, 0x05};
+                param.Value = bin_val;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = System.DBNull.Value; 
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Parameters.Clear();
+
+//execute select and check the results
+                cmd.CommandText = "sparql SELECT ?s ?o FROM <ado.bin> WHERE {?s ?p ?o}"; ;
+                myread = cmd.ExecuteReader();
+                int r = 0;
+
+                while (myread.Read())
+                {
+                    Console.WriteLine("=== ROW === "+r);
+                    for (int i = 0; i < myread.FieldCount; i++)
+                    {
+                        string s;
+                        if (myread.IsDBNull(i))
+                            Console.Write("N/A|\n");
+                        else
+                        {
+                            object o = myread.GetValue(i);
+                            Type t = myread.GetFieldType(i);
+
+                            s = myread.GetString(i);
+                            Console.Write(s + "[");
+                            if (o is SqlExtendedString)
+                            {
+                                SqlExtendedString se = (SqlExtendedString)o;
+                                Console.Write("IriType=" + se.IriType + ";StrType=" + se.StrType + ";Value=" + se.ToString());
+                                Console.Write(";ObjectType=" + o.GetType() + "]|\n");
+                            }
+                            else if (o is SqlRdfBox)
+                            {
+                                SqlRdfBox se = (SqlRdfBox)o;
+                                Console.Write("Lang=" + se.StrLang + ";Type=" + se.StrType + ";Value=" + se.Value);
+                                Console.Write(";ObjectType=" + o.GetType() + "]|\n");
+                                object v = se.Value;
+                                if (v is System.Byte[])
+                                {
+                                    byte[] vb = (byte[])v;
+                                    for (int z = 0; z < vb.Length; z++)
+                                    {
+                                        Console.WriteLine(""+z+"="+vb[z]);
+                                    }
+                                }
+                            }
+                            else
+                                Console.Write(o.GetType() + "]|\n");
+                        }
+                    }
+                    r++;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} Exception caught.", e);
+            }
+            finally
+            {
+                //		  if (myread != null)
+                //		    myread.Close();
+
+                if (c.State == ConnectionState.Open)
+                    c.Close();
+
+            }
+
+        }
+    }
+}
+]]></programlisting>      
+      <para>Output log for example is in the log.txt:</para>
+<programlisting><![CDATA[
+# log.txt
+=== ROW === 0
+res1[IriType=IRI;StrType=IRI;Value=res1;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+GpM7[Lang=;Type=http://www.w3.org/2001/XMLSchema#base64Binary;Value=GpM7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 1
+res2[IriType=IRI;StrType=IRI;Value=res2;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+0FB7[Lang=;Type=http://www.w3.org/2001/XMLSchema#hexBinary;Value=0FB7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 2
+res3[IriType=IRI;StrType=IRI;Value=res3;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+GpM7[Lang=;Type=http://www.w3.org/2001/XMLSchema#base64Binary;Value=GpM7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 3
+res4[IriType=IRI;StrType=IRI;Value=res4;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+0FB7[Lang=;Type=http://www.w3.org/2001/XMLSchema#hexBinary;Value=0FB7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 4
+res5[IriType=IRI;StrType=IRI;Value=res5;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+0102030405[System.Byte[]]|	
+]]></programlisting>      
+    </sect2>     
+    <sect2 id="instrdfvs">
+      <title>How can I insert RDF data from Visual Studio to Virtuoso?</title>     
+      <para>The following example shows how to insert RDF Data from Visual Studio to Virtuoso:</para>
+<programlisting><![CDATA[    
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Data;
+using OpenLink.Data.Virtuoso;
+
+#if ODBC_CLIENT
+namespace OpenLink.Data.VirtuosoOdbcClient
+#elif CLIENT
+namespace OpenLink.Data.VirtuosoClient
+#else
+namespace OpenLink.Data.VirtuosoTest
+#endif
+{
+    class Test_Insert
+    {
+        [STAThread]
+        static void Main(string[] args)
+        {
+            IDataReader myread = null;
+            IDbConnection c;
+
+            c = new VirtuosoConnection("HOST=localhost:1111;UID=dba;PWD=dba;Charset=UTF-8");
+
+            IDbCommand cmd = c.CreateCommand();
+            int ros;
+
+            try
+            {
+                c.Open();
+
+                cmd.CommandText = "sparql clear graph <ado.net>";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P01> \"131\"^^<http://www.w3.org/2001/XMLSchema#short> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P02> \"1234\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P03> \"12345.12\"^^<http://www.w3.org/2001/XMLSchema#float> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P04> \"123456.12\"^^<http://www.w3.org/2001/XMLSchema#double> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P05> \"123456.12\"^^<http://www.w3.org/2001/XMLSchema#decimal> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P06> \"01020304\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P07> \"01.20.1980T04:51:13\"^^<http://www.w3.org/2001/XMLSchema#dateTime> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P08> \"01.20.1980\"^^<http://www.w3.org/2001/XMLSchema#date> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P09> \"01:20:19\"^^<http://www.w3.org/2001/XMLSchema#time> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P10> \"test\" }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql define output:format '_JAVA_' insert into graph <ado.net> { <b> `iri($?)` `bif:__rdf_long_from_batch_params($?,$?,$?)` }";
+
+//add Object URI
+                add_triple(cmd, "S01", 1, "test1", null);
+
+//add Object BNode
+                add_triple(cmd, "S02", 1, "_:test2", null);
+
+
+//add Literal
+                add_triple(cmd, "S03", 3, "test3", null);
+
+//add Literal with Datatype
+                add_triple(cmd, "S04", 4, "1234", "http://www.w3.org/2001/XMLSchema#integer");
+
+//add Literal with Lang
+                add_triple(cmd, "S05", 5, "test5", "en");
+
+
+                add_triple(cmd, "S06", 3, (short)123, null);
+                add_triple(cmd, "S07", 3, 1234, null);
+                add_triple(cmd, "S08", 3, (float)12345.12, null);
+                add_triple(cmd, "S09", 3, 123456.12, null);
+                add_triple(cmd, "S10", 3, new DateTime(2001, 02, 23, 13, 44, 51, 234), null);
+                add_triple(cmd, "S11", 3, new DateTime(2001, 02, 24), null);
+                add_triple(cmd, "S12", 3, new TimeSpan(19, 41, 23), null);
+ 
+
+                add_triple(cmd, "S13", 4, "GpM7", "http://www.w3.org/2001/XMLSchema#base64Binary");
+                add_triple(cmd, "S14", 4, "0FB7", "http://www.w3.org/2001/XMLSchema#hexBinary");
+                byte[] bin_val = { 0x01, 0x02, 0x03, 0x04, 0x05 };
+                add_triple(cmd, "S15", 3, bin_val, null);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} Exception caught.", e);
+            }
+            finally
+            {
+
+                if (c.State == ConnectionState.Open)
+                    c.Close();
+
+            }
+
+        }
+
+
+        static void add_triple(IDbCommand cmd, string sub, int ptype, object val, string val_add)
+        {
+                cmd.Parameters.Clear();
+
+                IDbDataParameter param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = sub;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = ptype;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                if (val != null && val.GetType() == typeof (System.String))
+                    param.DbType = DbType.AnsiString;
+                param.Value = val;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = val_add;
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+        }
+
+
+
+    }
+}	
+]]></programlisting>      
+     <tip><title>See Also:</title>
+       <para><link linkend="rdfinsertmethods">RDF Insert Methods in Virtuoso</link></para>
+     </tip> 
+    </sect2>     	
+    <sect2 id="descrmd">
+      <title>How does default describe mode work?</title>     
+      <para>The default describe mode works only if subject has a type/class. To get any anonymous subject described CBD mode should be used:</para>
+<programlisting><![CDATA[ 
+$ curl -i -L -H "Accept: application/rdf+xml" http://lod.openlinksw.com/describe/?url=http%3A%2F%2Fwww.mpii.de%2Fyago%2Fresource%2FEddie%255FMurphy
+HTTP/1.1 303 See Other
+Date: Mon, 21 Mar 2011 14:24:36 GMT
+Server: Virtuoso/06.02.3129 (Linux) x86_64-generic-linux-glibc25-64  VDB
+Content-Type: text/html; charset=UTF-8
+Accept-Ranges: bytes
+TCN: choice
+Vary: negotiate,accept,Accept-Encoding
+Location: http://lod.openlinksw.com/sparql?query=%20DESCRIBE%20%3Chttp%3A%2F%2Fwww.mpii.de%2Fyago%2Fresource%2FEddie%255FMurphy%3E&format=application%
+2Frdf%2Bxml
+Content-Length: 0
+
+HTTP/1.1 200 OK
+Date: Mon, 21 Mar 2011 14:24:37 GMT
+Server: Virtuoso/06.02.3129 (Linux) x86_64-generic-linux-glibc25-64  VDB
+Accept-Ranges: bytes
+Content-Type: application/rdf+xml; charset=UTF-8
+Content-Length: 467967
+
+<?xml version="1.0" encoding="utf-8" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description rdf:about="http://www.mpii.de/yago/resource/MTV%5FMovie%5FAward%5Ffor%5FBest%5FComedic%5FPerformance"><n0pred:hasInternalWikipediaLinkTo xmlns:n0pred="http://www.mpii.de/yago/resource/" rdf:resource="http://www.mpii.de/yago/resource/Eddie%5FMurphy"/></rdf:Description>
+<rdf:Description rdf:about="http://www.mpii.de/yago/resource/#fact_23536547421"><rdf:subject rdf:resource="http://www.mpii.de/yago/resource/Eddie%5FMurphy"/></rdf:Description>
+<rdf:Description rdf:about="http://www.mpii.de/yago/resource/#fact_23536896725"><rdf:object rdf:resource="http://www.mpii.de/yago/resource/Eddie%5FMurphy"/></rdf:Description>
+...
+]]></programlisting>            
+    </sect2>    
+    <sect2 id="notresphttp">
+      <title>What should I do if the Virtuoso Server is not responding to HTTP requests?</title>     
+      <para>Assume the Virtuoso server is not responding to HTTP requests although SQL connection is working. In order to determine what activity is being performed that might account for this:</para>
+<orderedlist>
+  <listitem>Check the status: 
+<programlisting><![CDATA[ 
+SQL> status('');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+
+OpenLink Virtuoso VDB Server
+Version 06.02.3129-pthreads for Linux as of Mar 16 2011 
+Registered to Uriburner (Personal Edition, unlimited connections)
+Started on: 2011/03/17 10:49 GMT+60
+ 
+Database Status:
+  File size 0, 37598208 pages, 7313125 free.
+  1000000 buffers, 993399 used, 76771 dirty 0 wired down, repl age 25548714 0 w. io 0 w/crsr.
+  Disk Usage: 2642884 reads avg 4 msec, 30% r 0% w last  1389 s, 1557572 writes,
+    15331 read ahead, batch = 79.  Autocompact 308508 in 219226 out, 28% saved.
+Gate:  71130 2nd in reads, 0 gate write waits, 0 in while read 0 busy scrap. 
+Log = virtuoso.trx, 14922248 bytes
+VDB: 0 exec 0 fetch 0 transact 0 error
+1757362 pages have been changed since last backup (in checkpoint state)
+Current backup timestamp: 0x0000-0x00-0x00
+Last backup date: unknown
+Clients: 5 connects, max 2 concurrent
+RPC: 116 calls, -1 pending, 1 max until now, 0 queued, 2 burst reads (1%), 0 second brk=9521074176
+Checkpoint Remap 331113 pages, 0 mapped back. 1180 s atomic time.
+    DB master 37598208 total 7313125 free 331113 remap 40593 mapped back
+   temp  569856 total 569851 free
+ 
+Lock Status: 52 deadlocks of which 0 2r1w, 86078 waits,
+   Currently 1 threads running 0 threads waiting 0 threads in vdb.
+Pending:
+
+
+25 Rows. -- 1274 msec.
+SQL> 
+	
+]]></programlisting>   	
+  </listitem>
+  <listitem>Connect with the PL debugger and see what is running currently using the info threads call: 
+<programlisting><![CDATA[ 
+$ isql 1111 dba <password> -D
+DEBUG> info threads	
+]]></programlisting>   	
+  </listitem>
+  <listitem>This should return the current code being executed by the Sever.</listitem>
+  <listitem>Run <link linkend="fn_txn_killall"><function>txn_killall()</function></link> to kill any pending transactions which may enable the server to start responding to HTTP requests again: 
+<programlisting><![CDATA[ 
+
+SQL> txn_killall();
+
+Done. -- 866 msec.	
+]]></programlisting>   	
+  </listitem>
+</orderedlist>
+    </sect2> 
+    <sect2 id="replallgr">
+      <title>How can I replicate all graphs?</title>     
+      <para>To replicate all graphs ( except the system graph http://www.openlinksw.com/schemas/virtrdf# ), 
+      	one should use http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all as graph IRI:</para>
+<programlisting><![CDATA[ 
+SQL> DB.DBA.RDF_RDF_REPL_GRAPH_INS ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all');
+]]></programlisting>   	
+    </sect2>        	
   </sect1>    
 </chapter>
 

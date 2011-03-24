@@ -3217,6 +3217,11 @@ http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
 
 1 Rows. -- 00000 msec.
 ]]></programlisting>
+<para>Another example:</para>
+<programlisting><![CDATA[
+INSERT INTO GRAPH <http://localhost:8890/Northwind> 
+{ `iri($?)` <http://localhost:8890/schemas/northwind#has_province> "Valencia" };	
+]]></programlisting>
 <para>An inline SPARQL query can refer to SQL variables that are in scope in the SQL query or stored procedure containing it.
 Virtuoso extends the SPARQL syntax with a special notation to this effect. A reference to SQL variable X can be written as <emphasis>?:X</emphasis> or <emphasis>$:X</emphasis>.
 A reference to column <emphasis>C</emphasis> of a table or a sub-select with alias <emphasis>T</emphasis> can be written as <emphasis>?:T.C</emphasis> or <emphasis>$:T.C</emphasis>.
@@ -9002,6 +9007,7 @@ non-RDF but get RDF and this can go to the Quad Store)</para>
         <listitem>Choose from the list "Local resources owner": demo</listitem>
         <listitem>Check the check.box with label "Store metadata".</listitem>
         <listitem>Check all the check-boxes shown below the check-box "Store metadata".</listitem>
+        <listitem>Note: when selected "Convert Link", then all HREFs in the local stored content will be relative.</listitem>
         <listitem>Click the button "Create".
           <figure id="rdfinsertwebdav1" float="1">
 	    <title>Using Virtuoso Crawler</title>
@@ -18991,7 +18997,119 @@ one load may run at a time. One can try this by calling
 If these do not execute concurrently, then the best way may be to try
 <link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than
 a single threaded ttlp call.</para>
+       <sect3 id="rdfperfloadingutility"><title>RDF Bulk Load Utility</title>
+         <para>The RDF loader utility facilitates parallel bulk loading of multiple RDF files. The utility 
+         	maintains a database table containing a list of files to load and the status of each file, 
+         	whether not loaded, loaded or loaded with error. The table also records load start and 
+         	end times.</para>
+         <para>One must have a dba group login for using this and the virtuoso.ini file access 
+         	control list must be set up so that the Virtuoso server can open  the files to load.</para>
+         <para>Files are added to the load list with the function <link linkend="fn_ld_dir"><function>ld_dir</function></link>:</para>
+<programlisting><![CDATA[
+ld_dir (in dir_path varchar, in file_mask varchar, in target_graph varchar);
+]]></programlisting>
+         <para>The file mask is a SQL like pattern to match against the files in the directory. 
+         	For example:</para>
+<programlisting><![CDATA[
+ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
+]]></programlisting>
+         <para>would load the RDF in all files ending in .gz from the directory given as first parameter. 
+         	The RDF would be loaded in the http://bsbm.org graph.</para>
+         <para>If NULL is given for the graph, each file may go to a different graph specified in a 
+         	separate file with the name of the RDF source file plus the extension .graph.</para>
+         <para>A .graph file contains the target graph URI without any other content or whitespace.</para>  
+         <para>The layout of the load_list table is as follows:</para>
+<programlisting><![CDATA[
+create table DB.DBA.LOAD_LIST (
+  ll_file varchar,
+  ll_graph varchar,
+  ll_state int default 0, -- 0 not started, 1 going, 2 done
+  ll_started datetime,
+  ll_done datetime,
+  ll_host int,
+  ll_work_time integer,
+  ll_error varchar,
+  primary key (ll_file))
+alter index LOAD_LIST on DB.DBA.LOAD_LIST partition (ll_file varchar)
+create index LL_STATE on DB.DBA.LOAD_LIST (ll_state, ll_file, ll_graph) partition (ll_state int)
+;
+]]></programlisting>
+         <para>This table may be checked at any time during bulk load for the progress of the load. 
+         	ll_state is 1 for files being loaded and 2 for files whose loading has finished. 
+         	ll_error is NULL if the load finished without error, else it is the error message.</para>
+         <para>In order to load data from the files in load_list, run as dba:</para>
+<programlisting><![CDATA[
+DB.DBA.rdf_loader_run (); 	
+]]></programlisting>   
+         <para>One may run several of these commands on parallel sessions for better throughput.</para>
+         <para>On a cluster one can do:</para>
+<programlisting><![CDATA[
+cl_exec ('rdf_ld_srv ()'); 
+]]></programlisting>
+         <para>This will start one rdf_loader_run on each node of the cluster. Note that in such a 
+         	setting all the server processes must see the same files at the same path.</para>
+         <para>On an isql session one may execute rdf_loader_run () &amp; several times, forking a new 
+         	isql for each such command, similarly to what a Unix shell does.</para> 
+         <para>Because this load is non-transactional and non-logged, one must do an explicit checkpoint 
+         	after the load to guarantee a persistent state.</para>
+         <para>On a single server do:</para>
+<programlisting><![CDATA[
+checkpoint; 
+]]></programlisting>  
+  <para>On a cluster do:</para>
+<programlisting><![CDATA[  
+cl_exec ('checkpoint');
+]]></programlisting>
+         <para>The server(s) are online and can process queries and transactions while a bulk load 
+         	is in progress. Periodic checkpoints may occur during the load but the state is guaranteed 
+         	to be consistent only after running a checkpoint after all the bulk load threads 
+         	have finished.</para>
+         <para>A bulk load should not be forcibly stopped. To make a controlled stop, run:</para>
+<programlisting><![CDATA[
+rdf_load_stop ();
+]]></programlisting>   
+         <para>This will cause the files being loaded at the time to finish load but no new loads 
+         	will start until explicitly started with <function>rdf_loader_run ()</function>.</para>
+         <para>Specially note that on a cluster the database will be inconsistent if one server 
+         	process does a checkpoint and another does not. Thus guaranteeing a checkpoint on all 
+         	is necessary. This is easily done with an isql script with the following content:</para>
+<programlisting><![CDATA[
+ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
 
+-- Record CPU time 
+select getrusage ()[0] + getrusage ()[1];
+
+rdf_loader_run () &
+rdf_loader_run () &
+rdf_loader_run () &
+rdf_loader_run () &
+rdf_loader_run () &
+rdf_loader_run () &
+rdf_loader_run () &
+rdf_loader_run () &
+
+wait_for_children;
+checkpoint;
+
+-- Record CPU time
+select getrusage ()[0] + getrusage ()[1];
+]]></programlisting>
+         <para>For a cluster, the equivalent is:</para>
+<programlisting><![CDATA[
+ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
+
+cl_exec ('DB.DBA.RDF_LD_SRV (2)');
+
+cl_exec ('checkpoint');
+]]></programlisting>
+         <para><function>rdf_loader_run ()</function> recognizes several file types, including .ttl, .nt, .xml, .rdf, 
+         	.owl, .nq, .n4, and others. Internally the function uses 
+         	<link linkend="fn_ttlp"><function>DB.DBA.ttlp()</function></link> or 
+         	<link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.rdf_load_rdfxml</function></link>, 
+         	as appropriate.</para>
+         	<para>See <link linkend="rdfperfloadinglod">the next section</link> for detailed description 
+         	of the <function>rdf_loader_run ()</function> function.</para>
+       </sect3>
        <sect3 id="rdfperfloadinglod"><title>Loading LOD RDF data</title>
 <para>To load the rdf data to LOD instance, perform the following steps:
 </para>

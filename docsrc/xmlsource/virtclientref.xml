@@ -617,6 +617,149 @@ an VirtuosoConnection object.</para>
 	  </section>
 
 	  <section>
+	    <title>ConnectionString Property</title>
+
+	    <para>The Virtuoso ADO.NET Provider ConnectionString property implements the 
+	    IDbConnection.ConnectionString property to get or set the string used to open a Virtuoso 
+	    database connection, and includes the source database name and other parameters needed to 
+	    establish the initial connection. The default value is an empty string.</para>
+
+	    <fieldsynopsis>
+	      <modifier>public</modifier>
+	      <type>string</type>
+	      <varname>ConnectionString</varname>
+	    </fieldsynopsis>
+
+	    <section>
+	      <title>Property Value</title>
+	      <para>Includes the source database name and other parameters needed to establish the 
+	      initial connection. The default value is an empty string.</para>
+	      <para>ConnectionString has the following syntax: Each connection string is a sequence of settings 
+	      Individual settings are separated by semicolons. Each setting is a pair of name and value delimited 
+	      by the equal sign. Whitespace is ignored on either side of both names and values. Names are case 
+	      insensitive. The value part can be quoted by either single or double quote characters or remain 
+	      unquoted at all. However if it includes a semicolon, single quote, or double quote characters, 
+	      it must be enclosed in either type of quotes. To embed the same character that is used for 
+	      enclosing the value the character within the value must be doubled.</para>
+	      
+	      <para>The following table lists the valid names for values within the ConnectionString:</para>
+
+	      <table>
+		      <tgroup cols="3">
+		        <thead>
+		          <row>
+		            <entry>Name</entry>
+		            <entry>Default</entry>
+		            <entry>Description</entry>		            
+		          </row>
+		        </thead>
+		        <tbody>
+		          <row>
+		            <entry>Connect Timeout or<br/>Connection Timeout</entry>
+		            <entry>15</entry>
+		            <entry>The number of seconds to wait for a connection to the server before terminating the attempt and generating an error.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Connection Lifetime</entry>
+		            <entry>0</entry>
+		            <entry>When a connection is returned to the pool, its creation time is compared with the current time, and the connection is destroyed if that time span (in seconds) exceeds the value specified by connection lifetime. Useful in clustered configurations to force load balancing between a running server and a server just brought on-line.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Charset</entry>
+		            <entry>utf-16</entry>
+		            <entry>Specifies the character set to be used by the provider when passing string values to and from the database. Must be set to utf-8 to handle Unicode strings passed in SPARQL/SPASQL queries of RDF data.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Data Source or<br/>Server or<br/>Address or<br/>Network Address or<br/>Host</entry>
+		            <entry></entry>
+		            <entry>The name or network address of the instance of Virtuoso server to which to connect. Can take comma delimited list of instances for connection fail over.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Encrypt</entry>
+		            <entry>false</entry>
+		            <entry>Specifies if the connection must be SSL encrypted. Currently encryption only works with an ODBC-based provider.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Enlist</entry>
+		            <entry>true</entry>
+		            <entry>When true, the pooler automatically enlists the connection in the creation thread's current transaction context.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Initial Catalog or<br/>Database</entry>
+		            <entry></entry>
+		            <entry>The name of the database.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Max Pool Size</entry>
+		            <entry>100</entry>
+		            <entry>The maximum number of connections allowed in the pool.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Min Pool Size</entry>
+		            <entry>0</entry>
+		            <entry>The minimum number of connections allowed in the pool.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Password or<br/>Pwd</entry>
+		            <entry></entry>
+		            <entry>The password for the Virtuoso account logging on. </entry>		            
+		          </row>
+		          <row>
+		            <entry>Persist Security Info</entry>
+		            <entry>false</entry>
+		            <entry>When set to 'false', security-sensitive information, such as the password, is not returned as part of the connection if the connection is open or has ever been in an open State. Resetting the connection string resets all connection string values including the password.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Pooling</entry>
+		            <entry>true</entry>
+		            <entry>	When true, the VirtuosoConnection object is drawn from the appropriate pool, or if necessary, is created and added to the appropriate pool.</entry>		            
+		          </row>
+		          <row>
+		            <entry>RoundRobin</entry>
+		            <entry>false</entry>
+		            <entry>Enables load balancing in which case the server for the connection is chosen at random from the comma delimited provided as for a Failover connection.</entry>		            
+		          </row>
+		          <row>
+		            <entry>User ID or<br/>Uid</entry>
+		            <entry></entry>
+		            <entry>The Virtuoso login name.</entry>		            
+		          </row>		          
+		        </tbody>
+		      </tgroup>
+	      </table>
+	    </section>
+
+	    <section>
+	      <title>Implements</title>
+	      <para>IDbCommand.ConnectionString</para>
+	    </section>
+ 
+      <section>
+	      <title>Remarks</title>
+	       <para>The <emphasis>ConnectionString</emphasis> is similar to an OLE DB connection string, but 
+	       is not identical. Unlike OLE DB or ADO, the connection string that is returned is the same as the 
+	       user set <emphasis>ConnectionString</emphasis> minus security information if the 
+	       <emphasis>Persist Security Info</emphasis> value is set to <emphasis>false</emphasis> (default). 
+	       The Virtuoso ADO.NET Data Provider neither persists nor returns the password in a connection 
+	       string unless you set <emphasis>Persist Security Info</emphasis> to true.</para>
+	       <para>The <emphasis>ConnectionString</emphasis> property can be set only when the connection is 
+	       closed. Many of the connection string values have corresponding read-only properties. When the 
+	       connection string is set, all of these properties are updated, except when an error is detected; 
+	       in this case, none of the properties are updated. <emphasis>VirtuosoConnection</emphasis> 
+	       properties return only those settings contained in the <emphasis>ConnectionString</emphasis>.</para>
+	       <para>Resetting the <emphasis>ConnectionString</emphasis> on a closed connection resets all 
+	       connection string values (and related properties) including the password. For example, if you set a 
+	       connection string that includes "<emphasis>Database=Demo</emphasis>", and then reset the connection 
+	       string to "<emphasis>Data Source=myserver;User ID=dba;Password=dba</emphasis>", the Database 
+	       property is no longer set to <emphasis>Demo</emphasis>.</para>	      
+	       <para>The connection string is parsed immediately after being set. If errors in syntax are found 
+	       when parsing, a runtime exception (e.g., <emphasis>ArgumentException</emphasis>) is generated. 
+	       Other errors can be found only when an attempt is made to open the connection.</para>	       
+	    </section>
+	    
+	  </section>
+	  
+	  <section>
 	    <title>VirtuosoCommand Constructor (string, VirtuosoConnection, VirtuosoTransaction)</title>
 
 	    <para>Initializes a new instance of the VirtuosoCommand class with the text of the query,
