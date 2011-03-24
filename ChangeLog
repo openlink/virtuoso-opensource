@@ -1,3 +1,205 @@
+2011-03-24 13:48  source
+
+	* Fixed additional xml document parser error handling for Opera
+
+2011-03-23 16:45  source
+
+	* Added function to format rdf object for printing in html
+
+2011-03-23 12:25  source
+
+	* Fixed typo
+
+2011-03-23 12:17  source
+
+	* Added LinkedIn import
+	* Fixed duplicate addressbook entries issue
+
+2011-03-23 12:13  source
+
+	* Added rdfs schema
+	* Fixed datetime format
+	* Fixed minor issues
+
+2011-03-23 12:13  source
+
+	* Added more properties
+
+2011-03-23 12:13  source
+
+	* Fixed minor issues
+
+2011-03-23 12:03  source
+
+	* Added more options for exporting a site
+	* Added more delimiters
+	* Fixed folder DET type presentation
+	* Fixed export as text
+
+2011-03-23 12:01  source
+
+	* Fixed wrong serialization of VirtuosoExplicitString when it is
+	  binding with DV_ANY parameter
+
+2011-03-23 11:05  source
+
+	* Rebuild drivers
+
+2011-03-23 11:04  source
+
+	* Fixed issue with using _JAVA_ on sparql select
+
+2011-03-23 10:49  source
+
+	* Fixed duplicate addressbook entries issue
+
+2011-03-23 10:48  source
+
+	* Fixed broken show filter
+
+2011-03-23 10:48  source
+
+	* Fixed feeds aggregator
+
+2011-03-23 10:47  source
+
+	* Updated folder type list with 'Dynamic Resource'
+
+2011-03-23 10:37  source
+
+	* Added support for DV_RDF in v:isql rendering
+
+2011-03-23 10:35  source
+
+	* Added custom UA
+	* Fixed gunzip the zipped rdfs
+	* Fixed large pages in results
+
+2011-03-23 10:33  source
+
+	* Improved session persistence
+	* Fixed handling of XML+RDF parsing errors
+	* Fixed bugs in query cache handling/paging
+	* Fixed Cosmetics in "Raw triples" view
+	* Fixed Default view set as "Advanced" in query permalinks
+	* Fixed URL params handling so they always take precedence from
+	  persisted session
+	* Fixed bug in menu item to Reset session
+
+2011-03-23 10:28  source
+
+	* Added code to facilitate better error recovery when parsing
+	  invalid RDF+XML
+	* Fixed small code cosmetics
+
+2011-03-22 23:50  source
+
+	* Fixed missing globals
+
+2011-03-21 13:30  source
+
+	* Fixed missing variable initialization
+
+2011-03-21 10:44  source
+
+	* Fixed check if subselect has a recursive ref
+
+2011-03-18 10:51  source
+
+	* Fixed use new pages & disk reads to trigger the startup values
+
+2011-03-17 16:30  source
+
+	* Added lax mode in csv import
+
+2011-03-17 13:55  source
+
+	* Fixed when removing a join from outer's branches, do that repeatedly
+	  to remove all not needed. The recursion is done via sqlo_scope in
+	  order to get new labels for columns in select list, so process does
+	  not get confused by moving left part into FROM
+
+2011-03-17 13:53  source
+
+	* Fixed when compiling a shared query, we must have a reset context
+	  as it may jump from compiler outside of shared cache and leave
+	  a mutex locked, thus eventually can get hang
+
+2011-03-16 10:34  source
+
+	* Fixed issue with partial index when no path is followed
+
+2011-03-14 15:52  source
+
+	* Fixed return byte[] data from column with datatype = DV_ANY
+
+2011-03-14 15:47  source
+
+	* Fixed disable debug messages
+
+2011-03-14 15:46  source
+
+	* Fixed use dv_bin where needed like for dav-res
+
+2011-03-12 00:17  source
+
+	* Fixed increase delay on sequential deadlock
+
+2011-03-12 00:17  source
+
+	* Fixed labels
+
+2011-03-11 18:26  source
+
+	* Fixed use exclusive locks when doing sparul ops
+
+2011-03-11 13:08  source
+
+	* Fixed comment about missing io sect
+
+2011-03-11 13:08  source
+
+	* Added retry deadlock if session is not flushed
+
+2011-03-11 13:07  source
+
+	* Fixed do not do read ahead with less than 10k buffers available
+
+2011-03-11 12:17  source
+
+	* Fixed if no free buffer available, signal an error
+
+2011-03-11 11:28  source
+
+	* Fixed do not do read-ahead on extent map
+
+2011-03-10 23:24  source
+
+	* Added index to search over label text
+
+2011-03-09 16:41  source
+
+	* FIxed _java_ should not have effect on select
+
+2011-03-08 15:46  source
+
+	* Fixed labels in value side
+	* Fixed pages to pass W3C validator (mostly)
+	* Fixed check for integers
+	* FIxed xml excape will happen on <?V use
+
+2011-03-08 15:44  source
+
+	* Fixed hide value ranges option for now
+
+2011-03-08 15:43  source
+
+	* Fixed copyright year
+
+2011-03-08 14:32  source
+
+	* Added missing files to distribution
+
 2011-03-08 13:56  source
 
 	* Added workaround to tell _JAVA_ driver the input is string as it is
