@@ -314,7 +314,7 @@ b3s_render_ses_params ()
   s := connection_get ('sas');
   sid := connection_get ('sid');
 
-  if (i is not null) i := '&inf=' || sprintf ('%V', i);
+  if (i is not null) i := '&inf=' || sprintf ('%U', i);
   if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
   if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
 
@@ -403,7 +403,9 @@ create procedure b3s_label_get (inout data any, in langs any)
    if (not isstring (label))
      label := cast (label as varchar);
    --label := regexp_replace (label, '<[^>]+>', '', 1, null);  
-   label := cast (xtree_doc (label, 2) as varchar);
+   --label := cast (xtree_doc (label, 2) as varchar);
+   label := xpath_eval ('string(.)', xtree_doc (label, 2));
+   label := charset_recode (label, '_WIDE_', 'UTF-8');
    return label;
 }
 ;
@@ -560,10 +562,13 @@ create procedure b3s_label (in _S any, in langs any)
 {
   declare best_str, meta, data any;
   declare best_q, q float;
-  declare lang varchar;
+  declare lang, stat, msg varchar;
 
+  stat := '00000';
   exec (sprintf ('sparql define input:inference "virtrdf-label" '||
-  'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), null, null, vector (), 0, meta, data);
+  'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  if (stat <> '00000')
+    return '';
   best_str := '';
   best_q := 0;
   if (length (data))
@@ -579,6 +584,8 @@ create procedure b3s_label (in _S any, in langs any)
 	    }
 	}
     }
+  if (__tag (best_str) = 246)
+    best_str := rdf_box_data (best_str);
   return best_str;
 }
 ;
@@ -642,11 +649,15 @@ again:
 	 {
 	   declare lbl any;
 	   lbl := '';
-	   if (registry_get ('fct_desc_value_labels') = '1')
+	   if (registry_get ('fct_desc_value_labels') = '1' and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
 	     lbl := b3s_label (_url, langs);
 	   if ((not isstring(lbl)) or length (lbl) = 0)
 	     lbl := b3s_uri_curie(_url);
-	   http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
+	   -- XXX: must encode as wide label to print correctly  
+	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
+	   http (sprintf ('<a class="uri" %s href="%s">', rdfa, b3s_http_url (_url, sid, _from)));
+	   http_value (charset_recode (lbl, 'UTF-8', '_WIDE_'));
+	   http (sprintf ('</a>'));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
        --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>', 
@@ -843,4 +854,75 @@ create procedure fct_make_curie (in url varchar, in lines any)
   return sprintf ('http://%s/c/%s', chost, curie);
 }
 ;
+
+
+create procedure DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
+{
+  declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
+  declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare gs_app_callback, gs_app_uid varchar;
+
+  if (isinteger (consts))
+    goto normal;
+
+  uid := get_keyword ('uid', options, http_nobody_uid());
+  gs_app_callback := get_keyword ('gs-app-callback', options);
+  if (gs_app_callback is not null)
+    gs_app_uid := get_keyword ('gs-app-uid', options);
+
+  phys_subjects := dict_list_keys (subj_dict, 0);
+  phys_subjects := vector_concat (phys_subjects, consts);
+  phys_s_count := length (phys_subjects);
+  if (__tag of integer = __tag (good_graphs))
+    {
+      g_dict := dict_new ();
+      vectorbld_init (sorted_bad_graphs);
+      foreach (any g in bad_graphs) do
+	{
+	  if (isiri_id (g) and g < min_bnode_iri_id ())
+	    vectorbld_acc (sorted_bad_graphs, g);
+	}
+      vectorbld_final (sorted_bad_graphs);
+      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+	{
+	  declare subj, graph any;
+	  subj := phys_subjects [s_ctr];
+	  graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs) and
+	    __rgs_ack_cbk (G, uid, 1) and
+	    (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
+	  if (graph is not null)
+	    dict_put (g_dict, graph, 0);
+	}
+      sorted_good_graphs := dict_list_keys (g_dict, 0);
+      if (0 = length (sorted_good_graphs))
+	{
+	  g_dict := dict_new ();
+	  for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+	    {
+	      declare subj, graph any;
+	      subj := phys_subjects [s_ctr];
+	      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and 0 = position (G, sorted_bad_graphs) and
+		__rgs_ack_cbk (G, uid, 1) and
+		(gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
+	      if (graph is not null)
+		dict_put (g_dict, graph, 0);
+	    }
+	  sorted_good_graphs := dict_list_keys (g_dict, 1);
+	}
+      if (0 < length (sorted_good_graphs))
+	good_graphs := sorted_good_graphs;
+    }
+  normal:
+  return DB.DBA.SPARQL_DESC_DICT (subj_dict, consts, good_graphs, bad_graphs, storage_name, options);
+}
+;
+
+create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
+{
+  return DB.DBA.SPARQL_DESC_DICT (subj_dict, consts, good_graphs, bad_graphs, storage_name, options);
+}
+;
+
+grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
+grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 

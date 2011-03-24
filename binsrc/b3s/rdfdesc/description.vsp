@@ -157,7 +157,7 @@
 
    _subject := b3s_label_get (data, langs);
 
-  rdf_link := sprintf ('/sparql?query=%U', sprintf ('%s DESCRIBE <%s>', b3s_render_inf_clause(), _S)); 
+  rdf_link := sprintf ('/sparql?query=%U', sprintf ('define sql:describe-mode "LOD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S)); 
 
   declare __res_desc, qs, qv, best_variant, accept varchar;
   declare best_q, curr float;
@@ -215,7 +215,7 @@
 ?>
 <head>
     <base href="http://<?V host ?>/fct/rdfdesc/" />
-    <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
+    <title>About: <?vsp http (label); ?></title>
     <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
     <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
@@ -391,6 +391,12 @@ if (_subject <> '') {
 	  <form action="/describe/" method="get">
 	  <div>
 	      <input type="hidden" name="url" value="<?V gr ?>" />
+	      <?vsp if (connection_get ('inf') is not null) { ?>
+	      <input type="hidden" name="inf" value="<?V connection_get ('inf') ?>" />
+	      <?vsp } ?>
+	      <?vsp if (connection_get ('sas') is not null) { ?>
+	      <input type="hidden" name="sas" value="<?V connection_get ('sas') ?>" />
+	      <?vsp } ?>
 	      <input type="hidden" name="p" value="<?V page + 1 ?>"/>
 	      <?vsp if (sid is not null) { ?>
 	      <input type="hidden" name="sid" value="<?V sid ?>"/>
@@ -422,14 +428,14 @@ if (_subject <> '') {
         Explore alternative Linked Data Views &amp; Meshups using:
         <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
         &nbsp; &nbsp; Raw Data in:
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/cxml')?>">CXML</a> |
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/csv')?>">CSV</a> | RDF (
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/rdf+json')?>">JSON</a> 
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/atom+xml')?>">Atom</a> 
-        <a href="<?=rdf_link || sprintf ('&amp;output=%U', 'application/odata+json')?>">JSON</a> )
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> )
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
