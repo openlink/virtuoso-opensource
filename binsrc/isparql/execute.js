@@ -394,6 +394,7 @@ var QueryExec = function(optObj) {
     };
 
     this.resultType = function(data) {
+		if (data.documentElement == null) return iSPARQL.ResultType.ERROR; // OPERA returns XMLDocument with all members null
 		if (data.documentElement.localName == "sparql")
 			return iSPARQL.ResultType.RESSET;
 		if (data.documentElement.localName == "RDF")
@@ -865,7 +866,10 @@ var QueryExec = function(optObj) {
 
 	this.makeParserErrorMsg = function (data) {
 		var msg = '<h3 class="error">XML Parser error</h3>\n';
+		if (data.documentElement)
 		msg += '<p class="error_msg">'+data.documentElement.textContent+ '</p>\n';
+		else 
+			msg += '<p class="error_msg">The result XML contained invalid data and could not be processed by the browser\'s XML parser.</p>';
 		return msg;
 	};
 
@@ -980,7 +984,7 @@ var QueryExec = function(optObj) {
 
 		if (wasError) {
 			if (typeof data != "string" && item.resType == iSPARQL.ResultType.ERROR) {
-				if (data.documentElement.localName == "parsererror") {
+				if (!data.documentElement || data.documentElement.localName == "parsererror") {
 					item.dom.result_c.innerHTML = self.makeParserErrorMsg (data);
 					item.dom.response_c.innerHTML = self.makeErrorResp (data);
 				}
