@@ -2,6 +2,7 @@
 create procedure
 urilbl_ac_init_db () 
 {
+  --pl_debug+
   declare n, n_ins, n_strange integer;
   declare o_str varchar;
   declare daq any;
@@ -43,7 +44,9 @@ urilbl_ac_init_db ()
 
       o_str := "LEFT"(o_str, 512);
 
-      insert soft rdf_label option (into daq) (rl_o, rl_ro_id, rl_text, rl_lang) values (o, id, urilbl_ac_ruin_label (o_str), lng);
+      --if (not exists (select 1 from rdf_label where rl_o = o))
+	--insert into rdf_label option (into daq) (rl_o, rl_ro_id, rl_text, rl_lang) values (o, id, urilbl_ac_ruin_label (o_str), lng);
+      insert soft rdf_label (rl_o, rl_ro_id, rl_text, rl_lang) values (o, id, urilbl_ac_ruin_label (o_str), lng);
 
      cont:;
       n := n + 1;

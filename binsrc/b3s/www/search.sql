@@ -205,7 +205,7 @@ create procedure head_get (in num varchar)
     vector ('Vendor', 'Offer', 'Business Function', 'Customer Type', 'Offer Object', 'Type of Good', 'Price'),
 --    vector ('Total Products'),
     vector ('Cafe URI', 'Latitude', 'Longitude', 'Cafe Name', 'Church Name', 'Count'),
-    vector ('Road', 'Service', 'Latitude', 'Longitude'),
+    vector ('Road', 'Latitude', 'Longitude'),
     vector ('City URI', 'Distance (km)'),
     vector ('Geometry URI', 'Latitude', 'Longitude'),
     vector ('SKOS Broader', 'SKOS Narrower', 'SKOS Level', 'Entity URI', 'Entity Name', 'Geo Point'),
@@ -852,17 +852,17 @@ s3 := '\')) .
       if (isnull(val)  or val = '') val := '52.000';
 
       s1 :=
-      'sparql SELECT ?road ?services ?lat ?long WHERE ' ||
+      'sparql SELECT ?road ?lat ?long WHERE ' ||
       '  { ' ||
       '    { ' ||
-      '     ?services dbpprop:road ?road . ' ||
+--      '     ?services dbpprop:road ?road . ' ||
       '      ?road a yago:MotorwaysInEngland . ' ||
       '      ?services dbpprop:lat ?lat . ' ||
       '      ?services dbpprop:long ?long . ' ||
       '    } ' ||
       '    UNION ' ||
       '    { ' ||
-      '      ?services dbpprop:road ?road . ' ||
+--      '      ?services dbpprop:road ?road . ' ||
       '      ?road a yago:MotorwaysInScotland . ' ||
       '      ?services dbpprop:lat ?lat . ' ||
       '      ?services dbpprop:long ?long . ' ||
@@ -876,7 +876,7 @@ s3 := '\')) .
   else if (smode='15')
   {
     if (isnull(val)  or val = '') val := 'http://dbpedia.org/resource/London';
-    if (isnull(val2)  or val2 = '') val2 := 'http://dbpedia.org/ontology/City';
+    if (isnull(val2)  or val2 = '') val2 := 'http://dbpedia.org/ontology/PopulatedPlace';
     if (isnull(val3)  or val3 = '') val3 := '10';
     s1 := 'sparql SELECT DISTINCT ?m ( bif:round(bif:st_distance (?geo, ?gm)) ) ' ||
     ' WHERE { <';
@@ -899,15 +899,16 @@ s3 := '\')) .
     s1 := 'sparql SELECT DISTINCT ?s (bif:round(?lat)) AS ?lat (bif:round(?long)) AS ?long ' ||
       ' WHERE ' ||
       '   { ' ||
-      '     { ' ||
-      '       SELECT ?g ?s WHERE  ' ||
-      '         {  ' ||
-      '           graph ?g { ' ||
-      '             ?s geo:geometry ?geo }  ' ||
-      '         } ' ||
-      '       LIMIT 100  ' ||
-      '     } ' ||
+      --'     { ' ||
+      --'       SELECT ?g ?s WHERE  ' ||
+      --'         {  ' ||
+      --'           graph ?g { ' ||
+      --'             ?s geo:geometry ?geo }  ' ||
+      --'         } ' ||
+      --'       LIMIT 100  ' ||
+      --'     } ' ||
       '     graph ?g { ' ||
+      '       ?s geo:geometry ?geo . ' ||
       '       ?s geo:lat ?lat . ' ||
       '       ?s geo:long ?long . } ' ||
       '     FILTER (datatype (?lat) IN (xsd:integer, xsd:float, xsd:double)) . ' ||
@@ -1006,7 +1007,7 @@ s3 := '\')) .
   {
     if (isnull(val)    or val = '') val := 'http://dbpedia.org/resource/Oxford';
     if (isnull(val2)  or val2 = '') val2 := '5';
-    if (isnull(val3)  or val3 = '') val3 := 'http://dbpedia.org/ontology/established';
+    if (isnull(val3)  or val3 = '') val3 := 'http://dbpedia.org/property/established';
     if (isnull(val4)  or val4 = '') val4 := 'en';
 
     validate_input(val);

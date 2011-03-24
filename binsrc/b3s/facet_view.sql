@@ -1233,6 +1233,7 @@ fct_new ()
 }
 ;
 
+-- /* options */
 create procedure
 fct_set_inf (in tree any, in sid int)
 {
@@ -1287,11 +1288,12 @@ fct_set_inf (in tree any, in sid int)
 	           <option value="eav" '); http_value ( case when sel_s_term = 'e' then 'selected="true"' else '' end ); http ('>Entity-Attribute-Value</option>
 	           <option value="spo" '); http_value ( case when sel_s_term = 's' then 'selected="true"' else '' end ); http ('>Subject-Predicate-Object</option>
 	       	 </select><br/>
+<!--		 
                  <input type="checkbox" 
                         name="view3" 
                         value="yes" 
                         id="view3" '); http_value ( case when selected_view3 = 'yes' then 'checked="true"' end  ); http ('> 
-                 <label class="rt_ckb" for="view3">Show Values, Types, Properties simultaneously</label><br>
+                 <label class="rt_ckb" for="view3">Show Values, Types, Properties simultaneously</label><br> -->
                </div>
 <!--               <div class="fm_sect">
                  <h3>Limits</h3>

@@ -181,7 +181,7 @@ create procedure
 cmp_uri (in str varchar)
 {
   declare with_ns varchar;
-  declare nss, iris any;
+  declare nss, iris, exact_iri any;
 
 --  dbg_printf ('cmp_uri\n');
 
@@ -200,10 +200,13 @@ cmp_uri (in str varchar)
 
 --  dbg_obj_print ('ns with ', str, ' = ', nss);
 
-  if (length (nss) = 0)
-    return cmp_find_iri (str);
+  exact_iri := cmp_find_iri (str);
 
   vectorbld_init (iris);
+  foreach (any x in exact_iri) do
+    {
+      vectorbld_acc (iris, vector (x));
+    }
   foreach (any x in nss) do
     {
       vectorbld_acc (iris, cmp_find_iri (x, 1));

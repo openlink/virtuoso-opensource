@@ -602,6 +602,7 @@ fct_n_cols (in tree any)
 {
   declare tp varchar;
   tp := cast (xpath_eval ('//view/@type', tree, 1) as varchar);
+--  dbg_printf ('fct_n_cols: tp: %s', tp);
   if ('list' = tp)
     return 1;
   else if ('geo' = tp)

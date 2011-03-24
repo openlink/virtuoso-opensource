@@ -229,6 +229,7 @@ function init(){
 
 	  var pivot_link_opts = OAT.Dom.create('span', {}, 'pivot_link_opts');
 	  pivot_link_opts.innerHTML = '&nbsp;&nbsp;\
+          <!--\
 	  <a href="#" title="Sets the CXML type of subject URIs to String or Link, optionally performing a DESCRIBE on the subject">Style&nbsp;for&nbsp;RDF&nbsp;subjects</a>&nbsp;\
 	  <select id="CXML_redir_for_subjs" onchange="fct_set_pivot_subj_uri_opt()">\
 	  		<option value="" selected="true">Convert to string facets</option>\
@@ -238,13 +239,14 @@ function init(){
 			<option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\
 		</select>\
 		&nbsp;&nbsp;\
-		<a href="#" title="Sets the CXML type of resource URIs to String or Link, optionally performing a DESCRIBE on the resource">Style&nbsp;for&nbsp;other&nbsp;links</a>&nbsp;\
+                -->\
+		<a href="#" title="Sets the CXML type of resource URIs to String or Link, optionally performing a DESCRIBE on the resource">CXML&nbsp;link&nbsp;behavior</a>&nbsp;\
 		<select id="CXML_redir_for_hrefs" onchange="fct_set_pivot_href_opt()">\
-			<option value="" selected="true">Convert to string facets</option>\
-			<option value="121">Make plain links</option>\
-			<option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\
-			<option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\
-			<option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\
+			<option value="" selected="true">Local faceted navigation links</option>\
+			<option value="121">External resource links</option>\
+			<option value="LOCAL_PIVOT">External faceted navigation links</option>\
+			<option value="LOCAL_TTL">External description resource (TTL)</option>\
+			<option value="LOCAL_CXML">External description resource (CXML)</option>\
 		</select>';
 
       OAT.Dom.append (['pivot_a_ctr',pivot_a,pivot_pg,pivot_qrcode_opts,pivot_link_opts]);
@@ -284,19 +286,19 @@ function init(){
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th><xsl:value-of select="$p_term"/></th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$s_term"/></th><!--th>Title</th--><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text-properties'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th><xsl:value-of select="$p_term"/></th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'properties-in'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th><xsl:value-of select="$p_term"/></th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
@@ -304,7 +306,7 @@ function init(){
       </xsl:when>
       <xsl:when test="$view-type = 'classes'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th><xsl:value-of select="$t_term"/></th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$t_term"/></th><!--th>Label</th--><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
@@ -354,6 +356,9 @@ function init(){
 		  <xsl:value-of select="column[1]"/>
 		</xsl:attribute>
 		<xsl:choose>
+		  <xsl:when test="'' != string (column[2])">
+		      <xsl:value-of select="column[2]"/>
+		  </xsl:when>
 		  <xsl:when test="'' != column[1]/@shortform">
 		    <xsl:value-of select="column[1]/@shortform"/>
 		  </xsl:when>
@@ -363,14 +368,16 @@ function init(){
 		</xsl:choose>
 	      </a>
 	    </td>
-	    <td>
+	    <!--td>
 	      <xsl:choose>
-		<xsl:when test="'' != ./@shortform"><xsl:value-of select="./@shortform"/></xsl:when>
+		  <xsl:when test="'' != ./@shortform">
+		      <xsl:value-of select="./@shortform"/>
+		  </xsl:when>
 		<xsl:otherwise>
 		  <xsl:value-of select="column[2]"/>
 		</xsl:otherwise>
 	      </xsl:choose>
-	    </td>
+	    </td-->
 	    <td>
 	      <xsl:apply-templates select="column[3]"/>
 	    </td>
