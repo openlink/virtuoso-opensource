@@ -349,9 +349,12 @@ function callSparql (graph, qry_id, res_id, rdf_gem)
   OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
 }
 
-function hasError(root) {
+function hasError(root, showMessage) {
+  if (showMessage != false)
+    showMessage = true;
 	if (!root)
 	{
+	  if (showMessage)
 		alert('No data!');
 		return true;
 	}
@@ -361,7 +364,7 @@ function hasError(root) {
   if (error)
   {
 	    var message = error.getElementsByTagName('message')[0];
-      if (message)
+    if (message && showMessage)
         alert (OAT.Xml.textValue(message));
   		return true;
     }

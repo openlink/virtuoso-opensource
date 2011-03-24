@@ -1606,6 +1606,22 @@ create procedure ODS.ODS_API."user.login" (
 }
 ;
 
+create procedure ODS.ODS_API."user.validate" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    http_rewrite();
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  return ods_serialize_int_res (1);
+}
+;
+
 create procedure ODS.ODS_API."user.logout" () __soap_http 'text/plain'
 {
   declare uname varchar;
@@ -2273,11 +2289,18 @@ create procedure ODS.ODS_API."user.info" (
     http_rewrite();
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  if (not ods_check_auth (uname))
+  if (not ods_check_auth (uname) and isnull (name))
     return ods_auth_failed ();
 
-  if (isnull (name))
+  if (isinteger (uname))
+    uname := null;
+
+  if (not isnull (uname) and isnull (name))
     name := uname;
+
+  if (not isnull (uname) and (uname <> name))
+    return ods_serialize_sql_error ('37000', 'Bad  user''s name paramater');
+
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
@@ -2292,15 +2315,19 @@ create procedure ODS.ODS_API."user.info" (
 
     -- Personal
     ods_xml_item ('uid',       U_ID);
+    ods_xml_item ('iri',        SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
     ods_xml_item ('name',      U_NAME);
     ods_xml_item ('nickName',  WAUI_NICK);
-    ods_xml_item ('noPassword', noPassword);
-    ods_xml_item ('iri',       SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
-    ods_xml_item ('mail',      U_E_MAIL);
-    ods_xml_item ('title',     WAUI_TITLE);
     ods_xml_item ('firstName', WAUI_FIRST_NAME);
     ods_xml_item ('lastName',  WAUI_LAST_NAME);
     ods_xml_item ('fullName',  WAUI_FULL_NAME);
+
+    if (isnull (uname))
+      goto _notLogged;
+
+    ods_xml_item ('noPassword', noPassword);
+    ods_xml_item ('mail',       U_E_MAIL);
+    ods_xml_item ('title',      WAUI_TITLE);
     ods_xml_item ('homepage',  WAUI_WEBPAGE);
     ods_xml_item ('qrcode',     ODS.ODS_API."qrcode"(WAUI_WEBPAGE));
 
@@ -2397,6 +2424,7 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('photo',                  WAUI_PHOTO_URL);
       ods_xml_item ('audio',                  WAUI_AUDIO_CLIP);
     }
+  _notLogged:;
     http ('</user>');
   }
   return '';
@@ -5571,6 +5599,7 @@ grant execute on ODS.ODS_API."linkedinVerify" to ODS_API;
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
 grant execute on ODS.ODS_API."user.login" to ODS_API;
+grant execute on ODS.ODS_API."user.validate" to ODS_API;
 grant execute on ODS.ODS_API."user.logout" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.update.fields" to ODS_API;
