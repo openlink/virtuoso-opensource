@@ -2,6 +2,21 @@
 
 -- check and stats statements for rdf
 
+
+select count (*) from rdf_quad a table option (index rdf_quad) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index primary key) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+
+select count (*) from rdf_iri a where not  exists (select 1 from rdf_iri b table option (loop) where  a.ri_id = b.ri_id);
+select count (*) from rdf_iri a where not  exists (select 1 from rdf_iri b table option (loop) where  a.ri_name = b.ri_name);
+
+select count (*) from rdf_iri a where not  exists (select 1 from rdf_iri b table option (loop) where  a.ri_id = b.ri_id);
+select count (*) from rdf_prefix a where not  exists (select 1 from rdf_prefix b table option (loop) where  a.rp_name = b.rp_name);
+select count (*) from rdf_prefix a where not  exists (select 1 from rdf_prefix b table option (loop) where  a.rp_id = b.rp_id);
+
+select count (*) from rdf_obj a table option (index rdf_obj) where not exists (select 1 from rdf_obj b table option (index ro_val, loop) where b.ro_id = a.ro_id and b.ro_val = a.ro_val and b.ro_dt_and_lang = a.ro_dt_and_lang);
+select count (*) from rdf_obj a table option (index ro_val) where not exists (select 1 from rdf_obj b table option (index rdf_obj, loop) where b.ro_id = a.ro_id and b.ro_val = a.ro_val and b.ro_dt_and_lang = a.ro_dt_and_lang);
+
+
 select count (*) from rdf_quad a table option (index primary key) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_ogps) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
 
 select count (*) from rdf_quad a table option (index rdf_quad_ogps) where not exists (select 1 from rdf_quad b table option (loop, index primary key) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
@@ -193,3 +208,43 @@ create table berlin (ro_id bigint primary key);
 
 insert into berlin select ro_id from rdf_obj where ro_val like '**berlin' or blob_to_string (ro_long) like '**berlin';
 
+
+
+
+-- test 2+3 inx
+
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g);
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g);
+
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g) option (any order);
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g) option (any order);
+
+
+select top 10 * from rdf_quad a table option ( index rdf_quad_op, index_only) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where b.o = a.o and b.p = a.p );
+
+select distinct top 100 o, rdf_box_ro_id (o) from rdf_quad where is_rdf_box (o) and rdf_box_ro_id (o) and not exists (select 1 from rdf_obj table option (loop) where ro_id = rdf_box_ro_id (o)) option (any order);
+
+
+create procedure rdf_order_ck ()
+{
+  declare first int;
+  declare g1, s1, p1, o1 any;
+  first := 1;
+  for select g, s, p, o from rdf_quad table option (index rdf_quad_pogs) do
+    {
+      if (first = 0)
+	{
+	  if (not ( p >= p1)
+	      or (p = p1 and o < o1)
+	      or (p = p1 and o = o1 and g < g1)
+	      or (p = p1 and o = o1 and g = g1 and s <= s1))
+	    {
+		dbg_obj_print ('err', p1, o1, g1, s1);
+	      dbg_obj_print (p, o, g, s);
+		--signal ('42000', 'out of order');
+	    }
+	}
+    first := 0;
+    p1 := p; o1 := o; g1 := g; s1 := s;
+    }
+}

@@ -530,3 +530,166 @@ select case when b.fi2 in (100,110,111) then 1 else 0 end from t1 a, t1 b where 
 echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
 echo both ": cond exp shared between filter of hash filler and result set\n";
 
+explain ('sparql define input:storage ""
+PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT distinct ?dataset
+WHERE 
+{
+  ?dataset void:subset0 ?version .
+  OPTIONAL 
+    {
+      ?version void:subset1  ?layer .
+      ?layer conversion:num_triples ?triples .
+    }
+OPTIONAL 
+    {
+      ?version void:subset2  ?layer .
+      ?layer void:subset3 ?descriminator .
+  }
+
+}');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug 14207 remove two needless optionals STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain ('sparql define input:storage ""
+PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT distinct ?dataset ?layer
+WHERE 
+{
+  ?dataset void:subset0 ?version .
+  OPTIONAL 
+    {
+      ?version void:subset1  ?layer .
+      ?layer conversion:num_triples ?triples .
+    }
+OPTIONAL 
+    {
+      ?version void:subset2  ?layer .
+      ?layer void:subset3 ?descriminator .
+  }
+
+}');
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug 14207-2 remove one needless optionals STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain ('sparql define input:storage ""
+PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT distinct ?dataset ?descriminator
+WHERE 
+{
+  ?dataset void:subset0 ?version .
+  OPTIONAL 
+    {
+      ?version void:subset1  ?layer .
+      ?layer conversion:num_triples ?triples .
+    }
+OPTIONAL 
+    {
+      ?version void:subset2  ?layer .
+      ?layer void:subset3 ?descriminator .
+  }
+
+}');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug 14207-3 keep all outers STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+ttlp (
+'
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix conversion: <http://purl.org/twc/vocab/conversion/> .
+
+<ds> void:subset0 <vers> .
+<vers> void:subset1 <layer1> .
+<layer1> conversion:num_triples 12 .
+<vers> void:subset2 <layer1> .
+<layer1> void:subset3 <descriminator> .
+
+', '', 'test');   
+
+
+sparql define input:storage ""
+PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT distinct ?dataset
+WHERE 
+{
+  ?dataset void:subset0 ?version .
+  OPTIONAL 
+    {
+      ?version void:subset1  ?layer .
+      ?layer conversion:num_triples ?triples .
+    }
+OPTIONAL 
+    {
+      ?version void:subset2  ?layer .
+      ?layer void:subset3 ?descriminator .
+  }
+
+};
+ECHO BOTH $IF $EQU $LAST[1] ds "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug 14207-4 remove two needless optionals LAST=" $LAST[1] "\n";
+
+sparql define input:storage ""
+PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT distinct ?dataset ?layer
+WHERE 
+{
+  ?dataset void:subset0 ?version .
+  OPTIONAL 
+    {
+      ?version void:subset1  ?layer .
+      ?layer conversion:num_triples ?triples .
+    }
+OPTIONAL 
+    {
+      ?version void:subset2  ?layer .
+      ?layer void:subset3 ?descriminator .
+  }
+
+};
+ECHO BOTH $IF $EQU $LAST[2] layer1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug 14207-5 remove one needless optionals LAST=" $LAST[2] "\n";
+
+
+sparql define input:storage ""
+PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT distinct ?dataset ?descriminator
+WHERE 
+{
+  ?dataset void:subset0 ?version .
+  OPTIONAL 
+    {
+      ?version void:subset1  ?layer .
+      ?layer conversion:num_triples ?triples .
+    }
+OPTIONAL 
+    {
+      ?version void:subset2  ?layer .
+      ?layer void:subset3 ?descriminator .
+  }
+
+};
+
+
+ECHO BOTH $IF $EQU $LAST[2] descriminator "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug 14207-6 keep all optionals LAST=" $LAST[2] "\n";
+

@@ -269,8 +269,8 @@ echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for property\n";
 
 sparql define input:inference 'sas-p' define input:same-as "yes"
-select * from <sas-p> where { ?s <sas-p1> ?o };
-echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
+select distinct * from <sas-p> where { ?s <sas-p1> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for sameAs property\n";
 
 

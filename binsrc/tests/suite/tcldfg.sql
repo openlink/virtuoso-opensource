@@ -78,3 +78,15 @@ create procedure dfgp ()
 		     }
     }
 }
+
+
+
+create procedure df (in n int, in stage int)
+{
+  if (stage = 1 and 1 < sys_stat ('cl_this_host'))
+	delay (0.1);
+  return n + 1;
+}
+
+select count (*) from t1 a, t1 b, t1 c where b.fi2 = df (a.fi2, 1) and c.fi2 = df (b.fi2, 2) option (order, loop);
+
