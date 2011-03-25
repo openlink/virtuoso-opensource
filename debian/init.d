@@ -5,7 +5,7 @@
 #		Written by OpenLink Virtuoso Maintainer 
 #		<vos.admin@openlinksw.com>
 #
-# Version:	@(#)virtuoso  6.1.2  08-Jul-2010	vos.admin@openlinksw.com
+# Version:	@(#)virtuoso  6.1.3  25-Mar-2011	vos.admin@openlinksw.com
 #
 
 ### BEGIN INIT INFO
