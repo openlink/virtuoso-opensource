@@ -235,9 +235,9 @@ ri_list (rdf_inf_pre_node_t * ri, caddr_t iri, rdf_sub_t ** sub_ret)
     {
       switch (ri->ri_mode)
 	{
-	case RI_SUBCLASS: return sub->rs_sub;
+	  case RI_SUBCLASS: return sub->rs_sub ? sub->rs_sub : sub->rs_equiv;
 	case RI_SUPERCLASS: return sub->rs_super;
-	case RI_SUBPROPERTY: return sub->rs_sub;
+	  case RI_SUBPROPERTY: return sub->rs_sub ? sub->rs_sub : sub->rs_equiv;
 	case RI_SUPERPROPERTY: return sub->rs_super;
 	}
     }
