@@ -108,6 +108,7 @@
 								<vcard:Extadd>
 									<xsl:value-of select="/stores/store/address"/>
 								</vcard:Extadd>
+								<rdfs:label><xsl:value-of select="concat(/stores/store/address, ', ', /stores/store/city, ', ', /stores/store/postalCode, ', ', /stores/store/country)"/></rdfs:label>
 							</rdf:Description>
 						</vcard:ADR>
 					</gr:LocationOfSalesOrServiceProvisioning>
@@ -125,7 +126,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-			    <rdfs:label><xsl:value-of select="//product/name"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat('Offer: ', //product/name)"/></rdfs:label>
 			    <!-- For testing with standalone XSLT processor
 			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 			    -->
@@ -253,6 +254,9 @@
 	    <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'DollarSaving')}">
 	    -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'DollarSaving')}">
+	        <rdfs:label>
+			<xsl:value-of select="concat(., ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">USD</gr:hasUnitOfMeasurement>
 		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
 	    </gr:QuantitativeValueFloat>
@@ -334,7 +338,9 @@
 	    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
 	    -->
 	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
-		<rdfs:label>Manufacturer</rdfs:label>
+		<rdfs:label>
+			<xsl:value-of select="."/>	
+		</rdfs:label>
 		<gr:legalName><xsl:value-of select="."/></gr:legalName>
 	    </gr:BusinessEntity>
 	</gr:hasManufacturer>

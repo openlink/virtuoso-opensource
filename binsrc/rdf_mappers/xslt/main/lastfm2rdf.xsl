@@ -652,6 +652,7 @@
 			<geo:long rdf:datatype="&xsd;float">
 				<xsl:value-of select="venue/location/geo:point/geo:long"/>
 			</geo:long>
+			<rdfs:label><xsl:value-of select="concat(venue/location/street, ', ', venue/location/city, ', ', venue/location/postalcode, ', ', venue/location/country)"/></rdfs:label>
 		</vcard:ADR>
 
     </xsl:template>

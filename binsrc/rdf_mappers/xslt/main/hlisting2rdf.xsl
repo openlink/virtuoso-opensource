@@ -549,16 +549,19 @@
             <xsl:when test="$token = 'home' or $token = 'personal'">
                 <v:homeAdr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
+		    <rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
                 </v:homeAdr>
             </xsl:when>
             <xsl:when test="$token = 'work' or $token = 'office'">
                 <v:workAdr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
+		    <rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
                 </v:workAdr>
             </xsl:when>
             <xsl:otherwise>
                 <v:adr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
+	            <rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
                 </v:adr>
             </xsl:otherwise>
         </xsl:choose>

@@ -105,6 +105,7 @@
 			<vcard:Country>
 				<xsl:value-of select="hometown/country"/>
 			</vcard:Country>
+			<rdfs:label><xsl:value-of select="concat(hometown/city, ', ', hometown/state, ', ', hometown/country)"/></rdfs:label>
 		</vcard:ADR>
 		<xsl:for-each select="genres/genre">
             <mo:Genre rdf:about="{html-href}">

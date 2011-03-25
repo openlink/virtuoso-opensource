@@ -337,17 +337,14 @@
 
     <xsl:template match="amz:ItemAttributes/amz:PackageDimensions/Height">
 		<oplamz:packageHeight>
-			<!-- Xalan
-			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageHeight')}">
-			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageHeight')}">
-				<rdfs:label><xsl:value-of select="'Package height'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -356,6 +353,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -368,13 +366,13 @@
 	  		<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageWeight')}">
 			-->
 	  		<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageWeight')}">
-				<rdfs:label><xsl:value-of select="'Package weight'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-pounds')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' LBR')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -383,6 +381,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(., ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 	  		</gr:QuantitativeValueFloat>
@@ -395,13 +394,13 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageLength')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageLength')}">
-				<rdfs:label><xsl:value-of select="'Package length'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -410,6 +409,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -422,13 +422,13 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageWidth')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageWidth')}">
-				<rdfs:label><xsl:value-of select="'Package width'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -437,6 +437,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -449,13 +450,13 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemHeight')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemHeight')}">
-				<rdfs:label><xsl:value-of select="'Item height'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -464,6 +465,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -476,13 +478,13 @@
 	  		<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemWeight')}">
 			-->
 	  		<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemWeight')}">
-				<rdfs:label><xsl:value-of select="'Item weight'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-pounds')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' LBR')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -491,6 +493,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 	  		</gr:QuantitativeValueFloat>
@@ -503,13 +506,13 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemLength')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemLength')}">
-				<rdfs:label><xsl:value-of select="'Item length'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -518,6 +521,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -530,13 +534,13 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'ItemWidth')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemWidth')}">
-				<rdfs:label><xsl:value-of select="'Item width'"/></rdfs:label>
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -545,6 +549,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
+						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>

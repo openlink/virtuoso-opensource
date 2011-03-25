@@ -178,6 +178,7 @@
 		    <xsl:value-of select="fb:country"/>
 		</vcard:Country>
 	    </xsl:if>
+	<rdfs:label><xsl:value-of select="concat(fb:city, ' ', fb:state, ' ', fb:country)"/></rdfs:label>
 	</vcard:ADR>
     </xsl:template>
     <xsl:template match="fb:event">
