@@ -400,12 +400,18 @@ create procedure b3s_label_get (inout data any, in langs any)
 	    }
 	 }
      }
+   if (__tag of rdf_box = __tag (label))
+     label := rdf_box_data (label);
    if (not isstring (label))
      label := cast (label as varchar);
    --label := regexp_replace (label, '<[^>]+>', '', 1, null);  
-   --label := cast (xtree_doc (label, 2) as varchar);
+  if (0 and sys_stat ('cl_run_local_only'))
+    {
    label := xpath_eval ('string(.)', xtree_doc (label, 2));
    label := charset_recode (label, '_WIDE_', 'UTF-8');
+    }
+  else
+    label := cast (xtree_doc (label, 2) as varchar);
    return label;
 }
 ;
