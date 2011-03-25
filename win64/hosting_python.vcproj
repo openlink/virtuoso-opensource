@@ -180,7 +180,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386  $(PYTHON_LDFLAGS)"
+				AdditionalOptions="/MACHINE:I386 $(PYTHON_LDFLAGS)"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
 				OutputFile="$(ConfigurationName)/hosting_python.dll"
 				LinkIncremental="1"
@@ -279,7 +279,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 $(PYTHON_LDFLAGS)"
+				AdditionalOptions="/MACHINE:I386  $(PYTHON_LDFLAGS)"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
 				OutputFile="$(ConfigurationName)/hosting_python.dll"
 				LinkIncremental="1"

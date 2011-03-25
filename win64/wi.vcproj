@@ -124,8 +124,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions=""
 				Optimization="3"
-				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC"
+				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;&quot;$(InputDir)\tidy&quot;;..\binsrc\driver;.;..\libsrc\Tidy"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC;OLD_TIDY"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -380,6 +380,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_gnw.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\bif_imap.c"
 				>
 			</File>
 			<File
@@ -659,22 +663,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\repldb.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\replpush.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\replsri.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\replsub.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libsrc\Wi\rltrx.c"
 				>
 			</File>
@@ -736,6 +724,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_qm.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparql_rdb2rdf.c"
 				>
 			</File>
 			<File
@@ -1564,6 +1556,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\turtle_p.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\uname_const_decl.c"
 				>
 			</File>
 			<File

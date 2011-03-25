@@ -217,6 +217,10 @@
 				RelativePath="..\binsrc\hosting\mono\sql_code_xslt.c"
 				>
 			</File>
+			<File
+				RelativePath=".\virtuoso_t.rc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

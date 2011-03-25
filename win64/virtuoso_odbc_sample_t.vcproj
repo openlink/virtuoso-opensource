@@ -4,6 +4,7 @@
 	Version="9.00"
 	Name="virtuoso_sample_t"
 	ProjectGUID="{0E838FA8-CF7B-11DA-85E2-A4E5714C712A}"
+	RootNamespace="virtuoso_sample_t"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -361,6 +362,10 @@
 			>
 			<File
 				RelativePath="..\binsrc\tests\biftest\bif_sample.c"
+				>
+			</File>
+			<File
+				RelativePath="..\win32\virtuoso_t.rc"
 				>
 			</File>
 		</Filter>

@@ -41,8 +41,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
-				AdditionalIncludeDirectories="&quot;$(JDK_PATH)\include&quot;;..\libsrc\xml.new;..\libsrc;&quot;$(JDK_PATH)\include\win32&quot;;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(JDK_PATH_I386)\include&quot;;..\libsrc\xml.new;..\libsrc;&quot;$(JDK_PATH)\include\win32&quot;;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
 				PreprocessorDefinitions="INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib &quot;$(JDK_PATH)\lib\jvm.lib&quot;"
+				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib &quot;$(JDK_PATH_I386)\lib\jvm.lib&quot;"
 				OutputFile="$(OutDir)/virtuoso-javavm-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
@@ -123,7 +123,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				AdditionalIncludeDirectories="&quot;$(JDK_PATH)\include&quot;;..\libsrc\xml.new;..\libsrc;&quot;$(JDK_PATH)\include\win32&quot;;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
+				AdditionalIncludeDirectories="&quot;$(JDK_PATH_I386)\include&quot;;..\libsrc\xml.new;..\libsrc;&quot;$(JDK_PATH)\include\win32&quot;;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
 				PreprocessorDefinitions="INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
@@ -145,7 +145,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib &quot;$(JDK_PATH)\lib\jvm.lib&quot;"
+				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib &quot;$(JDK_PATH_I386)\lib\jvm.lib&quot;"
 				OutputFile="$(OutDir)/virtuoso-javavm-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
@@ -206,6 +206,10 @@
 			</File>
 			<File
 				RelativePath="..\binsrc\tests\biftest\sql_code_xslt.c"
+				>
+			</File>
+			<File
+				RelativePath=".\virtuoso_t.rc"
 				>
 			</File>
 		</Filter>

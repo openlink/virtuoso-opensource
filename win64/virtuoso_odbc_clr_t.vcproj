@@ -388,6 +388,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath="..\win32\virtuoso_t.rc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="PreBuild"
@@ -449,7 +453,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_clr.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_xslt.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputFileName) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						Outputs="$(InputDir)\sql_code_xslt.c"
 					/>
 				</FileConfiguration>
@@ -467,7 +471,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_clr.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_xslt.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputFileName) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						Outputs="$(InputDir)\sql_code_xslt.c"
 					/>
 				</FileConfiguration>

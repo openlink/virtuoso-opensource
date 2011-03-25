@@ -150,7 +150,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\binsrc\driver,..\libsrc\Wi,..\libsrc\langfunc,..\libsrc\plugin,..\binsrc\driver\include..\libsrc\Dk,..\libsrc\util\win32,..\libsrc;..\libsrc\Xml.new;openssl,.;$(IM_PATH)"
+				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\plugin;..\binsrc\driver\include..\libsrc\Dk;..\libsrc\util\win32;..\libsrc;..\libsrc\Xml.new;openssl;.;.\ImageMagick"
 				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;NDEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -187,7 +187,7 @@
 				OutputFile="$(ConfigurationName)/im.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl;$(IM_PATH)"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;.\openssl;.\ImageMagick"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
 				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
 				GenerateDebugInformation="true"
