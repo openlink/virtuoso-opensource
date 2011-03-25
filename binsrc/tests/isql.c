@@ -3963,8 +3963,13 @@ parse_statement_for_special_parameters (UTCHAR * whole_statement,
 			}
 		    }
 		  else if (newlen < oldlen)
-		    {		/* Use isqlt_tcscpy, squashing out extra characters. */
-		      isqlt_tcscpy (SCP (str + newlen), SCP (cont));
+		    {		/* Do NOT use isqlt_tcscpy in order to squash out extra characters --- ranges overlap! */
+		      for (p1 = cont, p2 = p1 + delta;
+			   (p1 <= (str + whole_len));
+			   p1++, p2++)
+			{
+			  *p2 = *p1;
+			}
 		    }
 /* And then copy the produced string itself, starting from the same
    location where the $dollar_form was (but leave the terminating
