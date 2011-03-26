@@ -303,6 +303,7 @@ create procedure WV.WIKI.gdata (
 
   declare exit handler for sqlstate '*'
   {
+    -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
     if (__SQL_STATE = 'BLOGV')
       http_request_status ('HTTP/1.1 409 Conflict');
     resignal;

@@ -4210,13 +4210,12 @@ create procedure WV.WIKI.UPDATE_TAG_SYSINFO (in _res_id integer, in _tags varcha
 
 create procedure WV.WIKI.SET_AUTOVERSION()
 {
-  for select ColId from WV.WIKI.CLUSTERS, WS.WS.SYS_DAV_COL
-    where COL_ID = ColId and COL_AUTO_VERSIONING is not null and COL_AUTO_VERSIONING <> 'A' do
+  for (select ColId from WV.WIKI.CLUSTERS, WS.WS.SYS_DAV_COL where COL_ID = ColId and COL_AUTO_VERSIONING is not null and COL_AUTO_VERSIONING <> 'A') do
     {
       declare _auth, _pwd varchar;
+
       WV.WIKI.GETDAVAUTH (_auth, _pwd);
-      DAV_SET_VERSIONING_CONTROL (
-        DAV_SEARCH_PATH(ColId, 'C'), NULL, 'A', _auth, _pwd);
+    DAV_SET_VERSIONING_CONTROL (DAV_SEARCH_PATH(ColId, 'C'), NULL, 'A', _auth, _pwd);
     }
 }
 ;
@@ -4231,20 +4230,15 @@ create procedure WV.WIKI.STALE (in _path varchar)
 create procedure WV.WIKI.STALE_ALL_XSLTS()
 {
   declare _prefix varchar;
+
   _prefix := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/';
-  -- Skins
-  for select COL_NAME from WS.WS.SYS_DAV_COL 
-    where COL_PARENT = DB.DBA.DAV_SEARCH_ID ('/DAV/VAD/wiki/Root/Skins/', 'C') do
+  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = DB.DBA.DAV_SEARCH_ID ('/DAV/VAD/wiki/Root/Skins/', 'C')) do
      {
        WV.WIKI.STALE (_prefix || 'Skins/' || COL_NAME || '/PostProcess.xslt');
-        --dbg_obj_princ (_prefix || 'Skins/' || COL_NAME || '/PostProcess.xslt');
      }
-  for select RES_NAME from WS.WS.SYS_DAV_RES 
-    where RES_COL = DB.DBA.DAV_SEARCH_ID ('/DAV/VAD/wiki/Root/', 'C') 
-    and RES_NAME like '%.xsl%' do
+  for (select RES_NAME from WS.WS.SYS_DAV_RES where RES_COL = DB.DBA.DAV_SEARCH_ID ('/DAV/VAD/wiki/Root/', 'C') and RES_NAME like '%.xsl%') do
      {
        WV.WIKI.STALE (_prefix || RES_NAME);
-        --dbg_obj_princ (_prefix || RES_NAME);
      }
 }
 ;
@@ -4256,7 +4250,6 @@ create trigger "Wiki_TopicDelete" before delete on WV.WIKI.TOPIC referencing old
 }
 ;
 
-      
 create procedure WV.WIKI.ADD_USER (in user_name varchar, in cluster_name varchar)
 {
   declare membership_type, uid integer;
@@ -4268,7 +4261,8 @@ create procedure WV.WIKI.ADD_USER (in user_name varchar, in cluster_name varchar
 	         values (uid, cluster_name, membership_type, 1);
       commit work;
       -- needed to launch trigger
-      update WA_MEMBER set WAM_STATUS = 1
+    update WA_MEMBER
+       set WAM_STATUS = 1
         where WAM_USER = uid
 	  and WAM_INST = cluster_name
 	  and WAM_MEMBER_TYPE = membership_type;
@@ -4278,7 +4272,8 @@ create procedure WV.WIKI.ADD_USER (in user_name varchar, in cluster_name varchar
 
 create procedure WV.WIKI.DROP_ALL_MEMBERS ()
 {
-  for select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' do {
+  for (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki') do
+  {
     delete from DB.DBA.WA_MEMBER where WAM_INST = WAI_NAME;
   }
 }
@@ -4323,8 +4318,7 @@ create procedure WV.WIKI.TEMPLATE_TOPIC(in template_name varchar)
 }
 ;
 
-create procedure WV.WIKI.REPLACE_BULK (in _text varchar,
-	in _repls any)
+create procedure WV.WIKI.REPLACE_BULK (in _text varchar, in _repls any)
 {
   declare idx integer;
   for (idx:=0; idx<length(_repls); idx:=idx+2)
@@ -4335,13 +4329,12 @@ create procedure WV.WIKI.REPLACE_BULK (in _text varchar,
 }
 ;
 
-create procedure WV.WIKI.CREATE_HOME_PAGE_TOPIC (inout _template WV.WIKI.TOPICINFO,
+create procedure WV.WIKI.CREATE_HOME_PAGE_TOPIC (
+  inout _template WV.WIKI.TOPICINFO,
   	in home_page varchar,
   in user_id integer)
 {
-  for select U_NAME,USERNAME, U_E_MAIL, coalesce (U_FULL_NAME, U_NAME) as _full_name from DB.DBA.SYS_USERS, WV.WIKI.USERS 
-	where U_ID = user_id 
-	and U_ID = USERID do
+  for select U_NAME,USERNAME, U_E_MAIL, coalesce (U_FULL_NAME, U_NAME) as _full_name from DB.DBA.SYS_USERS, WV.WIKI.USERS where U_ID = user_id and U_ID = USERID do
   {
     declare _text varchar;
     _text := WV.WIKI.REPLACE_BULK (cast (_template.ti_text as varchar), 
@@ -4406,28 +4399,28 @@ create trigger WIKI_USERS_U after update on WV.WIKI.USERS order 100 referencing 
 
 create trigger SYS_USERS_WIKI_USERS_U after update on DB.DBA.SYS_USERS order 100 referencing old as O, new as N
 {
-  if (N.U_FULL_NAME is null) {
+  if (N.U_FULL_NAME is null)
+  {
     update WV.WIKI.USERS
          set USERNAME = WV.WIKI.USER_WIKI_NAME(N.U_NAME)
        where USERID = N.U_ID;
-  } else {
-    if (O.U_FULL_NAME <> N.U_FULL_NAME) {
+  }
+  else if (O.U_FULL_NAME <> N.U_FULL_NAME)
+  {
       update WV.WIKI.USERS 
 	set USERNAME = WV.WIKI.USER_WIKI_NAME(N.U_FULL_NAME) 
 	where USERID = N.U_ID;
     }
-}
 }
 ;
 
 create procedure
 WS.WS.META_WIKI_HOOK (inout vtb any, inout r_id any)
 {
-  --dbg_obj_princ ('WS.WS.META_WIKI_HOOK: ', r_id);
   declare exit handler for sqlstate '*' {
-    --dbg_obj_princ (__SQL_STATE, ' ', __SQL_MESSAGE);
     return;
   };
+
   declare _cluster varchar;
   _cluster := (select ClusterName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS 
 	where ResId = r_id);
@@ -4435,31 +4428,25 @@ WS.WS.META_WIKI_HOOK (inout vtb any, inout r_id any)
     _cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = connection_get ('oWiki_cluster_id'));
   if (_cluster is not null)
     {
-      -- it is a wiki
-      foreach (varchar tag in (select split_and_decode (DT_TAGS, 0, '\0\0,')
-       	from WS.WS.SYS_DAV_TAG where DT_RES_ID = r_id)) 
-      do 
+    foreach (varchar tag in (select split_and_decode (DT_TAGS, 0, '\0\0,') from WS.WS.SYS_DAV_TAG where DT_RES_ID = r_id)) do
         {
---	dbg_obj_princ ('adding tag: ', tag); 
           vt_batch_feed (vtb, WV.WIKI.SYSINFO_PRED () || ' tag ' || tag, 0);
         }
       vt_batch_feed (vtb, WV.WIKI.SYSINFO_PRED () || ' cluster ', 0);
       vt_batch_feed (vtb, WV.WIKI.SYSINFO_PRED () || ' cluster ' || _cluster, 0);
-      --dbg_obj_princ (WV.WIKI.SYSINFO_PRED () || ' cluster ' || _cluster);
     }
 }
 ;
 
-
 create procedure WV.WIKI.UPGRADE__UPDATE_AUTHOR_ID()
 {
-  for select ResId as _res_id from WV.WIKI.TOPIC where AuthorId is null do {
+  for select ResId as _res_id from WV.WIKI.TOPIC where AuthorId is null do
+  {
     declare _max_ver integer;
     _max_ver := (select max(RV_ID) from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id);
     if (_max_ver is not null)
       {
-         update WV.WIKI.TOPIC set AuthorId = (select U_ID from DB.DBA.SYS_USERS, WS.WS.SYS_DAV_RES_VERSION where RV_ID = _max_ver and RV_WHO = U_NAME and RV_RES_ID = _res_id)
-	   where ResId = _res_id;
+      update WV.WIKI.TOPIC set AuthorId = (select U_ID from DB.DBA.SYS_USERS, WS.WS.SYS_DAV_RES_VERSION where RV_ID = _max_ver and RV_WHO = U_NAME and RV_RES_ID = _res_id) where ResId = _res_id;
       }
   }
 }
