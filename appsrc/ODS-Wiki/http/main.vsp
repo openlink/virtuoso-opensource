@@ -165,7 +165,6 @@ major_exit_handler:
 	    }
 	  if (__SQL_STATE = 'WVRLD')
 	    {
-        --???WV.WIKI.redirect ();
 	      http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: ?%V\r\n', _sid, _realm, __SQL_MESSAGE));
 	      return;
@@ -195,9 +194,11 @@ error_report:
 	  declare _ext_params any;
 	  _ext_params := _topic.ti_xslt_vector (WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
     http_value (
-      WV.WIKI.VSPXSLT ('PostProcess.xslt', WV.WIKI.VSPXSLT ( 'VspReportError.xslt', XMLELEMENT ('error', XMLATTRIBUTES (error_id as "id")), _ext_params),
+      WV.WIKI.VSPXSLT (
+        'PostProcess.xslt',
+        WV.WIKI.VSPXSLT ( 'VspReportError.xslt', XMLELEMENT ('error', XMLATTRIBUTES (error_id as "id")), _ext_params),
       _ext_params,
-      WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default')));
+        WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id , vector())));
 	  WV.WIKI.VSPFOOTER (path,params,lines);
 	  return;
   };
