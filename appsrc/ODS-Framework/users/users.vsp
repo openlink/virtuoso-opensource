@@ -47,7 +47,7 @@
   <?vsp
     declare N integer;
     declare vHostUrl, vUrl, vParams, vResult, vRequest, vRespond any;
-    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormTab2, vFormTab3, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
+    declare tmp, suffix, vValidate, vSid, vRealm, vUserName, vError, vForm, vFormTab, vFormTab2, vFormTab3, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
 
       vHostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
       if (isstring (vHostUrl) and strchr (vHostUrl , ':') is null)
@@ -80,18 +80,52 @@
     };
 
     vError := '';
+    vValidate := 0;
+    vSid := get_keyword ('sid', params, '');
+    vRealm := 'wa';
+    if (vSid <> '')
+    {
+      vUrl := sprintf ('%s/user.validate?sid=%s&realm=%s', vHostUrl, vSid, vRealm);
+      commit work;
+      vResult := http_client_ext (
+                   vUrl,
+                   http_method=>'GET',
+                   http_headers=>vRequest,
+                   headers=>vRespond
+                 );
+      if (vRespond[0] like 'HTTP/1._ 2__ %')
+      {
+        vXml := xml_tree_doc (vResult);
+        if (xpath_eval ('/result/code', vXml))
+          vValidate := 1;
+      }
+    }
+    vUserName := get_keyword ('userName', params);
     if (get_keyword ('oid-form', params) = 'lf')
+    {
       vForm := 'login';
+    }
     else if (get_keyword ('oid-form', params) = 'rf')
+    {
       vForm := 'register';
+    }
     else
-    vForm := get_keyword ('form', params, 'login');
+    {
+      vForm := get_keyword ('form', params);
+      if (isnull (vForm))
+      {
+        if (isnull (vUserName))
+        {
+          vForm := 'login';
+        } else {
+          vForm := 'user';
+        }
+      }
+    }
     vFormTab := atoi(get_keyword ('formTab', params, '0'));
     vFormTab2 := atoi(get_keyword ('formTab2', params, '0'));
     vFormTab3 := atoi(get_keyword ('formTab3', params, '0'));
     vFormMode := get_keyword ('formMode', params, '');
-    vSid := get_keyword ('sid', params);
-    vRealm := 'wa';
     xAcl := vector ('public', '1', 'acl', '2', 'private', '3');
 
     if (vForm = 'login')
@@ -867,6 +901,8 @@
     if ((vForm = 'user') or (vForm = 'profile'))
     {
       vUrl := sprintf ('%s/user.info?sid=%s&realm=%s', vHostUrl, vSid, vRealm);
+      if ((vForm = 'user') and not isnull (vUserName))
+        vUrl := vUrl || sprintf ('&name=%s', vUserName);
       commit work;
       vResult := http_client_ext (
                    vUrl,
@@ -964,16 +1000,27 @@
         <div id="ob_left">
           <?vsp
             if (vForm in ('user', 'profile'))
-              http (sprintf ('<b>User</b>: %s, <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>', xpath_eval ('string (/user/fullName)', vXml)));
+            {
+              http (sprintf ('<b>User</b>: %s', xpath_eval ('string (/user/fullName)', vXml)));
+              if (vValidate)
+                http (sprintf (', <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>'));
+            }
           ?>
         </div>
         <div id="ob_right">
         <?vsp
-          if ((vForm <> 'login') and (vForm <> 'register'))
+          if (vForm in ('user', 'profile'))
+          {
+            if (vValidate)
           {
         ?>
           <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>&nbsp;
         <?vsp
+            } else {
+        ?>
+          <a href="#" onclick="javascript: return logoutSubmit();">Login</a>&nbsp;
+        <?vsp
+            }
           }
         ?>
       </div>

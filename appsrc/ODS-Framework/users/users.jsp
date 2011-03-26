@@ -301,18 +301,45 @@
       // Parse the request
       items = upload.parseRequest(request);
     }
+
+    String $_retValue;
+    Document $_document = null;
+    String params = null;
+
+    Boolean $_validate = false;
+    String $_error = "";
+    String $_userName = getParameter(items, request, "userName");
+    String $_sid = getParameter(items, request, "sid");
+    String $_realm = "wa";
+    if ($_sid != null) {
+      params = httpParam( "", "sid", $_sid) +
+               httpParam("&", "realm", $_realm);
+      if ($_userName != null)
+        params += httpParam( "&", "name", $_userName);
+
+      $_retValue = httpRequest ("POST", "user.validate", params);
+      if ($_retValue.indexOf("<result>") == 0)
+      {
+        $_validate = true;
+      }
+    }
+
     String $_form = null;
     String $_oidForm = getParameter(items, request, "oid-form");
     if ($_oidForm == null) {
       $_form = getParameter(items, request, "form");
+      if ($_userName != null) {
+        $_form = "user";
+      } else {
+        $_form = "login";
+      }
     } else {
       if ($_oidForm.equals("lf"))
         $_form = "login";
       if ($_oidForm.equals("rf"))
         $_form = "register";
     }
-    if ($_form == null)
-      $_form = "login";
+
     int $_formTab = 0;
     if (getParameter(items, request, "formTab") != null)
       $_formTab = Integer.parseInt(getParameter(items, request, "formTab"));
@@ -325,12 +352,6 @@
     String $_formMode = "";
     if (getParameter(items, request, "formMode") != null)
       $_formMode = getParameter(items, request, "formMode");
-    String $_sid = getParameter(items, request, "sid");
-    String $_realm = "wa";
-    String $_error = "";
-    String $_retValue;
-    Document $_document = null;
-    String params = null;
 
     try
     {
@@ -960,8 +981,8 @@
         {
           params = httpParam ( "", "sid"   , $_sid) +
                    httpParam ("&", "realm" , $_realm);
-          if ($_form.equals("profile"))
-            params += httpParam ("&", "short", "0");
+          if ($_form.equals("user") && $_userName != null)
+            params += httpParam ("&", "name", $_userName);
           $_retValue = httpRequest ("POST", "user.info", params);
 		      $_document = createDocument($_retValue);
           if ("".compareTo(xpathEvaluate($_document, "/failed/message")) != 0)
@@ -1028,9 +1049,16 @@
         <%
           if (($_form != "login") && ($_form != "register"))
           {
+            if ($_validate)
+            {
         %>
           <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>
         <%
+            } else {
+        %>
+          <a href="#" onclick="javascript: return logoutSubmit();">Login</a>
+        <%
+            }
           }
         %>
       </div>
@@ -1287,7 +1315,9 @@
                 <div id="uf_div_new" style="clear: both;">
                 </div>
                   <script type="text/javascript">
-                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
+                  <%
+                    out.print(String.format("OAT.MSG.attach(OAT, 'PAGE_LOADED', function (){selectProfile('%s');});", $_userName));
+                  %>
                   </script>
                 </div>
               <%

@@ -501,10 +501,11 @@ var userData;
 var sslData;
 var aclData;
 var facebookData;
+var validateSession = false;
 
 // init
-function init() {
-	// CalendarPopup
+function init()
+{
 	OAT.Preferences.imagePath = "/ods/images/oat/";
 	OAT.Preferences.stylePath = "/ods/oat/styles/";
 	OAT.Preferences.showAjax = false;
@@ -516,6 +517,19 @@ function init() {
   }
   OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
 
+  var uriParams = OAT.Dom.uriParams();
+  var startForm;
+  if (typeof (uriParams['sid']) != 'undefined' && uriParams['sid'] != '') {
+    $('sid').value = uriParams['sid'];
+    var S = '/ods/api/user.validate?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
+    var x = function (data) {
+      var xml = OAT.Xml.createXmlDoc(data);
+      if (!hasError(xml)) {
+        validateSession = true;
+      }
+    }
+    OAT.AJAX.GET (S, false, x, {async: false});
+  }
 	if ($("lf")) {
     lfTab = new OAT.Tab("lf_content", {goCallback: lfCallback});
 		lfTab.add("lf_tab_0", "lf_page_0");
@@ -531,8 +545,8 @@ function init() {
       OAT.Dom.show('lf_tab_5');
     lfTab.add("lf_tab_5", "lf_page_5");
 		lfTab.go(0);
-    var uriParams = OAT.Dom.uriParams();
     if (uriParams['oid-form'] == 'lf') {
+      startForm = 'lf';
       OAT.Dom.show('lf');
       OAT.Dom.hide('rf');
       if (uriParams['oid-mode'] == 'twitter') {
@@ -580,8 +594,8 @@ function init() {
     rfTab.add("rf_tab_5", "rf_page_5");
 		rfTab.go(0);
 
-    var uriParams = OAT.Dom.uriParams();
     if (uriParams['oid-form'] == 'rf') {
+      startForm = 'rf';
       OAT.Dom.hide('lf');
       OAT.Dom.show('rf');
       if (uriParams['oid-mode'] == 'twitter') {
@@ -768,22 +782,6 @@ function init() {
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
   }
-  /*
-	if ($("uf")) {
-		ufTab = new OAT.Tab("uf_content");
-		ufTab.add("uf_tab_0", "uf_page_0");
-		ufTab.add("uf_tab_1", "uf_page_1");
-		ufTab.add("uf_tab_2", "uf_page_2");
-		ufTab.add("uf_tab_3", "uf_page_3");
-		ufTab.add("uf_tab_4", "uf_page_4");
-		ufTab.go(0);
-		if ($("uf_rdf_content")) {
-      try {
-  			cRDF = new OAT.RDFMini($("uf_rdf_content"), {showSearch : false});
-      } catch (e) {}
-    }
-	}
-  */
 	if ($('pf')) {
 	  var obj = $('formTab');
     if (!obj) {hiddenCreate('formTab2', null, '0');}
@@ -851,10 +849,20 @@ function init() {
 
     pfTabInit('pf_tab_2_', $v('formTab2'));
 	}
+  if (!startForm) {
+    var userName;
+    if (typeof (uriParams['userName']) != 'undefined' && uriParams['userName'] != '')
+      userName = uriParams['userName'];
+
+    if (validateSession || userName)
+      selectProfile(userName);
+  }
+
   OAT.MSG.send(OAT, 'PAGE_LOADED');
 }
 
-function lfCallback(oldIndex, newIndex) {
+function lfCallback(oldIndex, newIndex)
+{
   if (newIndex == 0)
     $('lf_login').value = 'Login';
   else if (newIndex == 1)
@@ -871,7 +879,8 @@ function lfCallback(oldIndex, newIndex) {
   pageFocus('lf_page_'+newIndex);
 }
 
-function rfCallback(oldIndex, newIndex) {
+function rfCallback(oldIndex, newIndex)
+{
   if (newIndex == 0)
     $('rf_signup').value = 'Sign Up';
   else if (newIndex == 1)
@@ -1184,7 +1193,8 @@ function pfParam(fldName)
   return S;
 }
 
-function pfTabSelect(tabPrefix, newIndex, newIndex2, newIndex3) {
+function pfTabSelect(tabPrefix, newIndex, newIndex2, newIndex3)
+{
   $('formMode').value = '';
   if (newIndex3 != null) {
     if ($v('formTab3') == newIndex3) {return;}
@@ -1242,7 +1252,8 @@ function pfTabInit(tabPrefix, newIndex) {
   }
 }
 
-function pfShowRows(prefix, values, delimiters, showRow, acl, aclName) {
+function pfShowRows(prefix, values, delimiters, showRow, acl, aclName)
+{
   var rowCount = 0;
   var tbl = prefix+'_tbl';
 	var tmpLines = values.split(delimiters[0]);
@@ -1264,7 +1275,8 @@ function pfShowRows(prefix, values, delimiters, showRow, acl, aclName) {
   fieldACLUpdate(acl, aclName);
 }
 
-function pfShowBioEvents(prefix, showRow) {
+function pfShowBioEvents(prefix, showRow)
+{
   var x = function (data)
   {
     var rowCount = 0;
@@ -1287,7 +1299,8 @@ function pfShowBioEvents(prefix, showRow) {
 	OAT.AJAX.GET('/ods/api/user.bioEvents.list?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), '', x);
 }
 
-function pfShowOnlineAccounts(prefix, accountType, showRow) {
+function pfShowOnlineAccounts(prefix, accountType, showRow)
+{
   var x = function (data)
   {
     var rowCount = 0;
@@ -1310,7 +1323,8 @@ function pfShowOnlineAccounts(prefix, accountType, showRow) {
 	OAT.AJAX.GET('/ods/api/user.onlineAccounts.list?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&type='+accountType, '', x);
 }
 
-function pfShowItem(api, prefix, names, cb) {
+function pfShowItem(api, prefix, names, cb)
+{
   var x = function (data)
   {
 		var o = null;
@@ -1337,7 +1351,8 @@ function pfShowItem(api, prefix, names, cb) {
   OAT.AJAX.GET('/ods/api/'+api+'?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&id='+$v(prefix+'_id'), '', x);
 }
 
-function pfShowList(api, prefix, noMsg, cols, idIndex, cb) {
+function pfShowList(api, prefix, noMsg, cols, idIndex, cb)
+{
   var x = function (data)
   {
     function buttonShow (elm, actionButton, srcButton, textButton) {
@@ -1395,14 +1410,16 @@ function pfShowList(api, prefix, noMsg, cols, idIndex, cb) {
 	OAT.AJAX.GET('/ods/api/'+api+'?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), '', x);
 }
 
-function pfDeleteListObject(api, id, cb) {
+function pfDeleteListObject(api, id, cb)
+{
   if (confirm('Are you sure you want to delete this record?')) {
     var deleteApi = api.replace('list', 'delete');
 	  OAT.AJAX.GET('/ods/api/'+deleteApi+'?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&id='+id, '', cb);
 	}
 }
 
-function pfEditListObject(prefix, id) {
+function pfEditListObject(prefix, id)
+{
   hiddenCreate(prefix+'_id', $('page_form'), id);
   $('formMode').value = 'edit';
   if ($v('mode') == 'html') {
@@ -1427,7 +1444,8 @@ function pfEditListObject(prefix, id) {
   $('page_form').submit();
 }
 
-function pfShowMode(prefix, mode, id) {
+function pfShowMode(prefix, mode, id)
+{
   if (mode) {
     OAT.Dom.hide(prefix+'_list');
     if (mode == 'import') {
@@ -1440,7 +1458,8 @@ function pfShowMode(prefix, mode, id) {
   }
 }
 
-function pfShowOwn(mode, id) {
+function pfShowOwn(mode, id)
+{
   pfShowMode('pf051', mode, id);
   var x = function (obj) {
     $('ow_tbody').innerHTML = '';
@@ -1452,7 +1471,8 @@ function pfShowOwn(mode, id) {
   pfShowItem('user.owns.get', 'pf051', ['flag', 'name', 'comment'], x);
 }
 
-function pfShowFavorite(mode, id) {
+function pfShowFavorite(mode, id)
+{
   pfShowMode('pf052', mode, id);
   var x = function (obj) {
     $('r_tbody').innerHTML = '<tr id="r_item_0_tr_0_properties"><td></td><td></td><td valign="top"></td></tr>';
@@ -1471,12 +1491,14 @@ function pfShowFavorite(mode, id) {
   pfShowItem('user.favorites.get', 'pf052', ['flag', 'label', 'uri'], x);
 }
 
-function pfShowMade(mode, id) {
+function pfShowMade(mode, id)
+{
   pfShowMode('pf053', mode, id);
   pfShowItem('user.mades.get', 'pf053', ['property', 'uri', 'description']);
 }
 
-function pfShowOffer(mode, id) {
+function pfShowOffer(mode, id)
+{
   pfShowMode('pf054', mode, id);
   var x = function (obj) {
     $('ol_tbody').innerHTML = '';
@@ -1488,7 +1510,8 @@ function pfShowOffer(mode, id) {
   pfShowItem('user.offers.get', 'pf054', ['flag', 'name', 'comment'], x);
 }
 
-function pfShowSeek(mode, id) {
+function pfShowSeek(mode, id)
+{
   pfShowMode('pf055', mode, id);
   var x = function(obj) {
     $('wl_tbody').innerHTML = '';
@@ -1500,7 +1523,8 @@ function pfShowSeek(mode, id) {
   pfShowItem('user.seeks.get', 'pf055', ['flag', 'name', 'comment'], x);
 }
 
-function pfShowLike(mode, id) {
+function pfShowLike(mode, id)
+{
   pfShowMode('pf056', mode, id);
   var x = function(obj) {
     $('ld_tbody').innerHTML = '';
@@ -1780,19 +1804,18 @@ function afterAuthenticate(xml) {
   return false;
 }
 
-function selectProfile() {
+function selectProfile(userName) {
   // UI Profile
   var S = '/ods/api/user.info?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
-  OAT.AJAX.GET(S, '', selectProfileCallbackNew);
+  if (userName)
+    S += '&name=' + encodeURIComponent(userName);
 
-  // Old UI Profile
-  // var S = '/ods/api/user.info?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&short=1';
-  // OAT.AJAX.GET(S, '', selectProfileCallback);
+  OAT.AJAX.GET(S, '', selectProfileCallbackNew);
 }
 
 function selectProfileCallbackNew(data) {
   var xml = OAT.Xml.createXmlDoc(data);
-	if (!hasError(xml)) {
+  if (!hasError(xml, false)) {
   	/* user data */
    	var user = xml.getElementsByTagName('user')[0];
 		if (user) {
@@ -1807,6 +1830,8 @@ function selectProfileCallbackNew(data) {
       var S = '/ods/api/user.info.webID?webID=' + encodeURIComponent(tagValue(user, 'iri'));
       OAT.AJAX.GET(S, '', x);
     }
+  } else {
+    logoutSubmit();
   }
 }
 
@@ -1816,8 +1841,14 @@ function showProfileNew(xmlDoc) {
     var x = function(data) {
       var xslDoc = OAT.Xml.createXmlDoc(data);
       var result = OAT.Xml.transformXSLT(xmlDoc, xslDoc);
-      if (result)
+      if (result) {
+        showTitle('profile');
+        OAT.Dom.hide("lf");
+        OAT.Dom.hide("rf");
+        OAT.Dom.show("uf");
+        OAT.Dom.hide("pf");
         div.innerHTML = OAT.Xml.serializeXmlDoc(result);
+    }
     }
     OAT.AJAX.GET('users.xsl', false, x);
   }
@@ -2091,6 +2122,7 @@ function afterLogin(data, prefix) {
 		/* user data */
 		$('sid').value = OAT.Xml.textValue(xml.getElementsByTagName('sid')[0]);
 		$('realm').value = 'wa';
+    validateSession = true;
 		var T = $('form');
 		if (T) {
 			T.value = ((prefix == 'rf')? 'profile': 'user');
@@ -3280,8 +3312,18 @@ function showTitle(txt) {
   {
     if ((txt == 'user') || (txt == 'profile')) {
       OAT.Dom.show(T);
+      OAT.Dom.show('ob_left_01');
+      OAT.Dom.show('ob_right_logout');
+      if (validateSession) {
+        OAT.Dom.show('ob_left_02');
+        $('ob_right_logout').innerHTML = 'Logout';
+      } else {
+        OAT.Dom.hide('ob_left_02');
+        $('ob_right_logout').innerHTML = 'Login';
+      }
     } else {
       OAT.Dom.hide(T);
+      OAT.Dom.hide('ob_right_logout');
     }
   }
 }

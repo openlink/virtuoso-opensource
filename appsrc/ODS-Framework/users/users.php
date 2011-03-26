@@ -159,20 +159,40 @@
 
     $_REQUEST = array_merge($_GET, $_POST);
     $_error = "";
+    $_validate = 0;
+    $_sid = (isset ($_REQUEST['sid'])) ? $_REQUEST['sid'] : "";
+    $_realm = "wa";
+    if ($_sid <> '')
+    {
+      $_url = sprintf("%s/user.validate?sid=%s&realm=%s", apiURL(), $_sid, $_realm);
+      $_result = file_get_contents($_url);
+      if (substr_count($_result, "<result>") <> 0)
+      {
+        $_validate = 1;
+      }
+    }
+    $_userName = (isset ($_REQUEST['userName'])) ? $_REQUEST['userName'] : "";
     if (isset ($_REQUEST['oid-form'])) {
       if ($_REQUEST['oid-form'] == 'lf')
         $_form = "login";
       if ($_REQUEST['oid-form'] == 'rf')
         $_form = "register";
     } else {
-    $_form = (isset ($_REQUEST['form'])) ? $_REQUEST['form'] : "login";
+      $_form = (isset ($_REQUEST['form'])) ? $_REQUEST['form'] : "";
+      if ($_form == "")
+      {
+        if ($_userName == "")
+        {
+          $_form = "login";
+        } else {
+          $_form = "user";
+        }
+      }
     }
     $_formTab = intval((isset ($_REQUEST['formTab'])) ? $_REQUEST['formTab'] : "0");
     $_formTab2 = intval((isset ($_REQUEST['formTab2'])) ? $_REQUEST['formTab2'] : "0");
     $_formTab3 = intval((isset ($_REQUEST['formTab3'])) ? $_REQUEST['formTab3'] : "0");
     $_formMode = (isset ($_REQUEST['formMode'])) ? $_REQUEST['formMode'] : "";
-    $_sid = $_REQUEST['sid'];
-    $_realm = "wa";
 
       if ($_form == "login")
       {
@@ -792,8 +812,9 @@
     if (($_form == "user") || ($_form == "profile"))
         {
       $_url = sprintf ("%s/user.info?sid=%s&realm=%s", apiURL(), $_sid, $_realm);
-      if ($_form == "profile")
-        $_url .= "&short=0";
+      if (($_form == "user") && ($_userName <> ""))
+        $_url .= sprintf ("&name=%s", $_userName);
+
       $_result = getRequest ($_url);
       $_xml = simplexml_load_string($_result);
       if (substr_count($_result, "<failed>") <> 0)
@@ -842,16 +863,26 @@
         <div id="ob_left">
           <?php
             if (($_form == "profile") || ($_form == "user"))
-              print sprintf ('<b>User</b>: %s, <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>', $_xml->fullName);
+              print sprintf ('<b>User</b>: %s', $_xml->fullName);
+
+            if ($_validate == 1)
+              print sprintf (', <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>');
           ?>
         </div>
         <div id="ob_right">
         <?php
           if (($_form <> 'login') && ($_form <> 'register'))
           {
+            if ($_validate == 1)
+            {
         ?>
           <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>&nbsp;
         <?php
+            } else {
+        ?>
+          <a href="#" onclick="javascript: return logoutSubmit();">Login</a>&nbsp;
+        <?php
+            }
           }
         ?>
       </div>
@@ -1108,7 +1139,9 @@
                 <div id="uf_div_new" style="clear: both;">
                 </div>
                   <script type="text/javascript">
-                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
+                  <?php
+                    print sprintf ("OAT.MSG.attach(OAT, 'PAGE_LOADED', function (){selectProfile('%s');});", $_userName);
+                  ?>
                   </script>
                 </div>
               <?php
