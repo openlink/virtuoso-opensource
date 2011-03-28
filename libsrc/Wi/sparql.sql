@@ -1615,11 +1615,11 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, 222)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t or 126 = t)
+  else if (217 = t or 126 = t or 222 = t)
     v := cast (v as varchar);
   else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
