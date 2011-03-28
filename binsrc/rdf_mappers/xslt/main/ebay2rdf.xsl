@@ -228,7 +228,7 @@
 		  -->
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'ConvertedCurrentPrice')}">
 			<rdfs:label>
-      			<xsl:value-of select="concat('Converted Current Price: ', . , ' (', @currencyID, ')')"/>	
+      			<xsl:value-of select="concat( . , ' (', @currencyID, ')')"/>	
 			</rdfs:label>
 			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>

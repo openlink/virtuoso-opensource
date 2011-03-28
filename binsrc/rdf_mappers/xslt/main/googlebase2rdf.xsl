@@ -247,7 +247,7 @@
 						</xsl:when>
 						<xsl:otherwise>
               <rdfs:label>
-		<xsl:value-of select="concat('Price: ', substring-before(., ' ') , ' (', translate (substring-after(., ' '), $lc, $uc), ')')"/>	
+		<xsl:value-of select="concat(substring-before(., ' ') , ' (', translate (substring-after(., ' '), $lc, $uc), ')')"/>	
 		</rdfs:label>
               <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
               <!-- C62 implies 'one' -->
@@ -283,7 +283,7 @@
 				<gr:hasPriceSpecification>
 		  			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('Price_', $entryID))}">
             <rdfs:label>
-		<xsl:value-of select="concat('Price: ', substring-before(g:price, ' '), ' (', translate (substring-after(g:price, ' '), $lc, $uc), ')')"/>	
+		<xsl:value-of select="concat( substring-before(g:price, ' '), ' (', translate (substring-after(g:price, ' '), $lc, $uc), ')')"/>	
 		</rdfs:label>
             <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             <!-- C62 implies 'one' -->

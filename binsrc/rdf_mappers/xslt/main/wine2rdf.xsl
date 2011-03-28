@@ -113,7 +113,7 @@
         <gr:hasPriceSpecification>
             <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_Max')}">
                 <rdfs:label>
-		<xsl:value-of select="concat('Max price: ', ., ' (USD)')"/>	
+		<xsl:value-of select="concat( ., ' (USD)')"/>	
 		</rdfs:label>
                 <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
                 <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
@@ -126,7 +126,7 @@
         <gr:hasPriceSpecification>
             <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_Min')}">
                 <rdfs:label>
-		<xsl:value-of select="concat('Min price: ', ., ' (USD)')"/>	
+		<xsl:value-of select="concat( ., ' (USD)')"/>	
 		</rdfs:label>
                 <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
                 <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
@@ -139,7 +139,7 @@
         <gr:hasPriceSpecification>
             <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_Retail')}">
                 <rdfs:label>
-		<xsl:value-of select="concat('suggested retail price: ', ., ' (USD)')"/>	
+		<xsl:value-of select="concat( ., ' (USD)')"/>	
 		</rdfs:label>
                 <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
                 <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
