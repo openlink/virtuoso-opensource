@@ -1605,6 +1605,20 @@ if test "x$with_malloc_debug" = "xyes"; then
 fi
 
 
+AC_ARG_WITH(mtx-debug, [dnl
+AC_HELP_STRING([--with-mtx-debug], [extra mutex debugging code])],
+    [ with_mtx_debug="$withval" ],
+    [ with_mtx_debug="no" ]
+)
+
+if test "x$with_mtx_debug" = "xyes"; then
+    BUILD_OPTS="$BUILD_OPTS mtx_debug"
+    CCDEBUG="$CCDEBUG -DMTX_DEBUG"
+    CCOPT="-g"
+    AM_LDFLAGS="-g"
+fi
+
+
 ##########################################################################
 ##									##
 ##  Check out POSIX threads libs    					##
