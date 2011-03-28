@@ -117,7 +117,12 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	virtuoso_driver/*.java \
-	virtuoso_driver/data.nt \
 	manifest.main \
-	virt_sesame3.jar
+	META-INF/org.openrdf.repository.templates \
+	META-INF/org.openrdf.store.schemas \
+	META-INF/schemas/virtuoso-schema.ttl \
+	META-INF/services/org.openrdf.repository.config.RepositoryFactory \
+	META-INF/templates/virtuoso.ttl
+	virt_sesame3.jar \
+	virtuoso_driver/data.nt \
+	virtuoso_driver/*.java
