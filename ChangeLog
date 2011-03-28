@@ -1,3 +1,88 @@
+2011-03-28 13:52  source
+
+	* Added missing files to distribution
+
+2011-03-28 12:57  source
+
+	* Fixed minor layout issue
+
+2011-03-28 12:53  source
+
+	* Added support for posh triples
+
+2011-03-28 12:52  source
+
+	* Fixed labels
+
+2011-03-28 12:22  source
+
+	* Fixed allow varbinary as input for obj
+
+2011-03-26 14:22  source
+
+	* Fixed user's pages to start with profile page
+
+2011-03-26 14:21  source
+
+	* Fixed skin handling
+
+2011-03-25 21:33  source
+
+	* Updated version
+
+2011-03-25 21:29  source
+
+	* Updated build environment for win32 and win64
+
+2011-03-25 17:47  source
+
+	* Fixed possible copy overlap on some newer C libs
+
+2011-03-25 16:23  source
+
+	* Fixed vcard handling
+
+2011-03-25 16:19  source
+
+	* Fixed encoding
+
+2011-03-25 15:10  source
+
+	* Updated testsuite
+
+2011-03-25 12:20  source
+
+	* Fixed if there is no subclass/property but there is an equivalent,
+	  then use that as the statrt point, otherwise we would not get a
+	  result
+
+2011-03-24 16:15  source
+
+	* Added bulk-loader to virtuoso binary
+
+2011-03-24 16:04  source
+
+	* Updated documentation
+
+2011-03-24 15:50  source
+
+	* Fixed do now use daq because rdf_label has two keys and soft
+	  does not work
+	* Fixed use labels if not curie or uri
+	* Fixed issue with recent dbpedia onthology
+	* Fixed labels
+	* Fixed auto-complete failed when exact match & prefix found
+
+2011-03-24 15:47  source
+
+	* Fixed use labels for IRIs only
+	* Fixed use special describe mode to avoid empty results
+	* Fixed error handling
+	* Fixed keep sas & inf
+	* Fixed bad encoding
+	* Fixed proper escape for uris
+	* Fixed wrong labels
+
 2011-03-24 13:48  source
 
 	* Fixed additional xml document parser error handling for Opera
