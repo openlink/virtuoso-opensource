@@ -86,6 +86,12 @@ cd tdav_meta
 for x in `ls ../tdav_meta_*.zip` ; do unzip "$x" ; done
 cd ..
 
+if [ ! -f tdav_meta/bookmarks.xml ]
+then
+    LOG "***ABORTED: tdav_meta directory does not contain demo data"
+    exit 1
+fi
+
 _dsn=$DSN
 DSN=$DS1
 SHUTDOWN_SERVER
