@@ -209,7 +209,7 @@
 				-->
 		  		<gr:UnitPriceSpecification rdf:about="{concat(vi:proxyIRI ($base, '', 'OfferPrice_'), position())}">
 					<rdfs:label>
-						<xsl:value-of select="concat('Offer price: ', ./amz:OfferListing/amz:Price/amz:Amount div 100, ' (', ./amz:OfferListing/amz:Price/amz:CurrencyCode ,')')"/>	
+						<xsl:value-of select="concat( ./amz:OfferListing/amz:Price/amz:Amount div 100, ' (', ./amz:OfferListing/amz:Price/amz:CurrencyCode ,')')"/>	
 					</rdfs:label>
 					<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="./amz:OfferListing/amz:Price/amz:Amount div 100"/></gr:hasCurrencyValue>
@@ -322,7 +322,7 @@
 			-->
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($base, '', 'ListPrice')}">
 				<rdfs:label>
-					<xsl:value-of select="concat('List price: ', amz:Amount div 100, ' (', amz:CurrencyCode ,')')"/>	
+					<xsl:value-of select="concat( amz:Amount div 100, ' (', amz:CurrencyCode ,')')"/>	
 				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
            		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="amz:Amount div 100"/></gr:hasCurrencyValue>
@@ -344,7 +344,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (INH)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -353,7 +353,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -372,7 +372,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' LBR')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (LBR)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -381,7 +381,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(., ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(., ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 	  		</gr:QuantitativeValueFloat>
@@ -400,7 +400,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (INH)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -409,7 +409,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -428,7 +428,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (INH)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -437,7 +437,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -456,7 +456,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (INH)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -465,7 +465,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -484,7 +484,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' LBR')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (LBR)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -493,7 +493,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 	  		</gr:QuantitativeValueFloat>
@@ -512,7 +512,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (INH)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -521,7 +521,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
@@ -540,7 +540,7 @@
 							<xsl:value-of select=". div 100"/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. div 100, ' INH')"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. div 100, ' (INH)')"/></rdfs:label>
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -549,7 +549,7 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-						<rdfs:label><xsl:value-of select="concat(. , ' ', @Units)"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat(. , ' (', @Units, ')')"/></rdfs:label>
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
