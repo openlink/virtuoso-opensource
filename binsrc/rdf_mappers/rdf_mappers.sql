@@ -6932,7 +6932,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
   declare ret_flag, is_grddl, download_size, load_msec int;
   declare get_feeds, add_html_meta, grddl_loop int;
-  declare base_url, ns_url, reg, doc_base, proxy_iri, cset, dtd_sysuri, tgt_page  varchar;
+  declare base_url, ns_url, reg, doc_base, proxy_iri, cset, dtd_sysuri, tgt_page, posh  varchar;
   declare profile_trf, ns_trf, ext_profs, thisgr, cnt any;
   declare dict any;
 
@@ -7075,8 +7075,16 @@ try_grddl:
   if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1' and mdta) -- It is recognized as GRDDL, data is loaded (testing the grddl only mode)
     goto ret;
   try_rdfa:;
-  -- RDFa
   thisgr := coalesce (dest, graph_iri);
+  if (xt_xml is not null)
+    xt := xt_xml;
+  -- try loading POSH
+  {
+    declare exit handler for sqlstate '*';
+    posh := '<html>' || serialize_to_UTF8_xml (xpath_eval ('//head', xt)) || '</html>';
+    DB.DBA.RDF_LOAD_RDFA (posh, proxy_iri, thisgr, 2);
+  }
+  -- RDFa
   if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
     goto no_dtd_check;
   dtd_sysuri := xtree_doc_get_dtd (xt, 1);
@@ -7119,6 +7127,7 @@ try_grddl:
   else if (mdta)
     goto ret;
 	
+	
   try_grddl1:
   -- /* GRDDL - plan A, eRDF going here */
   foreach (any prof in profs) do
@@ -7140,11 +7149,6 @@ try_grddl:
       next_prof:;
     }
   -- brute force attack, scan w/o profile
-  if (xt_xml is not null)
-  {
-    xt := xt_xml;
-	}
-	
   if (mdta < 2)
     {
       -- currently no profile in RDFa and some similar, so we try it to extract directly
