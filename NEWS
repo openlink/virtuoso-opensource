@@ -1,3 +1,157 @@
+March 28, 2011, V6.1.3:
+  * Database engine
+    - Added configurable normalization of accented characters
+    - Added global X509 CA repository
+    - Added IMAP, IMAPs and POP3s  client support
+    - Added http maintenance functions
+    - Added optimization for case when there is no locality
+    - Added optimization to look at GS index only
+    - Added optimization to boolean expression evaluation
+    - Added read-ahead on extent
+    - Added retry deadlock if http session is not flushed
+    - Added retry on deadlock when sponging on multiple threads
+    - Added support for CORS on http endpoints
+    - Added support for passing NVARCHAR arguments to thread-safe dicts
+    - Added support for S/MIME encrypt and decrypt
+    - Added ssl const decoration in explain
+    - Added three new aggregates mostly for use with SPARQL-BI
+    - Added transitivity cache
+    - Fixed busy loop when no free remaps
+    - Fixed check for 5xx or 4xx status codes
+    - Fixed check if subselect has a recursive ref
+    - Fixed cost model to count inx cond and scale card at end
+    - Fixed error on INSERT DATA with literals of non-default types
+    - Fixed following checkpoint kill recovery remap extents may
+      have allocated pages with no corresponding logical page because
+       recovery performs unremap. Therefor if em remap page is allocated
+       in em but free in dbs freemap, disregards and reset em allocation,
+       if no logical page. If logical page, concider the dbs freeset
+       in error and mark page as allocated.
+    - Fixed increase delay on sequential deadlock
+    - Fixed index_only on partial can return has data even if main row does not
+    - Fixed infinite loop when dealing with string like abc&def and no token
+    - Fixed issue parsing sparql function calls with zero arguments
+    - Fixed issue with aggregates, distinct and ORDER BY
+    - Fixed issue with closing XAConnection and connectionpool
+    - Fixed issue with combination of UNION in the argument of IN
+      causing General internal Optimized compiler error
+    - Fixed issue with partial index when no path is followed
+    - Fixed JDBC driver lost prepared data after execution query,
+      so next execute of prepared query throws exception
+    - Fixed memleaks
+    - Fixed moved mutex lock/unlock calls to avoid deadlock
+    - Fixed recovery mode
+    - Fixed send body of 509 bandwidth error
+    - Fixed set HTTP status to 503 when showing maintenance page
+      and added a Retry-After: 1800 (seconds) header as a hint to the
+      remote
+    - Fixed set local timezone
+    - Fixed size of input buffer of an XML parser is now adaptive
+    - Updated documentation
+
+  * SPARQL and RDF
+    - Added attribution and Evri ontology
+    - Added cartridges for EOL, Evry, Google Book, Groupon, hNews,
+        hRecipe, ProductWiki, RDFa, RDFohloh
+    - Added checking for rdfa dtd
+    - Added Described By
+    - Added expiration header
+    - Added improvements for SPARQL-FED esp. to let XSLT access
+      data from remote SPARQL endpoint
+    - Added index to search over label text
+    - Added initial codegen for ASK subquery
+    - Added lax mode in csv import
+    - Added MinExpiration param for sponger
+    - Added more prefixes
+    - Added namespace prefix 'fn' for for XPATH 2.0 and XQuery 1.0
+      Core Functions library
+    - Added new SPARQL-to-SQL codegen for type cast functions
+    - Added new SQL optimization trick to convert 
+        sprintf ('format', col0, col1, ..., colN) = exnp 
+	into more index friendly: 
+	( col0 = sprintf_inverse ('format', expn, 2)[0] and 
+	  col1 = sprintf_inverse ('format', expn, 2)[1] and ...  
+	  colN = sprintf_inverse ('format', expn, 2)[N] )
+    - Added optimization of SPARQL arithmatic and numerical comparisons
+    - Added RDFa W3c validation button
+    - Added rdfs schema
+    - Added refresh=clean mode, to drop cache even if it is in the
+      middle of sponging on another threads
+    - Added scheduler task to keep volume under some limit
+    - Added special immutable setting for inf rules
+    - Added support for CSV output mode
+    - Added support for define input:inference in SAPRQL DESCRIBE
+    - Added support for define output:format "NT"
+    - Added support for FILTER EXISTST and FILTER NOT EXISTS
+    - Added support for host-meta
+    - Added support for IUD ops to XMLA endpoint
+    - Added support for MINUS
+    - Added support for RDB2RDF
+    - Added support of "seealso" predicate in case of recursive sponging
+    - Added WebID based ACL support via https
+    - Fixed datatype for twitter
+    - Fixed datetime format
+    - Fixed do not use triple dicts on long files
+    - Fixed DOI and RDFa
+    - Fixed enable xlat iris
+    - Fixed hreview aggregates
+    - Fixed issue with SPARQL CONSTRUCT/INSERT/DELETE/MODIFY queries
+    - Fixed issue with sponging options and DESCRIBE on /sparql endpoint
+    - Fixed issues reported by W3C Validator
+    - Fixed issues with SPARQL-FED
+    - Fixed missing column error in SPARQL-to-SQL preprocessor
+    - Fixed missing namespace in </results>
+    - Fixed security issue in SPARQL
+    - FIxed sparql parse bug with NOT FROM NAMED queries like 
+      select distinct ?g ?p not from named virtrdf: 
+      where { graph ?g { ?s ?p ?o }}
+    - Fixed sqltype and display size of DV_IRI_ID column
+    - Fixed use common API to delete target
+    - Fixed use doi proxy if no hslookup plugin
+    - Fixed use dsn from content-location when it exists
+    - Fixed use exclusive locks when doing SPARUL ops
+    - Fixed when selection list contains expressions with constants
+      do not inline OJ
+    - Fixed small bugs
+
+  * ODS Applications
+    - Added ACL Inheritance
+    - Added ACL semantic ping
+    - Added group sharing
+    - Added IMAP support
+    - Added JSON format for webfinger
+    - Added language and type options for offers
+    - Added 'Likes', 'Dislikes', 'Owns', 'Knows' and 'Social Network'
+    - Added linkblog pages
+    - Added login with Google account
+    - Added microblog template
+    - Added new index on OL accounts
+    - Added new login and register library
+    - Added profile security for offers, likes etc
+    - Added progress bar, ping and ACL
+    - Added RDF graph property for links
+    - Added RDFa info
+    - Added RSS and Atom imports
+    - Added signed mails
+    - Added support for LinkedIn
+    - Added support for Salmon protocol
+    - Added support for SWD
+    - Added support for Twitter
+    - Added UI for Login Authentication Keys
+    - Added WebID to 'My Profile'
+    - Fixed ACL handling
+    - Fixed HTTPS handling
+    - Fixed certificates
+    - Fixed hyperlink session expire issue
+    - Fixed openID server parameters extraction
+    - Fixed RDF object properties
+    - Fixed Twitter and LinkedIn registration/login
+    - Fixed WebID for Briefcase instances
+    - Fixed X.509 certificates in user pages
+    - Fixed XRDS
+    - Updated to CKeditor version 3.5.2
+
+
 July 09, 2010, V6.1.2:
   * Database engine
     - Added FOAF+SSL based authentication for client connection
