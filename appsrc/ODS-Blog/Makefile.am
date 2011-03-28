@@ -73,6 +73,8 @@ EXTRA_DIST = \
 	templates/digital_bazaar/*.vspx \
 	templates/digital_bazaar/images/*.jpg \
 	templates/digital_bazaar/images/*.png \
+	templates/micro/*.css \
+	templates/micro/*.vspx \
 	templates/modern/*.css \
 	templates/modern/*.vspx \
 	templates/newspaper_view/*.css \
