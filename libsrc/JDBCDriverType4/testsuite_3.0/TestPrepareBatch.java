@@ -86,7 +86,7 @@ public class TestPrepareBatch
             if(res[i] != 1)
             {
                System.out.println(i + " " + res[i]);
-               System.out.print("    FAILED");
+               System.out.println("    FAILED");
                System.exit(-1);
             }
          System.out.println("    PASSED");

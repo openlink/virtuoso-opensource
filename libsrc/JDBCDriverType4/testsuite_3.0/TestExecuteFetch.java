@@ -64,8 +64,8 @@ public class TestExecuteFetch
             System.out.println("    FAILED");
             System.exit(-1);
          }
-         System.out.println("Execute select * from sys_keys");
-         boolean more = stmt.execute("select * from sys_keys");
+         System.out.println("Execute select * from INFORMATION_SCHEMA.TABLES");
+         boolean more = stmt.execute("select * from INFORMATION_SCHEMA.TABLES");
          ResultSetMetaData data = stmt.getResultSet().getMetaData();
          for(int i = 1;i <= data.getColumnCount();i++)
             System.out.println(data.getColumnLabel(i) + "\t" + data.getColumnTypeName(i));
