@@ -5681,6 +5681,8 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
               sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_idx);
               if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
                 continue;
+              if (!(SPART_VARR_NOT_NULL & sub_eq->e_rvr.rvrRestrictions) && (0 == sub_eq->e_gspo_uses))
+                continue;
               restrs_not_filtered_in_subqs &= (~(sub_eq->e_rvr.rvrRestrictions) |
                 ~(SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL ) );
               if ((SPART_VARR_FIXED & restrs_not_filtered_in_subqs) &&
