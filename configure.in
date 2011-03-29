@@ -2109,13 +2109,13 @@ if test "x$ac_integ_jdk" != "x" ; then
     ac_save_CPPFLAGS="$CPPFLAGS"
     #supported jvm hosting platforms : add more here
     case $host in
-	x64_64-*-linux*)
+	x86_64-*-linux*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux"
         	AC_CHECK_HEADERS(jni.h,
 			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux" ],
 			[ ac_integ_jdk="" ])
 		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
-			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/amd64/server -ljvm" ],
+			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/amd64/server -R$ac_integ_jdk/jre/lib/amd64/server -ljvm" ],
 			[ ac_integ_jdk="" ],
 			[ "-L$ac_integ_jdk/jre/lib/amd64/server"])
 		;;
