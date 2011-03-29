@@ -196,7 +196,7 @@
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 		<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
-		<!-- Absence of gr:priceType property indicates this is the actual sale price not, say, a suggested retail price (SRP) -->
+	        <gr:priceType rdf:datatype="&xsd;string">regular price</gr:priceType>
 	    </gr:UnitPriceSpecification>
 	</gr:hasPriceSpecification>
     </xsl:template>
@@ -231,6 +231,7 @@
 	        <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 	        <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 		<gr:eligibleRegions rdf:datatype="&xsd;string">US</gr:eligibleRegions>
+	        <gr:priceType rdf:datatype="&xsd;string">shipping price</gr:priceType>
 	    </gr:DeliveryChargeSpecification>
 	</gr:hasPriceSpecification>
     </xsl:template>
