@@ -4874,7 +4874,13 @@ xml_template_get_sqlx_parms (client_connection_t * cli, const caddr_t text, id_h
       if (place)
 	{
 	  ret [inx+named_params] = box_cast_to (NULL, *place, DV_TYPE_OF (*place), ssl->ssl_dtp,
-	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, NULL);
+	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err);
+	  if (*err)
+	    {
+	      dk_free_tree (ret);
+	      ret = NULL;
+	      goto err_end;
+	    }
 	}
       else
 	ret [inx+named_params] = NEW_DB_NULL;
