@@ -697,7 +697,7 @@ var QueryExec = function(optObj) {
 		if (iSPARQL.Settings.shorten_uris)
 			iSPARQL.Common.shortenURI (a);
 		
-		OAT.Dom.append([ctr,spc,a]);
+		OAT.Dom.append([ctr,a, spc]);
 		
     };
 
@@ -729,10 +729,10 @@ var QueryExec = function(optObj) {
 		var item = self.cache[self.cacheIndex];
 		self.dom.plnk_ctr = OAT.Dom.create("div", {className: "result_plnk_ctr"});
 
-		self.makeExecPermalink (self.dom.plnk_ctr);
-	
 		if (iSPARQL.Settings.pivotInstalled) 
 			self.makePivotPermalink(self.dom.plnk_ctr);
+
+		self.makeExecPermalink (self.dom.plnk_ctr);
 
 		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
 		anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
