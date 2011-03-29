@@ -27,29 +27,6 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
-  <!-- xsl:template match="vm:widget_wrap">
-    <div class="widget">
-      <xsl:attribute name="class">
-        <xsl:value-of select="@class"/>
-      </xsl:attribute>
-      <div class="w_title_bar">
-        <div class="w_title_text_ctr">
-          <img>
-            <xsl:attribute name="src">
-              <xsl:value-of select="id_img"/>
-            </xsl:attribute>
-          </img>
-          <xsl:value-of select="@title"/>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
-      </div--> <!-- w_title_bar -->
-      <!--xsl:apply-templates/>
-    </div--> <!-- widget -->
-  <!--/xsl:template -->
-
   <xsl:template match="vm:dash-welcome">
     <div class="widget w_welcome">
       <vm:welcome-message />
@@ -59,39 +36,6 @@
 
   <xsl:template match="vm:dash-app-ads">
     <div class="widget w_dash_app_ads">
-      <!-- add dismiss cookie/prefs check -->
-      <!-- add dismiss control and pane -->
-      <!-- vm:if test="wa_vad_check ('blog2') is not null">
-        <div class="sf_blurb">
-          <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo" />
-        </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('enews2') is not null">
-       <div class="sf_blurb">
-         <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('oDrive') is not null">
-       <div class="sf_blurb">
-   <vm:url
-     value="-->
-
-<!--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
-     self.banner)"
-     url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('wiki') is not null">
-       <div class="sf_blurb">
-   <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('oMail') is not null">
-       <div class="sf_blurb">
-   <vm:url value="Get your own ODS Webmail address!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
-       </div>
-     </vm:if -->
-
     </div>
   </xsl:template>
 
@@ -109,10 +53,6 @@
                src="images/icons/user_16.png"
                alt="ODS user icon" />
           <span class="w_title_text">Users <span class="usr_count"> active: <?V active ?></span></span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -158,10 +98,6 @@
                alt="ODS-Weblog icon"/>
           <span class="w_title_text">Top Blogs</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <ul>
@@ -189,11 +125,6 @@
                src="images/icons/ods_feeds_16.png"
                alt="ODS-Feed Reader icon" />
           <span class="w_title_text">Latest News</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -224,11 +155,6 @@
                src="images/icons/ods_wiki_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text">Wiki Activity</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -261,11 +187,6 @@
                src="images/icons/ods_weblog_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('WEBLOG2') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -643,10 +564,6 @@
                alt="ODS-Feed Reader icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('eNews2') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -709,10 +626,6 @@
                alt="ODS-Mail icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -764,10 +677,6 @@
                src="images/icons/ods_wiki_16.png"
                alt="ODS-Wiki icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oWiki') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -830,10 +739,6 @@
                alt="ODS-Briefcase icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oDrive') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -885,11 +790,6 @@
                src="images/icons/ods_bookmarks_16.png"
                alt="ODS-Bookmark icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Bookmark') ?> summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -953,11 +853,6 @@
                alt="ODS-Community icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Community') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <table class="app_summary_listing">
@@ -980,10 +875,6 @@
                src="images/icons/ods_gallery_16.png"
                alt="ODS-Gallery icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('oGallery') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1047,10 +938,6 @@
                alt="ODS-Polls icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Polls') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -1112,10 +999,6 @@
                src="images/icons/ods_ab_16.png"
                alt="ODS-AddressBook icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('AddressBook') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1179,10 +1062,6 @@
                alt="ODS-Calendar icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Calendar') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -1245,10 +1124,6 @@
                alt="ODS-IM icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('IM') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -1310,10 +1185,6 @@
                src="images/icons/ods_discussion_16.png"
                alt="ODS-Discussion icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('nntpf') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1378,10 +1249,6 @@
                height="16" />
           What's New
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="images/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="images/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <vm:welcome-message2 />
@@ -1397,10 +1264,6 @@
                src="images/icons/apps_16.png"
                alt="ODS-Data Spaces icon"/>
           <span class="w_title_text">My Data Spaces</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -1612,10 +1475,6 @@
                height="16"/>
           My Profile
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <v:template name="my_user_details" type="simple" enabled="1">
@@ -1747,10 +1606,6 @@
                  alt="ODS-Weblog icon" />
             <span class="w_title_text">My Blog</span>
           </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-          </div>
         </div>
         <div class="w_pane content_pane">
           <ul>
@@ -1852,10 +1707,6 @@
                  alt="ODS-Feed Reader icon" />
             <span class="w_title_text">My News</span>
           </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-          </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
           <ul>
@@ -1897,10 +1748,6 @@
                  src="images/icons/ods_bookmarks_16.png"
                  alt="ODS-Bookmarks icon"/>
             <span class="w_title_text">My Bookmarks</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -1993,10 +1840,6 @@
                  src="images/icons/ods_ab_16.png"
                  alt="ODS-AddressBook icon"/>
             <span class="w_title_text">My Contacts</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -2100,10 +1943,6 @@
                src="images/icons/group_16.png"
                alt="ODS Connections icon" />
           <span class="w_title_text">My Connections</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -2233,10 +2072,6 @@
                alt="ODS-Communities icon"/>
           <span class="w_title_text">My Communities</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
 <?vsp
@@ -2290,10 +2125,6 @@
                width="16" height="16"
                alt="ods gallery icon"/>
           <span class="w_title_text">My Photos</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -2449,10 +2280,6 @@
                alt="facebook icon"/>
           <span class="w_title_text">Facebook</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <?vsp
@@ -2490,10 +2317,6 @@
                  src="images/icons/group_16.png"
                  alt="ODS-Guestbook icon" />
             <span class="w_title_text">My Guestbook</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2645,10 +2468,6 @@
                  alt="ODS-Mail icon" />
             <span class="w_title_text">My Mail</span>
           </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-          </div>
         </div>
         <div class="w_pane content_pane">
 <?vsp
@@ -2736,10 +2555,6 @@
                  src="images/icons/ods_briefcase_16.png"
                  alt="ODS-Briefcase icon" />
             <span class="w_title_text">My briefcase</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2842,10 +2657,6 @@
           <div class="w_title_text_ctr">
             <img class="w_title_icon" src="images/icons/ods_calendar_16.png" alt="ODS-Calendar icon"/>
             <span class="w_title_text">My Calendar</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
