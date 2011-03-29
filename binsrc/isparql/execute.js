@@ -692,7 +692,7 @@ var QueryExec = function(optObj) {
 	    '/PivotViewer/' + "?url=" + encodeURIComponent(xparm);
 	a.target = "_blank";
 	var spc = OAT.Dom.create("span");
-	spc.innerHTML = "&nbsp;";
+		spc.innerHTML = "&nbsp;|&nbsp;";
 
 		if (iSPARQL.Settings.shorten_uris)
 			iSPARQL.Common.shortenURI (a);
