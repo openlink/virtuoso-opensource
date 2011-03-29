@@ -653,7 +653,9 @@ grant execute on DB.DBA.RDF_VIEW_GET_BINARY to PROXY;
 create procedure DB.DBA.RDF_SPONGE_AUTH (in realm varchar)
 {
   declare auth_func, agent varchar;
-  if (__proc_exists ('DB.DBA.FOAF_SSL_AUTH_GEN') is null or 0 = is_https_ctx ())
+  if (__proc_exists ('DB.DBA.FOAF_SSL_AUTH_GEN') is null)
+    return 1;
+  if (http_acl_get ('Sponger', '*', '*') = -1)
     return 1;
   if (0 = DB.DBA.FOAF_SSL_AUTH_GEN (realm, 1))
     return 0;
