@@ -112,6 +112,7 @@ clean-local:
 	-rm -rf out.driver out.examples doc
 	-rmdir lib
 
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
@@ -123,7 +124,7 @@ EXTRA_DIST = \
 	META-INF/org.openrdf.store.schemas \
 	META-INF/schemas/virtuoso-schema.ttl \
 	META-INF/services/org.openrdf.repository.config.RepositoryFactory \
-	META-INF/templates/virtuoso.ttl
+	META-INF/templates/virtuoso.ttl \
 	virt_sesame3.jar \
 	virtuoso_driver/data.nt \
 	virtuoso_driver/*.java
