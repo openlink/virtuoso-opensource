@@ -25,7 +25,7 @@ OAT.RDFAtom = function (tag, value, ns) {
     self._tag = tag;
     self._val = value;
     self._dt = '';
-    self._lang = '';
+    self._lang = false;
 
     this.isIRI = function () {
 	if (self._tag == OAT.RDFTag.IRI) return true;
@@ -48,6 +48,10 @@ OAT.RDFAtom = function (tag, value, ns) {
 
     this.getValue = function () {
 	return self._val;
+    }
+
+    this.getLang = function () {
+	return self._lang;
     }
 
     this.equals = function (_obj) {

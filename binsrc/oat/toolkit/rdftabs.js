@@ -1377,7 +1377,29 @@ OAT.RDFTabs.map = function(parent,optObj) {
 					       "http://www.georss.org/georss/point",
 					       "http://www.openlinksw.com/schemas/virtrdf#Geometry"]);
 
-    this.markerPredBlacklist = OAT.IRIDB.insertIRIArr (["http://www.openlinksw.com/schemas/oat/rdftabs#useMarker"]);
+    this.markerPredBlacklist = OAT.IRIDB.insertIRIArr (["http://www.openlinksw.com/schemas/oat/rdftabs#useMarker",
+							"http://xmlns.com/foaf/0.1/based_near",
+							"http://www.w3.org/2003/01/geo/wgs84_pos",
+							"http://www.w3.org/2003/01/geo/geometry",
+							"http://www.w3.org/2003/01/geo/wgs84_pos#geometry",
+							"http://www.w3.org/2003/01/geo/lat",
+							"http://www.w3.org/2003/01/geo/wgs84_pos#lat",
+							"http://www.w3.org/2003/01/geo/latitude", 
+							"http://www.w3.org/2006/vcard/ns#latitude",
+							"http://www.w3.org/2001/vcard-rdf/3.0#latitude",
+							"http://dbpedia.org/property/lat",
+							"http://www.w3.org/2003/01/geo/lng",
+							"http://www.w3.org/2003/01/geo/wgs84_pos#long",
+							"http://www.w3.org/2003/01/geo/lon",
+							"http://www.w3.org/2003/01/geo/long",
+							"http://www.w3.org/2003/01/geo/longitude",
+							"http://www.w3.org/2006/vcard/ns#longitude",
+							"http://www.w3.org/2001/vcard-rdf/3.0#longitude",
+							"http://dbpedia.org/property/long",
+							"http://www.w3.org/2003/01/geo/Point", 
+							"http://www.w3.org/2003/01/geo/wgs84_pos#Point",
+							"http://www.georss.org/georss/point",
+							"http://www.openlinksw.com/schemas/virtrdf#Geometry"]);
 
     this.usedBlanknodes = [];
     this.pointList = new OAT.RDFTabs.PointList({uniqueInsert:true});
@@ -1515,9 +1537,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    return markerPath + '01.png';
 	    break;
 	case OAT.RDFTabsData.MARKER_MODE_EXPLICIT:
+	    if (typeof (item.preds[m_p_iid]) != 'undefined') {
 	    mpred = item.preds[m_p_iid][0];
-	    if (typeof (mpred) != 'undefined') {
-		if (mpred.constructor = OAT.RDFAtom) {
+		if (mpred.constructor == OAT.RDFAtom) {
 		    if (mpred.isIRI())
 			markerFile = mpred.getIRI();
 		    else if (mpred.isLit()) {
@@ -1530,10 +1552,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    }
 	    break;
 	case OAT.RDFTabsData.MARKER_MODE_AUTO:
+	    if (typeof (item.preds[m_p_iid]) != 'undefined') { // explicit marker def takes precedence
 	    mpred = item.preds[m_p_iid][0];
-
-	    if (typeof (mpred) != 'undefined') { // explicit marker def takes precedence
-		if (mpred.constructor = OAT.RDFAtom) {
+		if (mpred.constructor == OAT.RDFAtom) {
 		    if (mpred.isIRI())
 			markerFile = mpred.getIRI();
 		    else if (mpred.isLit()) {
@@ -1581,8 +1602,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	var div = OAT.Dom.create ("div",{className:"all_props_ctr"});
 	var preds = item.preds;
 	for (var p in preds) {
+	    if (self.markerPredBlacklist.find(parseInt(p)) != -1) continue; // Not all predicates are created equal
 	    var pred = preds[p];
-	    if (pred in self.markerPredBlacklist) continue; // Not all predicates are created equal
 	    var simple = self.parent.store.getCIRIorSplit(p);
 	    if (pred.length == 1 || self.lookupProperties.find(simple) != -1) {
 		var predC = OAT.Dom.create("tr",{className:"predicate"});
@@ -1981,6 +2002,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	    OAT.Dom.center(self.dimmer,1,1);
 	});
 	img.src = self.images[index][0];
+	img.title = self.parent.getTitle(item);
 	self.fixNav();
     }
 
@@ -2006,6 +2028,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	});
 	img.src = uri;
 	img.title = self.parent.getTitle(item);
+	img.alt = self.parent.getTitle(item);
 	OAT.Event.attach(img,"click",function() { self.showBig(index); });
     }
 
