@@ -64,8 +64,6 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="quote"><xsl:text>"</xsl:text></xsl:variable>
-
     <xsl:template match="/pw_api_results">
 		<rdf:RDF>
 				<rdf:Description rdf:about="{$docproxyIRI}">
@@ -75,12 +73,9 @@
 					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
 					<foaf:topic rdf:resource="{$resourceURL}"/>
 					<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+				<owl:sameAs rdf:resource="{$docIRI}"/>
 				</rdf:Description>
 
-
-				<!-- For testing with standalone XSLT processor
-						<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
-				 -->
 						<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
 				  <rdfs:comment>ProductWiki</rdfs:comment>
 					  <rdfs:label>ProductWiki</rdfs:label>
@@ -90,9 +85,6 @@
 				  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.productwiki.com')}"/>
 						</gr:BusinessEntity>
 
-				<!-- For testing with standalone XSLT processor
-				<rdf:Description rdf:about="{concat ($baseUri, '#', 'Product')}">
-				-->
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
@@ -116,35 +108,54 @@
     </xsl:template>
 
     <xsl:template match="product/description">
-	<oplbb:description rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:description>
+		<xsl:variable name="local_text" select="vi:convert_to_xtree(string(.))"/>
+		<oplbb:description rdf:datatype="&xsd;string">
+			<xsl:value-of select="."/>
+		</oplbb:description>
+		<xsl:for-each select="$local_text//li">
+			<oplbb:feature rdf:datatype="&xsd;string">
+				<xsl:value-of select="."/>
+			</oplbb:feature>
+		</xsl:for-each>
     </xsl:template>
 
     <xsl:template match="product/title">
-		<oplbb:title rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:title>
+		<oplbb:title rdf:datatype="&xsd;string">
+			<xsl:value-of select="."/>
+		</oplbb:title>
 		<dc:title>
 			<xsl:value-of select="." />
 		</dc:title>
 	</xsl:template>
 	
     <xsl:template match="product/skus/sku/upc">
-	<gr:hasEAN_UCC-13><xsl:value-of select="."/></gr:hasEAN_UCC-13>
+		<gr:hasEAN_UCC-13>
+			<xsl:value-of select="."/>
+		</gr:hasEAN_UCC-13>
     </xsl:template>
 
     <xsl:template match="product/skus/sku/asin">
-		<oplamz:ASIN><xsl:value-of select="."/></oplamz:ASIN>	
+		<oplamz:ASIN>
+			<xsl:value-of select="."/>
+		</oplamz:ASIN>	
     </xsl:template>
 
     <xsl:template match="product/skus/sku/mpn">
-		<gr:hasMPN><xsl:value-of select="."/></gr:hasMPN>	
+		<gr:hasMPN>
+			<xsl:value-of select="."/>
+		</gr:hasMPN>	
     </xsl:template>
 	
-	
     <xsl:template match="product/id">
-	<oplbb:productId><xsl:value-of select="."/></oplbb:productId>
+		<oplbb:productId>
+			<xsl:value-of select="."/>
+		</oplbb:productId>
     </xsl:template>
 
     <xsl:template match="product/category">
-	<oplbb:category><xsl:value-of select="."/></oplbb:category>
+		<oplbb:category>
+			<xsl:value-of select="."/>
+		</oplbb:category>
     </xsl:template>
 
     <xsl:template match="product/images/image/rawimage">
