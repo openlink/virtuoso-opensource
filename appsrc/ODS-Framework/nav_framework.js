@@ -3525,8 +3525,7 @@ ODS.Nav = function(navOptions) {
 	  var _li = OAT.Dom.create ('li');
 	  _li.innerHTML = _im.childNodes[i].nodeName + ': ';
 
-				OAT.Dom.append( [ _ul, _li,
-						OAT.Dom.text(OAT.Xml.textValue(_im.childNodes[i])), ]);
+				OAT.Dom.append( [ _ul, _li, OAT.Dom.text(OAT.Xml.textValue(_im.childNodes[i]))]);
 		}
 
 	    var organization = {};
