@@ -1254,6 +1254,21 @@ create procedure DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME (in code varchar)
 }
 ;
 
+create procedure DB.DBA.RDF_CONVERT_TO_XTREE (in code varchar)
+{
+	declare tmp any;
+	declare pos int;
+	tmp := code;
+	pos := strstr(cast(tmp as varchar), '<ul>');
+	if (pos > 0)
+		tmp := subseq(tmp, pos);
+	else
+		tmp := '<ul/>';
+	tmp:= xtree_doc(tmp);
+	return tmp;
+}
+;
+
 create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
 {
   declare res, xp, xt, url varchar;
@@ -1595,6 +1610,7 @@ grant execute on DB.DBA.GET_XBRL_NAME_BY_CIK to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_DATATYPE to public;
 grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
+grant execute on DB.DBA.RDF_CONVERT_TO_XTREE to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1626,6 +1642,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sasIRI', 'DB.DBA.RM_SAM
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docIRI', 'DB.DBA.RM_SPONGE_DOC_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:http_string_date', 'DB.DBA.XSLT_HTTP_STRING_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:uri_hash', 'DB.DBA.RDF_SPONGE_URI_HASH');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:convert_to_xtree', 'DB.DBA.RDF_CONVERT_TO_XTREE');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
