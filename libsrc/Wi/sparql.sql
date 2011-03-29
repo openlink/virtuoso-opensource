@@ -12103,6 +12103,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.TTLP_EV_NEW_GRAPH_A to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_TRIPLE_A to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_TRIPLE_L_A to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_EV_REPORT_DEFAULT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML_MT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE',

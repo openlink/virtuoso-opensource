@@ -1400,7 +1400,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
       return DB.DBA.RDF_SPONGE_UP_1 (graph_iri, options, uid);
     }
   commit work;
-  set_user_id ('dba', 1);
+  --set_user_id ('dba', 1);
   cookie := connection_get ('__rdf_sponge_sid');
   if (cookie is not null)
     options := vector_concat (options, vector ('rdf_sponge_sid', cookie));
@@ -1430,7 +1430,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   declare perms, log_mode integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
-  set_user_id ('dba', 1);
+  --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)
     local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
@@ -1485,7 +1485,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   -- if requested iri is immutable, do not try to get it at all
   -- this is to preserve rdf storage in certain cases
   immg := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ImmutableGraphs');
-  if (immg is not null)
+  if (immg is not null and user <> 'dba')
     {
       immg := split_and_decode (immg, 0, '\0\0,');
       foreach (any imm in immg) do
@@ -1512,6 +1512,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         }
     }
   -- dbg_obj_princ ('will sponge...');
+  set_user_id ('dba', 1);
   if (lower (graph_iri) like 'file:%')
     {
       res_graph_iri := DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
