@@ -45,6 +45,7 @@ iSPARQL.Defaults = {
     tab:          0,
     anchorMode:   0, /* 0:describe, 1:get data items,2:Open in new window */
     maxrows:      50,
+    view:         1,
     endpoint:     '/sparql',
     pivotInstalled: false,
     addthis_key: false,
@@ -74,25 +75,27 @@ iSPARQL.Defaults = {
 	var qp = false;
 	var p = OAT.Dom.uriParams();
 	
-	if (p['default-graph-uri']) { iSPARQL.Defaults.graph = p['default-graph-uri']; qp = true; }
-	if (p['defaultGraph'])      { iSPARQL.Defaults.graph = p['defaultGraph']; qp = true; }
+	if (p['default-graph-uri']) { iSPARQL.Settings.graph  = p['default-graph-uri']; qp = true; }
+	if (p['defaultGraph'])      { iSPARQL.Settings.graph  = p['defaultGraph']; qp = true; }
 	if (p['query']) { 
-	    iSPARQL.Defaults.query  = p['query']; 
+	    iSPARQL.Settings.query  = p['query']; 
 	    qp = true; 
 	}
-	if (p['sponge'])            { iSPARQL.Defaults.sponge = p['sponge']; qp = true; }
-	if (p['should_sponge'])     { iSPARQL.Defaults.sponge = p['should_sponge']; qp = true; }
+	if (p['sponge'])            { iSPARQL.Settings.sponge = p['sponge']; qp = true; }
+	if (p['should_sponge'])     { iSPARQL.Settings.sponge = p['should_sponge']; qp = true; }
 	if (p['view']) {
 	    var tabInx = parseInt(p['view']);
-	    if (!isNaN(tabInx) && tabinx >= 0 && tabInx < 3)
-		iSPARQL.Defaults.tab = tabInx;
+	    if (!isNaN(tabInx) && tabInx >= 0 && tabInx < 3)
+		iSPARQL.Settings.tab = tabInx;
+	    else 
+		iSPARQL.Settings.tab = 1;
 	    qp = true;
 	}
-	if (p['endpoint']) { iSPARQL.Defaults.endpoint = p['endpoint']; qp = true;}
-	if (p['resultview']) { iSPARQL.Defaults.resultView = p['resultview']; qp = true;}
-	if (qp) iSPARQL.Defaults.qp_override = qp;
-	if (p['__DEBUG']) iSPARQL.Defaults.debug = true;
-	if (p['maxrows']) iSPARQL.Defaults.maxrows = parseInt(p['maxrows']);
+	if (p['endpoint']) { iSPARQL.Settings.endpoint = p['endpoint']; qp = true;}
+	if (p['resultview']) { iSPARQL.Settings.resultView = p['resultview']; qp = true;}
+	if (qp) iSPARQL.Settings.qp_override = qp;
+	if (p['__DEBUG']) iSPARQL.Settings.debug = true;
+	if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
     },
 
     //
@@ -154,9 +157,7 @@ iSPARQL.Defaults = {
 	    iSPARQL.Defaults.map_type = OAT.Map.TYPE_OL;
 	    break;
 	}
-	iSPARQL.Defaults.handlePageParams();
     }
-    
 };
 
 // curie, prefix, selected by default
@@ -165,6 +166,7 @@ iSPARQL.Defaults = {
 iSPARQL.Settings = {
     xslt:'/isparql/xslt/',
     debug:true
-};
+}
+
 
 

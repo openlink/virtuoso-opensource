@@ -1479,7 +1479,8 @@ iSPARQL.QBE = function (def_obj) {
 	    sponge:$v("qbe_sponge"),
 	    endpoint:iSPARQL.endpointOpts.endpointPath,
 	    pragmas:iSPARQL.endpointOpts.pragmas,
-	    maxrows:iSPARQL.dataObj.maxrows
+	    maxrows:iSPARQL.dataObj.maxrows,
+	    view:0
 	}
 	iSPARQL.recentQueryUI.addQuery (p.query);
 	
