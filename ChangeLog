@@ -1,3 +1,90 @@
+2011-03-29 23:20  source
+
+	* Updated version to 6.1.3 for final release
+
+2011-03-29 22:55  source
+
+	* Fixed do not check immutable graph when dba is running
+
+2011-03-29 22:52  source
+
+	* FIxed minor issue
+
+2011-03-29 22:52  source
+
+	* FIxed ACL
+
+2011-03-29 22:49  source
+
+	* Fixed minor issue with prices
+
+2011-03-29 22:46  source
+
+	* Fixed swapped menu items
+
+2011-03-29 22:43  source
+
+	* Fixed use INFORMATION_SCHEMA.TABLES
+
+2011-03-29 21:08  source
+
+	* Fixed menu layout
+
+2011-03-29 20:14  source
+
+	* Fixed JS IE bug on profile page
+	* Small code cleanup
+
+2011-03-29 14:06  source
+
+	* Fixed typo in Makefile.am
+
+2011-03-29 12:45  source
+
+	* Fixed put absolute path for database in default virtuoso.ini
+
+2011-03-29 11:02  source
+
+	* Added alt to images in rdftab
+
+2011-03-29 10:58  source
+
+	* Fixed tuned handling of page params
+	* Fixed permalinks now encode information of which editor was used
+	  to produce the query
+
+2011-03-29 10:53  source
+
+	* Fixed must return error when cast fails
+
+2011-03-29 10:53  source
+
+	* Fixed issue with sparql filter with two optionals
+
+2011-03-29 00:31  source
+
+	* FIxed issue locating jvm runtime library location on linux x86_64
+
+2011-03-29 00:09  source
+
+	* Fixed build issue when prerequisite support .jar files not present
+
+2011-03-28 23:11  source
+
+	* Fixed check for demo data before continuing
+
+2011-03-28 17:29  source
+
+	* Added configure option for enabling mutex debugging
+
+2011-03-28 16:04  source
+
+	* Fixed dependency for VOS
+
+2011-03-28 15:56  source
+
+	* Rolled back previous patch
+
 2011-03-28 13:52  source
 
 	* Added missing files to distribution
