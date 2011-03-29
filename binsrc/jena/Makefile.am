@@ -62,8 +62,8 @@ install-data-local:
 	-cp virt_jena.jar "$(DESTDIR)${libdir}/jena"
 
 lib:
-	@test -d lib || touch virt_jena.jar
 	-mkdir lib
+	-touch -c virt_jena.jar
 	@echo "Please refer to ~/README.jena file for missing .jar files"
 
 virt_jena.jar: $(JENA_SRC) manifest.main
@@ -102,6 +102,7 @@ version:
 
 clean-local:
 	-rm -rf out.driver doc
+	-rmdir lib
 
 
 # ----------------------------------------------------------------------

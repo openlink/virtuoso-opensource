@@ -57,8 +57,8 @@ install-data-local:
 	-cp virt_sesame3.jar "$(DESTDIR)${libdir}/sesame"
 
 lib:
-	@test -d lib || touch virt_sesame3.jar
 	-mkdir lib
+	-touch -c virt_sesame3.jar
 	@echo "Please refer to ~/README.sesame3 file for missing .jar files"
 
 
@@ -110,6 +110,7 @@ version: virt_sesame3.jar
 
 clean-local:
 	-rm -rf out.driver out.examples doc
+	-rmdir lib
 
 # ----------------------------------------------------------------------
 #
