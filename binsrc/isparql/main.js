@@ -55,11 +55,16 @@ function init() {
 
 	iSPARQL.StatusUI.hide();
 
-		
 	if (!OAT.Browser.isIE || !OAT.Browser.isScreenOnly) {
 	    if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
 	}
 
+		if (OAT.Browser.isIE || OAT.Browser.isScreenOnly && iSPARQL.Settings.view == 0)
+			tab.go (1); /* is 0-based index... */
+		else
+			tab.go (iSPARQL.Settings.view);
+
+		
     } catch (e) {
 	if (e.prototype == iSPARQL.Exception)
 	    iSPARQL.StatusUI.errMsg = e.toString;
@@ -73,10 +78,6 @@ function init() {
     }
 
     OAT.Dom.show("page_content");
-
-    if (OAT.Browser.isIE || OAT.Browser.isScreenOnly) {
-	tab.go (1); /* is 0-based index... */
-    }
 }
 
 iSPARQL.SERVER_TYPE = {
@@ -235,7 +236,8 @@ iSPARQL.Advanced = function () {
 	    pragmas:iSPARQL.endpointOpts.pragmas,
 	    namedGraphs:iSPARQL.dataObj.namedGraphs,
 	    callback:iSPARQL.Common.setData,
-	    maxrows:iSPARQL.dataObj.maxrows
+			maxrows:iSPARQL.dataObj.maxrows,
+			view:1
 	}
 	
 	iSPARQL.recentQueryUI.addQuery (o.query);
@@ -1583,7 +1585,6 @@ iSPARQL.Common = {
 	tab_query =   tab.add ("tab_query",  "page_query");
 	tab_results = tab.add ("tab_results","page_results");
 
-		if (iSPARQL.Settings.tab == 2) iSPARQL.Settings.tab = 1;
 		tab.go (iSPARQL.Settings.tab); /* is 0-based index... */
 
 	var tabgraphs = new OAT.Tab ("tabgrph_content");
@@ -1738,9 +1739,23 @@ iSPARQL.Common = {
 
 	init_qbe(); // Customise svgsparql prototype
 
-	window.qbe = new iSPARQL.QBE(iSPARQL.Defaults);
+		var qbe_def = {
+			query: false,
+			graph: false
+		};
 
-	qbe.loadFromString(iSPARQL.Defaults.query);
+		if (iSPARQL.Settings.view != 0) { 
+			if (iSPARQL.serverDefaults.query) 
+				qbe_def.query = iSPARQL.serverDefaults.query;
+			else 
+				qbe_def.query = "SELECT * WHERE {?s ?p ?o}";
+		}
+		else {
+			qbe_def.query = iSPARQL.Settings.query;
+		}
+		qbe_def.graph = iSPARQL.Settings.graph;
+
+		window.qbe = new iSPARQL.QBE(qbe_def);
     },
 
     initQE: function() {
@@ -2059,8 +2074,10 @@ iSPARQL.Common = {
 		if (p['should_sponge'])     { iSPARQL.Settings.sponge = p['should_sponge']; qp = true; }
 		if (p['view']) {
 			var tabInx = parseInt(p['view']);
-			if (!isNaN(tabInx) && tabinx >= 0 && tabInx < 3)
-				iSPARQL.Settings.tab = tabInx;
+			if (!isNaN(tabInx) && tabInx >= 0 && tabInx < 3)
+				iSPARQL.Defaults.tab = tabInx;
+			else 
+				iSPARQL.Settings.tab = 1;
 			qp = true;
 		}
 		if (p['endpoint']) { iSPARQL.Settings.endpoint = p['endpoint']; qp = true;}

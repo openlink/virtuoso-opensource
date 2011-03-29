@@ -47,6 +47,8 @@ function init() {
   for (i in iSPARQL.Defaults)
     iSPARQL.Settings[i] = iSPARQL.Defaults[i];
 
+  iSPARQL.Defaults.handlePageParams();
+
   iSPARQL.StatusUI.init();
 
   var opts = OAT.Dom.uriParams();
@@ -61,11 +63,9 @@ function init() {
     f.appendChild(a);
   }
 
-
-
   var lc = [];
 
-  if (qe.detectLocationMacros(iSPARQL.Defaults.query)) {
+  if (qe.detectLocationMacros(iSPARQL.Settings.query)) {
     iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
 
     if (!iSPARQL.locationCache) {
@@ -75,12 +75,12 @@ function init() {
       }
       var locUI = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
                                               cancelCB: false,
-					      cbParm: iSPARQL.Defaults,
+		                                  cbParm: iSPARQL.Settings,
 					      cache: iSPARQL.locationCache});
       iSPARQL.StatusUI.hide();
       locUI.refresh();
   } else {
-    qe.execute(iSPARQL.Defaults);
+      qe.execute(iSPARQL.Settings);
   }   
 }
   </script>

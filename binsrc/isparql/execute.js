@@ -474,9 +474,10 @@ var QueryExec = function(optObj) {
 
 	if (opts.endpoint)
 	    xparm = xparm + "&endpoint="  + opts.endpoint;
+
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
-
+		xparm += "&view=" + opts.view;
 	plnk.target = "_blank";
 	plnk.href= nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 
@@ -712,6 +713,7 @@ var QueryExec = function(optObj) {
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+		xparm += "&view=" + opts.view;
 
 	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 	
@@ -934,7 +936,7 @@ var QueryExec = function(optObj) {
 		iSPARQL.endpointOpts.setEndpoint (null, item.opts.endpoint);
 
 		adv.redraw();
-		if (qbe) qbe.loadFromString(iSPARQL.dataObj.query);
+//		if (!item.wasError && qbe) qbe.loadFromString(iSPARQL.dataObj.query);
 
 		self.refreshNav();
 	};
@@ -967,7 +969,7 @@ var QueryExec = function(optObj) {
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
-		xparm += "&view=1";
+		xparm += "&view=" + opts.view;
 	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
 		a.target = "_blank";
 
