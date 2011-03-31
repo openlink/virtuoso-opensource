@@ -613,7 +613,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare old_last_load, old_expiration, old_last_modified datetime;
   declare load_begin_msec, load_end_msec, old_exp_is_true,
     old_download_size, old_download_msec_time, old_read_count,
-    new_download_size, explicit_refresh integer;
+    new_download_size, explicit_refresh, max_sz integer;
   declare get_method varchar;
   declare ret_hdr, immg, req_hdr_arr any;
   declare req_hdr varchar;
@@ -840,6 +840,22 @@ resp_received:
     }
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
+
+  max_sz := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxDataSourceSize'), '20971520'));
+
+  if (max_sz < new_download_size)
+    {
+      rollback work;
+      update DB.DBA.SYS_HTTP_SPONGE
+	  set HS_SQL_STATE = 'RDFXX',
+	  HS_SQL_MESSAGE = sprintf ('Content length %d is over the limit %d', new_download_size, max_sz),
+	  HS_EXPIRATION = now (),
+	  HS_EXP_IS_TRUE = 0
+	      where
+	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+      commit work;
+      signal ('RDFXX', sprintf ('Content length %d is over the limit %d', new_download_size, max_sz));
+    }
 
   --if (__tag (ret_body) = 185)
   --  ret_body := string_output_string (subseq (ret_body, 0, 10000000));
