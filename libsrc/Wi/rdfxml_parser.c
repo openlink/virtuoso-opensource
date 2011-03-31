@@ -853,7 +853,22 @@ xp_rdfa_expand_name (xp_node_t * xn, const char *name, const char *colon, int us
       ctx_xn = ctx_xn->xn_parent;
     }
   if (0 != ns_len)
+    {
+      if (NULL != colon)
+        {
+          caddr_t pref = box_dv_short_nchars (name, ns_len);
+          caddr_t ns_uri = xml_get_ns_uri (xn->xn_xp->xp_qi->qi_client, pref, ~0, 0);
+          dk_free_box (pref);
+          if (NULL != ns_uri)
+            {
+              relative = box_dv_short_strconcat (ns_uri, local);
+              dk_free_box (ns_uri);
+              goto relative_is_set; /* see below */
+            }
+          dk_free_box (ns_uri);
+        }
     return NULL; /* error: undefined namespace prefix */
+    }
   relative = box_dv_short_string (name);
 
 relative_is_set:
@@ -925,6 +940,7 @@ rdfa_rel_rev_value_is_reserved (const char *val)
 #define RDFA_ATTRSYNTAX_WS_LIST			0x10
 #define RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE	0x20
 #define RDFA_ATTRSYNTAX_EMPTY_MEANS_XSD_STRING	0x40
+#define RDFA_ATTRSYNTAX_DIRTY_HREF		0x80
 
 caddr_t
 xp_rdfa_parse_attr_value (xparse_ctx_t *xp, xp_node_t * xn, char *attrname, char *attrvalue, int allowed_syntax, caddr_t **values_ret, int *values_count_ret)
@@ -1032,9 +1048,27 @@ next_token:
             goto next_token; /* see above */
         }
     }
+  else if (RDFA_ATTRSYNTAX_DIRTY_HREF & allowed_syntax)
+    {
+      int qmark_found = 0;
+      while (('\0' != tail[0]) && !isspace(tail[0]))
+        {
+          if ('?' == tail[0])
+            qmark_found = 1;
+          else if (('[' == tail[0]) || (']' == tail[0]))
+            {
+              if (qmark_found)
+                allowed_syntax |= ~RDFA_ATTRSYNTAX_WS_LIST;
+              else
+              break;
+            }
+          tail++;
+        }
+    }
   else
     {
-      while (('\0' != tail[0]) && ('[' != tail[0]) && (']' != tail[0]) && !isspace(tail[0])) tail++;
+      while (('\0' != tail[0]) && ('[' != tail[0]) && (']' != tail[0]) && !isspace(tail[0]))
+        tail++;
     }
   token_end = tail;
   switch (tail[0])
@@ -1104,9 +1138,23 @@ next_token:
         expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
       token_end[0] = saved_token_delim;
       if (NULL == expanded_token)
+        {
+#ifndef NDEBUG
+          token_end[0] = '\0';
+          if (('_' == token_start[0]) && (curie_colon == token_start + 1))
+            expanded_token = tf_bnode_iid (xp->xp_tf, box_dv_short_nchars (token_start+2, token_end-(token_start+2)));
+          else if (curie_colon == token_start)
+            { /* Note that the default prefix mapping may differ from usage to usage, it is xhtml vocab namespace only for RDFa */
+              expanded_token = box_dv_short_strconcat (uname_xhv_ns_uri, curie_colon+1);
+            }
+          else
+            expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
+          token_end[0] = saved_token_delim;
+#endif
         xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
           "Bad token in the value of attribute \"%.20s\" (undeclared namespace?)",
           attrname );
+    }
     }
   else if (RDFA_ATTRSYNTAX_REL_REV_RESERVED & allowed_syntax)
     {
@@ -1506,7 +1554,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
               dk_free_tree (xpt->xpt_href);
               xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
               xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
                 NULL, NULL );
               xp_rdfa_set_base (xp, outer, xpt->xpt_href);
               xpt->xpt_href = NULL;
@@ -1517,7 +1565,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
               dk_free_tree (xpt->xpt_href);
               xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
               xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, raw_aname, avalue,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
                 NULL, NULL );
               href_prio = 4;
             }
