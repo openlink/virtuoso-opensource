@@ -738,6 +738,10 @@ create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
     return x;
   if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
     return x;
+  if (http_mime_type (x) like 'image/%')
+    {
+      return x;
+    }
   return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
 }
 ;
@@ -1116,6 +1120,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
   if (strchr (uri, '#') is not null)
     frag := '';
 
+  if (http_mime_type (uri) like 'image/%')
+    return uri;
+
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
   ua [0] := '';
@@ -1172,6 +1179,9 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
     }
   if (strchr (uri, '#') is not null)
     frag := '';
+
+  if (http_mime_type (uri) like 'image/%')
+    return uri;
 
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
@@ -2489,11 +2499,11 @@ create procedure DB.DBA.RDF_LOAD_OVERSTOCK (in graph_iri varchar, in new_origin_
   ret_body := replace (ret_body, '= \'<script', '= \'<scr\' + \'ipt');
   --ret_body := replace (ret_body, '[url]', '{url}');
   --ret_body := replace (ret_body, '[title]', '{title}');
-  cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+  cont := tidy_html (ret_body, 'output-xhtml:yes\r\ntidy-mark:no');
   --string_to_file ('over.html', cont, -2);
   if (dest is null)
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
-  DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 2);
+  DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 1);
   --DB.DBA.RDF_QUAD_URI (thisgr, new_origin_uri, 'http://xmlns.com/foaf/0.1/primaryTopic', new_origin_uri || '#product');
   return 1;
 }
@@ -2511,7 +2521,7 @@ create procedure DB.DBA.RDF_LOAD_RDFA_CARTRIDGE (in graph_iri varchar, in new_or
       return 0;
     };
   if (get_keyword ('use_tidy', opts) = 'yes') 
-    cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+    cont := tidy_html (ret_body, 'output-xhtml:yes\r\ntidy-mark:no');
   else  
     cont := ret_body;
   if (dest is null)
@@ -7095,12 +7105,6 @@ try_grddl:
   thisgr := coalesce (dest, graph_iri);
   if (xt_xml is not null)
     xt := xt_xml;
-  -- try loading POSH
-  {
-    declare exit handler for sqlstate '*';
-    posh := '<html>' || serialize_to_UTF8_xml (xpath_eval ('//head', xt)) || '</html>';
-    DB.DBA.RDF_LOAD_RDFA (posh, proxy_iri, thisgr, 2);
-  }
   -- RDFa
   if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
     goto no_dtd_check;
