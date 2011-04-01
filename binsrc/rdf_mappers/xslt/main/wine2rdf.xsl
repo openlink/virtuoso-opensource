@@ -224,12 +224,12 @@
     </xsl:template>
 
     <xsl:template match="Product/GeoLocation">
-        <geo:lat rdf:datatype="&xsd;float">
+        <!--geo:lat rdf:datatype="&xsd;float">
             <xsl:value-of select="Latitude"/>
         </geo:lat>
         <geo:long rdf:datatype="&xsd;float">
             <xsl:value-of select="Longitude"/>
-        </geo:long>
+        </geo:long-->
         <rdfs:seeAlso rdf:resource="{Url}"/>
     </xsl:template>
 
@@ -242,8 +242,9 @@
                 <gr:legalName><xsl:value-of select="Name"/></gr:legalName>
                     </xsl:if>
                     <xsl:if test="string-length(WineType/Name) &gt; 0">
-                <gr:legalName><xsl:value-of select="WineType/Name"/></gr:legalName>
+                        <gr:category><xsl:value-of select="WineType/Name"/></gr:category>
                     </xsl:if>
+					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
                 <rdfs:seeAlso rdf:resource="{Url}"/>
                 <rdfs:seeAlso rdf:resource="{WineType/Url}"/>
             </oplbb:Product>
