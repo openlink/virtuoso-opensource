@@ -220,7 +220,24 @@ spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld)
         (uname_xmlschema_ns_uri_hash_integer == fld->_.lit.datatype) ||
         (uname_xmlschema_ns_uri_hash_decimal == fld->_.lit.datatype) ||
         (uname_xmlschema_ns_uri_hash_double == fld->_.lit.datatype) )
+	{
+	  if (DV_STRINGP (fld->_.lit.val))
         return t_box_sprintf (210, "%.200s", fld->_.lit.val);
+	  else
+	    {
+	      caddr_t err = NULL, ret, str;
+	      str = box_cast_to (NULL, fld->_.lit.val, DV_TYPE_OF (fld->_.lit.val), DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+	      if (!err && str)
+		ret = t_box_sprintf (210, "%.200s", str);
+              else
+                {
+		  dk_free_tree (err);
+		  ret = t_box_sprintf (210, "Value cannot be printed");
+  	        }
+	      dk_free_box (str);
+	      return ret;
+	    }
+	}
       return t_box_sprintf (410, "\"%.200s\"^^<%.200s>", fld->_.lit.val, fld->_.lit.datatype);
     default: return t_box_dv_short_string ("...");
     }
