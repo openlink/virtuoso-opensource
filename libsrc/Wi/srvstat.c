@@ -817,30 +817,32 @@ srv_lock_report (const char * mode)
       "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks,
       lock_waits, thr_ct, lw_ct, vdb_ct);
 
+  LEAVE_TXN;
   if (!strchr (mode, 'l'))
     {
-      LEAVE_TXN;
       return;
     }
-    {
       DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
 	{
 	  for (inx = 0; inx < IT_N_MAPS; inx++)
 	    {
+	  mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
 	      mutex_enter (&it->it_maps[inx].itm_mtx);
+	  IN_TXN;
 	  if (0 == setjmp_splice (&locks_done))
 	    {
 	      locks_printed = 0;
 		  maphash (lock_status, &it->it_maps[inx].itm_locks);
 		}
+	  LEAVE_TXN;
 	      mutex_leave (&it->it_maps[inx].itm_mtx);
+	  mutex_leave (it->it_lock_release_mtx);
 	    }
 	}
       END_DO_SET();
+  IN_TXN;
       lt_wait_status ();
       cl_lt_wait_status ();
-
-    }
     LEAVE_TXN;
 }
 
