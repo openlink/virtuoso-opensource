@@ -1050,16 +1050,30 @@ next_token:
     }
   else if (RDFA_ATTRSYNTAX_DIRTY_HREF & allowed_syntax)
     {
+      int lpar_found = 0;
       int qmark_found = 0;
-      while (('\0' != tail[0]) && !isspace(tail[0]))
+      while ('\0' != tail[0])
         {
           if ('?' == tail[0])
             qmark_found = 1;
           else if (('[' == tail[0]) || (']' == tail[0]))
             {
-              if (qmark_found)
-                allowed_syntax |= ~RDFA_ATTRSYNTAX_WS_LIST;
+              if (!lpar_found && strchr (tail, '('))
+                lpar_found = 1;                         /* 012345678901 */
+              if (!qmark_found && !lpar_found && strncmp ("javascript:", attrvalue, 11))
+                break;
               else
+                allowed_syntax |= ~RDFA_ATTRSYNTAX_WS_LIST;
+            }
+          else if ('(' == tail[0])
+            lpar_found = 1;
+          else if (isspace(tail[0]))
+            {
+              if (RDFA_ATTRSYNTAX_WS_LIST & allowed_syntax)
+                break;
+              if (!lpar_found && strchr (tail, '('))
+                lpar_found = 1;         /* 012345678901 */
+              if (!lpar_found && strncmp ("javascript:", attrvalue, 11))
               break;
             }
           tail++;
