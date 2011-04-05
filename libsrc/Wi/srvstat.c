@@ -372,9 +372,6 @@ process_status_report (void)
 }
 
 
-#define mutex_try_enter(m) \
-  (mutex_enter (m), 1)
-
 
 int
 dbs_mapped_back (dbe_storage_t * dbs)
@@ -799,51 +796,48 @@ srv_lock_report (const char * mode)
   int thr_ct = 0, lw_ct = 0, vdb_ct = 0, inx;
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
-    {
-      if (lt != bootstrap_cli->cli_trx)
-	{
-	  thr_ct += lt->lt_threads;
-	  lw_ct += lt->lt_lw_threads;
-	  vdb_ct += lt->lt_vdb_threads;
-	}
-    }
+  {
+    if (lt != bootstrap_cli->cli_trx)
+      {
+	thr_ct += lt->lt_threads;
+	lw_ct += lt->lt_lw_threads;
+	vdb_ct += lt->lt_vdb_threads;
+      }
+  }
   END_DO_SET ();
   thr_cli_running = thr_ct;
   thr_cli_waiting = lw_ct;
   thr_cli_vdb = vdb_ct;
-  rep_printf (
-      "\nLock Status: %ld deadlocks of which %ld 2r1w, %ld waits,"
+  rep_printf ("\nLock Status: %ld deadlocks of which %ld 2r1w, %ld waits,"
       "\n   Currently %d threads running %d threads waiting %d threads in vdb."
-      "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks,
-      lock_waits, thr_ct, lw_ct, vdb_ct);
+      "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks, lock_waits, thr_ct, lw_ct, vdb_ct);
 
-  LEAVE_TXN;
   if (!strchr (mode, 'l'))
     {
+      LEAVE_TXN;
       return;
     }
-      DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
-	{
-	  for (inx = 0; inx < IT_N_MAPS; inx++)
-	    {
-	  mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
-	      mutex_enter (&it->it_maps[inx].itm_mtx);
-	  IN_TXN;
-	  if (0 == setjmp_splice (&locks_done))
-	    {
-	      locks_printed = 0;
-		  maphash (lock_status, &it->it_maps[inx].itm_locks);
-		}
-	  LEAVE_TXN;
-	      mutex_leave (&it->it_maps[inx].itm_mtx);
-	  mutex_leave (it->it_lock_release_mtx);
-	    }
-	}
-      END_DO_SET();
-  IN_TXN;
-      lt_wait_status ();
-      cl_lt_wait_status ();
-    LEAVE_TXN;
+  DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
+  {
+    for (inx = 0; inx < IT_N_MAPS; inx++)
+      {
+	if (mutex_try_enter (it->it_lock_release_mtx))
+	  {			/* prevent read release as lock release is outside of TXN mtx */
+	    mutex_enter (&it->it_maps[inx].itm_mtx);
+	    if (0 == setjmp_splice (&locks_done))
+	      {
+		locks_printed = 0;
+		maphash (lock_status, &it->it_maps[inx].itm_locks);
+	      }
+	    mutex_leave (&it->it_maps[inx].itm_mtx);
+	    mutex_leave (it->it_lock_release_mtx);
+	  }
+      }
+  }
+  END_DO_SET ();
+  lt_wait_status ();
+  cl_lt_wait_status ();
+  LEAVE_TXN;
 }
 
 
@@ -944,6 +938,9 @@ key_stats (void)
   maphash (key_status, wi_inst.wi_schema->sc_id_to_key);
 }
 
+
+#define mutex_try_enter(m) \
+  (mutex_enter (m), 1)
 
 semaphore_t * ps_sem;
 
