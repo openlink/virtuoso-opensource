@@ -2499,7 +2499,10 @@ create procedure DB.DBA.RDF_LOAD_OVERSTOCK (in graph_iri varchar, in new_origin_
   ret_body := replace (ret_body, '= \'<script', '= \'<scr\' + \'ipt');
   --ret_body := replace (ret_body, '[url]', '{url}');
   --ret_body := replace (ret_body, '[title]', '{title}');
+  if (get_keyword ('use_tidy', opts) = 'yes') 
   cont := tidy_html (ret_body, 'output-xhtml:yes\r\ntidy-mark:no');
+  else  
+    cont := ret_body;
   --string_to_file ('over.html', cont, -2);
   if (dest is null)
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
