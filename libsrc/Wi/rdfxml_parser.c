@@ -1523,7 +1523,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
           need_rdfa_local = 1;
         }
     }
-  if (!strcmp (local_name, "html"))
+  if (!strcmp (local_name, "html") || !strcmp (local_name, "xhtml"))
     {
       if (RDFA_IN_HTML & outer_place_bits)
         xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"html\" can not appear inside other \"html\" element");
@@ -1661,9 +1661,17 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
       if ((RDFA_IN_HTML & outer_place_bits) &&
         !((RDFA_IN_HEAD | RDFA_IN_BODY) & outer_place_bits) &&
         ((RDFA_IN_HEAD | RDFA_IN_BODY) & inner_place_bits) )
-        subj = uname___empty;
+        {
+          subj = uname___empty;
+          need_rdfa_local = 1;
+        }
       else if (0 != typeof_count)
         subj = tf_bnode_iid (xp->xp_tf, NULL);
+      else if (!(RDFA_IN_HTML & inner_place_bits) && (NULL == xn->xn_parent)) /*1104 */
+        {
+          subj = uname___empty;
+          need_rdfa_local = 1;
+        }
       break;
     }
   if (prop_pred_count)
