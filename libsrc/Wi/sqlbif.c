@@ -5785,6 +5785,12 @@ bif_isstring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_bool (DV_STRING == DV_TYPE_OF (arg0));
 }
 
+caddr_t
+bif_isstring_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "isstring_session");
+  return box_bool (DV_STRING_SESSION == DV_TYPE_OF (arg0));
+}
 
 caddr_t
 bif_isbinary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -14275,6 +14281,7 @@ sql_bif_init (void)
   bif_define_typed ("isblob", bif_isblob_handle, &bt_integer);
   bif_define_typed ("isentity", bif_isentity, &bt_integer);
   bif_define_typed ("isstring", bif_isstring, &bt_integer);
+  bif_define_typed ("isstring_session", bif_isstring_session, &bt_integer);
   bif_define_typed ("isbinary", bif_isbinary, &bt_integer);
   bif_define_typed ("isarray", bif_isarray, &bt_integer);
   bif_define_typed ("isvector", bif_isvector, &bt_integer);

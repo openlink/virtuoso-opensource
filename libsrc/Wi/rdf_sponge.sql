@@ -978,6 +978,8 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
     }
   declare ret_begin, ret_html any;
   ret_begin := subseq (ret_body, 0, 4096);
+  if (isstring_session (ret_begin))
+    ret_begin := string_output_string (ret_begin);
   ret_html := xtree_doc (ret_begin, 2);
   if (xpath_eval ('/html|/xhtml', ret_html) is not null)
     return 'text/html';
