@@ -915,8 +915,11 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		$$ = spar_gp_finalize (sparp_arg, $3);
 		sparp_validate_options_of_tree (sparp_arg, $$, $$->_.gp.options); }
 	| spar_select_query_mode {
+		$<token_type>$ = (ptrlong)(sparp_env()->spare_context_gp_subtypes->data);
 		if (NULL == sparp_env()->spare_context_sinvs) { /* There's an exception related to codegen-time optimization SERVICE { SELECT {x}} like it is SERVICE {x}, so no error right here. */
 		    SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "subquery"); }
+		if (SERVICE_L == $<token_type>$)
+		  spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
@@ -929,6 +932,7 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		SPART *where_gp;
 	        caddr_t retselid;
 		SPART *wm = $6;
+		SPART *res;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
 		retselid = spar_selid_pop (sparp_arg);
 		wm->_.wm.where_gp = where_gp;
@@ -937,7 +941,13 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		if (SPAR_REQ_TOP == subselect_top->type)
 		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
 		spar_env_pop (sparp_arg);
-		$$ = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top);
+		res = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top);
+		if (SERVICE_L == $<token_type>2)
+		  {
+		    spar_gp_add_member (sparp_arg, res);
+		    res = spar_gp_finalize (sparp_arg, NULL);
+		  }
+		$$ = res;
 		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	;
 

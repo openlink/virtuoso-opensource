@@ -1292,6 +1292,8 @@ spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery
   SPART *gp;
   gp = spar_gp_finalize (sparp, options);
   gp->_.gp.subquery = subquery;
+  if ((SELECT_L != gp->_.gp.subtype) && (0 != gp->_.gp.subtype))
+    spar_internal_error (sparp, "spar_" "gp_finalize_with_subquery(): subquery is composed in a wrong way");
   gp->_.gp.subtype = SELECT_L;
   if (NULL != options)
     sparp_validate_options_of_tree (sparp, gp, options);

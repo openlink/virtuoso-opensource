@@ -528,9 +528,11 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
       }
     case SPAR_FUNCALL:
       {
-        int argcount = BOX_ELEMENTS (tree->_.funcall.argtrees);
+        caddr_t fname = tree->_.funcall.qname;
         ssg_putchar (' ');
-        ssg_sdprin_qname (ssg, (SPART *)(tree->_.funcall.qname));
+        if (!strncmp (fname, "xpath:", 6))
+          fname = t_box_dv_short_string (fname + 6);
+        ssg_sdprin_qname (ssg, (SPART *)(fname));
             ssg_putchar ('(');
             ssg->ssg_indent++;
             ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');

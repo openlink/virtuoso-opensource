@@ -452,6 +452,7 @@ sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper)
   sub_sparp->sparp_expr = subq;
   sub_sparp->sparp_env = subq->_.req_top.shared_spare;
   sub_sparp->sparp_parent_sparp = sparp;
+  sub_sparp->sparp_first_equiv_idx = sparp->sparp_sg->sg_equiv_count;
   return sub_sparp;
 }
 
@@ -628,6 +629,8 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
         curr_eq->e_const_reads++;
       if (SPARP_EQUIV_ADD_SUBQUERY_USE & flags)
         spar_internal_error (sparp, "SPARP_EQUIV_INS_VARIABLE conflicts with SPARP_EQUIV_ADD_SUBQUERY_USE");
+      if (SPARP_EQUIV_ADD_OPTIONAL_READ & flags)
+        spar_internal_error (sparp, "SPARP_EQUIV_INS_VARIABLE conflicts with SPARP_EQUIV_ADD_OPTIONAL_READ");
     }
   else
     {
@@ -645,7 +648,13 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
 
 namesake_found:
   if (SPARP_EQUIV_GET_NAMESAKES & flags)
+    {
+      if (SPARP_EQUIV_ADD_SUBQUERY_USE & flags)
+        curr_eq->e_subquery_uses++;
+      if (SPARP_EQUIV_ADD_OPTIONAL_READ & flags)
+        curr_eq->e_optional_reads++;
     return curr_eq;
+    }
   curr_vars = curr_eq->e_vars;
   varcount = curr_eq->e_var_count;
   for (varctr = 0; varctr < varcount; varctr++)
