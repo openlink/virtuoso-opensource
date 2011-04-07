@@ -1603,6 +1603,12 @@ pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, i
   if (!itc->itc_bp.bp_is_pos_valid)
     {
       log_error ("Invalid bit position on index: %s", itc->itc_tree->it_key->key_name);
+      if (itc->itc_type == ITC_CURSOR)
+	{
+	  it_cursor_t * it = (it_cursor_t *) itc;
+	  if (!wi_inst.wi_checkpoint_atomic && it->itc_ltrx)
+	    itc_bust_this_trx (it, NULL, ITC_BUST_THROW);
+	}
       GPF_T1 ("next/prev of non-valid bit pos");
     }
   switch (itc->itc_bp.bp_ce_type)
