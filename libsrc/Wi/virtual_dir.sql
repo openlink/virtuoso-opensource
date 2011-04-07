@@ -757,10 +757,8 @@ if (rc)
 	    {
 	      set http_charset=charset;
 	    }
-	  http_header (concat (http_header_get (), 'ETag: "', tag,
-		sprintf ('"\r\nContent-Length: %d\r\n\r\n', length (cnt))));
-	  http_flush (2);
-	  ses_write (cnt);
+	  http_header (concat (http_header_get (), sprintf ('ETag: "%s"\r\n', tag)));
+	  http (cnt);
 	}
       else
 	{
