@@ -1009,6 +1009,8 @@ char *product_version_string ()
   return buf;
 }
 
+extern int process_is_swapping;
+
 void
 status_report (const char * mode, query_instance_t * qi)
 {
@@ -1077,21 +1079,28 @@ status_report (const char * mode, query_instance_t * qi)
       END_DO_SET ();
       mutex_leave (thread_mtx);
       dk_set_free (clients);
-      PrpcSelfSignal ((self_signal_func) st_collect_ps_info, (caddr_t)&set);
-      semaphore_enter (ps_sem);
-      rep_printf ("\n\nRunning Statements:\n%12.12s Text\n", "Time (msec)");
-      DO_SET (caddr_t, data, &set)
+      if (!process_is_swapping)
 	{
-	  if (DV_TYPE_OF (data) == DV_C_STRING)
+	  PrpcSelfSignal ((self_signal_func) st_collect_ps_info, (caddr_t)&set);
+	  semaphore_enter (ps_sem);
+	  rep_printf ("\n\nRunning Statements:\n%12.12s Text\n", "Time (msec)");
+	  DO_SET (caddr_t, data, &set)
+	    {
+	      if (DV_TYPE_OF (data) == DV_C_STRING)
 
-	    rep_printf ("%.80s\n", data);
-	  else
-	    rep_printf ("%12ld ", unbox (data));
-	  dk_free_box (data);
+		rep_printf ("%.80s\n", data);
+	      else
+		rep_printf ("%12ld ", unbox (data));
+	      dk_free_box (data);
+	    }
+	  END_DO_SET ();
+	  dk_set_free (set);
+	  set = NULL;
 	}
-      END_DO_SET ();
-      dk_set_free (set);
-      set = NULL;
+      else
+	{
+	  rep_printf ("\n\nProcess is swapping cannot get client status report.");
+	}
     }
   if (strchr (mode, 'k'))
     key_stats ();
