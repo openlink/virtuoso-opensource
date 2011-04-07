@@ -2581,6 +2581,23 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
 }
 ;
 
+create procedure DB.DBA.RDF_VALIDATE_RDFXML (in strg varchar, in base varchar, in graph varchar)
+{
+  declare app_env any;
+  declare old_log_mode int;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() requires a valid IRI as a base argument if graph is not specified');
+    }
+  rdf_load_rdfxml (strg, 0, graph, vector ( '', '', '', '', '', '', '' ), app_env, base );
+  return graph;
+}
+;
+
 create procedure DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH (inout g varchar, inout g_iid IRI_ID, inout app_env any) {
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(', g, g_iid, app_env, ')');
   ;
