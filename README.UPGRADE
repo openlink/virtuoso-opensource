@@ -92,3 +92,24 @@ the new RDF_QUAD table is installed. The steps for this are:
      section
 
   8. Start up database
+
+
+Upgrading from VOS 6.1.X to VOS 6.1.Y
+-------------------------------------
+
+The database format has not changed between various versions of Virtuoso
+6.1.X, so from a database standpoint no particular steps need to be
+performed before upgrading to the latest version of Virtuoso 6.1.x.
+
+The only requirement is that you have properly shutdown the database
+prior to installing the latest binaries, as the transaction logs can
+have a different version tag. In this case the virtuoso server will
+print the following message and refuses to start the database:
+
+    The transaction log file has been produced by server version
+    '06.01.XXXX'. The version of this server is '06.01.YYYY'. If the
+    transaction log is empty or you do not want to replay it then delete
+    it and start the server again. Otherwise replay the log using the
+    server of version '06.01.XXXX' and make checkpoint and shutdown
+    to ensure that the log is empty, then delete it and start using
+    new version.
