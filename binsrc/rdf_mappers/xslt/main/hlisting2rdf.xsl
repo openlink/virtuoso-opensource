@@ -21,6 +21,24 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY book "http://purl.org/NET/book/vocab#">
+<!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY amz "http://webservices.amazon.com/AWSECommerceService/2005-10-05">
+<!ENTITY oplamz "http://www.openlinksw.com/schemas/amazon#">
+]>
+
 <xsl:stylesheet
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:rss="http://purl.org/rss/1.0/"
@@ -36,23 +54,91 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+	xmlns:gr="&gr;"	
+	xmlns:sioc="http://rdfs.org/sioc/ns#"	
     version="1.0">
+	
     <xsl:output indent="yes" omit-xml-declaration="yes" method="xml" />
+
     <xsl:param name="baseUri" />
+
 	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>	
+
     <xsl:template match="/h:html/h:body">
         <rdf:RDF>
             <xsl:apply-templates />
         </rdf:RDF>
     </xsl:template>
+    
     <xsl:template match="//*[@class='hlisting']">
       <rdf:Description rdf:about="{$docproxyIRI}">
-        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hlisting')}" />
+			<xsl:for-each select="//*[@class='hlisting']">
+				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', concat('hlisting', position()))}" />
+				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Vendor', position()))}" />
+				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer', position()))}" />
+			</xsl:for-each>
       </rdf:Description>	
-        <hlisting:Listing rdf:about="{vi:proxyIRI ($baseUri, '', 'hlisting')}">
+		<xsl:for-each select="//*[@class='hlisting']">
+			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('hlisting', position()))}">
+				<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
             <xsl:apply-templates mode="hlisting" />
-        </hlisting:Listing>
+			</rdf:Description>
+			<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', concat('Vendor', position()))}">
+				<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer', position()))}"/>
+				<xsl:apply-templates mode="vendor" />
+			</gr:BusinessEntity>
+			<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', concat('Offer', position()))}">
+				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+				<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+				<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', concat('hlisting', position()))}"/>
+				<xsl:variable name="pos" select="position()"/>
+				<sioc:link rdf:resource="{.//a/@href}" />
+				<xsl:for-each select=".//*[@class = 'price']">
+					<gr:hasPriceSpecification>
+						<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('Price', $pos))}">
+							<rdfs:label>
+								<xsl:value-of select="concat(substring-after(., '$'), ' (USD)')" />
+							</rdfs:label>
+							<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+							<gr:hasCurrencyValue rdf:datatype="&xsd;float">
+								<xsl:value-of select="substring-after(., '$')"/>
+							</gr:hasCurrencyValue>
+							<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
+							<gr:priceType rdf:datatype="&xsd;string">sale price</gr:priceType>
+						</gr:UnitPriceSpecification>
+					</gr:hasPriceSpecification>
+				</xsl:for-each>
+				<xsl:apply-templates mode="offering" />
+			</gr:Offering>
+		</xsl:for-each>
     </xsl:template>
+	
+	<xsl:template match="*" mode="vendor">
+        <xsl:variable name="class" select="@class" />
+        <xsl:variable name="field">
+            <xsl:choose>
+                <xsl:when test="contains($class, 'lister')">
+                    <xsl:value-of select="'lister'" />
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="$class" />
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        <xsl:choose>
+            <xsl:when test="$field='lister'">
+				<xsl:apply-templates select="." mode="extract-vcard" />
+			</xsl:when>
+        </xsl:choose>
+    </xsl:template>
+	
+	<xsl:template match="*" mode="offering">
+		<xsl:if test="@class='item'">
+			<xsl:apply-templates select="." mode="extract-vcard" />
+		</xsl:if>
+    </xsl:template>
+
+    
     <xsl:template match="*" mode="hlisting">
         <xsl:variable name="class" select="@class" />
         <xsl:variable name="field">
@@ -72,14 +158,8 @@
                 <xsl:when test="$class='dtexpired'">
                     <xsl:value-of select="'dtexpired'" />
                 </xsl:when>
-                <xsl:when test="contains($class, 'sell') or  contains($class, 'rent') or  contains($class, 'trade') or  contains($class, 'meet') or  contains($class, 'announce') or  contains($class, 'offer') or  contains($class, 'wanted') or  contains($class, 'event') or  contains($class, 'service')">
-                    <xsl:value-of select="'listing_action'" />
-                </xsl:when>
                 <xsl:when test="contains($class, 'lister')">
                     <xsl:value-of select="'lister'" />
-                </xsl:when>
-                <xsl:when test="contains($class, 'price')">
-                    <xsl:value-of select="'price'" />
                 </xsl:when>
                 <xsl:otherwise>
                     <xsl:value-of select="$class" />
@@ -92,43 +172,22 @@
                     <xsl:value-of select="@title" />
                 </dcterms:created>
             </xsl:when>
-            <xsl:when test="$field='price'">
-                <hlisting:price>
-                    <xsl:value-of select="." />
-                </hlisting:price>
-            </xsl:when>
             <xsl:when test="$field='dtexpired'">
                 <dcterms:available>
                     <xsl:value-of select="@title" />
                 </dcterms:available>
             </xsl:when>
             <xsl:when test="$field='item'">
-                <hlisting:item>
-                    <v:VCard>
                         <xsl:apply-templates select="." mode="extract-vcard" />
-                    </v:VCard>
-                </hlisting:item>
-            </xsl:when>
-            <xsl:when test="$field='lister'">
-                <hlisting:lister>
-                    <v:VCard>
-                        <xsl:apply-templates select="." mode="extract-vcard" />
-                    </v:VCard>
-                </hlisting:lister>
             </xsl:when>
             <xsl:when test="$field='description'">
                 <dc:description>
                     <xsl:value-of select="." />
                 </dc:description>
             </xsl:when>
-            <xsl:when test="$field='listing_action'">
-                <hlisting:listing_action>
-                    <xsl:value-of select="." />
-                </hlisting:listing_action>
-            </xsl:when>
         </xsl:choose>
-        <xsl:apply-templates mode="hlisting" />
     </xsl:template>
+	
     <xsl:template match="*" mode="extract-vcard">
         <xsl:variable name="fn">
             <xsl:call-template name="testclass">
@@ -256,9 +315,12 @@
             </xsl:call-template>
         </xsl:variable> <!-- ============================================================ -->
         <xsl:if test="$fn != 0">
-            <v:fn>
+            <gr:name>
                 <xsl:value-of select="." />
-            </v:fn>
+            </gr:name>
+			<rdfs:label>
+                <xsl:value-of select="." />
+			</rdfs:label>
         </xsl:if>
         <xsl:if test="$n != 0">
             <v:n rdf:parseType="Resource">
@@ -425,7 +487,9 @@
         </xsl:if>
         <xsl:apply-templates mode="extract-vcard" />
     </xsl:template>
+	
     <xsl:template match="comment()|processing-instruction()|text()" mode="extract-vcard" />
+    
     <xsl:template match="*" mode="extract-tel">
         <xsl:variable name="type" select=".//*[@class='type']" />
         <xsl:variable name="value" select=".//*[@class='value']" />
@@ -451,6 +515,7 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
+    
     <xsl:template name="tel">
         <xsl:param name="type" select="''" />
         <xsl:param name="value" select="'+1-800-555-1212'" />
@@ -484,6 +549,7 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template> <!-- ============================================================ -->
+	
     <xsl:template match="*" mode="extract-email">
         <xsl:variable name="type" select=".//*[@class='type']" />
         <xsl:variable name="value" select=".//*[@class='value']/@href" />
@@ -516,6 +582,7 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template> <!-- ============================================================ -->
+    
     <xsl:template match="*" mode="extract-adr">
         <xsl:variable name="type" select=".//*[@class='type']" />
         <xsl:variable name="token" select="translate($type,
