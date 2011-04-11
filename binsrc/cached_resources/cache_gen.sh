@@ -63,6 +63,11 @@ uriprefix='http://www.w3.org/2000/01/'
 publishingdate='2004-02-10 20:54'
 cache_file 'rdf-schema'		'<owl:Onthology rdf:about=\"http://www.w3.org/2000/01/rdf-schema#\"/>'	'An RDF description of the RDF and RDFS vocalulary'
 
+fileprefix='w3-1999-xhtml/'
+uriprefix='http://www.w3.org/1999/xhtml/'
+publishingdate='2010-01-27 20:54'
+cache_file 'vocab'		''	'XHTML Vocabulary'
+
 fileprefix='openlinksw-sparql/'
 uriprefix='http://www.openlinksw.com/sparql/'
 publishingdate='2006-09-11 01:25'
