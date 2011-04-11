@@ -480,10 +480,7 @@ spar_find_sc_for_big_ssl_const (sparp_t *sparp, sql_comp_t **sc_ret)
   sc_ret[0] = sparp->sparp_sparqre->sparqre_super_sc;
   if (NULL == sc_ret[0])
     {
-#ifdef NDEBUG
-      spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text");
-#endif
-      return 0;
+      spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text, add 'define sql:big-data-const 0' for workaround");
     }
   else
     {
