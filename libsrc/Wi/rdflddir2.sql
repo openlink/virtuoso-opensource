@@ -201,7 +201,7 @@ rdf_load_dir (in path varchar,
 
 create procedure ld_array ()
 {
-  declare first, last, arr, len, local any;
+  declare first, last, arr, fs, len, local any;
   declare cr cursor for
       select top 100 LL_FILE, LL_GRAPH
         from DB.DBA.LOAD_LIST table option (index ll_state)
@@ -214,15 +214,20 @@ create procedure ld_array ()
   first := 0;
   last := 0;
  arr := make_array (100, 'any');
+  fs  := make_array (100, 'any');
   fill := 0;
   open cr;
   len := 0;
   for (;;)
     {
+      next:
       fetch cr into f, g;
+      if (file_stat (f, 1) = 0)
+	goto next;
       if (0 = first) first := f;
       last := f;
       arr[fill] := vector (f, g);
+      fs[fill] := f;
     len := len + cast (file_stat (f, 1) as int);
       fill := fill + 1;
       if (len > 2000000 or fill >= 100)
@@ -233,8 +238,7 @@ create procedure ld_array ()
     return 0;
   if (1 <> sys_stat ('cl_run_local_only'))
     local := sys_stat ('cl_this_host');
-  update load_list set ll_state = 1, ll_started = curdatetime (), LL_HOST = local
-    where ll_file >= first and ll_file <= last;
+  update load_list set ll_state = 1, ll_started = curdatetime (), LL_HOST = local where ll_file in (fs);
   return arr;
 }
 ;
