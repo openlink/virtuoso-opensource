@@ -571,7 +571,7 @@ create procedure b3s_label (in _S any, in langs any)
   declare lang, stat, msg varchar;
 
   stat := '00000';
-  exec (sprintf ('sparql define input:inference "virtrdf-label" '||
+  exec (sprintf ('sparql define input:inference "facets" '||
   'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
   if (stat <> '00000')
     return '';
@@ -581,7 +581,7 @@ create procedure b3s_label (in _S any, in langs any)
     {
       for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
 	{
-	  q := rdfdesc_get_lang_by_q (langs, data[i][1]);
+	  q := b3s_get_lang_by_q (langs, data[i][1]);
 	  --dbg_obj_print (data[i][0], langs, data[i][1], q);
           if (q > best_q)
 	    {
