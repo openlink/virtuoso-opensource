@@ -2191,7 +2191,7 @@ again:
               return 0;
             rb_complete (rb, qi->qi_trx, qi);
           }
-        name = rb->rb_box;
+        name = box_copy_tree (rb->rb_box);
         dtp = DV_TYPE_OF (name);
         goto again; /* see above */
       }
