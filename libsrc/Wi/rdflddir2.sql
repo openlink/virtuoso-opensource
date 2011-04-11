@@ -132,6 +132,8 @@ create procedure ld_ttlp_flags (in fname varchar)
 {
   if (fname like '%/btc-2009%' or fname like '%.nq%' or fname like '%.n4')
     return 255 + 512;
+   if (fname like '%.trig' or fname like '%.trig.gz')
+     return 255 + 256;
   return 255;
 }
 ;
