@@ -2272,15 +2272,11 @@ canon_iri_to_id (query_instance_t *qi, caddr_t canon_name, int mode, caddr_t *er
       switch (mode)
         {
         case IRI_TO_ID_IF_KNOWN:
-          return key_name_to_iri_id (qi->qi_trx, canon_name, 0); break;
+          return key_name_to_iri_id (qi->qi_trx, canon_name, 0);
         case IRI_TO_ID_WITH_CREATE:
           return key_name_to_iri_id (qi->qi_trx, canon_name, 1);
-#ifdef DEBUG
-	  if (!boxed_iid) bing ();
-#endif
-	  break;
         case IRI_TO_ID_IF_CACHED:
-          return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name); break;
+          return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name);
         }
       break;
     default: err_ret[0] = srv_make_new_error ("RDFXX", ".....",
