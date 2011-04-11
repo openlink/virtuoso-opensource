@@ -647,7 +647,7 @@ dtd_normalize_attr_val (vxml_parser_t* parser, const char* value, int level)
 	    unichar c = dtd_char_ref (parser, tmp_buf.lm_memblock + (i + 1), tmp_buf.lm_length - (i + 1));
 	    if (c >= 0)
 	      {
-		while (';' != tmp_buf.lm_memblock[++i]) {}
+		while (';' != tmp_buf.lm_memblock[++i] && (i < tmp_buf.lm_length)) {}
 /* Trick! The fact is used that &..; notation is longer than UTF8 encoding for all standard charrefs,
 thus the length of output is no larger than the length if input. */
 		buf_tail = eh_encode_char__UTF8 (c, buf_tail, buf_tail+MAX_UTF8_CHAR /* no need to pass the handler here */);
@@ -1223,6 +1223,8 @@ thus the length of output is no larger than the length if input. */
 	}
 
     }
+  if ((NULL != parser->inner_tag) && (NULL != parser->inner_tag->ot_descr) && parser->inner_tag->ot_descr->htmltd_is_script)
+    return 0;
   if (log_syntax_error)
     xmlparser_logprintf (parser, XCFG_FATAL, ECM_MESSAGE_LEN, "Invalid reference"); /* unexpected input */
   return 0;
