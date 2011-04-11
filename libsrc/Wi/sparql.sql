@@ -361,6 +361,7 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'product'	, 'http://www.buy.com/rss/module/productV2/'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'protseq'	, 'http://purl.org/science/protein/bysequence/'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdf'	, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'rdfa'	, 'http://www.w3.org/ns/rdfa#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfdf'	, 'http://www.openlinksw.com/virtrdf-data-formats#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfs'	, 'http://www.w3.org/2000/01/rdf-schema#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'sc'	, 'http://purl.org/science/owl/sciencecommons/'		, 2);
