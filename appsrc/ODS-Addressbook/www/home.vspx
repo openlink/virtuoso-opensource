@@ -166,7 +166,7 @@
       -- value
       if (fProperty = 'description')
          {
-        F := '<pre>' || AB.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
+        F := '<pre style="margin: 0; white-space: pre-wrap;">' || AB.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
       }
       else if (internal_type (fValue) = 211)
            {
