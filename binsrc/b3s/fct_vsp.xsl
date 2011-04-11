@@ -331,9 +331,7 @@ function init(){
 	</xsl:if>
 	    <td>
 	      <xsl:if test="'url' = column[1]/@datatype">
-		<a><xsl:attribute name="href">
-		    /describe/?url=<xsl:value-of select="urlify (column[1])"/>&amp;sid=<xsl:value-of select="$sid"/>
-		  </xsl:attribute>
+		<a><xsl:attribute name="href">/describe/?url=<xsl:value-of select="urlify (column[1])"/>&amp;sid=<xsl:value-of select="$sid"/></xsl:attribute>
 		  <xsl:attribute name="class">describe</xsl:attribute>Describe</a>
 	      </xsl:if>
 	      <xsl:if test="$view-type = 'properties' or $view-type = 'classes'">
