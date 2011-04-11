@@ -46,7 +46,7 @@
       <v:variable name="_ask_rdf" type="int" default="0" persist="0" />
       <v:variable name="_udata" type="any" default="NULL" persist="0" />
       <v:variable name="_auth" type="varchar" default="''" persist="0" />
-      <v:variable name="mode" type="varchar" default="''" persist="0" />
+      <v:variable name="mode" type="varchar" default="''" persist="0" param-name="mode"/>
       <v:variable name="_old_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_uid" type="varchar" default="''" persist="0" />
@@ -63,6 +63,7 @@
       <v:variable name="_accept_rdf" type="int" default="0" persist="0" />
       <v:variable name="_bot" type="int" default="1" persist="0" />
       <v:variable name="_thr" type="int" default="1" persist="0" />
+      <v:variable name="_delay" type="float" default="1" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -94,7 +95,7 @@
             declare _idx varchar;
             declare _n_own, ename integer;
             self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
-            if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit')
+            if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
             {
 	      declare _host, _root, _tmp any;
               _n_own := 0;
@@ -104,12 +105,12 @@
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
 		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
 		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
-		VS_ACCEPT_RDF, VS_BOT, VS_THREADS
+		VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
 		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
 		self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
-		self._accept_rdf, self._bot, self._thr
+		self._accept_rdf, self._bot, self._thr, self._delay
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 
               if (self._other is null) 
@@ -169,6 +170,7 @@
 	      self.target_pwd := '';
 	      self._udata := vector ();
               self._depth := 'unlimited';
+	      self._delay := 0;
             }
           ]]>
         </v:script>
@@ -337,6 +339,12 @@
               <td>Number of threads</td>
               <td>
                 <v:text name="thr" value="--self._thr"  />
+              </td>
+            </tr>
+            <tr>
+              <td>Crawl delay (sec)</td>
+              <td>
+                <v:text name="delay" value="--sprintf ('%.2f', self._delay)"  />
               </td>
             </tr>
             <tr>
@@ -622,6 +630,7 @@
 			self._convhtml := atoi (get_keyword ('convhtml', params, '0'));
 			self._bot := atoi (get_keyword ('bot', params, '0'));
 			self._thr := atoi (get_keyword ('thr', params, '1'));
+			self._delay := atof (get_keyword ('delay', params, '0'));
 
 			if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
 			  {
@@ -729,7 +738,8 @@
 			      VS_XPATH = self._xp_exp,
 			      VS_ACCEPT_RDF = self._accept_rdf,
 			      VS_THREADS = self._thr,
-			      VS_BOT = self._bot
+			      VS_BOT = self._bot,
+			      VS_DELAY = self._delay
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
@@ -749,14 +759,14 @@
 			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
 			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
 			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
-			    VS_THREADS, VS_BOT)
+			    VS_THREADS, VS_BOT, VS_DELAY)
 			    values
 			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
 			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
 			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
 			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
 			    self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
-			    self._thr, self._bot);
+			    self._thr, self._bot, self._delay);
 
 			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
 			    values (self._host, self._url, now(), 'waiting', self._root);

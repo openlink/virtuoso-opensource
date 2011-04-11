@@ -128,6 +128,13 @@
 		      text="&#160;Edit"
 		      url="--concat('robot_edit.vspx?mode=edit&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
 		      />
+		    <v:button action="simple" style="image" name="url3"
+		      value="images/icons/copy_16.png"
+		      xhtml_alt="Copy"
+		      xhtml_title="Copy"
+		      text="&#160;Copy"
+		      url="--concat('robot_edit.vspx?mode=copy&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+		      />
 		    <v:button action="simple" style="image" name="data_set2_delete"
 		      value="images/icons/trash_16.png"
 		      xhtml_alt="Delete"
