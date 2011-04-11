@@ -2800,6 +2800,73 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 }
 ;
 
+
+create procedure DB.DBA.RDF_RDFA11_FETCH_PROFILES (in profile_iris any, inout prefixes any, inout terms any, inout vocab any)
+{
+  declare agg any;
+  --dbg_obj_princ ('DB.DBA.RDF_RDFA11_FETCH_PROFILES (', profile_iris, ')');
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      if (not exists (sparql define input:storage "" ask where { graph `iri(?:profile_iri)` { ?s ?p ?o }}))
+        DB.DBA.SPARUL_LOAD (profile_iri, profile_iri, 0, NULL, 0);
+    }
+  vectorbld_init (agg);
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      for (sparql define input:storage "" prefix rdfa: <http://www.w3.org/ns/rdfa#>
+        select ?p, ?u
+        where {
+            graph `iri(?:profile_iri)` {
+                ?s rdfa:prefix ?p ; rdfa:uri ?u .
+                optional { ?s rdfa:uri ?u2 . filter (?u != ?u2). }
+                filter (isliteral (?p))
+                filter (isliteral (?u))
+                filter (?u != '')
+                filter (!bound (?u2)) } }
+        ) do { vectorbld_acc (agg, "p", "u"); }
+    }
+  vectorbld_final (agg);
+  prefixes := agg;
+  vectorbld_init (agg);
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      for (sparql define input:storage "" prefix rdfa: <http://www.w3.org/ns/rdfa#>
+        select ?t, ?u
+        where {
+            graph `iri(?:profile_iri)` {
+                ?s rdfa:term ?t ; rdfa:uri ?u .
+                optional { ?s rdfa:uri ?u2 . filter (?u != ?u2). }
+                optional { ?s rdfa:term ?t2 . filter (?t != ?t2). }
+                filter (isliteral (?t))
+                filter (isliteral (?u))
+                filter (?t != '')
+                filter (?u != '')
+                filter (!bound (?t2))
+                filter (!bound (?u2)) } }
+        order by ?t
+        ) do { vectorbld_acc (agg, "t", "u"); }
+    }
+  vectorbld_final (agg);
+  if (1 < length (profile_iris))
+    gvector_sort (agg, 2, 0, 1);
+  terms := agg;
+  vocab := null;
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      vocab := (sparql define input:storage "" prefix rdfa: <http://www.w3.org/ns/rdfa#>
+        select (max(str(?v)))
+        where {
+            graph `iri(?:profile_iri)` {
+                ?s rdfa:vocabulary ?v } } );
+      if (isstring (vocab))
+        goto vocab_is_set;
+    }
+vocab_is_set: ;
+  --dbg_obj_princ ('DB.DBA.RDF_RDFA11_FETCH_PROFILES (', profile_iris, ' returned ', prefixes, terms, vocab);
+}
+;
+
+
 create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null, in xml_parse_mode integer := 0)
 {
   declare app_env any;
@@ -12045,6 +12112,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TTL2HASH to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_RDFA11_FETCH_PROFILES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFA to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE',
