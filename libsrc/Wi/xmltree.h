@@ -697,28 +697,34 @@ typedef struct xp_rdfa_locals_s
   struct xp_rdfa_locals_s *xrdfal_parent;	/*!< Pointer to parent context */
   xp_node_t *	xrdfal_xn;		/*!< Node whose not-yet-closed element corresponds to the given context */
   int		xrdfal_place_bits;	/*!< A combination of RDFA_IN_... bits */
-  caddr_t	xrdfal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs */
   caddr_t	xrdfal_subj;		/*!< A [new subject] as set at the end of parsing the opening tag. It can be NULL, look up */
   caddr_t	xrdfal_obj_res;		/*!< A [current object resource] as set at the end of parsing the opening tag or created as bnode after that */
   caddr_t	xrdfal_datatype;	/*!< Datatype IRI */
-  caddr_t	xrdfal_language;	/*!< Language label */
+  caddr_t	xrdfal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs. Automatically inherited from parent */
+  caddr_t	xrdfal_language;	/*!< Language label. Automatically inherited from parent */
+  caddr_t	xrdfal_vocab;		/*!< Vocabulary URI. Automatically inherited from parent */
+  caddr_t *	xrdfal_profile_terms;	/*!< Definitions of terms from an external RDFa profile resource, get-keyword style, sorted by terms for \c ecm_find_name(). Automatically inherited from parent */
   rdfa_ict_t *	xrdfal_ict_buffer;	/*!< Storage for incomplete triples, may contain NULLs at the end */
   int		xrdfal_ict_count;	/*!< Count of stored incomplete triples */
   int		xrdfal_boring_opened_elts;	/*!< Number of opened but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
 } xp_rdfa_locals_t;
 
-#define RDFA_ATTR_ABOUT		101
-#define RDFA_ATTR_CONTENT	102
-#define RDFA_ATTR_DATATYPE	103
-#define RDFA_ATTR_HREF		104
-#define RDFA_ATTR_PROPERTY	105
-#define RDFA_ATTR_REL		106
-#define RDFA_ATTR_RESOURCE	107
-#define RDFA_ATTR_REV		108
-#define RDFA_ATTR_SRC		109
-#define RDFA_ATTR_TYPEOF	110
-#define RDFA_ATTR_XML_BASE	111
-#define RDFA_ATTR_XML_LANG	112
+#define RDFA_ATTR_ABOUT		0
+#define RDFA_ATTR_CONTENT	1
+#define RDFA_ATTR_DATATYPE	2
+#define RDFA_ATTR_HREF		3
+#define RDFA_ATTR_PREFIX	4
+#define RDFA_ATTR_PROFILE	5
+#define RDFA_ATTR_PROPERTY	6
+#define RDFA_ATTR_REL		7
+#define RDFA_ATTR_RESOURCE	8
+#define RDFA_ATTR_REV		9
+#define RDFA_ATTR_SRC		10
+#define RDFA_ATTR_TYPEOF	11
+#define RDFA_ATTR_VOCAB		12
+#define RDFA_ATTR_XML_BASE	13
+#define RDFA_ATTR_XML_LANG	14
+#define COUNTOF__RDFA_ATTR	15
 
 /*! This structure is kept in RDFa parser as a DV_ARRAY_OF_POINTER and freed in case of error, to avoid memleaks.
 It is allocated once and only partially cleaned by callback calls. */
