@@ -658,22 +658,22 @@ function eDelete(event, obj, onOffset) {
 
 	// delete dialog
 	if (onOffset != null) {
-		deleteDialog2.ok = function() {
+		deleteDialog2.okBtn.onclick = function() {
   		deleteDialog2.hide();
       if ($('e_delete_0').checked)
         createHidden('F1', 'onOffset', onOffset);
       createHidden('F1', 'delete', obj.id);
     doPost ('F1', 'command');
   }
-  	deleteDialog2.cancel = deleteDialog2.hide;
+		deleteDialog2.cancelBtn = deleteDialog2.hide;
   	deleteDialog2.show ();
   } else {
-  	deleteDialog.ok = function() {
+		deleteDialog.okBtn.onclick = function() {
       createHidden('F1', 'delete', obj.id);
       doPost ('F1', 'command');
   		deleteDialog.hide();
    	}
-   	deleteDialog.cancel = deleteDialog.hide;
+		deleteDialog.cancelBtn = deleteDialog.hide;
   	deleteDialog.show ();
   }
   return false;

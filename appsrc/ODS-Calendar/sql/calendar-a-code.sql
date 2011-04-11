@@ -6238,7 +6238,8 @@ create procedure CAL.WA.import_feed_rss_item (
   description := xpath_eval ('[ xmlns:content="http://purl.org/rss/1.0/modules/content/" ] string(/item/content:encoded)', xt, 1);
   if (is_empty_or_null (description))
     description := xpath_eval ('string(/item/description)', xt, 1);
-  description := CAL.WA.string2xml (serialize_to_UTF8_xml (description));
+  description := serialize_to_UTF8_xml (description);
+
   link := cast (xpath_eval ('/item/link', xt, 1) as varchar);
   if (isnull (link))
   {
@@ -6296,31 +6297,40 @@ create procedure CAL.WA.import_feed_atom_item(
     if (length (contents) = 1)
     {
       description := CAL.WA.xml2string(contents[0]);
-    } else {
+    }
+    else
+    {
       description := '<div>';
       foreach (any content in contents) do
+      {
         description := concat(description, CAL.WA.xml2string(content));
-      description := concat(description, '</div>');
     }
-  } else {
+      description := description || '</div>';
+    }
+  }
+  else
+  {
     description := xpath_eval ('string(/entry/content)', xt, 1);
     if (is_empty_or_null(description))
       description := xpath_eval ('string(/entry/summary)', xt, 1);
-    description := CAL.WA.string2xml (serialize_to_UTF8_xml (description));
+
+    description := serialize_to_UTF8_xml (description);
   }
+
   link := cast (xpath_eval ('/entry/link[@rel="alternate"]/@href', xt, 1) as varchar);
+
   uid := cast (xpath_eval ('/entry/id', xt, 1) as varchar);
-  pubDate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/created', xt, 1) as varchar), null);
+
+  pubDate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/created', xt, 1) as varchar));
   if (isnull (pubDate))
   {
-    pubdate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/modified', xt, 1) as varchar), null);
+    pubdate := CAL.WA.dt_convert (cast(xpath_eval ('/entry/modified', xt, 1) as varchar));
     if (isnull (pubDate))
     {
-      pubdate := CAL.WA.dt_convert(cast(xpath_eval ('/entry/updated', xt, 1) as varchar), null);
-      if (isnull (pubDate))
-        pubdate := now();
+      pubdate := CAL.WA.dt_convert (cast(xpath_eval ('/entry/updated', xt, 1) as varchar), now ());
     }
   }
+
   id := CAL.WA.import_task_update
         (
           id,                                   -- id
