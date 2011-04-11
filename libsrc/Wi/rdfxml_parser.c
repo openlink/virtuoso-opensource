@@ -476,7 +476,10 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             }
 	  else if (!strcmp (tmp_local, "type"))
 	    {
-              goto push_inner_attr_prop; /* see below */
+              dk_set_push (&inner_attr_props, avalue);
+              dk_set_push (&inner_attr_props, ((caddr_t)((ptrlong)'T')));
+              inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
+              continue;
 	    }
 	  else if (!strcmp (tmp_local, "value"))
 	    {
@@ -561,6 +564,12 @@ push_inner_attr_prop:
       size_t l1, l2;
       caddr_t aname, avalue;
       tmp_nsuri = dk_set_pop (&inner_attr_props);
+      if (!IS_BOX_POINTER (tmp_nsuri))
+        {
+          avalue = dk_set_pop (&inner_attr_props);
+          xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_type, avalue);
+          continue;
+        }
       tmp_local = dk_set_pop (&inner_attr_props);
       avalue = dk_set_pop (&inner_attr_props);
       l1 = strlen (tmp_nsuri);
