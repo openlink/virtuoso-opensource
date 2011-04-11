@@ -618,7 +618,7 @@ var progressInc = 100 / progressSize;
 function stopState()
 {
   progressTimer = null;
-  OAT.AJAX.POST('ajax.vsp', "a=load&sa=stop&id="+progressID+urlParam("sid")+urlParam("realm"), x, {async: false});
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=stop&id="+progressID+urlParam("sid")+urlParam("realm"), null, {async: false});
 }
 
 function initState ()
@@ -724,7 +724,7 @@ function readBookmark (id)
   var realm = '';
   if (document.forms[0].elements['realm'])
     realm = document.forms[0].elements['realm'].value;
-  OAT.AJAX.POST ("ajax.vsp", "sid="+sid+"&realm="+realm+"&id="+id+"&a=visited", function(){}, {onstart:function(){}, onerror:function(){}});
+  OAT.AJAX.POST ('ajax.vsp', "sid="+sid+"&realm="+realm+"&id="+id+"&a=visited", function(){}, {onstart:function(){}, onerror:function(){}});
 }
 
 function davBrowse (fld)

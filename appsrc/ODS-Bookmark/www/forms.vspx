@@ -914,7 +914,7 @@
             <v:button action="simple" value="Next" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
-                  declare params, S any;
+                  declare params, S, V any;
                   params := self.vc_page.vc_event.ve_params;
 
                   if (self.v_source = 0)
@@ -953,6 +953,24 @@
                       self.vc_error_message := 'Bad import source!';
                       self.vc_is_valid := 0;
                       return;
+                    } else {
+                      V := BMK.WA.string2xml (S);
+                      if (xpath_eval ('/html', V, 1) is not null)
+                      {
+                        -- HTML, do auto discovery of the feeds
+                        declare url, T any;
+
+                        T := xpath_eval('//head/link[ @rel="alternate" and @type="application/rss+xml" ]/@href', V, 0);
+                        if (not length (T))
+                          T := xpath_eval('//head/link[ @rel="alternate" and @type="application/atom+xml" ]/@href', V, 0);
+
+                        if (length (T))
+                        {
+                          url := cast (T[0] as varchar);
+                          url := WS.WS.EXPAND_URL (self.f_uri.ufl_value, url);
+                          S := BMK.WA.dav_content (url);
+                        }
+                      }
                     }
                   }
                   else if (self.v_source = 3)
@@ -1094,10 +1112,9 @@
             <input type="hidden" name="tags" value="<?V self.v_tag ?>"/>
             <span id="progressMax" style="display: none;">
               <?vsp
-                 declare progressMax, S, T, R, V any;
+                 declare progressMax, S, T, R, V, V2 any;
 
                  progressMax := 0;
-
                  R := DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/Bookmarks/Import/' || self.sid, 'R'), S, T, 0, 0);
                  S := blob_to_string (S);
 
@@ -1111,37 +1128,53 @@
                  S := replace(S, 'FOLDED', '');
                  S := replace(S, '  ', ' ');
                  S := replace(S, '&', '&amp;');
-                 V := BMK.WA.xtree_doc (S, 2);
+
+                 V := BMK.WA.string2xml (S, 2);
                  if (isnull (V))
                    goto _xbel;
-                 V := xpath_eval ('//dl', V);
-                 if (isnull (V))
+                 V2 := xpath_eval ('//dl', V);
+                 if (isnull (V2))
                    goto _xbel;
-                 progressMax := xpath_eval('count (//a)', V);
+                 progressMax := xpath_eval('count (//a)', V2);
                  goto _end;
 
                _xbel:;
                  -- check XBEL format
                  --
-                 V := BMK.WA.xtree_doc (S);
+                 V := BMK.WA.string2xml (S);
                  if (isnull (V))
+                   goto _end;
+                 V2 := xpath_eval('/xbel', V);
+                 if (isnull (V2))
+                   goto _rss;
+                 progressMax := xpath_eval('count (//bookmark)', V2);
+                 goto _end;
+
+               _rss:;
+                 -- check RSS format
+                 --
+                 V2 := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', V);
+                 if (isnull (V2))
+                   goto _atom;
+                 progressMax := xpath_eval('count (/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item)', V2);
+                 goto _end;
+
+               _atom:;
+                 -- check Atom format
+                 --
+                 V2 := xpath_eval ('/feed/entry', V);
+                 if (isnull (V2))
                    goto _delicious;
-                 V := xpath_eval('/xbel', BMK.WA.string2xml(S));
-                 if (isnull (V))
-                   goto _delicious;
-                 progressMax := xpath_eval('count (//bookmark)', V);
+                 progressMax := xpath_eval('count (/feed/entry)', V2);
                  goto _end;
 
               _delicious:;
                  -- check delicious format
                  --
-                 V := BMK.WA.xtree_doc (S);
-                 if (isnull (V))
+                 V2 := xpath_eval('/posts', V);
+                 if (isnull (V2))
                    goto _end;
-                 V := xpath_eval('/posts', V);
-                 if (isnull (V))
-                   goto _end;
-                 progressMax := xpath_eval('count (//post)', V);
+                 progressMax := xpath_eval('count (//post)', V2);
 
               _end:;
                  http (cast (progressMax as varchar));
@@ -1166,7 +1199,7 @@
           </div>
           <script type="text/javascript">
             <![CDATA[
-              initState();
+              OAT.MSG.attach(OAT, "PAGE_LOADED", function(){initState();});
             ]]>
           </script>
         </v:template>
