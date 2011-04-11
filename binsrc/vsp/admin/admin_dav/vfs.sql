@@ -376,6 +376,7 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
   declare aq_list, aq, url_batch any;
   declare err any;
   declare pid, thr_conf, care_bot int;
+  declare delay_sec float;
 
   _total := 0;
   registry_set ('WEB_COPY', 'X __sequence_set (''WEB_COPY_SSHUT'', datediff (''second'', stringdate (''1980-01-01''), now ()), 0)');
@@ -387,15 +388,15 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
   commit work;
 
   whenever not found goto n_site;
-  select VS_URL, VS_METHOD, VS_THREADS, VS_BOT 
-      into _tgt_url, _dav_method, thr_conf, care_bot 
+  select VS_URL, VS_METHOD, VS_THREADS, VS_BOT, VS_DELAY 
+      into _tgt_url, _dav_method, thr_conf, care_bot, delay_sec 
       from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root with (exclusive);
+  if (care_bot)  
+    VFS_ROBOTS_GET (_tgt, _root, delay_sec);
   if (thr_conf is not null and thr_conf > 0)
     nthreads := thr_conf;
   if (nthreads is null or nthreads < 0)
     nthreads := 1;
-  if (care_bot)  
-    VFS_ROBOTS_GET (_tgt, _root);
   commit work;
   -- if it is an update 
   if (_upd = 1)
@@ -439,11 +440,19 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
 	  {
 	    ERR_MAIL_SEND (_tgt, vector (), _root, __SQL_STATE, __SQL_MESSAGE);
 	    rollback work;
+	    __SQL_STATE := cast (__SQL_STATE as varchar);
+	    if (__SQL_STATE = '40001')
+	      {
+		resignal;
+	      }
 	    goto fn_end;
 	  };
 	found_one := 0; ndone := 0;
 	if (WS.WS.VFS_STATUS_GET (_tgt, _root) = 'stopped')
 	  goto fn_end;
+	commit work;
+	if (delay_sec > 0)
+	  delay (delay_sec);
 	for (declare i int, i := 0; i < batch_size; i := i + 1)
 	      {
 	     _rc := call (url_fn) (_tgt, _root, _next_url, _clnt_data);
@@ -2104,7 +2113,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
 }
 ;
 
-create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar)
+create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar, out delay_sec float)
 {
   declare s any;
   declare v1 any;
@@ -2112,6 +2121,7 @@ create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar)
   s := string_output ();
   http (txt, s);
   v1 := '';
+  delay_sec := 0;
   while (1)
     {
       declare l, arr any;
@@ -2138,11 +2148,16 @@ create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar)
 	      exact_match := 1;
 	      v1 := '';
 	      fill := 1;
+	      delay_sec := 0;
 	    }
 	}
       else if (fill and lower (arr[0]) = 'disallow')
 	{
 	  v1 := v1 || trim (arr[1]) || '%;';
+	}
+      else if (fill and lower (arr[0]) = 'crawl-delay')
+	{
+	  delay_sec := atof (trim (arr[1]));
 	}
     }
   ex:
@@ -2153,9 +2168,9 @@ create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar)
 }
 ;
 
-create procedure VFS_ROBOTS_GET (in _host varchar, in _root varchar)
+create procedure VFS_ROBOTS_GET (in _host varchar, in _root varchar, inout site_delay_sec float)
 {
-  declare url, ret, head, me, robots any;
+  declare url, ret, head, me, robots, delay_sec any;
   url := vector ('http', _host, '/robots.txt', '', '', '');
   url := vfs_uri_compose (url);
   robots := null;
@@ -2168,9 +2183,11 @@ create procedure VFS_ROBOTS_GET (in _host varchar, in _root varchar)
     goto en;
   me := coalesce (cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ClientIdString'), 
   	'Mozilla/4.0 (compatible; OpenLink Virtuoso)');
-  robots := vfs_robots_parse (ret, me);
+  robots := VFS_ROBOTS_PARSE (ret, me, delay_sec);
+  if (delay_sec > site_delay_sec)
+    site_delay_sec := delay_sec;
   en:
-  update VFS_SITE set VS_ROBOTS = robots where VS_HOST = _host and VS_ROOT = _root;
+  update VFS_SITE set VS_ROBOTS = robots, VS_DELAY = delay_sec where VS_HOST = _host and VS_ROOT = _root;
   return robots;
 }
 ;
