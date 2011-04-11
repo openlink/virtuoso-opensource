@@ -70,7 +70,7 @@
               self.ld_name.ufl_value := null;
               self.ld_comment.ufl_value := null;
               self.ld_properties := ODS..jsonObject ();
-              self.ld_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', get_keyword ('products', self.ld_properties, vector ()))));
+              self.ld_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', vector ())));
 
               self.vc_data_bind(e);
             ]]>
@@ -128,6 +128,8 @@
                       <![CDATA[
                         self.ld_mode := 'LD/edit';
                         self.ld_id := (control.vc_parent as vspx_row_template).te_column_value('WUL_ID');
+                        self.ld_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', vector ())));
+
                         select WUL_FLAG,
                                WUL_URI,
                                WUL_TYPE,
@@ -143,7 +145,12 @@
                           from DB.DBA.WA_USER_LIKES
                          where WUL_ID = self.ld_id;
 
+                        if (get_keyword ('version', self.ld_properties) = '1.0')
                         self.ld_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', get_keyword ('products', self.ld_properties, vector ()))));
+
+                        if (get_keyword ('version', self.ld_properties) = '2.0')
+                          self.ld_newProperties := get_keyword ('ontologies', self.ld_properties, vector ());
+
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -220,14 +227,32 @@
 		          Properties
 		        </th>
 		        <td width="800px">
+              <table class="ctl_grp">
+                <tr>
+                  <td width="800px">
               <table id="ld_tbl" class="listing">
-                <tbody id="ld_tbody">
-                  <tr id="ld_throbber">
-                    <td>
-                      <img src="/ods/images/oat/Ajax_throbber.gif" />
-                    </td>
+                      <thead>
+                        <tr class="listing_header_row">
+                          <th>
+                            <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                          </th>
+                          <th width="100%">
+                            Ontology
+                          </th>
+                          <th width="80px">
+                            Action
+                          </th>
                   </tr>
+                      </thead>
+                      <tbody id="ld_tbody" class="colorize">
+                        <tr id="ld_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                 </tbody>
+              </table>
+                  </td>
+                  <td valign="top" nowrap="nowrap">
+                    <span class="button pointer" onclick="TBL.createRow('ld', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                  </td>
+                </tr>
               </table>
               <input type="hidden" id="ld_no" name="ld_no" value="1" />
               <script type="text/javascript">
@@ -265,11 +290,7 @@
                   IDs := vector ();
                   ontologies := vector ();
                   self.getItems ('ld', 'gr', ontologies, IDs);
-                  products := vector ();
-                  if (length (ontologies))
-                    products := get_keyword ('items', ontologies[0], vector());
-
-                  self.ld_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+                  self.ld_properties := vector_concat (ODS..jsonObject (), vector ('version', '2.0', 'ontologies', ontologies));
                   if (self.ld_mode = 'LD/add')
                   {
                     if (exists (select 1 from DB.DBA.WA_USER_LIKES where WUL_U_ID = self.u_id and WUL_NAME = self.ld_name.ufl_value))

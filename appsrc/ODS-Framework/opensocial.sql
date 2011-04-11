@@ -483,3 +483,5 @@ create trigger sn_related_opensocial_D after delete on DB.DBA.sn_related referen
   return;
 }
 ;
+
+use DB;

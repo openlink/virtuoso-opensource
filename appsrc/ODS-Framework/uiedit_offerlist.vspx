@@ -69,7 +69,7 @@
               self.ol_offer.ufl_value := null;
               self.ol_comment.ufl_value := null;
               self.ol_properties := ODS..jsonObject ();
-              self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ol_properties, vector ()))));
+              self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', vector ())));
 
               self.vc_data_bind(e);
             ]]>
@@ -119,6 +119,8 @@
                       <![CDATA[
                         self.ol_mode := 'OL/edit';
                         self.ol_id := (control.vc_parent as vspx_row_template).te_column_value('WUOL_ID');
+                        self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', vector ())));
+
                         select WUOL_FLAG,
                                WUOL_OFFER,
                                WUOL_COMMENT,
@@ -130,7 +132,11 @@
                           from DB.DBA.WA_USER_OFFERLIST
                          where WUOL_ID = self.ol_id;
 
+                        if (get_keyword ('version', self.ol_properties) = '1.0')
                         self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ol_properties, vector ()))));
+
+                        if (get_keyword ('version', self.ol_properties) = '2.0')
+                          self.ol_newProperties := get_keyword ('ontologies', self.ol_properties, vector ());
 
                         self.vc_data_bind(e);
                       ]]>
@@ -189,15 +195,37 @@
   		          Products
   		        </th>
               <td width="800px">
+              <table class="ctl_grp">
+                <tr>
+                  <td width="800px">
                 <table id="ol_tbl" class="listing">
-                  <tbody id="ol_tbody">
-                  <tr id="ol_throbber">
-                    <td>
-                      <img src="/ods/images/oat/Ajax_throbber.gif" />
-                    </td>
+                      <thead>
+                        <tr class="listing_header_row">
+                          <th>
+                            <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                          </th>
+                          <th width="100%">
+                            Ontology
+                          </th>
+                          <th width="80px">
+                            Action
+                          </th>
                   </tr>
+                      </thead>
+                      <tbody id="ol_tbody" class="colorize">
+                        <tr id="ol_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                   </tbody>
 			  </table>
+                  </td>
+                  <td valign="top" nowrap="nowrap">
+                    <span class="button pointer" onclick="TBL.createRow('ol', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                    <br /><br />
+                    <span class="button pointer" onclick="RDF.showRDF('ol', 'RDF');"><img class="button" src="/ods/images/icons/rdf_11.png" border="0" alt="Show RDF Data" title="Show RDF Data" /> RDF</span>
+                    <br /><br />
+                    <span class="button pointer" onclick="RDF.showRDF('ol', 'TTL');"><img class="button" src="/ods/images/icons/rdf_11.png" border="0" alt="Show RDF Data" title="Show RDF Data" /> TTL</span>
+                  </td>
+                </tr>
+              </table>
                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
           <script type="text/javascript">
             <![CDATA[
@@ -229,16 +257,11 @@
                   return;
 
                 declare ontologies, IDs any;
-                declare products any;
 
                 IDs := vector ();
                 ontologies := vector ();
                 self.getItems ('ol', 'gr', ontologies, IDs);
-                products := vector ();
-                if (length (ontologies))
-                  products := get_keyword ('items', ontologies[0], vector());
-
-                self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+                  self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '2.0', 'ontologies', ontologies));
                 if (self.ol_mode = 'OL/add')
               {
                     if (exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = self.u_id and WUOL_TYPE = self.ol_type and WUOL_OFFER = self.ol_offer.ufl_value))
@@ -268,6 +291,10 @@
           </tr>
         </table>
     </div>
+      <div id="rdfDiv" style="display: none;">
+        <pre id="rdfData">
+        </pre>
+      </div>
     </vm:if>
 	</v:form>
 </v:page>

@@ -1151,27 +1151,14 @@ create procedure _get_cookie_vec (in lines any)
 ;
 
 create procedure _get_ods_fb_settings (
-  out fb_settings any,
-  in fb_user_id integer := 2)
+  out fb_settings any)
 {
-   declare dba_options,fb_dba_options any;
-   declare exit handler for sqlstate '*' {return 0;};
-
    fb_settings := null;
-  fb_dba_options := null;
-   dba_options := (select US_KEY from WA_USER_SVC where US_U_ID = fb_user_id and US_SVC = 'FBKey');
-   if(length(dba_options) >0)
+  for (select a_key, a_secret from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'Facebook API') do
    {
-     fb_dba_options:=replace(dba_options,'\r\n','&');
-     fb_dba_options:=replace(fb_dba_options,'\n','&');
-     fb_dba_options:=split_and_decode(fb_dba_options);
-   }
-  if (fb_dba_options is not null and length(trim(get_keyword('key',fb_dba_options)))> 4 and length(trim(get_keyword('secret',fb_dba_options)))> 4)
-   {
-      fb_settings:=vector(trim(get_keyword('key',fb_dba_options)),trim(get_keyword('secret',fb_dba_options)));
+    fb_settings := vector (a_key, a_secret);
       return 1;
    }
-
    return 0;
 }
 ;

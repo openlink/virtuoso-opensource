@@ -103,8 +103,8 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_svc)
 declare v any;
 declare sel, val any;
 
-              control.vsl_items := vector ('Amazon API', 'Amazon WishList', 'Ebay', 'FaceBook', 'Flickr', 'Google Associates', 'Google API');
-              control.vsl_item_values := vector ('AmazonKey', 'AmazonID', 'EbayID', 'FBKey', 'FlickrKey', 'GoogleAdsenseID', 'GoogleKey');
+              control.vsl_items := vector ('Amazon API', 'Amazon WishList', 'Ebay', 'Flickr', 'Google Associates', 'Google API');
+              control.vsl_item_values := vector ('AmazonKey', 'AmazonID', 'EbayID', 'FlickrKey', 'GoogleAdsenseID', 'GoogleKey');
 
 val := control.vsl_items;
 sel := control.vsl_item_values;
@@ -131,13 +131,10 @@ for (declare i, l int, i := 0, l := length (sel); i < l; i := i + 1)
   {
      if (position (sel[i], ex) = 0 or sel[i] = self.svc_name.ufl_value)
        {
-                  if ((sel[i] <> 'FBKey') or (self.u_id = http_dav_uid ()))
-                  {
          newn := vector_concat (newn, vector (val[i]));
          newv := vector_concat (newv, vector (sel[i]));
        }
   }
-              }
 control.vsl_items := newn;
 control.vsl_item_values := newv;
 control.vs_set_selected ();
@@ -152,16 +149,6 @@ control.vs_set_selected ();
 		  <label for="svc_keys">Keys</label>
         <br />
         <v:textarea name="svc_keys" value="" xhtml_id="svc_keys" xhtml_rows="5" xhtml_cols="50" default_value="key=\nsecret=\nsession="/>
-        <?vsp
-          if (__proc_exists ('DB.DBA.FB_SIG') is not null)
-          {
-        ?>
-        <v:template name="template_fb2" type="simple" enabled="--equ(self.u_id, http_dav_uid ())">
-          <v:browse-button name="fbt1" xhtml_id="fbt1" value="Get FaceBook session" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=800, width=800" selector="fb_popup.vspx" style="button"/>
-        </v:template>
-        <?vsp
-          }
-        ?>
 		  <br />
 	      <span class="fm_ctl_btn">
 		  <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_svc),0)">

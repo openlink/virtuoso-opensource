@@ -753,7 +753,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
 };
 
-create procedure wa_user_check (inout txt varchar, inout flags varchar, in fld integer)
+create procedure wa_user_check (inout txt any, inout flags varchar, in fld integer)
 {
   declare exit handler for sqlstate '*' { return 0; };
 
@@ -1255,45 +1255,6 @@ create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, 
     DB.DBA.ODS_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('place'), bioPlace);
 };
 
-create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri varchar, in user_iri varchar, in obj any)
-{
-  declare N integer;
-  declare tmp, products, properties, iri any;
-
-  products := get_keyword ('products', obj);
-  foreach (any product in products) do
-  {
-    iri := offerlist_item_iri (forum_iri, get_keyword ('id', product));
-	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
-    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('className', product)));
-
-    properties := get_keyword ('properties', product);
-    foreach (any property in properties) do
-    {
-      declare propertyType, propertyName, propertyValue, propertyLanguage any;
-
-      propertyType := get_keyword ('type', property);
-      propertyValue := get_keyword ('value', property);
-      propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
-      if (propertyType = 'object')
-      {
-        DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
-      }
-      else if (propertyType = 'data')
-      {
-        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
-      }
-      else
-      {
-        propertyLanguage := get_keyword ('language', property);
-        DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, iri, propertyName, propertyValue, ODS.ODS_API."ontology.denormalize" (propertyType), propertyLanguage);
-  }
-    }
-  }
-}
-;
-
 create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in ol_type varchar, in ol_flag varchar, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
 {
   declare user_name, forum_type any;
@@ -1324,14 +1285,14 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
   sioc_forum (graph_iri, graph_iri, forum_iri, ol_offer, forum_type, ol_comment, null, user_name);
 
   obj := deserialize (ol_properties);
-  sioc_goodRelation_details (graph_iri, forum_iri, user_iri, obj);
+  sioc_user_items_create (graph_iri, forum_iri, user_iri, obj);
 };
 
 create procedure sioc_user_offerlist_delete (in user_id integer, in ol_id integer, in ol_type varchar, in ol_flag varchar, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
 {
-  declare N integer;
+  declare N, M integer;
   declare user_name any;
-  declare graph_iri, forum_iri, iri, obj, products any;
+  declare graph_iri, forum_iri, iri, obj, ontologies, products any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -1351,14 +1312,9 @@ create procedure sioc_user_offerlist_delete (in user_id integer, in ol_id intege
   }
   delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
 
-  obj := deserialize (ol_properties);
-  products := get_keyword ('products', obj);
-  for (N := 0; N < length (products); N := N + 1)
-  {
-    iri := offerlist_item_iri (forum_iri, N+1);
-    delete_quad_s_or_o (graph_iri, iri, iri);
+  sioc_user_items_delete (graph_iri, forum_iri, deserialize (ol_properties));
   }
-};
+;
 
 create procedure sioc_user_graph (in user_name varchar, in flag varchar)
 {
@@ -1411,37 +1367,7 @@ create procedure sioc_user_likes (in user_id integer, in l_id integer, in l_flag
   DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, like_iri (like_property), forum_iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, rdfs_iri ('seeAlso'), l_uri);
 
-  declare N integer;
-  declare tmp, products, properties, iri any;
-
-  products := get_keyword ('products', deserialize (l_properties));
-  foreach (any product in products) do
-  {
-    iri := likes_item_iri (forum_iri, get_keyword ('id', product));
-	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
-    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('className', product)));
-
-    properties := get_keyword ('properties', product);
-    foreach (any property in properties) do
-    {
-      declare propertyType, propertyName, propertyValue any;
-
-      propertyType := get_keyword ('type', property);
-      propertyValue := get_keyword ('value', property);
-      propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
-      if (propertyType = 'data')
-      {
-        --dbg_obj_princ ('data: ', iri, propertyName, propertyValue);
-        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
-      }
-      else if (propertyType = 'object')
-      {
-        --dbg_obj_princ ('obj: ', iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
-        DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
-      }
-    }
-  }
+  sioc_user_items_create (graph_iri, forum_iri, user_iri, deserialize (l_properties));
 }
 ;
 
@@ -1468,12 +1394,7 @@ create procedure sioc_user_likes_delete (in user_id integer, in l_id integer, in
   }
   delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
 
-  products := get_keyword ('products', deserialize (l_properties));
-  for (N := 0; N < length (products); N := N + 1)
-  {
-    iri := likes_item_iri (forum_iri, N+1);
-    delete_quad_s_or_o (graph_iri, iri, iri);
-  }
+  sioc_user_items_delete (graph_iri, forum_iri, deserialize (l_properties));
 }
 ;
 
@@ -1544,28 +1465,14 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_f
   DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (f_class));
   DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioct_iri ('likes'), iri);
-  f_properties := deserialize (f_properties);
-  foreach (any property in f_properties) do
-  {
-    declare propertyType, propertyName, propertyValue any;
 
-    propertyType := get_keyword ('type', property);
-    propertyValue := get_keyword ('value', property);
-    propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
-    if (propertyType = 'data')
-    {
-      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
-    }
-    else if (propertyType = 'object')
-    {
-      DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
-    }
+  sioc_user_item_properies_create (graph_iri, iri, deserialize (f_properties));
   }
-};
+;
 
 create procedure sioc_user_favorite_delete (in user_id integer, in f_id integer, in f_flag varchar, in f_type varchar, in f_label varchar, in f_uri varchar, in f_class varchar, in f_properties any)
 {
-  declare user_id, user_name any;
+  declare user_name any;
   declare graph_iri, forum_iri, iri any;
   declare exit handler for sqlstate '*'
   {
@@ -1584,8 +1491,102 @@ create procedure sioc_user_favorite_delete (in user_id integer, in f_id integer,
 
   iri := favorite_item_iri (forum_iri, f_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
-};
+}
+;
 
+create procedure sioc_user_items_create (in graph_iri varchar, in forum_iri varchar, in user_iri varchar, in obj any)
+{
+  declare N integer;
+  declare ontologies any;
+
+  if (get_keyword ('version', obj) = '1.0')
+  {
+    sioc_user_item_create (graph_iri, forum_iri, user_iri, get_keyword ('products', obj, vector ()));
+  }
+  else if (get_keyword ('version', obj) = '2.0')
+  {
+    ontologies := get_keyword ('ontologies', obj, vector ());
+    foreach (any ontology in ontologies) do
+    {
+      sioc_user_item_create (graph_iri, forum_iri, user_iri, get_keyword ('items', ontology, vector ()));
+    }
+  }
+}
+;
+
+create procedure sioc_user_item_create (in graph_iri varchar, in forum_iri varchar, in user_iri varchar, in items any)
+{
+  declare properties, iri any;
+
+  foreach (any item in items) do
+  {
+    iri := offerlist_item_iri (forum_iri, get_keyword ('id', item));
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('className', item)));
+
+    properties := get_keyword ('properties', item);
+    sioc_user_item_properies_create (graph_iri, iri, properties);
+  }
+}
+;
+
+create procedure sioc_user_item_properies_create (in graph_iri varchar, in iri varchar, in properties any)
+{
+  declare propertyType, propertyName, propertyValue, propertyLanguage any;
+
+  foreach (any property in properties) do
+  {
+    propertyType := get_keyword ('type', property);
+    propertyValue := get_keyword ('value', property);
+    propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
+    if (propertyType = 'object')
+    {
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+    }
+    else if (propertyType = 'data')
+    {
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
+    }
+    else
+    {
+      propertyLanguage := get_keyword ('language', property);
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, iri, propertyName, propertyValue, ODS.ODS_API."ontology.denormalize" (propertyType), propertyLanguage);
+    }
+  }
+}
+;
+
+create procedure sioc_user_items_delete (in graph_iri varchar, in forum_iri varchar, in obj any)
+{
+  declare N integer;
+  declare iri varchar;
+  declare ontologies, products any;
+
+  if (get_keyword ('version', obj) = '1.0')
+  {
+    products := get_keyword ('products', obj, vector ());
+    for (N := 0; N < length (products); N := N + 1)
+    {
+      iri := offerlist_item_iri (forum_iri, N+1);
+      delete_quad_s_or_o (graph_iri, iri, iri);
+    }
+  }
+  else if (get_keyword ('version', obj) = '2.0')
+  {
+    ontologies := get_keyword ('ontologies', obj, vector ());
+    foreach (any ontology in ontologies) do
+    {
+      products := get_keyword ('items', ontology, vector ());
+      for (N := 0; N < length (products); N := N + 1)
+      {
+        iri := offerlist_item_iri (forum_iri, N+1);
+        delete_quad_s_or_o (graph_iri, iri, iri);
+      }
+    }
+  }
+}
+;
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in name varchar, in url varchar, in uri varchar := null)
 {
@@ -4863,6 +4864,8 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   -- if (iri is not null and not foaf_check_friend (iri, agent))
   --  return 0;
 
+  if (iri is not null)
+  {
   -- ACL check
   arr := sprintf_inverse (iri, 'http://%s/dataspace/person/%s#this', 1);
   if (length (arr) <> 2)
@@ -4871,6 +4874,7 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   groups_iri := sprintf ('http://%s/dataspace/private/%s', arr[0], arr[1]);
   if (SIOC..acl_check (SIOC..acl_clean_iri (iri) || '/webaccess', groups_iri, vector (iri)) = '')
     return 0;
+  }
 
   -- agent := fix_uri (agent);
   hf := rfc1808_parse_uri (agent);

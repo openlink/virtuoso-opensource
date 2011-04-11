@@ -546,36 +546,37 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
-  function xSelectOption(fld, fldValue, ontologyClassName)
+  function selectOption46(options, fldValue, ontologyClassName)
   {
     var ontologyClass = RDF.getOntologyClass(ontologyClassName);
     if (ontologyClass && ontologyClass.properties)
     {
       var properties = ontologyClass.properties;
-      if (!properties) {return;}
+      if (!properties)
+        return;
 
       for (i = 0; i < properties.length; i++)
-        TBL.selectOption(fld, fldValue, properties[i].name, properties[i].name);
-      xSelectOption(fld, fldValue, ontologyClass.subClassOf);
+        options.push(properties[i].name);
+      selectOption46(options, fldValue, ontologyClass.subClassOf);
     }
   }
 
-	var fld = TBL.createCellSelect(fldName);
-  fld.style.width = '95%';
-  fld.item = fldOptions.item;
-  var fldValue;
-  if (fldOptions.value)
+  var fldValue = '';
+  if (fldOptions.value && fldOptions.value.name)
     fldValue = fldOptions.value.name;
-  TBL.selectOption(fld, null, '', '');
-  xSelectOption(fld, null, fld.item.className);
-  fld.onchange = function(){RDF.changePropertyValue(fld);};
-  sortSelect (fld);
-  fld.value = fldValue;
-  if (fld.selectedIndex != -1)
-    fld.options[fld.selectedIndex].defaultSelected = true;
+  var fld = TBL.createCellCombolist(td, fldValue, {name: fldName, onchange: RDF.changePropertyValue});
+  var fldInput = fld.input;
+  fldInput.setAttribute("autocomplete", "off");
+  fldInput.onchange = RDF.changePropertyValue;
+  fldInput.item = fldOptions.item;
 
-  td.appendChild(fld);
-  return fld;
+  var options = [];
+  selectOption46(options, null, fldInput.item.className);
+  options.sort();
+  for (i = 0; i < options.length; i++)
+    fld.addOption(options[i]);
+
+  return fldInput;
 }
 
 TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
@@ -628,10 +629,11 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
     }
     td.appendChild(fld.div);
     propertyType = 'object';
-  }
-  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
-    var fldClassName = '';
+  } else {
+    if (ontologyClassProperty && ontologyClassProperty.datatypeProperties)
     propertyType = ontologyClassProperty.datatypeProperties;
+
+    var fldClassName = '';
     if ((propertyType == 'xsd:byte')    ||
         (propertyType == 'xsd:short')   ||
         (propertyType == 'xsd:int')     ||
@@ -707,7 +709,8 @@ TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
   if (ontologyClassProperty && ontologyClassProperty.objectProperties) {
     td.innerHTML = 'URI';
   }
-  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
+  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties)
+  {
     if (ontologyClassProperty.datatypeProperties == 'xsd:byte')  {
       td.innerHTML = 'Byte';
     } else if (ontologyClassProperty.datatypeProperties == 'xsd:short')  {
@@ -728,7 +731,10 @@ TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
     } else {
     td.innerHTML = 'Literal';
   }
+  } else {
+    td.innerHTML = 'Literal';
 }
+
 }
 
 TBL.createCell49 = function (td, prefix, fldName, No, fldOptions) {
@@ -907,13 +913,14 @@ TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
   fld.id = fldName;
+  fld.title = 'Delete row';
   fld.onclick = function(){TBL.deleteRow(prefix, No);};
   OAT.Dom.addClass(fld, 'button pointer');
 
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/icons/trash_16.png';
   img.alt = 'Delete row';
-  img.title = fld.alt;
+  img.title = img.alt;
   OAT.Dom.addClass(img, 'button');
 
   fld.appendChild(img);
@@ -957,16 +964,20 @@ TBL.createButtonAdd = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
   fld.id = fldName;
+  fld.title = 'Add Element';
   OAT.Dom.addClass(fld, 'button pointer');
 
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/icons/add_16.png';
-  img.alt = 'Add row';
-  img.title = fld.alt;
+  img.alt = 'Add Element';
+  img.title = img.alt;
   OAT.Dom.addClass(img, 'button');
 
   fld.appendChild(img);
-  fld.appendChild(OAT.Dom.text(' Add'));
+  var titleText = fldOptions.title;
+  if (!titleText)
+    titleText = 'Add';
+  fld.appendChild(OAT.Dom.text(' '+titleText));
 
   td.appendChild(fld);
   return fld;
@@ -1027,18 +1038,15 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
 
   var img = OAT.Dom.create('img');
   var txt;
-  if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length)
-    {
+  if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length) {
       img.src = '/ods/images/icons/link_16.png';
       img.alt = 'Link';
-      img.title = fld.alt;
+    img.title = img.alt;
       txt = OAT.Dom.text(' Link');
-    }
-  else
-    {
+  } else {
       img.src = '/ods/images/icons/disconnect_16.png';
       img.alt = 'Unlink';
-      img.title = fld.alt;
+    img.title = img.alt;
       txt = OAT.Dom.text(' Unlink');
     }
   OAT.Dom.addClass(img, 'button');
@@ -1046,41 +1054,29 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
   fld.appendChild(txt);
 
   td.appendChild(fld);
-  fld.onclick = function() 
-    { 
+  fld.onclick = function() {
       var url, x;
-      if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length)
-	{
+    if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length) {
 	  url = '/ods/api/oauth_connect?uri=' + encodeURIComponent(fldOptions["profile_url"]) + 
 	      '&login=1&oauth_sid=' + encodeURIComponent(fldOptions["oauth_sid"]);
-	  x = function (data)
-	    {
-	      if (data.length)
-		{
-		  var win = window.open (
-		      data, 
-		      null, 
-		      "width=700,height=420,top=100,left=100,status=no,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+      x = function (data) {
+        if (data.length) {
+          var win = window.open(data, null, "width=700,height=420,top=100,left=100,status=no,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
 		  win.window.focus();
-		}
-	      else
-		{
+        } else {
 		  alert ("This service cannot be linked.");
 		}
 	    }
-	}
-      else
-	{
+    } else {
 	  if (!confirm('Please confirm removal of associated session'))
 	    return;
 	  url = '/ods/api/oauth_disconnect?uri=' + encodeURIComponent(fldOptions["profile_url"]);
-	  x = function (data) 
-	    {
+      x = function (data) {
 	      window.location.reload ();
-	    };
+      }
 	}
       OAT.AJAX.GET(url, '', x);
-    };
+  }
 }
 
 TBL.webidShow = function(obj, frmName)

@@ -2483,15 +2483,33 @@
                   		          Products
                   		        </th>
                   		        <td width="800px">
+                                    <table class="ctl_grp">
+                                      <tr>
+                                        <td width="800px">
                                 <table id="ol_tbl" class="listing">
-                                  <tbody id="ol_tbody">
-                                    <tr id="ol_throbber">
-                                      <td>
-                                        <img src="/ods/images/oat/Ajax_throbber.gif" />
-                                      </td>
+                                            <thead>
+                                              <tr class="listing_header_row">
+                                                <th>
+                                                  <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                                                </th>
+                                                <th width="100%">
+                                                  Ontology
+                                                </th>
+                                                <th width="80px">
+                                                  Action
+                                                </th>
                                     </tr>
+                                            </thead>
+                                            <tbody id="ol_tbody" class="colorize">
+                                              <tr id="ol_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                                   </tbody>
                                 </table>
+                                        </td>
+                                        <td valign="top" nowrap="nowrap">
+                                          <span class="button pointer" onclick="TBL.createRow('ol', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                                        </td>
+                                      </tr>
+                                    </table>
                                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
                               </td>
                             </tr>
@@ -2579,15 +2597,33 @@
                   		          Products
                   		        </th>
                   		        <td width="800px">
+                                    <table class="ctl_grp">
+                                      <tr>
+                                        <td width="800px">
                                 <table id="wl_tbl" class="listing">
-                                  <tbody id="wl_tbody">
-                                    <tr id="wl_throbber">
-                                      <td>
-                                        <img src="/ods/images/oat/Ajax_throbber.gif" />
-                                      </td>
+                                            <thead>
+                                              <tr class="listing_header_row">
+                                                <th>
+                                                  <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                                                </th>
+                                                <th width="100%">
+                                                  Ontology
+                                                </th>
+                                                <th width="80px">
+                                                  Action
+                                                </th>
                                     </tr>
+                                            </thead>
+                                            <tbody id="wl_tbody" class="colorize">
+                                              <tr id="wl_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                                   </tbody>
                                 </table>
+                                        </td>
+                                        <td valign="top" nowrap="nowrap">
+                                          <span class="button pointer" onclick="TBL.createRow('wl', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                                        </td>
+                                      </tr>
+                                    </table>
                                 <input type="hidden" id="wl_no" name="wl_no" value="1" />
                               </td>
                             </tr>
@@ -2695,15 +2731,33 @@
 		                            Properties
                   		        </th>
                   		        <td width="800px">
+                                    <table class="ctl_grp">
+                                      <tr>
+                                        <td width="800px">
                                 <table id="ld_tbl" class="listing">
-                                  <tbody id="ld_tbody">
-                                    <tr id="ld_throbber">
-                                      <td>
-                                        <img src="/ods/images/oat/Ajax_throbber.gif" />
-                                      </td>
+                                            <thead>
+                                              <tr class="listing_header_row">
+                                                <th>
+                                                  <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                                                </th>
+                                                <th width="100%">
+                                                  Ontology
+                                                </th>
+                                                <th width="80px">
+                                                  Action
+                                                </th>
                                     </tr>
+                                            </thead>
+                                            <tbody id="ld_tbody" class="colorize">
+                                              <tr id="ld_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                                   </tbody>
                                 </table>
+                                        </td>
+                                        <td valign="top" nowrap="nowrap">
+                                          <span class="button pointer" onclick="TBL.createRow('ld', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                                        </td>
+                                      </tr>
+                                    </table>
                                 <input type="hidden" id="ld_no" name="ld_no" value="1" />
                               </td>
                             </tr>

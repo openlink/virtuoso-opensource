@@ -1706,6 +1706,15 @@ create procedure wa_check_app (
 }
 ;
 
+create procedure wa_check_owner_app (
+  in wad_type varchar,
+  in app_type varchar,
+  in user_id integer)
+{
+  return case when (wa_check_package (wad_type) and exists (select 1 from DB.DBA.WA_MEMBER where WAM_APP_TYPE = app_type and WAM_MEMBER_TYPE = 1 and WAM_USER = user_id)) then 1 else 0 end;
+}
+;
+
 create procedure wa_vad_check (in pname varchar)
 {
   declare nam varchar;
