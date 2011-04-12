@@ -908,7 +908,7 @@ caddr_t
 rdfa_rel_rev_value_is_reserved (const char *val)
 {
   char buf[15];
-  int ctr;
+  int ctr, pos;
   static void *vals[] = {
     "alternate"		, &uname_xhv_ns_uri_alternate	,
     "appendix"		, &uname_xhv_ns_uri_appendix	,
@@ -942,7 +942,7 @@ rdfa_rel_rev_value_is_reserved (const char *val)
       buf[ctr] = tolower (val[ctr]);
     }
   buf[ctr] = '\0';
-  int pos = ecm_find_name (buf, vals, sizeof (vals)/(2 * sizeof(void *)), 2 * sizeof(void *));
+  pos = ecm_find_name (buf, vals, sizeof (vals)/(2 * sizeof(void *)), 2 * sizeof(void *));
   if (ECM_MEM_NOT_FOUND == pos)
     return NULL;
   return ((caddr_t **)vals) [2 * pos + 1][0];
@@ -1593,7 +1593,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
   int inner_place_bits = outer_place_bits; /* Place bits are first inherited, then changed (OR-ed) */
   int need_rdfa_local = 0, parent_obj_should_be_set = 0;
   int ctr;
-  caddr_t subj;
+  caddr_t subj, bnode_subj = NULL;
 #ifdef RDFXML_DEBUG
   if (xpt->xpt_base || xpt->xpt_dt || xpt->xpt_lang || xpt->xpt_obj_content || xpt->xpt_obj_res || xpt->xpt_src || xpt->xpt_href)
     GPF_T1("xp_" "rdfa_element(): nonempty xpt");
@@ -1685,9 +1685,9 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
       need_rdfa_local = 1;
     }
   n_attrs = attrdata->local_attrs_count;
+  memset (avalues, 0, sizeof (avalues));
   if (0 == n_attrs)
     goto all_attributes_are_retrieved; /* see below */
-  memset (avalues, 0, sizeof (avalues));
   for (inx = 0; inx < n_attrs; inx ++)
     {
       char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
@@ -1914,7 +1914,9 @@ all_attributes_are_retrieved:
           need_rdfa_local = 1;
         }
       else if (NULL != avalues[RDFA_ATTR_TYPEOF]) /* There was "if (0 != typeof_count)" here but that's wrong for typeof="" needed solely to make a bnode */
-        subj = tf_bnode_iid (xp->xp_tf, NULL);
+	{
+	  bnode_subj = subj = tf_bnode_iid (xp->xp_tf, NULL);
+	}
       else if (!(RDFA_IN_HTML & inner_place_bits) && (NULL == xn->xn_parent)) /*1104 */
         {
           subj = uname___empty;
@@ -1939,6 +1941,8 @@ all_attributes_are_retrieved:
   if (!need_rdfa_local)
     {
       outer->xrdfal_boring_opened_elts++;
+      if (bnode_subj)
+	dk_free_box (bnode_subj);
       return;
     }
 /* There is something interesting so the stack should grow */
