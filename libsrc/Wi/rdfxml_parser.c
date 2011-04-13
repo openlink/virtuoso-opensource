@@ -2136,6 +2136,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
           literal_head = (caddr_t *)list (1, uname__root);
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
+	  current_node->xn_children = NULL;
           if (obj_use_count)
             {
               xml_tree_ent_t *literal_xte;
