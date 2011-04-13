@@ -1784,7 +1784,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 {
   declare mime_type, _graph, _base, out_arr, tmp varchar;
   declare html_start, xd any;
-  declare rc int;
+  declare rc, deadl int;
 
   html_start := null;
 
@@ -1793,9 +1793,20 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
   _graph := WS.WS.MAKE_URL (_host, _start_path);
   _base := WS.WS.MAKE_URL (_host, url);
 
+  commit work;
+  deadl := 6;
+
   declare exit handler for sqlstate '*'
   {
-    return;
+    rollback work;
+    __SQL_STATE := cast (__SQL_STATE as varchar);
+    if (__SQL_STATE = '40001')
+      {
+	deadl := deadl - 1;
+	if (deadl > 0)
+	  goto again;
+      }
+    resignal;
   };
 
   if (url like '*.gz')
@@ -1810,7 +1821,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
     }
   -- RDF/XML or RDF/N3 depends on option
   mime_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (url, ctype, content);
-
+again:
   -- RDF formats 
     {
       if (strstr (mime_type, 'application/rdf+xml') is not null)
