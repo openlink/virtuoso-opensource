@@ -1372,6 +1372,109 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   return DVC_MATCH;
 }
 
+int itc_sample_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf);
+
+int
+itc_sample_row_check (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  dbe_key_t *row_key = NULL;
+  /* Check the key id's and non-key columns. */
+  search_spec_t *sp;
+  dbe_key_t *key = itc->itc_insert_key;
+
+  if (itc->itc_insert_key && itc->itc_insert_key->key_is_bitmap && !itc->itc_no_bitmap)
+#if 0
+    return itc_sample_bm_row_check (itc, buf);
+#else
+    return DVC_MATCH;
+#endif
+
+  if (IE_KEY_VERSION (itc->itc_row_data) == itc->itc_insert_key->key_version)
+    itc->itc_row_key = itc->itc_insert_key;
+  else
+    {
+      ITC_REAL_ROW_KEY (itc);
+      if (!sch_is_subkey (isp_schema (NULL), itc->itc_row_key->key_id, itc->itc_insert_key->key_id))
+	return DVC_LESS;	/* Key specified but this ain't it */
+      row_key = itc->itc_row_key;
+    }
+  sp = itc->itc_row_specs;
+  if (sp)
+    {
+      do
+	{
+	  int op = sp->sp_min_op;
+	  search_spec_t sp_auto;
+
+	  if (row_key)
+	    {
+	      dbe_col_loc_t *cl = key_find_cl (row_key, sp->sp_cl.cl_col_id);
+	      if (cl)
+		{
+		  memcpy (&sp_auto, sp, sizeof (search_spec_t));
+		  sp = &sp_auto;
+		  sp->sp_cl = *cl;
+		}
+	      else
+		{
+		  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, sp->sp_cl.cl_col_id);
+		  if (col)
+		    {
+		      if (DVC_CMP_MASK & op)
+			{
+			  if (0 == (op & cmp_boxes (col->col_default, itc->itc_search_params[sp->sp_min], sp->sp_collation, sp->sp_collation)))
+		            return DVC_LESS;
+			}
+		      else if (op == CMP_LIKE)
+			{
+			  caddr_t v = itc->itc_search_params[sp->sp_min];
+			  int st = LIKE_ARG_CHAR, pt = LIKE_ARG_CHAR;
+			  dtp_t rtype = DV_TYPE_OF (v);
+			  dtp_t ltype = DV_TYPE_OF (col->col_default);
+			  if (DV_WIDE == rtype || DV_LONG_WIDE == rtype)
+			    pt = LIKE_ARG_WCHAR;
+			  if (DV_WIDE == ltype || DV_LONG_WIDE == ltype)
+			    st = LIKE_ARG_WCHAR;
+			  if (DVC_MATCH != cmp_like (col->col_default, v, sp->sp_collation, sp->sp_like_escape, st, pt))
+			    return DVC_LESS;
+			}
+		      if (sp->sp_max_op != CMP_NONE
+			  && (0 == (sp->sp_max_op & cmp_boxes (col->col_default, itc->itc_search_params[sp->sp_max],
+				sp->sp_collation, sp->sp_collation))))
+			return DVC_LESS;
+		      goto next_sp;
+		    }
+		  return DVC_LESS;
+		}
+	    }
+
+	  if (ITC_NULL_CK (itc, sp->sp_cl))
+	    return DVC_LESS;
+	  if (DVC_CMP_MASK & op)
+	    {
+	      int res = page_col_cmp_1 (buf, itc->itc_row_data, &sp->sp_cl, itc->itc_search_params[sp->sp_min]);
+	      if (0 == (op & res) || (DVC_NOORDER & res))
+		return DVC_LESS;
+	    }
+	  else if (op == CMP_LIKE)
+	    {
+	      if (DVC_MATCH != itc_like_compare (itc, buf, itc->itc_search_params[sp->sp_min], sp))
+		return DVC_LESS;
+	      goto next_sp;
+	    }
+	  if (sp->sp_max_op != CMP_NONE)
+	    {
+	      int res = page_col_cmp_1 (buf, itc->itc_row_data, &sp->sp_cl, itc->itc_search_params[sp->sp_max]);
+	      if (0 == (sp->sp_max_op & res) || (DVC_NOORDER & res))
+		return DVC_LESS;
+	    }
+	next_sp:
+	  sp = sp->sp_next;
+	} while (sp);
+    }
+  return DVC_MATCH;
+}
+
 
 int
 itc_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
@@ -3215,6 +3318,8 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 		break;
 	      sp = sp->sp_next;
 	    }
+	  if (r_kv && DVC_MATCH == res) /* check dependant cols */
+	    res = itc_sample_row_check (itc, buf);
 	  if (DVC_MATCH == res)
 	    {
 	      if (r_kv)
@@ -3316,8 +3421,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
 	level_of_single_leaf_match = level;
     }
   if (leaf_estimate)
-    leaf_estimate = (((float)leaf_estimate) - 0.5) * (*buf_ret)->bd_content_map->pm_count * rows_per_bm
-+ leaf_ctr;
+    leaf_estimate = (((float)leaf_estimate) - 0.5) * (*buf_ret)->bd_content_map->pm_count * rows_per_bm + leaf_ctr;
   else if (leaf_ctr > 1)
     leaf_estimate = leaf_ctr - 1;
   if (rnd_leaf)

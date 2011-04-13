@@ -538,6 +538,7 @@ typedef struct index_choice_s
   char		ic_text_order;
   char		ic_geo_order;
   char		ic_o_string_range_lit; /* 1 if o is known to be a string 2 if literal strings */
+  dk_set_t	ic_inx_sample_cols;
 } index_choice_t;
 
 #define IC_OPT_ITERS 0 /* can change in or rdf inf iters into after test */

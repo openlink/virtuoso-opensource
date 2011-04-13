@@ -1221,6 +1221,13 @@ itc_sample_cache_key (it_cursor_t * itc)
       if (CMP_NONE != sp->sp_max_op)
 	conds = (conds << 3) | sp->sp_max_op;
     }
+  /* do same for itc->itc_row_specs */
+  for (sp = itc->itc_row_specs; sp; sp = sp->sp_next)
+    {
+      conds= (conds << 3) | sp->sp_min_op;
+      if (CMP_NONE != sp->sp_max_op)
+	conds = (conds << 3) | sp->sp_max_op;
+    }
   box[1] = box_num (conds);
   for (inx = 0; inx < itc->itc_search_par_fill; inx++)
     box[inx + 2] = box_copy_tree (itc->itc_search_params[inx]);
@@ -1244,17 +1251,22 @@ extern rdf_inf_ctx_t * empty_ric;
 #define SMPL_QUEUE 1
 #define SMPL_RESULT 2
 
+int32 sqlo_sample_dep_cols = 0;
+search_spec_t * dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key);
+
 int64
-sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, sample_opt_t * sop)
+sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts,
+    sample_opt_t * sop, index_choice_t * ic)
 {
   sqlo_t * so = NULL;
   caddr_t sc_key = NULL, num, *place;
   int64 res, tb_count;
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
-  search_spec_t specs[10];
+  search_spec_t specs[10], row_specs[10];
   int v_fill = 0, inx;
   search_spec_t ** prev_sp;
+  dk_set_t added_cols = NULL;
   if (sop)
     sop->sop_res_from_ric_cache = 0;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
@@ -1276,7 +1288,35 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
       if (!so)
 	so = lowers[inx] ? lowers[inx]->dfe_sqlo : uppers[inx]->dfe_sqlo;
       *prev_sp = &specs[inx];
+      t_set_push (&added_cols, (void *) (*prev_sp)->sp_col);
       prev_sp = &specs[inx].sp_next;
+    }
+  if (sqlo_sample_dep_cols)
+    {
+      /* make row specs */
+      memset (&row_specs, 0, sizeof (row_specs));
+      prev_sp = &itc->itc_row_specs;
+      inx = 0;
+      ic->ic_inx_sample_cols = NULL;
+      DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
+	{
+	  if (cp->dfe_type != DFE_TEXT_PRED && !sqlo_in_list (cp, NULL, NULL) &&
+	      dk_set_member (key->key_parts, (void *) cp->_.bin.left->_.col.col) &&
+	      !dk_set_member (added_cols, (void *) cp->_.bin.left->_.col.col))
+	    {
+	      if (key->key_bit_cl && key->key_bit_cl->cl_col_id == cp->_.bin.left->_.col.col->col_id)
+		continue;
+	      res = dfe_const_to_spec (cp, NULL, key, &row_specs[inx], itc, &v_fill);
+	      if (KS_CAST_OK != res)
+		continue;
+	      *prev_sp = &row_specs[inx];
+	      prev_sp = &row_specs[inx].sp_next;
+	      /* push into a set inside ic so we know to exclude when calculate cost */
+	      t_set_push (&ic->ic_inx_sample_cols, cp);
+	      inx ++;
+	    }
+	}
+      END_DO_SET ();
     }
   sc_key = itc_sample_cache_key (itc);
   if (sop && sop->sop_sc_key_ret)
@@ -1313,6 +1353,10 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
     res = itc_sample (itc);
   itc_free (itc);
   tb_count = dbe_key_count (key->key_table->tb_primary_key);
+#if 0
+  if (0 == res && ic->ic_inx_sample_cols) /* if no samples take 1% */
+    res = tb_count > 0 ? (tb_count / 100) + 1 : tb_count;
+#endif
   res = MIN (tb_count, res);
   if (!sop || sop->sop_ric || sop->sop_use_sc_cache)
     {
@@ -1360,7 +1404,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
   while ((sub_iri = rit_next (rit)))
     {
       *variable = sub_iri->rs_iri;
-      s = sqlo_inx_sample_1 (key, lowers, uppers, n_parts, &sop);
+      s = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, &sop, ic);
       if (s >= 0)
 	{
 	  est += s;
@@ -1389,7 +1433,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
   if (sop.sop_is_cl)
     {
       sop.sop_is_cl = SMPL_RESULT;
-      s = sqlo_inx_sample_1 (key, lowers, uppers, n_parts, &sop);
+      s = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, &sop, ic);
       if (s >= 0)
 	{
 	  est += s;
@@ -1586,7 +1630,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  memset (&sop, 0, sizeof (sop));
 	  sop.sop_ric = empty_ric;
 	  sop.sop_sc_key_ret = &sc_key;
-	  c = sqlo_inx_sample_1 (key, lowers, uppers, n_parts, &sop);
+	  c = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, &sop, ic);
 	  if (!sop.sop_res_from_ric_cache && c > 1000)
 	    {
 	      ric_set_sample (empty_ric, sc_key, c);
@@ -1631,7 +1675,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
       dk_free_box (o_const);
     }
   ic->ic_n_lookups = 1;
-  return sqlo_inx_sample_1 (key, lowers, uppers, n_parts, NULL);
+  return sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, NULL, ic);
 }
 
 
@@ -1788,7 +1832,6 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
   caddr_t p;
   float * place;
   dbe_key_t * key = dfe->_.table.key;
-  dbe_column_t * g_col;
   df_elt_t * so_dfe, * g_dfe;
   if (!enable_p_stat || 1 != inx_const_fill)
     return 0;
@@ -1974,6 +2017,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	    }
 	  else
 	    {
+	      /* here we should check if row spec was used to take samples */
 	      col_arity *= p_arity;
 	      col_cost += p_cost * col_arity;
 	    }
@@ -2069,7 +2113,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
 	  left_col = in_list ? in_list[0]->_.col.col : DFE_COLUMN == pred->_.bin.left->dfe_type ? pred->_.bin.left->_.col.col : NULL;
-	  if (DFE_BOP_PRED == pred->dfe_type && !dk_set_member (key->key_parts, (void*) left_col))
+	  if (DFE_BOP_PRED == pred->dfe_type &&
+	      !dk_set_member (key->key_parts, (void*) left_col) &&
+	      !dk_set_member (ic->ic_inx_sample_cols, (void*) left_col))
 	    {
 	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
 	      total_arity *= p_arity;
