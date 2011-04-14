@@ -2716,16 +2716,30 @@ init_acl_set (char *acl_string1, dk_set_t * acl_set_ptr)
     }
 }
 
+/*
+   HTTP client
+   http_get
+   1 - URL
+   2 - variable to return response headers
+   3 - HTTP method string
+   4 - request header line(s)
+   5 - request body
+   6 - proxy address
+   7 - number of HTTP redirects to follow
+   8 - time-out (seconds)
+*/
+
 caddr_t
 bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char * me = "http_get";
   caddr_t uri = bif_string_or_uname_arg (qst, args, 0, me);
-  int n_args = BOX_ELEMENTS (args), follow_redirects = 0;
+  int n_args = BOX_ELEMENTS (args), follow_redirects = 0, to_is_null = 1;
   caddr_t method = NULL;
   caddr_t header = NULL;
   caddr_t body = NULL;
   caddr_t volatile proxy = NULL;
+  uint32 to = 0;
 
   if (n_args > 2)
     method = bif_string_or_uname_arg (qst, args, 2, me);
@@ -2744,12 +2758,14 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (n_args > 5)
     proxy = bif_string_or_null_arg (qst, args, 5, me);
-  if (BOX_ELEMENTS (args) > 6) /* follow redirects */
+  if (n_args > 6) /* follow redirects */
     {
       int dummy = 0;
       follow_redirects = (int) bif_long_or_null_arg (qst, args, 6, me, &dummy);
     }
-  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, 0, 1 /*no timeout*/, proxy, NULL, 0, 1, follow_redirects);
+  if (n_args > 7) /* time-out */
+    to = (uint32) bif_long_or_null_arg (qst, args, 7, me, &to_is_null);
+  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects);
 }
 
 void
