@@ -96,6 +96,7 @@ create table WS.WS.VFS_SITE (
     VS_THREADS  int default 1,
     VS_ROBOTS long varchar default null,
     VS_DELAY	float default 0,
+    VS_TIMEOUT	float default null,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -188,6 +189,9 @@ alter table WS.WS.VFS_SITE add VS_ROBOTS long varchar default null
 ;
 
 alter table WS.WS.VFS_SITE add VS_DELAY float default 0
+;
+
+alter table WS.WS.VFS_SITE add VS_TIMEOUT  float default null
 ;
 
 alter table WS.WS.VFS_QUEUE add VQ_LEVEL int default 0

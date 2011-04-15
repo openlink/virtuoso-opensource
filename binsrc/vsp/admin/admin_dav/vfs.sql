@@ -87,9 +87,10 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
   declare _udata, ext_hook, store_hook, _header_arr, _resps, xp_exp any;
-  declare n_urls, conv_html, is_sitemap, accept_rdf int;
+  declare n_urls, conv_html, is_sitemap, accept_rdf, time_out int;
 
   conv_html := 1;
+  time_out := null;
   n_urls := position (0, _urls) - 1;
   if (n_urls < 0)
     n_urls := length (_urls);
@@ -98,11 +99,11 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
          coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), 
 	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), 
-	 VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF
+	 VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF, VS_TIMEOUT
       into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, 
       	 redir_flag, store_flag, try_to_get_rdf, 
 	 _udata, ext_hook, store_hook, _del, _other, 
-	 conv_html, is_sitemap, xp_exp, accept_rdf
+	 conv_html, is_sitemap, xp_exp, accept_rdf, time_out
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 nf_opt:
 
@@ -201,7 +202,7 @@ get_again:
     if (n_urls = 1)
       {
 	declare _resp, _content any;
-        _content := http_get (_t_urls[0], _resp, 'GET', case when _upd = 1 then _header_arr[0] else _header_arr end);
+        _content := http_get (_t_urls[0], _resp, 'GET', case when _upd = 1 then _header_arr[0] else _header_arr end, null, null, redir_flag, time_out);
 	-- when single request we can check here and re-try if no header is received
 	if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
 	  {
@@ -1784,7 +1785,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 {
   declare mime_type, _graph, _base, out_arr, tmp varchar;
   declare html_start, xd any;
-  declare rc int;
+  declare rc, deadl int;
 
   html_start := null;
 
@@ -1793,9 +1794,20 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
   _graph := WS.WS.MAKE_URL (_host, _start_path);
   _base := WS.WS.MAKE_URL (_host, url);
 
+  commit work;
+  deadl := 6;
+
   declare exit handler for sqlstate '*'
   {
-    return;
+    rollback work;
+    __SQL_STATE := cast (__SQL_STATE as varchar);
+    if (__SQL_STATE = '40001')
+      {
+	deadl := deadl - 1;
+	if (deadl > 0)
+	  goto again;
+      }
+    resignal;
   };
 
   if (url like '*.gz')
@@ -1810,7 +1822,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
     }
   -- RDF/XML or RDF/N3 depends on option
   mime_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (url, ctype, content);
-
+again:
   -- RDF formats 
     {
       if (strstr (mime_type, 'application/rdf+xml') is not null)
