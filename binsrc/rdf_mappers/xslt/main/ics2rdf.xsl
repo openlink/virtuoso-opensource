@@ -148,6 +148,11 @@
 	<component>
 	    <xsl:element name="{$elt}" namespace="&ical;">
 	    <xsl:attribute name="about" namespace="&rdf;"><xsl:value-of select="vi:proxyIRI($baseUri, '', $elt2)"/></xsl:attribute>
+		<xsl:if test="SUMMARY/val">
+			<rdfs:label>
+				<xsl:value-of select="vi:string2date3(normalize-space(SUMMARY/val))"/>
+			</rdfs:label>
+		</xsl:if>
 		<xsl:apply-templates select="*"/>
 	    </xsl:element>
 	</component>
@@ -218,14 +223,14 @@
     <xsl:template match="*[*[local-name (.) != 'val' and local-name (.) != 'fld']]">
 	<xsl:variable name="elt"><xsl:call-template name="ename"/></xsl:variable>
 	<xsl:element name="{$elt}" namespace="&ical;">
-	    <xsl:attribute name="parseType" namespace="&rdf;">Resource</xsl:attribute>
+	    <!--xsl:attribute name="parseType" namespace="&rdf;">Resource</xsl:attribute-->
 	    <xsl:apply-templates />
 	</xsl:element>
     </xsl:template>
 
-    <xsl:template match="val">
-	<xsl:value-of select="vi:string2date3(normalize-space(.))"/>
-    </xsl:template>
+    <xsl:template match="CHARSET"></xsl:template>
+
+    <xsl:template match="val"><xsl:value-of select="vi:string2date3(normalize-space(.))"/></xsl:template>
 
     <xsl:template match="URL|DIR" priority="1">
 	<ical:url rdf:resource="{val}"/>

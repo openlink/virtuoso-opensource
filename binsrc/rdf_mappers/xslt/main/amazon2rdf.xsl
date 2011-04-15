@@ -213,6 +213,17 @@
 					<gr:priceType rdf:datatype="&xsd;string">offer price</gr:priceType>
           		</gr:UnitPriceSpecification>
 			</gr:hasPriceSpecification>
+			<oplamz:hasSalePrice>
+				<gr:UnitPriceSpecification rdf:about="{concat(vi:proxyIRI ($base, '', 'SalePrice_'), position())}">
+					<rdfs:label>
+						<xsl:value-of select="concat( ./amz:OfferListing/amz:SalePrice/amz:Amount div 100, ' (', ./amz:OfferListing/amz:SalePrice/amz:CurrencyCode ,')')"/>	
+					</rdfs:label>
+					<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>	
+            		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="./amz:OfferListing/amz:SalePrice/amz:Amount div 100"/></gr:hasCurrencyValue>
+            		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="./amz:OfferListing/amz:SalePrice/amz:CurrencyCode"/></gr:hasCurrency>
+					<gr:priceType rdf:datatype="&xsd;string">sale price</gr:priceType>
+				</gr:UnitPriceSpecification>
+			</oplamz:hasSalePrice>
 		</xsl:element>
 
 		<xsl:element namespace="&gr;" name="BusinessEntity">
@@ -275,6 +286,25 @@
     <xsl:template match="amz:Item/amz:ASIN">
 		<oplamz:ASIN><xsl:value-of select="."/></oplamz:ASIN>
     </xsl:template>
+
+    <xsl:template match="amz:Item/amz:SmallImage">
+		<foaf:depiction rdf:resource="{URL}"/>
+    </xsl:template>
+
+    <xsl:template match="amz:Item/amz:MediumImage">
+		<foaf:depiction rdf:resource="{URL}"/>
+    </xsl:template>
+	
+    <xsl:template match="amz:Item/amz:LargeImage">
+		<foaf:depiction rdf:resource="{URL}"/>
+    </xsl:template>
+
+    <xsl:template match="amz:Item/amz:ImageSets">
+		<xsl:for-each select="ImageSet/SwatchImage">
+			<foaf:depiction rdf:resource="{URL}"/>
+		</xsl:for-each>
+    </xsl:template>
+	
     <xsl:template match="amz:Item/amz:DetailPageURL">
 		<oplamz:DetailPageURL><xsl:value-of select="."/></oplamz:DetailPageURL>
     </xsl:template>

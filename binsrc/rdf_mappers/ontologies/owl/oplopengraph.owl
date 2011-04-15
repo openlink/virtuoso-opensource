@@ -1,0 +1,419 @@
+<!--
+  Generated from oplopengraph.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+
+  An OpenLink ontology for complementing Open Graph 
+  See http://developers.facebook.com/docs/reference/api/
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/opengraph#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:oplog="http://www.openlinksw.com/schemas/opengraph#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/opengraph">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-04-06</dc:date>
+        <dc:description>OpenLink schema for Open Graph objects and properties</dc:description>
+        <dc:title>OpenLink schema for Open Graph</dc:title>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Activity">
+        <rdfs:comment>A class representing an activity listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Activity</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Album">
+        <rdfs:comment>An Facebook photo album</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Album</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Application">
+        <rdfs:comment>An application registered on Facebook Platform</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Application</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Book">
+        <rdfs:comment>A class representing a book listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Book</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Checkin">
+        <rdfs:comment>An Facebook checkin</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Checkin</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Comment">
+        <rdfs:comment>A comment on a Graph API object</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Comment</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Event">
+        <rdfs:comment>Specifies information about an event, including the location, event name, and which invitees plan to attend</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Event</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#FriendList">
+        <rdfs:comment>A Facebook friend list</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>FriendList</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Group">
+        <rdfs:comment>A Facebook group</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Group</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Insights">
+        <rdfs:comment>Statistics about applications, pages, and domains.</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Insights</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Interest">
+        <rdfs:comment>A class representing an interest listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Interest</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Link">
+        <rdfs:comment>A link shared on a user's wall</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Link</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Message">
+        <rdfs:comment>An individual message in the new Facebook messaging system</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Message</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Movie">
+        <rdfs:comment>A class representing a movie listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Movie</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Music">
+        <rdfs:comment>A class representing music listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Music</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Note">
+        <rdfs:comment>A Facebook note</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Note</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Object">
+        <rdfs:comment>A base class representing all Open Graph objects</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Open Graph object</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Page">
+        <rdfs:comment>A Facebook Page</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Page</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Photo">
+        <rdfs:comment>An individual photo within an album</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Photo</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Post">
+        <rdfs:comment>An individual entry in a profile's feed</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Post</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Review">
+        <rdfs:comment>A review for an application</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Review</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#StatusMessage">
+        <rdfs:comment>A status message on a user's wall</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>StatusMessage</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Subscription">
+        <rdfs:comment>A subscription to an application to get real-time updates for an Graph object type</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Subscription</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#TVProgramme">
+        <rdfs:comment>A class representing a TV programme listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>TV programme</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Thread">
+        <rdfs:comment>A message thread in the Facebook messaging system</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Thread</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#User">
+        <rdfs:comment>A Facebook user profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>User</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Video">
+        <rdfs:comment>An individual video</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Video</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#category">
+        <rdfs:comment>The Page's category</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Page"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>category</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#description">
+        <rdfs:comment>A brief description of an Open Graph object</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#from">
+        <rdfs:comment>The Facebook user who made this post</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>from</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_account">
+        <rdfs:comment>A Facebook page owned by the user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Page"/>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has account</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_comment">
+        <rdfs:comment>A comment made on a Facebook object</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has comment</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Comment"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_feed">
+        <rdfs:comment>A post on an application's wall</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Application"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has feed</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_friend">
+        <rdfs:comment>A friend of the Facebook user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has friend</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_interest">
+        <rdfs:comment>An interest listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has interest</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Interest"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_member">
+        <rdfs:comment>a user who is a member of this FriendList</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#FriendList"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has member</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_photo">
+        <rdfs:comment>A photo contained in an album</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Album"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has photo</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Photo"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_picture">
+        <rdfs:comment>A picture</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has picture</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_post">
+        <rdfs:comment>A application's own post</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Application"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has post</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#id">
+        <rdfs:comment>A Facebook object ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#liked_by">
+        <rdfs:comment>the user that liked the Facebook object</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>liked by</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_activity">
+        <rdfs:comment>An activity listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>likes activity</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Activity"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_book">
+        <rdfs:comment>A book listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>likes book</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Book"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_movie">
+        <rdfs:comment>A movie listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>likes movie</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Movie"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_music">
+        <rdfs:comment>Music listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>likes music</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Music"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_tv_programme">
+        <rdfs:comment>A TV programme listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>likes TV programme</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#TVProgramme"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#link">
+        <rdfs:comment>A link attached to a Post</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>link</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#locale">
+        <rdfs:comment>A user's locale expressed as an ISO language code and country code</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>locale</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#message">
+        <rdfs:comment>A message contained in a Post</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>message</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#name">
+        <rdfs:comment>The name of an Open Graph object</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#posted">
+        <rdfs:comment>A post by a Facebook user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>posted</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#tagged_by">
+        <rdfs:comment>The photos, videos, and posts in which this application has been tagged</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Application"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>tagged by</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#uri">
+        <rdfs:comment>The URI of a Facebook user's Facebook home page</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>uri</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
+

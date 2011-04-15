@@ -355,10 +355,10 @@
        <div id="navbar">
          <ul id="navlist">
           <li>
-            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current">Forward Links</a>
+            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current" title="description subject references other objects or literal values via one or more attribute-value pairs">References</a>
           </li>
           <li>
-            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;">Backward Links</a>
+            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;" title="description subject referenced by other objects by being the value of one or more attribute-value pairs">Referenced By</a>
           </li>
          </ul>
       </div> <!-- #navbar -->

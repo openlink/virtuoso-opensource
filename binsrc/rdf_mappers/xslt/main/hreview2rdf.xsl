@@ -142,7 +142,19 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
     </xsl:if>
     <xsl:if test="$rating != 0">
       <review:rating>
-        <xsl:value-of select="." />
+	<xsl:variable name="rate" select="normalize-space(.)"/>
+	<xsl:choose>
+	<xsl:when test=".//*[@class='value-title']">
+		<xsl:variable name="rate2" select=".//*[@class='value-title']/@title"/>
+	        <xsl:value-of select="$rate2" />
+	</xsl:when>
+	<xsl:when test="string-length($rate) &gt; 0">
+	        <xsl:value-of select="$rate" />
+	</xsl:when>
+	<xsl:otherwise>
+	        <xsl:value-of select="'0'" />
+	</xsl:otherwise>
+	</xsl:choose>
       </review:rating>
     </xsl:if>
     <xsl:if test="$description != 0">

@@ -44,8 +44,10 @@
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
     <xsl:output method="xml" indent="yes"/>
+	
     <xsl:param name="baseUri" />
     <xsl:param name="exif" />
+
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
     <xsl:variable name="doc">

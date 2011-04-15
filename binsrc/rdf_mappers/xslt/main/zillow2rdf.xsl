@@ -126,9 +126,11 @@
     </xsl:template>
 
     <xsl:template match="result/address">
+		<rdfs:label>
+			<xsl:value-of select="concat(street, ', ', city, ', ', state)"/>
+		</rdfs:label>
 		<oplzllw:street><xsl:value-of select="street"/></oplzllw:street>
 		<oplzllw:postalCode><xsl:value-of select="zipcode"/></oplzllw:postalCode>
-
 		<oplzllw:city><xsl:value-of select="city"/></oplzllw:city>
 		<oplzllw:state><xsl:value-of select="translate (state, $lc, $uc)"/></oplzllw:state>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', city)}"/>
@@ -148,7 +150,7 @@
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'LastSoldPrice')}">
 				<rdfs:label>
-				<xsl:value-of select="concat( $amount, ' (', @currency, ')')"/>	
+					<xsl:value-of select="concat( vi:formatAmount($amount), ' (', @currency, ')')"/>	
 				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
@@ -163,7 +165,7 @@
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'ZestimatePrice')}">
 				<rdfs:label>
-				<xsl:value-of select="concat('Zestimate: ', $amount, ' (', amount/@currency, ')')"/>	
+					<xsl:value-of select="concat(vi:formatAmount($amount), ' (', amount/@currency, ')')"/>
 				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
@@ -207,7 +209,7 @@
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'CurrentPrice')}">
 				<rdfs:label>
-				<xsl:value-of select="concat( $amount, ' (', @currency, ')')"/>	
+				<xsl:value-of select="concat( vi:formatAmount($amount), ' (', @currency, ')')"/>	
 				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>

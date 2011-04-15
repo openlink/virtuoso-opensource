@@ -151,7 +151,7 @@ create procedure rdfdesc_label_1 (in _S any, in lines any := null)
 {
   declare best_str, meta, data, stat, msg any;
   declare best_q, q float;
-  declare lang, langs varchar;
+  declare lang, langs, label varchar;
 
   if (not (registry_get ('fct_desc_value_labels') = '1'))
     return null;
@@ -179,7 +179,13 @@ create procedure rdfdesc_label_1 (in _S any, in lines any := null)
 	    }
 	}
     }
-  return best_str;
+  label := best_str;
+   if (__tag of rdf_box = __tag (label))
+     label := rdf_box_data (label);
+   if (not isstring (label))
+     label := cast (label as varchar);
+    label := cast (xtree_doc (label, 2) as varchar);
+   return label;
 }
 ;
 
@@ -482,22 +488,9 @@ again:
        if (isstring(_object) and _object like 'http://%')
        {
 	 _href := rdfdesc_http_url (_object);
-	 image_ext := subseq(lcase(_object), strrchr(_object, '.') + 1);
-	 if (image_ext is not null)
-	 {
-	   _href := case
-	    when (image_ext = 'bmp') then _object
-	    when (image_ext = 'gif') then _object
-	    when (image_ext = 'jpeg') then _object
-	    when (image_ext = 'jpg') then _object
-	    when (image_ext = 'png') then _object
-	    when (image_ext = 'svg') then _object
-	    when (image_ext = 'tiff') then _object
-	    when (image_ext = 'tif') then _object
+	 if (http_mime_type (_object) like 'image/%')
+	   http (sprintf ('<a class="uri" href="%s"><img src="%s" height="160" style="border-width:0"/></a>', _href, _object));
 	    else
-              rdfdesc_http_url (_object)
-	    end;
-	 }
          http (sprintf ('<a class="uri" href="%s">%s</a>', _href, _object));
        }
        else

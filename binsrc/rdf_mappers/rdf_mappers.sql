@@ -62,6 +62,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_EVRI', null, 'Evri');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*foursquare.com/.*)|(https://.*foursquare.com/.*)',
+    'URL', 'DB.DBA.RDF_LOAD_FOURSQUARE', null, 'Foursquare');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*tumblr.com/.*',
     'URL', 'DB.DBA.RDF_LOAD_TUMBLR', null, 'Tumblr');
 
@@ -117,6 +121,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('http://.*bestbuy.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_BESTBUY', null, 'BestBuy articles');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://.*zappos.com/.*',
+	'URL', 'DB.DBA.RDF_LOAD_ZAPPOS', null, 'Zappos articles');
+	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('http://.*productwiki.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_PRODUCTWIKI', null, 'Product Wiki articles');
@@ -738,6 +746,10 @@ create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
     return x;
   if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
     return x;
+  if (http_mime_type (x) like 'image/%')
+    {
+      return x;
+    }
   return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
 }
 ;
@@ -1116,6 +1128,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
   if (strchr (uri, '#') is not null)
     frag := '';
 
+  --if (http_mime_type (uri) like 'image/%')
+    --return uri;
+
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
   ua [0] := '';
@@ -1172,6 +1187,9 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
     }
   if (strchr (uri, '#') is not null)
     frag := '';
+
+  --if (http_mime_type (uri) like 'image/%')
+  --  return uri;
 
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
@@ -1260,7 +1278,7 @@ create procedure DB.DBA.RDF_CONVERT_TO_XTREE (in code varchar)
 	declare pos int;
 	tmp := code;
 	pos := strstr(cast(tmp as varchar), '<ul>');
-	if (pos > 0)
+	if (pos >= 0)
 		tmp := subseq(tmp, pos);
 	else
 		tmp := '<ul/>';
@@ -1581,6 +1599,31 @@ create procedure RDF_SPONGE_URI_HASH (in u varchar)
 }
 ;
 
+create procedure DB.DBA.FORMAT_AMOUNT (in val varchar) returns varchar
+{
+	declare ret, cur varchar;
+	declare pos, cpos int;
+	cpos := 0;
+	pos := 0;
+	ret := '';
+	pos := length(val);
+	if (pos = 0)
+		return '';
+	while (pos >= 0)
+	{
+		cpos := pos - 3;
+		if (cpos < 0)
+			cpos := 0;
+		cur := subseq (val, cpos, pos);
+		ret := concat(cur, ',', ret);
+		pos := pos - 3;
+		if (cpos < 0)
+			return trim(ret, ', ');
+	}
+	return trim(ret, ', ');
+}
+;
+
 grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
@@ -1595,6 +1638,7 @@ grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE3 to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
 grant execute on DB.DBA.RDF_PROXY_ENTITY_IRI to public;
+grant execute on DB.DBA.FORMAT_AMOUNT to public;
 grant execute on DB.DBA.RM_SPONGE_DOC_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
 grant execute on DB.DBA.RM_SAMEAS_IRI to public;
@@ -1611,6 +1655,7 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_DATATYPE to public;
 grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 grant execute on DB.DBA.RDF_CONVERT_TO_XTREE to public;
+grant execute on DB.DBA.OPENGRAPH_OBJ_CONNECTIONS to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1633,6 +1678,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.X
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date3', 'DB.DBA.XSLT_STRING2ISO_DATE3');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_PROXY_ENTITY_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:formatAmount', 'DB.DBA.FORMAT_AMOUNT');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:getCountryName', 'DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME');
@@ -2489,11 +2535,14 @@ create procedure DB.DBA.RDF_LOAD_OVERSTOCK (in graph_iri varchar, in new_origin_
   ret_body := replace (ret_body, '= \'<script', '= \'<scr\' + \'ipt');
   --ret_body := replace (ret_body, '[url]', '{url}');
   --ret_body := replace (ret_body, '[title]', '{title}');
-  cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+  if (get_keyword ('use_tidy', opts) = 'yes') 
+  cont := tidy_html (ret_body, 'output-xhtml:yes\r\ntidy-mark:no');
+  else  
+    cont := ret_body;
   --string_to_file ('over.html', cont, -2);
   if (dest is null)
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
-  DB.DBA.RDF_LOAD_RDFA (cont, new_origin_uri, thisgr, 2);
+  DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 1);
   --DB.DBA.RDF_QUAD_URI (thisgr, new_origin_uri, 'http://xmlns.com/foaf/0.1/primaryTopic', new_origin_uri || '#product');
   return 1;
 }
@@ -2511,7 +2560,7 @@ create procedure DB.DBA.RDF_LOAD_RDFA_CARTRIDGE (in graph_iri varchar, in new_or
       return 0;
     };
   if (get_keyword ('use_tidy', opts) = 'yes') 
-    cont := tidy_html (ret_body, 'output-xhtml:1\r\ninput-xml:1');
+    cont := tidy_html (ret_body, 'output-xhtml:yes\r\ntidy-mark:no');
   else  
     cont := ret_body;
   if (dest is null)
@@ -3011,15 +3060,29 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION (in graph_iri varc
 create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
     declare qr, path any;
-    declare tree, xt, xd, types any;
+    declare tree, xt, xt_og_metadata, xd, types any;
     declare id, cnt, url, tmp, access_token, client_id, client_secret, code varchar;
     declare pos integer;
+
+    declare og_object_type varchar; -- Type of Open Graph object being handled
+    declare og_conns any; -- Open Graph object's connections 
+    declare og_err, og_headers any;
+    declare retries integer;
+    declare og_timeout integer; -- Timeout when accessing Open Graph collections
+
+    og_timeout := 60;
+    access_token := _key;
+    if (access_token is not null and length(access_token) = 0)
+      access_token := null;
+
     declare exit handler for sqlstate '*'
     {
         DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+        -- dbg_printf ('RDF_LOAD_FACEBOOK_OPENGRAPH exit handler:\n %s', __SQL_MESSAGE);
         return 0;
     };
     
+    -- dbg_printf('RDF_LOAD_FACEBOOK_OPENGRAPH');
     if (new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
@@ -3050,17 +3113,156 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
 	}
+    else if (new_origin_uri like 'http://graph.facebook.com/%')
+      {
+	tmp := sprintf_inverse (new_origin_uri, 'http://graph.facebook.com/%s', 0);
+	id := rtrim(tmp[0], '&/');
+	pos := strchr(id, '?');
+	if (pos > 0)
+	  id := left(id, pos);
+	if (id is null)
+	  return 0;
+      }
     else
         return 0;
-    url := sprintf ('https://graph.facebook.com/%s', id);
+
+    url := sprintf ('https://graph.facebook.com/%s?metadata=1', id);
     cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     tree := json_parse (cnt);
-    xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
-    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+    og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
+    -- string_to_file ('/tmp/og_social_tree_metadata', serialize_to_UTF8_xml(xt_og_metadata), -2);
+
+    -- Transform the base OpenGraph object description to RDF
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt_og_metadata, 
+        vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'og_object_type', og_object_type));
     xd := serialize_to_UTF8_xml (xt);
+    -- dbg_printf('%s', xd);
+    -- RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+    retries := 0;
+
+retry_without_access_token:
+
+    -- Try all the object's connections listed in the object metadata
+    og_conns := DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (xt_og_metadata, access_token);
+
+    -- Transform each of the OpenGraph object's connections
+    for (declare i int, i := 0; i < length (og_conns); i := i + 2)
+    {
+      -- dbg_printf ('\nTrying connection:\n%s', og_conns[i+1]);
+
+      if (og_conns[i] = 'picture')
+      {
+        declare og_picture_url varchar;
+
+        og_picture_url := null;
+        -- TO DO: Doesn't work - Why?
+        -- cnt := http_client_ext (url=>og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), headers=>og_headers, n_redirects=>5);
+        cnt := http_client_ext (url=>og_conns[i+1], headers=>og_headers);
+        if (aref (og_headers, 0) like '% 302%')
+        {
+          for (declare j int, j := 0; j < length (og_headers); j := j+1)
+          {
+            -- dbg_printf ('og_header[%d] = %s', j, og_headers[j]);
+            if (og_headers[j] like 'Location: %')
+            {
+              og_picture_url := subseq (trim(og_headers[j], '\r\n'), 10);
+              goto got_picture_url;
+            }
+          }
+        }
+got_picture_url:
+        if (og_picture_url is not null)
+          xt := xtree_doc (sprintf ('<results><picture>%s</picture></results>', og_picture_url));
+        else
+          xt := xtree_doc ('<results></results>');
+      }
+      else
+      {
+        -- Some of the Open Graph collections occasionally fail to respond, so set timeout
+        cnt := http_client (og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), timeout=>og_timeout);
+        tree := json_parse (cnt);
+    xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+      }
+
+      og_err := cast (xpath_eval('results/error/type', xt) as varchar);
+      if (og_err is null)
+      {
+        declare mode varchar;
+
+        mode := sprintf ('%s_%s', og_object_type, og_conns[i]);
+
+        -- string_to_file (sprintf('/tmp/og_social_tree_%s', mode), serialize_to_UTF8_xml(xt), -2);
+        -- dbg_printf ('Output from /%s ...', og_conns[i]);
+        -- dbg_obj_print (xt);
+        -- dbg_printf ('Transforming output with XSLT mode: %s', mode);
+
+        -- Transform the OpenGraph connection output to RDF
+        xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
+            vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'og_object_type', mode));
+    xd := serialize_to_UTF8_xml (xt);
+
+        -- dbg_printf ('RDF/XML output from /%s ...', og_conns[i]);
+        -- dbg_printf('%s', xd);
+
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      }
+      else
+      {
+        declare og_msg varchar;
+        og_msg := cast (xpath_eval('results/error/message', xt) as varchar);
+
+        -- dbg_printf ('OpenGraph error: %s - %s', og_err, og_msg);
+
+        if (og_err = 'OAuthException' and og_conns[i] = 'home' and retries = 0)
+        {
+          -- Access token is invalid
+          -- Even public connections will fail if tried with an invalid access token
+          -- Retry the connections without an access token, allowing connections which
+          -- require one to quietly fail
+          access_token := null;
+          retries := 1;
+
+          -- dbg_printf ('\nAccess token invalid - Retrying without one\n');
+          goto retry_without_access_token;
+        }
+        ;
+      }
+conn_done: 
+        ;
+    }
+
+    -- dbg_printf ('RDF_LOAD_FACEBOOK_OPENGRAPH: Done');
     DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
-    return 0;
+
+    -- return 0;
+    return 1;
+}
+;
+
+-- Extracts an Open Graph object's connections from XML tree containing the object's metadata
+-- Returns vector of (connection name, connection uri) pairs
+create procedure DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (in xt any, in access_token varchar)
+{
+  declare og_conns, conns any;
+  declare conn_str, token_str varchar;
+
+  token_str := '';
+  if (access_token is not null and length (access_token) > 0)
+    token_str := '?access_token=' || access_token;
+
+  og_conns := vector();
+  conns := xpath_eval('/results/metadata/connections/*', xt, 0);
+  foreach (any conn in conns) do
+  {
+    conn_str := cast (conn as varchar) || token_str;
+    og_conns := vector_concat (og_conns, 
+        vector (cast(xpath_eval('local-name()', conn) as varchar), conn_str));
+  }
+
+  return og_conns;
 }
 ;
 
@@ -5363,6 +5565,67 @@ create procedure DB.DBA.RDF_LOAD_EVRI (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, exif any;
+	declare entity_id, email_, password_ varchar;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	email_ := get_keyword ('email', opts);
+	password_ := get_keyword ('password', opts);
+	if (( length (email_) * length (password_) ) = 0)
+		return 0;
+	if (new_origin_uri like 'http%://%foursquare.com/venue/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/venue/%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('https://api.foursquare.com/v1/venue?vid=%s', entity_id);
+	}
+	else if (new_origin_uri like 'http%://%foursquare.com/user/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/user/%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('https://api.foursquare.com/v1/user?uid=%s', entity_id);
+	}
+	else if (new_origin_uri like 'http%://%foursquare.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		if (entity_id = 'item')
+			return 0;
+		url := sprintf('https://api.foursquare.com/v1/user?twitter=%s', entity_id);
+	}
+	else
+		return 0;
+	declare bas, auth_header varchar;
+	bas := encode_base64 (concat(email_, ':', password_));
+    auth_header := 'Authorization: Basic '||bas;
+	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/foursquare2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'entity', entity_id));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_CNET (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
@@ -5898,6 +6161,52 @@ create procedure DB.DBA.RDF_LOAD_PRODUCTWIKI (in graph_iri varchar, in new_origi
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_ZAPPOS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, api_key, asin, hdr, tree, exif any;
+	declare pos, is_sku, is_store integer;
+	asin := null;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.zappos.com/product/%')
+	{
+		declare arr any;
+		arr := sprintf_inverse (new_origin_uri, 'http://www.zappos.com/product/%s', 0);
+		asin := arr[0];
+		pos := strchr(asin, '/');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
+	}
+	else
+	{
+		return 0;
+	}
+	api_key := _key;
+	if (asin is null or not isstring (api_key))
+		return 0;
+	url := sprintf ('http://api.zappos.com/Product?id=%s&includes=["description","styles"]&key=%s', asin, api_key);
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	tree := json_parse (tmp);
+	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zappos2rdf.xsl', xt, 
+		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts); 
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -6141,22 +6450,24 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   --       Lowercase parameters will come after uppercase ones in the canonical query string.
   if (is_wish_list = 1)
   {
-    canon := sprintf('AWSAccessKeyId=%s&Condition=All&ListId=%s&ListType=WishList&MerchantId=All&Operation=ListLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+		canon := sprintf('AWSAccessKeyId=%s&Condition=All&ListId=%s&ListType=WishList&MerchantId=All&Operation=ListLookup&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
   }
   else if (is_wish_list = 2)
   {
-    canon := sprintf('AWSAccessKeyId=%s&Availability=Available&Condition=All&Keywords=%s&MerchantId=All&Operation=ItemSearch&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&SearchIndex=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, index1, datenow);
+		canon := sprintf('AWSAccessKeyId=%s&Availability=Available&Condition=All&Keywords=%s&MerchantId=All&Operation=ItemSearch&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&SearchIndex=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, index1, datenow);
   }
   else
   {
-      canon := sprintf('AWSAccessKeyId=%s&Condition=All&ItemId=%s&MerchantId=All&Operation=ItemLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+		canon := sprintf('AWSAccessKeyId=%s&Condition=All&ItemId=%s&MerchantId=All&Operation=ItemLookup&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
   }
   url := DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (canon, secret_key);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar), 'wish_list', cast(is_wish_list as varchar), 'associate_key', associate_key));
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, 
+		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar), 
+		'wish_list', cast(is_wish_list as varchar), 'associate_key', associate_key));
   xd_utf8 := serialize_to_UTF8_xml (xt);
    {
      declare mlist varchar;
@@ -7095,12 +7406,6 @@ try_grddl:
   thisgr := coalesce (dest, graph_iri);
   if (xt_xml is not null)
     xt := xt_xml;
-  -- try loading POSH
-  {
-    declare exit handler for sqlstate '*';
-    posh := '<html>' || serialize_to_UTF8_xml (xpath_eval ('//head', xt)) || '</html>';
-    DB.DBA.RDF_LOAD_RDFA (posh, proxy_iri, thisgr, 2);
-  }
   -- RDFa
   if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
     goto no_dtd_check;
