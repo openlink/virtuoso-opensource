@@ -1128,8 +1128,8 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
   if (strchr (uri, '#') is not null)
     frag := '';
 
-  if (http_mime_type (uri) like 'image/%')
-    return uri;
+  --if (http_mime_type (uri) like 'image/%')
+    --return uri;
 
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
@@ -1188,8 +1188,8 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
   if (strchr (uri, '#') is not null)
     frag := '';
 
-  if (http_mime_type (uri) like 'image/%')
-    return uri;
+  --if (http_mime_type (uri) like 'image/%')
+  --  return uri;
 
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
