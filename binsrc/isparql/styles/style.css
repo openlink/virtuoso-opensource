@@ -198,13 +198,17 @@ fieldset.deref_opts h4 {
   background-color: #FFFFFF;
   height: 30px;
   padding-top: 10px;
-  padding-bottom:10px;
+  padding-bottom:30px;
   width: 100%;
   border-top: 1px solid #aaa
 }
 
-div.foot_l { text-align: left; float: left; clear: left; width: 45%; margin-left: 5px;}
-div.foot_r { text-align: right; float: right; width: 45%; margin-right: 5px;}
+div.foot_l { text-align: left; float: left; clear: left; width: 45%; margin-left: 10px;}
+div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
+
+#data_links {
+  margin: 10px;
+}
 
 span.dyn_page { vertical-align: top;}
 

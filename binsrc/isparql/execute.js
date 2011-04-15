@@ -394,7 +394,8 @@ var QueryExec = function(optObj) {
     };
 
     this.resultType = function(data) {
-		if (data.documentElement == null) return iSPARQL.ResultType.ERROR; // OPERA returns XMLDocument with all members null
+		if (data.documentElement == null) 
+			return iSPARQL.ResultType.ERROR; // OPERA returns XMLDocument with all members null
 		if (data.documentElement.localName == "sparql")
 			return iSPARQL.ResultType.RESSET;
 		if (data.documentElement.localName == "RDF")
@@ -462,11 +463,45 @@ var QueryExec = function(optObj) {
 		if (old>=0) self.nav(old);
     };
 
+	this.makeDataLinks = function () {
+		var item = self.cache[self.cacheIndex];
+		var opts = item.opts;
+		var request = item.request;
+		var ctr = self.miniplnk;
+		
+		var nloca = document.location;
+
+		if (opts.endpoint = '/sparql') {
+			var resUriBase = nloca.protocol + 
+				"//" + nloca.host + "/sparql/?query=" + encodeURIComponent(opts.query);
+			
+			resUriBase += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+			resUriBase += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+			resUriBase += "&format=";
+
+			$('cxml_raw_lnk').href =   resUriBase + encodeURIComponent("text/cxml");
+			$('csv_raw_lnk').href =    resUriBase + encodeURIComponent("text/csv");
+
+			$('nt_raw_lnk').href =     resUriBase + encodeURIComponent("text/plain");
+			$('n3_raw_lnk').href =     resUriBase + encodeURIComponent("text/rdf+n3");
+			$('json_raw_lnk').href =   resUriBase + encodeURIComponent("application/rdf+json");
+			$('rdfxml_raw_lnk').href = resUriBase + encodeURIComponent("application/rdf+xml");
+			
+			$('odata_atom_lnk').href = resUriBase + encodeURIComponent("application/atom+xml");
+			$('odata_json_lnk').href = resUriBase + encodeURIComponent("application/odata+json");
+
+			OAT.Dom.show('data_links');
+		}
+
+	}
+
     this.makeMiniRDFPlinkURI = function (caller,msg,o) {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 	var request = item.request;
-	var plnk = self.miniplnk;
+		var ctr = self.miniplnk;
+
+		OAT.Dom.clear(ctr);
 
 	var nloca = document.location;
 
@@ -478,11 +513,17 @@ var QueryExec = function(optObj) {
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 		xparm += "&view=" + opts.view;
-	plnk.target = "_blank";
-	plnk.href= nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
+
+		var plnk_a = OAT.Dom.create("a");
+
+		plnk_a.target = "_blank";
+		plnk_a.href= nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
+		plnk_a.innerHTML = "Permalink"
 
 		if (iSPARQL.Settings.shorten_uris) 
-			iSPARQL.Common.shortenURI (plnk);
+			iSPARQL.Common.shortenURI (plnk_a);
+
+		OAT.Dom.append([ctr, plnk_a]);
 				
     }
 
@@ -723,6 +764,7 @@ var QueryExec = function(optObj) {
 	execURIa.target = "_blank";
 	
 		OAT.Dom.append([ctr,execURIa]);
+		OAT.Dom.hide ('data_links')
     };
 
     this.drawSparqlResultSet = function (resSet) {
@@ -935,6 +977,11 @@ var QueryExec = function(optObj) {
 
 		iSPARQL.endpointOpts.setEndpoint (null, item.opts.endpoint);
 
+		if (item.resType == iSPARQL.ResultType.GRAPH) 
+			OAT.Dom.show('data_links');
+		else 
+			OAT.Dom.hide('data_links');
+
 		adv.redraw();
 //		if (!item.wasError && qbe) qbe.loadFromString(iSPARQL.dataObj.query);
 
@@ -1041,9 +1088,7 @@ var QueryExec = function(optObj) {
 				var c_i = self.cacheIndex;
 				
 				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
-				
-		self.miniplnk = OAT.Dom.create ("a");
-		self.miniplnk.innerHTML = "Permalink";
+				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_ctr"});
 
 /*					self.addthis_ctr.innerHtml = '<div id="sharelink" class="addthis_toolbox addthis_default_style "' + 
 						'addthis:url=""' + 
@@ -1094,8 +1139,7 @@ var QueryExec = function(optObj) {
 				
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
 				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
-				
-
+				self.makeDataLinks();
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
