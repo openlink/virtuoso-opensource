@@ -3363,7 +3363,7 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
     {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
-    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, "DATETIME"		},
+    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, "TIME"		},
     {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
     {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
