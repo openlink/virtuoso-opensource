@@ -1539,19 +1539,21 @@ iSPARQL.Common = {
  			OAT.Dom.show('queryopts');
 			OAT.Dom.show('queryMetaData');
 			OAT.Dom.show('controls');
+				OAT.Dom.hide('data_links')
 	    }
 	    else if (newIndex == 1) { // Advanced
 			OAT.Dom.hide ('qry_type_ctls');
  			OAT.Dom.show('queryopts');
 			OAT.Dom.show('queryMetaData');
 			OAT.Dom.show('controls');
+				OAT.Dom.hide('data_links')
 	    }
 	    else {	// Result tab
 			OAT.Dom.hide('qry_type_ctls');
  			OAT.Dom.hide('queryopts');
 			OAT.Dom.hide('queryMetaData');
 			OAT.Dom.hide('controls');
-		
+				OAT.Dom.show('data_links')
 	    }
 	}
 

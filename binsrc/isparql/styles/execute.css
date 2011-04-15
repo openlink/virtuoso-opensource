@@ -173,3 +173,25 @@ div.rdf_data div.pager {
 div.pager div {
   margin: 3px;
 }
+
+#foot {
+  font-size: 7pt;
+  text-align: right;
+  float: left;
+  clear: both;
+  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
+  background: -moz-linear-gradient(top,#ccdde0,#577);
+  background-color: #FFFFFF;
+  height: 30px;
+  padding-top: 10px;
+  padding-bottom:30px;
+  width: 100%;
+  border-top: 1px solid #aaa
+}
+
+div.foot_l { text-align: left; float: left; clear: left; width: 45%; margin-left: 10px;}
+div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
+
+#data_links {
+  margin: 10px;
+}
