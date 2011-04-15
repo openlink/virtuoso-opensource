@@ -7378,7 +7378,9 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
               ssg_print_scalar_expn (ssg, local_eq->e_vars[0], SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
               goto param_value_is_printed; /* see below */
             }
-          if (((SPART_VARR_FIXED | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & local_eq->e_rvr.rvrRestrictions))
+          if ((SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & local_eq->e_rvr.rvrRestrictions)
+            goto try_parent_eq; /* see below */
+          if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & local_eq->e_rvr.rvrRestrictions))
             {
               ssg_print_scalar_expn (ssg, (SPART *)(local_eq->e_rvr.rvrFixedValue), SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
               goto param_value_is_printed; /* see below */
@@ -7394,9 +7396,15 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
                   goto param_value_is_printed; /* see below */
                 }
             }
+try_parent_eq:
           parent_eq = SPARP_EQUIV (sparp, local_eq->e_receiver_idxs[0]);
+          if ((NULL == parent_eq) || ((SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & parent_eq->e_rvr.rvrRestrictions))
+            {
+              ssg_puts (" NULL");
+              goto param_value_is_printed; /* see below */
+            }
           parent_gp = parent_eq->e_gp;
-          if (((SPART_VARR_FIXED | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & parent_eq->e_rvr.rvrRestrictions))
+          if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & parent_eq->e_rvr.rvrRestrictions))
             {
               ssg_print_scalar_expn (ssg, (SPART *)(parent_eq->e_rvr.rvrFixedValue), SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
               goto param_value_is_printed; /* see below */
