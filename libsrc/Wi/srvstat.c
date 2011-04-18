@@ -191,6 +191,9 @@ extern int enable_dfg_print;
 extern int enable_distinct_sas;
 int32 ha_rehash_pct = 300;
 extern int c_use_aio;
+extern long strses_file_reads;
+extern long strses_file_seeks;
+extern long strses_file_writes;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -808,9 +811,11 @@ srv_lock_report (const char * mode)
   thr_cli_running = thr_ct;
   thr_cli_waiting = lw_ct;
   thr_cli_vdb = vdb_ct;
-  rep_printf ("\nLock Status: %ld deadlocks of which %ld 2r1w, %ld waits,"
+  rep_printf (
+      "\nLock Status: %ld deadlocks of which %ld 2r1w, %ld waits,"
       "\n   Currently %d threads running %d threads waiting %d threads in vdb."
-      "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks, lock_waits, thr_ct, lw_ct, vdb_ct);
+      "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks,
+      lock_waits, thr_ct, lw_ct, vdb_ct);
 
   if (!strchr (mode, 'l'))
     {
@@ -1205,6 +1210,9 @@ stat_desc_t stat_descs [] =
     {"tc_anytime_early_flush", &tc_anytime_early_flush},
     {"read_block_usec", &read_block_usec},
     {"write_block_usec", &write_block_usec},
+    {"strses_file_reads", &strses_file_reads},
+    {"strses_file_writes", &strses_file_writes},
+    {"strses_file_seeks", &strses_file_seeks},
     {"tc_dive_would_deadlock", &tc_dive_would_deadlock},
     {"tc_get_buffer_while_stat", &tc_get_buffer_while_stat},
     {"tc_bp_wait_flush", &tc_bp_wait_flush},
