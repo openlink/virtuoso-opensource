@@ -5119,6 +5119,9 @@ bif_http_lock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "HT042", "Invalid DBA credentials");
   sec_check_dba ((query_instance_t *) qst, "http_lock");
 
+  if (!www_maintenance_page)
+    sqlr_new_error ("22023", "HTERR", "The maintenance page is not specified, must have MaintenancePage setting in the HTTPServer section of the INI");
+
   if (!MAINTENANCE)
     {
       www_maintenance = 1;
