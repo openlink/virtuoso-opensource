@@ -692,9 +692,11 @@ lt_short_name (lock_trx_t * lt)
 
   if (!lt->lt_client)
     return "NO_CLIENT";
-  if (lt->lt_client->cli_ws)
-    return "VSP";
-  name = LT_NAME (lt);
+  if (lt->lt_client->cli_ws) /* http client, print the client IP */
+    return lt->lt_client->cli_ws->ws_client_ip ? lt->lt_client->cli_ws->ws_client_ip : "VSP";
+  name = lt->lt_client->cli_session ?
+      (lt->lt_client->cli_session->dks_peer_name ? lt->lt_client->cli_session->dks_peer_name : "NO_CONN") :
+      "INTERNAL";
   last = strchr (name, ':');
   if (last)
     return (last + 1);
