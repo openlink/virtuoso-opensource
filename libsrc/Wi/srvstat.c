@@ -194,6 +194,7 @@ extern int c_use_aio;
 extern long strses_file_reads;
 extern long strses_file_seeks;
 extern long strses_file_writes;
+extern long strses_file_wait_msec;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -1213,6 +1214,7 @@ stat_desc_t stat_descs [] =
     {"strses_file_reads", &strses_file_reads},
     {"strses_file_writes", &strses_file_writes},
     {"strses_file_seeks", &strses_file_seeks},
+    {"strses_file_wait_msec", &strses_file_wait_msec},
     {"tc_dive_would_deadlock", &tc_dive_would_deadlock},
     {"tc_get_buffer_while_stat", &tc_get_buffer_while_stat},
     {"tc_bp_wait_flush", &tc_bp_wait_flush},
