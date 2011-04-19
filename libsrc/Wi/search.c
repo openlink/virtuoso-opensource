@@ -1382,11 +1382,9 @@ itc_sample_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   search_spec_t *sp;
   dbe_key_t *key = itc->itc_insert_key;
 
-  if (itc->itc_insert_key && itc->itc_insert_key->key_is_bitmap && !itc->itc_no_bitmap)
 #if 0
-    return itc_sample_bm_row_check (itc, buf);
-#else
-    return DVC_MATCH;
+  if (itc->itc_insert_key && itc->itc_insert_key->key_is_bitmap && !itc->itc_no_bitmap)
+    return DVC_LESS;
 #endif
 
   if (IE_KEY_VERSION (itc->itc_row_data) == itc->itc_insert_key->key_version)
@@ -3290,7 +3288,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
   int have_left_leaf = 0, was_left_leaf = 0;
   int pos = itc->itc_map_pos; /* itc is at leftmost match. Nothing at left of the itc */
   int save_pos = itc->itc_map_pos;
-  int ctr = 0, leaf_ctr = 0, row_ctr = 0;
+  int ctr = 0, leaf_ctr = 0, row_ctr = 0, row_match_ctr = 0;
   *ends_with_match = 0;
   for (pos = pos; pos < pm->pm_count; pos++)
     {
@@ -3318,8 +3316,9 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 		break;
 	      sp = sp->sp_next;
 	    }
-	  if (r_kv && DVC_MATCH == res) /* check dependant cols */
-	    res = itc_sample_row_check (itc, buf);
+	  if (r_kv && DVC_MATCH == res && itc->itc_row_specs && DVC_MATCH == itc_sample_row_check (itc, buf)) /* check dependant cols */
+	    row_match_ctr ++;
+
 	  if (DVC_MATCH == res)
 	    {
 	      if (r_kv)
@@ -3363,6 +3362,14 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
       /* angle is a measure between 0 to 999.  Scale it to leaf count and pick the leaf */
       int nth = (leaf_ctr * angle) / 1000;
       *alt_leaf_ret = leaves[MIN (nth, leaf_ctr - 1)];
+    }
+  /* adjust estimate */
+  if (itc->itc_row_specs && row_ctr)
+    {
+      if (row_match_ctr)
+	ctr = (row_match_ctr * ctr) / row_ctr;
+      else
+	ctr = (int) ((float)ctr * MAX (0.05, ((float) row_ctr / ctr)));
     }
   return ctr;
 }

@@ -1251,7 +1251,7 @@ extern rdf_inf_ctx_t * empty_ric;
 #define SMPL_QUEUE 1
 #define SMPL_RESULT 2
 
-int32 sqlo_sample_dep_cols = 0;
+int32 sqlo_sample_dep_cols = 1;
 search_spec_t * dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key);
 
 int64
@@ -1353,10 +1353,6 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
     res = itc_sample (itc);
   itc_free (itc);
   tb_count = dbe_key_count (key->key_table->tb_primary_key);
-#if 0
-  if (0 == res && ic->ic_inx_sample_cols) /* if no samples take 1% */
-    res = tb_count > 0 ? (tb_count / 100) + 1 : tb_count;
-#endif
   res = MIN (tb_count, res);
   if (!sop || sop->sop_ric || sop->sop_use_sc_cache)
     {
