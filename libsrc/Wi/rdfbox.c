@@ -1744,8 +1744,19 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
   switch (DV_TYPE_OF (iri))
     {
     case DV_STRING: case DV_UNAME:
+	  {
+	    int iri_boxlen = box_length (iri);
+	    /*                                     0123456789 */
+	    if ((iri_boxlen > 9) && !memcmp (iri, "nodeID://", 9))
+	      {
+                ns_prefix_ret[0] = uname___empty;
+		local_ret[0] = box_dv_short_nchars (iri + 9, iri_boxlen - 9);
+		is_bnode_ret[0] = 1;
+		return 1;
+	      }
       iri_split_ttl_qname (iri, ns_prefix_ret, local_ret, 1);
       return 1;
+	  }
     case DV_IRI_ID: case DV_IRI_ID_8:
       {
         int res;
@@ -1813,7 +1824,7 @@ iri_cast_nt_absname (query_instance_t *qi, caddr_t iri, caddr_t *iri_ret, ptrlon
 /*                                             0123456789 */
         if ((iri_boxlen > 9) && !memcmp (iri, "nodeID://", 9))
           {
-            iri_ret[0] = box_dv_short_nchars (iri + 9, iri_boxlen - 9);
+            iri_ret[0] = box_sprintf (30, "_:%s", iri + 9);
             is_bnode_ret[0] = 1;
             return 1;
           }
