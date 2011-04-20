@@ -115,6 +115,7 @@ typedef struct shcompo_s
 #else
 #define SHC_ENTER(s) \
     do { \
+      if (THREAD_CURRENT_THREAD == (s)->shcompo_owner) GPF_T1 ("entering mtx twice"); \
       mutex_enter ((s)->shcompo_comp_mutex); \
       (s)->shcompo_owner = THREAD_CURRENT_THREAD; \
     } while (0)
