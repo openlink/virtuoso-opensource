@@ -83,7 +83,7 @@ int in_srv_global_init = 0;
 
 int it_n_maps = 256;
 int rdf_obj_ft_rules_size;
-extern int disable_listen_on_tcp_sock;
+int disable_listen_on_tcp_sock;
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
@@ -2409,6 +2409,7 @@ cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 
   IN_TXN;
   lt = cli->cli_trx;
+  lt_wait_checkpoint ();
 
   lt_threads_inc_inner (lt);
 

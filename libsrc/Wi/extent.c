@@ -58,7 +58,7 @@
 #endif
 
 
-int ext_free_count (extent_t * ext);
+dp_addr_t ext_free_count (extent_t * ext);
 extent_t * em_new_extent (extent_map_t * em, int type, dp_addr_t extends);
 dp_addr_t em_try_get_dp (extent_map_t * em, int pg_type, dp_addr_t near);
 dp_addr_t em_new_dp_1 (extent_map_t * em, int ext_type, dp_addr_t near);
@@ -190,10 +190,10 @@ dbs_extent_allocated (dbe_storage_t * dbs, dp_addr_t n)
     }
 }
 
-int32
+dp_addr_t
 em_free_count (extent_map_t * em, int type)
 {
-  int32 n = 0;
+  dp_addr_t n = 0;
   DO_EXT (ext, em)
     {
       if (type != EXT_TYPE (ext))
@@ -747,7 +747,7 @@ em_find_free_extender (extent_map_t * em, extent_t * near_ext)
 }
 
 
-int
+dp_addr_t
 ext_free_count (extent_t * ext)
 {
   int inx, b_idx, free = 0;

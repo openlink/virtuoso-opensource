@@ -235,6 +235,8 @@ lt_wait_checkpoint_1 (int cl_listener_also)
       LEAVE_TXN;
       semaphore_enter (self->thr_sem);
       IN_TXN;
+      if (self->thr_lt)
+	break;
     }
 }
 
@@ -254,6 +256,15 @@ cpt_over (void)
   cpt_thread = NULL;
   DO_SET (du_thread_t *, thr, &wi_inst.wi_waiting_checkpoint)
   {
+    if (thr->thr_lt)
+      {
+	lock_trx_t * lt = thr->thr_lt;
+	if (LT_FREEZE == lt->lt_status)
+	  {
+	    lt->lt_close_ack_threads = 0;
+	    lt->lt_status = LT_PENDING;
+	  }
+      }
     semaphore_leave (thr->thr_sem);
   }
   END_DO_SET();

@@ -474,6 +474,8 @@ lt_done (lock_trx_t * lt)
   {
     int64 plt = 0;
     int inx;
+    if (local_cll.cll_id_to_trx)
+      gethash_64 (plt, lt->lt_trx_no, local_cll.cll_id_to_trx);
     if (plt)
       GPF_T1 ("lt in id to trx  at lt_done");
     for (inx = 0; inx < trx_rc->rc_fill; inx++)
@@ -667,20 +669,25 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
 void
 lt_ack_freeze_inner (lock_trx_t * lt)
 {
-
+  du_thread_t *self = THREAD_CURRENT_THREAD;
   ASSERT_IN_TXN;
   /* Can be called from lt_leave, no itc and bufs but must ack for cpt to proceed */
   lt->lt_status = LT_FREEZE;
   lt->lt_error = LTE_OK;
-  LT_CLOSE_ACK_THREADS(lt);
+  LT_CLOSE_ACK_THREADS (lt);
   lt->lt_close_ack_threads = 1;
   lt_resume_waiting_end (lt);
-  lt_wait_checkpoint();
-  LT_CLOSE_ACK_THREADS(lt);
-  lt->lt_close_ack_threads = 0;
+  self->thr_lt = lt;
+  lt_wait_checkpoint ();
+  self->thr_lt = NULL;
   if (LT_FREEZE == lt->lt_status)
-    lt->lt_status = LT_PENDING;
+    {
+      LT_CLOSE_ACK_THREADS (lt);
+      lt->lt_close_ack_threads = 0;
+      lt->lt_status = LT_PENDING;
+    }
 }
+
 
 
 void

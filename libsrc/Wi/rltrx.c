@@ -1491,6 +1491,8 @@ lt_transact (lock_trx_t * lt, int op)
       rdbg_printf (("Host %d:  Own rollback with lte=%d of %d:%d\n", local_cll.cll_this_host, lt->lt_error, LT_W_NO (lt)));
     }
   ASSERT_IN_TXN;
+  if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
+    log_error ("transact while cpt atomic, trx no %d, cpt trx no %d", lt->lt_trx_no, (wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0));
   if (lt->lt_threads != lt->lt_lw_threads + lt->lt_close_ack_threads + lt->lt_vdb_threads)
     {
       lt_log_debug ((
@@ -1543,6 +1545,8 @@ lt_transact (lock_trx_t * lt, int op)
 	    pl_finalize_page (pl, itc);
 	  else
 	    pl_rollback_page (pl, itc);
+	  if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
+	    log_error ("transact while cpt atomic, trx no: %d, n locks %d", lt->lt_trx_no, n_locks);
 	  ITC_LEAVE_MAPS (itc);
 	}
       if (pl_arr != (page_lock_t**) &pl_arr_auto)
@@ -1581,6 +1585,8 @@ lt_transact (lock_trx_t * lt, int op)
   LT_CLOSE_ACK_THREADS(lt);
   lt->lt_close_ack_threads = 0;
   lt_resume_waiting_end (lt);
+  if (wi_inst.wi_cpt_lt != lt)
+    lt_wait_checkpoint ();
 #ifdef VIRTTP
   if (lt->lt_2pc._2pc_info)
     {
