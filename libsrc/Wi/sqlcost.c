@@ -1251,7 +1251,7 @@ extern rdf_inf_ctx_t * empty_ric;
 #define SMPL_QUEUE 1
 #define SMPL_RESULT 2
 
-int32 sqlo_sample_dep_cols = 1;
+int32 sqlo_sample_dep_cols = 0;
 search_spec_t * dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key);
 
 int64
