@@ -60,8 +60,8 @@ struct id_hash_s
   {
     int			ht_key_length;		/*!< Number of bytes in key */
     int			ht_data_length;		/*!< Number of bytes in dependent data */
-    id_hashed_key_t	ht_buckets;	/*!< Number of buckets */
-    int			ht_bucket_length;
+    id_hashed_key_t	ht_buckets;		/*!< Buckets */
+    int			ht_bucket_length;	/*!< Number of buckets */
     int			ht_data_inx;
     int			ht_ext_inx;
     char *		ht_array;
