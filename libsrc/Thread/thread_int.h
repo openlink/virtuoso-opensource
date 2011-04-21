@@ -132,6 +132,7 @@ struct thread_s
   void *		thr_sql_scs;
   int                   thr_attached;
   caddr_t		thr_dbg;
+  struct lock_trx_s *	thr_lt; /* use to access lt during checkpoint wait */
 #ifndef NDEBUG
   void *		thr_pg_dbg;
 #endif  
