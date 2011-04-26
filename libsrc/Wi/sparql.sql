@@ -2537,11 +2537,11 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
     {
       old_log_mode := log_enable (log_enable, 1);
     }
-  if (1 <> sys_stat ('cl_run_local_only'))
-    {
-      DB.DBA.TTLP_CL (strg, base, graph, flags);
-      return;
-    }
+--  if (1 <> sys_stat ('cl_run_local_only'))
+--    {
+--      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
+--      return;
+--    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null, iri_xlate_cbk, iri_xlate_env);
@@ -10650,7 +10650,7 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
     }
   if (1 <> sys_stat ('cl_run_local_only'))
     {
-      DB.DBA.TTLP_CL (strg, base, graph, flags);
+      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
   if (126 = __tag (strg))
@@ -10695,7 +10695,7 @@ create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar,
     }
   if (1 <> sys_stat ('cl_run_local_only'))
     {
-      DB.DBA.TTLP_CL_LOCAL_FILE (filename, base, graph, flags);
+      DB.DBA.TTLP_CL (filename, 1, base, graph, flags);
       return;
     }
   app_env := vector (
