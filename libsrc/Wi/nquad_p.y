@@ -89,6 +89,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _COMMA		/*:: PUNCT_TTL_LAST(",") ::*/
 %token _DOT_WS		/*:: PUNCT("."), TTL, LAST(". "), LAST(".\n"), LAST(".") ::*/
 %token _LBRA		/*:: PUNCT_TTL_LAST("{") ::*/
+%token _LBRA_TOP_TRIG	/*:: PUNCT_TRIG_LAST("{") ::*/
 %token _LPAR		/*:: PUNCT_TTL_LAST("(") ::*/
 %token _LSQBRA		/*:: PUNCT_TTL_LAST("[") ::*/
 %token _LSQBRA_RSQBRA	/*:: PUNCT_TTL_LAST("[]") ::*/
@@ -97,6 +98,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _RSQBRA		/*:: PUNCT_TTL_LAST("[ ]") ::*/
 %token _SEMI		/*:: PUNCT_TTL_LAST(";") ::*/
 %token _EQ		/*:: PUNCT_TTL_LAST("=") ::*/
+%token _EQ_TOP_TRIG	/*:: PUNCT_TRIG_LAST("=") ::*/
 %token _EQ_GT		/*:: PUNCT_TTL_LAST("=>") ::*/
 %token _LT_EQ		/*:: PUNCT_TTL_LAST("<=") ::*/
 %token _BANG		/*:: PUNCT_TTL_LAST("!") ::*/

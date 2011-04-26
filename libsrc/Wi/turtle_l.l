@@ -189,7 +189,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"."		{ return _DOT_WS; }
 <INITIAL>":"		{ return _COLON; }
 <INITIAL>";"		{ return _SEMI; }
-<INITIAL>"="		{ return _EQ; }
+<INITIAL>"="		{ return (((0 == ttlp_arg[0].ttlp_lexdepth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG)) ? _EQ_TOP_TRIG : _EQ); }
 <INITIAL>"=>"		{ return _EQ_GT; }
 <INITIAL>"<="		{ return _LT_EQ; }
 <INITIAL>"!"		{ return _BANG; }
@@ -219,7 +219,10 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"["				{ ttlp_arg[0].ttlp_lexdepth++; return _LSQBRA; }
 <INITIAL>"[]"				{ return _LSQBRA_RSQBRA; }
 <INITIAL>"]"				{ ttlp_arg[0].ttlp_lexdepth--; return _RSQBRA; }
-<INITIAL>"{"				{ ttlp_arg[0].ttlp_lexdepth++; return _LBRA; }
+<INITIAL>"{"				{
+    int depth = ttlp_arg[0].ttlp_lexdepth++;
+    return (((0 == depth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG)) ? _LBRA_TOP_TRIG : _LBRA);
+  }
 <INITIAL>"}"				{ ttlp_arg[0].ttlp_lexdepth--; return _RBRA; }
 
 <INITIAL>"<"([^\\>\001-\040])*">"	{
@@ -508,7 +511,7 @@ ttlp_NUMBER_double (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * y
 }
 
 caddr_t
-ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
+ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset)
 {
   dk_set_t lexems = NULL;
   caddr_t result_array;
@@ -523,7 +526,7 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
     {
       ttlp->ttlp_text = str;
       ttlp->ttlp_text_len = strlen (str);
-      ttlp->ttlp_err_hdr = "TURTLE parser";
+      ttlp->ttlp_err_hdr = ((mode_bits & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((mode_bits & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
       if (NULL == query_charset)
 	query_charset = default_charset;
       if (NULL == query_charset)

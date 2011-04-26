@@ -26,7 +26,7 @@
 %parse-param {yyscan_t yyscanner}
 %lex-param {ttlp_t * ttlp_arg}
 %lex-param {yyscan_t yyscanner}
-%expect 3
+%expect 2
 
 %{
 
@@ -84,6 +84,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _COMMA		/*:: PUNCT_TTL_LAST(",") ::*/
 %token _DOT_WS		/*:: PUNCT("."), TTL, LAST(". "), LAST(".\n"), LAST(".") ::*/
 %token _LBRA		/*:: PUNCT_TTL_LAST("{") ::*/
+%token _LBRA_TOP_TRIG	/*:: PUNCT_TRIG_LAST("{") ::*/
 %token _LPAR		/*:: PUNCT_TTL_LAST("(") ::*/
 %token _LSQBRA		/*:: PUNCT_TTL_LAST("[") ::*/
 %token _LSQBRA_RSQBRA	/*:: PUNCT_TTL_LAST("[]") ::*/
@@ -92,6 +93,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _RSQBRA		/*:: PUNCT_TTL_LAST("[ ]") ::*/
 %token _SEMI		/*:: PUNCT_TTL_LAST(";") ::*/
 %token _EQ		/*:: PUNCT_TTL_LAST("=") ::*/
+%token _EQ_TOP_TRIG	/*:: PUNCT_TRIG_LAST("=") ::*/
 %token _EQ_GT		/*:: PUNCT_TTL_LAST("=>") ::*/
 %token _LT_EQ		/*:: PUNCT_TTL_LAST("<=") ::*/
 %token _BANG		/*:: PUNCT_TTL_LAST("!") ::*/
@@ -180,6 +182,12 @@ clause
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 		trig_block_or_predicate_object_list
 	| top_triple_clause_with_nonq_subj
+	| _LBRA_TOP_TRIG {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
+	    inner_triple_clauses trig_group_end dot_opt {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf; }
+
         | error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
 
@@ -205,8 +213,9 @@ trig_block_or_predicate_object_list
 	;
 
 opt_eq_lbra
-	: _LBRA
-	| _EQ _LBRA
+	: _LBRA_TOP_TRIG
+	| _EQ_TOP_TRIG _LBRA_TOP_TRIG
+	| _EQ_TOP_TRIG error { ttlyyerror_action ("No '{' after an equality sign in TriG"); }
 	;
 
 inner_triple_clauses

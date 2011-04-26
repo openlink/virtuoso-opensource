@@ -225,7 +225,7 @@ extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 #define TTLP_STRLITERAL_3QUOT 		0x31
 #define TTLP_STRLITERAL_3QUOT_AT	0x41
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
-extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
+extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset);
 
 extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
 extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);

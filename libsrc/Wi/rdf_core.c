@@ -1070,7 +1070,8 @@ caddr_t
 bif_turtle_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_arg (qst, args, 0, "turtle_lex_analyze");
-  return ttl_query_lex_analyze (str, QST_CHARSET(qst));
+  int mode_flags = ((1 < BOX_ELEMENTS(args)) ? bif_long_arg (qst, args, 1, "turtle_lex_analyze") : 0);
+  return ttl_lex_analyze (str, mode_flags, QST_CHARSET(qst));
 }
 
 #ifdef DEBUG
@@ -1091,6 +1092,7 @@ ttl_lexem_descr_t ttl_lexem_descrs[__TTL_NONPUNCT_END+1];
 #define LITERAL(x) 'L', (x)
 #define FAKE(x) 'F', (x)
 #define TTL "s"
+#define TRIG "t"
 
 #define LAST(x) "L", (x)
 #define LAST1(x) "K", (x)
@@ -1098,6 +1100,7 @@ ttl_lexem_descr_t ttl_lexem_descrs[__TTL_NONPUNCT_END+1];
 #define ERR(x)  "E", (x)
 
 #define PUNCT_TTL_LAST(x) PUNCT(x), TTL, LAST(x)
+#define PUNCT_TRIG_LAST(x) PUNCT(x), TRIG, LAST(x)
 
 
 static void ttl_lex_props (int val, const char *yname, char fmttype, const char *fmt, ...)
@@ -1145,7 +1148,7 @@ bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t **lexems;
       unsigned lex_count;
       unsigned cmd_idx = 0;
-      int last_lval, last1_lval;
+      int mode_bits = 0, last_lval, last1_lval;
       ttl_lexem_descr_t *ld = ttl_lexem_descrs + tested_lex_val;
       if (0 == ld->ld_val)
 	continue;
@@ -1158,10 +1161,11 @@ bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  cmd = ld->ld_tests[cmd_idx][0];
 	  switch (cmd)
 	    {
-	    case 's': break;	/* Fake, TURTLE has only one mode */
+	    case 's': mode_bits = 0; break;
+	    case 't': mode_bits = TTLP_ALLOW_TRIG; break;
 	    case 'K': case 'L': case 'M': case 'E':
 	      cmd_idx++;
-	      lexems = (caddr_t **) ttl_query_lex_analyze (ld->ld_tests[cmd_idx], QST_CHARSET(qst));
+	      lexems = (caddr_t **) ttl_lex_analyze (ld->ld_tests[cmd_idx], mode_bits, QST_CHARSET(qst));
 	      dk_set_push (&report, box_dv_short_string (ld->ld_tests[cmd_idx]));
 	      lex_count = BOX_ELEMENTS (lexems);
 	      if (0 == lex_count)

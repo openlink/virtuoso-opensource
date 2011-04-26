@@ -198,7 +198,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_value			, RDF_NS_URI "value"		},
   { &uname_space				, "space"			},
   { &uname_swap_reify_ns_uri			, SWAP_REIFY_NS_URI		},
-  { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "#statement"	},
+  { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "statement"	},
   { &uname_virtrdf_ns_uri			, VIRTRDF_NS_URI		},
   { &uname_virtrdf_ns_uri_DefaultQuadMap	, VIRTRDF_NS_URI "DefaultQuadMap"	},
   { &uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	},
