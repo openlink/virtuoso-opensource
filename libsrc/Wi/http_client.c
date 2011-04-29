@@ -1951,7 +1951,16 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
   ctx->hcctx_url = url;
   ctx->hcctx_host = http_cli_get_host_from_url (url);
   ctx->hcctx_uri = http_cli_get_uri_from_url (url);
-
+  if (!strnicmp (url, "https://", 8) && !ctx->hcctx_pkcs12_file)
+    {
+      http_cli_ssl_cert (ctx, (caddr_t)"1");
+      ctx->hcctx_ssl_insecure = '\1';
+      RELEASE (ctx->hcctx_proxy.hcp_proxy);
+    }
+  else
+    {
+      ctx->hcctx_pkcs12_file = NULL;
+    }
   ctx->hcctx_redirects --;
   ctx->hcctx_retry_count = 0;
   F_SET (ctx, HC_F_RETRY);
