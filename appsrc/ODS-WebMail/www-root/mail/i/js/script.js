@@ -361,14 +361,17 @@ function coloriseRow(obj, checked) {
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
-function windowShow(sPage, width, height)
-{
+function windowShow(sPage, sPageName, width, height) {
   if (width == null)
-    width = 520;
+		width = 700;
   if (height == null)
-    height = 420;
-  sPage = sPage + '&return=F1&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+		height = 500;
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  sPage += '&return=F1' + urlParam('sid') + urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
 
