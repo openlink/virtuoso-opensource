@@ -24,29 +24,9 @@
 -->
 <v:page name="search" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="update_params" arglist="">
-    <![CDATA[
-      declare tmp, params any;
-
-      self.v_keywords := trim (self.v_keywords);
-      self.v_expression := trim (self.v_expression);
-      self.v_tags := trim (self.v_tags);
-
-      tmp := AB.WA.tags2vector (self.v_tags);
-      tmp := AB.WA.vector_unique (tmp);
-      self.v_tags := AB.WA.vector2tags (tmp);
-
-      params := self.vc_page.vc_event.ve_params;
-      if (not (self.account_rights = 'public') and not isnull (get_keyword ('f_tags', params)))
-        self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
-      self.v_shared := self.f_shared.ufl_selected;
-    ]]>
-  </v:method>
-
   <v:method name="do_search" arglist="inout e vspx_event">
     <![CDATA[
-      declare tmp any;
-
+      declare tmp, params any;
       declare exit handler for SQLSTATE '*' 
       {
         if (__SQL_STATE = 'TEST') {
@@ -57,7 +37,13 @@
         resignal;
       };
 
-      self.update_params();
+      self.v_keywords := trim (self.v_keywords);
+      self.v_expression := trim (self.v_expression);
+      self.v_tags := trim (self.v_tags);
+
+      tmp := AB.WA.tags2vector (self.v_tags);
+      tmp := AB.WA.vector_unique (tmp);
+      self.v_tags := AB.WA.vector2tags (tmp);
 
       AB.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
       if (self.v_mode not in ('simple', 'opensearch'))
@@ -92,6 +78,7 @@
       }
       if (self.v_mode in ('simple', 'opensearch'))
       {
+        self.v_own := 1;
         AB.WA.xml_set('MyContacts', data, 1);
       } else {
         if (self.v_own = 1)
@@ -254,8 +241,8 @@
           self.v_category := cast (get_keyword ('f_category', params, get_keyword ('category', params, self.v_category)) as integer);
 
           -- options
-            self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
-          self.v_shared := self.f_shared.ufl_selected;
+          self.v_own := cast (get_keyword ('f_own', params, self.v_own) as integer);
+          self.v_shared := cast (get_keyword ('f_shared', params, self.v_shared) as integer);
 
           self.v_max := trim (get_keyword ('f_max', params, self.v_max));
           self.v_order := trim (get_keyword ('f_order', params, self.v_order));
@@ -284,11 +271,6 @@
       ?>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
-      <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
-        <div class="new-form-header" style="margin-top: 6px;">
-          <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> person(s) in last search</i>
-        </div>
-      </v:template>
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
@@ -326,8 +308,8 @@
                 </v:before-data-bind>
 
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="search" class="AB_grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
-                    <thead class="sortHeader">
+                  <table id="search" class="ODS_grid" style="border: 0px;">
+                    <thead>
                       <tr>
                         <th>
                           Name
@@ -384,16 +366,19 @@
 
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
+                    <tfoot>
+                      <tr>
+                        <td align="right">
+                          <vm:ds-navigation data-set="ds" />
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </v:template>
 
-                <span id="ds_navigation">
-                  <vm:ds-navigation data-set="ds" />
-                </span>
               </v:data-set>
               <script type="text/javascript">
                 <![CDATA[
-                  coloriseTable('search');
                   exchangeHTML();
                 ]]>
               </script>
@@ -462,10 +447,12 @@
                   <tr>
                     <th/>
                     <td>
+                    <label>
                       <?vsp
                         http(sprintf('<input type="checkbox" name="f_own" id="f_own" value="1" %s onclick="javascript: changeState(this, \'f_category\');" />', case when (self.v_own = 1) then 'checked="checked"' else '' end));
                       ?>
-                      <b><vm:label for="f_own" value="Search in my contacts"/></b>
+                      <b>Search in my contacts</b>
+                    </label>
                     </td>
                   </tr>
                   <tr>
@@ -479,8 +466,12 @@
                 <tr>
                   <th/>
                   <td>
-                    <v:check-box name="f_shared" initial-checked="self.v_shared" xhtml_id="f_shared" value="1" />
-                    <b><vm:label for="f_shared" value="Search in my shared contacts"/></b>
+                    <label>
+                      <?vsp
+                        http (sprintf ('<input type="checkbox" name="f_shared" id="f_shared" value="1" %s />', case when (self.v_shared = 1) then 'checked="checked"' else '' end));
+                      ?>
+                      <b>Search in my shared contacts</b>
+                    </label>
                   </td>
                 </tr>
               </table>
@@ -561,7 +552,7 @@
                 <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_redirect (AB.WA.utf2wide (AB.WA.page_url (self.domain_id, 'search.vspx?mode=advanced')));
+                    self.vc_redirect (AB.WA.utf2wide (AB.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=advanced&s_keywords=%s', self.s_keywords.ufl_value))));
                     ]]>
                   </v:on-post>
                 </v:button>

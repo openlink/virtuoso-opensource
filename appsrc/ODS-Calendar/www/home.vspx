@@ -487,7 +487,7 @@
       }
       else if (fProperty = 'description')
           {
-        F := sprintf ('<pre style="margin: 0">%V</pre>', CAL.WA.utf2wide (cast (fValue as varchar)));
+        F := sprintf ('<pre style="margin: 0; white-space: pre-wrap;">%V</pre>', cast (fValue as varchar));
       }
       else if (internal_type (fValue) = 211)
       {
@@ -1048,9 +1048,9 @@
     ]]>
   </v:method>
 
-  <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
+  <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar, in p_class varchar">
     <![CDATA[
-      return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=600, width=800\'); return false;" title="%s %s" class="link">%s</span>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<span onclick="javascript: windowShow(\'%s\', \'calendar_%s_window\'); return false;" title="%s %s" class="%s">%s</span>', CAL.WA.page_url (self.domain_id, p_url, self.sid, self.realm), p_name, p_name, p_title, p_class, p_name);
     ]]>
   </v:method>
 
@@ -2281,10 +2281,10 @@
                                 {
                                   actions := sprintf ('<span onclick="javascript: vspxPost (\'command\', \'edit\', \'x_%d\'); return false;" class="link">edit</span>', e_id)
                                              || ' | '
-                                             || self.windowOpen (sprintf ('annotea.vspx?oid=%d', e_id), 'annotate', e_subject);
+                                             || self.windowOpen (sprintf ('annotea.vspx?oid=%d', e_id), 'annotate', e_subject, 'link');
                                 }
                                 if (CAL.WA.discussion_check () and CAL.WA.conversation_enable (self.domain_id))
-                                  actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', e_id), 'discuss', e_subject);
+                                  actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', e_id), 'discuss', e_subject, 'link');
                                   http ('<td nowrap="nowrap">' || actions || '</td>');
                               ?>
                       </tr>
@@ -2402,7 +2402,7 @@
                     <v:label for="e_subject" value="Name" />
               </th>
               <td>
-                          <v:text name="e_subject" null-value="''" value="--self.v_subject" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
+                          <v:text name="e_subject" xhtml_id="e_subject" null-value="''" value="--self.v_subject" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
               </td>
             </tr>
             <tr>
@@ -2515,7 +2515,7 @@
                 <v:label for="e_description" value="Description"/>
               </th>
               <td>
-                          <v:textarea name="e_description" null-value="--''" value="--self.v_description" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                          <v:textarea name="e_description" xhtml_id="e_description" null-value="--''" value="--self.v_description" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
               </td>
             </tr>
             <tr>
@@ -2578,25 +2578,21 @@
                           <v:textarea name="e_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                           <?vsp
                             if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
-                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?form=F1&dst=mc&params=e_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
+                              http (self.windowOpen('contacts.vspx?dst=mc&params=e_attendees:s1;', 'Select', 'Select', 'button'));
                             if (self.v_attendees_count)
-                              http (sprintf ('<input type="button" value="Details" onclick="javascript: window.open (\'attendees.vspx?id=%d&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=768, width=1024\'); return false;" class="button">', self.v_id, self.sid, self.realm));
+                              http (self.windowOpen('attendees.vspx?id=' || cast (self.v_id as varchar), 'Details', 'Details', 'button'));
                           ?>
                         </td>
                       </tr>
                       <tr>
-                  <script type="text/javascript">
-                    function suggestTags ()
-                    {
-                      window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt='+escape(document.F1.elements['e_subject'].value)+'&amp;txt2='+escape(document.F1.elements['e_description'].value) + '&amp;fld=e_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
-                    }
-                  </script>
                   <th>
                     <v:label for="e_tags" value="Tags (comma-separated)" />
                   </th>
                   <td>
                       <v:text name="e_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
-                      <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
+                          <?vsp if (CAL.WA.tag_rule_exists (self.account_id)) { ?>
+                            <input type="button" value="Suggest" onclick="javascript: tagsShow('<?V CAL.WA.page_url (self.domain_id, 'tags.vspx?fld=e_tags') ?>', 'e');" class="button" />
+                          <?vsp } ?>
                       <input type="button" value="Clear" onclick="javascript: document.F1.elements['e_tags'].value = ''" class="button" />
                   </td>
                 </tr>
@@ -3459,7 +3455,7 @@
                     <v:label for="t_subject" value="Name" />
               </th>
               <td>
-                          <v:text name="t_subject" null-value="''" value="--self.v_subject" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
+                          <v:text name="t_subject" xhtml_id="t_subject" null-value="''" value="--self.v_subject" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
               </td>
             </tr>
             <tr>
@@ -3582,7 +3578,7 @@
                 <v:label for="t_description" value="Description"/>
               </th>
               <td>
-                          <v:textarea name="t_description" null-value="--''" value="--self.v_description" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                          <v:textarea name="t_description" xhtml_id="t_description" null-value="--''" value="--self.v_description" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                         </td>
                       </tr>
                       <vm:if test="(self.cAction = 'create') or (CAL.WA.event_domain (self.v_id) = self.domain_id)">
@@ -3612,25 +3608,21 @@
                           <v:textarea name="t_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                           <?vsp
                             if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
-                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?form=F1&dst=mc&params=t_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
+                              http (self.windowOpen('contacts.vspx?dst=mc&params=t_attendees:s1;', 'Select', 'Select', 'button'));
                             if (self.v_attendees_count)
-                              http (sprintf ('<input type="button" value="Details" onclick="javascript: window.open (\'attendees.vspx?id=%d&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=768, width=1024\'); return false;" class="button">', self.v_id, self.sid, self.realm));
+                              http (self.windowOpen('attendees.vspx?id=' || cast (self.v_id as varchar), 'Details', 'Details', 'button'));
                           ?>
                         </td>
                       </tr>
                       <tr>
-              <script type="text/javascript">
-                function suggestTags ()
-                {
-                  window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt='+escape(document.F1.elements['t_subject'].value)+'&amp;txt2='+escape(document.F1.elements['t_description'].value) + '&amp;fld=n_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
-                }
-              </script>
               <th>
                 <v:label for="t_tags" value="Tags (comma-separated)" />
               </th>
               <td>
                   <v:text name="t_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
-                  <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
+                          <?vsp if (CAL.WA.tag_rule_exists (self.account_id)) { ?>
+                            <input type="button" value="Suggest" onclick="javascript: tagsShow('<?V CAL.WA.page_url (self.domain_id, 'tags.vspx?fld=t_tags') ?>', 't');" class="button" />
+                          <?vsp } ?>
                   <input type="button" value="Clear" onclick="javascript: document.F1.elements['t_tags'].value = ''" class="button" />
               </td>
             </tr>
@@ -4276,17 +4268,15 @@
                     </td>
                   </tr>
                   <tr>
-                    <th></th>
+                    <th valign="top">
+                      Related objects
+                    </th>
                     <td>
                       <label>
                         <v:check-box name="ex_events" is-boolean="1" true-value="1" false-value="0" value="--self.exEvents" />
                         Events
                       </label>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th></th>
-                    <td>
+                      <br />
                       <label>
                         <v:check-box name="ex_tasks" is-boolean="1" true-value="1" false-value="0" value="--self.exTasks" />
                         Tasks
@@ -4609,7 +4599,7 @@
                       		  <?vsp
                       		    if ((control as vspx_row_template).te_column_value('EX_EXEC_LOG') is not null)
                   {
-                      		      http (sprintf ('<a href="#" onclick="javascript: window.open (\'message.vspx?msg=%U\', \'calendar_message\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
+                      		      http (sprintf ('<a href="#" onclick="javascript: return windowShow(\'%s?msg=%U\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', CAL.WA.page_url (self.domain_id, 'message.vspx'), (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
                   }
                       		    else
                   {
@@ -4951,17 +4941,15 @@
                     </tr>
                   </vm:if>
                         <tr>
-                    <th></th>
+                    <th valign="top">
+                      Related objects
+                    </th>
                           <td>
                       <label>
                         <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', coalesce (self.ve_options, vector ()), 1)" />
                         Events
                       </label>
-                          </td>
-                        </tr>
-                        <tr>
-                    <th></th>
-                          <td>
+                      <br />
                       <label>
                         <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', coalesce (self.ve_options, vector ()), 1)" />
                         Tasks
@@ -5415,8 +5403,10 @@
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_showTasks" xhtml_id="s_showTasks" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('showTasks', self.settings, '1') as integer)" />
-                              <vm:label for="s_showTasks" value="Show tasks in Calendar"/>
+                                Show tasks in Calendar
+                              </label>
                             </td>
                         </tr>
                           <tr>
@@ -5437,22 +5427,28 @@
                               Show columns in 'Events' view
                             </th>
                             <td>
+                              <label>
                               <v:check-box name="s_e_column_3" xhtml_id="s_e_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_LOCATION', self.settings, '0') as integer)" />
-                              <vm:label for="s_e_column_3" value="Location"/>
+                                Location
+                              </label>
                           </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_e_column_1" xhtml_id="s_e_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_UPDATED', self.settings, '1') as integer)" />
-                              <vm:label for="s_e_column_1" value="Updated"/>
+                                Updated
+                              </label>
                           </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_e_column_2" xhtml_id="s_e_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('event_E_CREATED', self.settings, '0') as integer)" />
-                              <vm:label for="s_e_column_2" value="Created"/>
+                                Created
+                              </label>
                           </td>
                           </tr>
                           <tr>
@@ -5460,50 +5456,64 @@
                               Show columns in 'Tasks' view
                             </th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_1" xhtml_id="s_t_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_STATUS', self.settings, '1') as integer)" />
-                              <vm:label for="s_t_column_1" value="Status"/>
+                                Status
+                              </label>
                           </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_5" xhtml_id="s_t_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_PRIORITY', self.settings, '1') as integer)" />
-                              <vm:label for="s_t_column_5" value="Priority"/>
+                                Priority
+                              </label>
                             </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_6" xhtml_id="s_t_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_START', self.settings, '0') as integer)" />
-                              <vm:label for="s_t_column_6" value="Start Date"/>
+                                Start Date
+                              </label>
                             </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_7" xhtml_id="s_t_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_END', self.settings, '1') as integer)" />
-                              <vm:label for="s_t_column_7" value="Due Date"/>
+                                Due Date
+                              </label>
                             </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_2" xhtml_id="s_t_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_COMPLETED', self.settings, '0') as integer)" />
-                              <vm:label for="s_t_column_2" value="Completed"/>
+                                Completed
+                              </label>
                             </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_3" xhtml_id="s_t_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_UPDATED', self.settings, '0') as integer)" />
-                              <vm:label for="s_t_column_3" value="Updated"/>
+                                Updated
+                              </label>
                             </td>
                           </tr>
                           <tr>
                             <th></th>
                             <td>
+                              <label>
                               <v:check-box name="s_t_column_4" xhtml_id="s_t_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_CREATED', self.settings, '0') as integer)" />
-                              <vm:label for="s_t_column_4" value="Created"/>
+                                Created
+                              </label>
                             </td>
                           </tr>
                           <tr>
@@ -5673,35 +5683,31 @@
                   <tr>
                             <th width="30%">&nbsp;</th>
                     <td>
+                              <label>
                               <?vsp
                                 declare S, T varchar;
 
-                                S := '';
-                      				  if (not CAL.WA.discussion_check ())
-                      				    S := 'disabled="disabled"';
-                                T := '';
-                      				  if (cast(get_keyword ('conv', self.settings, '0') as integer) = 1)
-                      				    T := 'checked';
+                                  S := case when (not CAL.WA.discussion_check ()) then 'disabled="disabled"' else '' end;
+                                  T := case when (cast(get_keyword ('conv', self.settings, '0') as integer) = 1) then 'checked' else '' end;
                                 http (sprintf ('<input type="checkbox" name="s_conv" value="1" %s %s />', T, S));
                               ?>
-                      				<vm:label for="s_conv" value="Enable discussions on this instance" />
+                      				  Enable discussions on this instance
+                              </label>
                     </td>
                   </tr>
                   <tr>
                             <th width="30%">&nbsp;</th>
                     <td>
+                              <label>
                               <?vsp
                                 declare S, T varchar;
 
-                                S := '';
-                      				  if (not CAL.WA.discussion_check ())
-                      				    S := 'disabled="disabled"';
-                                T := '';
-                      				  if (cast(get_keyword ('conv_init', self.settings, '0') as integer) = 1)
-                      				    T := 'checked';
+                                  S := case when (not CAL.WA.discussion_check ()) then 'disabled="disabled"' else '' end;
+                                  T := case when (cast(get_keyword ('conv_init', self.settings, '0') as integer) = 1) then 'checked' else '' end;
                                 http (sprintf ('<input type="checkbox" name="s_conv_init" value="1" %s %s />', T, S));
                               ?>
-                      				<vm:label for="s_conv_init" value="Initialize the news group with existing posts" />
+                      				  Initialize the news group with existing posts
+                              </label>
                     </td>
                   </tr>
                 </table>
@@ -5709,7 +5715,7 @@
                     </div>
                   </div>
                   <div class="form-footer">
-                    <v:button action="simple" value="Save" xhtml_class="form-button">
+                    <v:button name="sp_save" action="simple" value="Save" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                           declare rows, chars any;
@@ -5803,14 +5809,12 @@
 
                           commit work;
                           self.initData ();
-                          self.cAction := 'browse';
-                          self.cSubAction := '';
 
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
                   </v:button>
-                    <v:button action="simple" value="Clear" xhtml_class="form-button">
+                    <v:button name="sp_clear" action="simple" value="Clear" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                           delete from CAL.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
@@ -5957,7 +5961,7 @@
                               </v:button>
                               <?vsp
                                 if ((select count(*) from CAL.WA.UPSTREAM_LOG where UL_UPSTREAM_ID = (control as vspx_row_template).te_column_value('U_ID')))
-                                  http (sprintf ('<input type="button" value="Error Log" onclick="javascript: window.open (\'logs.vspx?sid=%s&realm=%s&oid=%d\', \'calendar_log_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('U_ID')));
+                                  http (self.windowOpen(sprintf ('logs.vspx?oid=%d', (control as vspx_row_template).te_column_value('U_ID')), 'Error Log', 'Error Log', 'button'));
                               ?>
                             </td>
                           </tr>
@@ -6145,7 +6149,7 @@
                 </v:template>
 
                 <v:template type="simple" enabled="--case when self.cSubAction = 'grantBrowse' then 1 else 0 end">
-                  <v:button value="--'Share'" action="simple" xhtml_class="button">
+                  <v:button value="--'New Share'" action="simple" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                         commit work;
@@ -6278,32 +6282,31 @@
                         </th>
                         <td>
                           <v:text name="sg_account" null-value="--''" value="--self.vg_account" xhtml_class="textbox" />
-                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&form=F1&params=sg_account:s1;')" class="button" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&params=sg_account:s1;&nrows=<?V CAL.WA.settings_rows (self.settings) ?>')" class="button" />
                         </td>
                       </tr>
                       <tr>
-                        <th></th>
+                        <th valign="top">
+                          Share access
+                        </th>
                         <td>
                           <?vsp
-                            http (sprintf ('<input type="checkbox" value="1" name="sg_enable" id="sg_enable" %s />', CAL.WA.checkedAttribute (self.vg_enable)));
+                            http(sprintf('<label><input type="radio" name="sg_enable" id="sg_enable_0" value="0" %s />Disable</label>', CAL.WA.checkedAttribute (self.vg_enable, 0)));
+                            http('<br />');
+                            http(sprintf('<label><input type="radio" name="sg_enable" id="sg_enable_1" value="1" %s />Enable</label>', CAL.WA.checkedAttribute (self.vg_enable, 1)));
                           ?>
-                          <vm:label for="sg_enable" value="Enable"/>
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th valign="top">
                           Share mode
                         </th>
                         <td>
-                          <v:select-list name="sg_mode">
-                            <v:item value="R" name="Read Only" />
-                            <v:item value="W" name="Read/Write" />
-                            <v:before-data-bind>
-                              <![CDATA[
-                                control.ufl_value := self.vg_mode;
-                              ]]>
-                            </v:before-data-bind>
-                          </v:select-list>
+                          <?vsp
+                            http(sprintf('<label><input type="radio" name="sg_mode" id="sg_mode_0" value="R" %s />Read Only</label>', CAL.WA.checkedAttribute (self.vg_mode, 'R')));
+                            http('<br />');
+                            http(sprintf('<label><input type="radio" name="sg_mode" id="sg_mode_1" value="R" %s />Read/Write</label>', CAL.WA.checkedAttribute (self.vg_mode, 'W')));
+                          ?>
                         </td>
                       </tr>
                     </table>
@@ -6328,7 +6331,7 @@
 
                           self.vg_account    := trim (self.sg_account.ufl_value);
                           self.vg_enable     := cast (get_keyword ('sg_enable', params, '0') as integer);
-                          self.vg_mode       := trim (self.sg_mode.ufl_value);
+                          self.vg_mode       := get_keyword ('sg_mode', params, 'R');
                           self.vg_account_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vg_account);
                           if (isnull (self.vg_account_id))
                           {
@@ -6409,7 +6412,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <input class="button" type="button" title="Help" alt="Help" value="Help" onclick="javascript: window.open ('help.vspx?page=proba', 'calendar_help', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500'); return false;"/>
+                  <input class="button" type="button" title="Help" alt="Help" value="Help" onclick="javascript: return windowShow('<?V CAL.WA.page_url (self.domain_id, 'help.vspx?page=proba') ?>');"/>
                   <v:data-set name="ds_shared" sql="select a.*, b.WAI_NAME from CAL.WA.SHARED a, DB.DBA.WA_INSTANCE b where a.S_DOMAIN_ID = :p0 and a.S_CALENDAR_ID = b.WAI_ID order by b.WAI_NAME" nrows="0" scrollable="1">
                     <v:param name="p0" value="--self.domain_id" />
 
@@ -6568,7 +6571,7 @@
                       <tr>
                         <td colspan="2" align="center">
                           <?vsp
-                            http ('<a href="javascript: void(0);" onclick="javascript: window.open (\'help.vspx?page=proba\', \'calendar_help\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');">Learn more about public and shared calendars</a><br />');
+                            http (self.windowOpen('help.vspx?page=proba', 'Learn more about public and shared calendars', 'Learn more about public and shared calendars', 'link'));
                           ?>
                         </td>
                       </tr>
@@ -6590,7 +6593,7 @@
                         </th>
                         <td>
                           <v:text name="ss_calendar" xhtml_id="ss_calendar" value="--self.vs_calendar" xhtml_size="60" />
-                          <input id="ss_type_button" type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?form=F1&params=ss_calendar:s1;',520)" class="button" />
+                          <input id="ss_type_button" type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?params=ss_calendar:s1;',520)" class="button" />
                         </td>
                       </tr>
                       <tr>

@@ -473,7 +473,7 @@
 
         <div id="ds_navigation">
           <span>
-            <vm:ds-navigation data-set="ds"/>
+            <vm:ds-navigation data-set="ds" mode="compact"/>
           </span>
         </div>
       </v:data-set>

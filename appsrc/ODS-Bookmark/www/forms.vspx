@@ -144,7 +144,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return sprintf ('<span onclick="javascript: window.open (\'%s\', \'bookmarks_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=600, width=800\'); return false;" title="%s %s" class="link">%s</span>', BMK.WA.url_fix (sprintf ('%s%s', BMK.WA.bookmarks_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return sprintf ('<span onclick="javascript: windowShow(\'%s\', \'bookmarks_%s_window\'); return false;" title="%s %s" class="link">%s</span>', BMK.WA.page_url (self.domain_id, p_url, self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -914,7 +914,7 @@
             <v:button action="simple" value="Next" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
-                  declare params, S any;
+                  declare params, S, V any;
                   params := self.vc_page.vc_event.ve_params;
 
                   if (self.v_source = 0)
@@ -953,6 +953,24 @@
                       self.vc_error_message := 'Bad import source!';
                       self.vc_is_valid := 0;
                       return;
+                    } else {
+                      V := BMK.WA.string2xml (S);
+                      if (xpath_eval ('/html', V, 1) is not null)
+                      {
+                        -- HTML, do auto discovery of the feeds
+                        declare url, T any;
+
+                        T := xpath_eval('//head/link[ @rel="alternate" and @type="application/rss+xml" ]/@href', V, 0);
+                        if (not length (T))
+                          T := xpath_eval('//head/link[ @rel="alternate" and @type="application/atom+xml" ]/@href', V, 0);
+
+                        if (length (T))
+                        {
+                          url := cast (T[0] as varchar);
+                          url := WS.WS.EXPAND_URL (self.f_uri.ufl_value, url);
+                          S := BMK.WA.dav_content (url);
+                        }
+                      }
                     }
                   }
                   else if (self.v_source = 3)
@@ -1094,10 +1112,9 @@
             <input type="hidden" name="tags" value="<?V self.v_tag ?>"/>
             <span id="progressMax" style="display: none;">
               <?vsp
-                 declare progressMax, S, T, R, V any;
+                 declare progressMax, S, T, R, V, V2 any;
 
                  progressMax := 0;
-
                  R := DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/Bookmarks/Import/' || self.sid, 'R'), S, T, 0, 0);
                  S := blob_to_string (S);
 
@@ -1111,37 +1128,53 @@
                  S := replace(S, 'FOLDED', '');
                  S := replace(S, '  ', ' ');
                  S := replace(S, '&', '&amp;');
-                 V := BMK.WA.xtree_doc (S, 2);
+
+                 V := BMK.WA.string2xml (S, 2);
                  if (isnull (V))
                    goto _xbel;
-                 V := xpath_eval ('//dl', V);
-                 if (isnull (V))
+                 V2 := xpath_eval ('//dl', V);
+                 if (isnull (V2))
                    goto _xbel;
-                 progressMax := xpath_eval('count (//a)', V);
+                 progressMax := xpath_eval('count (//a)', V2);
                  goto _end;
 
                _xbel:;
                  -- check XBEL format
                  --
-                 V := BMK.WA.xtree_doc (S);
+                 V := BMK.WA.string2xml (S);
                  if (isnull (V))
+                   goto _end;
+                 V2 := xpath_eval('/xbel', V);
+                 if (isnull (V2))
+                   goto _rss;
+                 progressMax := xpath_eval('count (//bookmark)', V2);
+                 goto _end;
+
+               _rss:;
+                 -- check RSS format
+                 --
+                 V2 := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', V);
+                 if (isnull (V2))
+                   goto _atom;
+                 progressMax := xpath_eval('count (/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item)', V2);
+                 goto _end;
+
+               _atom:;
+                 -- check Atom format
+                 --
+                 V2 := xpath_eval ('/feed/entry', V);
+                 if (isnull (V2))
                    goto _delicious;
-                 V := xpath_eval('/xbel', BMK.WA.string2xml(S));
-                 if (isnull (V))
-                   goto _delicious;
-                 progressMax := xpath_eval('count (//bookmark)', V);
+                 progressMax := xpath_eval('count (/feed/entry)', V2);
                  goto _end;
 
               _delicious:;
                  -- check delicious format
                  --
-                 V := BMK.WA.xtree_doc (S);
-                 if (isnull (V))
+                 V2 := xpath_eval('/posts', V);
+                 if (isnull (V2))
                    goto _end;
-                 V := xpath_eval('/posts', V);
-                 if (isnull (V))
-                   goto _end;
-                 progressMax := xpath_eval('count (//post)', V);
+                 progressMax := xpath_eval('count (//post)', V2);
 
               _end:;
                  http (cast (progressMax as varchar));
@@ -1166,7 +1199,7 @@
           </div>
           <script type="text/javascript">
             <![CDATA[
-              initState();
+              OAT.MSG.attach(OAT, "PAGE_LOADED", function(){initState();});
             ]]>
           </script>
         </v:template>
@@ -1325,7 +1358,7 @@
               <script type="text/javascript">
                 function suggestTags ()
                 {
-                  window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt=' + escape (document.F1.elements['b_name'].value) + '&amp;txt2=' + escape (document.F1.elements['b_description'].value) + '&amp;fld=b_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
+                      windowShow('<?V BMK.WA.page_url (self.domain_id, 'tags.vspx', self.sid, self.realm) ?>&amp;txt=' + escape (document.F1.elements['b_name'].value) + '&amp;txt2=' + escape (document.F1.elements['b_description'].value) + '&amp;fld=b_tags', 'bookmarks_suggest_window');
                 }
               </script>
               <th>
@@ -1554,7 +1587,7 @@
               </th>
               <td>
                 <v:text name="f_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;dst=mc&amp;params=f_grants:s1;')" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?amp;dst=mc&amp;params=f_grants:s1;&nrows=<?V BMK.WA.settings_rows (self.settings) ?>')" class="button" />
                 <input type="button" value="Clear" onClick="javascript: document.F1.elements['f_grants'].value = ''" class="button" />
               </td>
             </tr>
@@ -1684,7 +1717,7 @@
               </th>
               <td>
                 <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=s_bmk&amp;dst=mc&amp;params=s_grants:s1;')" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?mode=s_bmk&amp;dst=mc&amp;params=s_grants:s1;&nrows=<?V BMK.WA.settings_rows (self.settings) ?>')" class="button" />
               </td>
             </tr>
           </table>
@@ -1795,7 +1828,7 @@
 
                 params := self.vc_page.vc_event.ve_params;
 
-                control.ufl_value := 'Sharings for ';
+                control.ufl_value := 'Shares for ';
                 delimiter := '';
                 for (N := 0; N < length (params); N := N + 2)
                 {
@@ -1811,8 +1844,8 @@
                     {
                       name := (select F_NAME from BMK.WA.FOLDER where F_ID = node_id);
                     }
-                    delimiter := ', ';
                     control.ufl_value := control.ufl_value || delimiter || '''' || name || '''';
+                    delimiter := ', ';
                   }
                 }
               ]]>
@@ -1827,7 +1860,7 @@
               </th>
               <td>
                 <v:text name="s_share" null-value="--''" value="--self.vs_share" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&dst=mc&amp;params=s_share:s1;')" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?dst=mc&amp;params=s_share:s1;&nrows=<?V BMK.WA.settings_rows (self.settings) ?>')" class="button" />
                 <input type="button" value="Clear" onClick="javascript: document.F1.elements['s_share'].value = ''" class="button" />
               </td>
             </tr>

@@ -242,7 +242,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<spam onclick="javascript: window.open (\'%s\', \'polls_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link">%s</span>', POLLS.WA.url_fix (sprintf ('%s%s', POLLS.WA.polls_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<spam onclick="javascript: window.open (\'%s\', \'polls_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=600, width=800\'); return false;" title="%s %s" class="link">%s</span>', POLLS.WA.page_url (self.domain_id, p_url, self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -673,11 +673,13 @@
 
               <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                 <table>
-                  <tr align="center">
-                    <td align="center" colspan="2">
+                  <tfoot>
+                    <tr>
+                      <td align="right" colspan="2">
                       <vm:ds-navigation data-set="ds"/>
                     </td>
                   </tr>
+                  </tfoot>
                 </table>
               </v:template>
 

@@ -104,6 +104,9 @@
             control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
             ]]>
           </v:before-data-bind>
+          <v:after-data-bind>
+            control.ds_make_statistic ();
+          </v:after-data-bind>
         </v:data-source>
         <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
           <div style="padding: 0 0 0.5em 0;">
@@ -145,19 +148,17 @@
           </div>
 
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="vmds" class="OD_grid colorise" cellspacing="0">
-              <thead class="sortHeader">
+            <table id="vmds" class="ODS_grid">
+              <thead>
                 <tr>
-                  <th class="checkbox" width="1%">
+                  <th class="checkbox">
                     <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                   </th>
                   <?vsp http (ODRIVE.WA.show_column_header ('Schema URI', 'RS_URI', self.vmds_order, self.vmds_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('Label', 'RS_LABEL', self.vmds_order, self.vmds_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('Kind', 'RS_CATNAME', self.vmds_order, self.vmds_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('Version', 'RS_VERSION', self.vmds_order, self.vmds_direction)); ?>
-                  <th width="1%">
-                    Actions
-                  </th>
+                  <th class="action">Actions</th>
                 </tr>
               </thead>
             </table>
@@ -167,8 +168,8 @@
 
             <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
-                <tr align="center">
-                <td colspan="5">No Schemas</td>
+                <tr>
+                  <td colspan="6">No Schemas</td>
                 </tr>
               </table>
             </v:template>
@@ -176,12 +177,10 @@
             <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
-                  <td align="center" valign="top">
+                  <td class="checkbox">
                     <?vsp
                       if (ODRIVE.WA.dav_rdf_notDeprecated((control as vspx_row_template).te_column_value('RS_URI')))
-                      {
                         http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', (control as vspx_row_template).te_column_value('RS_URI')));
-                      }
                     ?>
                   </td>
                   <td nowrap="nowrap">
@@ -196,7 +195,7 @@
                   <td nowrap="nowrap">
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RS_VERSION')" format="%s"/>
                   </td>
-                  <td nowrap="nowrap">
+                  <td class="action">
                     <v:button value="--case when ((self.v_right <> 'W') or not ODRIVE.WA.dav_rdf_notDeprecated (((control.vc_parent as vspx_row_template).te_column_value('RS_URI')))) then 'View' else 'Edit' end" action="simple" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[
@@ -227,20 +226,17 @@
 
           <v:template type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <tr align="center">
-                <td colspan="5">
+              <tfoot>
+                <tr align="right">
+                  <td colspan="6">
                   <vm:ds-navigation data-set="ds" />
                 </td>
               </tr>
+              </tfoot>
             </table>
           </v:template>
 
         </v:data-set>
-        <script>
-                        <![CDATA[
-            coloriseTable('vmds');
-                        ]]>
-        </script>
       </v:template>
 
       <v:template type="simple" enabled="-- case when self.v_mode <> 'browse' then 1 else 0 end">

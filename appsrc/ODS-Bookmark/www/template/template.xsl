@@ -254,11 +254,10 @@
   <!--=========================================================================-->
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
-      {
         declare n_start, n_end, n_total integer;
         declare ds vspx_data_set;
 
-        ds := self.vc_find_descendant_control ('<xsl:value-of select="@data-set" />');
+      ds := case when (udt_instance_of (control, fix_identifier_case ('vspx_data_set'))) then control else control.vc_find_parent (control, 'vspx_data_set') end;
         if (isnull (ds.ds_data_source))
         {
           n_total := ds.ds_rows_total;
@@ -273,57 +272,46 @@
           n_end := n_total;
 
         if (n_total)
-          http (sprintf ('%d - %d of %d', n_start, n_end, n_total));
+        http (sprintf ('Showing %d - %d of %d', n_start, n_end, n_total));
 
-        declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first integer;
+      declare _prev, _next vspx_button;
 
-  	    d_prev := d_next := d_last := d_first := 0;
-  	    _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-  	    _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
   	    _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
   	    _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-
-        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
-        {
-          if (n_total)
+      if ((_next is not null and _next.vc_enabled) or (_prev is not null and _prev.vc_enabled))
             http (' | ');
-        if (_first is not null and not _first.vc_enabled)
-    	    d_first := 1;
-
-        if (_next is not null and not _next.vc_enabled)
-    	    d_next := 1;
-
-        if (_prev is not null and not _prev.vc_enabled)
-    	    d_prev := 1;
-
-        if (_last is not null and not _last.vc_enabled)
-    	    d_last := 1;
-        }
     ?&gt;
-    <?vsp
-      if (d_first)
-        http ('<img src="/ods/images/skin/pager/p_first_gr.png" alt="First Page" title="First Page" border="0" />first&nbsp;');
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="/ods/images/skin/pager/p_first.png" xhtml_alt="First" text="first&amp;nbsp;" />
-    <?vsp
-      if (d_prev)
-        http ('<img src="/ods/images/skin/pager/p_prev_gr.png" alt="Previous Page" title="Previous Page" border="0" />prev&nbsp;');
-    ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="/ods/images/skin/pager/p_prev.png" xhtml_alt="Previous" text="prev&amp;nbsp;" />
-    <?vsp
-      if (d_next)
-        http ('<img src="/ods/images/skin/pager/p_next_gr.png" alt="Next Page" title="Next Page" border="0" />next&nbsp;');
-    ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="/ods/images/skin/pager/p_next.png" xhtml_alt="Next" text="next&amp;nbsp;" />
-    <?vsp
-      if (d_last)
-        http ('<img src="/ods/images/skin/pager/p_last_gr.png" alt="Last Page" title="Last Page" border="0" />last');
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="/ods/images/skin/pager/p_last.png" xhtml_alt="Last" text="last" />
-    <?vsp
-      }
-    ?>
+    <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+        ]]>
+      </v:before-render>
+    </v:button>
   </xsl:template>
 
   <!--=========================================================================-->

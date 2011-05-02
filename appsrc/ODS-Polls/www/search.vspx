@@ -371,11 +371,13 @@
 
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
+                    <tfoot>
                     <tr>
-                      <td align="center" colspan="1">
+                        <td align="right" colspan="1">
                         <vm:ds-navigation data-set="ds"/>
                       </td>
                     </tr>
+                    </tfoot>
                   </table>
                 </v:template>
 

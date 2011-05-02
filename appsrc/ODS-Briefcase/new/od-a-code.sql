@@ -455,30 +455,24 @@ create procedure ODRIVE.WA.show_column_header (
   in columnName varchar,
   in sortOrder varchar,
   in sortDirection varchar := 'asc',
-  in isSortable integer := 1)
+  in columnProperties varchar := '')
 {
-  declare strClass, strOnclick any;
+  declare class, image, onclick any;
 
-  strClass := '';
-  strOnclick := '';
-  if (isSortable)
-  {
-    strClass := 'sortcol';
-    strOnclick := sprintf ('onclick="javascript: myPost(\'F1\', \'sortColumn\', \'%s\');"', columnName);
+  image := '';
+  onclick := sprintf ('onclick="javascript: odsPost(this, [\'sortColumn\', \'%s\']);"', columnName);
     if (sortOrder = columnName)
     {
       if (sortDirection = 'desc')
       {
-        strClass := strClass || ' sortcol_active sortcol_desc';
+      image := '&nbsp;<img src="/ods/images/icons/orderdown_16.png" border="0" alt="Down"/>';
       }
       else if (sortDirection = 'asc')
       {
-        strClass := strClass || ' sortcol_active sortcol_asc';
-      }
+      image := '&nbsp;<img src="/ods/images/icons/orderup_16.png" border="0" alt="Up"/>';
     }
-    strClass := 'class="' || strClass || '"';
   }
-  return sprintf ('<th %s %s>%s</th>', strClass, strOnclick, columnLabel);
+  return sprintf ('<th %s %s>%s%s</th>', columnProperties, onclick, columnLabel, image);
 }
 ;
 
@@ -1614,6 +1608,30 @@ create procedure ODRIVE.WA.account_mail(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.account_iri (
+  in account_id integer)
+{
+  return SIOC..person_iri (SIOC..user_iri (account_id, null));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_inverse_iri (
+  in account_iri integer)
+{
+  declare params any;
+
+  params := sprintf_inverse (account_iri, 'http://%s/dataspace/person/%s#this', 1);
+  if (length (params) <> 2)
+    return -1;
+
+  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = params[1]), -1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.account_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -1621,7 +1639,7 @@ create procedure ODRIVE.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := ODRIVE.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id), null)));
+  S := ODRIVE.WA.iri_fix (ODRIVE.WA.account_iri (ODRIVE.WA.domain_owner_id (domain_id)));
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
@@ -2237,6 +2255,8 @@ create procedure ODRIVE.WA.acl_params (
       acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
       for (N := 0; N < length (acl_users); N := N + 1)
       {
+        acl_user := ODRIVE.WA.account_inverse_iri (trim (acl_users[N]));
+        if (acl_user = -1)
         acl_user := ODRIVE.WA.odrive_user_id (trim (acl_users[N]));
         if (acl_user <> -1)
         {

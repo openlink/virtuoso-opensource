@@ -48,6 +48,19 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   doPost ('F1', fButton);
 }
 
+function odsPost(obj, fields, button) {
+  var form = getParent (obj, 'form');
+  var formName = form.name;
+  for (var i = 0; i < fields.length; i += 2)
+    createHidden(formName, fields[i], fields[i+1]);
+
+  if (button) {
+    doPost(formName, button);
+  } else {
+    form.submit();
+  }
+}
+
 function dateFormat(date, format) {
 	function long(d) {
 		return ((d < 10) ? "0" : "") + d;
@@ -386,23 +399,38 @@ function showTab(tabs, tabsCount, tabNo) {
   }
 }
 
-function windowShow(sPage, width, height) {
+function windowShow(sPage, sPageName, width, height) {
   if (width == null)
 		width = 700;
   if (height == null)
-    height = 420;
-	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value
-			+ '&realm=' + document.forms[0].elements['realm'].value;
-	win = window.open(sPage, null, "width=" + width + ",height=" + height
-			+ ", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+		height = 500;
+  if (sPage.indexOf('form=') == -1)
+    sPage += '&form=F1';
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
+
+	return false;
 }
 
 function calendarsShow(sPage, width, height) {
 	if ($('ss_type_0').checked)
     sPage = sPage + '&mode=p'
 
-  windowShow(sPage, width, height);
+	return windowShow(sPage, width, height);
+}
+
+function tagsShow(sPage, prefix) {
+	if ($(prefix+'_subject'))
+		sPage += '&txt=' + encodeURIComponent($v(prefix+'_subject'))
+
+	if ($(prefix+'_description'))
+		sPage += '&txt2=' + encodeURIComponent($v(prefix+'_description'))
+
+	return windowShow(sPage);
 }
 
 function calendarsHelp(mode) {
@@ -418,8 +446,7 @@ function calendarsHelp(mode) {
     $('ss_calendar').value = '';
 }
 
-function rowSelect(obj)
-{
+function rowSelect(obj) {
   var srcForm = window.document.F1;
   var dstForm = window.opener.document.F1;
 
@@ -658,22 +685,22 @@ function eDelete(event, obj, onOffset) {
 
 	// delete dialog
 	if (onOffset != null) {
-		deleteDialog2.ok = function() {
+		deleteDialog2.okBtn.onclick = function() {
   		deleteDialog2.hide();
       if ($('e_delete_0').checked)
         createHidden('F1', 'onOffset', onOffset);
       createHidden('F1', 'delete', obj.id);
     doPost ('F1', 'command');
   }
-  	deleteDialog2.cancel = deleteDialog2.hide;
+		deleteDialog2.cancelBtn = deleteDialog2.hide;
   	deleteDialog2.show ();
   } else {
-  	deleteDialog.ok = function() {
+		deleteDialog.okBtn.onclick = function() {
       createHidden('F1', 'delete', obj.id);
       doPost ('F1', 'command');
   		deleteDialog.hide();
    	}
-   	deleteDialog.cancel = deleteDialog.hide;
+		deleteDialog.cancelBtn = deleteDialog.hide;
   	deleteDialog.show ();
   }
   return false;
@@ -682,9 +709,7 @@ function eDelete(event, obj, onOffset) {
 function eAnnotea(event, id, domain_id, account_id) {
   event.cancelBubble = true;
 
-	URL = 'annotea.vspx?sid=' + document.forms[0].sid.value + '&realm='
-			+ document.forms[0].realm.value + '&oid=' + id + '&did='
-			+ domain_id + '&aid=' + account_id;
+	URL = 'annotea.vspx?' + urlParam("sid") + urlParam("realm") + '&oid=' + id + '&did=' + domain_id + '&aid=' + account_id;
 	window.open(URL, 'addressbook_anotea_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600');
   return false;
 }
@@ -770,8 +795,7 @@ function checkReminder() {
       }
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=list" + urlParam("sid")
-			+ urlParam("realm"), cb, {
+	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=list" + urlParam("sid") + urlParam("realm"), cb, {
 		type : OAT.AJAX.TYPE_TEXT,
 		onstart : function() {
 		},

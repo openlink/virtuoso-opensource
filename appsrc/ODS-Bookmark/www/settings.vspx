@@ -592,7 +592,7 @@
                           <?vsp
                             if ((control as vspx_row_template).te_column_value('EX_EXEC_LOG') is not null)
                             {
-                              http (sprintf ('<a href="#" onclick="javascript: window.open (\'message.vspx?msg=%U\', \'BM_message\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
+                              http (sprintf ('<a href="#" onclick="javascript: windowShow(\'message.vspx?msg=%U\', \'BM_message\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
                             }
                             else
                             {

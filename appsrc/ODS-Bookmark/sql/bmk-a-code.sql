@@ -941,7 +941,7 @@ create procedure BMK.WA.bookmark_import(
   in tags varchar := '',
   in progress_id varchar := null)
 {
-  declare V any;
+  declare V, V2 any;
 
   -- check netscape format
   if (isnull(strcasestr(S, '<!doctype netscape-bookmark-file-1>')))
@@ -954,30 +954,50 @@ create procedure BMK.WA.bookmark_import(
   S := replace(S, '&', '&amp;');
   V := xtree_doc (S, 2);
   V := xpath_eval('//dl', V);
-  if (V is null)
+  if (isnull (V))
     goto _xbel;
 
   BMK..bookmark_import_netscape (domain_id, folder_id, tags, xml_cut(V), progress_id);
   goto _end;
 
 _xbel:;
-  -- check xbel format
-  V := xtree_doc (S);
-  V := xpath_eval('/xbel', BMK.WA.string2xml(S));
-  if (V is null)
+  -- check XBEL format
+  --
+  V := BMK.WA.string2xml (S);
+  if (isnull (V))
+    goto _end;
+  V2 := xpath_eval('/xbel', V);
+  if (isnull (V2))
+    goto _rss;
+  BMK..bookmark_import_xbel (domain_id, folder_id, tags, xml_cut(V2), progress_id, 'xbel');
+  goto _end;
+
+_rss:;
+  -- check RSS format
+  --
+  V2 := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', V);
+  if (isnull (V2))
+    goto _atom;
+  BMK..bookmark_import_rss (domain_id, folder_id, tags, V2, progress_id);
+  goto _end;
+
+_atom:;
+  -- check Atom format
+  --
+  V2 := xpath_eval ('/feed/entry', V);
+  if (isnull (V2))
     goto _delicious;
-  BMK..bookmark_import_xbel (domain_id, folder_id, tags, xml_cut(V), progress_id, 'xbel');
+  BMK..bookmark_import_atom (domain_id, folder_id, tags, V2, progress_id);
   goto _end;
 
 _delicious:;
-  V := xtree_doc (S);
-  V := xpath_eval('/posts', V);
-  if (V is null)
+  V2 := xpath_eval('/posts', V);
+  if (isnull (V2))
   {
     signal ('BMK01', 'The content being imported was not of a format ODS-Bookmarks understands!<>');
     goto _end;
   }
-  BMK..bookmark_import_delicious (domain_id, folder_id, tags, xml_cut(V), progress_id);
+  BMK..bookmark_import_delicious (domain_id, folder_id, tags, xml_cut(V2), progress_id);
 
 _end:
     return;
@@ -993,8 +1013,8 @@ create procedure BMK.WA.bookmark_import_netscape(
   in V any,
   in progress_id varchar)
 {
-  declare tmp, UID, T, Q any;
-  declare N, M integer;
+  declare tmp, T, Q any;
+  declare N integer;
 
   if (V is null)
     return;
@@ -1006,20 +1026,9 @@ create procedure BMK.WA.bookmark_import_netscape(
     if (T is null)
       goto _folder;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
-    UID := xpath_eval('/dl/dt/a/@id', V, N);
-    commit work;
 
-    connection_set ('__bookmark_import', '1');
-    tmp := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), null, tags, folder_id);
-    connection_set ('__bookmark_import', '0');
+    BMK.WA.bookmark_import_update (domain_id, Q, T, null, tags, folder_id, progress_id);
 
-	  if (not is_empty_or_null (progress_id))
-	  {
-	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
-	      return;
-	    M := cast (registry_get('bookmark_index_' || progress_id) as integer) + 1;
-	    registry_set ('bookmark_index_' || progress_id, cast (M as varchar));
-	  }
     N := N + 1;
   }
 _folder:
@@ -1050,8 +1059,8 @@ create procedure BMK.WA.bookmark_import_xbel(
   in progress_id varchar,
   in tag varchar)
 {
-  declare tmp, T, Q, D any;
-  declare N, M integer;
+  declare T, Q, D any;
+  declare N integer;
 
   if (V is null)
     return;
@@ -1066,21 +1075,12 @@ create procedure BMK.WA.bookmark_import_xbel(
     Q := xpath_eval(sprintf('/%s/bookmark[%d]/@href', tag, N), V, 1);
     if (Q is null)
       goto _folder;
+
     T := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/title/text())', tag, N), V, 1));
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/desc/text())', tag, N), V, 1));
-    commit work;
 
-    connection_set ('__bookmark_import', '1');
-    tmp := BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, tags, folder_id);
-    connection_set ('__bookmark_import', '0');
+    BMK.WA.bookmark_import_update (domain_id, Q, T, D, tags, folder_id, progress_id);
 
-	  if (not is_empty_or_null (progress_id))
-	  {
-	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
-	      return;
-	    M := cast (registry_get('bookmark_index_' || progress_id) as integer) + 1;
-	    registry_set('bookmark_index_' || progress_id, cast (M as varchar));
-	  }
     N := N + 1;
   }
 _folder:
@@ -1100,6 +1100,91 @@ _exit:
 
 -----------------------------------------------------
 --
+create procedure BMK.WA.bookmark_import_rss (
+  in domain_id integer,
+  in folder_id integer,
+  in tags varchar,
+  in V any,
+  in progress_id varchar)
+{
+  declare items, item, T, Q, D any;
+  declare N, L integer;
+
+  items := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', V, 0);
+  L := length (items);
+  for (N := 0; N < L; N := N + 1)
+  {
+    item := xml_cut(items[N]);
+    T := serialize_to_UTF8_xml (xpath_eval ('string(/item/title)', item, 1));
+    D := xpath_eval ('[ xmlns:content="http://purl.org/rss/1.0/modules/content/" ] string(/item/content:encoded)', item, 1);
+    if (is_empty_or_null (D))
+      D := xpath_eval ('string(/item/description)', item, 1);
+
+    D := serialize_to_UTF8_xml (D);
+    Q := cast (xpath_eval ('/item/link', item, 1) as varchar);
+    if (isnull (Q))
+    {
+      Q := cast (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /item/@rdf:about', item, 1) as varchar);
+      if ((isnull (Q)) and isnull (cast(xpath_eval ('/item/guid[@isPermaLink = "false"]', item, 1) as varchar)))
+        Q := cast (xpath_eval ('/item/guid', item, 1) as varchar);
+    }
+
+    BMK.WA.bookmark_import_update (domain_id, Q, T, D, tags, folder_id, progress_id);
+  }
+}
+;
+
+-----------------------------------------------------
+--
+create procedure BMK.WA.bookmark_import_atom (
+  in domain_id integer,
+  in folder_id integer,
+  in tags varchar,
+  in V any,
+  in progress_id varchar)
+{
+  declare items, item, contents, T, Q, D any;
+  declare N, L integer;
+
+  items := xpath_eval ('/feed/entry', V, 0);
+  L := length (items);
+  for (N := 0; N < L; N := N + 1)
+  {
+    item := xml_cut (items[N]);
+    T := serialize_to_UTF8_xml (xpath_eval ('string(/entry/title)', item, 1));
+    if (xpath_eval ('/entry/content[@type = "application/xhtml+xml" or @type="xhtml"]', item) is not null)
+    {
+      contents := xpath_eval ('/entry/content/*', item, 0);
+      if (length (contents) = 1)
+      {
+        D := serialize_to_UTF8_xml (contents[0]);
+      }
+      else
+      {
+        D := '<div>';
+        foreach (any content in contents) do
+          D := concat(D, ENEWS.WA.xml2string(content));
+
+        D := concat(D, '</div>');
+      }
+    }
+    else
+    {
+      D := xpath_eval ('string(/entry/content)', item, 1);
+      if (is_empty_or_null(D))
+        D := xpath_eval ('string(/entry/summary)', item, 1);
+
+      D := serialize_to_UTF8_xml (D);
+    }
+    Q := cast (xpath_eval ('/entry/link[@rel="alternate"]/@href', item, 1) as varchar);
+
+    BMK.WA.bookmark_import_update (domain_id, Q, T, D, tags, folder_id, progress_id);
+  }
+}
+;
+
+-----------------------------------------------------
+--
 create procedure BMK.WA.bookmark_import_delicious(
   in domain_id integer,
   in folder_id integer,
@@ -1108,7 +1193,7 @@ create procedure BMK.WA.bookmark_import_delicious(
   in progress_id varchar)
 {
   declare tmp, T, Q, D, H, nTags, TG, TGA any;
-  declare N, M integer;
+  declare N integer;
 
   if (V is null)
     return;
@@ -1130,12 +1215,38 @@ create procedure BMK.WA.bookmark_import_delicious(
     {
       TGA := split_and_decode(TG, 0, '\0\0 ');
       foreach (any tag in TGA) do
+      {
         if (BMK.WA.validate_tag (tag))
           nTags := concat(nTags, tag, ',');
     }
+    }
     nTags := trim(tags || ',' || nTags, ',');
+
+    BMK.WA.bookmark_import_update (domain_id, Q, T, D, nTags, folder_id, progress_id);
+
+    N := N + 1;
+  }
+_exit:
+  return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.bookmark_import_update (
+  in domain_id integer,
+  in Q any,
+  in T any,
+  in D any,
+  in tags varchar,
+  in folder_id integer,
+  in progress_id varchar)
+{
+  declare id, M integer;
+
+  commit work;
     connection_set ('__bookmark_import', '1');
-    BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), D, nTags, folder_id, H);
+  id := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), D, tags, folder_id);
     connection_set ('__bookmark_import', '0');
 
 	  if (not is_empty_or_null (progress_id))
@@ -1145,10 +1256,7 @@ create procedure BMK.WA.bookmark_import_delicious(
 	    M := cast (registry_get('bookmark_index_' || progress_id) as integer) + 1;
 	    registry_set('bookmark_index_' || progress_id, cast (M as varchar));
     }
-    N := N + 1;
-  }
-_exit:
-  return;
+  return id;
 }
 ;
 
@@ -3134,8 +3242,11 @@ create procedure BMK.WA.string2xml (
   in content varchar,
   in mode integer := 0)
 {
-  if (mode = 0) {
-    declare exit handler for sqlstate '*' { goto _html; };
+  if (mode = 0)
+  {
+    declare exit handler for sqlstate '*' {
+      goto _html;
+    };
     return xml_tree_doc (xml_tree (content, 0));
   }
 _html:;

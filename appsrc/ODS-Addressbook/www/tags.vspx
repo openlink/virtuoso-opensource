@@ -32,10 +32,10 @@
       <v:variable persist="0" name="v_tags" type="any"/>
     </vm:variables>
     <vm:pagebody>
-      <table id="tags" class="grid" style="width: 100%;" cellspacing="0">
-        <thead class="sortHeader">
+      <table class="ODS_grid">
+        <thead>
           <tr>
-            <th class="checkbox" width="1%">
+            <th class="checkbox">
               <?vsp
                 http('<input type="checkbox" name="cb_all" value="Unselect All" checked="checked" onclick="selectAllCheckboxes(this, \'cb_item\'); "/>');
               ?>
@@ -66,7 +66,7 @@
             for (N := 0; N < length (vTags); N := N + 1) {
         ?>
           <tr>
-            <td>
+            <td class="checkbox">
               <?vsp
                 http (sprintf ('<input type="checkbox" name="cb_item" value="%s" checked="checked" onclick="javascript: coloriseRow(getParent(this, \'tr\'), this.checked);"/>', vTags[N]));
               ?>

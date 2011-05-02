@@ -45,7 +45,7 @@
     declare progressID, progressIndex any;
 
     progressID := cast (get_keyword ('id', params, msec_time()) as varchar);
-    progressIndex := registry_get ('feed_' || progressID || '_index');
+    progressIndex := registry_get ('bookmark_index_' || progressID);
 	  if (subAction = 'stop')
 	  {
 	    registry_set ('bookmark_action_' || progressID, 'stop');
