@@ -115,6 +115,13 @@
 				  <?vsp } ?>
 			      </table>
 			      <br/>
+			      <?vsp 
+			      if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL'))
+			        {
+				  http ('No HTTPS listeners defined');
+				}
+			      else {			
+			      ?> 
 			      <v:form name="frm1" type="simple" method="POST">
               Virtual Host:				  
               <select name="l_domains" xhtml_id="l_domains">
@@ -138,6 +145,9 @@
 		    ]]></v:on-post>
 	    </v:button>
 			      </v:form>
+			      <?vsp 
+			      }
+			      ?> 
 			      <!-- end tab  -->
 			  </td>
 		      </tr>

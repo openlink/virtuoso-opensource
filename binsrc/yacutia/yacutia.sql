@@ -6721,17 +6721,19 @@ create procedure y_tab_or_space (in x any)
 }
 ;
 
-create procedure WS.WS.VFS_EXPORT_DEFS ()
+create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
 {
   declare ses any;
   ses := string_output ();
   for select * from WS.WS.VFS_SITE do 
     {
+      if (ids is not null and not position (VS_ID, ids))
+        goto skipit;	
       http (sprintf ('-- Crawling descriptor for %s\n', VS_DESCR), ses);
       http ('INSERT SOFT WS.WS.VFS_SITE (\n\tVS_DESCR,\n\tVS_HOST,\n\tVS_URL,\n\tVS_INX,\n\tVS_OWN,\n\tVS_ROOT,\n\tVS_NEWER,\n' ||
 		'\tVS_DEL,\n\tVS_FOLLOW,\n\tVS_NFOLLOW,\n\tVS_SRC,\n\tVS_OPTIONS,\n\tVS_METHOD,\n\tVS_OTHER,\n\tVS_OPAGE,\n\tVS_REDIRECT,\n'||
 		'\tVS_STORE,\n\tVS_UDATA,\n\tVS_DLOAD_META,\n\tVS_INST_ID,\n\tVS_EXTRACT_FN,\n\tVS_STORE_FN,\n\tVS_DEPTH,'||
-		'\n\tVS_CONVERT_HTML,\n\tVS_XPATH,\n\tVS_BOT,\n\tVS_IS_SITEMAP,\n\tVS_ACCEPT_RDF,\n\tVS_THREADS,\n\tVS_ROBOTS)\n VALUES (\n',
+		'\n\tVS_CONVERT_HTML,\n\tVS_XPATH,\n\tVS_BOT,\n\tVS_IS_SITEMAP,\n\tVS_ACCEPT_RDF,\n\tVS_THREADS,\n\tVS_ROBOTS,\n\tVS_DELAY,\n\tVS_TIMEOUT,\n\tVS_HEADERS)\n VALUES (\n',
             ses			 
 	  );
       http ('\t', ses);	  
@@ -6793,7 +6795,13 @@ create procedure WS.WS.VFS_EXPORT_DEFS ()
       http ('\t', ses);
       http (DB.DBA.SYS_SQL_VAL_PRINT (VS_THREADS),ses); http (',\n', ses);
       http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROBOTS),ses); http ('\n', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROBOTS),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DELAY),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_TIMEOUT),ses); http (',\n', ses);
+      http ('\t', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HEADERS),ses); http ('\n', ses);
       http (');\n', ses);
       for select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = VS_HOST and VM_ROOT = VS_ROOT order by VM_SEQ do 
 	{
@@ -6808,6 +6816,7 @@ create procedure WS.WS.VFS_EXPORT_DEFS ()
       http ('\n', ses);
       http ('\n', ses);
       http ('\n', ses);
+      skipit:;
     }
   http ('WS.WS.VFS_INIT_QUEUE ();\n', ses);
   return ses;
