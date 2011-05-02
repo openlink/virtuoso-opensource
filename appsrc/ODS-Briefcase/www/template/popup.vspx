@@ -25,7 +25,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
+    <base href="<?V ODRIVE.WA.host_url () || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/common.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
@@ -48,6 +50,11 @@
         }
         OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
         window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+      	window.onkeyup = function (event) {
+      		if (event.keyCode == 27) {
+      			window.close ();
+      		}
+      	}
       </script>
     ]]>
     <title></title>
@@ -74,7 +81,7 @@
           self.account_id := cast (get_keyword ('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword ('user_role', aSessInfo, '');
           self.accountName := get_keyword ('user_name', aSessInfo, '');
-          self.settings := ODRIVE.WA.settings (self.domain_id);
+          self.settings := ODRIVE.WA.settings (self.account_id);
         ]]>
       </v:on-init>
 

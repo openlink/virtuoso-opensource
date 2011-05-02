@@ -38,8 +38,8 @@
       declare item any;
 
       http ('<div id="dav_list" style="max-height: 200px; min-height: 200px;">');
-      http ('  <table class="OD_grid colorise no-border" cellspacing="0">');
-      http ('    <thead class="sortHeader nocolor">');
+      http ('  <table class="ODS_grid" style="border: 0px;">');
+      http ('    <thead>');
       http ('      <tr>');
       http ('        <th>Name</th>');
       http ('        <th>Size</th>');
@@ -60,7 +60,7 @@
 
         http ('    <tr>');
         http (sprintf ('<td nowrap="nowrap"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', ODRIVE.WA.ui_image (ODRIVE.WA.DAV_GET (item, 'fullPath'), ODRIVE.WA.DAV_GET (item, 'type'), ODRIVE.WA.DAV_GET (item, 'mimeType')), ODRIVE.WA.ui_alt (ODRIVE.WA.DAV_GET (item, 'name'), ODRIVE.WA.DAV_GET (item, 'type')), self.items[i]));
-        http (sprintf ('<td class="number" nowrap="nowrap">%s</td', ODRIVE.WA.ui_size (ODRIVE.WA.DAV_GET (item, 'length'), ODRIVE.WA.DAV_GET (item, 'type'))));
+        http (sprintf ('<td class="number" nowrap="nowrap">%s</td>', ODRIVE.WA.ui_size (ODRIVE.WA.DAV_GET (item, 'length'), ODRIVE.WA.DAV_GET (item, 'type'))));
         http (sprintf ('<td nowrap="nowrap">%s</td>', ODRIVE.WA.ui_date (ODRIVE.WA.DAV_GET (item, 'modificationTime'))));
         http (sprintf ('<td>%s</td>', ODRIVE.WA.DAV_GET (item, 'ownerName')));
         http (sprintf ('<td>%s</td>', ODRIVE.WA.DAV_GET (item, 'groupName')));
@@ -425,7 +425,7 @@
                     </th>
                     <td>
                       <input type="text" name="prop_mime" class="field-short" />
-                      <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=prop_mime:s1;')" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('<?V ODRIVE.WA.page_url (self.domain_id, 'mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" />
                     </td>
                   </tr>
                   <tr>
@@ -442,7 +442,7 @@
                         </v:after-data-bind>
                       </v:text>
                       <vm:if test="ODRIVE.WA.check_admin (self.account_id)">
-                        <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=u&amp;params=prop_owner:s1;')" class="button" />
+                        <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&amp;params=prop_owner:s1;&nrows=<?V ODRIVE.WA.settings_rows (self.settings) ?>')" class="button" />
                       </vm:if>
                     </td>
                   </tr>
@@ -452,7 +452,7 @@
                     </th>
                     <td>
                       <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=g&amp;params=prop_group:s1;')" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
                     </td>
                   </tr>
                   <tr>

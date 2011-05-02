@@ -96,6 +96,8 @@
 
                 if (self.v_mask = '')
                   self.v_mask := '%';
+
+                self.ds.vc_reset();
                 self.ds.vc_data_bind (e);
               ]]>
             </v:on-post>
@@ -174,11 +176,13 @@
 
           <v:template type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <tr align="center">
+              <tfoot>
+                <tr align="right">
                 <td colspan="3">
                   <vm:ds-navigation data-set="ds"/>
                 </td>
               </tr>
+              </tfoot>
             </table>
           </v:template>
 

@@ -118,6 +118,8 @@
             <![CDATA[
               self.v_how := self.how.ufl_value;
               self.v_value := trim(self.value.ufl_value);
+
+              self.ds.vc_reset();
               self.vc_data_bind (e);
             ]]>
           </v:on-post>
@@ -233,7 +235,7 @@
       <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
         <div style="padding: 0 0 0.5em 0;">
           <hr />
-          <a href="#" onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
+          <span onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition.');" class="button"> Add selected</span>
         </div>
       </v:template>
       <script>

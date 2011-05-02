@@ -27,6 +27,11 @@ body {
   font-size: 9pt;
 }
 
+form {
+  margin: 0;
+  padding: 0;
+}
+
 a {
   text-decoration: none;
 }
@@ -417,23 +422,6 @@ input.nolink2 {
   background-color: #EFEFEF;
 }
 
-.nolink3 {
-  font-size: 1em;
-  font-weight: bold;
-  color: #000;
-  background-color: inherit;
-}
-
-input.nolink4 {
-  text-align: left;
-  margin: 0px;
-  padding: 0px;
-  font-size: 1em;
-  font-weight: bold;
-  border: 0px;
-  background-color: #b0cde4;
-}
-
 .nolink_a {
   color: #000;
   background-color: #F0F0F0;
@@ -453,17 +441,6 @@ input.nolink4 {
 	position: absolute;
 	top: 2px;
 	right: 5px;
-}
-
-.button2 {
-  font-size: .8em;
-	font-family: verdana, sans-serif;
-  color: #ffffff;
-  font-weight: bold;
-  padding: 0.1em 1em 0.1em 1em ;
-  border: solid 1px;
-  border-color: #7f94a5;
-  background: #99b3c5;
 }
 
 .pane {
@@ -558,17 +535,6 @@ div.boxHeader {
   padding: 2px;
   border: 1px solid #7f94a5;
   vertical-align: middle;
-}
-
-/* Grids */
-.BMK_grid {
-  width: 100%;
-  border: solid #7f94a5;
-  border-width: 1px 1px 2px 1px;
-}
-
-.BMK_grid tr td {
-  border-bottom: 1px solid #CCC;
 }
 
 thead.sortHeader tr {
@@ -831,44 +797,6 @@ font-weight:bold;
 
 #pane_left .tree_ul_selected {
 font-weight:normal !important;
-}
-
-/* Popup Calendar */
-.calendar {
-	border: 1px solid #000;
-	background-color: #FFF;
-  z-index: 101;
-}
-
-.calendar_year, .calendar_month {
-	text-align: center;
-	border-bottom: 1px solid #aaa;
-	padding: 2px 0px;
-}
-
-.calendar table {
-	margin-top: 2px;
-}
-
-.calendar thead {
-	font-weight: bold;
-}
-
-.calendar thead td {
-	padding: 0px 2px;
-}
-
-.calendar td {
-	font-size: 75%;
-	text-align: center;
-}
-
-td.calendar_selected {
-	background-color: #faa;
-}
-
-.calendar_special {
-	color: #c55;
 }
 
 .pointer {

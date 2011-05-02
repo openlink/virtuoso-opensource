@@ -108,6 +108,55 @@
                 ]]>
               </v:on-post>
             </v:button>
+          <v:button name="btn_delete" value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
+            <v:on-post>
+              <![CDATA[
+                declare i integer;
+
+                for (i := 0; i < length(e.ve_params); i := i + 2)
+                {
+                  if (e.ve_params[i] = 'cb_item')
+                  {
+                    declare exit handler for sqlstate '*'
+                    {
+                      rollback work;
+                      goto _next;
+                    };
+                    commit work;
+
+                    ENEWS.WA.channel_delete (e.ve_params[i+1]);
+                  }
+                  _next:;
+                }
+                ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button name="btn_refresh" value="refresh" action="simple" xhtml_onclick="javascript: return anySelected(this.form, \'cb_item\', \'No feeds were selected to be refreshed.\');" xhtml_class="button" xhtml_alt="Refresh selected feed(s)">
+            <v:on-post>
+              <![CDATA[
+                declare i integer;
+
+                for (i := 0; i < length(e.ve_params); i := i + 2)
+                {
+                  if (e.ve_params[i] = 'cb_item')
+                  {
+                    declare exit handler for sqlstate '*'
+                    {
+                      rollback work;
+                      goto _next;
+                    };
+                    commit work;
+
+                     ENEWS.WA.feed_refresh(e.ve_params[i+1]);
+                  }
+                  _next:;
+                }
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
             <div class="menuBar" id="exportBar">
           <a class="menuButton button2" onMouseDown="return this.blur();" onClick="return menuPopup(this, 'exportMenu');" title="Export Feeds">export</a>
               <div class="menu" id="exportMenu">
@@ -128,6 +177,9 @@
             control.ds_sql := concat(control.ds_sql, ' order by ', self.c_order, ' ', self.c_direction);
           ]]>
         </v:before-data-bind>
+          <v:after-data-bind>
+            control.ds_make_statistic ();
+          </v:after-data-bind>
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
@@ -137,16 +189,16 @@
                   <th class="checkbox" width="1%">
                     <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')" title="Select All" />
                   </th>
-                  <th>
+                  <th width="50%">
                     <?vsp self.sortColumn('Title', 'EF_TITLE'); ?>
                   </th>
-                  <th>
+                  <th width="50%">
                     <?vsp self.sortColumn('Feed URL', 'EF_URI'); ?>
                   </th>
                   <th>
                     <?vsp self.sortColumn('Retrieved', 'EF_COUNT'); ?>
                   </th>
-                  <th width="5%" colspan="2">
+                  <th>
                     Action
                   </th>
                 </tr>
@@ -158,8 +210,8 @@
 
             <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
-                <tr align="center">
-                  <td colspan="6">No feeds</td>
+                <tr>
+                  <td colspan="5">No feeds</td>
                 </tr>
               </table>
             </v:template>
@@ -181,35 +233,13 @@
                   <td align="right">
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_COUNT')" format="%d"/>
                   </td>
-                  <td nowrap="nowrap">
+                  <td>
                     <v:button name="btn_edit" value="edit" action="simple" xhtml_class="button" xhtml_alt="edit feed">
                       <v:on-post>
                         <![CDATA[
                           self.v_id := (control.vc_parent as vspx_row_template).te_column_value('EFD_ID');
                           self.v_mode := 'update';
                           self.vc_data_bind (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                  <td nowrap="nowrap">
-                    <v:button name="btn_delete" value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this feed?\');" xhtml_class="button" xhtml_alt="Delete feed">
-                      <v:on-post>
-                        <![CDATA[
-                        ENEWS.WA.channel_delete ((control.vc_parent as vspx_row_template).te_column_value('EFD_ID'));
-                          ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
-                		      self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button name="btn_refresh" value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh feed">
-                      <v:on-post>
-                        <![CDATA[
-                          declare exit handler for sqlstate '*' { goto _next; };
-
-                 			    ENEWS.WA.feed_refresh((control.vc_parent as vspx_row_template).te_column_value('EF_ID'));
-                 			  _next:
-                   		    self.vc_data_bind (e);
                         ]]>
                       </v:on-post>
                     </v:button>
@@ -222,122 +252,13 @@
 
           <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <v:template name="t2" type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
-                <tr class="td_border">
-                  <td align="right" colspan="4" class="td_border">
-                    <b>Selected&amp;nbsp;</b>
-                  </td>
-                  <td class="td_border">
-                    &amp;nbsp;
-                  </td>
-                  <td nowrap="nowrap" class="td_border">
-                    <v:button name="btn_delete2" value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
-                      <v:on-post>
-                        <![CDATA[
-                          declare i integer;
-
-                          for (i := 0; i < length(e.ve_params); i := i + 2) {
-                            if (e.ve_params[i] = 'cb_item') {
-                              declare exit handler for sqlstate '*' {
-                                rollback work;
-                                goto _next;
-                              };
-                              commit work;
-
-                            ENEWS.WA.channel_delete (e.ve_params[i+1]);
-                            }
-                            _next:;
-                          }
-                          ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
-                		      self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button name="btn_refresh2" value="refresh" action="simple" xhtml_onclick="javascript: return anySelected(this.form, \'cb_item\', \'No feeds were selected to be refreshed.\');" xhtml_class="button" xhtml_alt="Refresh selected feed(s)">
-                      <v:on-post>
-                        <![CDATA[
-                          declare i integer;
-
-                          for (i := 0; i < length(e.ve_params); i := i + 2)
-                          {
-                            if (e.ve_params[i] = 'cb_item')
-                            {
-                              declare exit handler for sqlstate '*'
-                              {
-                                rollback work;
-                                goto _next;
-                              };
-                              commit work;
-
-                     			    ENEWS.WA.feed_refresh(e.ve_params[i+1]);
-                            }
-                            _next:;
-                          }
-                   		    self.vc_data_bind (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-                <tr class="td_border">
-                  <td align="right" colspan="4" class="td_border">
-                    <b>All&amp;nbsp;</b>
-                  </td>
-                  <td class="td_border">
-                    &amp;nbsp;
-                  </td>
-                  <td nowrap="nowrap" class="td_border">
-                    <v:button name="btn_delete3" value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete all feeds?\');" xhtml_class="button" xhtml_alt="Delete all feeds">
-                      <v:on-post>
-                        <![CDATA[
-                        for (select EFD_ID
-                                 from ENEWS.WA.FEED
-                                   join ENEWS.WA.FEED_DOMAIN EC on EFD_FEED_ID = EF_ID
-                                where EFD_DOMAIN_ID = self.domain_id) do {
-                            declare exit handler for sqlstate '*'
-                            {
-                              rollback work;
-                              goto _next;
-                            };
-                            commit work;
-
-                          ENEWS.WA.channel_delete(EFD_ID);
-                          _next:;
-                          }
-                          ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
-                		      self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button name="btn_refresh3" value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh all feeds">
-                      <v:on-post>
-                        <![CDATA[
-                          for (select EF_ID
-                                 from ENEWS.WA.FEED ECD
-                                   join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EF_ID
-                                where EFD_DOMAIN_ID = self.domain_id) do {
-                            declare exit handler for sqlstate '*'
-                            {
-                              rollback work;
-                              goto _next;
-                            };
-                            commit work;
-
-                   			    ENEWS.WA.feed_refresh(EF_ID);
-                          _next:;
-                          }
-                   		    self.vc_data_bind (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-              </v:template>
-              <tr align="center">
-                <td align="center" colspan="6">
+              <tfoot>
+                <tr align="right" >
+                  <td colspan="5">
                   <vm:ds-navigation data-set="ds"/>
                 </td>
               </tr>
+              </tfoot>
             </table>
           </v:template>
 

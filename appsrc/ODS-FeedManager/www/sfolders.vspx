@@ -89,6 +89,9 @@
             control.ds_sql := concat(control.ds_sql, ' order by ', self.sf_order, ' ', self.sf_direction);
           ]]>
         </v:before-data-bind>
+          <v:after-data-bind>
+            control.ds_make_statistic ();
+          </v:after-data-bind>
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <div style="padding: 0 0 0.5em 0;">
@@ -101,6 +104,14 @@
               ]]>
             </v:on-post>
           </v:button>
+            <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this smart folder?\');" xhtml_class="button" xhtml_alt="Delete Smart folder">
+              <v:on-post>
+                <![CDATA[
+                  ENEWS.WA.sfolder_delete(self.domain_id, cast((control.vc_parent as vspx_row_template).te_column_value('ESFO_ID') as integer));
+          		    self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
         </div>
 
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
@@ -113,7 +124,7 @@
                 <th>
                   <?vsp self.sortColumn('Title', 'ESFO_NAME'); ?>
                 </th>
-                  <th width="5%" colspan="2">
+                  <th width="1%">
                   <v:label value="Action" format="%s"/>
                 </th>
               </tr>
@@ -126,7 +137,7 @@
           <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table id="list" cellspacing="0">
               <tr align="center">
-                <td colspan="4">No Smart folders</td>
+                  <td colspan="3">No Smart folders</td>
               </tr>
             </table>
           </v:template>
@@ -153,16 +164,6 @@
                     </v:on-post>
                   </v:button>
                 </td>
-                <td nowrap="nowrap">
-                  <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this smart folder?\');" xhtml_class="button" xhtml_alt="Delete Smart folder">
-                    <v:on-post>
-                      <![CDATA[
-                        ENEWS.WA.sfolder_delete(self.domain_id, cast((control.vc_parent as vspx_row_template).te_column_value('ESFO_ID') as integer));
-                		    self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-                </td>
               </tr>
             </table>
           </v:template>
@@ -170,66 +171,9 @@
         </v:template>
 
         <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
-          <table id="list" cellspacing="0">
-            <v:template type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
-              <tr class="td_border">
-                <td align="right" colspan="2" class="td_border">
-                  <b>Selected&amp;nbsp;</b>
-                </td>
-                <td class="td_border">
-                  &amp;nbsp;
-                </td>
-                <td nowrap="nowrap" class="td_border">
-                  <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete selected smart folder(s)?\', this.form, \'cb_item\', \'No smart folders were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected Smart folders">
-                    <v:on-post>
-                      <![CDATA[
-                        declare i integer;
-
-                          for (i := 0; i < length(e.ve_params); i := i + 2)
-                          {
-                            if (e.ve_params[i] = 'cb_item')
-                            {
-                              declare exit handler for sqlstate '*'
-                              {
-                              rollback work;
-                              goto _next;
-                            };
-                            commit work;
-
-                            ENEWS.WA.sfolder_delete(self.domain_id, e.ve_params[i+1]);
-                          }
-                          _next:;
-                        }
-              		      self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-                </td>
-              </tr>
-              <tr class="td_border">
-                <td align="right" colspan="2" class="td_border">
-                  <b>All&amp;nbsp;</b>
-                </td>
-                <td class="td_border">
-                  &amp;nbsp;
-                </td>
-                <td nowrap="nowrap" class="td_border">
-                  <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete all smart folder(s)?\');" xhtml_class="button" xhtml_alt="Delete all Smart folders">
-                    <v:on-post>
-                      <![CDATA[
-                        for (select ESFO_ID from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = self.domain_id) do
-                          {
-                          ENEWS.WA.sfolder_delete(self.domain_id, ESFO_ID);
-                          }
-              		      self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-                </td>
-              </tr>
-            </v:template>
+            <table>
             <tr>
-              <td align="center" colspan="4">
+                <td align="right" colspan="3">
                 <vm:ds-navigation data-set="ds"/>
               </td>
             </tr>

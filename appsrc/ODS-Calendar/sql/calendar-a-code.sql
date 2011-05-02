@@ -1029,6 +1029,18 @@ create procedure CAL.WA.user_name(
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.tag_rule_exists (
+  in user_id integer)
+{
+  if (exists (select 1 from TAG_RULE_SET, TAG_USER where TU_TRS = TRS_ID and TU_U_ID = user_id))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.tag_prepare(
   inout tag varchar)
 {

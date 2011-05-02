@@ -29,22 +29,14 @@ function setFooter() {
   }
 }
 
-function urlParam(fldName)
-{
+function urlParam(fldName) {
   var O = document.forms[0].elements[fldName];
   if (O && O.value != '')
     return '&' + fldName + '=' + encodeURIComponent(O.value);
   return '';
 }
 
-function myPost(frm_name, fld_name, fld_value)
-{
-  createHidden(frm_name, fld_name, fld_value);
-  document.forms[frm_name].submit();
-}
-
-function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
-{
+function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   if (fName)
     createHidden('F1', fName, fValue);
   if (f2Name)
@@ -54,10 +46,17 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
   doPost('F1', fButton);
 }
 
-function toolbarPost(fld_value)
-{
-  document.F1.toolbar_hidden.value = fld_value;
-  doPost ('F1', 'toolbar');
+function odsPost(obj, fields, button) {
+  var form = getParent (obj, 'form');
+  var formName = form.name;
+  for (var i = 0; i < fields.length; i += 2)
+    createHidden(formName, fields[i], fields[i+1]);
+
+  if (button) {
+    doPost(formName, button);
+  } else {
+    form.submit();
+  }
 }
 
 function dateFormat(date, format) {
@@ -157,16 +156,12 @@ function submitEnter(e, myForm, myButton, myAction)
   return true;
 }
 
-function checkNotEnter(e)
-{
+function checkNotEnter(e) {
   var key;
-
-  if (window.event)
-  {
+  if (window.event) {
     key = window.event.keyCode;
   } else {
-    if (e)
-    {
+    if (e) {
       key = e.which;
     } else {
       return true;
@@ -480,13 +475,11 @@ function initDisabled()
 }
 }
 
-function deleteConfirm()
-{
+function deleteConfirm() {
   return confirm('Are you sure you want to delete the chosen record?');
 }
 
-function deprecateConfirm()
-{
+function deprecateConfirm() {
   return confirm('Are you sure you want to deprecate the chosen record?');
 }
 
@@ -496,28 +489,30 @@ function confirmAction(confirmMsq, form, txt, selectionMsq) {
   return false;
 }
 
-function webidShow(obj, width, height)
-{
+function webidShow(obj) {
   var S = 'p';
   if (obj.id.replace('fld_2', 'fld_1') != obj.id)
     S = $v(obj.id.replace('fld_2', 'fld_1'));
 
-  windowShow('/ods/webid_select.vspx?form=F1&mode='+S.charAt(0)+'&params='+obj.id+':s1;', width, height);
+  windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;');
 }
 
-function windowShow(sPage, width, height)
-{
-  if (!width)
+function windowShow(sPage, sPageName, width, height) {
+	if (width == null)
     width = 700;
-  if (!height)
-    height = 420;
-  sPage += '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+	if (height == null)
+		height = 500;
+  if (sPage.indexOf('form=') == -1)
+    sPage += '&form=F1';
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
 
-function renameShow(myForm, myPrefix, myPage, width, height)
-{
+function renameShow(myForm, myPrefix, myPage, width, height) {
   var myFiles = getSelected (myForm, myPrefix);
   if (myFiles != '')
     windowShow(myPage + myFiles, width, height);

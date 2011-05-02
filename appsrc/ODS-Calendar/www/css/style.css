@@ -27,6 +27,11 @@ body {
   font-size: 9pt;
 }
 
+form {
+  margin: 0;
+  padding: 0;
+}
+
 abbr {
   border: none;
 }
@@ -364,14 +369,15 @@ div.menu div.menuItemSep {
 }
 
 input.button {
-  margin: .2em 0 .1em 0;
   font-size: .8em;
   font-family: verdana, sans-serif;
   color: #ffffff;
   font-weight: bold;
+  margin: .2em 0 .1em 0;
   border: solid 1px;
   border-color: #7f94a5;
   background: #99b3c5;
+	cursor: pointer;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -397,23 +403,6 @@ input.nolink2 {
   background-color: #EFEFEF;
 }
 
-.nolink3 {
-  font-size: 1em;
-  font-weight: bold;
-  color: #000;
-  background-color: inherit;
-}
-
-input.nolink4 {
-  text-align: left;
-  margin: 0px;
-  padding: 0px;
-  font-size: 1em;
-  font-weight: bold;
-  border: 0px;
-  background-color: #b0cde4;
-}
-
 .nolink_a {
   color: #000;
   background-color: #F0F0F0;
@@ -433,17 +422,6 @@ input.nolink4 {
   position: absolute;
   top: 2px;
   right: 5px;
-}
-
-.button2 {
-  padding: 0 0.35em 0 0.35em;
-  font-size: .8em;
-  font-family: verdana, sans-serif;
-  color: #ffffff;
-  font-weight: bold;
-  border: solid 1px;
-  border-color: #7f94a5;
-  background: #99b3c5;
 }
 
 .pane {
@@ -1004,44 +982,6 @@ a.tab.activeTab2 {
   -moz-user-select:none;
 }
 
-/* Popup Calendar */
-.calendar {
-	border: 1px solid #000;
-	background-color: #FFF;
-  z-index: 101;
-}
-
-.calendar_year, .calendar_month {
-	text-align: center;
-	border-bottom: 1px solid #aaa;
-	padding: 2px 0px;
-}
-
-.calendar table {
-	margin-top: 2px;
-}
-
-.calendar thead {
-	font-weight: bold;
-}
-
-.calendar thead td {
-	padding: 0px 2px;
-}
-
-.calendar td {
-	font-size: 75%;
-	text-align: center;
-}
-
-td.calendar_selected {
-	background-color: #faa;
-}
-
-.calendar_special {
-	color: #c55;
-}
-
 .ss_color {
   float: left;   
 	width: 60px;
@@ -1116,13 +1056,14 @@ input.openID {
 span.button {
   background: none repeat scroll 0 0 #99B3C5;
   border: 1px solid #7F94A5;
-  -moz-border-radius: 5px;
-  -webkit-border-radius: 5px;
   color: #FFFFFF;
   font-size: 0.8em;
   font-weight: bold;
-  padding: 3px 4px 1px;
+  padding: 2px 5px 0px;
   text-decoration:none;
+	cursor: pointer;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
 }
 
 img.button {

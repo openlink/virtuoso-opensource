@@ -58,6 +58,19 @@ function toolbarPost(value)
   doPost ('F1', 'toolbar');
 }
 
+function odsPost(obj, fields, button) {
+  var form = getParent (obj, 'form');
+  var formName = form.name;
+  for (var i = 0; i < fields.length; i += 2)
+    createHidden(formName, fields[i], fields[i+1]);
+
+  if (button) {
+    doPost(formName, button);
+  } else {
+    form.submit();
+  }
+}
+
 function dateFormat(date, format) {
 	function long(d) {
 		return ((d < 10) ? "0" : "") + d;
@@ -363,14 +376,18 @@ function showTab(tabs, tabsCount, tabNo)
   }
 }
 
-function windowShow(sPage, width, height)
-{
-  if (!width)
+function windowShow(sPage, sPageName, width, height) {
+	if (width == null)
     width = 700;
-  if (!height)
-    height = 420;
-  sPage += urlParam("sid")+urlParam("realm");
-  win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+	if (height == null)
+		height = 500;
+  if (sPage.indexOf('form=') == -1)
+    sPage += '&form=F1';
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
 

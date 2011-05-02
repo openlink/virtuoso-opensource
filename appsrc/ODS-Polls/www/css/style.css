@@ -27,6 +27,11 @@ body {
   font-size: 9pt;
 }
 
+form {
+  margin: 0;
+  padding: 0;
+}
+
 a {
   text-decoration: none;
 }
@@ -307,6 +312,25 @@ input.button {
   background: #99b3c5;
 }
 
+.navi-button {
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  margin-right: 2px;
+  padding: 0.1em 0.3em 0.1em 0.3em ;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+	cursor: pointer;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+}
+
+.navi-button:hover {
+  text-decoration: none;
+}
+
 input.nolink {
   text-align: left;
   margin: 0px;
@@ -328,23 +352,6 @@ input.nolink2 {
   background-color: #EFEFEF;
 }
 
-.nolink3 {
-  font-size: 1em;
-  font-weight: bold;
-  color: #000;
-  background-color: inherit;
-}
-
-input.nolink4 {
-  text-align: left;
-  margin: 0px;
-  padding: 0px;
-  font-size: 1em;
-  font-weight: bold;
-  border: 0px;
-  background-color: #b0cde4;
-}
-
 .nolink_a {
   color: #000;
   background-color: #F0F0F0;
@@ -364,17 +371,6 @@ input.nolink4 {
   position: absolute;
   top: 2px;
   right: 5px;
-}
-
-.button2 {
-  font-size: .8em;
-  font-family: verdana, sans-serif;
-  color: #ffffff;
-  font-weight: bold;
-  padding: 0.1em 1em 0.1em 1em ;
-  border: solid 1px;
-  border-color: #7f94a5;
-  background: #99b3c5;
 }
 
 .pane {

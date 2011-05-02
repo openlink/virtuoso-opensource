@@ -97,6 +97,8 @@
             <![CDATA[
               self.v_how := self.how.ufl_value;
               self.v_value := trim(self.value.ufl_value);
+
+              self.ds.vc_reset();
               self.vc_data_bind (e);
             ]]>
           </v:on-post>
@@ -153,6 +155,16 @@
         </v:template>
 
         <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr align="center">
+                <td colspan="2">
+                  No records
+                </td>
+              </tr>
+            </table>
+          </v:template>
 
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>

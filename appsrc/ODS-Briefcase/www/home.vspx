@@ -243,26 +243,24 @@
       if (not self.enabledColumn(columnId))
         return;
 
-      declare dir_column, strClass, strOnclick any;
+      declare dir_column, image, onclick any;
 
+      image := '';
+      onclick := '';
       dir_column := self.getColumn(columnId);
-      strClass := '';
-      strOnclick := '';
       if ((dir_column[3] = 1) and (self.dir_path <> ''))
       {
-        strClass := 'sortcol';
-        strOnclick := sprintf ('onclick="javascript: myPost(\'F1\', \'sortColumn\', \'%s\');"', dir_column[0]);
+        onclick := sprintf ('onclick="javascript: odsPost(this, [\'sortColumn\', \'%s\']);"', dir_column[0]);
         if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'desc'))
         {
-          strClass := strClass || ' sortcol_active sortcol_desc';
+          image := '&nbsp;<img src="/ods/images/icons/orderdown_16.png" border="0" alt="Down"/>';
         }
         else if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'asc'))
         {
-          strClass := strClass || ' sortcol_active sortcol_asc';
+          image := '&nbsp;<img src="/ods/images/icons/orderup_16.png" border="0" alt="Up"/>';
         }
-        strClass := 'class="' || strClass || '"';
       }
-      http (sprintf ('<th nowrap="nowrap" %s %s %s>%s</th>', dir_column[6], strClass, strOnclick, dir_column[2]));
+      http (sprintf ('<th %s %s>%s%s</th>', dir_column[6], onclick, dir_column[2], image));
     ]]>
   </v:method>
 
@@ -1517,7 +1515,7 @@
                     <td>
                       <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onchange="javascript: ODRIVE.toggleEditor();" />
                       <v:template name="tform_11" type="simple" enabled="--self.dav_enable">
-                        <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
+                        <input type="button" value="Select" onclick="javascript: windowShow('<?V ODRIVE.WA.page_url (self.domain_id, 'mimes_select.vspx?params=dav_mime:s1;') ?>');" disabled="disabled" class="button" />
                       </v:template>
                     </td>
                   </tr>
@@ -1595,7 +1593,7 @@
                       </v:after-data-bind>
                     </v:text>
                     <vm:if test="ODRIVE.WA.check_admin (self.account_id) and self.dav_enable">
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&amp;params=dav_owner:s1;&nrows=<?V ODRIVE.WA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
                     </vm:if>
                   </td>
                 </tr>
@@ -1606,7 +1604,7 @@
                   <td>
                     <v:text name="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                     <vm:if test="self.dav_enable">
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=dav_group:s1;&nrows=<?V ODRIVE.WA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
                     </vm:if>
                   </td>
                 </tr>
@@ -1818,7 +1816,7 @@
                       <td width="100%">
                         <table id="s_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
                   <tr>
-                            <th nowrap="nowrap">User/Group</th>
+                            <th nowrap="nowrap">User/Group (WebID)</th>
                             <th width="1%">Inheritance</th>
                             <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
@@ -1839,9 +1837,9 @@
                       acl := acl_values[N];
                                 if (self.dav_enable and (acl[1] <> 3))
                                 {
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u", tdCssText: "white-space: nowrap;"}, fld_2: {mode: 43, value: %d, objectType: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 51, value: "%s", formMode: "u", nrows: %d, tdCssText: "white-space: nowrap;", className: "_validate_ _webid_"}, fld_2: {mode: 43, value: %d, objectType: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_iri (acl[0]), ODRIVE.WA.settings_rows (self.settings), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 } else {
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_iri (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 }
                   }
                   ?>
@@ -1852,7 +1850,7 @@
                       </td>
                       <td valign="top" nowrap="nowrap">
                         <vm:if test="self.dav_enable">
-                          <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u', tdCssText: 'white-space: nowrap;'}, fld_2: {mode: 43, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 51, formMode: 'u', nrows: <?V ODRIVE.WA.settings_rows (self.settings) ?>, tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_2: {mode: 43, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </vm:if>
                       </td>
                     </tr>
@@ -1893,7 +1891,7 @@
                                 {
                                   if (self.dav_enable)
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, value: "%s", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
@@ -1906,7 +1904,7 @@
                         </td>
                         <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>
@@ -1918,18 +1916,12 @@
 
             <v:template name="tform_21" type="simple" enabled="-- case when (gte(self.command_mode, 10) and ODRIVE.WA.dav_rdf_has_metadata (self.dav_path)) then 1 else 0 end">
               <div id="3" class="tabContent" style="display: none;">
-                <table id="schema" class="OD_grid" cellspacing="0">
-                  <thead class="sortHeader">
+                <table id="schema" class="ODS_grid">
+                  <thead>
                     <tr>
-                      <th>
-                        Schema
-                      </th>
-                      <th>
-                        Property
-                      </th>
-                      <th>
-                        Value
-                      </th>
+                      <th>Schema</th>
+                      <th>Property</th>
+                      <th>Value</th>
                     </tr>
                   </thead>
                   <?vsp
@@ -2206,13 +2198,13 @@
                       ]]>
                     </v:after-data-bind>
                     <v:template name="ds_items_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                      <table id="dir" class="OD_grid colorise no-border" cellspacing="0">
-                        <thead class="sortHeader">
-                          <tr class="nocolor">
+                      <table id="dir" class="ODS_grid" style="border: 0px;">
+                        <thead>
+                          <tr>
                             <?vsp
                               if (self.dir_path <> '')
                               {
-                                http ('<th class="checkbox" width="1%">');
+                                http ('<th class="checkbox">');
                                   http ('<input type="checkbox" name="selectall" value="Select All" onclick="selectAllCheckboxes (this, \'cb_item\', true)" title="Select All" />');
                                 http ('</th>');
                               }
@@ -2228,9 +2220,7 @@
                               <?vsp self.showColumnHeader('column_#8'); ?>
                               <?vsp self.showColumnHeader('column_#9'); ?>
                             </vm:if>
-                            <th width="1%">
-                              Actions
-                            </th>
+                            <th class="action">Actions</th>
                           </tr>
                         </thead>
                       </table>
@@ -2274,7 +2264,7 @@
 
                               if (self.dir_path <> '')
                               {
-                                http (         '<td align="center">');
+                                http (         '<td class="checkbox">');
                                 if (rowset[8] not like '%,acl')
                                   http (sprintf ('  <input type="checkbox" name="cb_item" value="%s" onclick="selectCheck (this, \'cb_item\')"/>', rowset[8]));
                                 http (         '</td>');
@@ -2402,11 +2392,6 @@
 
                     <v:template type="simple" name-to-remove="table" set-to-remove="top">
                       <table>
-                        <tr class="nocolor" align="center">
-                          <td colspan="11">
-                            <vm:ds-navigation data-set="ds_items" />
-                          </td>
-                        </tr>
                       </table>
                     </v:template>
 
