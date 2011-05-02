@@ -29,6 +29,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
@@ -44,6 +45,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:owl="&owl;"
+    xmlns:pto="&pto;" 
     xmlns:dcterms="&dcterms;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"  
     xmlns:review="&review;"    
@@ -93,6 +95,7 @@
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
+			<rdf:type rdf:resource="&pto;Wine"/>
                 <gr:hasMakeAndModel>
                     <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
                         <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
@@ -168,6 +171,12 @@
         </xsl:if>
     </xsl:template>
 
+    <xsl:template match="Product/Appellation">
+        <xsl:if test="string-length(Name) &gt; 0">
+		<rdf:type rdf:resource="{concat('&pto;', Name)}" />
+        </xsl:if>
+    </xsl:template>
+
     <xsl:template match="Product/Appellation" mode="manufacturer">
         <xsl:if test="string-length(Name) &gt; 0">
         <gr:hasManufacturer>
@@ -178,6 +187,12 @@
                 <rdfs:seeAlso rdf:resource="{Region/Url}"/>
             </gr:BusinessEntity>
         </gr:hasManufacturer>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="Product/Vineyard">
+        <xsl:if test="string-length(Name) &gt; 0">
+	<rdf:type rdf:resource="{concat('&pto;', Name)}" />
         </xsl:if>
     </xsl:template>
 

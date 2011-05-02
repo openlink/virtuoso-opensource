@@ -25,6 +25,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
@@ -40,6 +41,7 @@
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
+    xmlns:pto="&pto;" 
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
@@ -96,6 +98,7 @@
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplzllw;Product" />
+			<rdf:type rdf:resource="&pto;Zillow.com"/>
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<gr:amountOfThisGood>1</gr:amountOfThisGood>
 				<xsl:apply-templates select="response/results/result" />

@@ -27,6 +27,7 @@
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
@@ -48,6 +49,7 @@
     xmlns:owl="&owl;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
+    xmlns:pto="&pto;" 
     xmlns:oplamz="&oplamz;"	
     xmlns:bestbuy="http://remix.bestbuy.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -88,6 +90,7 @@
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
+				<rdf:type rdf:resource="&pto;ProductWiki"/>
 				   <xsl:apply-templates select="//product[1]" />
 				</rdf:Description>
 		</rdf:RDF>

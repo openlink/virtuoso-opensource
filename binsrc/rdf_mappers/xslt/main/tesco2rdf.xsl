@@ -26,6 +26,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -37,6 +38,7 @@
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
     xmlns:foaf="&foaf;"
+    xmlns:pto="&pto;" 
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
@@ -79,12 +81,13 @@
 					<rdfs:label><xsl:value-of select="//Name"/></rdfs:label>
 					<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
-                    <gr:eligibleRegions>UK</gr:eligibleRegions>
+                    <gr:eligibleRegions>US</gr:eligibleRegions>
 					<xsl:apply-templates mode="offering"/>
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
+					<rdf:type rdf:resource="&pto;Google"/>
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<xsl:apply-templates/>
 			</rdf:Description>
@@ -121,6 +124,7 @@
     </xsl:template>
 
     <xsl:template match="manufacturer">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
 		<gr:hasManufacturer>
 		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
 	    <rdfs:label><xsl:value-of select="concat('Manufacturer ', .)"/></rdfs:label>

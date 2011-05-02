@@ -28,6 +28,7 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -44,6 +45,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:gr="&gr;"
+    xmlns:pto="&pto;" 
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:owl="&owl;"
@@ -146,6 +148,7 @@
 
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+		<rdf:type rdf:resource="&pto;Oreilly"/>
 		<xsl:choose>
 			<xsl:when test="$category='video'">
 				<rdf:type rdf:resource="&bibo;AudioVisualDocument"/>

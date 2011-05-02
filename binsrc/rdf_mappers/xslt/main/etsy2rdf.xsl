@@ -26,6 +26,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -35,6 +36,7 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
+    xmlns:pto="&pto;" 
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
@@ -96,6 +98,7 @@
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
+					<rdf:type rdf:resource="&pto;Etsy"/>
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 					<xsl:apply-templates select="results/results/*" />
 				</rdf:Description>
