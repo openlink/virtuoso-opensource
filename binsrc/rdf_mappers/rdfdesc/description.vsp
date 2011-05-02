@@ -262,7 +262,7 @@
      }
   declare desc_resource_uri varchar;
   declare desc_qr varchar;
-  desc_qr := sprintf ('DESCRIBE <%s>', _S);
+  desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', _S);
   desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
 ?>
 
@@ -452,18 +452,18 @@
         Alternative Linked Data Views:
 
 	<?vsp if (VAD_CHECK_VERSION ('fct') is not null) { ?>	
-	<a href="/describe/?uri=<?vsp http_url (_S); ?>">Facets</a> 
+	<a href="/describe/?uri=<?vsp http_url (_S); ?>" title="Faceted Browing using Follow-Your-Nose pattern across links" target="_blank">Facets</a> 
 	|
 	<?vsp } ?>
 	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
-	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>">PivotViewer</a> 
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>"  title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a> 
 	|
 	<?vsp } ?>
 	<?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) { ?>	
-	<a href="/isparql/view/?query=<?vsp http_url (desc_qr); ?>&amp;resultview=triples">iSPARQL</a> 
+	<a href="/isparql/view/?query=<?vsp http_url (desc_qr); ?>&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a> 
 	|
 	<?vsp } ?>
-	<a href="/ode/?uri=<?vsp http_url (_S); ?>">ODE</a> 
+	<a href="/ode/?uri=<?vsp http_url (_S); ?>" title="Basic navigation and exploration" target="_blank">ODE</a> 
 	
        &nbsp; &nbsp; Raw Linked Data formats:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
