@@ -129,7 +129,7 @@
   <!-- ====================================================================================== -->
   <xsl:template match="handlers/handler_objects/actions/action">
     <xsl:call-template name="make_href">
-      <xsl:with-param name="url">javascript:var newwin=window.open('','blank');newwin.focus();</xsl:with-param>
+      <xsl:with-param name="url">javascript: windowShow('', 'blank');</xsl:with-param>
       <xsl:with-param name="target">_blank</xsl:with-param>
       <xsl:with-param name="params">mid=<xsl:value-of select="/page/message/msg_id"/>&amp;pid=<xsl:value-of select="../../../../part_id"/></xsl:with-param>
       <xsl:with-param name="img"><xsl:call-template name="handler_action"/></xsl:with-param>

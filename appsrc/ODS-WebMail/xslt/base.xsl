@@ -148,7 +148,7 @@
 
     <xsl:choose>
       <xsl:when test="$target = 'help-popup'">
-        <xsl:variable name="onclick">javascript:window.open('<xsl:value-of select="$url"/><xsl:value-of select="$pparams"/>','help','width=300, height=300, left=100,top=100')</xsl:variable>
+        <xsl:variable name="onclick">javascript: windowShow('<xsl:value-of select="$url" /><xsl:value-of select="$pparams" />', 'help');</xsl:variable>
         <xsl:variable name="href">#</xsl:variable>
         <xsl:variable name="target"></xsl:variable>
       </xsl:when>

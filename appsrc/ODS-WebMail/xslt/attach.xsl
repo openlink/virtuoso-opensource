@@ -28,13 +28,6 @@
   <xsl:template match="page">
     <form method="post" enctype="multipart/form-data" name="f1">
       <xsl:attribute name="action"><xsl:value-of select="$iri" />/attach.vsp</xsl:attribute>
-      <script>
-        function windowShow(sPage)
-        {
-          win = window.open(sPage, 'blank', "width=600,height=525,top=100,left=100,status=yes,toolbar=yes,menubar=yes,scrollbars=yes,resizable=yes");
-          win.window.focus();
-        };
-      </script>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="ap">
         <xsl:attribute name="value"><xsl:value-of select="ap"/></xsl:attribute>
