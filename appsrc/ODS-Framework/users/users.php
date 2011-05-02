@@ -623,7 +623,10 @@
               foreach($_REQUEST as $name => $value)
               {
                 if (substr_count($name, 'x1_fld_1_') <> 0)
-                  $_tmp = $_tmp . $value . '\n';
+                {
+                  $_sufix = str_replace("x1_fld_1_", "", $name);
+                  $_tmp = $_tmp . $value . ";" . $_REQUEST['x1_fld_2_'.$_sufix] . "\n";
+                }
               }
               $_params .= "&webIDs=" . myUrlencode ($_tmp);
               $_tmp = "";
@@ -1372,6 +1375,9 @@
                                           <th>
                                             URI
                                           </th>
+                                          <th width="10%">
+                                            Access
+                                          </th>
                                           <th width="65px">
                                             Action
                                           </th>
@@ -1379,18 +1385,12 @@
                                       </thead>
                                       <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<?php print(str_replace("\n", "\\n", $_xml->webIDs)); ?>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<?php print(str_replace("\n", "\\n", $_xml->webIDs)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4, value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_webIDs" id="pf_acl_webIDs">
-                                      <?php
-                                        for ($N = 0; $N < count ($ACL); $N += 2)
-                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->webIDs) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
-                                      ?>
-                                    </select>
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>

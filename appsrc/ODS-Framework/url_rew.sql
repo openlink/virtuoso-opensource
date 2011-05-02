@@ -522,6 +522,46 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_rdf', 1,
     2,
     303);
 
+-- A rule returning home page for a given discussion within instance all of these having a form of <home>/conversation.vspx?id=<item id>
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_discussion_html', 1,
+    '/dataspace/([^/]*)/(addressbook|bookmark|subscriptions|polls)/([^/]*)/([0-9]*)/([0-9]*)',
+    vector('uname', 'app', 'inst', 'item', 'discussion'), 5,
+    '/dataspace/%s/%s/%s/conversation.vspx?id=%s', vector('uname', 'app', 'inst', 'item'),
+    NULL,
+    NULL,
+    2,
+    303);
+
+-- A rule returning home page for a given discussion within instance all of these having a form of <home>/conversation.vspx?id=<item id>
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_item_discussion_html', 1,
+    '/dataspace/([^/]*)/calendar/([^/]*)/(Task|Event)/([0-9]*)/([0-9]*)',
+    vector('uname', 'inst', 'item_type', 'item', 'discussion'), 5,
+    '/dataspace/%s/calendar/%s/conversation.vspx?id=%s', vector('uname', 'inst', 'item'),
+    NULL,
+    NULL,
+    2,
+    303);
+
+-- A rule returning home page for a given annotation within instance all of these having a form of <home>/annotea.vspx?id=<item id>
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_annotation_html', 1,
+    '/dataspace/([^/]*)/(addressbook|bookmark|subscriptions|polls)/([^/]*)/([0-9]*)/annotation/([0-9]*)',
+    vector('uname', 'app', 'inst', 'item', 'annotation'), 5,
+    '/dataspace/%s/%s/%s/annotea.vspx?oid=%s&id=%s', vector('uname', 'app', 'inst', 'item', 'annotation'),
+    NULL,
+    NULL,
+    2,
+    303);
+
+-- A rule returning home page for a given discussion within instance all of these having a form of <home>/conversation.vspx?id=<item id>
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_item_annotation_html', 1,
+    '/dataspace/([^/]*)/calendar/([^/]*)/(Task|Event)/([0-9]*)/annotation/([0-9]*)',
+    vector('uname', 'inst', 'item_type', 'item', 'annotation'), 5,
+    '/dataspace/%s/calendar/%s/annotea.vspx?oid=%s&id=%s', vector('uname', 'inst', 'item', 'annotation'),
+    NULL,
+    NULL,
+    2,
+    303);
+
 --DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');
 --DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba',
 --    opts=>vector ('url_rewrite', 'ods_rule_tcn_list'));
@@ -681,6 +721,8 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_discussion_home_html',
 	  'ods_discussion_html',
 	  'ods_item_html',
+    'ods_item_discussion_html',
+    'ods_item_annotation_html',
 	  'ods_wiki_item_html',
 	  'ods_wiki_atom_html',
 	  'ods_ecrm_item_html1',
@@ -691,6 +733,8 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_photo_item_html',
 	  'ods_photo_gems_html',
 	  'ods_cal_item_html',
+    'ods_cal_item_discussion_html',
+    'ods_cal_item_annotation_html',
 	  'ods_cal_atom_html',
 	  'ods_apps_gems_html',
 	  'ods_apps_tags_html',

@@ -33,6 +33,18 @@ function findParent(obj, tag) {
   return findParent(obj, tag);
     }
 
+function odsPost(obj, fields, button) {
+  var form = findParent (obj, 'form');
+  for (var i = 0; i < fields.length; i += 2)
+    hiddenCreate(fields[i], form, fields[i+1]);
+
+  if (button) {
+    doPost(form.name, button);
+  } else {
+    form.submit();
+  }
+}
+
 function toggleControl (ctr1, val, ctr2)
     {
   if (ctr2 != null)

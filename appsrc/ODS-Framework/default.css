@@ -703,37 +703,43 @@ table.listing th
   text-align: left !important;
   border-color: #FFFFFF;
   border-style: solid;
-  border-width: 0px 0px 0px 1px}
+  border-width: 0px 0px 0px 1px;
+}
 
-
-tr.listing_header_row
-{
+tr.listing_header_row {
   background-image: url(images/stl_blu1_grad.gif);
-  background-repeat: repeat-x}
+  background-repeat: repeat-x;
+}
 
-tr.listing_header_row th
-{
+tr.listing_header_row th {
   text-align: left;
-  white-space: nowrap
-}
-
-a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover
-{
   white-space: nowrap;
-  color: #000000
 }
 
-tr.listing_row_even
-{ }
-
-tr.listing_row_odd
-{
-  background-color: #f0f0f0
+a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover {
+  white-space: nowrap;
+  color: #000000;
 }
 
-tr.listing_row_selected
-{
-  background-color: gray
+tr.listing_row_even {
+}
+
+tr.listing_row_odd {
+  background-color: #f0f0f0;
+}
+
+tr.listing_row_selected {
+  background-color: gray;
+}
+
+.listing_row_odd:hover, .listing_row_even:hover {
+ 	background-color: #eec;
+}
+
+tr.listing_navigation td {
+  border-color: #99B3C5;
+  border-style: solid;
+  border-width: 2px 0px 0px 0px;
 }
 /*
 tbody.colorize tr:nth-child(even)  { background-color:#fff; }
@@ -955,6 +961,26 @@ img.button {
   margin-bottom: -3px;
 }
 
+.navi-button {
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  text-decoration: none;
+  margin-right: 2px;
+  padding: 0.1em 0.3em 0.1em 0.3em ;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+	cursor: pointer;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+}
+
+.navi-button:hover {
+  text-decoration: none;
+}
+
 div.form {
   width: 550px;
   background-color: #FFF;
@@ -1059,4 +1085,69 @@ fieldset.form div label.form {
   margin: 0 0 5px 0;
   font-weight: bold;
   text-align: right;
+}
+
+/* ODS grid */
+table.ODS_grid {
+  width: 100%;
+  background-color: white;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  border-spacing: 0;
+}
+
+table.ODS_grid thead tr {
+  background-color: #b0cde4;
+}
+
+table.ODS_grid tbody tr:nth-child(odd) {
+  background-color:#f0f0f0;
+}
+
+table.ODS_grid tbody tr:nth-child(even) {
+  background-color:#fff;
+}
+
+table.ODS_grid thead tr th {
+  text-align: left !important;
+  white-space: nowrap;
+  padding-left: 3px;
+  border: solid #7f94a5;
+  border-width: 0px 1px 1px 0px;
+  background-image: url(/ods/images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+table.ODS_grid thead tr th[onclick] {
+  cursor: pointer;
+}
+
+table.ODS_grid thead tr th:last-child {
+  border-width: 0px 0px 1px 0px;
+}
+
+table.ODS_grid th.checkbox, table.ODS_grid td.checkbox {
+  width: 1px;
+  text-align: center;
+  margin: 0;
+  padding: 0.5px;
+}
+
+table.ODS_grid th.action, table.ODS_grid td.action {
+  width: 1px;
+  white-space: nowrap;
+}
+
+table.ODS_grid tbody tr:hover {
+ 	background-color: #eec;
+}
+
+table.ODS_grid td {
+  padding: 2px 3px;
+}
+
+table.ODS_grid tfoot td {
+  padding: 2px 3px 3px 3px;
+  border: solid #7f94a5;
+  border-width: 1px 0px 0px 0px;
 }

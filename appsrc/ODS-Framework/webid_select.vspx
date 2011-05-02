@@ -33,24 +33,9 @@
 
   <vm:page>
     <vm:header>
-      <vm:title>Select users to invite</vm:title>
+      <vm:title>Select WebID</vm:title>
       <link rel="stylesheet" type="text/css" href="default.css" />
       <style type="text/css">
-        a {
-          text-decoration: none;
-        }
-        a:active {
-          text-decoration: none;
-        }
-        a:visited {
-          text-decoration: none;
-        }
-        a:hover {
-          text-decoration: none;
-        }
-        .listing_row_odd:hover, .listing_row_even:hover {
-         	background-color: #eec;
-        }
         div.boxHeader {
           background-color: #EFEFEF;
           margin: 0 0 0.5em 0;
@@ -58,47 +43,15 @@
           border: 1px solid #7F94A5;
           vertical-align: middle;
         }
-        input.button {
-          margin: .2em 0 .1em 0;
-          font-size: .8em;
-          font-family: verdana, sans-serif;
-          color: #ffffff;
-          font-weight: bold;
-          border: solid 1px;
-          border-color: #7F94A5;
-          background: #99b3c5;
-        }
-        .button2 {
-          font-size: .8em;
-          font-family: verdana, sans-serif;
-          color: #ffffff;
-          font-weight: bold;
-          padding: 0.1em 1em 0.1em 1em ;
-          border: solid 1px;
-          border-color: #7F94A5;
-          background: #99b3c5;
-        }
       </style>
-    </vm:header>
-
-    <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-      <![CDATA[
-        declare altStr, directionStr, imageStr varchar;
-
-        if (self.v_order = columnName and self.v_direction = 'desc') {
-          directionStr := 'Ascending';
-          imageStr := '&nbsp;<img src="images/icons/orderdown_16.png" border="0" alt="Down"/>';
-        } else if (self.v_order = columnName and self.v_direction = 'asc') {
-          directionStr := 'Descending';
-          imageStr := '&nbsp;<img src="images/icons/orderup_16.png" border="0" alt="Up"/>';
-        } else {
-          directionStr := 'Ascending';
-          imageStr := '&nbsp;&nbsp;';
+      <script type="text/javascript">
+      	window.onkeyup = function (event) {
+      		if (event.keyCode == 27) {
+      			window.close ();
         }
-        altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-        http(sprintf('<a href="#" onClick="javascript: myPost(''page_form'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-      ]]>
-    </v:method>
+      	}
+      </script>
+    </vm:header>
 
     <v:method name="sortChange" arglist="in columnName varchar">
       <![CDATA[
@@ -137,6 +90,7 @@
         <v:variable name="v_filter" persist="0" type="varchar" default="null"/>
         <v:variable name="v_order" persist="0" type="varchar" default="'F2'" />
         <v:variable name="v_direction" persist="0" type="varchar" default="'asc'" />
+        <v:variable name="v_nrows" persist="0" param-name="nrows" type="varchar" default="'10'" />
         <v:variable name="v_src" persist="0" param-name="src" type="varchar" default="''" />
         <v:variable name="v_dst" persist="0" param-name="dst" type="varchar" default="'sc'" />
         <v:variable name="v_s1" persist="0" param-name="s1" type="varchar" default="''" />
@@ -144,9 +98,11 @@
       </vm:variables>
       <vm:body>
         <vm:login redirect="index.vspx"/>
+        <input type="hidden" name="nrows" id="sid"   value="<?V get_keyword('nrows', self.vc_page.vc_event.ve_params, '10') ?>" />
         <input type="hidden" name="sid"   id="sid"   value="<?V get_keyword('sid', self.vc_page.vc_event.ve_params) ?>" />
         <input type="hidden" name="realm" id="realm" value="<?V get_keyword('realm', self.vc_page.vc_event.ve_params) ?> " />
         <input type="hidden" name="form"  id="form"  value="<?V get_keyword('form', self.vc_page.vc_event.ve_params, 'page_form') ?> " />
+        <input type="hidden" name="mode"  id="form"  value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params, '') ?> " />
         <input type="hidden" name="src"   id="src"   value="<?V get_keyword('src', self.vc_page.vc_event.ve_params, '') ?>" />
         <input type="hidden" name="dst"   id="dst"   value="<?V get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc') ?>" />
         <input type="hidden" name="s1"    id="s1"    value="<?V get_keyword('s1', self.vc_page.vc_event.ve_params, '') ?>" />
@@ -173,6 +129,12 @@
 
                 user_sql := '';
                 group_sql := '';
+                if (self.v_filter = 'u')
+                {
+                  control.ds_sql := 'select ''Person'' F1, SIOC..person_iri (SIOC..user_iri (U_ID)) F2, '''' F3 from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_DAV_ENABLE = 1 and U_ACCOUNT_DISABLED = 0';
+                }
+                else
+                {
                 if (self.v_filter <> 'p')
                 {
                   group_sql := sprintf ('select ''Group'' F1, SIOC..acl_group_iri (%d, WACL_NAME) F2, WACL_DESCRIPTION F3 from WA_GROUPS_ACL where WACL_USER_ID = %d', self.u_id, self.u_id);
@@ -198,8 +160,10 @@
                 {
                   control.ds_sql := concat('select F1, F2, F3 from (', user_sql, ' union ' , group_sql, ') x ');
                 }
+                }
                 self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
                 control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
+                control.ds_nrows := cast (self.v_nrows as integer);
               ]]>
             </v:before-data-bind>
             <v:after-data-bind>
@@ -208,25 +172,21 @@
           </v:data-source>
           <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
             <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table id="webids" class="listing" cellspacing="0">
-                <tr class="listing_header_row">
+              <table class="ODS_grid">
+                <thead>
+                  <tr>
                   <vm:if test="self.isMultiple(self.v_dst)">
-                    <th class="checkbox" width="1%">
+                      <th class="checkbox">
                       <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item'); updateChecked(this, 'cb_item'); "/>
                     </th>
                   </vm:if>
                   <vm:if test="self.v_mode = ''">
-                    <th>
-                      Type
-                    </th>
+                      <th>Type</th>
                   </vm:if>
-                  <th>
-                    <?vsp self.sortColumn('WebID', 'F2'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Description', 'F3'); ?>
-                  </th>
+                    <?vsp http (DB.DBA.wa_show_column_header('WebID', 'F2', self.v_order, self.v_direction, 'width="50%"')); ?>
+                    <?vsp http (DB.DBA.wa_show_column_header('Description', 'F3', self.v_order, self.v_direction, 'width="50%"')); ?>
                 </tr>
+                </thead>
               </table>
             </v:template>
 
@@ -242,9 +202,9 @@
 
               <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table>
-                  <tr onclick="rowSelected(this);" class="pointer <?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+                  <tr onclick="rowSelected(this);" class="pointer">
                     <vm:if test="self.isMultiple(self.v_dst)">
-                      <td  align="center">
+                      <td class="checkbox">
                         <?vsp
                           declare S, name any;
 
@@ -275,11 +235,13 @@
 
             <v:template type="simple" name-to-remove="table" set-to-remove="top">
               <table>
-                <tr align="center">
-                  <td colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
+                <tfoot>
+                  <tr>
+                    <td style="text-align: right;" colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
                     <vm:ds-navigation data-set="ds"/>
                   </td>
                 </tr>
+                </tfoot>
               </table>
             </v:template>
 
@@ -287,7 +249,7 @@
           <vm:if test="self.isMultiple(self.v_dst)">
             <div style="padding: 0 0 0.5em 0;">
               <hr />
-              <a href="#" onclick="javascript: addChecked(document.forms['page_form'], 'cb_item', 'No users were selected for addition. No groups were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
+              <a href="#" onclick="javascript: addChecked(document.forms['page_form'], 'cb_item', 'No users were selected for addition. No groups were selected for addition.');" class="navi-button">&amp;nbsp;Add selected</a>
             </div>
           </vm:if>
         </div>

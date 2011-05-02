@@ -459,18 +459,19 @@
                                           <th>
                                             URI
                                           </th>
+                                          <th width="10%">
+                                            Access
+                                          </th>
                                           <th width="65px">
                                             Action
                                           </th>
                                         </tr>
                                       </thead>
-                                      <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
+                                      <tr id="x1_tr_no" style="display: none;"><td colspan="3"><b>No Personal URIs</b></td></tr>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_webIDs" id="pf_acl_webIDs">
-                                    </select>
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>

@@ -714,8 +714,10 @@
                     while (iterator.hasNext()) {
                       FileItem item = (FileItem) iterator.next();
                       if (item.isFormField()) {
-                        if (item.getFieldName().indexOf("x1_fld_1_") == 0)
-                          tmp += item.getString() + "\n";
+                        if (item.getFieldName().indexOf("x1_fld_1_") == 0) {
+                          suffix = item.getFieldName().replace("x1_fld_1_", "");
+                          tmp += item.getString() + ";" + getParameter(items, request, "x1_fld_2_"+suffix) + "\n";
+                        }
                       }
                     }
                   } else {
@@ -1546,6 +1548,9 @@
                                           <th>
                                             URI
                                           </th>
+                                          <th width="10%">
+                                            Access
+                                          </th>
                                           <th width="65px">
                                             Action
                                           </th>
@@ -1553,21 +1558,12 @@
                                       </thead>
                                       <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4, value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_webIDs" id="pf_acl_webIDs">
-                                      <%
-                                        {
-                                          String S = xpathEvaluate($_acl, "/acl/webIDs");
-                                          for (int N = 0; N < $_ACL.length; N += 2)
-                                            out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
-                                        }
-                                      %>
-                                    </select>
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>

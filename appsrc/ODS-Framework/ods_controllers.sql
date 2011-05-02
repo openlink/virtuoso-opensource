@@ -1564,8 +1564,8 @@ create procedure ODS.ODS_API."user.authenticate" (
     if (not isnull (facebookUID))
     {
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
-    if (isnull (uname) and (oauthMode = 'linkedin'))
-      signal ('22023', 'The Facebook account is not registered.<>');
+    if (isnull (uname))
+      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Security/Facebook'' \nfor a successful authentication.<>');
     }
   else if (not isnull (openIdUrl))
     {
@@ -1577,6 +1577,8 @@ create procedure ODS.ODS_API."user.authenticate" (
       signal ('22023', 'OpenID Authentication Failed.<>');
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
+    if (isnull (uname))
+      signal ('22023', 'The OpenID account is not registered.\nPlease enter your OpenID account data in ODS ''Edit Profile/Security/OpenID'' \nfor a successful authentication.<>');
     }
   else if (not isnull (oauthMode))
   {
@@ -5065,11 +5067,11 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
 	  {
 	    certLogin := 1;
 	    certLoginEnable := coalesce (UC_LOGIN, 0);
-	    appendProperty (V, 'certLogin', certLogin);
-	    appendProperty (V, 'certLoginEnable', certLoginEnable);
 	    appendProperty (V, 'iri', agent);
 	    appendProperty (V, 'mbox', get_certificate_info (10, null, 0, '', 'emailAddress'));
 	    appendProperty (V, 'name', get_certificate_info (10, null, 0, '', 'CN'));
+  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
+  	    --appendProperty (V, 'certLoginEnable', certLoginEnable);
 	    return case when outputMode then params2json (V) else V end;
 	  }
       }

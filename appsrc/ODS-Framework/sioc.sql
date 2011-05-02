@@ -1054,17 +1054,14 @@ create procedure sioc_user_info (
   if (wa_user_check (webpage, flags, 7))
     DB.DBA.ODS_QUAD_URI (wa_user_graph (flags, 7, public_graph_iri, protected_graph_iri), iri, foaf_iri ('homepage'), webpage);
 
-  if (wa_user_check (ext_urls, flags, 8))
+  --  external IRIs
+  for (select u, flag from DB.DBA.WA_USER_INTERESTS (txt) (u varchar, flag varchar) P where txt = ext_urls) do
     {
-      declare arr any;
-      ext_urls := blob_to_string (ext_urls);
-      ext_urls := replace (ext_urls, '\r', '\n');
-      ext_urls := replace (ext_urls, '\n\n', '\n');
-      arr := split_and_decode (ext_urls, 0, '\0\0\n');
-      foreach (any u in arr) do
+      if (length (u))
 	{
-	  if (length (trim (u)))
-   	      DB.DBA.ODS_QUAD_URI (wa_user_graph (flags, 8, public_graph_iri, protected_graph_iri), iri, owl_iri ('sameAs'), u);
+          if (length (flag) = 0)
+            flag := '1';
+          DB.DBA.ODS_QUAD_URI (wa_user_graph (flag, 0, public_graph_iri, protected_graph_iri), iri, owl_iri ('sameAs'), u);
 	}
     }
 
@@ -2975,7 +2972,8 @@ create trigger WA_USER_INFO_SIOC_I after insert on DB.DBA.WA_USER_INFO referenci
   if (N.WAUI_SITE_NAME is not null)
     DB.DBA.ODS_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
   sioc_user_info (graph_iri, iri, null, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME, N.WAUI_TITLE, _u_full_name, _u_e_mail);
-};
+}
+;
 
 create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referencing old as O, new as N
 {
@@ -4853,6 +4851,16 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   set_user_id ('dba');
   info := get_certificate_info (9);
   agent := ODS.ODS_API.SSL_WEBID_GET (); 
+  if (agent is null)
+    {
+      agent := DB.DBA.FOAF_SSL_WEBFINGER ();
+      -- when no webid asked the webfinder already did check for certitificate
+      if (agent is not null and iri is null)
+	{
+	  graph := uuid ();
+	  return 1;
+	}
+    }
   if (agent is null)
     agent := ODS..FINGERPOINT_WEBID_GET ();
 

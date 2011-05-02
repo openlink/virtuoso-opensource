@@ -1161,7 +1161,7 @@ function pfSetACLSelects (obj)
     if (ctrl.disabled)
       continue;
 
-   	if (ctrl.name.indexOf('pf_acl_') != 0)
+     if ((ctrl.name.indexOf('pf_acl_') != 0) && (ctrl.name.indexOf('x1_fld_2_') != 0))
       continue;
 
    	if (!OAT.Dom.isChild(ctrl, div))
@@ -1901,7 +1901,7 @@ function showProfile(user) {
         addProfileRow(tbl, user, 'gender',    'Gender');
         addProfileRow(tbl, user, 'birthday',  'Birthday');
         addProfileRow(tbl, user, 'homepage',  'Personal Webpage');
-				addProfileTableValues(tbl, 'Personal URIs (Web IDs)', tagValue(user, 'webIDs'), [ 'URL' ], [ '\n' ])
+    addProfileTableValues(tbl, 'Other Personal URIs (WebIDs)', tagValue(user, 'webIDs'), [ 'URL', 'Access' ], [ '\n', ';' ])
 				addProfileTableValues(tbl, 'Topic of Interests', tagValue(user, 'interests'), [ 'URL', 'Label' ], [ '\n', ';' ])
 				addProfileTableValues(tbl, 'Thing of Interests', tagValue(user, 'topicInterests'), [ 'URL', 'Label' ], [ '\n', ';' ])
       }
@@ -2283,7 +2283,7 @@ function ufProfileCallback(data) {
 			fieldUpdate(user, 'gender', 'pf_gender', aclData);
 			fieldUpdate(user, 'birthday', 'pf_birthday', aclData);
 			fieldUpdate(user, 'homepage', 'pf_homepage', aclData);
-      pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});}, aclData, 'pf_acl_webIDs');
+      pfShowRows("x1", tagValue(user, "webIDs"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4, value: val2}});}, aclData, 'pf_acl_webIDs');
 			fieldUpdate(user, 'mailSignature', 'pf_mailSignature');
 			fieldUpdate(user, 'summary', 'pf_summary', aclData);
 			fieldUpdate(user, 'photo', 'pf_photo', aclData);
@@ -2492,7 +2492,7 @@ function encodeTableData(prefix, delimiters)
         retValue += $v(prefix+"_fld_1_"+N) + delimiters[1] + $v(prefix+"_fld_2_"+N) + delimiters[0];
     }
   }
-  return retValue;
+  return encodeURIComponent(retValue);
 }
 
 function updateOnlineAccounts(prefix, accountType)
@@ -2722,7 +2722,7 @@ function pfUpdateSubmit(No) {
           + '&spbEnable=' + encodeURIComponent($('pf_spbEnable').checked? '1': '0')
           + '&inSearch=' + encodeURIComponent($('pf_inSearch').checked? '1': '0')
           + '&showActive=' + encodeURIComponent($('pf_showActive').checked? '1': '0')
-        + '&webIDs=' + encodeTableData("x1", ["\n"])
+          + '&webIDs=' + encodeTableData("x1", ["\n", ";"])
         + '&interests=' + encodeTableData("x2", ["\n", ";"])
         + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);
         A +='title=' + $v('pf_acl_title')

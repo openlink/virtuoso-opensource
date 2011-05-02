@@ -123,11 +123,21 @@ TBL.No = function (tbl, prefix, options)
   return parseInt(No)
 }
 
-TBL.createRow = function (prefix, No, optionObject)
-{
+TBL.parent = function (obj, tag) {
+  var obj = obj.parentNode;
+  if (obj.tagName.toLowerCase() == tag)
+    return obj;
+  return TBL.parent(obj, tag);
+}
+
+TBL.createRow = function (prefix, No, optionObject, viewMode) {
   if (No != null)
   {
     TBL.deleteRow(prefix, No);
+  }
+  else if (viewMode)
+  {
+    TBL.createViewRow(prefix, optionObject);
   }
   else
   {
@@ -314,9 +324,12 @@ TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/select.gif';
   img.className = "pointer";
-    var F = (fldOptions.form)? '&form='+fldOptions.form: '';
+
+    var frm = TBL.parent(fld, 'form');
+    var F = '&form='+frm.name;
     var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: '';
-    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=mc&params='+fldName+':s1;'+F+M)};
+    var N = (fldOptions.nrows)? '&nrows='+fldOptions.nrows: '';
+    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=mc&params='+fldName+':s1;'+F+M+N, 'ods_select_users')};
 
   td.appendChild(img);
   }
@@ -416,8 +429,10 @@ TBL.createCell20 = function (td, prefix, fldName, No, fldOptions) {
 
 TBL.selectOption = function(fld, fldValue, optionName, optionValue) {
 	var o = OAT.Dom.option(optionName, optionValue, fld);
-	if (fldValue == optionValue)
+  if (fldValue == optionValue) {
 		o.selected = true;
+    o.defaultSelected = true;
+  }
 }
 
 TBL.createCell30 = function (td, prefix, fldName, No, fldOptions) {
@@ -831,7 +846,7 @@ TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
   var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
-  img.onclick = function (){TBL.webidShow(fld, fldOptions.form)};
+    img.onclick = function (){TBL.webidShow(fld, fldOptions)};
   if (fldOptions.imgCssText)
     img.style.cssText = fldOptions.imgCssText;
 
@@ -888,7 +903,7 @@ TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
   var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
-  img.onclick = function (){TBL.webidShow(fld)};
+  img.onclick = function (){TBL.webidShow(fld, {})};
   if (fldOptions.imgCssText)
     img.style.cssText = fldOptions.imgCssText;
 
@@ -1079,29 +1094,30 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
   }
 }
 
-TBL.webidShow = function(obj, frmName)
+TBL.webidShow = function(obj, fldOptions)
 {
   var S = 'p';
   if (obj.id.replace('fld_2', 'fld_1') != obj.id)
     S = $v(obj.id.replace('fld_2', 'fld_1'));
 
-  var F = '';
-  if (frmName)
-    F = '&form='+frmName;
+  var frm = TBL.parent(obj, 'form');
+  var F = '&form='+frm.name;
+  var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: S;
+  var N = (fldOptions.nrows)? '&nrows='+fldOptions.nrows: '';
 
-  TBL.windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;'+F);
+  TBL.windowShow('/ods/webid_select.vspx?params='+obj.id+':s1;'+F+M+N, 'ods_select_webid');
 }
 
-TBL.windowShow = function(sPage, width, height)
+TBL.windowShow = function(sPage, sPageName, width, height)
 {
   if (!width)
     width = 700;
   if (!height)
-    height = 420;
+    height = 500;
   if (document.forms[0].elements['sid'])
     sPage += '&sid=' + document.forms[0].elements['sid'].value;
   if (document.forms[0].elements['realm'])
     sPage += '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }

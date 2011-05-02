@@ -43,7 +43,8 @@
       {
         if ((params [N] like 'x1_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          tmp_e := tmp_e || trim (params [N+1]) || '\n';
+          suffix := replace (params [N], 'x1_fld_1_', '');
+          tmp_e := tmp_e || trim (params [N+1]) || ';' || trim (get_keyword ('x1_fld_2_'||suffix, params, '')) || '\n';
         }
         else if ((params [N] like 'x2_fld_1_%') and (trim (params [N+1]) <> ''))
         {
@@ -293,7 +294,6 @@
   <v:variable name="sav5" type="varchar" default="'1'" />
   <v:variable name="sav6" type="varchar" default="'1'" />
   <v:variable name="sav7" type="varchar" default="'1'" />
-  <v:variable name="sav8" type="varchar" default="'1'" />
   <v:variable name="sav9" type="varchar" default="'3'" />
 
   <v:variable name="sav33" type="varchar" default="'1'" />
@@ -370,7 +370,6 @@
         self.sav5 := tmp[5];
         self.sav6 := tmp[6];
         self.sav7 := tmp[7];
-        self.sav8 := tmp[8];
 
         self.sav33 := tmp[33];
         self.sav37 := tmp[37];
@@ -542,6 +541,9 @@
                          <th>
                            URI
                          </th>
+                         <th width="10%">
+                           Access
+                         </th>
                          <th width="65px">
                            Action
                          </th>
@@ -550,19 +552,18 @@
                		   <![CDATA[
                 		   <script type="text/javascript">
                      <?vsp
-                       for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
+                         for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.efoaf) do
                        {
-                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _webid_ _canEmpty_"}});});});', interest));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _webid_ _canEmpty_"}, fld_2: {mode: 4, value: "%s"}});});});', interest, label));
                        }
                      ?>
                 		   </script>
                   	 ]]>
-                     <tr id="x1_tr_no"><td colspan="2"><b>No Personal URIs</b></td></tr>
+                     <tr id="x1_tr_no"><td colspan="3"><b>No Personal URIs</b></td></tr>
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
-                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                   <vm:u-prop-select name="sel_8" value="self.sav8" />
+                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                  </td>
                </tr>
              </table>
@@ -846,7 +847,7 @@
         <tr>
           <th><label for="set_personal_1">Set access for all fields as </label></th>
           <td class="ctrl">
-            <v:select-list name="set_personal_1" xhtml_id="set_personal_1" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+            <v:select-list name="set_personal_1" xhtml_id="set_personal_1" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_"); setSelectLists (this.value, this.form, "x1_fld_2_");'>
               <v:item name="*no change*"  value="0" />
               <v:item name="public"  value="1" />
               <v:item name="acl" value="2" />

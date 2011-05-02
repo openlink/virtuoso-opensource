@@ -1306,157 +1306,64 @@
 
 <xsl:template match="vm:ds-navigation">
   &lt;?vsp
+    declare n_start, n_end, n_total integer;
+    declare ds vspx_data_set;
+
+    ds := case when (udt_instance_of (control, fix_identifier_case ('vspx_data_set'))) then control else control.vc_find_parent (control, 'vspx_data_set') end;
+    if (isnull (ds.ds_data_source))
    {
-    declare _prev, _next, _last, _first vspx_button;
-    declare d_prev, d_next, d_last, d_first, index_arr int;
-    d_prev := d_next := d_last := d_first := index_arr := 0;
-    _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-    _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
+      n_total := ds.ds_rows_total;
+      n_start := ds.ds_rows_offs + 1;
+      n_end   := n_start + ds.ds_nrows - 1;
+    } else {
+      n_total := ds.ds_data_source.ds_total_rows;
+      n_start := ds.ds_data_source.ds_rows_offs + 1;
+      n_end   := n_start + ds.ds_data_source.ds_rows_fetched - 1;
+    }
+    if (n_end > n_total)
+      n_end := n_total;
+
+    if (n_total)
+      http (sprintf ('Showing %d - %d of %d', n_start, n_end, n_total));
+
+    declare _prev, _next vspx_button;
+
     _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
     _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-    if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-      goto skipit;
-    index_arr := 1;
-    if (_first is not null and not _first.vc_enabled)
-    {
-      d_first := 1;
-    }
-    if (_next is not null and not _next.vc_enabled)
-    {
-      d_next := 1;
-    }
-    if (_prev is not null and not _prev.vc_enabled)
-    {
-      d_prev := 1;
-    }
-    if (_last is not null and not _last.vc_enabled)
-    {
-      d_last := 1;
-    }
-    skipit:;
+    if ((_next is not null and _next.vc_enabled) or (_prev is not null and _prev.vc_enabled))
+      http (' | ');
   ?&gt;
-  <!--
-  <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      if (d_first)
-      {
-  http ('<a href="#">first</a>');
-      }
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="url" value="first"
-        xhtml_alt="First" xhtml_title="First" text="First">
-    </v:button>
-  </xsl:if>
-  -->
-  <?vsp
-    http('&#160;');
-    if (d_prev)
-    {
-      http ('<a href="#">&lt;&lt;</a>');
-    }
-  ?>
-  <v:button name="{@data-set}_prev" action="simple" style="url" value="&lt;&lt;"
-    xhtml_alt="Previous" xhtml_title="Previous" text="Previous">
+  <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+      ]]>
+    </v:before-render>
   </v:button>
-    <![CDATA[&nbsp;]]>
-    <![CDATA[&nbsp;]]>
-  <!-- an version of page numbering -->
-  <xsl:if test="not(@type) or @type = 'set'">
-    <v:text name="{@data-set}_offs" type="hidden" value="0" />
-    <?vsp
-    if (index_arr)
-    {
-      declare dsname, idx_offs, frm_name any;
-      declare frm vspx_control;
-frm := control.vc_find_parent_form (control);
-frm_name := '';
-if (frm is not null)
-  frm_name := frm.vc_name;
-      -- this button is just to trigger the post, no render at all
-      if (0)
-  {
-    ?>
-          <v:button name="{@data-set}_idx" action="simple" style="url" value="Submit">
-  <v:on-post><![CDATA[
-      declare ds vspx_data_set;
-      declare dss vspx_data_source;
-      declare offs int;
-      offs := atoi (get_keyword (replace (control.vc_name, '_idx', '_offs'), e.ve_params, '0'));
-      ds := control.vc_find_parent (control, 'vspx_data_set');
-      if (ds.ds_data_source is not null or isarray (ds.ds_row_data))
-        {
-	  ds.ds_rows_offs := ds.ds_nrows * offs;
-	  ds.vc_data_bind (e);
-        }
-      ]]></v:on-post>
+  &nbsp;
+  <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+      ]]>
+    </v:before-render>
     </v:button>
-    <?vsp
-        }
-    ?>
-    <xsl:processing-instruction name="vsp">
-  dsname := '<xsl:value-of select="@data-set"/>';
-    </xsl:processing-instruction>
-    <?vsp
-    declare i, n, t, c integer;
-    declare _class varchar;
-    declare dss vspx_data_source;
-    declare ds vspx_data_set;
-    ds := control.vc_parent;
-    dss := null;
-    if (ds.ds_data_source is not null)
-      dss := ds.ds_data_source;
-    i := 0;
-    n := ds.ds_nrows;
-    t := 0;
-    if (dss is not null)
-     t := dss.ds_total_rows;
-    else if (isarray (ds.ds_row_data))
-      t := length (ds.ds_row_data);
-    if (ds.ds_rows_total > t)
-      t := ds.ds_rows_total;
-    c := ds.ds_rows_offs/ds.ds_nrows;
-    if ((t/n) > 20)
-      i := (t/n) - 20;
-    while (t and i < (t/n)+1)
-       {
-    ?>
-    | <a href="#" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
-    <?vsp
-        i := i + 1;
-}
-if (i > 0)
-  http (' | ');
-    }
-    ?>
-  </xsl:if>
-    <![CDATA[&nbsp;]]>
-    <![CDATA[&nbsp;]]>
-  <?vsp
-    if (d_next)
-    {
-    http ('<a href="#">&gt;&gt;</a>');
-    }
-  ?>
-  <v:button name="{@data-set}_next" action="simple" style="url" value="&gt;&gt;"
-    xhtml_alt="Next" xhtml_title="Next" text="Next">
+  &nbsp;
+  <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+      ]]>
+    </v:before-render>
   </v:button>
-  <!--
-  <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      http('&#160;');
-      if (d_last)
-      {
-  http ('<a href="#">last</a>');
-      }
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="url" value="last"
-      xhtml_alt="Last" xhtml_title="Last" text="Last">
+  &nbsp;
+  <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+      ]]>
+    </v:before-render>
     </v:button>
-  </xsl:if>
-  -->
-  <?vsp
-    }
-  ?>
 </xsl:template>
 
 <xsl:template match="vm:site-member">
@@ -3175,72 +3082,5 @@ if (i > 0)
     <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text>
 </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:ds-members-navigation">
-    &lt;?vsp
-      {
-        declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first int;
-
-        d_prev := d_next := d_last := d_first := 0;
-        _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-        _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
-        _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
-        _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-
-        if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-          goto _skip;
-
-        if (_first is not null and not _first.vc_enabled)
-          d_first := 1;
-
-        if (_next is not null and not _next.vc_enabled)
-          d_next := 1;
-
-        if (_prev is not null and not _prev.vc_enabled)
-          d_prev := 1;
-
-        if (_last is not null and not _last.vc_enabled)
-          d_last := 1;
-
-      _skip:;
-    ?&gt;
-    <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      if (d_first)
-        http ('<img src="images/icons/first_16.png" alt="First" title="First" border="0" /> First');
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="images/icons/first_16.png" xhtml_alt="First" text="First"/>
-    </xsl:if>
-    <?vsp
-      if (d_first or _first.vc_enabled)
-        http ('&nbsp;');
-      if (d_prev)
-        http ('<img src="images/icons/previous_16.png" alt="Previous" title="Previous" border="0" /> Previous');
-    ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="images/icons/previous_16.png" xhtml_alt="Previous" text="Previous"/>
-    <?vsp
-      if (d_prev or _prev.vc_enabled)
-        http ('&nbsp;');
-      if (d_next)
-        http ('<img src="images/icons/next_16.png" alt="Next" title="Next" border="0" /> Next');
-    ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="images/icons/next_16.png" xhtml_alt="Next" text="Next"/>
-    <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      if (d_next or _next.vc_enabled)
-        http ('&nbsp;');
-      if (d_last)
-        http ('<img src="images/icons/last_16.png" alt="Last" title="Last" border="0" /> Last');
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="images/icons/last_16.png" xhtml_alt="Last" text="Last"/>
-    </xsl:if>
-    <?vsp
-      }
-    ?>
-  </xsl:template>
-
-
 
 </xsl:stylesheet>

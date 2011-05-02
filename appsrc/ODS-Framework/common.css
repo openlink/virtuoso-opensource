@@ -1,0 +1,173 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+/* ODS grids */
+table.ODS_grid {
+  width: 100%;
+  background-color: white;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  border-spacing: 0;
+}
+
+table.ODS_grid thead tr {
+  background-color: #b0cde4;
+}
+
+table.ODS_grid tbody tr:nth-child(odd) {
+  background-color:#fff;
+}
+
+table.ODS_grid tbody tr:nth-child(even) {
+  background-color:#f0f0f0;
+}
+
+table.ODS_grid thead tr th {
+  height: 18px;
+  text-align: left !important;
+  white-space: nowrap;
+  padding: 0px 2px 1px 2px !important;
+  border: solid #7f94a5;
+  border-width: 0px 1px 1px 0px;
+  background-image: url(/ods/images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+table.ODS_grid thead tr th[onclick] {
+  cursor: pointer;
+}
+
+table.ODS_grid thead tr th:last-child {
+  border-width: 0px 0px 1px 0px;
+}
+
+table.ODS_grid th.checkbox, table.ODS_grid td.checkbox {
+  width: 1px;
+  text-align: center;
+  margin: 0;
+  padding: 0.5px;
+}
+
+table.ODS_grid th.action, table.ODS_grid td.action {
+  width: 1px;
+  white-space: nowrap;
+}
+
+table.ODS_grid tbody tr:hover {
+ 	background-color: #eec;
+}
+
+table.ODS_grid td {
+  vertical-align: top;
+  padding: 2px 3px;
+}
+
+table.ODS_grid tfoot td {
+  padding: 2px 3px 3px 3px;
+  border: solid #7f94a5;
+  border-width: 1px 0px 0px 0px;
+}
+
+/* Annotation grids */
+table.ANN_grid {
+  width: 100%;
+  border-width: 0px;
+  border-spacing: 0;
+}
+
+table.ANN_grid tr td {
+  border-bottom: 1px solid #ccc;
+}
+
+/* Navigation buttons */
+.navi-button {
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  text-decoration: none;
+  margin-right: 2px;
+  padding: 0.1em 0.3em 0.1em 0.3em ;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+	cursor: pointer;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+}
+
+.navi-button:hover {
+  text-decoration: none;
+}
+
+/* Popup Calendar */
+.calendar {
+	border: 1px solid #000;
+	background-color: #FFF;
+  z-index: 101;
+}
+
+.calendar_year, .calendar_month {
+	text-align: center;
+	border-bottom: 1px solid #aaa;
+	padding: 2px 0px;
+}
+
+.calendar table {
+	margin-top: 2px;
+}
+
+.calendar thead {
+	font-weight: bold;
+}
+
+.calendar thead td {
+	padding: 0px 2px;
+}
+
+.calendar td {
+	font-size: 75%;
+	text-align: center;
+}
+
+td.calendar_selected {
+	background-color: #faa;
+}
+
+.calendar_special {
+	color: #c55;
+}
+
+/* ComboList */
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px 10px 5px 10px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #99b3c5;
+  color: white;
+}
