@@ -2354,7 +2354,7 @@ row_set_col (row_fill_t * rf, dbe_col_loc_t * cl, caddr_t data)
 
     case DV_SINGLE_FLOAT:
       {
-	double df = unbox_float (data);
+	double df = IS_BOX_POINTER (data) ? unbox_float (data) : (double) (ptrlong) data;
 	float ft = (float) df;
 	FLOAT_TO_EXT (row + cl->cl_pos[rv], &ft);
 	return;
@@ -2362,7 +2362,7 @@ row_set_col (row_fill_t * rf, dbe_col_loc_t * cl, caddr_t data)
 
     case DV_DOUBLE_FLOAT:
       {
-	double df = unbox_double (data);
+	double df = IS_BOX_POINTER (data) ? unbox_double (data) : (double) (ptrlong) data;
 	DOUBLE_TO_EXT (row + cl->cl_pos[rv], &df);
 	return;
       }
