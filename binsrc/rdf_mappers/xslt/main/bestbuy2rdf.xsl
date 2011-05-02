@@ -27,6 +27,7 @@
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
@@ -46,6 +47,7 @@
     xmlns:sioc="&sioc;"
     xmlns:owl="&owl;"
     xmlns:dcterms="&dcterms;"
+    xmlns:pto="&pto;" 
     xmlns:gr="&gr;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -157,6 +159,7 @@
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
+						<rdf:type rdf:resource="&pto;Best_Buy"/>
                             <gr:hasMakeAndModel>
 			        <!-- For testing with standalone XSLT processor
 	                        <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
@@ -345,6 +348,10 @@
 		<gr:legalName><xsl:value-of select="."/></gr:legalName>
 	    </gr:BusinessEntity>
 	</gr:hasManufacturer>
+    </xsl:template>
+
+    <xsl:template match="product/manufacturer">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
     </xsl:template>
 
     <xsl:template match="product/details/detail">

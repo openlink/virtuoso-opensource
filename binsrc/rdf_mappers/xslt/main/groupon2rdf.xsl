@@ -30,6 +30,7 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY pto "http://www.productontology.org/id/">
 ]>
 <xsl:stylesheet version="1.0"
 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -39,6 +40,7 @@ xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 xmlns:foaf="&foaf;"
 xmlns:bibo="&bibo;"
 xmlns:sioc="&sioc;" 
+xmlns:pto="&pto;" 
 xmlns:gr="&gr;"
 xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 xmlns:dcterms="&dcterms;"
@@ -98,6 +100,7 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
   <xsl:template match="deal">
     <rdf:Description rdf:about="{$resourceURL}">
       <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+      <rdf:type rdf:resource="&pto;Groupon"/>
 		<opl:providedBy>
 			<foaf:Organization rdf:about="http://www.groupon.com#this">
 				<foaf:name><xsl:value-of select="concat('Groupon: ', name)"/></foaf:name>

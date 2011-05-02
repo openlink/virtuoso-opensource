@@ -29,6 +29,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -42,6 +43,7 @@
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
+    xmlns:pto="&pto;" 
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:owl="&owl;"
@@ -98,6 +100,7 @@
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 				<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 				<rdf:type rdf:resource="&oplbb;Product" />
+				<rdf:type rdf:resource="&pto;Zappos.com"/>
 				<gr:hasMakeAndModel>
 					<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 						<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>

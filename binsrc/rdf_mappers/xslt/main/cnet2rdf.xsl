@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cnet "http://api.cnet.com/restApi/v1.0/ns">
 <!ENTITY oplcn "http://www.openlinksw.com/schemas/cnet#">
@@ -40,6 +41,7 @@
   xmlns:foaf="&foaf;"
   xmlns:bibo="&bibo;"
   xmlns:sioc="&sioc;"
+  xmlns:pto="&pto;" 
   xmlns:gr="&gr;"
   xmlns:dcterms="&dcterms;"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -123,6 +125,7 @@
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;SoftwareProduct" />
+		<rdf:type rdf:resource="&pto;CNET.com"/>
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
@@ -141,6 +144,7 @@
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;TechProduct" />
+		<rdf:type rdf:resource="&pto;CNET.com"/>
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
@@ -186,6 +190,10 @@
 		</gr:BusinessEntity>
 	</gr:hasManufacturer>
   </xsl:template>
+
+    <xsl:template match="cnet:Manufacturer/cnet:Name">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
+    </xsl:template>
 
   <xsl:template match="cnet:Specs">
   	<oplcn:specification><xsl:value-of select="string(.)"/></oplcn:specification>

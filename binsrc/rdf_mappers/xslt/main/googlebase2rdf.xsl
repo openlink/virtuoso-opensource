@@ -25,6 +25,7 @@
 <!ENTITY a "http://www.w3.org/2005/Atom">
 <!ENTITY batch "http://schemas.google.com/gdata/batch">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+  <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
@@ -55,6 +56,7 @@
     xmlns:g="&g;"
     xmlns:gm="&gm;"
     xmlns:gr="&gr;"
+  xmlns:pto="&pto;" 
     xmlns:oplgb="&oplgb;"
     xmlns:owl="&owl;"
     xmlns:rdf="&rdf;"
@@ -139,6 +141,7 @@
 				</xsl:when>
 				<xsl:otherwise>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+	  <rdf:type rdf:resource="&pto;Google"/>
 			<gr:amountOfThisGood>1</gr:amountOfThisGood>
           <gr:name>
             <xsl:value-of select="a:title"/>

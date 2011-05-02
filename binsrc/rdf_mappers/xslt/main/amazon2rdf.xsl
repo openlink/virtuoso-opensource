@@ -35,6 +35,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY amz "http://webservices.amazon.com/AWSECommerceService/2005-10-05">
 <!ENTITY oplamz "http://www.openlinksw.com/schemas/amazon#">
 ]>
@@ -47,6 +48,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:gr="&gr;"
+    xmlns:pto="&pto;" 
     xmlns:book="&book;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
@@ -125,6 +127,7 @@
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplamz;Product" />
+						<rdf:type rdf:resource="&pto;Amazon.com"/>
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <gr:hasMakeAndModel>
 					<rdf:Description rdf:about="{vi:proxyIRI ($base, '', 'MakeAndModel')}">
@@ -277,6 +280,10 @@
 		</gr:hasManufacturer>
     </xsl:template>
 
+    <xsl:template match="amz:ItemAttributes/amz:Manufacturer">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
+    </xsl:template>
+    
     <xsl:template match="amz:ItemAttributes/amz:Publisher">
 		<dcterms:publisher>
                         <xsl:value-of select="."/>
@@ -322,6 +329,7 @@
     </xsl:template>
     <xsl:template match="amz:ItemAttributes/amz:ProductGroup">
 		<oplamz:productGroup><xsl:value-of select="."/></oplamz:productGroup>
+		<rdf:type rdf:resource="{concat('&pto;', .)}" />
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:Feature">

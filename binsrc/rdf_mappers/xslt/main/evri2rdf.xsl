@@ -30,6 +30,7 @@
   <!ENTITY dcterms "http://purl.org/dc/terms/">
   <!ENTITY sioc "http://rdfs.org/sioc/ns#">
   <!ENTITY owl "http://www.w3.org/2002/07/owl#">
+  <!ENTITY pto "http://www.productontology.org/id/">
   <!ENTITY gr "http://purl.org/goodrelations/v1#">
   <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
   <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
@@ -43,6 +44,7 @@ xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 xmlns:rdf="&rdf;"
 xmlns:rdfs="&rdfs;"
 xmlns:foaf="&foaf;"
+xmlns:pto="&pto;"
 xmlns:bibo="&bibo;"
 xmlns:sioc="&sioc;"
 xmlns:owl="&owl;"
@@ -92,6 +94,7 @@ xmlns:oplbb="&oplbb;">
           </xsl:when>
           <xsl:when test="$entity = 'product'">
             <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+   	    <rdf:type rdf:resource="&pto;Evri"/>
           </xsl:when>
         </xsl:choose>
         <xsl:for-each select="entity/properties/property">

@@ -27,9 +27,6 @@
 <!ENTITY like "http://ontologi.es/like#">
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 <!ENTITY mo "http://purl.org/ontology/mo/">
-<!--
-<!ENTITY og "http://opengraphprotocol.org/schema/">
--->
 <!ENTITY og "http://ogp.me/ns#">
 <!ENTITY oplog "http://www.openlinksw.com/schemas/opengraph#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
@@ -39,9 +36,6 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!--
-<!ENTITY vi "xalan://openlink.virtuoso.XalanExtensions.Sponger">
--->
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
 ]>
 <xsl:stylesheet
@@ -63,6 +57,7 @@
     xmlns:vi="&vi;"
     xmlns:video="&video;"
     xmlns:xhv="&xhv;"
+	xmlns:fb="http://www.facebook.com/2008/fbml"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     version="1.0"
 	>
@@ -113,6 +108,9 @@
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="page"/>
             </xsl:when>
+            <xsl:when test="$og_object_type = 'general'">
+	            <xsl:apply-templates mode="general"/>
+            </xsl:when>
             <xsl:otherwise>
                 <xsl:apply-templates />
             </xsl:otherwise>
@@ -131,77 +129,57 @@
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<xsl:if test="normalize-space (name) != ''">
 				<dc:title><xsl:value-of select="concat(name, ' (container)')"/></dc:title>
+				</xsl:if>
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 		    </rdf:Description>
-            <!--
-		    <rdf:Description rdf:about="{$resourceURL}">
-                <xsl:if test="id">
-                    <oplog:id><xsl:value-of select="id"/></oplog:id>
+		</rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="/results" mode="general">
+		<rdf:RDF>
+           <rdf:Description rdf:about="{$docproxyIRI}">
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<xsl:if test="normalize-space (name) != ''">
+				    <dc:title><xsl:value-of select="concat(document/name, ' (container)')"/></dc:title>
                 </xsl:if>
-                <xsl:if test="name">
-                    <foaf:name><xsl:value-of select="name"/></foaf:name>
-                </xsl:if>
-                <xsl:if test="first_name">
-                    <foaf:firstName><xsl:value-of select="first_name"/></foaf:firstName>
-                </xsl:if>
-                <xsl:if test="last_name">
-                    <foaf:lastName><xsl:value-of select="last_name"/></foaf:lastName>
-                </xsl:if>
-                <xsl:if test="picture">
-                    <foaf:img rdf:resouce="{picture}"/>
-                </xsl:if>
-                <xsl:if test="link">
-                    <bibo:uri rdf:resouce="{link}"/>
-                </xsl:if>
-                <xsl:if test="category">
-                    <og:category><xsl:value-of select="category"/></og:category>
-                </xsl:if>
-				<xsl:if test="username">
-                    <foaf:nick><xsl:value-of select="username"/></foaf:nick>
-                </xsl:if>
-                <xsl:if test="products">
-                    <og:products><xsl:value-of select="products"/></og:products>
-                </xsl:if>
-                <xsl:if test="fan_count">
-    				<og:fan_count><xsl:value-of select="fan_count"/></og:fan_count>
-                </xsl:if>
-                <xsl:if test="about">
-    				<dc:description><xsl:value-of select="about"/></dc:description>
-                </xsl:if>
-                <xsl:if test="height">
-    				<og:height><xsl:value-of select="height"/></og:height>
-                </xsl:if>
-                <xsl:if test="width">
-    				<og:width><xsl:value-of select="width"/></og:width>
-                </xsl:if>
-                <xsl:if test="gender">
-    				<foaf:gender><xsl:value-of select="gender"/></foaf:gender>
-                </xsl:if>
-                <xsl:if test="source">
-    				<foaf:img rdf:resouce="{source}"/>
-                </xsl:if>
-                <xsl:if test="icon">
-    				<foaf:img rdf:resouce="{icon}"/>
-                </xsl:if>
-                <xsl:if test="relationship_status">
-    				<og:relationship_status><xsl:value-of select="relationship_status"/></og:relationship_status>
-                </xsl:if>
-                <xsl:if test="website">
-    				<rdfs:seeAlso rdf:resource="{website}"/>
-                </xsl:if>
-                <xsl:if test="updated_time">
-    				<dcterms:modified rdf:datatype="&xsd;dateTime">
-						<xsl:value-of select="updated_time"/>
-					</dcterms:modified>
-                </xsl:if>
-                <xsl:if test="created_time">
-    				<dcterms:created rdf:datatype="&xsd;dateTime">
-						<xsl:value-of select="created_time"/>
-					</dcterms:created>
-                </xsl:if>
+				<owl:sameAs rdf:resource="{$docIRI}"/>
 		    </rdf:Description>
-            -->
+		    <rdf:Description rdf:about="{$resourceURL}">
+				<rdf:type rdf:resource="&oplog;Page" />
+                <xsl:if test="document/id">
+                    <oplog:id><xsl:value-of select="document/id"/></oplog:id>
+                </xsl:if>
+                <xsl:if test="document/name">
+                    <dc:title><xsl:value-of select="document/name"/></dc:title>
+					<rdfs:label><xsl:value-of select="document/name"/></rdfs:label>
+                </xsl:if>
+                <xsl:if test="document/picture">
+                    <foaf:img rdf:resource="{document/picture}"/>
+                </xsl:if>
+                <xsl:if test="string-length(document/link) &gt; 0">
+                    <bibo:uri rdf:resource="{document/link}"/>
+                </xsl:if>
+                <xsl:if test="document/website">
+                    <foaf:page rdf:resource="{document/website}"/>
+                </xsl:if>
+                <xsl:if test="document/category">
+                    <og:category><xsl:value-of select="document/category"/></og:category>
+                </xsl:if>
+                <xsl:if test="document/description">
+                    <dc:description><xsl:value-of select="document/description"/></dc:description>
+                </xsl:if>
+                <xsl:if test="document/likes">
+                    <fb:like><xsl:value-of select="document/likes"/></fb:like>
+                </xsl:if>
+				<xsl:for-each select="document/metadata/connections/*">
+					<rdfs:seeAlso rdf:resource="{.}"/>
+				</xsl:for-each>
+		    </rdf:Description>
 		</rdf:RDF>
 	</xsl:template>
 
@@ -444,6 +422,7 @@
                 <xsl:if test="name">
                     <oplog:name><xsl:value-of select="name"/></oplog:name>
                     <rdfs:label><xsl:value-of select="name"/></rdfs:label>
+                    <dc:title><xsl:value-of select="name"/></dc:title>
                 </xsl:if>
                 <xsl:if test="category">
                     <oplog:category><xsl:value-of select="category"/></oplog:category>
@@ -451,6 +430,18 @@
                 <xsl:if test="description">
                     <oplog:description><xsl:value-of select="description"/></oplog:description>
                 </xsl:if>
+                <xsl:if test="picture">
+                    <foaf:img rdf:resource="{picture}"/>
+                </xsl:if>
+                <xsl:if test="string-length(link) &gt; 0">
+                    <bibo:uri rdf:resource="{link}"/>
+                </xsl:if>
+                <xsl:if test="likes">
+                    <fb:like><xsl:value-of select="likes"/></fb:like>
+                </xsl:if>
+				<xsl:for-each select="metadata/connections/*">
+					<rdfs:seeAlso rdf:resource="{.}"/>
+				</xsl:for-each>
 		    </rdf:Description>
 		</rdf:RDF>
 	</xsl:template>

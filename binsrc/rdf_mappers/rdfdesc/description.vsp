@@ -260,6 +260,10 @@
      {
        dsn := rfc1808_expand_uri (_G, dsn);
      }
+  declare desc_resource_uri varchar;
+  declare desc_qr varchar;
+  desc_qr := sprintf ('DESCRIBE <%s>', _S);
+  desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
 ?>
 
 <!-- header -->
@@ -445,8 +449,22 @@
     <div id="footer">
       <?vsp if (error_message is null) { ?>
       <div id="ft_t">
-       Explore alternative Linked Data Views via this <a title="OpenLink Data Explorer" href="/ode/?uri=<?vsp http_url (_S); ?>">OpenLink Data Explorer</a> link
-       &nbsp; &nbsp;
+        Alternative Linked Data Views:
+
+	<?vsp if (VAD_CHECK_VERSION ('fct') is not null) { ?>	
+	<a href="/describe/?uri=<?vsp http_url (_S); ?>">Facets</a> 
+	|
+	<?vsp } ?>
+	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>">PivotViewer</a> 
+	|
+	<?vsp } ?>
+	<?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) { ?>	
+	<a href="/isparql/view/?query=<?vsp http_url (desc_qr); ?>&amp;resultview=triples">iSPARQL</a> 
+	|
+	<?vsp } ?>
+	<a href="/ode/?uri=<?vsp http_url (_S); ?>">ODE</a> 
+	
        &nbsp; &nbsp; Raw Linked Data formats:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (

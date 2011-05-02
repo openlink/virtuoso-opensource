@@ -33,6 +33,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY ebay "urn:ebay:apis:eBLBaseComponents">
@@ -46,6 +47,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:pto="&pto;" 
     xmlns:gr="&gr;"
     xmlns:book="&book;"
     xmlns:dc="&dc;"
@@ -152,6 +154,8 @@
 			<rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplebay;Product" />
+			<rdf:type rdf:resource="&pto;EBay"/>
+
                 <foaf:page rdf:resource="{$baseUri}"/>
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <xsl:variable name="brand" 
@@ -161,6 +165,16 @@
 					<xsl:variable name="model"
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Model']/ebay:Value"/>
                 <xsl:if test="string-length(concat($brand, $make, $model)) &gt; 0">
+	
+                    <xsl:if test="string-length($make) &gt; 0">
+                        <rdf:type rdf:resource="{concat('&pto;', $make)}" />
+                    </xsl:if>
+                    <xsl:if test="string-length($brand) &gt; 0">
+                        <rdf:type rdf:resource="{concat('&pto;', $brand)}" />
+                    </xsl:if>
+                    <xsl:if test="string-length($model) &gt; 0">
+                        <rdf:type rdf:resource="{concat('&pto;', $model)}" />
+                    </xsl:if>
                 <gr:hasMakeAndModel>
 				<!-- Xalan
 	            <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
