@@ -812,27 +812,8 @@ function init()
     OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2, 2);});
     OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 2, 3);});
     OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 2, 4);});
-    var x = function (data) {
-      var url;
-      try {
-        var url = OAT.JSON.parse(data);
-      } catch (e) { url = null; }
-      if (url != null) {
-        if (url != '') {
-          var a = OAT.Dom.create('a');
-          a.href = url;
-          a.innerHTML = 'Certificate Generator';
-          a.style.cssText = 'color: #000; text-decoration: none;';
-          $("pf_tab_2_5").innerHTML = '';
-          $("pf_tab_2_5").appendChild(a);
-          OAT.Dom.show("pf_tab_2_5");
-        }
-      } else {
-        OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
-      OAT.Dom.show("pf_tab_2_5");
-      }
-    }
-    OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
+    // pf_tab_2_5
+    ufCertificateGenerator();
     OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 2, 6);});
 
     pfTabInit('pf_tab_2_', $v('formTab2'));
@@ -1364,7 +1345,7 @@ function pfShowList(api, prefix, noMsg, cols, idIndex, cb)
 			o = null;
 		}
 		var tbody = $(prefix+'_tbody');
-		tbody.innerHTML = '';
+    OAT.Dom.clear(tbody);
 		if (o) {
     	for (var N = 0; N < o.length; N++) {
     	  var id = o[N][idIndex];
@@ -1450,7 +1431,7 @@ function pfShowOwn(mode, id)
 {
   pfShowMode('pf051', mode, id);
   var x = function (obj) {
-    $('ow_tbody').innerHTML = '';
+    OAT.Dom.clear('ow_tbody');
     RDF.tablePrefix = 'ow';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1489,7 +1470,7 @@ function pfShowOffer(mode, id)
 {
   pfShowMode('pf054', mode, id);
   var x = function (obj) {
-    $('ol_tbody').innerHTML = '';
+    OAT.Dom.clear('ol_tbody');
     RDF.tablePrefix = 'ol';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1502,7 +1483,7 @@ function pfShowSeek(mode, id)
 {
   pfShowMode('pf055', mode, id);
   var x = function(obj) {
-    $('wl_tbody').innerHTML = '';
+    OAT.Dom.clear('wl_tbody');
     RDF.tablePrefix = 'wl';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1515,7 +1496,7 @@ function pfShowLike(mode, id)
 {
   pfShowMode('pf056', mode, id);
   var x = function(obj) {
-    $('ld_tbody').innerHTML = '';
+    OAT.Dom.clear('ld_tbody');
     RDF.tablePrefix = 'ld';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -2135,6 +2116,7 @@ function afterLogin(data, prefix) {
 			T.value = ((prefix == 'rf')? 'profile': 'user');
 			T.form.submit();
 		} else {
+      ufCertificateGenerator();
 			OAT.Dom.show("ob_right_logout");
 			OAT.Dom.hide("ob_links");
 			OAT.Dom.hide("lf");
@@ -2176,6 +2158,29 @@ function inputParameter(inputField) {
   if (T)
     return T.value;
   return '';
+}
+
+function ufCertificateGenerator() {
+  var x = function (data) {
+    var url;
+    try {
+      var url = OAT.JSON.parse(data);
+    } catch (e) { url = null; }
+    if (url && url.indexOf('<failed>') == -1) {
+      var a = OAT.Dom.create('a');
+      a.href = url;
+      a.innerHTML = 'Certificate Generator';
+      a.style.cssText = 'color: #000; text-decoration: none;';
+      $("pf_tab_2_5").innerHTML = '';
+      $("pf_tab_2_5").appendChild(a);
+      OAT.Dom.show("pf_tab_2_5");
+    } else {
+      $("pf_tab_2_5").innerHTML = 'Certificate Generator';
+      OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
+      OAT.Dom.show("pf_tab_2_5");
+    }
+  }
+  OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
 }
 
 function ufCleanTablesData(prefix) {
@@ -2928,7 +2933,7 @@ function pfCleanFOAFData() {
   $('pf_foaf').defaultValue = '';
   $('cb_all').checked = false;
   $('cb_all').defaultChecked = false;
-	$('i_tbody').innerHTML = '';
+  OAT.Dom.clear('i_tbody');
 	OAT.Dom.hide('i_tbl');
 }
 
