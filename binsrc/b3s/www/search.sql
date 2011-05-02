@@ -35,9 +35,9 @@ create procedure label_get(in smode varchar)
   else if (smode='10') label := 'Cloud Around Person With Filtered Out Blank Nodes';
   else if (smode='11') label := 'Product Count By Manufacturer';
   else if (smode='12') label := 'Vendors with offers';
-  else if (smode='13') label := 'Places of worship around Paris with Cafe''s in close proximity';
+  else if (smode='13') label := 'Objects around Paris with Cafe''s in close proximity';
   else if (smode='14') label := 'Motorways across England & Scotland';
-  else if (smode='15') label := 'Places of worship around London with Cities in close proximity';
+  else if (smode='15') label := 'Objects around London with Cities in close proximity';
   else if (smode='16') label := 'Places with coordinates';
   else if (smode='17') label := 'Subcategories of Protestant Churches';
   else if (smode='18') label := 'Things within close proximity of New York City';
@@ -68,7 +68,7 @@ create procedure input_get (in num varchar)
   	'Search for',
 	'Search for',
 	'Search for',
-	'Interest',
+	'Name',
 	'Search for',
 	'Person URI',
 	'Property',
@@ -80,7 +80,7 @@ create procedure input_get (in num varchar)
 --	'Manufacturer',
         'City Longitude',
         'Latitude',
-        'Place of Worship URI',
+        'Entity URI',
         'Geometry Latitude',
         'Broader',
         'Place URI',
@@ -107,13 +107,13 @@ create procedure input_getcustom (in num varchar)
   if (num = 2)
     return 'City Latitude';
   else if (num = 3)
-    return 'Cafe Proximity to Place of Worship';
+    return 'Cafe Proximity to Entity URI';
   else if (num = 4)
-    return 'City Proximity to Place of Worship';
+    return 'Distance';
   if (num = 5)
-    return 'Class URI';
+    return 'isA';
   if (num = 6)
-    return 'City Proximity to Place of Worship';
+    return 'Distance';
   if (num = 7)
     return 'Geometry Longitude';
   if (num = 8)
