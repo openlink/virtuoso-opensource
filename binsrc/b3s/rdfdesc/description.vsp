@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" version="XHTML+RDFa 1.0">
+<html 
+    xmlns="http://www.w3.org/1999/xhtml" 
+    xml:lang="en" 
+    version="XHTML+RDFa 1.0"
+    xmlns:addthis="http://www.addthis.com/help/api-spec"
+>
 <?vsp
 --
 --
@@ -40,7 +45,8 @@
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
-  declare dt1, dt2, count_str, tbinf, ua varchar;
+  declare dt1, dt2, count_str, tbinf, tbsas, ua varchar;
+
 
   n_per_page := 100;
   dis_next := 0;
@@ -66,11 +72,29 @@
    b3s_parse_inf (sid, params);
    inf := b3s_render_inf_clause ();
   tbinf := connection_get ('inf');
+  tbsas := connection_get ('sas');
   if (tbinf is not null)
     tbinf := sprintf ('TABLE OPTION (WITH \'%s\')', tbinf);
   else
     tbinf := '';
   
+  if (tbsas is not null)
+    tbsas := '';
+  else
+    tbsas := '';
+  
+  
+  --
+  -- Get AddthisKey from registry
+  --
+  --  if 0 then disable addthis support
+  --  if 1 use temp key to get basic social bookmarking
+  --  any other value should be a registered key
+  --
+  declare _addthis_key varchar;
+  _addthis_key := registry_get ('fct_addthis_key');
+  if (not isstring(_addthis_key)) _addthis_key := '0';
+  if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
   ses_parms := b3s_render_ses_params ();
 
@@ -211,6 +235,10 @@
   fct_links_hdr (_S, rdf_link);
   if (not length (label))
     label := b3s_trunc_uri (page_resource_uri);
+  declare desc_resource_uri varchar;
+  declare desc_qr varchar;
+  desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
+  desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
   --http_flush (1);
 ?>
 <head>
@@ -326,7 +354,7 @@ if (_subject <> '') {
       }
       else
       {
-      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) ORDER BY 1 ASC OPTION (QUIETCAST)) sp1', tbinf, _S);
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%S\' , 1) ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1', tbinf, _S, tbsas);
       }
       dt2 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 1 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
 
@@ -341,7 +369,7 @@ if (_subject <> '') {
 	    }
           else
 	    {
-              dt1 := sprintf ('select count(*) as cnt from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) ORDER BY 1 ASC OPTION (QUIETCAST)) sp1', tbinf, _S);
+              dt1 := sprintf ('select count(*) as cnt from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%S\' , 1) ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1', tbinf, _S, tbsas);
 	    }
 	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
 	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
@@ -383,6 +411,7 @@ if (_subject <> '') {
 
        if  (odd_position = 0)
 	 {
+	    http_request_status ('HTTP/1.1 404 Not found');
 	    http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
 	 }
 ?>
@@ -424,9 +453,34 @@ if (_subject <> '') {
     <?vsp b3s_render_dbg_out (dbg_out); ?>
 <!-- footer -->
     <div id="FT">
+<?vsp if (_addthis_key <> '0') { ?>
+  <div id="FT_share">
+    <!-- AddThis Button BEGIN -->
+    <a class="addthis_button" href="http://www.addthis.com/bookmark.php?v=250&amp;pubid=<?=_addthis_key?>"><img src="http://s7.addthis.com/static/btn/sm-share-en.gif" width="83" height="16" alt="Bookmark and Share" style="border:0"/></a>
+    <script type="text/javascript">
+	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
+	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    </script>
+    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <!-- AddThis Button END -->
+  </div><!-- FT_share -->
+<?vsp } ?>
       <div id="ft_t">
-        Explore alternative Linked Data Views &amp; Meshups using:
-        <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> 
+        Alternative Linked Data Views:
+	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a> 
+	|
+	<?vsp } ?>
+	<?vsp if (VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>	
+	<a href="<?vsp http (rdfdesc_http_url (page_resource_uri)); ?>" target="_blank">Sponger</a> 
+	|
+	<?vsp } ?>
+	<?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) { ?>	
+	<a href="/isparql/view/?query=<?vsp http_url (desc_qr); ?>&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a> 
+	|
+	<?vsp } ?>
+	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a> 
+	
         &nbsp; &nbsp; Raw Data in:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html 
+    xmlns="http://www.w3.org/1999/xhtml" 
+    xml:lang="en" 
+    lang="en"
+    xmlns:addthis="http://www.addthis.com/help/api-spec"
+>
 <?vsp
 --
 --
@@ -41,6 +46,18 @@
   b3s_handle_ses (path, lines, params);
 
   sid := connection_get ('sid');
+
+  --
+  -- Get AddthisKey from registry
+  --
+  --  if 0 then disable addthis support
+  --  if 1 use temp key to get basic social bookmarking
+  --  any other value should be a registered key
+  --
+  declare _addthis_key varchar;
+  _addthis_key := registry_get ('fct_addthis_key');
+  if (not isstring(_addthis_key)) _addthis_key := '0';
+  if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
    -- side-effect sets connection vars 'inf' and 'sas' - val or null
 
@@ -178,7 +195,10 @@
 	    if (tp = 3) -- Expanded sas
 	      {
 	         qr := sprintf ('sparql select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = <%S> ) } order by desc 2 limit 20', _S);
-                 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n', fct_s_term ()));
+		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n', 
+		'Identifier (URI)'
+		--fct_s_term ()
+		));
 	      }
 	    if (tp = 4) -- Expanded ifp
 	      {
@@ -242,6 +262,18 @@
     </div> <!--  #MD -->
 <!-- footer -->
     <div id="FT">
+<?vsp if (_addthis_key <> '0') { ?>
+  <div id="FT_share">
+    <!-- AddThis Button BEGIN -->
+    <a class="addthis_button" href="http://www.addthis.com/bookmark.php?v=250&amp;pubid=<?=_addthis_key?>"><img src="http://s7.addthis.com/static/btn/sm-share-en.gif" width="83" height="16" alt="Bookmark and Share" style="border:0"/></a>
+    <script type="text/javascript">
+	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
+	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    </script>
+    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <!-- AddThis Button END -->
+  </div><!-- FT_share -->
+<?vsp } ?>
       <div id="ft_t">
         Explore using:
         <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |

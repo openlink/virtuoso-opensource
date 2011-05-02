@@ -530,3 +530,5 @@ div#nav {
 a#sp_link { font-size: 11pt; font-weight:normal; }
 
 #qrcode { position:fixed; top:100px; right: 30px; z-index: 0; } 
+
+#FT_share { float: right; clear: right; vertical-align: top; margin-right: 4px; }
