@@ -28,9 +28,11 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <?vsp 
+    declare ids any;
+    ids := deserialize (decode_base64 (get_keyword ('ids', params)));
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');  
-    http (WS.WS.VFS_EXPORT_DEFS ()); 
+    http (WS.WS.VFS_EXPORT_DEFS (ids)); 
     return;
   ?>
 </v:page>

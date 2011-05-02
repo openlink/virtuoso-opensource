@@ -64,6 +64,7 @@
       <v:variable name="_bot" type="int" default="1" persist="0" />
       <v:variable name="_thr" type="int" default="1" persist="0" />
       <v:variable name="_delay" type="float" default="1" persist="0" />
+      <v:variable name="_head" type="varchar" default="null" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -105,12 +106,12 @@
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
 		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
 		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
-		VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY
+		VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY, VS_HEADERS
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
 		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
 		self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
-		self._accept_rdf, self._bot, self._thr, self._delay
+		self._accept_rdf, self._bot, self._thr, self._delay, self._head
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 
               if (self._other is null) 
@@ -164,13 +165,14 @@
               self._flow := '';
               self._dflow := '';
               self._store := '';
-              self._redir := '';
+              self._redir := '1';
 	      self.target_url := '';
 	      self.target_uid := '';
 	      self.target_pwd := '';
 	      self._udata := vector ();
               self._depth := 'unlimited';
 	      self._delay := 0;
+	      self._head := '';
             }
           ]]>
         </v:script>
@@ -318,6 +320,20 @@
               </td>
             </tr>
             <tr>
+		<td>Custom HTTP headers</td>
+              <td>
+                <v:text name="head" value="--coalesce (self._head, '')"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <label for="redir">Number of HTTP redirects to follow</label>
+	    </td>
+              <td>
+                <v:text name="redir" value="--self._redir" xhtml_id="redir" xhtml_size="5"/>
+              </td>
+            </tr>
+            <tr>
 		<td>XPath expression for links extraction</td>
               <td>
                 <v:text name="xp_exp" value="--coalesce (self._xp_exp, '')"  xhtml_size="70"/>
@@ -423,13 +439,6 @@
               <td>
                 <v:check-box name="del" value="1" initial-checked="--case when self._del = 'checked' then 1 else 0 end" xhtml_id="del"/>
                 <label for="del">Delete if remove on remote detected</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <v:check-box name="redir" value="1" initial-checked="--case when self._redir then 1 else 0 end" xhtml_id="redir"/>
-                <label for="redir">Follow HTTP redirects</label>
               </td>
             </tr>
             <tr>
@@ -598,10 +607,12 @@
                         self._other := atoi (get_keyword ('other', params, '0'));
 
 			self._xp_exp := get_keyword ('xp_exp', params, '');
+			self._head := get_keyword ('head', params, '');
 			self._depth := get_keyword ('depth', params, '');
 
 			if (self._depth = '' or self._depth = 'unlimited') self._depth := null;
 			if (self._xp_exp = '') self._xp_exp := null;
+			if (self._head = '') self._head := null;
 
 			if (self._xp_exp is not null)
 			  {
@@ -739,7 +750,8 @@
 			      VS_ACCEPT_RDF = self._accept_rdf,
 			      VS_THREADS = self._thr,
 			      VS_BOT = self._bot,
-			      VS_DELAY = self._delay
+			      VS_DELAY = self._delay,
+			      VS_HEADERS = self._head
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
@@ -759,14 +771,14 @@
 			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
 			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
 			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
-			    VS_THREADS, VS_BOT, VS_DELAY)
+			    VS_THREADS, VS_BOT, VS_DELAY, VS_HEADERS)
 			    values
 			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
 			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
 			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
 			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
 			    self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
-			    self._thr, self._bot, self._delay);
+			    self._thr, self._bot, self._delay, self._head);
 
 			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
 			    values (self._host, self._url, now(), 'waiting', self._root);
