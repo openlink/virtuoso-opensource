@@ -33,12 +33,13 @@
   <v:method name="getItems" arglist="in prefix varchar, in mode varchar, inout ontologies any, inout IDs any">
     <![CDATA[
       declare params any;
-      declare N, M integer;
+      declare N, M, L integer;
       declare re, reParts any;
       declare ontology, ontologyNo, ontologyName, ontologyItems any;
       declare item, itemID, itemNo, itemClass, itemProperties any;
 
       params := self.vc_page.vc_event.ve_params;
+      L := 0;
       IDs := vector ();
       ontologies := vector ();
       for (N := 0; N < length (params); N := N + 4)
@@ -73,7 +74,8 @@
             }
           _skip2:;
           }
-          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
+          ontology := vector_concat (ODS..jsonObject (), vector ('id', cast (L as varchar), 'ontology', ontologyName, 'items', ontologyItems));
+          L := L + 1;
           ontologies := vector_concat (ontologies, vector (ontology));
         }
       _skip:;
@@ -86,7 +88,7 @@
       declare L integer;
       declare re, reParts any;
       declare itemProperties any;
-      declare property, propNo, propName, propValue, propType, propLanguage any;
+      declare tmp, property, propNo, propName, propValue, propType, propLanguage any;
 
 
               itemProperties := vector ();
@@ -100,10 +102,13 @@
                   reParts := regexp_parse(re, params[L], 0);
                   propNo := subseq (params[L], reParts[2], reParts[3]);
                   propName := trim (params[L+1]);
-          propType := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params, 'data');
-          propValue := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params);
-          propLanguage := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_4_'||propNo, params);
-          property := vector_concat (ODS..jsonObject (), vector ('name', propName, 'value', propValue, 'type', propType, 'language', propLanguage));
+          tmp := prefix || '_item_'||ontologyNo||'_prop_'||itemNo;
+          propType := get_keyword (tmp||'_fld_2_'||propNo, params, 'data');
+          propValue := get_keyword (tmp||'_fld_3_'||propNo, params);
+          property := vector_concat (ODS..jsonObject (), vector ('name', propName, 'value', propValue, 'type', propType));
+          propLanguage := get_keyword (tmp||'_fld_4_'||propNo, params, '');
+          if (propLanguage <> '')
+            property := vector_concat (property, vector ('language', propLanguage));
                   itemProperties := vector_concat (itemProperties, vector (property));
                 }
       _skip:;

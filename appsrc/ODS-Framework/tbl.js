@@ -123,11 +123,21 @@ TBL.No = function (tbl, prefix, options)
   return parseInt(No)
 }
 
-TBL.createRow = function (prefix, No, optionObject)
-{
+TBL.parent = function (obj, tag) {
+  var obj = obj.parentNode;
+  if (obj.tagName.toLowerCase() == tag)
+    return obj;
+  return TBL.parent(obj, tag);
+}
+
+TBL.createRow = function (prefix, No, optionObject, viewMode) {
   if (No != null)
   {
     TBL.deleteRow(prefix, No);
+  }
+  else if (viewMode)
+  {
+    TBL.createViewRow(prefix, optionObject);
   }
   else
   {
@@ -314,9 +324,12 @@ TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/select.gif';
   img.className = "pointer";
-    var F = (fldOptions.form)? '&form='+fldOptions.form: '';
+
+    var frm = TBL.parent(fld, 'form');
+    var F = '&form='+frm.name;
     var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: '';
-    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=mc&params='+fldName+':s1;'+F+M)};
+    var N = (fldOptions.nrows)? '&nrows='+fldOptions.nrows: '';
+    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=mc&params='+fldName+':s1;'+F+M+N, 'ods_select_users')};
 
   td.appendChild(img);
   }
@@ -416,8 +429,10 @@ TBL.createCell20 = function (td, prefix, fldName, No, fldOptions) {
 
 TBL.selectOption = function(fld, fldValue, optionName, optionValue) {
 	var o = OAT.Dom.option(optionName, optionValue, fld);
-	if (fldValue == optionValue)
+  if (fldValue == optionValue) {
 		o.selected = true;
+    o.defaultSelected = true;
+  }
 }
 
 TBL.createCell30 = function (td, prefix, fldName, No, fldOptions) {
@@ -546,36 +561,37 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
-  function xSelectOption(fld, fldValue, ontologyClassName)
+  function selectOption46(options, fldValue, ontologyClassName)
   {
     var ontologyClass = RDF.getOntologyClass(ontologyClassName);
     if (ontologyClass && ontologyClass.properties)
     {
       var properties = ontologyClass.properties;
-      if (!properties) {return;}
+      if (!properties)
+        return;
 
       for (i = 0; i < properties.length; i++)
-        TBL.selectOption(fld, fldValue, properties[i].name, properties[i].name);
-      xSelectOption(fld, fldValue, ontologyClass.subClassOf);
+        options.push(properties[i].name);
+      selectOption46(options, fldValue, ontologyClass.subClassOf);
     }
   }
 
-	var fld = TBL.createCellSelect(fldName);
-  fld.style.width = '95%';
-  fld.item = fldOptions.item;
-  var fldValue;
-  if (fldOptions.value)
+  var fldValue = '';
+  if (fldOptions.value && fldOptions.value.name)
     fldValue = fldOptions.value.name;
-  TBL.selectOption(fld, null, '', '');
-  xSelectOption(fld, null, fld.item.className);
-  fld.onchange = function(){RDF.changePropertyValue(fld);};
-  sortSelect (fld);
-  fld.value = fldValue;
-  if (fld.selectedIndex != -1)
-    fld.options[fld.selectedIndex].defaultSelected = true;
+  var fld = TBL.createCellCombolist(td, fldValue, {name: fldName, onchange: RDF.changePropertyValue});
+  var fldInput = fld.input;
+  fldInput.setAttribute("autocomplete", "off");
+  fldInput.onchange = RDF.changePropertyValue;
+  fldInput.item = fldOptions.item;
 
-  td.appendChild(fld);
-  return fld;
+  var options = [];
+  selectOption46(options, null, fldInput.item.className);
+  options.sort();
+  for (i = 0; i < options.length; i++)
+    fld.addOption(options[i]);
+
+  return fldInput;
 }
 
 TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
@@ -628,10 +644,11 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
     }
     td.appendChild(fld.div);
     propertyType = 'object';
-  }
-  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
-    var fldClassName = '';
+  } else {
+    if (ontologyClassProperty && ontologyClassProperty.datatypeProperties)
     propertyType = ontologyClassProperty.datatypeProperties;
+
+    var fldClassName = '';
     if ((propertyType == 'xsd:byte')    ||
         (propertyType == 'xsd:short')   ||
         (propertyType == 'xsd:int')     ||
@@ -707,7 +724,8 @@ TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
   if (ontologyClassProperty && ontologyClassProperty.objectProperties) {
     td.innerHTML = 'URI';
   }
-  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
+  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties)
+  {
     if (ontologyClassProperty.datatypeProperties == 'xsd:byte')  {
       td.innerHTML = 'Byte';
     } else if (ontologyClassProperty.datatypeProperties == 'xsd:short')  {
@@ -728,7 +746,10 @@ TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
     } else {
     td.innerHTML = 'Literal';
   }
+  } else {
+    td.innerHTML = 'Literal';
 }
+
 }
 
 TBL.createCell49 = function (td, prefix, fldName, No, fldOptions) {
@@ -825,7 +846,7 @@ TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
   var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
-  img.onclick = function (){TBL.webidShow(fld, fldOptions.form)};
+    img.onclick = function (){TBL.webidShow(fld, fldOptions)};
   if (fldOptions.imgCssText)
     img.style.cssText = fldOptions.imgCssText;
 
@@ -882,7 +903,7 @@ TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
   var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
-  img.onclick = function (){TBL.webidShow(fld)};
+  img.onclick = function (){TBL.webidShow(fld, {})};
   if (fldOptions.imgCssText)
     img.style.cssText = fldOptions.imgCssText;
 
@@ -907,13 +928,14 @@ TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
   fld.id = fldName;
+  fld.title = 'Delete row';
   fld.onclick = function(){TBL.deleteRow(prefix, No);};
   OAT.Dom.addClass(fld, 'button pointer');
 
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/icons/trash_16.png';
   img.alt = 'Delete row';
-  img.title = fld.alt;
+  img.title = img.alt;
   OAT.Dom.addClass(img, 'button');
 
   fld.appendChild(img);
@@ -957,16 +979,20 @@ TBL.createButtonAdd = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
   fld.id = fldName;
+  fld.title = 'Add Element';
   OAT.Dom.addClass(fld, 'button pointer');
 
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/icons/add_16.png';
-  img.alt = 'Add row';
-  img.title = fld.alt;
+  img.alt = 'Add Element';
+  img.title = img.alt;
   OAT.Dom.addClass(img, 'button');
 
   fld.appendChild(img);
-  fld.appendChild(OAT.Dom.text(' Add'));
+  var titleText = fldOptions.title;
+  if (!titleText)
+    titleText = 'Add';
+  fld.appendChild(OAT.Dom.text(' '+titleText));
 
   td.appendChild(fld);
   return fld;
@@ -1027,18 +1053,15 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
 
   var img = OAT.Dom.create('img');
   var txt;
-  if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length)
-    {
+  if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length) {
       img.src = '/ods/images/icons/link_16.png';
       img.alt = 'Link';
-      img.title = fld.alt;
+    img.title = img.alt;
       txt = OAT.Dom.text(' Link');
-    }
-  else
-    {
+  } else {
       img.src = '/ods/images/icons/disconnect_16.png';
       img.alt = 'Unlink';
-      img.title = fld.alt;
+    img.title = img.alt;
       txt = OAT.Dom.text(' Unlink');
     }
   OAT.Dom.addClass(img, 'button');
@@ -1046,66 +1069,55 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
   fld.appendChild(txt);
 
   td.appendChild(fld);
-  fld.onclick = function() 
-    { 
+  fld.onclick = function() {
       var url, x;
-      if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length)
-	{
+    if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length) {
 	  url = '/ods/api/oauth_connect?uri=' + encodeURIComponent(fldOptions["profile_url"]) + 
 	      '&login=1&oauth_sid=' + encodeURIComponent(fldOptions["oauth_sid"]);
-	  x = function (data)
-	    {
-	      if (data.length)
-		{
-		  var win = window.open (
-		      data, 
-		      null, 
-		      "width=700,height=420,top=100,left=100,status=no,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+      x = function (data) {
+        if (data.length) {
+          var win = window.open(data, null, "width=700,height=420,top=100,left=100,status=no,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
 		  win.window.focus();
-		}
-	      else
-		{
+        } else {
 		  alert ("This service cannot be linked.");
 		}
 	    }
-	}
-      else
-	{
+    } else {
 	  if (!confirm('Please confirm removal of associated session'))
 	    return;
 	  url = '/ods/api/oauth_disconnect?uri=' + encodeURIComponent(fldOptions["profile_url"]);
-	  x = function (data) 
-	    {
+      x = function (data) {
 	      window.location.reload ();
-	    };
+      }
 	}
       OAT.AJAX.GET(url, '', x);
-    };
+  }
 }
 
-TBL.webidShow = function(obj, frmName)
+TBL.webidShow = function(obj, fldOptions)
 {
   var S = 'p';
   if (obj.id.replace('fld_2', 'fld_1') != obj.id)
     S = $v(obj.id.replace('fld_2', 'fld_1'));
 
-  var F = '';
-  if (frmName)
-    F = '&form='+frmName;
+  var frm = TBL.parent(obj, 'form');
+  var F = '&form='+frm.name;
+  var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: S;
+  var N = (fldOptions.nrows)? '&nrows='+fldOptions.nrows: '';
 
-  TBL.windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;'+F);
+  TBL.windowShow('/ods/webid_select.vspx?params='+obj.id+':s1;'+F+M+N, 'ods_select_webid');
 }
 
-TBL.windowShow = function(sPage, width, height)
+TBL.windowShow = function(sPage, sPageName, width, height)
 {
   if (!width)
     width = 700;
   if (!height)
-    height = 420;
+    height = 500;
   if (document.forms[0].elements['sid'])
     sPage += '&sid=' + document.forms[0].elements['sid'].value;
   if (document.forms[0].elements['realm'])
     sPage += '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }

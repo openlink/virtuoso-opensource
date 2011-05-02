@@ -59,7 +59,7 @@
           <h3>Recently Signed In</h3>
           <ul class="w_act_lst">
 <?vsp
-  for select top 3  nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nu_row_id desc do
+            for (select distinct top 3 nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nu_row_id desc) do
     {
     if (not length (u_full_name))
       u_full_name := null;
@@ -68,20 +68,20 @@
 <?vsp
     }
 ?>
-          <li/></ul>
+          <li/>
+        </ul>
           <h3>New Users</h3>
         <ul class="w_act_lst">
 <?vsp
-  for select top 3  nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nr_row_id desc do
+            for (select distinct top 3 nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nr_row_id desc) do
     {
 ?>
-        <li>
-          <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nr_name) ||'/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
-        </li>
+          <li><a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nr_name) ||'/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a></li>
 <?vsp
     }
 ?>
-        <li/></ul>
+          <li/>
+        </ul>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
         <a href="search.vspx?newest=users&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
@@ -90,7 +90,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-blogs">
-    <div class="widget w_db_summary w_blog_summary">
+    <div class="widget w_db_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -102,7 +102,7 @@
       <div class="w_pane content_pane">
         <ul>
 <?vsp
-  for select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc do
+            for (select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc) do
   {
 ?>
           <li><a href="&lt;?V wa_expand_url (wnb_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnb_title, 1, 55) ?></a></li>
@@ -118,7 +118,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-news">
-    <div class="widget w_db_summary w_news_summary">
+    <div class="widget w_db_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -130,12 +130,10 @@
       <div class="w_pane content_pane">
         <ul>
   <?vsp
-  for select top 10 wnn_efi_id, wnn_title, wnn_link from wa_new_news order by wnn_row_id desc do
+            for (select top 10 wnn_efi_id, wnn_title, wnn_link from wa_new_news order by wnn_row_id desc) do
   {
   ?>
-    <li>
-            <a href="&lt;?V wa_expand_url (SIOC..feed_item_iri2 (wnn_efi_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a>
-          </li>
+          <li><a href="&lt;?V wa_expand_url (SIOC..feed_item_iri2 (wnn_efi_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a></li>
   <?vsp
   }
   ?>
@@ -148,26 +146,22 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-wiki">
-    <div class="widget w_db_summary w_wiki_summary">
+    <div class="widget w_db_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
                src="images/icons/ods_wiki_16.png"
-               alt="ODS-Weblog icon"/>
+               alt="ODS-Wiki icon"/>
           <span class="w_title_text">Wiki Activity</span>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <ul>
 <?vsp
-  for select top 10 wnw_title, wnw_topic_id from wa_new_wiki order by wnw_row_id desc do
+          for (select top 10 wnw_title, wnw_topic_id from wa_new_wiki order by wnw_row_id desc) do
     {
 ?>
-    <li>
-            <a href="&lt;?V wa_expand_url (WV.WIKI.post_topic_uri (wnw_topic_id), self.login_pars) ?&gt;">
-              <?V wa_utf8_to_wide (wnw_title, 1, 55) ?>
-            </a>
-          </li>
+          <li><a href="&lt;?V wa_expand_url (WV.WIKI.post_topic_uri (wnw_topic_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnw_title, 1, 55) ?></a></li>
 <?vsp
      }
 ?>
@@ -180,7 +174,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-blog-summary">
-    <div class="widget w_app_summary w_blog_summary">
+    <div class="widget w_db_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -1257,7 +1251,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-dataspaces">
-    <div class="widget w_my_dataspaces">
+    <div class="widget w_my_instance">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -1573,32 +1567,24 @@
   <xsl:template match="vm:dash-my-blog">
 <?vsp
   declare has_blog_app int;
-  has_blog_app := 0;
-  if (wa_check_package('blog2') and
-      exists (select 1 from wa_member
-                where WAM_APP_TYPE='WEBLOG2' and
-                      WAM_MEMBER_TYPE=1 and
-                      WAM_USER=self.u_id))
-    {
-      has_blog_app := 1;
-    }
+
+      has_blog_app := wa_check_owner_app ('blog2', 'WEBLOG2', self.u_id);
 ?>
     <vm:if test="not has_blog_app">
       <div class="app_ad">
-        <!-- TODO create app ad button and call template to create-->
-        <!--vm:url value="Foo" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo"-->
         <a href="index_inst.vspx?&lt;?V 'wa_name=WEBLOG2&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_blog.jpg" alt="Your Own Blog IS Just 3 Clicks Away!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="blog_app_ad_nuke"/>
-          <label for="blog_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div>
     </vm:if>
     <vm:if test="has_blog_app">
-      <div class="widget w_my_blog">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1622,17 +1608,11 @@
     </vm:if>
   </xsl:template>
 
-<!--vm:url value="Start using Wiki" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" /-->
-
   <xsl:template match="vm:dash-my-wiki">
 <?vsp
   declare has_wiki_app int;
-  has_wiki_app := 0;
-  if (wa_check_package('wiki') and
-      exists (select 1 from wa_member where WAM_APP_TYPE='oWiki' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id))
-        {
-          has_wiki_app := 1;
-        }
+
+      has_wiki_app := wa_check_owner_app ('wiki', 'oWiki', self.u_id);
 ?>
     <vm:if test="not has_wiki_app">
       <div class="app_ad">
@@ -1640,14 +1620,15 @@
           <img border="0" src="images/app_ads/ods_bann_wiki.jpg" alt="Share Information, Collaborate With ODS-Wiki!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="wiki_app_ad_nuke"/>
-          <label for="wiki_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div>
     </vm:if>
     <vm:if test="has_wiki_app">
-      <div class="widget w_my_wiki">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1656,7 +1637,7 @@
             <span class="w_title_text">My Wiki</span>
           </div>
         </div>
-        <div class="pane content_pane">
+        <div class="w_pane content_pane">
           <ul>
             <xsl:call-template name="user-dashboard-my-item">
               <xsl:with-param name="app">oWiki</xsl:with-param>
@@ -1674,17 +1655,10 @@
   <!--vm:url value="Create your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" /-->
 
   <xsl:template match="vm:dash-my-news">
-
 <?vsp
   declare has_news_app int;
-  has_news_app := 0;
-  if (wa_check_package('enews2') and
-      exists (select 1 from wa_member
-                       where WAM_APP_TYPE='eNews2' and
-                             WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
-    {
-      has_news_app := 1;
-    }
+
+      has_news_app := wa_check_owner_app ('enews2', 'eNews2', self.u_id);
 ?>
     <vm:if test="not has_news_app">
       <div class="app_ad">
@@ -1692,14 +1666,15 @@
           <img border="0" src="images/app_ads/ods_bann_feeds.jpg" alt="Create Your Own Personalized News Desk!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="news_app_ad_nuke"/>
-          <label for="news_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div>
     </vm:if>
     <vm:if test="has_news_app">
-      <div class="widget w_my_news">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1724,24 +1699,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-bookmarks">
-
 <?vsp
-
   declare has_bookmarks integer;
 
-  has_bookmarks := 0;
-
-  if (wa_check_package ('bookmark') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='Bookmark' and
-                      WAM_MEMBER_TYPE = 1 and
-                      WAM_USER = self.u_id))
-    has_bookmarks := 1;
-
+      has_bookmarks := wa_check_owner_app ('bookmark', 'Bookmark', self.u_id);
 ?>
     <vm:if test="has_bookmarks">
-      <div class="widget w_my_bookmarks">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1787,14 +1751,8 @@
                      wa_expand_url (_inst_url, self.login_pars),
                      '&tab=shared',
                      dta[0],
-                     case when dta[0] > 1
-                       then 's'
-                       else ''
-                     end,
-                     case when dta[0] > 1
-                       then 's'
-                       else ''
-                     end));
+                     case when dta[0] > 1 then 's' else '' end,
+                     case when dta[0] > 1 then 's' else '' end));
     }
 ?>
 
@@ -1807,8 +1765,9 @@
           <img border="0" src="images/app_ads/ods_bann_bookmarks.jpg" alt="Let us help you organize and share your bookmarks!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="bookmarks_app_ad_nuke"/>
-          <label for="bookmarks_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -1816,24 +1775,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-contacts">
-
 <?vsp
-
   declare has_addressbook integer;
 
-  has_addressbook := 0;
-
-  if (wa_check_package ('addressbook') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='AddressBook' and
-                      WAM_MEMBER_TYPE = 1 and
-                      WAM_USER = self.u_id))
-    has_addressbook := 1;
-
+      has_addressbook := wa_check_owner_app ('addressbook', 'AddressBook', self.u_id);
 ?>
     <vm:if test="has_addressbook">
-      <div class="widget w_my_addressbook">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1879,10 +1827,7 @@
                      wa_expand_url (_inst_url, self.login_pars),
                      '&tab=shared',
                      dta[0],
-                     case when dta[0] > 1
-                       then 's'
-                       else ''
-                     end ));
+                     case when dta[0] > 1 then 's' else '' end ));
     }
 ?>
 
@@ -1895,8 +1840,9 @@
           <img border="0" src="images/app_ads/ods_bann_addressbook.jpg" alt="Let us help you organize and share your contacts!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="addressbook_app_ad_nuke"/>
-          <label for="addressbook_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2064,7 +2010,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-community">
-    <div class="widget w_my_communities">
+    <div class="widget w_my_instance">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -2109,12 +2055,9 @@
 
   <xsl:template match="vm:dash-my-photos">
     <?vsp
-
       declare has_gallery integer;
 
-      has_gallery := 0;
-      if (exists (select 1 from wa_member where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id))
-        has_gallery := 1;
+      has_gallery := wa_check_owner_app ('Gallery', 'oGallery', self.u_id);;
     ?>
     <vm:if test="has_gallery">
     <div class="widget w_my_photos">
@@ -2262,8 +2205,9 @@
           <img border="0" src="images/app_ads/ods_bann_photos.jpg" alt="Let us help you organize and share your contacts!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="gallery_app_ad_nuke"/>
-          <label for="gallery_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2447,20 +2391,10 @@
 <?vsp
   declare has_webmail int;
 
-  has_webmail := 0;
-
-  if (wa_check_package('oMail') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='oMail' and
-                      WAM_MEMBER_TYPE=1 and
-                      WAM_USER=self.u_id) )
-    {
-      has_webmail := 1;
-    }
+      has_webmail := wa_check_owner_app ('oMail', 'oMail', self.u_id);
 ?>
     <vm:if test="has_webmail">
-      <div class="widget w_my_mail">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -2520,8 +2454,9 @@
           <img border="0" src="images/app_ads/ods_bann_webmail.jpg" alt="Webmail app ad banner" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="mail_app_ad_nuke"/>
-          <label for="mail_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2535,20 +2470,10 @@
 <?vsp
   declare has_briefcase int;
 
-  has_briefcase := 0;
-
-  if (wa_check_package('Briefcase') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='oDrive' and
-                      WAM_MEMBER_TYPE=1 and
-                      WAM_USER=self.u_id) )
-    {
-      has_briefcase := 1;
-    }
+      has_briefcase := wa_check_owner_app ('Briefcase', 'oDrive', self.u_id);
 ?>
     <vm:if test="has_briefcase">
-      <div class="widget w_my_news">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -2629,8 +2554,9 @@
           <img border="0" src="images/app_ads/ods_bann_briefcase.jpg" alt="Briefcase app ad banner" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="briefcase_app_ad_nuke"/>
-          <label for="briefcase_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2641,18 +2567,10 @@
     <?vsp
       declare has_calendar integer;
 
-      has_calendar := 0;
-
-      if (wa_check_package ('calendar') and
-          exists (select 1
-                    from wa_member
-                   where WAM_APP_TYPE='Calendar' and
-                         WAM_MEMBER_TYPE = 1 and
-                         WAM_USER = self.u_id))
-        has_calendar := 1;
+      has_calendar := wa_check_owner_app ('calendar', 'Calendar', self.u_id);
     ?>
     <vm:if test="has_calendar">
-      <div class="widget w_my_calendar">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon" src="images/icons/ods_calendar_16.png" alt="ODS-Calendar icon"/>
@@ -2678,8 +2596,9 @@
           <img border="0" src="images/app_ads/ods_bann_calendar.jpg" alt="Let us help you organize your events!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="calendar_app_ad_nuke"/>
-          <label for="calendar_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->

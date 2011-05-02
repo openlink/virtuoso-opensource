@@ -130,7 +130,7 @@ function checkRest (form, sel)
     }
 }
             ODSInitArray.push ( function () {
-              OAT.Loader.load(["json", "ws", "calendar", "combolist"], function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){(<?V self.is_org ?>)? swPersHide(): swPersShow();}); OAT.MSG.send(OAT, 'PAGE_LOADED');});
+              OAT.Loader.load(["json", "ws", "calendar", "combolist", "anchor", "dialog"], function(){OAT.Preferences.imagePath = '/ods/images/oat/'; OAT.Preferences.stylePath = '/ods/oat/styles/'; OAT.Preferences.showAjax = false; OAT.MSG.attach(OAT, "PAGE_LOADED", function(){(<?V self.is_org ?>)? swPersHide(): swPersShow();}); OAT.MSG.send(OAT, 'PAGE_LOADED');});
             });
           ]]>
         </script>

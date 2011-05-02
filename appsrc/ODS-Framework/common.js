@@ -26,35 +26,42 @@ function showError(msg) {
   return false;
 }
 
-function toggleControl (ctr1, val, ctr2)
-{
-  if (ctr2 == null)
-    return;
+function findParent(obj, tag) {
+  var obj = obj.parentNode;
+  if (obj.tagName.toLowerCase() == tag)
+    return obj;
+  return findParent(obj, tag);
+    }
 
-  if (ctr1 && ctr1.value == val)
+function odsPost(obj, fields, button) {
+  var form = findParent (obj, 'form');
+  for (var i = 0; i < fields.length; i += 2)
+    hiddenCreate(fields[i], form, fields[i+1]);
+
+  if (button) {
+    doPost(form.name, button);
+  } else {
+    form.submit();
+  }
+}
+
+function toggleControl (ctr1, val, ctr2)
     {
-      ctr2.disabled = true;
-    }
-  else
-    {
-      ctr2.disabled = false;
-    }
+  if (ctr2 != null)
+    ctr2.disabled = (ctr1 && ctr1.value == val);
 }
 
 function setSelectLists (val, form, pref)
 {
-  var i;
   if (val == 0 || form == null || pref == null)
     return;
-  for (i = 0; i < form.elements.length; i++)
+  for (var i = 0; i < form.elements.length; i++)
     {
       var contr = form.elements[i];
       if (contr != null && contr.type == 'select-one' && contr.name.indexOf (pref) != -1)
-        {
           contr.value = val;
         }
     }
-}
 
 function dateFormat(date, format)
 {
@@ -552,6 +559,7 @@ function pageFocus(tab) {
 
 // RDF Relations
 // ---------------------------------------------------------------------------
+var rdfDialog
 var RDF = new Object();
 RDF.tablePrefix = 'r';
 RDF.itemTypes = new Object();
@@ -834,6 +842,88 @@ RDF.clearTable = function()
 }
 
 // Item Types functions
+RDF.showRDF = function(prefix, format)
+{
+  function preparePropertiesWork(prefix, ontologyNo, itemNo) {
+    var form = document.forms['page_form'];
+    var itemProperties = [];
+    for (var L = 0; L < form.elements.length; L++)
+    {
+      if (!form.elements[L])
+        continue;
+
+      var ctrl = form.elements[L];
+      if (typeof(ctrl.type) == 'undefined')
+        continue;
+
+      if (ctrl.name.indexOf(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_") != 0)
+        continue;
+
+      var propertyNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_", "");
+      var propertyName = ctrl.value;
+      var propertyType = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
+      var propertyValue = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
+      var propertyLanguage = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_4_"+propertyNo);
+      if (propertyType == 'object') {
+        var item = RDF.getItemByName(propertyValue);
+        if (item)
+          propertyValue = item.id;
+      }
+      itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType, "language": propertyLanguage});
+    }
+    return itemProperties;
+  }
+
+  var L = 0;
+  var form = document.forms['page_form'];
+  var ontologies = [];
+  for (var N = 0; N < form.elements.length; N++)
+  {
+    if (!form.elements[N])
+      continue;
+
+    var ctrl = form.elements[N];
+    if (typeof(ctrl.type) == 'undefined')
+      continue;
+
+    if (ctrl.name.indexOf(prefix+"_fld_2_") != 0)
+      continue;
+
+    var ontologyNo = ctrl.name.replace(prefix+"_fld_2_", "");
+    var ontologyName = ctrl.value;
+    var ontologyItems = [];
+    for (var M = 0; M < form.elements.length; M++)
+    {
+      if (!form.elements[M])
+        continue;
+
+      var ctrl = form.elements[M];
+      if (typeof(ctrl.type) == 'undefined')
+        continue;
+
+      if (ctrl.name.indexOf(prefix+"_item_"+ontologyNo+"_fld_2_") != 0)
+        continue;
+
+      var itemNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_fld_2_", "");
+      var itemName = ctrl.value;
+      var itemProperties = preparePropertiesWork(prefix, ontologyNo, itemNo);
+      ontologyItems.push({"id": itemNo, "className": itemName, "properties": itemProperties});
+    }
+    ontologies.push({"id": ''+L++, "ontology": ontologyName, "items": ontologyItems});
+  }
+  var items = OAT.JSON.stringify(ontologies);
+	var x = function(data) {
+    if (!rdfDialog) {
+      rdfDialog = new OAT.Dialog("Show Data", "rdfDiv", {width: 800, height: 500, resize: 0, modal: 1, buttons: 1});
+      OAT.Dom.show('rdfDiv');
+    }
+    $('rdfData').innerHTML = data;
+		rdfDialog.show();
+	}
+  OAT.AJAX.GET('/ods/api/objects.rdf', 'items='+encodeURIComponent(items)+'&format='+format, x);
+}
+
+// Item Types functions
 RDF.showItemTypes = function()
 {
   var prefix = this.tablePrefix;
@@ -1020,13 +1110,14 @@ RDF.showItemsTable = function(itemType)
     var prefixItem = prefix + '_item_' + No;
 
     var fld = OAT.Dom.create('span');
+    fld.title = 'Add Element';
     fld.onclick = function(){var id = RDF.newItemId(); TBL.createRow(prefixItem, null, {No: id, fld_1: {mode: 45, cssText: 'display: none;'}, fld_2: {mode: 44, itemType: itemType, labelValue: 'New Item: '}, btn_1: {mode: 42}, btn_2: {mode: 43}});};
     OAT.Dom.addClass(fld, 'button pointer');
 
     var img = OAT.Dom.create('img');
     img.src = '/ods/images/icons/add_16.png';
-    img.alt = 'Add row';
-    img.title = fld.alt;
+    img.alt = 'Add Element';
+    img.title = img.alt;
     OAT.Dom.addClass(img, 'button');
 
     fld.appendChild(img);
@@ -1310,13 +1401,14 @@ RDF.showPropertiesTable = function(item)
       var prefixProp = prefix + '_prop_' + No;
 
       var fld = OAT.Dom.create('span');
+      fld.title = 'Add Property';
       fld.onclick = function(){TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item}, fld_2: {mode: 48, item: item}, fld_3: {mode: 47, item: item}, fld_4: {mode: 49, item: item}});};
       OAT.Dom.addClass(fld, 'button pointer');
 
       var img = OAT.Dom.create('img');
       img.src = '/ods/images/icons/add_16.png';
-      img.alt = 'Add row';
-      img.title = fld.alt;
+      img.alt = 'Add Property';
+      img.title = img.alt;
       OAT.Dom.addClass(img, 'button');
 
       fld.appendChild(img);
@@ -1343,17 +1435,19 @@ RDF.showPropertiesTable = function(item)
 
 RDF.changePropertyValue = function(obj)
 {
-  var S = obj.parentNode.id;
+  var fld = obj.input;
+  var fldTd = findParent(fld, 'td');
+  var S = fldTd.id;
 
-  var fldName = (obj.id).replace(/fld_1/, 'fld_2');
+  var fldName = (fld.id).replace(/fld_1/, 'fld_2');
   var td = $(S.substr(0,S.lastIndexOf('_')+1)+'2');
-  TBL.createCell48(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
+  TBL.createCell48(td, '', fldName, 0, {item: fld.item, value: {name: fld.value}});
 
-  var fldName = (obj.id).replace(/fld_1/, 'fld_3');
+  var fldName = (fld.id).replace(/fld_1/, 'fld_3');
   var td = $(S.substr(0,S.lastIndexOf('_')+1)+'3');
-  TBL.createCell47(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
+  TBL.createCell47(td, '', fldName, 0, {item: fld.item, value: {name: fld.value}});
 
-  var fldName = (obj.id).replace(/fld_1/, 'fld_4');
+  var fldName = (fld.id).replace(/fld_1/, 'fld_4');
   var td = $(S.substr(0,S.lastIndexOf('_')+1)+'4');
-  TBL.createCell49(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
+  TBL.createCell49(td, '', fldName, 0, {item: fld.item, value: {name: fld.value}});
 }

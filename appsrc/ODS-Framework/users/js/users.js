@@ -486,9 +486,9 @@ function buildObjByChildNodes(elm) {
 	return obj;
 }
 
-
 // publics
 var lfTab;
+var lfNotReturn = true;
 var rfTab;
 var ufTab;
 var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9', 'pf_page_0_10'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2_0', 'pf_page_2_1', 'pf_page_2_2', 'pf_page_2_3', 'pf_page_2_4', 'pf_page_2_5', 'pf_page_2_6']];
@@ -524,7 +524,7 @@ function init()
     var S = '/ods/api/user.validate?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
     var x = function (data) {
       var xml = OAT.Xml.createXmlDoc(data);
-      if (!hasError(xml)) {
+      if (!hasError(xml, false)) {
         validateSession = true;
       }
     }
@@ -551,30 +551,18 @@ function init()
       OAT.Dom.hide('rf');
       if (uriParams['oid-mode'] == 'twitter') {
         lfTab.go(4);
-        OAT.AJAX.POST ('/ods/api/user.authenticate' +
-          '?oauthMode=twitter' +
-          '&oauthSid=' + encodeURIComponent(uriParams['sid']) +
-          '&oauthVerifier=' + encodeURIComponent(uriParams['oauth_verifier']) +
-          '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']), null, afterLogin);
+        lfNotReturn = false;
+        loginSubmit(4, 'lf');
       }
-      else if (uriParams['oid-mode'] == 'linkedin')
-      {
+      else if (uriParams['oid-mode'] == 'linkedin') {
         lfTab.go(5);
-        OAT.AJAX.POST ('/ods/api/user.authenticate' +
-          '?oauthMode=linkedin' +
-          '&oauthSid=' + encodeURIComponent(uriParams['sid']) +
-          '&oauthVerifier=' + encodeURIComponent(uriParams['oauth_verifier']) +
-          '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']), null, afterLogin);
+        lfNotReturn = false;
+        loginSubmit(5, 'lf');
       }
-      else
-      {
-        $('lf_openId').value = uriParams['openid.identity'];
+      else if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
       lfTab.go(1);
-      if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
-          OAT.AJAX.POST ('/ods/api/user.authenticate', openIdLoginURL(uriParams), afterLogin);
-      } else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel') {
-      alert('OpenID Authentication Failed');
-    }
+        $('lf_openId').value = uriParams['openid.identity'];
+        loginSubmit(1, 'lf');
       }
 				}
 	}
@@ -607,8 +595,8 @@ function init()
           if (user && user.getElementsByTagName('id')[0]) {
             hiddenCreate('twitter-data', null, data);
             var tbl = $('rf_table_4');
-            addProfileRowValue(tbl, 'Login Name', tagValue(user, 'screen_name'));
-            addProfileRowInput(tbl, 'E-Mail', 'rf_twitter_email');
+            addProfileRowInput(tbl, 'Login Name', 'rf_twitter_name', {value: tagValue(user, 'screen_name')});
+            addProfileRowInput(tbl, 'E-Mail', 'rf_twitter_email', {width: '300px'});
           }
           else
           {
@@ -632,8 +620,8 @@ function init()
           if (user && user.getElementsByTagName('id')[0]) {
             hiddenCreate('linkedin-data', null, data);
             var tbl = $('rf_table_5');
-            rfRowValue(tbl, 'Login Name', OAT.Xml.textValue(user.getElementsByTagName('first-name')[0]));
-            rfRowInput(tbl, 'E-Mail', 'rf_linkedin_email');
+            addProfileRowInput(tbl, 'Login Name', 'rf_linkedin_name', {value: OAT.Xml.textValue(user.getElementsByTagName('first-name')[0])});
+            addProfileRowInput(tbl, 'E-Mail', 'rf_linkedin_email', {width: '300px'});
           }
           else
           {
@@ -694,7 +682,7 @@ function init()
           if (!data['nick'])
             addProfileRowInput(tbl, 'Login Name', 'rf_openid_uid');
           if (!data['mbox'])
-            addProfileRowInput(tbl, 'E-Mail', 'rf_openid_email');
+              addProfileRowInput(tbl, 'E-Mail', 'rf_openid_email', {width: '300px'});
         } else {
         var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
         OAT.AJAX.POST ("/ods/api/user.register", q, afterSignup);
@@ -824,27 +812,8 @@ function init()
     OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2, 2);});
     OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 2, 3);});
     OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 2, 4);});
-    var x = function (data) {
-      var url;
-      try {
-        var url = OAT.JSON.parse(data);
-      } catch (e) { url = null; }
-      if (url != null) {
-        if (url != '') {
-          var a = OAT.Dom.create('a');
-          a.href = url;
-          a.innerHTML = 'Certificate Generator';
-          a.style.cssText = 'color: #000; text-decoration: none;';
-          $("pf_tab_2_5").innerHTML = '';
-          $("pf_tab_2_5").appendChild(a);
-          OAT.Dom.show("pf_tab_2_5");
-        }
-      } else {
-        OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
-      OAT.Dom.show("pf_tab_2_5");
-      }
-    }
-    OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
+    // pf_tab_2_5
+    ufCertificateGenerator();
     OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 2, 6);});
 
     pfTabInit('pf_tab_2_', $v('formTab2'));
@@ -1173,7 +1142,7 @@ function pfSetACLSelects (obj)
     if (ctrl.disabled)
       continue;
 
-   	if (ctrl.name.indexOf('pf_acl_') != 0)
+     if ((ctrl.name.indexOf('pf_acl_') != 0) && (ctrl.name.indexOf('x1_fld_2_') != 0))
       continue;
 
    	if (!OAT.Dom.isChild(ctrl, div))
@@ -1376,7 +1345,7 @@ function pfShowList(api, prefix, noMsg, cols, idIndex, cb)
 			o = null;
 		}
 		var tbody = $(prefix+'_tbody');
-		tbody.innerHTML = '';
+    OAT.Dom.clear(tbody);
 		if (o) {
     	for (var N = 0; N < o.length; N++) {
     	  var id = o[N][idIndex];
@@ -1462,7 +1431,7 @@ function pfShowOwn(mode, id)
 {
   pfShowMode('pf051', mode, id);
   var x = function (obj) {
-    $('ow_tbody').innerHTML = '';
+    OAT.Dom.clear('ow_tbody');
     RDF.tablePrefix = 'ow';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1501,7 +1470,7 @@ function pfShowOffer(mode, id)
 {
   pfShowMode('pf054', mode, id);
   var x = function (obj) {
-    $('ol_tbody').innerHTML = '';
+    OAT.Dom.clear('ol_tbody');
     RDF.tablePrefix = 'ol';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1514,7 +1483,7 @@ function pfShowSeek(mode, id)
 {
   pfShowMode('pf055', mode, id);
   var x = function(obj) {
-    $('wl_tbody').innerHTML = '';
+    OAT.Dom.clear('wl_tbody');
     RDF.tablePrefix = 'wl';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1527,7 +1496,7 @@ function pfShowLike(mode, id)
 {
   pfShowMode('pf056', mode, id);
   var x = function(obj) {
-    $('ld_tbody').innerHTML = '';
+    OAT.Dom.clear('ld_tbody');
     RDF.tablePrefix = 'ld';
     RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
     RDF.itemTypes = obj.properties;
@@ -1913,7 +1882,7 @@ function showProfile(user) {
         addProfileRow(tbl, user, 'gender',    'Gender');
         addProfileRow(tbl, user, 'birthday',  'Birthday');
         addProfileRow(tbl, user, 'homepage',  'Personal Webpage');
-				addProfileTableValues(tbl, 'Personal URIs (Web IDs)', tagValue(user, 'webIDs'), [ 'URL' ], [ '\n' ])
+    addProfileTableValues(tbl, 'Other Personal URIs (WebIDs)', tagValue(user, 'webIDs'), [ 'URL', 'Access' ], [ '\n', ';' ])
 				addProfileTableValues(tbl, 'Topic of Interests', tagValue(user, 'interests'), [ 'URL', 'Label' ], [ '\n', ';' ])
 				addProfileTableValues(tbl, 'Thing of Interests', tagValue(user, 'topicInterests'), [ 'URL', 'Label' ], [ '\n', ';' ])
       }
@@ -2002,7 +1971,7 @@ function addProfileRowValue(tbl, label, value, leftTag) {
   tbl.appendChild(tr);
 }
 
-function addProfileRowInput(tbl, label, fName) {
+function addProfileRowInput(tbl, label, fName, fOptions) {
 	var tr = OAT.Dom.create('tr');
   tr.id = 'tr+'+fName;
 
@@ -2014,7 +1983,7 @@ function addProfileRowInput(tbl, label, fName) {
 	var td = OAT.Dom.create('td');
   tr.appendChild(td);
 
-  var fld = OAT.Dom.create('input');
+  var fld = OAT.Dom.create('input', fOptions);
   fld.type = 'type';
   fld.id = fName;
   fld.name = fld.id;
@@ -2081,9 +2050,11 @@ function lfLoginSubmit() {
 }
 
 function loginSubmit(mode, prefix) {
+  var uriParams = OAT.Dom.uriParams();
+  var notReturn = lfNotReturn;
+  lfNotReturn = true;
 	var q = '';
 	if (mode == 1) {
-    var uriParams = OAT.Dom.uriParams();
     if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
       q += openIdLoginURL(uriParams);
     } else {
@@ -2093,19 +2064,36 @@ function loginSubmit(mode, prefix) {
   	  openIdAuthenticate(prefix);
     return false;
   	}
-	} else if (mode == 2) {
+  }
+  else if (mode == 2) {
 		if (!facebookData || !facebookData.uid)
 			return showError('Invalid Facebook UserID');
 
 		q += '&facebookUID=' + facebookData.uid;
-	} else if (mode == 3) {
-  } else if (mode == 4) {
+  }
+  else if (mode == 3) {
+  }
+  else if (mode == 4) {
+	  if (notReturn || (typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
     twitterAuthenticate('lf');
     return false;
-  } else if (mode == 5) {
+    }
+    q +='oauthMode=twitter'
+      + '&oauthSid=' + encodeURIComponent(uriParams['sid'])
+      + '&oauthVerifier=' + encodeURIComponent(uriParams['oauth_verifier'])
+      + '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']);
+  }
+  else if (mode == 5) {
+	  if ((notReturn || typeof (uriParams['oauth_verifier']) == 'undefined') || (typeof (uriParams['oauth_token']) == 'undefined')) {
     linkedinAuthenticate('lf');
     return false;
-  } else {
+    }
+    q +='oauthMode=linkedin'
+      + '&oauthSid=' + encodeURIComponent(uriParams['sid'])
+      + '&oauthVerifier=' + encodeURIComponent(uriParams['oauth_verifier'])
+      + '&oauthToken=' + encodeURIComponent(uriParams['oauth_token']);
+  }
+  else {
 		if (($(prefix+'_uid').value.length == 0) || ($(prefix+'_password').value.length == 0))
       return showError('Invalid User ID or Password');
 
@@ -2128,6 +2116,7 @@ function afterLogin(data, prefix) {
 			T.value = ((prefix == 'rf')? 'profile': 'user');
 			T.form.submit();
 		} else {
+      ufCertificateGenerator();
 			OAT.Dom.show("ob_right_logout");
 			OAT.Dom.hide("ob_links");
 			OAT.Dom.hide("lf");
@@ -2169,6 +2158,29 @@ function inputParameter(inputField) {
   if (T)
     return T.value;
   return '';
+}
+
+function ufCertificateGenerator() {
+  var x = function (data) {
+    var url;
+    try {
+      var url = OAT.JSON.parse(data);
+    } catch (e) { url = null; }
+    if (url && url.indexOf('<failed>') == -1) {
+      var a = OAT.Dom.create('a');
+      a.href = url;
+      a.innerHTML = 'Certificate Generator';
+      a.style.cssText = 'color: #000; text-decoration: none;';
+      $("pf_tab_2_5").innerHTML = '';
+      $("pf_tab_2_5").appendChild(a);
+      OAT.Dom.show("pf_tab_2_5");
+    } else {
+      $("pf_tab_2_5").innerHTML = 'Certificate Generator';
+      OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
+      OAT.Dom.show("pf_tab_2_5");
+    }
+  }
+  OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
 }
 
 function ufCleanTablesData(prefix) {
@@ -2276,7 +2288,7 @@ function ufProfileCallback(data) {
 			fieldUpdate(user, 'gender', 'pf_gender', aclData);
 			fieldUpdate(user, 'birthday', 'pf_birthday', aclData);
 			fieldUpdate(user, 'homepage', 'pf_homepage', aclData);
-      pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});}, aclData, 'pf_acl_webIDs');
+      pfShowRows("x1", tagValue(user, "webIDs"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4, value: val2}});}, aclData, 'pf_acl_webIDs');
 			fieldUpdate(user, 'mailSignature', 'pf_mailSignature');
 			fieldUpdate(user, 'summary', 'pf_summary', aclData);
 			fieldUpdate(user, 'photo', 'pf_photo', aclData);
@@ -2485,7 +2497,7 @@ function encodeTableData(prefix, delimiters)
         retValue += $v(prefix+"_fld_1_"+N) + delimiters[1] + $v(prefix+"_fld_2_"+N) + delimiters[0];
     }
   }
-  return retValue;
+  return encodeURIComponent(retValue);
 }
 
 function updateOnlineAccounts(prefix, accountType)
@@ -2539,6 +2551,7 @@ function updateBioEvents(prefix)
 }
 
 function prepareItems(prefix) {
+  var L = 0;
   var ontologies = [];
   var form = $('page_form');
   for (var N = 0; N < form.elements.length; N++)
@@ -2573,7 +2586,7 @@ function prepareItems(prefix) {
       var itemProperties = preparePropertiesWork(prefix, ontologyNo, itemNo);
       ontologyItems.push({"id": itemNo, "className": itemName, "properties": itemProperties});
     }
-    ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
+    ontologies.push({"id": ''+L++, "ontology": ontologyName, "items": ontologyItems});
   }
   return OAT.JSON.stringify(ontologies);
 }
@@ -2714,7 +2727,7 @@ function pfUpdateSubmit(No) {
           + '&spbEnable=' + encodeURIComponent($('pf_spbEnable').checked? '1': '0')
           + '&inSearch=' + encodeURIComponent($('pf_inSearch').checked? '1': '0')
           + '&showActive=' + encodeURIComponent($('pf_showActive').checked? '1': '0')
-        + '&webIDs=' + encodeTableData("x1", ["\n"])
+          + '&webIDs=' + encodeTableData("x1", ["\n", ";"])
         + '&interests=' + encodeTableData("x2", ["\n", ";"])
         + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);
         A +='title=' + $v('pf_acl_title')
@@ -2920,7 +2933,7 @@ function pfCleanFOAFData() {
   $('pf_foaf').defaultValue = '';
   $('cb_all').checked = false;
   $('cb_all').defaultChecked = false;
-	$('i_tbody').innerHTML = '';
+  OAT.Dom.clear('i_tbody');
 	OAT.Dom.hide('i_tbl');
 }
 
@@ -3160,6 +3173,8 @@ function rfSignupSubmit(event) {
       return false;
     }
     q +='&data=' + encodeURIComponent($v('twitter-data'));
+    if ($('rf_twitter_name'))
+      q +='&name=' + encodeURIComponent($v('rf_twitter_name'));
     if ($('rf_twitter_email'))
       q +='&email=' + encodeURIComponent($v('rf_twitter_email'));
   }
@@ -3169,6 +3184,8 @@ function rfSignupSubmit(event) {
       return false;
     }
     q +='&data=' + encodeURIComponent($v('linkedin-data'));
+    if ($('rf_linkedin_name'))
+      q +='&name=' + encodeURIComponent($v('rf_linkedin_name'));
     if ($('rf_linkedin_email'))
       q +='&email=' + encodeURIComponent($v('rf_linkedin_email'));
   }

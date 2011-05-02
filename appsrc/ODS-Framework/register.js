@@ -43,7 +43,7 @@ function rfRowValue(tbl, label, value, leftTag) {
   tbl.appendChild(tr);
 }
 
-function rfRowInput(tbl, label, fName) {
+function rfRowInput(tbl, label, fName, fOptions) {
   var tr = OAT.Dom.create('tr');
   tr.id = 'tr+'+fName;
 
@@ -55,8 +55,8 @@ function rfRowInput(tbl, label, fName) {
   var td = OAT.Dom.create('td');
   tr.appendChild(td);
 
-  var fld = OAT.Dom.create('input');
-  fld.type = 'type';
+  var fld = OAT.Dom.create('input', fOptions);
+  fld.type = 'text';
   fld.id = fName;
   fld.name = fld.id;
   td.appendChild(fld);
@@ -98,8 +98,8 @@ function rfInit() {
         if (user && user.getElementsByTagName('id')[0]) {
           hiddenCreate('twitter-data', null, data);
           var tbl = $('rf_table_4');
-          rfRowValue(tbl, 'Login Name', OAT.Xml.textValue(user.getElementsByTagName('screen_name')[0]));
-          rfRowInput(tbl, 'E-Mail', 'rf_twitter_email');
+          rfRowInput(tbl, 'Login Name', 'rf_twitter_name', {value: OAT.Xml.textValue(user.getElementsByTagName('screen_name')[0])});
+          rfRowInput(tbl, 'E-Mail', 'rf_twitter_email', {width: '300px'});
         }
         else
         {
@@ -112,7 +112,8 @@ function rfInit() {
         '&oauth_token=' + encodeURIComponent(uriParams['oauth_token']);
 
       OAT.AJAX.POST (S, null, x);
-    } else if (uriParams['oid-mode'] == 'linkedin') {
+    }
+    else if (uriParams['oid-mode'] == 'linkedin') {
       rfTab.go(5);
       $('rf_is_agreed').checked = true;
       var x = function (data) {
@@ -121,8 +122,8 @@ function rfInit() {
         if (user && user.getElementsByTagName('id')[0]) {
           hiddenCreate('linkedin-data', null, data);
           var tbl = $('rf_table_5');
-          rfRowValue(tbl, 'Login Name', OAT.Xml.textValue(user.getElementsByTagName('first-name')[0]));
-          rfRowInput(tbl, 'E-Mail', 'rf_linkedin_email');
+          rfRowInput(tbl, 'Login Name', 'rf_linkedin_name', {value: OAT.Xml.textValue(user.getElementsByTagName('first-name')[0])});
+          rfRowInput(tbl, 'E-Mail', 'rf_linkedin_email', {width: '300px'});
         }
         else
         {
@@ -135,7 +136,8 @@ function rfInit() {
         '&oauth_token=' + encodeURIComponent(uriParams['oauth_token']);
 
       OAT.AJAX.POST (S, null, x);
-    } else {
+    }
+    else {
     rfTab.go(1);
     if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
       var x = function (params, param, data, property) {
@@ -181,7 +183,7 @@ function rfInit() {
         if (!data['nick'])
           rfRowInput(tbl, 'Login Name', 'rf_openid_uid');
         if (!data['mbox'])
-          rfRowInput(tbl, 'E-Mail', 'rf_openid_email');
+            rfRowInput(tbl, 'E-Mail', 'rf_openid_email', {width: '300px'});
       } else {
         var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
         OAT.AJAX.POST ("/ods/api/user.register", q, rfAfterSignup);
@@ -329,6 +331,8 @@ function rfSignupSubmit(event) {
       return false;
     }
     q +='&data=' + encodeURIComponent($v('twitter-data'));
+    if ($('rf_twitter_name'))
+      q +='&name=' + encodeURIComponent($v('rf_twitter_name'));
     if ($('rf_twitter_email'))
       q +='&email=' + encodeURIComponent($v('rf_twitter_email'));
   }
@@ -338,6 +342,8 @@ function rfSignupSubmit(event) {
       return false;
     }
     q +='&data=' + encodeURIComponent($v('linkedin-data'));
+    if ($('rf_linkedin_name'))
+      q +='&name=' + encodeURIComponent($v('rf_linkedin_name'));
     if ($('rf_linkedin_email'))
       q +='&email=' + encodeURIComponent($v('rf_linkedin_email'));
   }

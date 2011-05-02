@@ -1706,6 +1706,15 @@ create procedure wa_check_app (
 }
 ;
 
+create procedure wa_check_owner_app (
+  in wad_type varchar,
+  in app_type varchar,
+  in user_id integer)
+{
+  return case when (wa_check_package (wad_type) and exists (select 1 from DB.DBA.WA_MEMBER where WAM_APP_TYPE = app_type and WAM_MEMBER_TYPE = 1 and WAM_USER = user_id)) then 1 else 0 end;
+}
+;
+
 create procedure wa_vad_check (in pname varchar)
 {
   declare nam varchar;
@@ -5716,7 +5725,32 @@ create procedure wa_wa_member_upgrade ()
 }
 ;
 
+create procedure WA_FOAF_UPGRADE ()
+{
+  declare tmp, access, uname, visibility any;
 
+  if (registry_get ('WA_FOAF_UPGRADE') = 'done')
+    return;
+
+  for (select WAUI_U_ID, WAUI_FOAF from DB.DBA.WA_USER_INFO) do
+  {
+
+  	 uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
+     visibility := WA_USER_VISIBILITY (uname);
+     access := visibility[8];
+     tmp := '';
+     for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = WAUI_FOAF) do
+     {
+        tmp := tmp || interest || ';' || cast (access as varchar) || '\n';
+     }
+     WA_USER_EDIT (uname, 'WAUI_FOAF', tmp);
+  }
+
+  registry_set ('WA_FOAF_UPGRADE', 'done');
+}
+;
+WA_FOAF_UPGRADE ()
+;
 
 create procedure wa_get_new_url (in app_type varchar, in asid varchar, in arealm varchar)
 {
@@ -7310,12 +7344,7 @@ WA_UPGRADE_USER_SVC ()
 
 create procedure http_s ()
 {
-
-  if(is_https_ctx ())
-     return 'https://';
-  else
-     return 'http://';
-
+  return case when (is_https_ctx ()) then 'https://' else 'http://' end;
 }
 ;
 
@@ -7977,3 +8006,28 @@ create procedure ods_user_keys (in username varchar)
 }
 ;
 
+create procedure wa_show_column_header (
+  in columnLabel varchar,
+  in columnName varchar,
+  in sortOrder varchar,
+  in sortDirection varchar := 'asc',
+  in columnProperties varchar := '')
+{
+  declare class, image, onclick any;
+
+  image := '';
+  onclick := sprintf ('onclick="javascript: odsPost(this, [\'sortColumn\', \'%s\']);"', columnName);
+  if (sortOrder = columnName)
+  {
+    if (sortDirection = 'desc')
+    {
+      image := '&nbsp;<img src="/ods/images/icons/orderdown_16.png" border="0" alt="Down"/>';
+    }
+    else if (sortDirection = 'asc')
+    {
+      image := '&nbsp;<img src="/ods/images/icons/orderup_16.png" border="0" alt="Up"/>';
+    }
+  }
+  return sprintf ('<th %s %s>%s%s</th>', columnProperties, onclick, columnLabel, image);
+}
+;

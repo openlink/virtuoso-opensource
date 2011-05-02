@@ -83,17 +83,10 @@ function lfInit() {
       lfNotReturn = false;
       $('lf_login').click();
     }
-    else {
-      $('lf_openId').value = uriParams['openid.identity'];
+    else if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
     lfTab.go(1);
-    if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
-    {
-      OAT.AJAX.POST("/ods/api/user.authenticate", lfOpenIdLoginURL(uriParams), $('lf_login').onclick);
-    }
-    else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
-    {
-      alert('OpenID Authentication Failed');
-    }
+      $('lf_openId').value = uriParams['openid.identity'];
+      $('lf_login').click();
     }
   }
 
