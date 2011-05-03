@@ -175,6 +175,7 @@ tf_alloc (void)
 {
   NEW_VARZ (triple_feed_t, tf);
   tf->tf_blank_node_ids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  id_hash_set_rehash_pct (tf->tf_blank_node_ids, 220);
   return tf;
 }
 
