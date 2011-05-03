@@ -1862,7 +1862,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
             (1 == BOX_ELEMENTS (sub_eq->e_varnames)) &&
             !strcmp (eq->e_varnames[0], sub_eq->e_varnames[0]) )
             can_unlink = 1;
-          else if (sparp_equivs_have_same_fixedvalue (sparp, eq, sub_eq))
+          else if (sparp_equivs_have_same_fixedvalue (sparp, eq, sub_eq) && (0 != eq->e_gspo_uses))
             can_unlink = 1;
           if (can_unlink)
             sparp_equiv_disconnect (sparp, eq, sub_eq);
