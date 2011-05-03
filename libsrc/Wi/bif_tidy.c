@@ -48,7 +48,7 @@
 static dk_mutex_t *tidy_mtx;
 
 #ifndef OLD_TIDY
-static void *
+static void * TIDY_CALL
 tidy_malloc (size_t len)
 {
   if (len >= MAX_BOX_LENGTH)
@@ -56,7 +56,7 @@ tidy_malloc (size_t len)
   return t_alloc_box (len, DV_CUSTOM);
 }
 
-static void *
+static void * TIDY_CALL
 tidy_realloc (void * buf, size_t len)
 {
   int buf_size = IS_BOX_POINTER (buf) ? box_length (buf) : 0;
@@ -70,13 +70,13 @@ tidy_realloc (void * buf, size_t len)
   return new;
 }
 
-static void
+static void TIDY_CALL
 tidy_free (void * buf)
 {
   /* void, will release on MP_DONE */
 }
 
-static void
+static void TIDY_CALL
 tidy_panic (const char * err)
 {
   /* log_error ("Tidy panic: %s", err); */
