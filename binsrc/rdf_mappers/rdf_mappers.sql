@@ -2543,17 +2543,28 @@ create procedure DB.DBA.RDF_LOAD_OVERSTOCK (in graph_iri varchar, in new_origin_
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
-  ret_body := replace (ret_body, '= \'<script', '= \'<scr\' + \'ipt');
+  --ret_body := replace (ret_body, '= \'<script', '= \'<scr\' + \'ipt');
   --ret_body := replace (ret_body, '[url]', '{url}');
   --ret_body := replace (ret_body, '[title]', '{title}');
   if (get_keyword ('use_tidy', opts) = 'yes') 
   cont := tidy_html (ret_body, 'output-xhtml:yes\r\ntidy-mark:no');
   else  
-    cont := ret_body;
+    {
+      cont := concat (
+    '<div
+      xmlns:gr="http://purl.org/goodrelations/v1#"
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+      xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
+      xmlns:foaf="http://xmlns.com/foaf/0.1/"
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+      xmlns:review="http://purl.org/stuff/rev#">' ,
+      	serialize_to_UTF8_xml (xpath_eval ('//span[@about]', xtree_doc (ret_body, 2))), 
+      '</div>');	
+    }
   --string_to_file ('over.html', cont, -2);
   if (dest is null)
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
-  DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 1);
+  DB.DBA.RDF_LOAD_RDFA_1 (cont, new_origin_uri, thisgr, 0);
   --DB.DBA.RDF_QUAD_URI (thisgr, new_origin_uri, 'http://xmlns.com/foaf/0.1/primaryTopic', new_origin_uri || '#product');
   return 1;
 }
