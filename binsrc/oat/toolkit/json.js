@@ -30,6 +30,11 @@ OAT.JSON = {
 	},
 
 	deserialize:function(jsonString) {
+
+	if (typeof JSON != "undefined") {
+	    return JSON.parse(jsonString); // Use native JSON if available
+	}
+	
 		var js = jsonString; /* various safeguards */
 		if (js.substr(0,9) == "while(1);") { js = js.substr(9); }
 		if (js.substr(0,2) == "/*") { js = js.substr(2,js.length-4); }
@@ -37,6 +42,11 @@ OAT.JSON = {
 	},
 
 	serialize:function(something, c) {
+	
+	if (typeof (JSON) != "undefined") {
+	    return JSON.stringify(something); // Use native JSON if available
+	}
+	
 		var cache = c || [];
 		if (cache.indexOf(something) != -1) { throw new Error("Cannot serialize cyclic structure!"); }
 
@@ -57,7 +67,7 @@ OAT.JSON = {
 				} else if (something instanceof Array) {
 				    var arr = [];
 					cache.push(something);
-				for (var i=0;i<something.length;i++) {
+		for (var i=0;i<(OAT.Browser.isIE?something.length-1:something.length);i++) {
 						arr.push(arguments.callee.call(this, something[i], cache));
 				}
 				    return "["+arr.join(",")+"]";

@@ -1219,10 +1219,11 @@ OAT.Browser = {
     isKonqueror:!!navigator.userAgent.match(/konqueror/i),
     isKHTML:!!navigator.userAgent.match(/khtml/i),
 
-    isIE:(document.attachEvent && !document.addEventListener),
-    isIE6:( (document.attachEvent && !document.addEventListener) && !!navigator.userAgent.match(/msie 6/i) ),
+    isIE: !!navigator.userAgent.match(/msie/i),
+    isIE6:!!navigator.userAgent.match(/msie 6/i),
     isIE7:!!navigator.userAgent.match(/msie 7/i),
     isIE8:!!navigator.userAgent.match(/msie 8/i),
+    isIE9:!!navigator.userAgent.match(/msie 9/i),
 
     /* !isIE && !isIE7 */
 
@@ -1259,17 +1260,13 @@ OAT.Browser = {
 		  !!navigator.platform.toString().match(/ipod/i) ||
 		  !!navigator.userAgent.match(/android/i)),
 
-    hasNoSVG: (!!navigator.platform.toString().match(/iphone/i) ||
-	       !!navigator.platform.toString().match(/symbian/i) ||
-	       !!navigator.platform.toString().match(/ipod/i) ||
-	       !!navigator.userAgent.match(/android/i) ||
-	       !!navigator.userAgent.match(/msie/i)),
-
     hasXmlParser: ((!!document.implementation && 
 		    !!document.implementation.createDocument) ||
 		   (!!document.getImplementation &&
 		    !!document.getImplementation().createDocument)),
 
+    hasSVG:(!!document.implementation && 
+            document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1")),
     hasHtml5Storage: function () {
 	try {
 	    return 'localStorage' in window && window['localStorage'] !== null;
@@ -1278,7 +1275,10 @@ OAT.Browser = {
 	    return false;
 	}
     }
+    
 }
+
+
 
 /**
  * @namespace Event helper
