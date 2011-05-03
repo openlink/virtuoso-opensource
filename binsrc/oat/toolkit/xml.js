@@ -111,7 +111,10 @@ OAT.Xml = {
 	},
 
     serializeXmlDoc:function(xmlDoc) {
-	if (document.implementation && document.implementation.createDocument) {
+	if (window.ActiveXObject) {
+	    var s = xmlDoc.xml;
+	    return s;
+	} else if (document.implementation && document.implementation.createDocument) {
 	    var ser = new XMLSerializer();
 	    try {
 		var s = ser.serializeToString(xmlDoc);
@@ -119,9 +122,6 @@ OAT.Xml = {
 	    } catch (e) {
 		return false;
 	    }
-	} else if (window.ActiveXObject) {
-	    var s = xmlDoc.xml;
-	    return s;
 	} else {
 	    alert("OAT.Xml.serializeXmlDoc:\nNo XML parser available");
 	    return false;
