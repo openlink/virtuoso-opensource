@@ -1063,7 +1063,7 @@ create procedure DB.DBA.SPARQL_RESULTS_NT_WRITE_RES (inout ses any, in mdta any,
 }
 ;
 
-create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0, in esc_mode integer := 1)
+create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0, in esc_mode integer := 1, in pure_html integer := 0)
 {
   declare varctr, varcount, resctr, rescount integer;
   declare trnewline, newline varchar;
@@ -1133,7 +1133,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
               --else
                 --http_value (val, 0, ses);
 	    }
-	  else if (__tag of rdf_box = __tag (val))
+	  else if (pure_html and __tag of rdf_box = __tag (val))
 	      http_rdf_object (val, ses, 1);
           else
             {
@@ -1474,7 +1474,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (ret_format = 'HTML')
     {
-      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
+      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0, 1, case when ret_mime = 'text/html' then 1 else 0 end);
       goto body_complete;
     }
   if (ret_format = 'JS')
