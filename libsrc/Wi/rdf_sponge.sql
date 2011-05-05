@@ -1413,7 +1413,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
   declare aq, cookie varchar;
   declare dest, local_iri varchar;
 
-  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'AsyncQueue'), '0') = '0')
+  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'AsyncQueue'), '0') = '0' or get_keyword ('__rdf_sponge_queue', options) = 1)
     {
       return DB.DBA.RDF_SPONGE_UP_1 (graph_iri, options, uid);
     }
