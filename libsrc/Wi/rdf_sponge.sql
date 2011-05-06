@@ -1262,9 +1262,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   --    DB.DBA.SPARUL_CLEAR (graph_iri, 1);
   --    commit work;
   --  }
+
 load_grddl:;
   cset := http_request_header (ret_hdr, 'Content-Type', 'charset', null);
-  for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
+  for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS, RM_DESCRIPTION from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
     {
       declare val_match, pcols, new_opts any;
       declare npars int;
@@ -1299,6 +1300,8 @@ load_grddl:;
           if (registry_get ('__sparql_mappers_debug') = '1')
             dbg_obj_prin1 ('Match ', RM_HOOK);
 	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type, 'charset', cset));
+	  if (__proc_exists ('DB.DBA.RDF_SPONGER_STATUS'))
+	    call ('DB.DBA.RDF_SPONGER_STATUS') (graph_iri, new_origin_uri, dest, RM_DESCRIPTION, options);
 	  if (RM_TYPE <> 'HTTP')
 	    {
 	      if (npars = 7)
