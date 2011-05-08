@@ -8177,67 +8177,67 @@ https_cert_verify_callback (int ok, void *_ctx)
 }
 
 int
-https_set_certificate (SSL_CTX* ssl_ctx, char * https_cert, char * https_key)
+ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
 {
   char err_buf [1024];
-  if (strstr (https_cert, "db:") == https_cert || strstr (https_key, "db:") == https_key)
+  if (strstr (cert_name, "db:") == cert_name || strstr (key_name, "db:") == key_name)
     {
       xenc_key_t * k;
       client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
       user_t * saved_user;
       if (!cli)
 	{
-	  log_error ("HTTPS: The certificate & key stored in database cannot be accessed.");
+	  log_error ("The certificate & key stored in database cannot be accessed.");
 	  return 0;
 	}
-      if (strcmp (https_cert, https_key))
+      if (strcmp (cert_name, key_name))
 	{
-	  log_error ("HTTPS: The certificate & key stored in database must have same name");
+	  log_error ("The certificate & key stored in database must have same name");
 	  return 0;
 	}
       saved_user = cli->cli_user;
       if (!cli->cli_user)
 	cli->cli_user = sec_name_to_user ("dba");
-      k = xenc_get_key_by_name (https_key + 3, 1);
+      k = xenc_get_key_by_name (key_name + 3, 1);
       cli->cli_user = saved_user;
       if (!k || !k->xek_x509 || !k->xek_evp_private_key)
 	{
-	  log_error ("HTTPS: Invalid stored key %s", https_key);
+	  log_error ("Invalid stored key %s", key_name);
 	  return 0;
 	}
       if (SSL_CTX_use_certificate (ssl_ctx, k->xek_x509) <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 certificate file %s : %s", https_cert, err_buf);
+	  log_error ("Invalid X509 certificate file %s : %s", cert_name, err_buf);
 	  return 0;
 	}
       if (SSL_CTX_use_PrivateKey (ssl_ctx, k->xek_evp_private_key) <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 private key file %s : %s", https_key, err_buf);
+	  log_error ("Invalid X509 private key file %s : %s", key_name, err_buf);
 	  return 0;
 	}
     }
   else
     {
-      if (SSL_CTX_use_certificate_file (ssl_ctx, https_cert, SSL_FILETYPE_PEM) <= 0)
+      if (SSL_CTX_use_certificate_file (ssl_ctx, cert_name, SSL_FILETYPE_PEM) <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 certificate file %s : %s", https_cert, err_buf);
+	  log_error ("Invalid X509 certificate file %s : %s", cert_name, err_buf);
 	  return 0;
 	}
-      if (SSL_CTX_use_PrivateKey_file (ssl_ctx, https_key, SSL_FILETYPE_PEM) <= 0)
+      if (SSL_CTX_use_PrivateKey_file (ssl_ctx, key_name, SSL_FILETYPE_PEM) <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 private key file %s : %s", https_key, err_buf);
+	  log_error ("Invalid X509 private key file %s : %s", key_name, err_buf);
 	  return 0;
 	}
     }
   if (!SSL_CTX_check_private_key (ssl_ctx))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: X509 Private key %s does not match the X509 certificate public key %s : %s",
-	  https_key, https_cert, err_buf);
+      log_error ("X509 Private key %s does not match the X509 certificate public key %s : %s",
+	  key_name, cert_name, err_buf);
       return 0;
     }
   return 1;
@@ -8301,7 +8301,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	  goto err_exit;
 	}
     }
-  if (https_set_certificate (ssl_ctx, cert, skey) <= 0)
+  if (ssl_server_set_certificate (ssl_ctx, cert, skey) <= 0)
     goto err_exit;
 
   if (https_client_verify > 0)
@@ -10447,7 +10447,7 @@ http_init_part_two ()
 	    call_exit(-1);
 	  }
 
-      if (https_set_certificate (ssl_ctx, https_cert, https_key) <= 0)
+      if (ssl_server_set_certificate (ssl_ctx, https_cert, https_key) <= 0)
 	{
 	  call_exit(-1);
 	}
