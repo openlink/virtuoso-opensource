@@ -4843,6 +4843,56 @@ dk_ssl_free (void *old)
 }
 #endif
 
+int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name);
+
+static void 
+ssl_server_key_setup ()
+{
+#ifndef NO_THREAD
+  char err_buf[1024];
+
+  if (!c_ssl_server_port)
+    return;
+  if (!c_ssl_server_key)
+    log_error ("ODBC Server X509 private key is required");
+  if (!c_ssl_server_cert)
+    log_error ("ODBC Server X509 certificate is required");
+
+  if (!ssl_server_set_certificate (ssl_server_ctx, c_ssl_server_cert, c_ssl_server_key))
+    {
+      call_exit (-1);
+    }
+
+  if (ssl_server_verify)
+    {
+      int i, session_id_context = 2, verify = SSL_VERIFY_NONE;
+      STACK_OF (X509_NAME) * skCAList = NULL;
+
+      SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
+      SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
+      SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
+      if (ssl_server_verify == 1) /* required */
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
+      else /* 2 optional OR 3 optional no ca */
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
+      SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
+      SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
+
+      skCAList = SSL_CTX_get_client_CA_list (ssl_server_ctx);
+      if (sk_X509_NAME_num (skCAList) == 0)
+	log_warning ("ODBC X509 Client authentication requested but no CA known for verification");
+      for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
+	{
+	  char ca_buf[1024];
+	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
+	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
+	    log_debug ("ODBC Server Using X509 Client CA %s", ca_buf);
+	}
+    }
+#endif
+}
+
 static void
 ssl_server_init ()
 {
@@ -4895,62 +4945,6 @@ ssl_server_init ()
       call_exit (-1);
     }
 
-#ifndef NO_THREAD
-  if (!c_ssl_server_port)
-    return;
-
-  if (SSL_CTX_use_certificate_file (ssl_server_ctx, c_ssl_server_cert, SSL_FILETYPE_PEM) <= 0)
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      if (!c_ssl_server_key)
-	log_error ("ODBC Server X509 certificate is required");
-      else
-	log_error ("Error loading the ODBC server X509 certificate %s : %s", c_ssl_server_key, err_buf);
-      call_exit (-1);
-    }
-  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, c_ssl_server_key, SSL_FILETYPE_PEM) <= 0)
-    {
-      if (!c_ssl_server_key)
-	log_error ("ODBC Server X509 private key is required");
-      else
-	log_error ("Error loading the ODBC server X509 private key %s : %s", c_ssl_server_key, err_buf);
-      call_exit (-1);
-    }
-
-  if (!SSL_CTX_check_private_key (ssl_server_ctx))
-    {
-      log_error ("X509 Private key in %s does not match the X509 certificate public key in %s", c_ssl_server_key ? c_ssl_server_key : "<empty>", c_ssl_server_cert ? c_ssl_server_cert : "<empty>");
-      call_exit (-1);
-    }
-
-  if (ssl_server_verify)
-    {
-      int i, session_id_context = 2, verify = SSL_VERIFY_NONE;
-      STACK_OF (X509_NAME) * skCAList = NULL;
-
-      SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
-      SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
-      SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
-      if (ssl_server_verify == 1) /* required */
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
-      else /* 2 optional OR 3 optional no ca */
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
-      SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
-      SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
-
-      skCAList = SSL_CTX_get_client_CA_list (ssl_server_ctx);
-      if (sk_X509_NAME_num (skCAList) == 0)
-	log_warning ("ODBC X509 Client authentication requested but no CA known for verification");
-      for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
-	{
-	  char ca_buf[1024];
-	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
-	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
-	    log_debug ("ODBC Server Using X509 Client CA %s", ca_buf);
-	}
-    }
-#endif
 }
 
 
@@ -5368,11 +5362,11 @@ void
 ssl_server_listen ()
 {
 #ifdef _SSL
+  dk_session_t *listening;
   if (!c_ssl_server_port)
     return;
-  else
-    {
-      dk_session_t *listening = PrpcListen (c_ssl_server_port, SESCLASS_TCPIP);
+  ssl_server_key_setup ();
+  listening = PrpcListen (c_ssl_server_port, SESCLASS_TCPIP);
       if (!SESSTAT_ISSET (listening->dks_session, SST_LISTENING))
 	{
 	  log_error ("Failed ODBC Server SSL listen at %s.", c_ssl_server_port);
@@ -5383,7 +5377,6 @@ ssl_server_listen ()
 	log_info ("ODBC SSL/X509 server online at %s", c_ssl_server_port);
       else
 	log_info ("ODBC SSL server online at %s", c_ssl_server_port);
-    }
 #endif
 }
 
