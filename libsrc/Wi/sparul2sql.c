@@ -423,7 +423,8 @@ args_ready:
       (SPART **)t_list (4, arg0, arg1, var_vector_arg, arg3) );
   else
     ctor_call = spar_make_funcall (sparp, 1, funname,
-      (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num (use_limits)) );
+      /* Names arg1 and arg3 become slightly misleading when arg0 is not provided, e.g., in case of SPARQL_CONSTRUCT */
+      (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num_nonull (use_limits)) );
   if (cve->cve_limofs_var_alias)
     {
       SPART *alias = spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO);
