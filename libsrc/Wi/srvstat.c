@@ -191,6 +191,7 @@ extern int enable_dfg_print;
 extern int enable_distinct_sas;
 int32 ha_rehash_pct = 300;
 extern int c_use_aio;
+extern int32 sqlo_sample_dep_cols;
 extern long strses_file_reads;
 extern long strses_file_seeks;
 extern long strses_file_writes;
@@ -1437,6 +1438,7 @@ stat_desc_t stat_descs [] =
     {"cl_n_hosts", &cl_n_hosts, SD_INT32},
     {"cl_cum_messages", &cl_cum_messages, SD_INT64},
     {"cl_cum_bytes", &cl_cum_bytes, SD_INT64},
+    {"cl_req_batch_size", &cl_req_batch_size, SD_INT32},
     {"db_exists", &db_exists, SD_INT32},
     {"st_lite_mode", &my_lite_mode, NULL},
 
@@ -1493,6 +1495,7 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", &ha_rehash_pct, SD_INT32},
     {"c_use_aio", &c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception},
+    {"sqlo_sample_dep_cols", &sqlo_sample_dep_cols},
     {NULL, NULL, NULL}
   };
 
