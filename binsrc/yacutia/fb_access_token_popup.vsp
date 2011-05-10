@@ -17,10 +17,12 @@
   declare xt, og_tree any;
   declare _host varchar;
   declare offline_access integer;
+  declare rdf_mappers_vad_update_required integer;
 
   oauth_token := null;
   fb_app_site_url := null;
   offline_access := 0;
+  rdf_mappers_vad_update_required := 0;
 
   _host := registry_get ('URIQADefaultHost');
   if (is_http_ctx ()) _host := http_request_header(http_request_header (), 'Host', null, _host);
@@ -87,6 +89,15 @@
     og_user_id := cast (xpath_eval('/results/id', og_tree) as varchar);
     og_user_name := coalesce (og_user_name, '(unknown)');
     og_user_id := coalesce (og_user_id, '(unknown)');
+
+    -- Save to DB
+    if (oauth_error = '0' and oauth_token is not null and og_user_id is not null)
+    {
+      if (__proc_exists ('DB.DBA.OPENGRAPH_SAVE_ACCESS_TOKEN') is not null)
+        DB.DBA.OPENGRAPH_SAVE_ACCESS_TOKEN (og_user_id, og_user_name, fb_app_site_url, fb_app_id, oauth_token, oauth_token_expiry);
+      else
+        rdf_mappers_vad_update_required := 1;
+    }
   }
 auth_err: ;
 ?>
@@ -123,8 +134,13 @@ auth_err: ;
     <?vsp } else { ?>
       <p>This is a non-expiring token.</p>
     <?vsp } ?>
+    <?vsp if (rdf_mappers_vad_update_required = 1) { ?>
     <p>Please enter this token as the value for the API Key in the Sponger cartridge configuration and close this window.</p> 
     <p>If configuring more than one access token in the API Key, enter them in the format <em>facebook_id1=access_token1&amp;facebook_id2=access_token2...</em></p> 
+      <p><strong>Please update your RDF Mappers VAD. The latest VAD saves access tokens to a Virtuoso table. Manual entry of access tokens in the API Key is no longer required.</strong></p>
+    <?vsp } else { ?>
+      <p>The access token has been saved to table DB.DBA.OPENGRAPH_ACCESS_TOKENS ready for use by the Facebook Open Graph cartridge.</p> 
+    <?vsp } ?>
   <?vsp } ?>
 <?vsp } ?>
 
