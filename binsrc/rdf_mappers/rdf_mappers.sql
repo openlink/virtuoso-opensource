@@ -472,6 +472,18 @@ DB.DBA.EXEC_STMT(
 alter index RDF_META_CARTRIDGES_LOG on DB.DBA.RDF_META_CARTRIDGES_LOG partition cluster replicated', 0)
 ;
 
+EXEC_STMT ('create table RDF_SPONGER_QUEUE (
+    	RS_URI varchar, 
+	RS_QTS datetime, 
+	RS_TS timestamp, 
+	RS_STATE int default 0, 
+	RS_ERROR long varchar,
+	RS_IP varchar,
+	RS_CURRENT_CALL varchar,
+	RS_OPTS any,
+	PRIMARY KEY (RS_URI))
+create index RDF_SPONGER_QUEUE_STAT on RDF_SPONGER_QUEUE (RS_STATE, RS_QTS)', 0);
+
 create procedure RM_LOG_REQUEST (in url varchar, in kwd varchar, in proc varchar)
 {
   declare sid, pname any;
@@ -8969,6 +8981,14 @@ create procedure DB.DBA.RM_GET_LABELS_INIT (in dest varchar, in graph_iri varcha
 }
 ;
 
+create procedure DB.DBA.RDF_SPONGER_STATUS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in p_name varchar, inout options any)
+{
+  update RDF_SPONGER_QUEUE set RS_CURRENT_CALL = p_name where RS_URI = new_origin_uri;
+  if (row_count ())
+    commit work;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
     inout ret_body any, in ret_content_type varchar, inout options any)
 {
@@ -9003,7 +9023,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
     }  
   set isolation='committed';
   labels := DB.DBA.RM_GET_LABELS_INIT (dest, graph, new_origin_uri, options);
-  for select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS, MC_API_TYPE 
+  for select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS, MC_API_TYPE, MC_DESC
     from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
     {
       declare val_match, st any;
@@ -9043,6 +9063,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    dbg_obj_prin1 ('Match PP ', MC_HOOK);
 	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type), vector ('extracted-labels', labels));
+	  DB.DBA.RDF_SPONGER_STATUS (graph_iri, new_origin_uri, dest, MC_DESC, options);
 	  commit work;
 	  st := msec_time ();
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
