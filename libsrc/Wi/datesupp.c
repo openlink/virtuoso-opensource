@@ -29,6 +29,10 @@
 #include "util/strfuns.h"
 #include "datesupp.h"
 
+#ifdef NDEBUG
+#undef DATE2NUM_DEBUG
+#endif
+
 /*
  *  Important preprocessor symbols for the internal ranges
  */
@@ -165,10 +169,11 @@ yearday2date (int yday, const int is_leap_year, int *month, int *day)
  *  Computes the absolute number of days of the given date since 0001/01/01,
  *  respecting the missing period of the Gregorian Reformation
  */
-uint32
-date2num (const int year, const int month, const int day)
+#ifdef DATE2NUM_DEBUG
+int32
+date2num_old (const int year, const int month, const int day)
 {
-  uint32 julian_days;
+  int32 julian_days;
 
   julian_days = (uint32) ((year - 1) * (uint32) (DAY_LAST) + ((year - 1) >> 2));
 
@@ -191,8 +196,35 @@ date2num (const int year, const int month, const int day)
   julian_days += day;
   if (days_in_february (year) == 29 && month > 2)
     julian_days++;
-
   return julian_days;
+}
+#endif
+
+int32
+date2num (const int year, const int month, const int day)
+{
+  int a, y, m;
+  long jdn, midnight_jdn;
+  a = (14-month)/12;
+  y = ((year < 0) ? year + 1 : year) + 4800 - a;
+  m = month + 12 * a - 3;
+  if (year < GREG_YEAR || ((year == GREG_YEAR) && (month < GREG_MONTH || ((month == GREG_MONTH) && (day < GREG_LAST_DAY)))))
+    {
+      jdn = day + (153*m + 2)/5 + 365*y + y/4 - 32083;
+      if ((1722885 == jdn) && (1 == day))
+        jdn--;
+    }
+  else
+    jdn = day + (153*m + 2)/5 + 365*y + y/4 - y/100 +y/400 - 32045;
+  midnight_jdn = jdn - 1721423; /* A julian day of fake "0001-01-00" */
+#ifdef DATE2NUM_DEBUG
+  do {
+    uint32 old_mjn = date2num_old (year, month, day);
+    if ((5 < year) && (midnight_jdn != old_mjn))
+      GPF_T1 ("date2num(): internal error in calculation of julian day");
+  } while (0);
+#endif
+  return midnight_jdn;
 }
 
 
@@ -201,8 +233,9 @@ date2num (const int year, const int month, const int day)
  *  a standard date (since 0001/01/01),
  *  respecting the missing period of the Gregorian Reformation
  */
+#ifdef DATE2NUM_DEBUG
 void
-num2date (uint32 julian_days, int *year, int *month, int *day)
+num2date_old (int32 julian_days, int *year, int *month, int *day)
 {
   double x;
   int i;
@@ -248,6 +281,64 @@ num2date (uint32 julian_days, int *year, int *month, int *day)
       && (i < ((*year / 100) - (GREG_YEAR / 100)) - ((*year / 400) - (GREG_YEAR / 400))))
     i++;
   yearday2date (i, (days_in_february (*year) == 29), month, day);
+}
+#endif
+
+void
+num2date (int32 julian_days, int *year, int *month, int *day)
+{
+  double x;
+  int i;
+  int y_civ, m_civ, d_civ;
+  long midhignt_jdn;
+  int mj, g, dg, c, dc, b, db, a, da, y, m, d;
+  int /*c, d, m,*/ e;
+  midhignt_jdn = julian_days + 1721423;
+  if (2299161 <= midhignt_jdn)
+    {
+      mj = midhignt_jdn + 32044;
+      g = mj / 146097;
+      dg = mj % 146097;
+      c = (dg / 36524 + 1) * 3 / 4;
+      dc = dg - c * 36524;
+      b = dc / 1461;
+      db = dc % 1461;
+      a = (db / 365 + 1) * 3 / 4;
+      da = db - a * 365;
+      y = g * 400 + c * 100 + b * 4 + a;
+      m = (da * 5 + 308) / 153 - 2;
+      d = da - (m + 4) * 153 / 5 + 122;
+      y_civ = y - 4800 + (m+2)/12;
+      m_civ = (m+2)%12 + 1;
+      d_civ = d+1;
+    }
+  else if (1722884 == midhignt_jdn)
+    {
+      d_civ = m_civ = 1; y_civ = 5;
+    }
+  else
+    {
+      c = midhignt_jdn + 32082;
+      d = (4*c+3)/1461;
+      e = c - (1461*d)/4;
+      m = (5*e+2)/153;
+      d_civ = e - (153*m+2)/5+1;
+      m_civ = m + 3 - 12 * (m/10);
+      y_civ = d - 4800 + m/10;
+      if (y_civ < 0)
+        y_civ--;
+    }
+#ifdef DATE2NUM_DEBUG
+  do {
+      int old_year, old_month, old_day;
+      num2date_old (julian_days, &old_year, &old_month, &old_day);
+      if ((2000 < julian_days) && ((old_year != y_civ) || (old_month != m_civ) || (old_day != d_civ)))
+        GPF_T1 ("num2date(): internal error in splitting of julian day");
+  } while (0);
+#endif
+  *year = y_civ;
+  *month = m_civ;
+  *day = d_civ;
 }
 
 

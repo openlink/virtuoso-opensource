@@ -33,8 +33,8 @@
 #define GMTIMESTAMP_STRUCT TIMESTAMP_STRUCT
 
 /* datesupp.c */
-uint32 date2num (const int year, const int month, const int day);
-void num2date (uint32 julian_days, int *year, int *month, int *day);
+int32 date2num (const int year, const int month, const int day);
+void num2date (int32 julian_days, int *year, int *month, int *day);
 int ymd_valid_p (const int year, const int month, const int day);
 int date2weekday (const int year, const int month, const int day);
 void dt_now (caddr_t dt);

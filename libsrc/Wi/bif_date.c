@@ -459,6 +459,49 @@ bif_timezone (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (DT_TZ (arg));
 }
 
+#define NASA_TJD_OFFSET (2440000 - 1721423)
+
+caddr_t
+bif_nasa_tjd_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg = bif_date_arg (qst, args, 0, "nasa_tjd_number");
+  long n = DT_DAY (arg) - NASA_TJD_OFFSET;
+  return box_num (n);
+}
+
+caddr_t
+bif_nasa_tjd_fraction (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg = bif_date_arg (qst, args, 0, "nasa_tjd_fraction");
+  double f = (((DT_HOUR (arg) * (boxint)60 + DT_MINUTE (arg)) * (boxint)60 + DT_SECOND (arg)) * (boxint)1000000 + DT_FRACTION (arg)) / (60*60*24*1000000.0);
+  return box_double (f);
+}
+
+caddr_t
+bif_merge_nasa_tjd_to_datetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint num = bif_long_arg (qst, args, 0, "merge_nasa_tjd_to_datetime");
+  caddr_t res = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
+  DT_SET_DAY (res, num + NASA_TJD_OFFSET);
+  if (1 < BOX_ELEMENTS (args))
+    {
+      double frac = bif_double_arg (qst, args, 1, "merge_nasa_tjd_to_datetime");
+      boxint frac_microsec = frac * (60*60*24*1000000.0);
+      if ((0 > frac_microsec) || (60*60*24*1000000 <= frac_microsec))
+        sqlr_new_error ("22023", "SR644", "Fraction of julian day should be nonnegative and less than 1");
+      DT_SET_FRACTION (res, (frac_microsec % 1000000) * 1000);
+      frac_microsec = frac_microsec / 1000000;
+      DT_SET_SECOND (res, (frac_microsec % 60));
+      frac_microsec = frac_microsec / 60;
+      DT_SET_MINUTE (res, (frac_microsec % 60));
+      frac_microsec = frac_microsec / 60;
+      DT_SET_HOUR (res, frac_microsec);
+      DT_SET_DT_TYPE (res, DT_TYPE_DATETIME);
+    }
+  else
+    DT_SET_DT_TYPE (res, DT_TYPE_DATE);
+  return res;
+}
 
 caddr_t
 bif_date_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -819,6 +862,9 @@ bif_date_init ()
   bif_define_typed ("minute", bif_minute, &bt_integer);
   bif_define_typed ("second", bif_second, &bt_integer);
   bif_define_typed ("timezone", bif_timezone, &bt_integer);
+  bif_define_typed ("nasa_tjd_number", bif_nasa_tjd_number, &bt_integer);
+  bif_define_typed ("nasa_tjd_fraction", bif_nasa_tjd_fraction, &bt_double);
+  bif_define_typed ("merge_nasa_tjd_to_datetime", bif_merge_nasa_tjd_to_datetime, &bt_datetime);
 
   bif_define_typed ("now", bif_timestamp, &bt_timestamp);	/* This is standard name */
   bif_define_typed ("getdate", bif_timestamp, &bt_datetime);	/* This is standard name? */
