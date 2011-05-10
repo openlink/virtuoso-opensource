@@ -42,6 +42,7 @@ int space_rehash_threshold = 2;
 
 
 
+int32 dbs_cache_check_enable = 0;
 
 void
 it_cache_check (index_tree_t * it, int mode)
@@ -68,7 +69,7 @@ it_cache_check (index_tree_t * it, int mode)
 	      /* This can be legitimate if a thread is in freeze mode and one itc is on a table scan and another is in order by or hash fill, so that the freeze is in the temp space operation . */
 	      /* error = 1; */
 	    }
-	  if (DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)
+	  if (dbs_cache_check_enable && DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)
 	      && IT_CHECK_FAST != mode)
 	    pg_check_map_1 (buf);
 	    if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
