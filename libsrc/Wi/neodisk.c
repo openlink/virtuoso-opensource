@@ -2094,8 +2094,8 @@ srv_global_lock (query_instance_t * qi, int flag)
       lt->lt_is_excl = 1;
       lt->lt_replicate = REPL_NO_LOG;
       IN_TXN;
-      cpt_rollback (LT_KILL_ROLLBACK);
       server_lock.sl_owner = THREAD_CURRENT_THREAD;
+      cpt_rollback (LT_KILL_ROLLBACK);
       lt_threads_set_inner (lt, 1);
       LEAVE_TXN;
       server_lock.sl_ac_save = lt->lt_client->cli_row_autocommit;
