@@ -60,7 +60,7 @@
     <xsl:param name="baseUri"/>
     <xsl:param name="currentDateTime"/>
 
-	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri, '', 'Offering')"/>
     <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 

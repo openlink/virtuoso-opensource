@@ -103,10 +103,11 @@
 
     <xsl:template match="html">
 	<rdf:RDF>
+	    <xsl:if test="//a[@rel]">
 	    <xsl:variable name="xfn-doc">
 		<xsl:for-each select="$xfn-rel/xfn/rel">
 		    <xsl:variable name="rel" select="@value"/>
-		    <xsl:for-each select="$doc//a">
+		    <xsl:for-each select="$doc//a[@rel]">
 				<xsl:variable name="rel-attr" select="concat(' ', @rel, ' ')"/>
 				<xsl:if test="contains ($rel-attr, concat(' ', $rel, ' '))">
 					<xsl:element name="{$rel}" namespace="http://gmpg.org/xfn/11#">
@@ -119,7 +120,7 @@
 		</xsl:for-each>
 		<xsl:for-each select="$xfn-rel2/xfn/rel">
 		    <xsl:variable name="rel2" select="@value"/>
-		    <xsl:for-each select="$doc//a">
+		    <xsl:for-each select="$doc//a[@rel]">
 			<xsl:variable name="rel-attr2" select="concat(' ', @rel, ' ')"/>
 			<xsl:if test="contains ($rel-attr2, concat(' ', $rel2, ' '))">
 			    <xsl:element name="{$rel2}" namespace="http://vocab.sindice.com/xfn#">
@@ -136,6 +137,7 @@
 		    <foaf:homepage rdf:resource="{$baseUri}"/>
 		    <xsl:copy-of select="$xfn-doc"/>
 		</rdf:Description>
+	    </xsl:if>
 	    </xsl:if>
 	</rdf:RDF>
     </xsl:template>
