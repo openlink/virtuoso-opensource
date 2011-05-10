@@ -3034,6 +3034,21 @@ end_sp:
   return 1;
 };
 
+EXEC_STMT(
+'create table DB.DBA.OPENGRAPH_ACCESS_TOKENS (
+    OGAT_ACCESS_TOKEN varchar,           -- Facebook access token
+    OGAT_GRANTOR_ID varchar,             -- Facebook ID of user granting the access token
+    OGAT_GRANTOR_NAME varchar,           -- Facebook username
+    OGAT_APP_SITE_URL varchar,           -- Facebook app which is being given access
+    OGAT_APP_ID varchar,                 -- Facebook App ID of app being given access
+    OGAT_CREATED datetime,               -- Date/Time access token was created
+    OGAT_LIFETIME int,                   -- Token lifetime (secs) from creation time, after which token is invalid. null implies a non-expiring token
+    OGAT_EXPIRES datetime,       
+    primary key (OGAT_ACCESS_TOKEN)
+)
+create index OPENGRAPH_ACCESS_TOKENS_USER_ID on DB.DBA.OPENGRAPH_ACCESS_TOKENS (OGAT_GRANTOR_ID)', 0)
+;
+
 create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
     declare qr, path any;
@@ -3147,7 +3162,8 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     og_id := cast (xpath_eval('/results/id', xt_og_metadata) as varchar);
     if (length (og_id) = 0)
       og_id := null;
-    access_token := DB.DBA.OPENGRAPH_API_KEY_TO_ACCESS_TOKEN (_key, og_id);
+    access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
+
     -- dbg_printf('og_id: %s - access token: %s', og_id, access_token);
 
     retries := 0;
@@ -3227,32 +3243,6 @@ conn_done:
 }
 ;
 
--- Extracts an Open Graph access token from the Facebook (Open Graph) cartridge API key.
---
--- The intent is to allow multiple access tokens to be registered.
--- access_tokens is a string containing multiple Open Graph object-id/access-token pairs.
--- e.g. object_id1=access_token1&object_id2=access_token2&object_id3=access_token3...
--- The object-id will typically be the Facebook ID of the user who granted the access token.
---
--- A single value in access_tokens is also allowed without an object_id
-create procedure DB.DBA.OPENGRAPH_API_KEY_TO_ACCESS_TOKEN (in access_tokens varchar, in og_id varchar := null)
-{
-  declare id_token_vec any;
-
-  if (access_tokens is null or length (access_tokens) = 0)
-    return null;
-
-  id_token_vec := split_and_decode (access_tokens);
-  if (length (id_token_vec) = 2 and id_token_vec[1] is null)
-    return id_token_vec[0];
-
-  if (og_id is null or length (og_id) = 0)
-    return null;
-
-  return get_keyword (og_id, id_token_vec);
-}
-;
-
 -- Extracts an Open Graph object's connections from XML tree containing the object's metadata
 -- Returns vector of (connection name, connection uri) pairs
 create procedure DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (in xt any, in access_token varchar)
@@ -3274,6 +3264,68 @@ create procedure DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (in xt any, in access_token va
   }
 
   return og_conns;
+}
+;
+
+create procedure DB.DBA.OPENGRAPH_SAVE_ACCESS_TOKEN (
+  in og_user_id varchar,
+  in og_user_name varchar,
+  in fb_app_site_url varchar,
+  in fb_app_id varchar,
+  in oauth_token varchar,
+  in oauth_token_expiry int
+  )
+{
+  declare dt_expires datetime;
+
+  dt_expires := null;
+  if (oauth_token_expiry is not null)
+    dt_expires := dateadd ('second', atoi (oauth_token_expiry) , now ());
+
+  insert soft DB.DBA.OPENGRAPH_ACCESS_TOKENS (OGAT_GRANTOR_ID, OGAT_GRANTOR_NAME, OGAT_APP_SITE_URL, OGAT_APP_ID, OGAT_ACCESS_TOKEN, OGAT_CREATED, OGAT_LIFETIME, OGAT_EXPIRES)
+    values (og_user_id, og_user_name, fb_app_site_url, fb_app_id, oauth_token, now (), oauth_token_expiry, dt_expires);
+}
+;
+
+create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
+{
+  declare access_token varchar;
+
+  access_token := null;
+
+  if (og_id is null or length (og_id) = 0)
+    return null;
+
+  -- First look for a non-expiring access token
+  for (select top 1 
+         OGAT_ACCESS_TOKEN as _token
+       from 
+         DB.DBA.OPENGRAPH_ACCESS_TOKENS 
+       where 
+         OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES is null
+      )
+  do
+  {
+    access_token := _token;
+  }
+
+  if (access_token is not null)
+    return access_token;
+
+  -- Then look for an unexpired expiring access token
+  for (select top 1 
+         OGAT_ACCESS_TOKEN as _token
+       from 
+         DB.DBA.OPENGRAPH_ACCESS_TOKENS 
+       where 
+         OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES > now()
+      )
+  do
+  {
+    access_token := _token;
+  }
+
+  return access_token;
 }
 ;
 
@@ -6357,6 +6409,7 @@ create procedure DB.DBA.RDF_LOAD_ZAPPOS (in graph_iri varchar, in new_origin_uri
 }
 ;
 
+-- /* BestBuy  */
 create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -6447,7 +6500,7 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/bestbuy2rdf.xsl', xd,
-		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar), 'is_store', cast(is_store as varchar)));
+		vector ('baseUri', new_origin_uri, 'currentDateTime', cast(date_iso8601(now()) as varchar), 'is_store', cast(is_store as varchar)));
   xd := serialize_to_UTF8_xml (xt);
 	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts); 
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
