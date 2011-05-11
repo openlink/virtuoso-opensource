@@ -83,7 +83,7 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   declare _header, _etag, _http_resp_code, _start_url varchar;
   declare _del, _desc, _t_urls, _opts, _c_type varchar;
   declare _dav_method, _d_imgs, _opage varchar;
-  declare _dav_enabled, _other, ua varchar;
+  declare _dav_enabled, _other, ua, cust_headers varchar;
   declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
   declare _udata, ext_hook, store_hook, _header_arr, _resps, xp_exp any;
@@ -99,26 +99,31 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
          coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), 
 	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), 
-	 VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF, VS_TIMEOUT
+	 VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF, VS_TIMEOUT, VS_HEADERS
       into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, 
       	 redir_flag, store_flag, try_to_get_rdf, 
 	 _udata, ext_hook, store_hook, _del, _other, 
-	 conv_html, is_sitemap, xp_exp, accept_rdf, time_out
+	 conv_html, is_sitemap, xp_exp, accept_rdf, time_out, cust_headers
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 nf_opt:
 
-  _header := '';
+  if (length (cust_headers) > 2)
+    cust_headers := rtrim (cust_headers, ' \r\n') || '\r\n';
+  else
+    cust_headers := null;
+   
+  _header := coalesce (cust_headers, '');
   if (isstring (_opts) and strchr (_opts, ':') is not null)
     _header := sprintf ('Authorization: Basic %s\r\n', encode_base64(_opts));
 
   if (_upd = 1 and _since is not null)
     _header := concat (_header, 'If-Modified-Since: ', soap_print_box (_since, '', 1), '\r\n');
 
-  if (accept_rdf)
+  if (accept_rdf and strstr (_header, 'Accept:') is null)
     _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*\r\n'; -- /* rdf formats */
   -- global setting for crawler UA  
   ua := registry_get ('vfs_ua');
-  if (isstring (ua) and length (ua))
+  if (isstring (ua) and length (ua) and strstr (_header, 'User-Agent:') is null)
     {
       ua := trim (ua, ' \r\n');
       _header := _header || 'User-Agent: ' || ua || '\r\n';
@@ -256,6 +261,7 @@ get_again:
   }
 
   _c_type := coalesce (http_request_header (_resp, 'Content-Type'), '');
+      _c_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (_url, _c_type, _content);
       _etag := http_request_header (_resp, 'ETag', null, '');
 
       if (_http_resp_code = '200' and (isstring (_content) or __tag (_content) = 185))
@@ -329,11 +335,12 @@ create procedure WS.WS.VFS_STATUS_SET (in _tgt varchar, in _root varchar, in _st
 }
 ;
 
--- /* top level procedure for processing queues */
+-- /* top level procedure for processing queues, don't grant NEVER to any body else */
 create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _upd integer,
     in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := null, in batch_size int := 1)
 {
   declare _msg, _stat, oq varchar;
+  set_user_id ('dba');
 do_again:
   _stat := '00000';
   _msg := '';
@@ -1057,7 +1064,7 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
 
   if (tidy_external () and ctype like 'text/html')
     _content := tidy_html (_content, 'output-xhtml:yes\r\ntidy-mark:no');
-  if (ctype like 'application/%+xml' or ctype = 'text/xml')
+  if (ctype like 'application/%xml' or ctype = 'text/xml')
     _xml_tree := xml_tree (_content, 0);
   else  
   _xml_tree := xml_tree (_content, 2);
