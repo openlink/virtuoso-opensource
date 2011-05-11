@@ -1615,7 +1615,7 @@ create procedure WS.WS."host-meta" (in format varchar := 'xml') __SOAP_HTTP 'app
   accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
   if (format = 'json' or accept = 'application/json')
     {
-      http_header ('Content-Type: applicaition/json\r\n');
+      http_header ('Content-Type: application/json\r\n');
     http_xslt ('http://local.virt/xrd2json');
     }
   return ret;
