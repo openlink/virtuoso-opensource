@@ -1138,7 +1138,7 @@ self.vc_data_bind (e);
                     				    ret, cname, full_path, sync_ver);
                       				}
                   		        set triggers off;
-			      if (_fdet = '') _fdet := null;		
+			                        if (_fdet = '' or _fdet = 'rdfSink') _fdet := null;
                               update WS.WS.SYS_DAV_COL set COL_INHERIT = _inh, COL_DET = _fdet where COL_ID = ret;
 			                        set triggers on;
                             }
@@ -2082,7 +2082,7 @@ self.vc_data_bind (e);
                           declare mimetype, _recurse, _res_name, _fdet varchar;
                           declare _fidx, _file any;
                           declare _perms, _p, _idx varchar;
-                          declare _res_id, is_dir, _inh integer;
+                          declare _res_id, is_dir, _inh, _is_sink integer;
                           declare cur_usr varchar;
 
                           cur_usr := connection_get ('vspx_user');
@@ -2136,11 +2136,13 @@ self.vc_data_bind (e);
                           }
 
                           _perms := '';
+			  _is_sink := 0;
                           _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
                           _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
                           _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
 			  _fdet := get_keyword ('fdet', self.vc_page.vc_event.ve_params, '');
-                  			  if (_fdet = '')
+			  if (_fdet = 'rdfSink') _is_sink := 1;
+			  if (_fdet = '' or _fdet = 'rdfSink')
                   			    _fdet := null;
 
                           for (i := 0; i < 9; i := i + 1)
@@ -2279,6 +2281,8 @@ self.vc_data_bind (e);
                           {
                             DB.DBA.Y_DAV_PROP_SET (self.source_dir, c_properties[N][0], c_properties[N][1]);
                           }
+			  if (_is_sink)
+			    DB.DBA.Y_DAV_PROP_SET (self.source_dir, 'virt:rdf_graph', sprintf ('http://%{WSHost}s%s', self.source_dir));
 
                           -- acl
                           if (DB.DBA.Y_VAD_CHECK('Framework'))
