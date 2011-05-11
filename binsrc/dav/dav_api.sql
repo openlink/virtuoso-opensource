@@ -1905,7 +1905,7 @@ DAV_AUTHENTICATE_SSL (
       what := 'C';
       id := DAV_SEARCH_ID (V[N], what);
     }
-    if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
+    if (isinteger (id) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
     {
       tmp := null;
       graph := WS.WS.DAV_IRI (V[N]);
@@ -6514,12 +6514,30 @@ create procedure DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(in mime_type varchar) returns
 -- /* extracting metadata */
 create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resname varchar, in restype varchar, inout _rescontent any)
 {
+  declare rescontent any;
+  rescontent := subseq (_rescontent, 0, 10000000-1);
+  if ((length (_rescontent) < 262144) or (registry_get ('DAV_EXTRACT_RDF_ASYNC') <> '1'))
+    {
+      DAV_EXTRACT_AND_SAVE_RDF_INT2 (resid, resname, restype, rescontent);
+    } 
+  else 
+    {
+      declare aq any;
+      aq := async_queue (1);
+      if (not isstring (rescontent))
+	rescontent := cast (rescontent as varchar);
+      aq_request (aq, 'DB.DBA.DAV_EXTRACT_AND_SAVE_RDF_INT2', vector (resid, resname, restype, rescontent));
+    }
+}
+;
+
+-- /* extracting metadata */
+create procedure DAV_EXTRACT_AND_SAVE_RDF_INT2 (in resid integer, in resname varchar, in restype varchar, in rescontent any)
+{
   declare resttype, res_type_uri, full_name varchar;
   declare old_prop_id integer;
   declare html_start, full_xml, type_tree any;
   declare old_n3, addon_n3, spotlight_addon_n3 any;
-  declare rescontent any;
-  rescontent := subseq (_rescontent, 0, 10000000-1);
   -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ')');
   html_start := null;
   full_xml := null;
