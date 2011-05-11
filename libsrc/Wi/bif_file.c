@@ -6140,7 +6140,14 @@ signal_error:
 }
 
 
+#if defined(__APPLE__)
+#define fseeko64 fseeko
+#define ftello64 ftello
+#define fopen64  fopen
+#endif
+
 #include "zlib/contrib/minizip/unzip.h"
+#include "zlib/contrib/minizip/ioapi.h"
 #include "zlib/contrib/minizip/ioapi.c"
 #include "zlib/contrib/minizip/unzip.c"
 
