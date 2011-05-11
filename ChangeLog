@@ -1,3 +1,744 @@
+2011-05-11 14:49  source
+
+	* Fixed small issue
+
+2011-05-11 13:32  source
+
+	* Fixed issue compiling zip support on Mac OS X
+
+2011-05-11 13:19  source
+
+	* Fixed typo in Content-Type header
+
+2011-05-11 13:15  source
+
+	* Added missing file
+
+2011-05-11 13:11  source
+
+	* Fixed rdf_sink is not a DET
+
+2011-05-11 13:09  source
+
+	* Added more parameters for crawling
+	* Fixed top proc must run as dba
+	* Fixed use array for values
+
+2011-05-11 09:39  source
+
+	* Added WebID support to dynares
+	* Added optional async mode for dav meta extraction
+
+2011-05-11 08:08  source
+
+	* Added missing files
+
+2011-05-10 18:57  source
+
+	* Fixed write processing status to sponger queue
+	* Fixed access tokens for OpenGraph cartridge save/restore from table
+	  instead of the API key
+
+2011-05-10 18:43  source
+
+	* Fixed access tokens for OpenGraph cartridge save/restore from table
+	  instead of the API key
+
+2011-05-10 18:42  source
+
+	* Fixed minor issues
+
+2011-05-10 18:40  source
+
+	* Fixed disabled pg_check_map by default to make cpt faster
+
+2011-05-10 18:37  source
+
+	* Fixed disable pg_check_map by default to make cpt faster
+
+2011-05-10 12:20  source
+
+	* Fixed myust set sl_owner before cpt_rollback in order to know which
+	  thread owns the process, otherwise other threads may wrongly go
+	  inside the wait_checkpoint
+
+2011-05-10 12:18  source
+
+	* Added initial support for B.C. datetimes
+	* Added new functions to convert datetime from/to NASA Truncated
+	  Julian Day
+	* Fixed bug in date2num and num2date
+
+2011-05-09 12:06  source
+
+	* Fixed internal error in sparql_detalize on SPARUL statement
+
+2011-05-09 12:05  source
+
+	* Added new statistic counters
+
+2011-05-08 22:24  source
+
+	* Added GROUP_CONCAT and SAMPLE
+
+2011-05-08 22:23  source
+
+	* Added common function to set certificate server-side
+
+2011-05-08 22:18  source
+
+	* Added option to use certificates stored in the db
+
+2011-05-06 11:34  source
+
+	* Fixed call to sponger status procedure
+
+2011-05-05 12:55  source
+
+	* Fixed do not use aq if in sponger queue
+
+2011-05-05 12:54  source
+
+	* Fixed print literals with meta info only when html is requested
+
+2011-05-03 18:00  source
+
+	* Fixed workaround for missing offers
+
+2011-05-03 18:00  source
+
+	* Fixed minor issue
+
+2011-05-03 17:55  source
+
+	* Fixed compiling on VC10
+
+2011-05-03 17:51  source
+
+	* Fixed function signature for windows build
+
+2011-05-03 17:50  source
+
+	* Fixed error checking
+
+2011-05-03 14:03  source
+
+	* Added check for native JSON serializer/deserializer when available
+	* Fixed detection of buggy XML serializer in IE9
+	* Fixed MSIE detection
+	* Fixed SVG detection in OAT.Browser
+
+2011-05-03 11:50  source
+
+	* Fixed set rehash pct
+
+2011-05-03 11:15  source
+
+	* Fixed SPARQL OPTIONAL keyword sometimes causing queries to not
+	  return graph matches
+
+2011-05-02 14:16  source
+
+	* Added app discussion rules
+	* Added annotation rules
+	* Added common css
+	* Fixed navigation and standardize UI
+	* Fixed updating external URIs access rights in UI profile
+	* Fixed missing webfinger lookup
+	* Fixed OpenId not registered id message
+	* Fixed user selection page size
+	* Fixed popup windows
+	* Fixed security tab
+
+2011-05-02 14:09  source
+
+	* Added support for social bookmarking
+	* Fixed use 404 when no data is found
+	* Fixed links in footer
+	* Fixed escape the single quote char
+
+2011-05-02 14:06  source
+
+	* Fixed labels
+
+2011-05-02 14:02  source
+
+	* Fixed links
+
+2011-05-02 12:48  source
+
+	* Fixed popup windows
+
+2011-05-02 12:44  source
+
+	* Added annotation rules
+	* Added discussion IRIs
+	* Fixed navigation and standardize UI
+	* Fixed popup windows
+
+2011-05-02 12:43  source
+
+	file common.css was added on branch V6_0_0-DEVEL on 2011-05-02 14:16:01 +0000
+
+2011-05-02 12:30  source
+
+	* Added option to obtain a Facebook OAuth access token for use with
+	  sponger cartridge
+	* Fixed group export and delete of crawling targets
+	* Fixed crawling feeds, parameters for crawling
+	* Fixed disable config if no https
+	* Fixed shorten queue description
+
+2011-05-02 12:30  source
+
+	file fb_access_token_popup.vsp was added on branch V6_0_0-DEVEL on 2011-05-02 14:13:40 +0000
+
+2011-05-02 12:22  source
+
+	file google_store2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-05-02 14:10:54 +0000
+
+2011-05-02 12:22  source
+
+	file gowalla2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-05-02 14:10:54 +0000
+
+2011-05-02 12:22  source
+
+	* Added Gowalla cartridge
+	* Added Productontology
+	* Added Google Product
+	* Updated Facebook cartridge with multiple access tokens
+	* Fixed do not print empty container string if there is no name
+
+2011-05-02 08:24  source
+
+	* Fixed col_default to be same dtp as col_dtp to prevent default value
+	  misuse
+
+2011-05-02 08:23  source
+
+	* Fixed wrong deref of default int value
+
+2011-04-29 11:56  source
+
+	* Fixed when redirect is to secure site, setup the appropriate flags
+
+2011-04-26 12:16  source
+
+	* Fixed loading TriG
+
+2011-04-26 12:14  source
+
+	* Fixed loading NQuads
+
+2011-04-26 12:13  source
+
+	* Fixed check webid only if not uathenticated
+
+2011-04-21 13:09  source
+
+	* Added session counters for read/write/seek on gzip file
+
+2011-04-21 11:42  source
+
+	file README-WIN32.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:13 +0000
+
+2011-04-21 11:42  source
+
+	file watcom_f.mak was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:13 +0000
+
+2011-04-21 11:42  source
+
+	file watcom_l.mak was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:13 +0000
+
+2011-04-21 11:42  source
+
+	file zlib.dsw was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file README.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file bndsrc was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:11 +0000
+
+2011-04-21 11:42  source
+
+	file compile.clp was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:11 +0000
+
+2011-04-21 11:42  source
+
+	file example.dsp was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file minigzip.dsp was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file readme.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file zlib.dsp was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file zlib.inc was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:12 +0000
+
+2011-04-21 11:42  source
+
+	file README was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:11 +0000
+
+2011-04-21 11:41  source
+
+	file algorithm.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file enough.c was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:10 +0000
+
+2011-04-21 11:41  source
+
+	file rfc1950.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:10 +0000
+
+2011-04-21 11:41  source
+
+	file rfc1951.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:10 +0000
+
+2011-04-21 11:41  source
+
+	file rfc1952.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:10 +0000
+
+2011-04-21 11:41  source
+
+	file txtvsbin.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:10 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.vcproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file miniunz.vcproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:08 +0000
+
+2011-04-21 11:41  source
+
+	file minizip.vcproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file testzlib.vcproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file testzlibdll.vcproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file zlib.rc was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file zlibstat.vcproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.def was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.sln was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:09 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.sln was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.vcxproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.vcxproj.filters was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:08 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.vcxproj.user was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:08 +0000
+
+2011-04-21 11:41  source
+
+	file testzlibdll.vcxproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file testzlibdll.vcxproj.filters was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file testzlibdll.vcxproj.user was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlib.rc was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlibstat.vcxproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlibstat.vcxproj.filters was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlibstat.vcxproj.user was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file zlibvc.def was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:07 +0000
+
+2011-04-21 11:41  source
+
+	file miniunz.vcxproj.filters was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file miniunz.vcxproj.user was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file minizip.vcxproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file minizip.vcxproj.filters was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file minizip.vcxproj.user was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file testzlib.vcxproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file testzlib.vcxproj.filters was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file testzlib.vcxproj.user was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:06 +0000
+
+2011-04-21 11:41  source
+
+	file miniunz.vcxproj was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:05 +0000
+
+2011-04-21 11:41  source
+
+	file MiniZip64_Changes.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:04 +0000
+
+2011-04-21 11:41  source
+
+	file MiniZip64_info.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:04 +0000
+
+2011-04-21 11:41  source
+
+	file make_vms.com was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:04 +0000
+
+2011-04-21 11:41  source
+
+	file match686.asm was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:04 +0000
+
+2011-04-21 11:41  source
+
+	file gvmat64.S was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:02 +0000
+
+2011-04-21 11:41  source
+
+	file amd64-match.S was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:01 +0000
+
+2011-04-21 11:41  source
+
+	file zconf.h.cmakein was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:59 +0000
+
+2011-04-21 11:41  source
+
+	file zconf.h.in was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:59 +0000
+
+2011-04-21 11:41  source
+
+	file zlib.3.pdf was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:59 +0000
+
+2011-04-21 11:41  source
+
+	file zlib.map was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:59 +0000
+
+2011-04-21 11:41  source
+
+	file zlib.pc.in was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:59 +0000
+
+2011-04-21 11:41  source
+
+	file zlib2ansi was added on branch V6_0_0-DEVEL on 2011-04-21 11:43:00 +0000
+
+2011-04-21 11:41  source
+
+	file gzwrite.c was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:58 +0000
+
+2011-04-21 11:41  source
+
+	file treebuild.xml was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:58 +0000
+
+2011-04-21 11:41  source
+
+	file gzclose.c was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:57 +0000
+
+2011-04-21 11:41  source
+
+	file gzguts.h was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:57 +0000
+
+2011-04-21 11:41  source
+
+	file gzlib.c was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:58 +0000
+
+2011-04-21 11:41  source
+
+	file gzread.c was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:58 +0000
+
+2011-04-21 11:41  source
+
+	* Upgraded to zlib 1.2.5
+
+2011-04-21 11:41  source
+
+	file CMakeLists.txt was added on branch V6_0_0-DEVEL on 2011-04-21 11:42:56 +0000
+
+2011-04-20 15:12  source
+
+	* FIxed hang or crash after cpt over
+
+2011-04-20 15:12  source
+
+	* Fixed disable dep cols check
+
+2011-04-20 15:11  source
+
+	* Added debug code to detect mutex hang on same thread
+
+2011-04-19 20:50  source
+
+	* Fixed lock status report
+
+2011-04-19 20:49  source
+
+	* Fixed key dep cols check for sample
+
+2011-04-19 16:16  source
+
+	* Fixed bad bnode syntax in output
+
+2011-04-19 16:15  source
+
+	* Added session read waits statistic
+
+2011-04-18 16:03  source
+
+	* Fixed default mode for sponger should be sync instead of async
+
+2011-04-18 16:03  source
+
+	* Fixed http_lock requires that maintenance page is set
+
+2011-04-18 16:02  source
+
+	* Added statistics on read/write/seek session via file/gzip counters
+
+2011-04-15 12:42  source
+
+	* Added deadlock retry handler
+	* Added support to use redirect and timeout options
+
+2011-04-15 12:39  source
+
+	* Added Foursquare cartridge
+	* Added Zappos cartridge
+	* Added enhancements to Facebook OpenGraph cartridge
+	* Fixed minor issues
+
+2011-04-15 12:33  source
+
+	* Added "Raw linked data format" permalinks
+	* Fixed CSS
+
+2011-04-15 12:05  source
+
+	* Fixed codegen for service invocation for case of IN parameter
+	  that is not bound in SINV subquery (used only in filter) and is
+	  neither external/global nor fixed in parent group pattern
+
+2011-04-15 12:04  source
+
+	* Fixed support for xsd:time() in sparql when the argument value
+	  is safe for SQL CASET instead of function call
+
+2011-04-14 12:09  source
+
+	file zappos2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-04-15 12:39:05 +0000
+
+2011-04-13 22:51  source
+
+	* Added initial variant for estimate taking dep cols in account
+	  (by default disabled)
+
+2011-04-13 22:50  source
+
+	* Added missing param for http_get
+
+2011-04-13 10:16  source
+
+	* Fixed if tf_xx signals an error, xn_children were released twice
+
+2011-04-12 18:29  source
+
+	* Fixed check bnode subject
+	* Fixed clear avalues array before possible jump
+	* Fixed compiler warnings
+
+2011-04-11 21:44  source
+
+	* Fixed do not report a frequent error re unescaped "&&" in <SCRIPT>
+	  HTML tag
+	* Fixed can jump over buffer boundary if you have an &xx not ending
+	  in a semicolon
+
+2011-04-11 21:42  source
+
+	file copy_16.png was added on branch V6_0_0-DEVEL on 2011-04-11 21:45:59 +0000
+
+2011-04-11 21:42  source
+
+	* Added option top copy/clone crawler target
+	* Added option for crawl-delay
+
+2011-04-11 21:39  source
+
+	* Added support for crawl-delay
+
+2011-04-11 21:01  source
+
+	* Fixed removed leading CRLF
+
+2011-04-11 21:01  source
+
+	* Fixed wrong function call
+	* Fixed bad inference tag
+
+2011-04-11 20:55  source
+
+	* Fixed error message in spar_find_sc_for_big_ssl_const
+
+2011-04-11 20:54  source
+
+	* Added support for RDFa 1.1
+
+2011-04-11 20:53  source
+
+	* Fixed compiler warnings
+
+2011-04-11 15:36  source
+
+	* Added DB.DBA.RDF_RDFA11_FETCH_PROFILES() to sponge and return
+	  RDFa 1.1 external profile data
+
+2011-04-11 15:35  source
+
+	* Added rdfa: namespace prefix
+
+2011-04-11 15:05  source
+
+	* Added w3-1999-xhtml/vocab for RDFa 1.1
+
+2011-04-11 12:40  source
+
+	file foursquare2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-04-15 12:39:04 +0000
+
+2011-04-11 12:40  source
+
+	file oplopengraph.owl was added on branch V6_0_0-DEVEL on 2011-04-15 12:39:03 +0000
+
+2011-04-11 09:15  source
+
+	* Fxed issue with rdf_type attr
+
+2011-04-11 08:28  source
+
+	* Fixed double free
+
+2011-04-11 08:27  source
+
+	* Added support for trig
+
+2011-04-11 08:27  source
+
+	* Fixed check if file is present on local fs
+
+2011-04-07 21:19  source
+
+	* Added function to validate rdfxml
+
+2011-04-07 21:17  source
+
+	* Fixed do not flush immediately, as client may ask for gzip later
+
+2011-04-07 21:16  source
+
+	* FIxed if bitmap error on a cursor, kill the transaction instead of GPF
+
+2011-04-07 11:11  source
+
+	* Fixed if process is swapping do not try to signal self as lock reaper
+	  may decide to kill this transaction where it may wait for select
+	  thread to run its signal function
+
+2011-04-06 12:09  source
+
+	* Fixed issue with multiple transitive subqueries in sql optimizer
+
+2011-04-06 12:01  source
+
+	* Fixed when doing subseq, session will return session handle, which
+	  needs to be converted to string
+
+2011-04-05 14:38  source
+
+	* Fixed issues with RDFa 1.1 test
+
+2011-04-05 14:37  source
+
+	* Fixed possible mutex deadlock
+
+2011-04-04 12:32  source
+
+	* Added support for javascript-like hrefs in RDFa
+
+2011-04-04 12:31  source
+
+	* Fixed when not a string, use a cast to string
+
+2011-04-04 12:31  source
+
+	* Fixed use mtx in proper order
+
+2011-03-31 21:33  source
+
+	* Fixed issues with RDFa parsing
+
+2011-03-31 21:32  source
+
+	* Added check for MacDataSourceSize with default of 20MB
+	 CVS: ----------------------------------------------------------------------
+
 2011-03-29 23:20  source
 
 	* Updated version to 6.1.3 for final release
