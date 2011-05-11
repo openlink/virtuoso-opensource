@@ -1905,7 +1905,7 @@ DAV_AUTHENTICATE_SSL (
       what := 'C';
       id := DAV_SEARCH_ID (V[N], what);
     }
-    if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
+    if (isinteger (id) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
     {
       tmp := null;
       graph := WS.WS.DAV_IRI (V[N]);
