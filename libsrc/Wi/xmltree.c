@@ -58,6 +58,7 @@ extern "C" {
 #include "xpathp.h"
 #include "date.h" /* for DT_DT_TYPE */
 #include "rdf_core.h" /* for rdf_type_twobyte_to_iri */
+#include "uname_const_decl.h"
 
 #define REF_REL_URI(xte,head) \
  ((BOX_ELEMENTS (head) > 4) ? \
@@ -9831,7 +9832,7 @@ bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           dtp_t dtp = DV_TYPE_OF (arg);
           sqlr_new_error ("22023", "SR544",
             "Function __xsd_type() can not find XML Schema datatype that matches SQL datatype %s (%d)",
-            dv_type_title (dtp), dtp );
+            dv_type_title (dtp), (int)dtp );
         }
       return box_copy_tree (bif_arg (qst, args, 2, "__xsd_type"));
     }
