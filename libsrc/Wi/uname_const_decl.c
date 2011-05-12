@@ -81,6 +81,7 @@ caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 caddr_t uname_virtrdf_ns_uri_QuadMap;
 caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 caddr_t uname_virtrdf_ns_uri_QuadStorage;
+caddr_t uname_virtrdf_ns_uri_SparqlMacroLibrary;
 caddr_t uname_virtrdf_ns_uri_SyncToQuads;
 caddr_t uname_virtrdf_ns_uri_array_of_any;
 caddr_t uname_virtrdf_ns_uri_array_of_string;
@@ -207,6 +208,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_QuadMap		, VIRTRDF_NS_URI "QuadMap"	},
   { &uname_virtrdf_ns_uri_QuadMapFormat		, VIRTRDF_NS_URI "QuadMapFormat"	},
   { &uname_virtrdf_ns_uri_QuadStorage		, VIRTRDF_NS_URI "QuadStorage"	},
+  { &uname_virtrdf_ns_uri_SparqlMacroLibrary	, VIRTRDF_NS_URI "SparqlMacroLibrary"	},
   { &uname_virtrdf_ns_uri_SyncToQuads		, VIRTRDF_NS_URI "SyncToQuads"	},
   { &uname_virtrdf_ns_uri_array_of_any		, VIRTRDF_NS_URI "array-of-any"	},
   { &uname_virtrdf_ns_uri_array_of_string	, VIRTRDF_NS_URI "array-of-string"	},

@@ -99,6 +99,7 @@ extern caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 extern caddr_t uname_virtrdf_ns_uri_QuadMap;
 extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
+extern caddr_t uname_virtrdf_ns_uri_SparqlMacroLibrary;
 extern caddr_t uname_virtrdf_ns_uri_SyncToQuads;
 extern caddr_t uname_virtrdf_ns_uri_array_of_any;
 extern caddr_t uname_virtrdf_ns_uri_array_of_string;
