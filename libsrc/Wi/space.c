@@ -43,6 +43,7 @@ int space_rehash_threshold = 2;
 
 
 
+int32 dbs_cache_check_enable = 0;
 
 void
 it_cache_check (index_tree_t * it)
