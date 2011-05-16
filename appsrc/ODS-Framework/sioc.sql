@@ -977,7 +977,7 @@ create procedure sioc_user_info (
 	{
 	  if (length (interest))
 	    {
-  	      DB.DBA.ODS_QUAD_URI (public_graph_iri, iri, foaf_iri ('interest'), interest);
+  	      DB.DBA.ODS_QUAD_URI (public_graph_iri, iri, foaf_iri ('topic_interest'), interest);
 	      if (length (label))
   		      DB.DBA.ODS_QUAD_URI_L (public_graph_iri, interest, rdfs_iri ('label'), label);
 	    }
@@ -990,7 +990,7 @@ create procedure sioc_user_info (
   	  {
   	    if (length (interest))
   	    {
-  	      DB.DBA.ODS_QUAD_URI (public_graph_iri, iri, foaf_iri ('topic_interest'), interest);
+  	      DB.DBA.ODS_QUAD_URI (public_graph_iri, iri, foaf_iri ('interest'), interest);
   	      if (length (label))
   		      DB.DBA.ODS_QUAD_URI_L (public_graph_iri, interest, rdfs_iri ('label'), label);
   	    }
@@ -1590,7 +1590,7 @@ create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in nam
   declare pers_iri any;
 
   pers_iri := person_iri (iri);
-  if (isnull (uri))
+  if (not length (uri))
     uri := person_ola_iri (iri, name);
   -- XXX, have to know if this is URL
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
@@ -6163,6 +6163,26 @@ ret:
 
 
 use DB;
+
+create procedure WA_INTEREST_UPGRADE ()
+{
+  declare tmp, access, uname, visibility any;
+
+  if (registry_get ('WA_INTEREST_UPGRADE') = 'done')
+    return;
+
+  for (select WAUI_U_ID, WAUI_INTERESTS as F1, WAUI_INTEREST_TOPICS as F2 from DB.DBA.WA_USER_INFO) do
+  {
+  	 uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
+     WA_USER_EDIT (uname, 'WAUI_INTERESTS', F2);
+     WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', F1);
+  }
+
+  registry_set ('WA_INTEREST_UPGRADE', 'done');
+}
+;
+WA_INTEREST_UPGRADE ()
+;
 
 DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/wa/RDFData/', sioc..get_graph ());
 

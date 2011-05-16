@@ -633,10 +633,10 @@
                 vParams := vParams || sprintf ('&tags=%U', get_keyword ('i_tags', params, ''));
               if (get_keyword ('cb_item_i_sameAs', params, '') = '1')
                 vParams := vParams || sprintf ('&webIDs=%U', get_keyword ('i_sameAs', params, ''));
-              if (get_keyword ('cb_item_i_interests', params, '') = '1')
-                vParams := vParams || sprintf ('&interests=%U', get_keyword ('i_interests', params, ''));
               if (get_keyword ('cb_item_i_topicInterests', params, '') = '1')
                 vParams := vParams || sprintf ('&topicInterests=%U', get_keyword ('i_topicInterests', params, ''));
+              if (get_keyword ('cb_item_i_interests', params, '') = '1')
+                vParams := vParams || sprintf ('&interests=%U', get_keyword ('i_interests', params, ''));
               if (get_keyword ('cb_item_i_onlineAccounts', params, '') = '1')
                 vParams := vParams || sprintf ('&onlineAccounts=%U', get_keyword ('i_onlineAccounts', params, ''));
             }
@@ -683,7 +683,7 @@
                   tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x2_fld_2_'||suffix, params, '')) || '\n';
                 }
               }
-              vParams := vParams || sprintf ('&interests=%U', tmp);
+              vParams := vParams || sprintf ('&topicInterests=%U', tmp);
               tmp := '';
               for (N := 0; N < length (params); N := N + 2)
               {
@@ -693,7 +693,7 @@
                   tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x3_fld_2_'||suffix, params, '')) || '\n';
                 }
               }
-              vParams := vParams || sprintf ('&topicInterests=%U', tmp);
+              vParams := vParams || sprintf ('&interests=%U', tmp);
             }
             if (vFormTab2 = 2)
             {
@@ -1589,16 +1589,16 @@
                                       </thead>
                                       <tr id="x2_tr_no" style="display: none;"><td colspan="3"><b>No Topic of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", "<?V replace(cast (xpath_eval ('string (/user/interests)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", "<?V replace(cast (xpath_eval ('string (/user/topicInterests)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
                                       <?vsp
                                         for (N := 0; N < length (xAcl); N := N + 2)
-                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/interests)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/topicInterests)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
                                       ?>
                                     </select>
                                   </td>
@@ -1630,16 +1630,16 @@
                                       </thead>
                                       <tr id="x3_tr_no" style="display: none;"><td colspan="3"><b>No Thing of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", "<?V replace(cast (xpath_eval ('string (/user/topicInterests)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", "<?V replace(cast (xpath_eval ('string (/user/interests)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
                                       <?vsp
                                         for (N := 0; N < length (xAcl); N := N + 2)
-                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/topicInterests)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/interests)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
                                       ?>
                                     </select>
                                   </td>

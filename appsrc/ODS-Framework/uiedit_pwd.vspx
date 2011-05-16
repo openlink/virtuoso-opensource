@@ -118,9 +118,11 @@
 	     }
 	   }
 	  else if (regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
+	        {
 	  goto no_gen_svc;
 	 }
-	 else
+        }
+        else if (not ((coalesce (strstr (ua, 'Windows'), -1) > 0) and (coalesce (strstr (ua, 'Safari'), -1) > 0) and (coalesce (strstr (ua, 'Chrome'), -1) <= 0)))
         {
 	  no_gen_svc:;
       ?>

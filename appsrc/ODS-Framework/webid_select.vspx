@@ -102,7 +102,7 @@
         <input type="hidden" name="sid"   id="sid"   value="<?V get_keyword('sid', self.vc_page.vc_event.ve_params) ?>" />
         <input type="hidden" name="realm" id="realm" value="<?V get_keyword('realm', self.vc_page.vc_event.ve_params) ?> " />
         <input type="hidden" name="form"  id="form"  value="<?V get_keyword('form', self.vc_page.vc_event.ve_params, 'page_form') ?> " />
-        <input type="hidden" name="mode"  id="form"  value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params, '') ?> " />
+        <input type="hidden" name="mode"  id="mode"  value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params, '') ?> " />
         <input type="hidden" name="src"   id="src"   value="<?V get_keyword('src', self.vc_page.vc_event.ve_params, '') ?>" />
         <input type="hidden" name="dst"   id="dst"   value="<?V get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc') ?>" />
         <input type="hidden" name="s1"    id="s1"    value="<?V get_keyword('s1', self.vc_page.vc_event.ve_params, '') ?>" />
@@ -216,7 +216,7 @@
                     </vm:if>
                     <vm:if test="self.v_mode = ''">
                       <td nowrap="nowrap">
-                        <v:label value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('F1')" format="%s"/>
+                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('F1')" format="%s"/>
                       </td>
                     </vm:if>
                     <td nowrap="nowrap">

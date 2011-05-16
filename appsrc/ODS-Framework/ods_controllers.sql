@@ -3156,7 +3156,7 @@ create procedure ODS.ODS_API."user.topicOfInterest.new" (
   topicURI := trim (topicURI);
   topicLabel := coalesce (trim (topicLabel), '');
   newData := '';
-  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property = topicURI)
@@ -3169,7 +3169,7 @@ create procedure ODS.ODS_API."user.topicOfInterest.new" (
   }
   if (notFound)
     newData := newData || topicURI || ';' || topicLabel || '\n';
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -3192,13 +3192,13 @@ create procedure ODS.ODS_API."user.topicOfInterest.delete" (
 
   topicURI := trim (topicURI);
   newData := '';
-  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property <> topicURI)
       newData := newData || property || ';' || label || '\n';
   }
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -3223,7 +3223,7 @@ create procedure ODS.ODS_API."user.thingOfInterest.new" (
   thingURI := trim (thingURI);
   thingLabel := coalesce (trim (thingLabel), '');
   newData := '';
-  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property = thingURI)
@@ -3236,7 +3236,7 @@ create procedure ODS.ODS_API."user.thingOfInterest.new" (
   }
   if (notFound)
     newData := newData || thingURI || ';' || thingLabel || '\n';
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -3258,13 +3258,13 @@ create procedure ODS.ODS_API."user.thingOfInterest.delete" (
 
   thingURI := trim (thingURI);
   newData := '';
-  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property <> thingURI)
       newData := newData || property || ';' || label || '\n';
   }
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
   return ods_serialize_int_res (1);
 }
 ;

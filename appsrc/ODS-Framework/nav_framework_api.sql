@@ -395,12 +395,9 @@ create procedure usersGetInfo (
 
         http('<user>',resXml);
 
-          cursor_uname := '';
           cursor_uname := cast (userid2name (rset[i][0]) as varchar);
-
         for(k:=0;k<length(metas[0]);k:=k+1)
         {
-
           declare visibility_arr any;
           declare is_friend,visibility_pos,is_visible integer;
 
@@ -412,8 +409,7 @@ create procedure usersGetInfo (
               if (isSessionValid (sid, 'wa', _uname))
           {
 
-                  is_friend := DB.DBA.WA_USER_IS_FRIEND (username2id (_uname), 
-		                                         username2id (cursor_uname));
+                  is_friend := DB.DBA.WA_USER_IS_FRIEND (username2id (_uname), username2id (cursor_uname));
 
             --3 private;2 friends;1 public
 
@@ -2443,6 +2439,7 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='U_MUSIC')        return 'music';
  if(dbfield_name='U_BOOKS')        return 'books';
  if(dbfield_name='U_MOVIES')       return 'movies';
+ if(dbfield_name='U_INTEREST_TOPICS') return 'interestTopics';
  if(dbfield_name='U_INTERESTS')    return 'interests';
  if(dbfield_name='U_DATASPACE')    return 'dataspace';
  if(dbfield_name='H_COUNTRY')      return 'home_country';
@@ -2492,7 +2489,8 @@ create procedure visibility_posinarr(in dbfield_name varchar)
  if(dbfield_name='U_MUSIC')        return 24;
  if(dbfield_name='U_BOOKS')        return 44;
  if(dbfield_name='U_MOVIES')       return 46;
- if(dbfield_name='U_INTERESTS')    return 48;
+ if(dbfield_name='U_INTEREST_TOPICS') return 48;
+ if(dbfield_name='U_INTERESTS')       return 49;
  if(dbfield_name='U_DATASPACE')    return -1;
  if(dbfield_name='H_COUNTRY')      return 16;
  if(dbfield_name='H_STATE')        return 16;
@@ -2531,7 +2529,7 @@ create procedure constructFieldsNameStr (
   in fieldsname_str varchar)
 {
   declare correctfields_name_str varchar;
-  correctfields_name_str := 'userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interests,dataspace,foaf_ds,sioc_ds';
+  correctfields_name_str := 'userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interestTopics,interests,dataspace,foaf_ds,sioc_ds';
 
   declare res_str varchar;
   declare fields_name any;
@@ -2554,7 +2552,6 @@ create procedure constructFieldsNameStr (
               res_str:=res_str||'U.U_NAME as U_NAME';
 
            if(fields_name[i]='fullName')
---              res_str:=res_str||'coalesce(U.U_FULL_NAME,trim(concat(I.WAUI_FIRST_NAME,\' \',I.WAUI_LAST_NAME)),U.U_NAME) as U_FULL_NAME';
                 res_str:=res_str || '(case when length (trim (U.U_FULL_NAME)) > 0 ' ||
                                     '      then U_FULL_NAME '||
                                     '      when (length (trim (I.WAUI_FIRST_NAME)) > 0 or length (trim (I.WAUI_LAST_NAME))) '||
@@ -2627,6 +2624,9 @@ create procedure constructFieldsNameStr (
 
            if(fields_name[i]='interests')
               res_str:=res_str||'I.WAUI_INTERESTS as U_INTERESTS';
+
+              if (fields_name[i] = 'interestTopics')
+                res_str := res_str || 'I.WAUI_INTEREST_TOPICS as U_INTEREST_TOPICS';
 
            if(fields_name[i]='dataspace')
               res_str:=res_str||'DB.DBA.WA_USER_DATASPACE(U.U_NAME) as U_DATASPACE';
@@ -2712,20 +2712,11 @@ create procedure usersinfo_sql(in usersStr varchar,in fieldsStr varchar)
   declare qry varchar;
 
   declare fields_name_str varchar;
-  fields_name_str:='';
-  fields_name_str:=constructFieldsNameStr(fieldsStr);
-
   declare users_id_str varchar;
-  users_id_str:='';
-  users_id_str:=constructUsersIdStr(usersStr);
 
-
---  qry:=sprintf('select U.U_NAME as U_NAME,%s from DB.DBA.WA_USER_INFO I, DB.DBA.SYS_USERS U '||
---               ' where I.WAUI_U_ID=U.U_ID and U.U_ID in (%s)',
---               fields_name_str,users_id_str);
---
-  qry:=sprintf('select U.U_ID,%s  from DB.DBA.SYS_USERS U left join DB.DBA.WA_USER_INFO I on (U.U_ID=I.WAUI_U_ID)'||
-               ' where U.U_ID in (%s)',
+  fields_name_str := constructFieldsNameStr (fieldsStr);
+  users_id_str := constructUsersIdStr (usersStr);
+  qry := sprintf ('select U.U_ID,%s  from DB.DBA.SYS_USERS U left join DB.DBA.WA_USER_INFO I on (U.U_ID=I.WAUI_U_ID) where U.U_ID in (%s)',
                fields_name_str,users_id_str);
 
   return qry;

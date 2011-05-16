@@ -575,10 +575,10 @@
                 $_params .= '&tags=' . myUrlencode ($_REQUEST['i_tags']);
               if ($_REQUEST['cb_item_i_sameAs'] == '1')
                 $_params .= '&webIDs=' . myUrlencode ($_REQUEST['i_sameAs']);
-              if ($_REQUEST['cb_item_i_interests'] == '1')
-                $_params .= '&interests=' . myUrlencode ($_REQUEST['i_interests']);
               if ($_REQUEST['cb_item_i_topicInterests'] == '1')
                 $_params .= '&topicInterests=' . myUrlencode ($_REQUEST['i_topicInterests']);
+              if ($_REQUEST['cb_item_i_interests'] == '1')
+                $_params .= '&interests=' . myUrlencode ($_REQUEST['i_interests']);
               if ($_REQUEST['cb_item_i_onlineAccounts'] == '1')
                 $_params .= '&onlineAccounts=' . myUrlencode ($_REQUEST['i_onlineAccounts']);
             }
@@ -635,20 +635,20 @@
                 if (substr_count($name, 'x2_fld_1_') <> 0)
                 {
                   $_sufix = str_replace("x2_fld_1_", "", $name);
-                  $_tmp = $_tmp . $value . ";" . $_REQUEST['x2_fld_2_'.$_sufix] . "\n";
+                  $_tmp = $_tmp . $value . ";" . $_REQUEST['x2_fld_2_'.$_sufix] . '\n';
                 }
               }
-              $_params .= "&interests=" . myUrlencode ($_tmp);
+              $_params .= "&topicInterests=" . myUrlencode ($_tmp);
               $_tmp = "";
               foreach($_REQUEST as $name => $value)
               {
                 if (substr_count($name, 'x3_fld_1_') <> 0)
                 {
                   $_sufix = str_replace("x3_fld_1_", "", $name);
-                  $_tmp = $_tmp . $value . ";" . $_REQUEST['x3_fld_2_'.$_sufix] . '\n';
+                  $_tmp = $_tmp . $value . ";" . $_REQUEST['x3_fld_2_'.$_sufix] . "\n";
                 }
               }
-              $_params .= "&topicInterests=" . myUrlencode ($_tmp);
+              $_params .= "&interests=" . myUrlencode ($_tmp);
             }
             if ($_formTab2 == 2)
             {
@@ -1442,16 +1442,16 @@
                                       </thead>
                                       <tr id="x2_tr_no" style="display: none;"><td colspan="3"><b>No Topic of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", '<?php print(str_replace("\n", "\\n", $_xml->interests)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", '<?php print(str_replace("\n", "\\n", $_xml->topicInterests)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
                                       <?php
                                         for ($N = 0; $N < count ($ACL); $N += 2)
-                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->interests) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->topicInterests) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                       ?>
                                     </select>
                                   </td>
@@ -1483,16 +1483,16 @@
                                       </thead>
                                       <tr id="x3_tr_no" style="display: none;"><td colspan="3"><b>No Thing of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", '<?php print(str_replace("\n", "\\n", $_xml->topicInterests)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", '<?php print(str_replace("\n", "\\n", $_xml->interests)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
                                       <?php
                                         for ($N = 0; $N < count ($ACL); $N += 2)
-                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->topicInterests) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->interests) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                       ?>
                                     </select>
                                   </td>
