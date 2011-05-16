@@ -116,9 +116,6 @@ nf_opt:
   if (isstring (_opts) and strchr (_opts, ':') is not null)
     _header := sprintf ('Authorization: Basic %s\r\n', encode_base64(_opts));
 
-  if (_upd = 1 and _since is not null)
-    _header := concat (_header, 'If-Modified-Since: ', soap_print_box (_since, '', 1), '\r\n');
-
   if (accept_rdf and strstr (_header, 'Accept:') is null)
     _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*\r\n'; -- /* rdf formats */
   -- global setting for crawler UA  
@@ -135,12 +132,23 @@ nf_opt:
       for (declare i int, i := 0; i < n_urls; i := i + 1)
         {
 	  declare _url, _hdr varchar;
+	  declare _dt datetime;
 	  _url := _urls[i];
-	  _etag := (select VU_ETAG from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root);
-	  if (_etag is not null and isstring (_etag))
+	  -- take Etag if present
+	  _etag := null;
+	  _dt := _since;
+	  for select VU_ETAG, VU_CPTIME from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root do
+	    {
+	      _etag := VU_ETAG;
+	      _dt := VU_CPTIME;
+	    }
+	  if (_etag is not null and isstring (_etag) and length (_etag))
 	    _hdr := concat (_header,'If-None-Match: ', _etag, '\r\n');
   else
 	    _hdr := _header;
+	  -- check against last fetch  
+	  if (_upd = 1 and _dt is not null)
+	    _hdr := concat (_hdr, 'If-Modified-Since: ', soap_print_box (_dt, '', 1), '\r\n');
 	  _header_arr[i] := _hdr;  
 	}
     }
@@ -260,12 +268,12 @@ get_again:
 	  goto end_crawl;
   }
 
-  _c_type := coalesce (http_request_header (_resp, 'Content-Type'), '');
+      if (_http_resp_code = '200' and (isstring (_content) or __tag (_content) = 185))
+	{
+	  _c_type := http_request_header (_resp, 'Content-Type', null, '');
       _c_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (_url, _c_type, _content);
       _etag := http_request_header (_resp, 'ETag', null, '');
 
-      if (_http_resp_code = '200' and (isstring (_content) or __tag (_content) = 185))
-    {
       if (ext_hook is not null and __proc_exists (ext_hook))
 	    call (ext_hook) (_host, _url, _root, _content, _c_type, lev + 1);
 	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%' or _c_type like 'application/%xml' or _c_type = 'text/xml' or _url like '%.xml' or _url like '%.xml.gz') 
@@ -550,6 +558,9 @@ create procedure WS.WS.LOCAL_STORE (in _host varchar, in _url varchar, in _root 
     {
       insert soft VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
 	  values (_host, _url, md5 (_content), now (), _s_etag, _root);
+      if (row_count () = 0)
+	update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
+	    VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
       return 0;
     }
 
