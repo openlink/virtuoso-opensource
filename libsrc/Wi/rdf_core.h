@@ -73,7 +73,9 @@ extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_
 #define TRIPLE_FEED_TRIPLE_L	4
 #define TRIPLE_FEED_COMMIT	5
 #define TRIPLE_FEED_MESSAGE	6
-#define COUNTOF__TRIPLE_FEED	7
+#define COUNTOF__TRIPLE_FEED__REQUIRED	7
+#define TRIPLE_FEED_NEW_BASE	7
+#define COUNTOF__TRIPLE_FEED__ALL	8
 
 typedef struct triple_feed_s {
   query_instance_t *tf_qi;
@@ -86,8 +88,8 @@ typedef struct triple_feed_s {
   caddr_t tf_default_graph_iid;	/*!< Default graph iri ID, local */
   caddr_t tf_current_graph_iid;	/*!< Current graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
-  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED];	/*!< Callback names, owned by caller */
-  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
+  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED__REQUIRED];	/*!< Callback names, owned by caller */
+  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED__REQUIRED];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
   ptrlong tf_triple_count;	/*!< Number of triples that are sent to callbacks already, must be boxed before sending to SQL callbacks! */
   ptrlong tf_message_count;	/*!< Number of messages that are reported already, must be boxed before sending to SQL callbacks! */
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
@@ -95,13 +97,15 @@ typedef struct triple_feed_s {
 
 extern triple_feed_t *tf_alloc (void);
 extern void tf_free (triple_feed_t *tf);
-extern void tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names);
+extern void tf_set_cbk_names (triple_feed_t *tf, ccaddr_t *cbk_names);
 extern void tf_new_graph (triple_feed_t *tf, caddr_t uri);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *sqlmore, const char *descr);
+extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
+
 
 #define TF_ONE_GRAPH_AT_TIME(tf) (NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH])
 
@@ -132,6 +136,13 @@ extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, c
             (tf)->tf_default_graph_iid = tf_get_iid ((tf), (tf)->tf_default_graph_uri); } \
         (tf)->tf_current_graph_iid = box_copy ((tf)->tf_default_graph_iid); \
         tf_new_graph ((tf), (tf)->tf_current_graph_uri); } \
+  } while (0)
+
+#define TF_CHANGE_BASE_AND_DEFAULT_GRAPH(tf,new_uri) do { \
+    if (NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_BASE]) \
+      tf_new_base ((tf),(new_uri)); \
+    else { \
+        dk_free_box ((tf)->tf_base_uri); (tf)->tf_base_uri = (new_uri); } \
   } while (0)
 
 #define TF_GRAPH_ARG(tf) ((TF_ONE_GRAPH_AT_TIME((tf))) ? &((tf)->tf_current_graph_iid) : &(tf->tf_current_graph_uri))
@@ -176,6 +187,7 @@ typedef struct ttlp_s
   id_hash_t *ttlp_namespaces_prefix2iri;	/*!< A hashtable of namespace prefixes (keys) and IRIs (values) */
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
   dk_set_t ttlp_unused_seq_bnodes;	/*!< A list of bnodes that were allocated for use in lists but not used because lists are terminated before use */
+  caddr_t ttlp_base_uri;		/*!< Base URI used to resolve relative URIs of the document and optionally to resolve the relative URI of the graph in "graph CRUD" endpoint */
   caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */

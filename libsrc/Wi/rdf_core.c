@@ -269,24 +269,26 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
   END_DO_SET();
 }
 
-static const char *tf_cbk_param_types[COUNTOF__TRIPLE_FEED] = {
+static const char *tf_cbk_param_types[COUNTOF__TRIPLE_FEED__ALL] = {
   "RRR",	/* e.g., DB.DBA.TTLP_EV_NEW_GRAPH(?,?) */
   "RRR",	/* e.g., DB.DBA.TTLP_EV_NEW_BLANK(?,?, ?); there was 'select DB.DBA.TTLP_EV_NEW_BLANK(?,?)' */
   "RRRR",	/* e.g., DB.DBA.TTLP_EV_GET_IID(?,?,?, ?); there was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)'  */
   "RRRRR",	/* e.g., DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?) */
   "RRRRRRR",	/* e.g., DB.DBA.TTLP_EV_TRIPLE_L(?, ?, ?, ?,?,?, ?) */
   "RR",		/* e.g., DB.DBA.TTLP_EV_COMMIT(?,?) */
-  "RRRRRRRRRRR" }; /* e.g., DB.DBA.TTLP_EV_REPORT_DEFAULT(?,?,?,?,?,?,?,?,?,?,?) */
+  "RRRRRRRRRRR",	/* e.g., DB.DBA.TTLP_EV_REPORT_DEFAULT(?,?,?,?,?,?,?,?,?,?,?) */
+  "RRR" };		/* e.g., DB.DBA.TTLP_EV_NEW_BASE(?,?,?) */
 
 
 void
-tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names)
+tf_set_cbk_names (triple_feed_t *tf, ccaddr_t *cbk_names)
 {
+  int cbk_count = BOX_ELEMENTS (cbk_names);
   int ctr;
-  for (ctr = 0; ctr < COUNTOF__TRIPLE_FEED; ctr++)
+  for (ctr = 0; ctr < COUNTOF__TRIPLE_FEED__ALL; ctr++)
     {
       caddr_t err = NULL;
-      if ('\0' == cbk_names[ctr][0])
+      if ((ctr >= cbk_count) || ('\0' == cbk_names[ctr][0]))
         {
           tf->tf_cbk_names[ctr] = NULL;
           tf->tf_cbk_qrs[ctr] = NULL;
@@ -453,6 +455,50 @@ tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *s
 #endif
 }
 
+
+void
+tf_new_base (triple_feed_t *tf, caddr_t new_base)
+{
+  if ((NULL != tf->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH]) && (NULL != tf->tf_current_graph_uri))
+    tf_commit (tf);
+  if (tf->tf_current_graph_uri != tf->tf_default_graph_uri)
+    {
+      dk_free_tree (tf->tf_current_graph_uri);
+      tf->tf_current_graph_uri = NULL;
+    }
+  tf->tf_current_graph_uri = tf->tf_default_graph_uri;
+  if (NULL != tf->tf_base_uri)
+    {
+      dk_free_box (new_base);
+      sqlr_new_error ("37000", "SP029", "Multiple base URI declarations are not supported");
+    }
+  dk_free_box (tf->tf_base_uri); tf->tf_base_uri = box_dv_short_string (new_base);
+  do {
+      query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_NEW_BASE];
+      char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 3];
+      void **params;
+      caddr_t err = NULL;
+      if (NULL == cbk_qr)
+        GPF_T;
+      BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
+      params[0] = &(tf->tf_base_uri);
+      params[1] = &(tf->tf_default_graph_uri);
+      params[2] = &(tf->tf_app_env);
+      err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+      BOX_DONE (params, params_buf);
+      if (NULL != err)
+        sqlr_resignal (err);
+    } while (0);
+  if (NULL != tf->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH]) {
+      dk_free_tree (tf->tf_current_graph_iid);
+      if (TF_ONE_GRAPH_AT_TIME (tf)) {
+          tf->tf_current_graph_iid = NULL; /* to avoid double free in case of error in tf_get_iid() below */
+          tf->tf_default_graph_iid = tf_get_iid (tf, tf->tf_default_graph_uri); }
+      tf->tf_current_graph_iid = box_copy (tf->tf_default_graph_iid);
+      tf_new_graph (tf, tf->tf_current_graph_uri); }
+}
+
+
 caddr_t
 bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -476,10 +522,10 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_rdfxml");
   cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
   app_env = (caddr_t *) bif_arg (qst, args, 4, "rdf_load_rdfxml");
-  if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
+  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
-      "The argument #4 of rdf_load_rdfxml() should be a vector of %d names of stored procedures",
-      COUNTOF__TRIPLE_FEED );
+      "The argument #4 of rdf_load_rdfxml() should be a vector of %d to %d names of stored procedures",
+      COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
   dtp_of_text_arg = DV_TYPE_OF (text_arg);
   /*ns_2dict.xn2_size = 0;*/
   do
@@ -1025,10 +1071,10 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *app_env = (caddr_t *) bif_arg (qst, args, 5, "rdf_load_turtle");
   caddr_t err = NULL;
   caddr_t res;
-  if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
+  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
-      "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
-      COUNTOF__TRIPLE_FEED );
+      "The argument #4 of rdf_load_turtle() should be a vector of %d to %d names of stored procedures",
+      COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
   res = rdf_load_turtle (str, 0, base_uri, graph_uri, flags,
     (ccaddr_t *) cbk_names, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
@@ -1051,10 +1097,10 @@ bif_rdf_load_turtle_local_file (caddr_t * qst, caddr_t * err_ret, state_slot_t *
   caddr_t *app_env = (caddr_t *) bif_arg (qst, args, 5, "rdf_load_turtle_local_file");
   caddr_t err = NULL;
   caddr_t res;
-  if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
+  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
-      "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
-      COUNTOF__TRIPLE_FEED );
+      "The argument #4 of rdf_load_turtle() should be a vector of %d to %d names of stored procedures",
+      COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
   file_path_assert (str, NULL, 0);
   res = rdf_load_turtle (str, 1, base_uri, graph_uri, flags,
     (ccaddr_t *) cbk_names, app_env,

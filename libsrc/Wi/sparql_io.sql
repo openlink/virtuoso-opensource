@@ -1570,8 +1570,10 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     return;
   DB.DBA.VHOST_REMOVE (lpath=>'/SPARQL');
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud');
   DB.DBA.VHOST_REMOVE (lpath=>'/services/sparql-query');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-auth',
     ppath => '/!sparql/',
@@ -2740,6 +2742,248 @@ For best results, the result of the query should contain links to images associa
 registry_set ('/!sparql/', 'no_vsp_recompile')
 ;
 
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_CRUD_BASE_EV_NEW_BLANK (inout g_iid IRI_ID, inout app_env any, inout res IRI_ID)
+{
+  res := min_bnode_iri_id ();
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_CRUD_BASE_EV_TRIPLE (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
+  inout app_env any )
+{
+  signal ('22023', 'The graph URI is relative and can not be resolved using the submitted resource (base should be declared before data for the first triple)');
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_CRUD_BASE_EV_TRIPLE_L (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout app_env any )
+{
+  signal ('22023', 'The graph URI is relative and can not be resolved using the submitted resource (base should be declared before data for the first triple)');
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_CRUD_BASE_EV_NEW_BASE (
+  inout base_uri varchar,
+  inout graph_uri varchar,
+  inout app_env any )
+{
+  app_env[0] := DB.DBA.XML_URI_RESOLVE_LIKE_GET (base_uri, graph_uri);
+  signal ('ok001', '');
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_CRUD_BASE_TTL (inout strg any, in graph_uri varchar, in flags integer := 255)
+{
+  declare app_env any;
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
+  app_env := vector (null);
+  whenever sqlstate 'ok001' goto done;
+  rdf_load_turtle (strg, '', graph_uri, flags,
+    vector (
+      '',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_TRIPLE',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_TRIPLE_L',
+      '',
+      '',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_NEW_BASE' ),
+    app_env);
+done:
+  return app_env[0];
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_CRUD_BASE_RDFXML (in strg any, in graph_uri varchar)
+{
+  declare app_env any;
+  app_env := vector (null);
+  whenever sqlstate 'ok001' goto done;
+  rdf_load_rdfxml (strg, 0,
+    graph_uri,
+    vector (
+      '',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_TRIPLE',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_TRIPLE_L',
+      '',
+      '',
+      'DB.DBA.SPARQL_CRUD_BASE_EV_NEW_BASE' ),
+    app_env );
+done:
+  return app_env[0];
+}
+;
+
+create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params any, inout lines any)
+{
+  declare reqbegin varchar;
+  declare graph_uri varchar;
+  declare graph_uri_is_relative integer;
+  -- dbg_obj_princ ('===============');
+  -- dbg_obj_princ ('===============');
+  -- dbg_obj_princ ('===============');
+  -- dbg_obj_princ ('WS.WS."/!sparql-graph-crud/" (', path, params, lines, ')');
+  reqbegin := lines[0];
+  graph_uri := trim(get_keyword ('graph-uri', params, ''));
+  if (isstring (get_ekyword ('default', params)))
+    {
+      declare req_hosts varchar;
+      declare req_hosts_split any;
+      declare hctr integer;
+      if (graph_uri <> '')
+        signal ('22023', 'The request to SPARQL 1.1 Graph Store endpoint contains both "graph" and "default" params');
+      req_hosts := http_request_header (lines, 'Host', null, null);
+      req_hosts := replace (req_hosts, ', ', ',');
+      req_hosts_split := split_and_decode (req_hosts, 0, '\0\0,');
+      for (hctr := length (req_hosts_split) - 1; hctr >= 0; hctr := hctr - 1)
+        {
+          for (select top 1 SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST
+          where req_hosts_split [hctr] like SH_HOST) do
+            {
+              if (length (SH_GRAPH_URI))
+                {
+                  graph_uri := SH_GRAPH_URI;
+                  goto good_host_found;
+                }
+              goto bad_host_found;
+            }
+        }
+bad_host_found:
+      signal ('22023', 'The request to SPARQL 1.1 Graph Store endpoint contains "default" param but the endpoint is not configured to have default graph');
+good_host_found:
+      ;
+    }
+  if (graph_uri <> '')
+    goto graph_processing;
+  http_methods_set ('GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH');
+  http('<html xmlns="http://www.w3.org/1999/xhtml">\n');
+  http('	<head>\n');
+  http('		<title>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</title>\n');
+  http('		<style type="text/css">\n');
+  http('		label.n { display: inline; margin-top: 10pt; }\n');
+  http('		body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }\n');
+  http('		fieldset { border: 2px solid #86b9d9; }\n');
+  http('		legend { font-size: 12pt; color: #86b9d9; }\n');
+  http('		label { font-weight: bold; }\n');
+  http('		h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
+  http('		textarea { width: 100%; padding: 3px; }\n');
+  http('          #footer { width: 100%; float: left; clear: left; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}\n');
+  http('          #ft_r { float: right; clear: right;}\n');
+  http('          #ft_t { text-align: center; }\n');
+  http('          #ft_b { text-align: center; margin-top: 0.7ex }\n');
+  http('		</style>\n');
+  http('	</head>\n');
+  http('	<body>\n');
+  http('		<div id="header">\n');
+  http('			<h1>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</h1>\n');
+  http('		</div>\n');
+  http('		<div id="main">\n');
+  http('			<p>This page is designed to help you test support for <a href="http://www.w3.org/TR/sparql11-http-rdf-update">SPARQL 1.1 Graph Store HTTP Protocol</a> in OpenLink Virtuoso.</p>\n');
+  http('			<form action="" method="POST" enctype="multipart/form-data">\n');
+  http('			<fieldset>\n');
+  http('			<legend>RDF Upload</legend>\n');
+  http('			  <label for="graph-uri">Graph URI</label>\n');
+  http('			  <br />\n');
+  http('			  <input type="text" name="graph-uri" id="graph-uri" ');
+  http(sprintf ('value="%s" size="80"/>\n', coalesce ('')));
+  http('			  <br /><br />\n');
+  http('			  <label for="res-file">File to upload</label>\n');
+  http('			  <br />\n');
+  http('			  <input type="file" name="res-file" id="res-file"\n');
+  http('			  <br /><br />\n');
+  http('<input type="submit" value="Upload the resource"/>');
+  http('			</fieldset>\n');
+  http('			</form>\n');
+  http('		</div>\n');
+  http('		<div id="footer">\n');
+  http('		<div id="ft_b">\n');
+  http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
+  http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
+  http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
+  http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
+  http('		</div>\n');
+  http('		</div>\n');
+  http('	</body>\n');
+  http('</html>\n');
+  return;
+graph_processing:
+  commit work;
+  graph_uri_is_relative := neq (graph_uri, DB.DBA.XML_URI_RESOLVE_LIKE_GET ('zZz://example.com/', graph_uri));
+  if (graph_uri_is_relative)
+    {
+      if (not (reqbegin like 'PUT%') and not (reqbegin like 'POST%'))
+        signal ('22023', 'The graph URI <' || graph_uri || '> is relative and can be passed to SPARQL 1.1 Graph Store endpoint only in some PUT or POST requests');
+    }
+  if ((reqbegin like 'PUT%') or (reqbegin like 'POST%'))
+    {
+      declare res_file, res_content_type varchar;
+      declare full_graph_uri varchar;
+      res_file := get_keyword ('res-file', params, '');
+      if ('' = res_file)
+        res_file := http_body_read();
+      res_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, res_file);
+      -- dbg_obj_princ ('res_content_type=', res_content_type);
+      if (graph_uri_is_relative)
+        {
+          full_graph_uri := null;
+          if (res_content_type = 'text/rdf+n3')
+            full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_TTL (res_file, graph_uri, 255);
+          else if (res_content_type = 'application/rdf+xml')
+            full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_RDFXML (res_file, graph_uri);
+          else
+            signal ('22023', 'The graph URI <' || graph_uri || '> is relative and can not be resolved using the submitted resource of unsupported type ' || coalesce (res_content_type, ''));
+          if (full_graph_uri is null)
+            signal ('22023', 'The graph URI <' || graph_uri || '> is relative and can not be resolved using the submitted resource (resource does not contain any base)');
+        }
+      else
+        full_graph_uri := graph_uri;
+      commit work;
+      if (res_content_type = 'text/rdf+n3')
+        {
+          if (reqbegin like 'PUT%')
+            {
+              sparql clear graph ?:full_graph_uri;
+              commit work;
+            }
+          DB.DBA.TTLP (res_file, full_graph_uri, full_graph_uri);
+        }
+      else if (res_content_type = 'application/rdf+xml')
+        {
+          if (reqbegin like 'PUT%')
+            {
+              sparql clear graph ?:full_graph_uri;
+              commit work;
+            }
+          DB.DBA.RDF_LOAD_RDFXML (res_file, full_graph_uri, full_graph_uri);
+        }
+      else
+        signal ('22023', 'The PUT request for graph <' || full_graph_uri || '> is rejected: the submitted resource is of unsupported type ' || coalesce (res_content_type, ''));
+    }
+  else if (reqbegin like 'DELETE%')
+    {
+      sparql clear graph ?:graph_uri;
+      commit work;
+    }
+}
+;
+
+registry_set ('/!sparql-graph-crud/', 'no_vsp_recompile')
+;
+
+
 create procedure DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (in full_query varchar, in qry_params any, in maxrows integer, in accept varchar, in user_id varchar, in hard_timeout integer, in jsonp_callback any)
 {
   -- dbg_obj_princ ('DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (', full_query, qry_params, maxrows, accept, user_id, hard_timeout, ')');
@@ -2951,6 +3195,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_REXEC_TO_ARRAY to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_REXEC_WITH_META to SPARQL_SELECT',
     'grant execute on WS.WS."/!sparql/" to "SPARQL"',
+    'grant execute on WS.WS."/!sparql-graph-crud/" to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',

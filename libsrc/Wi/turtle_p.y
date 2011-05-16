@@ -154,7 +154,7 @@ turtledoc
 
 clause
         : _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
-	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_tf->tf_base_uri); ttlp_arg->ttlp_tf->tf_base_uri = $2; }
+	| _AT_base_L Q_IRI_REF dot_opt { TF_CHANGE_BASE_AND_DEFAULT_GRAPH(ttlp_arg->ttlp_tf,$2); }
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
 		caddr_t *old_uri_ptr;
 		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)

@@ -706,7 +706,7 @@ iter_is_set:
 #ifdef MALLOC_DEBUG
       yy_push_state (INITIAL, scanner);
 #endif
-      tf_set_cbk_names (tf, (const char **)cbk_names);
+      tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
       TF_CHANGE_GRAPH_TO_DEFAULT (tf);
       /* ttlyydebug = 1; */
       if (flags & TTLP_ALLOW_NQUAD)
