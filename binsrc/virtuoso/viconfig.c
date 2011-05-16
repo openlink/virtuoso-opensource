@@ -1055,7 +1055,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DensePageAllocation", &c_dense_page_allocation) == -1)
     c_dense_page_allocation = 0;
 
-  if (cfg_getlong (pconfig, section, "CheckExtentFreePages", &dbs_cache_check_enable) == -1)
+  if (cfg_getlong (pconfig, section, "PageMapCheck", &dbs_cache_check_enable) == -1)
     dbs_cache_check_enable = 0;
 
 
