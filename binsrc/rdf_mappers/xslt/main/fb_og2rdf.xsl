@@ -219,6 +219,7 @@
 				<rdf:type rdf:resource="&oplog;Page" />
                 <xsl:if test="document/id">
                     <oplog:id><xsl:value-of select="document/id"/></oplog:id>
+		    <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('https://graph.facebook.com/', document/id))}"/>
                 </xsl:if>
                 <xsl:if test="document/name">
                     <dc:title><xsl:value-of select="document/name"/></dc:title>
@@ -333,8 +334,8 @@
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="created_time"/>
 							</dcterms:created>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
-							<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 						</sioct:Comment>
 					</sioc:topic>
 				</xsl:for-each>
@@ -356,7 +357,7 @@
                 <xsl:if test="version">
                     <oplog:version><xsl:value-of select="version"/></oplog:version>
                 </xsl:if>
-				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', owner/id))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', owner/id))}"/>
                 <xsl:if test="name">
                     <foaf:name><xsl:value-of select="name"/></foaf:name>
                 </xsl:if>
@@ -392,7 +393,7 @@
                 <xsl:if test="id">
                     <oplog:id><xsl:value-of select="id"/></oplog:id>
                 </xsl:if>
-				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
                 <xsl:if test="name">
                     <foaf:name><xsl:value-of select="name"/></foaf:name>
                 </xsl:if>
@@ -400,7 +401,7 @@
                     <oplog:uri rdf:resource="{link}"/>
                 </xsl:if>
                 <xsl:if test="cover_photo">
-                    <oplog:cover_photo rdf:resource="{concat('https://graph.facebook.com', cover_photo)}"/>
+                    <oplog:cover_photo rdf:resource="{concat('https://graph.facebook.com/', cover_photo)}"/>
                 </xsl:if>
                 <xsl:if test="count">
                     <oplog:count><xsl:value-of select="count"/></oplog:count>
@@ -428,8 +429,8 @@
 							<dcterms:created rdf:datatype="&xsd;dateTime">
 								<xsl:value-of select="created_time"/>
 							</dcterms:created>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
-							<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 						</sioct:Comment>
 					</sioc:topic>
 				</xsl:for-each>
@@ -499,7 +500,7 @@
 			<rdf:Description rdf:about="{$resourceURL}">
                 <rdf:type rdf:resource="&c;Vevent" />
                 <rdf:type rdf:resource="&oplog;Event" />
-				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', owner/id))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', owner/id))}"/>
                 <xsl:if test="id">
                     <oplog:id><xsl:value-of select="id"/></oplog:id>
                 </xsl:if>
@@ -665,7 +666,7 @@
 							<xsl:if test="message">
 								<dc:description><xsl:value-of select="message"/></dc:description>
 							</xsl:if>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<xsl:if test="icon">
 								<foaf:depiction rdf:resource="{icon}"/>
 							</xsl:if>
@@ -692,8 +693,8 @@
 										<dcterms:created rdf:datatype="&xsd;dateTime">
 											<xsl:value-of select="created_time"/>
 										</dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
-										<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
@@ -749,8 +750,8 @@
 										<dcterms:created rdf:datatype="&xsd;dateTime">
 											<xsl:value-of select="created_time"/>
 										</dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
-										<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
@@ -774,13 +775,13 @@
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<xsl:if test="description">
 								<dc:description><xsl:value-of select="description"/></dc:description>
 							</xsl:if>
 							<sioc:link rdf:resource="{link}" />
 							<xsl:if test="cover_photo">
-								<oplog:cover_photo rdf:resource="{concat('https://graph.facebook.com', cover_photo)}"/>
+								<oplog:cover_photo rdf:resource="{concat('https://graph.facebook.com/', cover_photo)}"/>
 							</xsl:if>
 							<xsl:if test="count">
 								<oplog:count><xsl:value-of select="count"/></oplog:count>
@@ -811,8 +812,8 @@
 										<dcterms:created rdf:datatype="&xsd;dateTime">
 											<xsl:value-of select="created_time"/>
 										</dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
-										<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
@@ -834,7 +835,7 @@
 							<rdf:type rdf:resource="&oplog;StatusMessage" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <rdfs:label><xsl:value-of select="concat('Message from ', from/name, ' ', id)"/></rdfs:label>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<xsl:if test="message">
 								<dc:description><xsl:value-of select="message"/></dc:description>
 							</xsl:if>
@@ -843,7 +844,7 @@
 									<xsl:value-of select="updated_time"/>
 								</dcterms:modified>
 							</xsl:if>
-							<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 							<xsl:for-each select="likes/data">
 								<oplog:liked_by rdf:resource="{vi:proxyIRI ($baseUri, '', id)}"/>
 							</xsl:for-each>
@@ -940,7 +941,7 @@
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
                                 <xsl:value-of select="created_time"/>
 					        </dcterms:created>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<foaf:depiction rdf:resource="{picture}"/>
 							<foaf:depiction rdf:resource="{icon}"/>
 							<sioc:link rdf:resource="{source}"/>
@@ -965,8 +966,8 @@
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
                                 <xsl:value-of select="created_time"/>
 					        </dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com', from/id))}"/>
-										<sioc:link rdf:resource="{concat('https://graph.facebook.com', id)}" />
+										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
