@@ -171,3 +171,18 @@ td.calendar_selected {
   background-color: #99b3c5;
   color: white;
 }
+
+.oat_winrect_container {
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.oat_winrect_title {
+  background-image: url(/ods/images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+.app_item:hover {
+ 	background-color: #eec;
+}
+

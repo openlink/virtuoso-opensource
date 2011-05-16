@@ -678,10 +678,10 @@
                     params += httpParam ("&", "tags", getParameter(items, request, "i_tags"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_sameAs")))
                     params += httpParam ("&", "webIDs", getParameter(items, request, "i_sameAs"));
-                  if ("1".equals(getParameter(items, request, "cb_item_i_interests")))
-                    params += httpParam ("&", "interests", getParameter(items, request, "i_interests"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_topicInterests")))
                     params += httpParam ("&", "topicInterests", getParameter(items, request, "i_topicInterests"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_interests")))
+                    params += httpParam ("&", "interests", getParameter(items, request, "i_interests"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_onlineAccounts")))
                     params += httpParam ("&", "onlineAccounts", getParameter(items, request, "i_onlineAccounts"));
                 }
@@ -754,7 +754,7 @@
                     }
           		    }
             		  }
-                  params += httpParam ("&", "interests", tmp);
+                  params += httpParam ("&", "topicInterests", tmp);
                   tmp = "";
                   if (ServletFileUpload.isMultipartContent(request)) {
                     Iterator iterator = items.iterator();
@@ -779,7 +779,7 @@
                     }
           		    }
             		  }
-                  params += httpParam ("&", "topicInterests", tmp);
+                  params += httpParam ("&", "interests", tmp);
                 }
                 if ($_formTab2 == 2)
                 {
@@ -1614,16 +1614,16 @@
                                       </thead>
                                       <tr id="x2_tr_no" style="display: none;"><td colspan="3"><b>No Topic of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", '<% out.print(xpathEvaluate($_document, "/user/interests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", '<% out.print(xpathEvaluate($_document, "/user/topicInterests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
                                       <%
                                         {
-                                          String S = xpathEvaluate($_acl, "/acl/interests");
+                                          String S = xpathEvaluate($_acl, "/acl/topicInterests");
                                           for (int N = 0; N < $_ACL.length; N += 2)
                                             out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
                                         }
@@ -1658,16 +1658,16 @@
                                       </thead>
                                       <tr id="x3_tr_no" style="display: none;"><td colspan="3"><b>No Thing of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", '<% out.print(xpathEvaluate($_document, "/user/topicInterests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", '<% out.print(xpathEvaluate($_document, "/user/interests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
                                       <%
                                         {
-                                          String S = xpathEvaluate($_acl, "/acl/topicInterests");
+                                          String S = xpathEvaluate($_acl, "/acl/interests");
                                           for (int N = 0; N < $_ACL.length; N += 2)
                                             out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
                                         }

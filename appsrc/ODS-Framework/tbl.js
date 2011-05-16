@@ -1098,11 +1098,11 @@ TBL.webidShow = function(obj, fldOptions)
 {
   var S = 'p';
   if (obj.id.replace('fld_2', 'fld_1') != obj.id)
-    S = $v(obj.id.replace('fld_2', 'fld_1'));
+    S = $v(obj.id.replace('fld_2', 'fld_1'))[0];
 
   var frm = TBL.parent(obj, 'form');
   var F = '&form='+frm.name;
-  var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: S;
+  var M = '&mode='+((fldOptions.formMode)? fldOptions.formMode: S);
   var N = (fldOptions.nrows)? '&nrows='+fldOptions.nrows: '';
 
   TBL.windowShow('/ods/webid_select.vspx?params='+obj.id+':s1;'+F+M+N, 'ods_select_webid');

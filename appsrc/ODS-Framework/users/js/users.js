@@ -2299,8 +2299,8 @@ function ufProfileCallback(data) {
       fieldUpdate(user, 'spbEnable', 'pf_spbEnable');
       fieldUpdate(user, 'inSearch', 'pf_inSearch');
       fieldUpdate(user, 'showActive', 'pf_showActive');
-      pfShowRows("x2", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_interests');
-      pfShowRows("x3", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_topicInterests');
+      pfShowRows("x2", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_topicInterests');
+      pfShowRows("x3", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_interests');
 
 			// address
 			fieldUpdate(user, 'homeCountry', 'pf_homecountry', aclData);
@@ -2703,10 +2703,10 @@ function pfUpdateSubmit(No) {
           S += '&tags=' + encodeURIComponent($v('i_tags'));
         if ($v('cb_item_i_sameAs') == '1')
           S += '&webIDs=' + encodeURIComponent($v('i_sameAs'));
-        if ($v('cb_item_i_interests') == '1')
-          S += '&interests=' + encodeURIComponent($v('i_interests'));
         if ($v('cb_item_i_topicInterests') == '1')
           S += '&topicInterests=' + encodeURIComponent($v('i_topicInterests'));
+        if ($v('cb_item_i_interests') == '1')
+          S += '&interests=' + encodeURIComponent($v('i_interests'));
         if ($v('cb_item_i_onlineAccounts') == '1')
           S += '&onlineAccounts=' + encodeURIComponent($v('i_onlineAccounts'));
       }
@@ -2728,8 +2728,8 @@ function pfUpdateSubmit(No) {
           + '&inSearch=' + encodeURIComponent($('pf_inSearch').checked? '1': '0')
           + '&showActive=' + encodeURIComponent($('pf_showActive').checked? '1': '0')
           + '&webIDs=' + encodeTableData("x1", ["\n", ";"])
-        + '&interests=' + encodeTableData("x2", ["\n", ";"])
-        + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);
+          + '&topicInterests=' + encodeTableData("x2", ["\n", ";"])
+          + '&interests=' + encodeTableData("x3", ["\n", ";"]);
         A +='title=' + $v('pf_acl_title')
           + '&firstName=' + $v('pf_acl_firstName')
           + '&lastName=' + $v('pf_acl_lastName')
@@ -2740,8 +2740,8 @@ function pfUpdateSubmit(No) {
           + '&homepage=' + $v('pf_acl_homepage')
           + '&summary=' + $v('pf_acl_summary')
           + '&webIDs=' +  $v('pf_acl_webIDs')
-          + '&interests=' + $v('pf_acl_interests')
           + '&topicInterests=' + $v('pf_acl_topicInterests')
+          + '&interests=' + $v('pf_acl_interests')
           + '&audio=' + $v('pf_acl_audio')
           + '&photo=' + $v('pf_acl_photo');
       }
@@ -2973,8 +2973,8 @@ function pfGetFOAFData(iri) {
 			pfSetFOAFValue(tbody, o.resume,               'Resume',                       'i_summary');
 			pfSetFOAFValue(tbody, o.tags,                 'Tags',                  'i_tags');
       pfSetFOAFValue(tbody, o.sameAs,               'Other Personal URIs (WebIDs)', 'i_sameAs', ['URI'], ['value']);
-      pfSetFOAFValue(tbody, o.interest,             'Topic of Interest',            'i_interests', ['URL', 'Label'], ['value', 'label']);
-      pfSetFOAFValue(tbody, o.topic_interest,       'Thing of Interest',            'i_topicInterests', ['URI', 'Label'], ['value', 'label']);
+      pfSetFOAFValue(tbody, o.topic_interest,       'Topic of Interest',            'i_topicInterests', ['URL', 'Label'], ['value', 'label']);
+      pfSetFOAFValue(tbody, o.interest,             'Thing of Interest',            'i_interests', ['URI', 'Label'], ['value', 'label']);
       pfSetFOAFValue(tbody, o.onlineAccounts,       'Online Accounts',              'i_onlineAccounts', ['Label', 'URI'], ['value', 'uri']);
       pfSetFOAFValue(tbody, o.knows,                'Social Network',               'i_knows', ['URI', 'Name'], ['value', 'name']);
 		} else {

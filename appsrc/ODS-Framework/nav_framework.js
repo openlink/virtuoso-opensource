@@ -3833,35 +3833,38 @@ ODS.Nav = function(navOptions) {
 	}
 
 		function renderPersonalInformationBlock(xmlDoc) {
-	    var interestsP = $('interestsCtr');
-	    OAT.Dom.clear (interestsP);
 
-	    var musicP = $('musicCtr');
-	    OAT.Dom.clear (musicP);
+		  function renderPersonalInformationBlockInternal(node, values) {
+  			OAT.Dom.clear(node);
+  			values = OAT.Xml.textValue(values[0]).split('\n');
+  			for ( var i = 0; i < values.length; i++) {
+  				if (values[i].length) {
+  					var iArr = values[i].split(';');
 
-			var interests = OAT.Xml.xpath(xmlDoc,
-					'//usersGetInfo_response/user/interests', {});
-	    interests = OAT.Xml.textValue (interests[0]).split ('\n');
-
-			for ( var i = 0; i < interests.length; i++) {
-				if (interests[i].length) {
-			    var iArr = interests[i].split (';');
-
-			    var interestA = OAT.Dom.create ('a');
-
-			    interestA.innerHTML = iArr[1];
-			    interestA.href = self.expandURL (iArr[0]);
-			    interestA.target = '_blank';
-
+  					var a = OAT.Dom.create('a');
+  					a.innerHTML = iArr[1];
+  					a.href = self.expandURL(iArr[0]);
+  					a.target = '_blank';
 			    if (i == 0)
-				OAT.Dom.append ([interestsP,interestA]);
+  						OAT.Dom.append( [ node, a ]);
 			    else
-						OAT.Dom.append( [ interestsP, OAT.Dom.text(', '), interestA ]);
+  						OAT.Dom.append( [ node, OAT.Dom.text(', '), a ]);
+  				}
 			}
 		}
 
-			var music = OAT.Xml.xpath(xmlDoc,
-					'//usersGetInfo_response/user/music', {});
+			var interestsP = $('interestTopicsCtr');
+			var interests = OAT.Xml.xpath(xmlDoc, '//usersGetInfo_response/user/interestTopics', {});
+			renderPersonalInformationBlockInternal(interestsP, interests);
+
+			var interestsP = $('interestsCtr');
+			var interests = OAT.Xml.xpath(xmlDoc, '//usersGetInfo_response/user/interests', {});
+			renderPersonalInformationBlockInternal(interestsP, interests);
+
+			var musicP = $('musicCtr');
+			OAT.Dom.clear(musicP);
+
+			var music = OAT.Xml.xpath(xmlDoc, '//usersGetInfo_response/user/music', {});
 	    musicP.innerHTML = OAT.Xml.textValue (music[0]);
 	}
 
@@ -3902,7 +3905,7 @@ ODS.Nav = function(navOptions) {
 				       renderContactInformationBlock (xmlDoc3);
 				   });
 
-		self.session.usersGetInfo(self.profile.userId, 'interests,music',
+		self.session.usersGetInfo(self.profile.userId, 'interestTopics,interests,music',
 				   function (xmlDoc3) {
 				       renderPersonalInformationBlock (xmlDoc3);
 				   });

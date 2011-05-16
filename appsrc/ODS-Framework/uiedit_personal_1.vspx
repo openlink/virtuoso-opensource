@@ -57,8 +57,8 @@
           tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('x3_fld_2_'||suffix, params, '')) || '\n';
         }
       }
-      self.interests := tmp_a;
-      self.interestTopics := tmp_b;
+      self.interestTopics := tmp_a;
+      self.interests := tmp_b;
       self.efoaf := tmp_e;
 	  ]]>
 	</v:method>
@@ -252,8 +252,8 @@
       WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
 
       self.storePersonal_1();
-      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
       WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.interestTopics);
+      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
       WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.efoaf);
 
       WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
@@ -621,7 +621,7 @@
                		   <![CDATA[
                 		   <script type="text/javascript">
                      <?vsp
-                       for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
+                         for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
                        {
                            http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});});', interest, label));
                        }
@@ -664,7 +664,7 @@
                		   <![CDATA[
                 		   <script type="text/javascript">
                      <?vsp
-                       for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
+                         for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
                        {
                            http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});});', interest, label));
                        }

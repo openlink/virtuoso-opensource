@@ -2008,7 +2008,7 @@ create procedure WA_MAIL_TEMPLATES(in templ varchar,
 }
 ;
 
-
+-- /* imitialize server settings */
 create procedure INIT_SERVER_SETTINGS ()
 {
   declare cnt integer;
@@ -5818,8 +5818,8 @@ create procedure wa_get_type_from_name (in _name varchar)
   return 0;
 }
 ;
-
-wa_wa_member_upgrade ();
+wa_wa_member_upgrade ()
+;
 
 create procedure wa_keywords_sift (inout pKW any, in pSiftList any,in pPrefix any,in pOut integer := 0)
 {
