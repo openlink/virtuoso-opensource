@@ -9,8 +9,8 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
   <title>Sponger - Facebook Access Token Generation</title>
 <?vsp
-  declare fb_app_id, fb_app_secret, fb_app_site_url, fb_login_dialog_url, fb_offline_access varchar;
-  declare og_user_url, og_user_name, og_user_id, og_resp varchar;
+  declare fb_app_id, fb_app_name, fb_app_secret, fb_app_site_url, fb_login_dialog_url, fb_offline_access varchar;
+  declare og_user_url, og_user_name, og_user_id, og_app_url, og_resp varchar;
   declare oauth_code, oauth_error, oauth_url, oauth_token, oauth_token_expiry, oauth_resp varchar;
   declare oauth_headers, oauth_resp_params any;
   declare rm_options any;
@@ -90,6 +90,15 @@
     og_user_name := coalesce (og_user_name, '(unknown)');
     og_user_id := coalesce (og_user_id, '(unknown)');
 
+    -- Retrieve the name of the Facebook application requesting the access token
+    og_app_url := sprintf ('https://graph.facebook.com/%s', fb_app_id);
+    og_resp := http_client (og_app_url);
+    -- dbg_printf ('og_resp: %s', og_resp);
+    xt := json_parse (og_resp);
+    og_tree := DB.DBA.SOCIAL_TREE_TO_XML (xt);
+    fb_app_name := cast (xpath_eval('/results/name', og_tree) as varchar);
+    fb_app_name := coalesce (fb_app_name, '(unknown)');
+
     -- Save to DB
     if (oauth_error = '0' and oauth_token is not null and og_user_id is not null)
     {
@@ -106,12 +115,13 @@ auth_err: ;
 <body style="margin-left: 20px;">
 
 <h1>Sponger - Facebook Access Token Generation</h1>
+<!--
 <p>Access token generation used these settings (specified as Sponger cartridge options) for the Facebook app:</p>
 <ul>
 <li>Site URL:&nbsp;<?vsp http (coalesce (fb_app_site_url, 'NULL')); ?></li>
 <li>App ID:&nbsp;<?vsp http (coalesce (fb_app_id, 'NULL')); ?></li>
-<li>App secret:&nbsp;<?vsp http (coalesce (fb_app_secret, 'NULL')); ?></li>
 </ul>
+-->
 
 <?vsp  if (oauth_error <> '0') { ?> 
   <p><?vsp http (oauth_error); ?></p>
@@ -127,19 +137,32 @@ auth_err: ;
   <?vsp } ?>
 
   <?vsp if (oauth_token is not null) { ?>
-    <p><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?> has granted access token:</p>
+    <p>The Linked Data Generator hosted by application <em><?=fb_app_name ?></em> now has access to your Facebook-hosted Data Space.</p>
+    <!--
     <p><?vsp http (oauth_token); ?></p>
     <?vsp if (oauth_token_expiry is not null) { ?>
       <p>This token expires in <?vsp http (oauth_token_expiry); ?> seconds.</p>
     <?vsp } else { ?>
       <p>This is a non-expiring token.</p>
     <?vsp } ?>
+    -->
     <?vsp if (rdf_mappers_vad_update_required = 1) { ?>
     <p>Please enter this token as the value for the API Key in the Sponger cartridge configuration and close this window.</p> 
     <p>If configuring more than one access token in the API Key, enter them in the format <em>facebook_id1=access_token1&amp;facebook_id2=access_token2...</em></p> 
       <p><strong>Please update your RDF Mappers VAD. The latest VAD saves access tokens to a Virtuoso table. Manual entry of access tokens in the API Key is no longer required.</strong></p>
-    <?vsp } else { ?>
-      <p>The access token has been saved to table DB.DBA.OPENGRAPH_ACCESS_TOKENS ready for use by the Facebook Open Graph cartridge.</p> 
+    <?vsp } else { 
+      declare entity_uri, about_sponge_uri, describe_sponge_uri varchar;
+      about_sponge_uri := sprintf ('http://%s/about/html/http/graph.facebook.com/%s', _host, og_user_id);
+      entity_uri := sprintf ('http://%s/about/id/http/graph.facebook.com/%s', _host, og_user_id);
+      describe_sponge_uri := sprintf ('http://%s/describe/?url=%U', _host, entity_uri);
+    ?>
+      <p>Here are a variety of Linked Data oriented views of your Facebook profile:</p> 
+      <div>
+      <ol>
+      <li><a href="<?=about_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
+      <li><a href="<?=describe_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
+      </ol>
+      </div>
     <?vsp } ?>
   <?vsp } ?>
 <?vsp } ?>
