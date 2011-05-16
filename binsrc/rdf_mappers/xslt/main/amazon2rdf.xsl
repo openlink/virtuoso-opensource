@@ -127,7 +127,6 @@
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplamz;Product" />
-						<rdf:type rdf:resource="&pto;Amazon.com"/>
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <gr:hasMakeAndModel>
 					<rdf:Description rdf:about="{vi:proxyIRI ($base, '', 'MakeAndModel')}">

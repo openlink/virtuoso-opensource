@@ -98,7 +98,6 @@
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
-					<rdf:type rdf:resource="&pto;Etsy"/>
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 					<xsl:apply-templates select="results/results/*" />
 				</rdf:Description>

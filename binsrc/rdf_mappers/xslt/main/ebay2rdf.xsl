@@ -154,7 +154,6 @@
 			<rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplebay;Product" />
-			<rdf:type rdf:resource="&pto;EBay"/>
 
                 <foaf:page rdf:resource="{$baseUri}"/>
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
