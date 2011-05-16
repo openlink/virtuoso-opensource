@@ -38,6 +38,7 @@
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
     xmlns:h   ="http://www.w3.org/1999/xhtml"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:rdf="&rdf;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
@@ -122,6 +123,7 @@
 	    <xsl:attribute name="rdf:about">
 			<xsl:value-of select="vi:proxyIRI ($baseUri, '', concat($summary, $dtstart))" />
 	    </xsl:attribute>
+		<rdfs:label><xsl:value-of select="$summary" /></rdfs:label>
 
 	<xsl:call-template name="textProp">
 	    <xsl:with-param name="class">uid</xsl:with-param>
