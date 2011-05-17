@@ -57,6 +57,7 @@ public class VirtGraph extends GraphBase
     protected Connection connection = null;
     protected String ruleSet = null;
     protected boolean useSameAs = false;
+    protected int queryTimeout = 0;
     static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
@@ -217,6 +218,18 @@ public class VirtGraph extends GraphBase
     }
 
 
+    public int getQueryTimeout()
+    {
+    	return this.queryTimeout;
+    }
+
+
+    public void setQueryTimeout(int seconds)
+    {
+    	this.queryTimeout = seconds;
+    }
+
+
     public int getCount()
     {
         return size();
@@ -272,7 +285,7 @@ public class VirtGraph extends GraphBase
       checkOpen();
 
       try {
-	java.sql.Statement st = connection.createStatement();
+	java.sql.Statement st = createStatement();
 	st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"')");
 	st.close();
       } catch (Exception e) {
@@ -286,7 +299,7 @@ public class VirtGraph extends GraphBase
       checkOpen();
 
       try {
-	java.sql.Statement st = connection.createStatement();
+	java.sql.Statement st = createStatement();
 	st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"', 1)");
 	st.close();
       } catch (Exception e) {
@@ -309,6 +322,29 @@ public class VirtGraph extends GraphBase
       }
       return buf.toString();
     }
+
+
+    protected java.sql.Statement createStatement() throws java.sql.SQLException
+    {
+      checkOpen();
+      java.sql.Statement st = connection.createStatement();
+      if (queryTimeout > 0)
+        st.setQueryTimeout(queryTimeout);
+      st.setFetchSize(prefetchSize);
+      return st;
+    }
+
+    protected java.sql.PreparedStatement prepareStatement(String sql) throws java.sql.SQLException
+    {
+      checkOpen();
+      java.sql.PreparedStatement st = connection.prepareStatement(sql);
+      if (queryTimeout > 0)
+        st.setQueryTimeout(queryTimeout);
+      st.setFetchSize(prefetchSize);
+      return st;
+    }
+
+
 
 // GraphBase overrides
     public static String Node2Str(Node n)
@@ -407,7 +443,7 @@ public class VirtGraph extends GraphBase
       java.sql.PreparedStatement ps;
 
       try {
-        ps = connection.prepareStatement(sinsert);
+        ps = prepareStatement(sinsert);
         ps.setString(1, this.graphName);
         bindSubject(ps, 2, t.getSubject());
         bindPredicate(ps, 3, t.getPredicate());
@@ -425,7 +461,7 @@ public class VirtGraph extends GraphBase
       java.sql.PreparedStatement ps;
 
       try {
-        ps = connection.prepareStatement(sdelete);
+        ps = prepareStatement(sdelete);
         ps.setString(1, this.graphName);
         bindSubject(ps, 2, t.getSubject());
         bindPredicate(ps, 3, t.getPredicate());
@@ -463,7 +499,7 @@ public class VirtGraph extends GraphBase
       checkOpen();
 
       try {
-	java.sql.PreparedStatement ps = connection.prepareStatement(sb.toString());
+	java.sql.PreparedStatement ps = prepareStatement(sb.toString());
 
 	if (!readFromAllGraphs)
 	  ps.setString(1, graphName);
@@ -518,7 +554,7 @@ public class VirtGraph extends GraphBase
         sb.append(" select * where { graph <"+ graphName +"> { " + S +" "+ P +" "+ O +" }} limit 1");
 
       try {
-	java.sql.Statement stmt = connection.createStatement();
+	java.sql.Statement stmt = createStatement();
 	rs = stmt.executeQuery(sb.toString());
 	boolean ret = rs.next();
 	rs.close();
@@ -565,8 +601,7 @@ public class VirtGraph extends GraphBase
       try 
       {
         java.sql.PreparedStatement stmt;
-        stmt = connection.prepareStatement(sb.toString());
-	stmt.setFetchSize(prefetchSize);
+        stmt = prepareStatement(sb.toString());
 	return new VirtResSetIter(this, stmt.executeQuery(), tm);
       } catch (Exception e) {
         throw new JenaException(e);
@@ -603,7 +638,7 @@ public class VirtGraph extends GraphBase
 
       checkOpen();
       try {
-        java.sql.Statement stmt = connection.createStatement();
+        java.sql.Statement stmt = createStatement();
         stmt.execute(exec_text);
       }	catch(Exception e) {
         throw new JenaException(e);
@@ -615,7 +650,7 @@ public class VirtGraph extends GraphBase
     void add(Iterator<Triple> it, List<Triple> list) 
     {
       try {
-        PreparedStatement ps = connection.prepareStatement(sinsert);
+        PreparedStatement ps = prepareStatement(sinsert);
         int count = 0;
 	    
         while (it.hasNext())
@@ -692,7 +727,7 @@ public class VirtGraph extends GraphBase
         } else if (nS != null && nP != null && nO != null) {
           java.sql.PreparedStatement ps;
 
-          ps = connection.prepareStatement(sdelete);
+          ps = prepareStatement(sdelete);
           ps.setString(1, this.graphName);
           bindSubject(ps, 2, nS);
           bindPredicate(ps, 3, nP);
@@ -715,7 +750,7 @@ public class VirtGraph extends GraphBase
              "> { "+S+" "+P+" "+O+" } from <"+this.graphName+
              "> where { "+S+" "+P+" "+O+" }";
 
-          java.sql.Statement stmt = connection.createStatement();
+          java.sql.Statement stmt = createStatement();
           stmt.execute(query);
         }
       } catch(Exception e) {
@@ -731,7 +766,7 @@ public class VirtGraph extends GraphBase
       checkOpen();
 
       try {
-        java.sql.PreparedStatement ps = connection.prepareStatement(query);
+        java.sql.PreparedStatement ps = prepareStatement(query);
         ps.setString(1, name);
         ps.execute();
       }	catch(Exception e) {

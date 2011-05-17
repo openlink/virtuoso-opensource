@@ -55,7 +55,6 @@ import com.hp.hpl.jena.sparql.util.Utils;
 public class VirtuosoQueryEngine extends QueryEngineMain
 {
     private Query eQuery = null;
-    int prefetchSize = 200;
 
     
     public VirtuosoQueryEngine(Query query, DatasetGraph dataset, Binding initial, Context context)
@@ -80,13 +79,9 @@ public class VirtuosoQueryEngine extends QueryEngineMain
         VirtGraph vg = (VirtGraph)dsg.getDefaultGraph();
         String query = fixQuery(eQuery.toString(), initial, vg);
 	
-	prefetchSize = vg.getFetchSize ();
-
 	try
 	{
-	    java.sql.Connection connection = vg.getConnection();
-	    java.sql.Statement  stmt = connection.createStatement();
-	    stmt.setFetchSize(prefetchSize);
+	    java.sql.Statement  stmt = vg.createStatement();
 	    java.sql.ResultSet rs = stmt.executeQuery(query);
 	    return (QueryIterator)new VQueryIterator(vg, rs);
 	}

@@ -67,7 +67,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
     private String virt_query;
     private QuerySolution m_arg = null;
 
-    private int prefetchSize = 200;
     private java.sql.Statement stmt = null;
 
 
@@ -75,7 +74,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
     {
 	graph = _graph;
 	virt_graph = graph.getGraphName ();
-	prefetchSize = graph.getFetchSize ();
 	virt_query = query;
     }
 
@@ -85,11 +83,9 @@ public class VirtuosoQueryExecution  implements QueryExecution
       ResultSet ret = null;
 
       try {
-        Connection connection = graph.getConnection();
-
-        stmt = connection.createStatement();
-        stmt.setFetchSize(prefetchSize);
+        stmt = graph.createStatement();
         java.sql.ResultSet rs = stmt.executeQuery(getQuery());
+
         return new VResultSet(graph, rs);
       }	catch(Exception e) {
         throw new JenaException("Can not create ResultSet.:"+e);
@@ -130,10 +126,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execConstruct(Model model)
     {
       try {
-        Connection connection = graph.getConnection();
-
-        stmt = connection.createStatement();
-        stmt.setFetchSize(prefetchSize);
+        stmt = graph.createStatement();
         java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -165,10 +158,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execDescribe(Model model)
     {
       try {
-        Connection connection = graph.getConnection();
-
-        stmt = connection.createStatement();
-        stmt.setFetchSize(prefetchSize);
+        stmt = graph.createStatement();
         java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         ResultSetMetaData rsmd = rs.getMetaData();
         while(rs.next())
@@ -196,9 +186,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
       boolean ret = false;
 
       try {
-        Connection connection = graph.getConnection();
-
-        stmt = connection.createStatement();
+        stmt = graph.createStatement();
         java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         ResultSetMetaData rsmd = rs.getMetaData();
 
