@@ -95,7 +95,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
       checkOpen();
       try {
-        java.sql.PreparedStatement ps = getConnection().prepareStatement(query);
+        java.sql.PreparedStatement ps = prepareStatement(query);
         ps.setString(1, name);
         rs = ps.executeQuery();
         if (rs.next())
@@ -111,7 +111,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 					+ "' already exists.");
         Graph g = model.getGraph();
         int count = 0;
-        java.sql.PreparedStatement ps = getConnection().prepareStatement(sinsert);
+        java.sql.PreparedStatement ps = prepareStatement(sinsert);
 
         for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();) 
         {
@@ -146,7 +146,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
       checkOpen();
       try {
-        java.sql.Statement stmt = getConnection().createStatement();
+        java.sql.Statement stmt = createStatement();
         stmt.executeQuery(exec_text);
       } catch (Exception e) {
 	throw new JenaException(e);
@@ -206,7 +206,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
       checkOpen();
       try {
-        java.sql.PreparedStatement ps = getConnection().prepareStatement(query);
+        java.sql.PreparedStatement ps = prepareStatement(query);
         ps.setString(1, name);
         rs = ps.executeQuery();
         if (rs.next())
@@ -230,7 +230,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
       try {
         List<String> names=new LinkedList(); 
 
-        java.sql.Statement stmt = getConnection().createStatement();
+        java.sql.Statement stmt = createStatement();
         rs = stmt.executeQuery(exec_text);
         while(rs.next())
           names.add(rs.getString(1));
@@ -296,7 +296,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
         try {
 	  List<Node> names=new LinkedList();
 
-  	  java.sql.Statement stmt = vd.getConnection().createStatement();
+  	  java.sql.Statement stmt = vd.createStatement();
 	  rs = stmt.executeQuery(exec_text);
 	  while(rs.next())
 	    names.add(Node.createURI(rs.getString(1)));

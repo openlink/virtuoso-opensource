@@ -61,9 +61,7 @@ public class VirtuosoUpdateRequest
     { 
 	try
 	{
-	    Connection connection = graph.getConnection();
-
-	    stmt = connection.createStatement();
+	    stmt = graph.createStatement();
 
             for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
             {

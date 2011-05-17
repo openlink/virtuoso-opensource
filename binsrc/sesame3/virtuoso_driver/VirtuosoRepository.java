@@ -77,6 +77,7 @@ public class VirtuosoRepository implements Repository {
 
 	boolean useLazyAdd = false;
 	int prefetchSize = 200;
+	int queryTimeout = 0;
 	private boolean initialized = false;
 	String ruleSet;
     
@@ -345,6 +346,23 @@ public class VirtuosoRepository implements Repository {
 		return this.prefetchSize;
 	}
 
+
+	/**
+	 * Set the query timeout(default 0) 
+	 * 
+	 * @param seconds
+	 *        queryTimeout seconds, 0 - unlimited.
+	 */
+	public void setQueryTimeout(int seconds) {
+		this.queryTimeout = seconds;
+	}
+
+	/**
+	 * Get the query timeout seconds
+	 */
+	public int getQueryTimeout() {
+		return this.queryTimeout;
+	}
 
 	/**
 	 * Set the RoundRobin state for connection(default false) 

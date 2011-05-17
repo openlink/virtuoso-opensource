@@ -66,6 +66,7 @@ public class VirtuosoRepository implements Repository {
 	boolean useLazyAdd = false;
 	String defGraph;
 	int prefetchSize = 200;
+	int queryTimeout = 0;
 	String ruleSet;
 	
 	/**
@@ -262,6 +263,23 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public int getFetchSize() {
 		return this.prefetchSize;
+	}
+
+	/**
+	 * Set the query timeout(default 0) 
+	 * 
+	 * @param seconds
+	 *        queryTimeout seconds, 0 - unlimited.
+	 */
+	public void setQueryTimeout(int seconds) {
+		this.queryTimeout = seconds;
+	}
+
+	/**
+	 * Get the query timeout seconds
+	 */
+	public int getQueryTimeout() {
+		return this.queryTimeout;
 	}
 
 	/**

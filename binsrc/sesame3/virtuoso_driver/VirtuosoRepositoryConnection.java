@@ -672,7 +672,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		String query = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(query);
 
 			// begin at onset one
@@ -1078,7 +1078,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		boolean result = false;
 		String query = "sparql define input:storage \"\" select * where {?s ?o ?p} limit 1";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(query);
 			result = !rs.next();
                         rs.close();
@@ -1335,7 +1335,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			parser.setVerifyData(true);
 			parser.setStopAtFirstError(true);
 			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
-			final PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			final PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			final Resource[] _contexts = checkDMLContext(contexts);
 
                         RDFHandlerBase rdfInserter = new RDFHandlerBase() {
@@ -1361,7 +1361,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				public void handleNamespace(String prefix, String name) throws RDFHandlerException {
 					String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 					try {
-						PreparedStatement psn = getQuadStoreConnection().prepareStatement(query);
+						PreparedStatement psn = prepareStatement(query);
 						psn.setString(1, prefix);
 						psn.setString(2, name);
 						psn.execute();
@@ -1606,7 +1606,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 
 		try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
 
 			while (it.hasNext()) {
@@ -1697,7 +1697,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
   
 		try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
 
 			Statement st;
@@ -2083,7 +2083,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		List<Namespace> namespaceList = new LinkedList<Namespace>();
 		String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(query);
 
 			// begin at onset one
@@ -2120,7 +2120,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String retVal = null;
 		String query = "SELECT __xml_get_ns_uri (?, 3)";
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ResultSet rs = ps.executeQuery();
 
@@ -2158,7 +2158,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ps.setString(2, name);
 			ps.execute();
@@ -2189,7 +2189,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 		String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ps.execute(query);
 		}
@@ -2216,7 +2216,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 		String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			stmt.execute(query);
 		}
 		catch (SQLException e) {
@@ -2231,8 +2231,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			verifyIsOpen();
 			flushDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.setFetchSize(prefetchSize);
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -2255,8 +2254,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			verifyIsOpen();
 			flushDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.setFetchSize(prefetchSize);
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 			return new GraphResultImpl(new HashMap<String,String>(), new CursorGraphResult(rs));
 		}
@@ -2272,7 +2270,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			verifyIsOpen();
 			flushDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 
 			while(rs.next())
@@ -2311,7 +2309,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			flushDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
 			return stmt.getUpdateCount();
 		}
@@ -2341,6 +2339,28 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
+
+	private java.sql.Statement createStatement() throws java.sql.SQLException
+	{
+	  java.sql.Statement stmt = quadStoreConnection.createStatement();
+	  int timeout = repository.getQueryTimeout();
+          if (timeout > 0)
+            stmt.setQueryTimeout(timeout);
+          stmt.setFetchSize(prefetchSize);
+          return stmt;
+	}
+
+	private java.sql.PreparedStatement prepareStatement(String sql) throws java.sql.SQLException
+	{
+	  java.sql.PreparedStatement stmt = quadStoreConnection.prepareStatement(sql);
+	  int timeout = repository.getQueryTimeout();
+          if (timeout > 0)
+            stmt.setQueryTimeout(timeout);
+          stmt.setFetchSize(prefetchSize);
+          return stmt;
+	}
+	
+	
 	private String substBindings(String query, BindingSet bindings) 
 	{
 		StringBuffer buf = new StringBuffer();
@@ -2452,7 +2472,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        if (!isAutoCommit && useLazyAdd) {
 		        	synchronized(this) {
 		        		if (psInsert == null)
-						psInsert = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
 					for (int i = 0; i < contexts.length; i++) {
 						psInsert.setString(1, contexts[i].stringValue());
@@ -2470,7 +2490,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					}
 				}
 		        } else {
-				PreparedStatement ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+				PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
 				for (int i = 0; i < contexts.length; i++) {
 					ps.setString(1, contexts[i].stringValue());
@@ -2537,7 +2557,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
                 if (contexts!=null && contexts.length > 0)
 		  try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			for (int i = 0; i < contexts.length; i++) {
 				ps.setString(1, contexts[i].stringValue());
 				ps.execute();
@@ -2586,7 +2606,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 		try {
-		        java.sql.Statement st = getQuadStoreConnection().createStatement();
+		        java.sql.Statement st = createStatement();
 		        ResultSet rs = st.executeQuery(query.toString());
 
 			if (rs.next())
@@ -2638,8 +2658,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			query.append(" LIMIT 1");
 
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.setFetchSize(prefetchSize);
+			java.sql.Statement stmt = createStatement();
 			rs = stmt.executeQuery(query.toString());
 		}
 		catch (SQLException e) {
@@ -2664,13 +2683,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    if (subject == null && predicate == null && object == null && context != null) {
 			String  query = "sparql clear graph iri(??)";
 
-			ps = getQuadStoreConnection().prepareStatement(query);
+			ps = prepareStatement(query);
 			ps.setString(1, context.stringValue());
 			ps.execute();
 
 		    } else if (subject != null && predicate != null && object != null && context != null) {
 
-		    	ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
+		    	ps = prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
 
 			ps.setString(1, context.stringValue());
 			bindResource(ps, 2, subject);
@@ -2698,7 +2717,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
   				"> { "+S+" "+P+" "+O+" } from <"+context+
   				"> where { "+S+" "+P+" "+O+" }";
 
-		    	java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+		    	java.sql.Statement stmt = createStatement();
 		    	stmt.execute(query);
 		    }
 		}
