@@ -64,6 +64,9 @@ create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar,
   declare c_iri, creator_iri varchar;
 
   {
+    -- init services
+    SIOC..fill_ods_polls_services ();
+
     for (select WAI_ID,
                 WAI_TYPE_NAME,
                 WAI_NAME,
@@ -166,6 +169,29 @@ create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar,
 
 -------------------------------------------------------------------------------
 --
+create procedure fill_ods_polls_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('poll.new', 'poll.options.set',  'poll.options.get');
+  ods_object_services (graph_iri, 'polls', 'ODS Polls instance services', svc_functions);
+
+  -- item
+  svc_functions := vector ('poll.get', 'poll.edit', 'poll.delete', 'poll.activate', 'poll.close', 'poll.result', 'poll.vote', 'poll.question.new', 'poll.question.delete', 'poll.comment.new');
+  ods_object_services (graph_iri, 'polls/item', 'ODS Polls item services', svc_functions);
+
+  -- item comment
+  svc_functions := vector ('poll.comment.get', 'poll.comment.delete');
+  ods_object_services (graph_iri, 'polls/item/comment', 'ODS Polls comment services', svc_functions);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure polls_insert (
   in graph_iri varchar,
   in c_iri varchar,
@@ -211,13 +237,15 @@ create procedure polls_insert (
       foaf_maker (graph_iri, person_iri (creator_iri), U_FULL_NAME, U_E_MAIL);
     }
 
-  if (not isnull (graph_iri))
-  {
+  if (isnull (graph_iri))
+    return;
+
     iri := poll_post_iri (domain_id, poll_id);
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, POLLS.WA.poll_url (domain_id, poll_id), description);
     scot_tags_insert (inst_id, iri, tags);
-  }
-  return;
+
+  -- item services
+  SIOC..ods_object_services_attach (graph_iri, iri, 'polls/item');
 }
 ;
 
@@ -240,6 +268,9 @@ create procedure polls_delete (
   iri := poll_post_iri (domain_id, poll_id);
   scot_tags_delete (domain_id, iri, tags);
   delete_quad_s_or_o (graph_iri, iri, iri);
+
+  -- item services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'polls/item');
 }
 ;
 
@@ -416,38 +447,48 @@ create procedure polls_comment_insert (
       forum_iri := polls_iri (WAI_NAME);
 		}
 
-	if (not isnull (graph_iri))
-	{
+	if (isnull (graph_iri))
+	  return;
+
 		comment_iri := poll_comment_iri (domain_id, master_id, comment_id);
-    if (not isnull (comment_iri))
-    {
-		  master_iri := poll_post_iri (domain_id, master_id);
+  if (isnull (comment_iri))
+	  return;
+
+  master_iri := SIOC..poll_post_iri (domain_id, master_id);
       foaf_maker (graph_iri, u_url, u_name, u_mail);
       ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
       DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
       DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
-    }
-  }
+  -- item services
+  SIOC..ods_object_services_attach (graph_iri, comment_iri, 'polls/item/comment');
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure polls_comment_delete (
+  in graph_iri varchar,
   inout domain_id integer,
-  inout item_id integer,
-  inout id integer)
+  inout master_id integer,
+  inout comment_id integer)
 {
+  declare master_iri, comment_iri varchar;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+  master_iri := SIOC..poll_post_iri (domain_id, master_id);
+  if (isnull (graph_iri))
+    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
 
-  declare iri varchar;
+  if (isnull (graph_iri))
+    return;
 
-  iri := poll_comment_iri (domain_id, item_id, id);
-  delete_quad_s_or_o (get_graph (), iri, iri);
+  comment_iri := poll_comment_iri (domain_id, master_id, comment_id);
+  delete_quad_s_or_o (get_graph (), comment_iri, comment_iri);
+  -- item services
+  SIOC..ods_object_services_dettach (graph_iri, comment_iri, 'polls/item/comment');
 }
 ;
 

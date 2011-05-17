@@ -46,30 +46,38 @@
     <meta name="dc.title" content="<?V POLLS.WA.utf2wide (POLLS.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
       <![CDATA[
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var imagePath="/ods/images/oat/";
-        
-        var featureList=["ajax", "xml", "anchor", "dialog", "barchart", "piechart", "calendar"];
-    </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
+        OAT.Preferences.showAjax = false;
+        
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+          pathHome: '/home/',
+          path: '<?V POLLS.WA.dav_logical_home (self.account_id) ?>',
+          user: '<?V POLLS.WA.account_name (self.account_id) ?>',
+          connectionHeaders: {Authorization: '<?V POLLS.WA.account_basicAuthorization (self.account_id) ?>'}
+        };
+
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "barchart", "piechart", "calendar"];
+        OAT.Loader.load(featureList);
+    </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="js/polls.js"></script>
       <script type="text/javascript">
         function myInit() {
           if (!OAT._loaded) {
-            setTimeout(myInit, 50);
+            setTimeout(myInit, 100);
             return;
           }
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-          OAT.Preferences.showAjax = false;
-
-        	OAT.Style.include("winms.css");
-
-          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-          OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
@@ -106,7 +114,7 @@
 
           aSessInfo := POLLS.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
           self.account_rights := get_keyword ('account_rights', aSessInfo);
           self.owner_id := POLLS.WA.domain_owner_id (self.domain_id);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), POLLS.WA.settings (self.domain_id));

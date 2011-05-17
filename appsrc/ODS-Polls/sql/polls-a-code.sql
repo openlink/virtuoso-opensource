@@ -1209,6 +1209,20 @@ _error:
 }
 ;
 
+-----------------------------------------------------------------------------
+--
+create procedure POLLS.WA.dav_logical_home (
+  inout account_id integer) returns varchar
+{
+  declare home any;
+
+  home := POLLS.WA.dav_home (account_id);
+  if (not isnull (home))
+    home := replace (home, '/DAV', '');
+  return home;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.host_protocol ()
