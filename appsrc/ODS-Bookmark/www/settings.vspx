@@ -537,16 +537,16 @@
 
               <v:data-set name="ds_exchanges" data-source="self.dsrc_exchanges" scrollable="1">
                 <v:template name="ds_exchanges_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                    <thead class="sortHeader">
+                  <table id="preferences" class="ODS_grid">
+                    <thead>
                       <tr>
-                        <th class="checkbox" width="1%">
+                        <th class="checkbox">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
                         <th style="text-align: left;">Name</th>
                         <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
                         <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
-                        <th style="text-align: left;" width="5%" nowrap="nowrap">Action</th>
+                        <th class="action">Action</th>
                       </tr>
                     </thead>
                   </table>
@@ -579,7 +579,7 @@
                   <v:template name="ds_exchanges_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td align="center" valign="top">
+                        <td class="checkbox">
                           <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('EX_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                         </td>
                         <td nowrap="nowrap">
@@ -600,7 +600,7 @@
                             }
                           ?>
                         </td>
-                        <td nowrap="nowrap">
+                        <td class="action">
                           <v:button value="Edit" action="simple" xhtml_class="button">
                             <v:on-post>
                               <![CDATA[

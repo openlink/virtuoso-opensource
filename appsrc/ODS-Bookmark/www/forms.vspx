@@ -23,25 +23,6 @@
  -
 -->
 <v:page name="forms" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
-
-      if (self.n_order = columnName and self.n_direction = 'desc')
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (self.n_order = columnName and self.n_direction = 'asc') {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf ('Sort Rows on %s in %s Order', titleName, directionStr);
-      http (sprintf ('<a href="#" onclick="javascript: myPost (''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
 
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
@@ -519,31 +500,23 @@
         <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
 
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="bookmarks" style="clear: left; width: 100%;" cellspacing="0">
-            <thead class="sortHeader">
+            <table id="bookmarks" class="ODS_grid" style="border: 0px; clear: left;">
+              <thead>
               <tr>
-                  <th class="checkbox" width="1%">
+                  <th class="checkbox">
                     <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                   </th>
                 <th width="1%" style="border-width: 0px 0px 1px 0px;">
                   <img src="image/c.gif" border="0" alt="" />
                 </th>
-                <th width="80%">
-                  <?vsp self.sortColumn('Name', '_NAME'); ?>
-                </th>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Name', '_NAME', self.n_order, self.n_direction, 'width="80%"')); ?>
                 <vm:if test="cast(get_keyword('column_#2', self.settings, '0') as integer) = 1">
-                  <th nowrap="nowrap">
-                    <?vsp self.sortColumn('Date Created', '_CREATED'); ?>
-                  </th>
+                    <?vsp http (DB.DBA.wa_show_column_header ('Date Created', '_CREATED', self.n_order, self.n_direction)); ?>
                 </vm:if>
                 <vm:if test="cast(get_keyword('column_#3', self.settings, '1') as integer) = 1">
-                  <th nowrap="nowrap">
-                    <?vsp self.sortColumn('Last Update', '_UPDATED'); ?>
-                  </th>
+                    <?vsp http (DB.DBA.wa_show_column_header ('Last Update', '_UPDATED', self.n_order, self.n_direction)); ?>
                 </vm:if>
-                <th width="1%">
-                  Action
-                </th>
+                  <th class="action">Action</th>
               </tr>
             </thead>
           </table>
@@ -565,7 +538,7 @@
                       permissions := BMK.WA.bookmark_rights (self.domain_id, node_id, self.account_rights);
 
                   ?>
-                  <td align="center" valign="top">
+                  <td class="checkbox">
                     <?vsp
                       if ((permissions = 'W') and (node_type in ('f', 's', 'b')))
                       {
@@ -652,7 +625,7 @@
                       <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control as vspx_row_template).te_column_value('_UPDATED')), 'dct:modified')); ?>
                     </td>
                   </vm:if>
-                  <td nowrap="nowrap" valign="top">
+                  <td class="action">
                     <?vsp
                       declare N, domain_id integer;
                       declare actions, actionPrefix, uri, onclick, title, target, tags any;
@@ -714,11 +687,6 @@
           </v:template>
 
         </v:data-set>
-        <script type="text/javascript">
-          <![CDATA[
-            coloriseTable('bookmarks');
-          ]]>
-        </script>
       </v:template>
 
       <v:template type="simple" enabled="--case when self.v_form = 'import' then 1 else 0 end">
@@ -1383,12 +1351,12 @@
                 <legend><b>ODS users</b></legend>
                 <table class="form-body" cellspacing="0">
                   <tr>
-                    <td style="width: 95%; background-color: white;">
-                      <table id="f_tbl" width="100%" cellspacing="0">
-                        <thead class="sortHeader">
+                    <td style="width: 90%; background-color: white;">
+                      <table id="f_tbl" class="ODS_grid">
+                        <thead>
                           <tr>
                             <th width="100%">Value</th>
-                            <th width="50px">Action</th>
+                            <th class="action">Action</th>
                           </tr>
                         </thead>
                   		  <![CDATA[
@@ -1427,14 +1395,14 @@
                 <legend><b>WebID users</b></legend>
               <table class="form-body" cellspacing="0">
                 <tr>
-                  <td style="width: 95%; background-color: white;">
-                    <table id="s_tbl" width="100%" cellspacing="0">
-                      <thead class="sortHeader">
+                    <td style="width: 90%; background-color: white;">
+                      <table id="s_tbl" class="ODS_grid">
+                        <thead>
                         <tr>
                           <th width="15%">Type</th>
                           <th>Value</th>
                           <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
-                            <th width="50px">Action</th>
+                            <th class="action">Action</th>
                         </tr>
                       </thead>
                 		  <![CDATA[

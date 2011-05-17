@@ -358,21 +358,6 @@ table#list thead input {
 }
 
 /* Grid Rows */
-.tr_0 {
-  border: solid #7f94a5;
-  border-width: 0px 0px 1px 0px;
-  background-color: #F5F5EE;
-}
-
-.tr_1 {
-  border: solid #7f94a5;
-  border-width: 0px 0px 1px 0px;
-}
-
-.tr_1:hover, .tr_0:hover {
- 	background-color: #eec;
-}
-
 .tr_select {
   background-color: #FFFFCC;
 }
@@ -537,45 +522,6 @@ div.boxHeader {
   vertical-align: middle;
 }
 
-thead.sortHeader tr {
-  background-image: url(../image/stl_blu1_grad.gif);
-  background-repeat: repeat-x;
-}
-
-thead.sortHeader tr th {
-  font-size: 1em;
-  font-weight: bold;
-  text-align: left;
-  padding: 3px 2px 3px 3px;
-  border: solid #7f94a5;
-  border-width: 0px 1px 1px 0px;
-}
-
-thead.sortHeader th.checkbox {
-  text-align: center;
-  padding: 0;
-}
-
-thead.sortHeader th:last-child {
-  border-width: 0px 0px 1px 0px;
-}
-
-thead.sortHeader a, thead.sortHeader a:link, thead.sortHeader a:visited {
-  color: #000;
-  font-weight: bold;
-	display: block;
-	text-decoration: none;
-	width: 100%
-}
-
-thead.sortHeader a:hover {
-  color: #000;
-  font-weight: bold;
-	display: block;
-  text-decoration: none;
-	width: 100%
-}
-
 /* New forms */
 .new-form-body {
   font-size: 1em;
@@ -699,15 +645,6 @@ div.activeTab2 {
 }
 
 /* Toolbars */
-div.toolbar {
-}
-
-img.toolbar {
-	float: left;
-  margin-top: 10px;
-  background-color: #7F94A5;
-}
-
 span.toolbar {
 	float: left;
 	width: 70px;
@@ -722,18 +659,11 @@ span.toolbarLabel {
   font-size: 0.8em;
 }
 
-/* ComboList */
-.combo_list_list {
-  background-color: white;
-  border: 1px solid black;
-  padding: 5px 10px 5px 10px;
-  height: 100px;
-  overflow: auto;
-}
-
-.combo_list_option:hover {
-  background-color: #99b3c5;
-  color: white;
+img.toolbar {
+  display: block;
+  float: left;
+  margin-top: 10px;
+  background-color: #7F94A5;
 }
 
 /* Comments */

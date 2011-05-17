@@ -101,14 +101,15 @@ create procedure BMK.WA.vhost()
                realm    => 'wa',
                def_page => 'bookmarks.vspx'
              );
-  USER_CREATE ('SOAP_BOOKMARK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
-  USER_SET_QUALIFIER ('SOAP_BOOKMARK', 'DBA');
 
+  -- old SOAP
+  -- api user & url
+  BMK.WA.exec_no_error ('USER_DROP (\'SOAP_BOOKMARK\')');
   VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
-  VHOST_DEFINE (lpath => '/dataspace/services/bookmark',
-                ppath => '/SOAP/',
-                soap_user => 'SOAP_BOOKMARK',
-                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )); 
+  -- procs
+  BMK.WA.exec_no_error ('DROP procedure DBA.DB.bookmark_import');
+  BMK.WA.exec_no_error ('DROP procedure DBA.DB.bookmark_export');
+  BMK.WA.exec_no_error ('DROP procedure DBA.DB.bookmark_update');
 }
 ;
 

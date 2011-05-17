@@ -26,9 +26,7 @@
 
   <v:method name="toolbarLabel" arglist="in cmd varchar">
     <![CDATA[
-      if (self.tbLabels = 0)
-        return '';
-      return sprintf('<br /><span class="toolbarLabel">%s</span>', cmd);
+      return case when (self.tbLabels = 0) then '' else sprintf('<br /><span class="toolbarLabel">%s</span>', cmd) end;
     ]]>
   </v:method>
 
