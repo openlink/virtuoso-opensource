@@ -243,44 +243,39 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="javaScript">
-    <script type="text/javascript" src="/oMail/i/js/script.js"></script>
-    <script type="text/javascript">
-      var toolkitPath="/ods/oat";
-      var imagePath="/ods/images/oat/";
-
-      var featureList=["ajax", "json", "anchor", "dialog", "dav", "combolist", "calendar"];
-    </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript">
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
+        OAT.Preferences.showAjax = false;
+
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+                        pathHome: '/home/',
+                        path: '/home/<xsl:value-of select="//user_info/user_name" />/',
+                        user: '<xsl:value-of select="//user_info/user_name" />',
+                        connectionHeaders: {Authorization: '<xsl:value-of select="//user_info/user_basic_authorization" />'}
+                      };
+
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "tree", "calendar"];
+        OAT.Loader.load(featureList);
+      </script>
+    <script type="text/javascript" src="/oMail/i/js/script.js"></script>
     <script type="text/javascript" src="/ods/tbl.js"></script>
     <script type="text/javascript" src="/oMail/i/js/tbl.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
       function myInit() {
         if (!OAT._loaded) {
-          setTimeout(myInit, 50);
+          setTimeout(myInit, 100);
           return;
         }
-        OAT.Preferences.imagePath = '/ods/images/oat/';
-        OAT.Preferences.stylePath = '/ods/oat/styles/';
-        OAT.Preferences.showAjax = false;
-
-      	/* Load Stylesheets */
-      	OAT.Style.include("grid.css");
-      	OAT.Style.include("webdav.css");
-
-        // WebDAV
-        var options = { imagePath: OAT.Preferences.imagePath,
-                        pathHome: '/home/',
-                        path: '/home/<xsl:value-of select="//user_info/user_name" />/',
-                        user: '<xsl:value-of select="//user_info/user_name" />',
-                        connectionHeaders: {Authorization: '<xsl:value-of select="//user_info/user_basic_authorization" />'}
-                      };
-        OAT.WebDav.init(options);
-
-        // a++
-        OAT.Preferences.imagePath = '/ods/images/oat/';
-        OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-        OAT.Anchor.zIndex = 1001;
 
         if (<xsl:value-of select="//user_info/app" /> == 1)
         {

@@ -71,6 +71,9 @@
           <input type="button" name="att_2_button" value="Browse...">
             <xsl:attribute name="onclick">javascript: f1.att_source[1].checked = true; davBrowse ('att_2'); </xsl:attribute>
           </input>
+  		    <script type="text/javascript">
+            OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+  		    </script>
         </td>
       </tr>
       <tfoot>
