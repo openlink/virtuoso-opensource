@@ -606,26 +606,11 @@ div.activeTab {
 }
 
 /* Toolbars */
-div.toolbar {
-}
-
 img.toolbar {
   display: block;
   float: left;
   margin-top: 10px;
   background-color: #7F94A5;
-}
-
-a.toolbar {
-  display: block;
-  float: left;
-  width: 70px;
-  padding: 10px 0 10px 0;
-  color: #4F56A6;
-  font-weight: bold;
-  font-size: 12px;
-  text-decoration: none;
-  text-align: center;
 }
 
 span.toolbar {
