@@ -134,6 +134,9 @@ create procedure ODS.ODS_API."calendar.event.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   cTimezone := CAL.WA.settings_usedTimeZone (inst_id);
   eventStart := CAL.WA.event_user2gmt (eventStart, cTimezone);
   eventEnd := CAL.WA.event_user2gmt (eventEnd, cTimezone);
@@ -259,6 +262,9 @@ create procedure ODS.ODS_API."calendar.task.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   cTimezone := CAL.WA.settings_usedTimeZone (inst_id);
   eventStart := CAL.WA.event_user2gmt (CAL.WA.dt_join (CAL.WA.dt_dateClear (eventStart), CAL.WA.dt_timeEncode (12, 0)), cTimezone);
@@ -395,6 +401,9 @@ create procedure ODS.ODS_API."calendar.import" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   if (isnull (userName))
   {
     userName := uname;
@@ -456,6 +465,9 @@ create procedure ODS.ODS_API."calendar.export" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   http (CAL.WA.export_vcal (inst_id, null, vector ('events', events, 'tasks', tasks, 'periodFrom', periodFrom, 'periodTo', periodTo, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude)));
 
@@ -717,6 +729,9 @@ create procedure ODS.ODS_API."calendar.publication.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   _type := ODS.ODS_API.calendar_type_check (destinationType, destination);
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
@@ -920,6 +935,9 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   _type := ODS.ODS_API.calendar_type_check (sourceType, source);
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
@@ -1118,6 +1136,9 @@ create procedure ODS.ODS_API."calendar.upstream.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   CAL.WA.test (name, vector('name', 'Upstream Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
   CAL.WA.test (source, vector('name', 'Upstream URI', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));

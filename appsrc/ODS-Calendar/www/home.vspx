@@ -24,39 +24,60 @@
 -->
 <v:page name="calendar" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar, in fieldName varchar, in dsOrder varchar, in dsDirection varchar">
+  <v:method name="sortColumn" arglist="in columnLabel varchar, in columnName varchar, in sortField varchar, in sortOrder varchar, in sortDirection varchar, in columnProperties varchar">
     <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
+      declare image, onclick any;
 
-      if (dsOrder = columnName and dsDirection = 'desc')
+      image := '';
+      onclick := sprintf ('onclick="javascript: odsPost(this, [\'%s\', \'%s\']);"', sortField, columnName);
+      if (sortOrder = columnName)
       {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (dsOrder = columnName and dsDirection = 'asc') {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
+        if (sortDirection = 'desc')
+        {
+          image := '&nbsp;<img src="/ods/images/icons/orderdown_16.png" border="0" alt="Down"/>';
+        }
+        else if (sortDirection = 'asc')
+        {
+          image := '&nbsp;<img src="/ods/images/icons/orderup_16.png" border="0" alt="Up"/>';
+        }
       }
-      altStr := sprintf ('Sort Rows on %s in %s Order', titleName, directionStr);
-      http (sprintf ('<a href="#" onclick="javascript: myPost (''F1'', ''%s'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', fieldName, columnName, altStr, altStr, titleName, imageStr));
+      http (sprintf ('<th %s %s>%s%s</th>', columnProperties, onclick, columnLabel, image));
     ]]>
   </v:method>
 
-  <v:method name="sortChange" arglist="in columnName varchar, in dsOrder varchar, in dsDirection varchar, inout ds vspx_data_set">
+  <v:method name="sortChange" arglist="in columnName varchar, in sortOrder varchar, in sortDirection varchar, inout ds vspx_data_set">
     <![CDATA[
       if (is_empty_or_null (columnName))
         return;
 
       ds.vc_reset ();
-      if (udt_get (self, dsOrder) = columnName)
+      if (udt_get (self, sortOrder) = columnName)
       {
-        udt_set (self, dsDirection, either (equ (udt_get (self, dsDirection), 'asc'), 'desc', 'asc'));
+        udt_set (self, sortDirection, either (equ (udt_get (self, sortDirection), 'asc'), 'desc', 'asc'));
       } else {
-        udt_set (self, dsDirection, 'asc');
+        udt_set (self, sortDirection, 'asc');
       }
-      udt_set (self, dsOrder, columnName);
+      udt_set (self, sortOrder, columnName);
+    ]]>
+  </v:method>
+
+  <v:method name="columnHeaderShow" arglist="in columnLabel varchar, in columnName varchar, in sortField varchar, in sortOrder varchar, in sortDirection varchar, in settingsName varchar, in defaultVisible integer, in isSortable integer, in columnProperties varchar">
+    <![CDATA[
+      if (not cast (get_keyword (settingsName, self.settings, defaultVisible) as integer))
+        return;
+
+      if (isSortable = 1)
+      {
+        self.sortColumn (columnLabel, columnName, sortField, sortOrder, sortDirection, columnProperties);
+      } else {
+        http (sprintf ('<th nowrap="nowrap" %s>%s</th>', columnProperties, columnLabel));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="columnEnabled" arglist="in columnVisibleName varchar, in defaultVisible integer">
+    <![CDATA[
+      return cast (get_keyword (columnVisibleName, self.settings, defaultVisible) as integer);
     ]]>
   </v:method>
 
@@ -973,33 +994,6 @@
       );
       CAL.WA.event_update_acl (self.v_id, self.v_acl);
       self.shareNode (self.v_id, self.v_grants, 1);
-    ]]>
-  </v:method>
-
-  <v:method name="columnEnabled" arglist="in columnVisibleName varchar, in defaultVisible integer">
-    <![CDATA[
-      return cast (get_keyword (columnVisibleName, self.settings, defaultVisible) as integer);
-    ]]>
-  </v:method>
-
-  <v:method name="columnHeaderShow" arglist="in columnVisibleName varchar, in defaultVisible integer, in isSortable integer, in titleName varchar, in columnWidth integer, in columnName varchar, in fieldName varchar, in dsOrder varchar, in dsDirection varchar">
-    <![CDATA[
-      declare S varchar;
-
-      if (not cast (get_keyword (columnVisibleName, self.settings, defaultVisible) as integer))
-        return;
-
-      S := '';
-      if (not isnull (columnWidth))
-        S := sprintf ('width="%s"', columnWidth);
-      http (sprintf ('<th nowrap="nowrap" %s>', S));
-      if (isSortable = 1)
-      {
-        self.sortColumn (titleName, columnName, fieldName, dsOrder, dsDirection);
-      } else {
-        http (titleName);
-      }
-      http ('</th>');
     ]]>
   </v:method>
 
@@ -2100,49 +2094,40 @@
               <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
 
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                    <thead class="sortHeader">
+                        <table class="ODS_grid" style="border: 0px;">
+                          <thead>
                       <tr>
-                          <th class="checkbox" width="1%">
+                              <th class="checkbox">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
-                              <vm:if test="self.cScope = 'events'">
-                        <th nowrap="nowrap" width="10%">
-                          <?vsp self.sortColumn ('Duration', 'E_EVENT_START', 'e_sortColumn', self.e_order, self.e_direction); ?>
-                        </th>
-                        <th nowrap="nowrap">
-                          <?vsp self.sortColumn ('Name', 'E_SUBJECT', 'e_sortColumn', self.e_order, self.e_direction); ?>
-                        </th>
-                        <?vsp self.columnHeaderShow ('event_E_LOCATION', 0, 0, 'Location', '1%', 'E_LOCATION', 'e_sortColumn', self.e_order, self.e_direction); ?>
-                        <?vsp self.columnHeaderShow ('event_E_UPDATED',  1, 1, 'Updated', '1%',  'E_UPDATED',  'e_sortColumn', self.e_order, self.e_direction); ?>
-                        <?vsp self.columnHeaderShow ('event_E_CREATED',  0, 1, 'Created', '1%',  'E_CREATED',  'e_sortColumn', self.e_order, self.e_direction); ?>
-                              </vm:if>
-                              <vm:if test="self.cScope = 'tasks'">
-                                <th nowrap="nowrap">
-                                  <?vsp self.sortColumn ('Name', 'E_SUBJECT', 't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                </th>
-                                <?vsp self.columnHeaderShow ('task_E_START',     0, 1, 'Start',     '5%', 'E_EVENT_START', 't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_END',       1, 1, 'Due',       '5%', 'E_EVENT_END',   't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_COMPLETED', 0, 1, 'Completed', '1%', 'E_COMPLETED',   't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_STATUS',    1, 1, 'Status',    '3%', 'E_STATUS',      't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_PRIORITY',  1, 1, 'Priority',  '1%', 'E_PRIORITY',    't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_UPDATED',   0, 1, 'Updated',   '1%', 'E_UPDATED',     't_sortColumn', self.ts_order, self.ts_direction); ?>
-                                <?vsp self.columnHeaderShow ('task_E_CREATED',   0, 1, 'Created',   '1%', 'E_CREATED',     't_sortColumn', self.ts_order, self.ts_direction); ?>
-                              </vm:if>
-                              <vm:if test="self.cScope = 'search'">
-                                <th nowrap="nowrap" width="1%">
-                                  <?vsp self.sortColumn ('Type', 'E_KIND', 's_sortColumn', self.s_order, self.s_direction); ?>
-                                </th>
-                                <th nowrap="nowrap">
-                                  <?vsp self.sortColumn ('Item', 'E_EVENT_START', 's_sortColumn', self.s_order, self.s_direction); ?>
-                                </th>
-                                <th nowrap="nowrap" width="1%">
-                                  <?vsp self.sortColumn ('Updated', 'E_UPDATED', 's_sortColumn', self.s_order, self.s_direction); ?>
-                                </th>
-                              </vm:if>
-                          <th width="1%">
-                            Action
-                          </th>
+                              <?vsp
+                                if (self.cScope = 'events')
+                                {
+                                  self.sortColumn ('Duration', 'E_EVENT_START', 'e_sortColumn', self.e_order, self.e_direction, 'width="10%"');
+                                  self.sortColumn ('Name', 'E_SUBJECT', 'e_sortColumn', self.e_order, self.e_direction, '');
+                                  self.columnHeaderShow ('Location', 'E_LOCATION', 'e_sortColumn', self.e_order, self.e_direction, 'event_E_LOCATION', 0, 0, ' width="1%"');
+                                  self.columnHeaderShow ('Updated' , 'E_UPDATED' , 'e_sortColumn', self.e_order, self.e_direction, 'event_E_UPDATED' , 1, 1, ' width="1%"');
+                                  self.columnHeaderShow ('Created' , 'E_CREATED' , 'e_sortColumn', self.e_order, self.e_direction, 'event_E_CREATED' , 0, 1, ' width="1%"');
+                                }
+                                else if (self.cScope = 'tasks')
+                                {
+                                  self.sortColumn ('Name', 'E_SUBJECT', 't_sortColumn', self.ts_order, self.ts_direction, '');
+                                  self.columnHeaderShow ('Start'    , 'E_EVENT_START', 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_START',     0, 1, ' width="5%"');
+                                  self.columnHeaderShow ('Due'      , 'E_EVENT_END'  , 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_END',       1, 1, ' width="5%"');
+                                  self.columnHeaderShow ('Completed', 'E_COMPLETED'  , 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_COMPLETED', 0, 1, ' width="1%"');
+                                  self.columnHeaderShow ('Status'   , 'E_STATUS'     , 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_STATUS',    1, 1, ' width="3%"');
+                                  self.columnHeaderShow ('Priority' , 'E_PRIORITY'   , 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_PRIORITY',  1, 1, ' width="1%"');
+                                  self.columnHeaderShow ('Updated'  , 'E_UPDATED'    , 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_UPDATED',   0, 1, ' width="1%"');
+                                  self.columnHeaderShow ('Created'  , 'E_CREATED'    , 't_sortColumn', self.ts_order, self.ts_direction, 'task_E_CREATED',   0, 1, ' width="1%"');
+                                }
+                                else if (self.cScope = 'search')
+                                {
+                                  self.sortColumn ('Type'   , 'E_KIND'       , 's_sortColumn', self.s_order, self.s_direction, '');
+                                  self.sortColumn ('Item'   , 'E_EVENT_START', 's_sortColumn', self.s_order, self.s_direction, '');
+                                  self.sortColumn ('Updated', 'E_UPDATED'    , 's_sortColumn', self.s_order, self.s_direction, '');
+                                }
+                              ?>
+                              <th class="action">Action</th>
                       </tr>
                     </thead>
                   </table>
@@ -2307,7 +2292,6 @@
 
               <script type="text/javascript">
                 <![CDATA[
-                  coloriseTable('events');
                 exchangeHTML();
                 ]]>
               </script>
@@ -2784,8 +2768,8 @@
                             x[5] := 'Wednesday';
                             x[6] := 'Thursday';
                             x[7] := 'Friday';
-                            x[8] := 'Saturday.';
-                            x[9] := 'Sunday.';
+                                      x[8] := 'Saturday';
+                                      x[9] := 'Sunday';
                             y:= make_array (10, 'any');
                             y[0] := '10';
                             y[1] := '11';
@@ -3056,11 +3040,11 @@
                       <table class="form-body" cellspacing="0">
                         <tr>
                           <td style="width: 90%; background-color: white;">
-                            <table id="f_tbl" width="100%" cellspacing="0">
-                              <thead class="sortHeader">
+                            <table id="f_tbl" class="ODS_grid">
+                              <thead>
                                 <tr>
                                   <th width="100%">Value</th>
-                                  <th width="50px">Action</th>
+                                  <th class="action">Action</th>
                                 </tr>
                               </thead>
                         		  <![CDATA[
@@ -3100,13 +3084,13 @@
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">
-                          <table id="s_tbl" width="100%" cellspacing="0">
-                            <thead class="sortHeader">
+                            <table id="s_tbl" class="ODS_grid">
+                              <thead>
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
                                 <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
-                                <th width="50px">Action</th>
+                                  <th class="action">Action</th>
                               </tr>
                             </thead>
                       		  <![CDATA[
@@ -3653,11 +3637,11 @@
                       <table class="form-body" cellspacing="0">
                         <tr>
                           <td style="width: 90%; background-color: white;">
-                            <table id="f_tbl" width="100%" cellspacing="0">
-                              <thead class="sortHeader">
+                            <table id="f_tbl" class="ODS_grid">
+                              <thead>
                                 <tr>
                                   <th width="100%">Value</th>
-                                  <th width="50px">Action</th>
+                                  <th class="action">Action</th>
                                 </tr>
                               </thead>
                         		  <![CDATA[
@@ -3697,13 +3681,13 @@
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">
-                          <table id="s_tbl" width="100%" cellspacing="0">
-                            <thead class="sortHeader">
+                            <table id="s_tbl" class="ODS_grid">
+                              <thead>
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
                                 <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
-                                <th width="50px">Action</th>
+                                  <th class="action">Action</th>
                               </tr>
                             </thead>
                       		  <![CDATA[
@@ -4562,16 +4546,16 @@
               <div style="min-height: 200px">
                 <v:data-set name="ds_exchanges" data-source="self.dsrc_exchanges" scrollable="1">
                   <v:template name="ds_exchanges_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                    <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                      <thead class="sortHeader">
+                    <table class="ODS_grid" style="border: 0px;">
+                      <thead>
                         <tr>
-                          <th class="checkbox" width="1%">
+                          <th class="checkbox">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                           </th>
-                          <th style="text-align: left;">Name</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Action</th>
+                          <th>Name</th>
+                          <th width="5%" nowrap="nowrap">Executed On</th>
+                          <th width="5%" nowrap="nowrap">Status</th>
+                          <th clas="action">Action</th>
                         </tr>
                       </thead>
                     </table>
@@ -4586,7 +4570,7 @@
                     <v:template name="ds_exchanges_browse" type="browse" name-to-remove="table" set-to-remove="both">
                       <table>
                         <tr>
-                          <td align="center" valign="top">
+                          <td class="checkbox">
                             <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('EX_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                           </td>
                           <td nowrap="nowrap">
@@ -4607,7 +4591,7 @@
                   }
                       		  ?>
                           </td>
-                          <td nowrap="nowrap">
+                          <td class="action">
                             <v:button action="simple" name="edit_exchange" value="Edit" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
@@ -4678,11 +4662,6 @@
                   </v:on-post>
                 </v:button>
               </div>
-              <script type="text/javascript">
-                <![CDATA[
-                  coloriseTable('preferences');
-                ]]>
-              </script>
             </vm:if>
 
             <v:template name="exchange_form" type="simple" enabled="--case when self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate') then 1 else 0 end">
@@ -5093,10 +5072,10 @@
                 <br />
                 <b>The following subscription(s) will be deleted. For checked subscriptions corresponding events/tasks will be deleted too.</b>
                 <br /><br />
-                <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                  <thead class="sortHeader">
+                <table class="ODS_grid">
+                  <thead>
                     <tr>
-                      <th class="checkbox" width="1%">
+                      <th class="checkbox">
                         <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                       </th>
                       <th style="text-align: left;">Name</th>
@@ -5113,7 +5092,7 @@
                       {
                   ?>
                         <tr>
-                          <td align="center" valign="top">
+                          <td class="checkbox">
                             <input type="hidden" name="ex_item" value="<?V params[N+1] ?>" />
                             <input type="checkbox" name="cb_item" value="<?V params[N+1] ?>" onclick="selectCheck(this, 'cb_item')" />
                           </td>
@@ -5911,16 +5890,16 @@
                     <v:param name="p0" value="--self.domain_id" />
 
                     <v:template name="ds_upstreams_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                        <thead class="sortHeader">
+                      <table class="ODS_grid" style="border: 0px;">
+                        <thead>
                           <tr>
-                            <th class="checkbox" width="1%">
+                            <th class="checkbox">
                               <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                             </th>
-                            <th style="text-align: left;">Name</th>
-                            <th style="text-align: left;">Path</th>
-                            <th style="text-align: left;">In Queue</th>
-                            <th style="text-align: left;" width="5%">Action</th>
+                            <th>Name</th>
+                            <th>Path</th>
+                            <th>In Queue</th>
+                            <th class="action">Action</th>
                           </tr>
                         </thead>
                       </table>
@@ -5935,7 +5914,7 @@
                       <v:template name="ds_upstreams_browse" type="browse" name-to-remove="table" set-to-remove="both">
                         <table>
                           <tr>
-                            <td align="center" valign="top">
+                            <td class="checkbox">
                               <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('U_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                             </td>
                             <td nowrap="nowrap">
@@ -5949,7 +5928,7 @@
                                 http (cast ((select count(*) from CAL.WA.UPSTREAM_EVENT where UE_UPSTREAM_ID = (control as vspx_row_template).te_column_value('U_ID')) as varchar));
                         		  ?>
                             </td>
-                            <td nowrap="nowrap">
+                            <td class="action">
                               <v:button value="Edit" action="simple" xhtml_class="button">
                                 <v:on-post>
                                   <![CDATA[
@@ -6179,16 +6158,16 @@
                     <v:param name="p0" value="--self.domain_id" />
 
                     <v:template name="ds_grant_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                        <thead class="sortHeader">
+                      <table class="ODS_grid" style="border: 0px;">
+                        <thead>
                           <tr>
-                            <th class="checkbox" width="1%">
+                            <th class="checkbox">
                               <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                             </th>
-                            <th style="text-align: left;" nowrap="nowrap">User</th>
-                            <th style="text-align: left;" nowrap="nowrap" width="5%">Enabled/Disabled</th>
-                            <th style="text-align: left;" nowrap="nowrap" width="5%">Share Mode</th>
-                            <th style="text-align: left;" nowrap="nowrap" width="5%">Action</th>
+                            <th nowrap="nowrap">User</th>
+                            <th nowrap="nowrap" width="5%">Enabled/Disabled</th>
+                            <th nowrap="nowrap" width="5%">Share Mode</th>
+                            <th class="action">Action</th>
                           </tr>
                         </thead>
                       </table>
@@ -6417,18 +6396,18 @@
                     <v:param name="p0" value="--self.domain_id" />
 
                     <v:template name="ds_shared_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                        <thead class="sortHeader">
+                      <table class="ODS_grid" style="border: 0px;">
+                        <thead>
                           <tr>
-                            <th class="checkbox" width="1%">
+                            <th class="checkbox">
                               <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                             </th>
-                            <th style="text-align: left;">Calendar</th>
-                            <th style="text-align: left;" width="5%">Type</th>
-                            <th style="text-align: left;" width="5%">Visible</th>
-                            <th style="text-align: left;" width="5%">Mode</th>
-                            <th style="text-align: left;" width="5%">Color</th>
-                            <th style="text-align: left;" width="5%">Action</th>
+                            <th>Calendar</th>
+                            <th width="5%">Type</th>
+                            <th width="5%">Visible</th>
+                            <th width="5%">Mode</th>
+                            <th width="5%">Color</th>
+                            <th class="action">Action</th>
                           </tr>
                         </thead>
                       </table>
@@ -6438,7 +6417,7 @@
                       <v:template name="ds_shared_browse" type="browse" name-to-remove="table" set-to-remove="both">
                         <table>
                           <tr>
-                            <td align="center" valign="top">
+                            <td class="checkbox">
                               <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('S_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                             </td>
                             <td nowrap="nowrap">
@@ -6718,7 +6697,6 @@
                 </v:template>
                 <script type="text/javascript">
                   <![CDATA[
-                    coloriseTable('preferences');
                     calendarsHelp();
                   ]]>
                 </script>
@@ -6726,10 +6704,10 @@
       
       <div id="reminderDiv" style="display: none;">
         <div style="height: 200px; overflow: auto;">
-          <table id="reminderTable" style="width: 100%; background-color: #FFF;" cellspacing="0">
-            <thead class="sortHeader">
+                  <table class="ODS_grid">
+                    <thead>
               <tr>
-                <th class="checkbox" width="1%">
+                        <th class="checkbox">
                   <input type="checkbox" name="cbr_all" value="Select All" onclick="selectAllCheckboxes2(this, 'cbr_item')" />
                 </th>
                 <th>

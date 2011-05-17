@@ -4292,48 +4292,49 @@ create procedure CAL.WA.event_occurAtDate (
   if (not isnull (strstr (eRepeatExceptions, '<' || cast (datediff ('day', CAL.WA.dt_dateClear (eEventStart), dt) as varchar) || '>')))
     return 0;
 
+  if (eRepeat = 'D1')
+  {
   -- Every N-th day(s)
-  if (eRepeat = 'D1') {
     if (mod (datediff ('day', eEventStart, dtEnd), eRepeatParam1) = 0)
       return 1;
   }
-
+  else if (eRepeat = 'D2')
+  {
   -- Every week day
-  if (eRepeat = 'D2') {
     tmp := dayofweek (dt);
     if ((tmp > 1) and (tmp < 7))
       return 1;
   }
-
+  else if (eRepeat = 'W1')
+  {
   -- Every N-th week on ...
-  if (eRepeat = 'W1') {
     if (mod (datediff ('day', eEventStart, dtEnd) / 7, eRepeatParam1) = 0)
       if (bit_and (eRepeatParam2, power (2, CAL.WA.dt_WeekDay (dt, weekStarts)-1)))
         return 1;
   }
-
+  else if (eRepeat = 'M1')
+  {
   -- Every N-th day of M-th month(s)
-  if (eRepeat = 'M1') {
     if (mod (datediff ('month', eEventStart, dtEnd), eRepeatParam1) = 0)
       if (dayofmonth (dt) = eRepeatParam2)
         return 1;
   }
-
+  else if (eRepeat = 'M2')
+  {
   -- Every X day/weekday/weekend/... of Y-th month(s)
-  if (eRepeat = 'M2') {
     if (mod (datediff ('month', eEventStart, dtEnd), eRepeatParam1) = 0)
       if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eRepeatParam2, eRepeatParam3))
         return 1;
   }
-
-  if (eRepeat = 'Y1') {
+  else if (eRepeat = 'Y1')
+  {
     if (mod (datediff ('year', eEventStart, dtEnd), eRepeatParam1) = 0)
       if ((month (dt) = eRepeatParam2) and (dayofmonth (dt) = eRepeatParam3))
       return 1;
   }
-
+  else if (eRepeat = 'Y2')
+  {
   -- Every X day/weekday/weekend/... of Y-th month(s)
-  if (eRepeat = 'Y2') {
     if (month (dt) = eRepeatParam3)
       if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eRepeatParam1, eRepeatParam2))
         return 1;
@@ -4372,54 +4373,55 @@ create procedure CAL.WA.event_checkDate (
   if (dtEnd < eEventStart)
     return 0;
 
+  if (eRepeat = 'D1')
+  {
   -- Every N-th day(s)
-  if (eRepeat = 'D1') {
     iInterval := eRepeatParam1;
     if (mod (datediff ('day', eEventStart, dtEnd), eRepeatParam1) = 0)
       return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
-
+  else if (eRepeat = 'D2')
+  {
   -- Every week day
-  if (eRepeat = 'D2') {
     iInterval := 1;
     tmp := dayofweek (dt);
     if ((tmp > 1) and (tmp < 7))
       return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
-
+  else if (eRepeat = 'W1')
+  {
   -- Every N-th week on ...
-  if (eRepeat = 'W1') {
     iInterval := 1;
     if (mod (datediff ('day', eEventStart, dtEnd) / 7, eRepeatParam1) = 0)
       if (bit_and (eRepeatParam2, power (2, CAL.WA.dt_WeekDay (dt, weekStarts)-1)))
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
-
+  else if (eRepeat = 'M1')
+  {
   -- Every N-th day of M-th month(s)
-  if (eRepeat = 'M1') {
     iInterval := eRepeatParam1;
     if (mod (datediff ('month', eEventStart, dtEnd), eRepeatParam1) = 0)
       if (dayofmonth (dt) = eRepeatParam2)
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
-
+  else if (eRepeat = 'M2')
+  {
   -- Every X day/weekday/weekend/... of Y-th month(s)
-  if (eRepeat = 'M2') {
     iInterval := eRepeatParam1;
     if (mod (datediff ('month', eEventStart, dtEnd), eRepeatParam1) = 0)
       if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eRepeatParam2, eRepeatParam3))
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
-
-  if (eRepeat = 'Y1') {
+  else if (eRepeat = 'Y1')
+  {
     iInterval := eRepeatParam1;
     if (mod (datediff ('year', eEventStart, dtEnd), eRepeatParam1) = 0)
       if ((month (dt) = eRepeatParam2) and (dayofmonth (dt) = eRepeatParam3))
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
-
+  else if (eRepeat = 'Y2')
+  {
   -- Every X day/weekday/weekend/... of Y-th month(s)
-  if (eRepeat = 'Y2') {
     iInterval := 365;
     if (month (dt) = eRepeatParam3)
       if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eRepeatParam1, eRepeatParam2))
@@ -5531,8 +5533,9 @@ create procedure CAL.WA.vcal_str2recurrence (
 {
   declare N integer;
   declare S, T varchar;
-  declare V, ruleParams any;
+  declare V, weekdays, ruleParams any;
 
+  weekdays := vector ('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU');
   eRepeat := '';
   eRepeatParam1 := null;
   eRepeatParam2 := null;
@@ -5540,7 +5543,9 @@ create procedure CAL.WA.vcal_str2recurrence (
   eRepeatUntil := null;
 
   V := vector ();
-  ruleParams := xquery_eval (xmlPath, xmlItem, 0);
+  ruleParams := xquery_eval (xmlPath || '/fld', xmlItem, 0);
+  if (length (ruleParams) = 0)
+    ruleParams := xquery_eval (xmlPath || '/val', xmlItem, 0);
   foreach (any ruleParam in ruleParams) do
   {
     S := cast (xpath_eval ('.', ruleParam) as varchar);
@@ -5551,19 +5556,51 @@ create procedure CAL.WA.vcal_str2recurrence (
     return;
 
   -- daily rule
-  if (get_keyword ('FREQ', V) = 'DAILY') {
+  if (get_keyword ('FREQ', V) = 'DAILY')
+  {
+    T := get_keyword ('BYDAY', V);
+    if (isnull (T))
+    {
     eRepeat := 'D1';
     eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
+    } else {
+      eRepeat := 'D2';
+      eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
+      eRepeatParam2 := 0;
+      {
+        T := split_and_decode (T, 0, '\0\0,');
+        for (N := 0; N < length (T); N := N + 1)
+        {
+          if        (T[N] = 'MO') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 0));
+          } else if (T[N] = 'TU') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 1));
+          } else if (T[N] = 'WE') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 2));
+          } else if (T[N] = 'TH') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 3));
+          } else if (T[N] = 'FR') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 4));
+          } else if (T[N] = 'SA') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 5));
+          } else if (T[N] = 'SU') {
+            eRepeatParam2 := bit_or (eRepeatParam2, power (2, 6));
   }
-
-  if (get_keyword ('FREQ', V) = 'WEEKLY') {
+        }
+      }
+    }
+  }
+  else if (get_keyword ('FREQ', V) = 'WEEKLY')
+  {
     eRepeat := 'W1';
     eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
     eRepeatParam2 := 0;
     T := get_keyword ('BYDAY', V);
-    if (not isnull (T)) {
+    if (not isnull (T))
+    {
       T := split_and_decode (T, 0, '\0\0,');
-      for (N := 0; N < length (T); N := N + 1) {
+      for (N := 0; N < length (T); N := N + 1)
+      {
         if        (T[N] = 'MO') {
           eRepeatParam2 := bit_or (eRepeatParam2, power (2, 0));
         } else if (T[N] = 'TU') {
@@ -5582,20 +5619,60 @@ create procedure CAL.WA.vcal_str2recurrence (
         }
       }
   }
-
-  if (get_keyword ('FREQ', V) = 'MONTHLY') {
+  else if (get_keyword ('FREQ', V) = 'MONTHLY')
+  {
+    if (isnull (get_keyword ('BYDAY', V)))
+    {
     eRepeat := 'M1';
     eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
     eRepeatParam2 := cast (get_keyword ('BYMONTHDAY', V, '1') as integer);
+    } else {
+      eRepeat := 'M2';
+      eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
+      S := get_keyword ('BYDAY', V);
+      T := subseq (S, length (S)-2);
+      eRepeatParam3 := CAL.WA.vector_indexOf(weekdays, T);
+      if (isinteger (eRepeatParam3))
+        eRepeatParam3 := eRepeatParam3 + 1;
+      eRepeatParam2 := cast (subseq (S, 0, length (S)-2) as integer);
+      if (eRepeatParam2 = -1)
+        eRepeatParam2 := 5;
+    }
   }
-  if (get_keyword ('FREQ', V) = 'YEARLY') {
+  else if (get_keyword ('FREQ', V) = 'YEARLY')
+  {
+    if (isnull (get_keyword ('BYDAY', V)))
+    {
     eRepeat := 'Y1';
     eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
     eRepeatParam2 := cast (get_keyword ('BYMONTH', V, '1') as integer);
     eRepeatParam3 := cast (get_keyword ('BYMONTHDAY', V, '1') as integer);
+    } else {
+      eRepeat := 'Y2';
+      eRepeatParam3 := cast (get_keyword ('BYMONTH', V, '1') as integer);
+      S := get_keyword ('BYDAY', V);
+      T := subseq (S, length (S)-2);
+      eRepeatParam2 := CAL.WA.vector_indexOf(weekdays, T);
+      if (isinteger (eRepeatParam2))
+        eRepeatParam2 := eRepeatParam2 + 1;
+      eRepeatParam1 := cast (subseq (S, 0, length (S)-2) as integer);
+      if (eRepeatParam1 = -1)
+        eRepeatParam1 := 5;
+    }
   }
-
   eRepeatUntil := CAL.WA.vcal_iso2date (get_keyword ('UNTIL', V));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.vcal_recurrenceByDay2str (
+  in repeatValue integer)
+{
+  if (repeatValue = 5)
+    return '-1';
+
+  return '+' || cast (repeatValue as varchar);
 }
 ;
 
@@ -5609,31 +5686,29 @@ create procedure CAL.WA.vcal_recurrence2str (
   inout eRepeatUntil datetime)
 {
   declare S varchar;
+  declare weekdays any;
+
 
   if (is_empty_or_null (eRepeat))
     return null;
 
+  weekdays := vector ('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU');
   S := null;
-  -- daily rule
-  if (eRepeat = 'D1') {
-    S := 'FREQ=DAILY';
-    S := S || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
+  if (eRepeat = 'D1')
+  {
+    S := 'FREQ=DAILY'
+      || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
   }
-
-  if (eRepeat = 'D2') {
-    S := 'FREQ=DAILY';
-    S := S || ';INTERVAL=1';
-    S := S || ';BYDAY=MO,TU,WE,TH,FR';
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
+  else if (eRepeat = 'D2')
+  {
+    S := 'FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR';
   }
-
-  if (eRepeat = 'W1') {
+  else if (eRepeat = 'W1')
+  {
     S := 'FREQ=WEEKLY';
     S := S || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
-    if (eRepeatParam2 <> 0) {
+    if (eRepeatParam2 <> 0)
+    {
       S := S || ';BYDAY=';
       if (bit_and (eRepeatParam2, power (2, 0)))
         S := S || 'MO,';
@@ -5651,45 +5726,48 @@ create procedure CAL.WA.vcal_recurrence2str (
         S := S || 'SU,';
       S := trim (S, ',');
     }
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
   }
-
-  if (eRepeat = 'M1') {
-    S := 'FREQ=MONTHLY';
-    S := S || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
-    S := S || ';BYMONTHDAY=' || cast (eRepeatParam2 as varchar);
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
+  else if (eRepeat = 'M1')
+  {
+    S := 'FREQ=MONTHLY'
+      || ';INTERVAL='   || cast (eRepeatParam1 as varchar)
+      || ';BYMONTHDAY=' || cast (eRepeatParam2 as varchar);
   }
-
-  if (eRepeat = 'M2') {
-    S := 'FREQ=MONTHLY';
-    S := S || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
+  else if (eRepeat = 'M2')
+  {
+    S := 'FREQ=MONTHLY'
+      || ';INTERVAL='   || cast (eRepeatParam1 as varchar);
     if (eRepeatParam3 = 10)
-      S := S || ';BYMONTHDAY=' || cast (eRepeatParam2 as varchar);
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
+    {
+      S := S || ';BYMONTHDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam2);
   }
-
-  if (eRepeat = 'Y1') {
-    S := 'FREQ=YEARLY';
-    S := S || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
-    S := S || ';BYMONTH=' || cast (eRepeatParam2 as varchar);
-    S := S || ';BYMONTHDAY=' || cast (eRepeatParam3 as varchar);
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
+    else if ((eRepeatParam3 >= 0) and (eRepeatParam3 <= 7))
+    {
+      S := S || ';BYDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam2) || weekdays[eRepeatParam3];
   }
-
-  if (eRepeat = 'Y2') {
-    S := 'FREQ=YEARLY';
-    S := S || ';INTERVAL=1';
-    S := S || ';BYMONTH=' || cast (eRepeatParam3 as varchar);
-    if (eRepeatParam1 = 10)
-      S := S || ';BYMONTHDAY=' || cast (eRepeatParam2 as varchar);
-    if (not isnull (eRepeatUntil))
-      S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
   }
+  else if (eRepeat = 'Y1')
+  {
+    S := 'FREQ=YEARLY'
+      || ';INTERVAL='   || cast (eRepeatParam1 as varchar)
+      || ';BYMONTH='    || cast (eRepeatParam2 as varchar)
+      || ';BYMONTHDAY=' || cast (eRepeatParam3 as varchar);
+  }
+  else if (eRepeat = 'Y2')
+  {
+    S := 'FREQ=YEARLY'
+      || ';BYMONTH='    || cast (eRepeatParam3 as varchar);
+    if (eRepeatParam2 = 10)
+    {
+      S := S || ';BYMONTHDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam1);
+    }
+    else if ((eRepeatParam2 >= 0) and (eRepeatParam2 <= 7))
+    {
+      S := S || ';BYDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam1) || weekdays[eRepeatParam2];
+    }
+  }
+  if (not isnull (S) and not isnull (eRepeatUntil))
+    S := S || ';UNTIL=' || CAL.WA.vcal_date2str (eRepeatUntil);
 
   return S;
 }
@@ -5934,7 +6012,7 @@ create procedure CAL.WA.import_vcal (
 {
   declare N, nLength integer;
   declare oEvents, oTasks, oTags, oSync, oMailAttendees any;
-  declare tmp, xmlData, xmlItems, itemName, V any;
+  declare tmp, xmlData, xmlItems, xmlEvents, itemName, V any;
   declare id,
           uid,
           subject,
@@ -6015,36 +6093,36 @@ create procedure CAL.WA.import_vcal (
       -- events
       if (oEvents)
       {
-      nLength := xpath_eval('count (IMC-VEVENT)', xmlItem);
-      for (N := 1; N <= nLength; N := N + 1)
+        xmlEvents := xpath_eval ('./IMC-VEVENT', xmlItem, 0);
+        foreach (any xmlEvent in xmlEvents) do
       {
-        uid := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/UID/val', N), xmlItem, 1) as varchar);
+          uid := cast (xquery_eval ('UID/val', xmlEvent, 1) as varchar);
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
           if ((id <> -1) and not isnull (updatedBefore))
           {
             if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
               goto _skip;
           }
-          subject := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar));
-          description := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar));
-        location := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/LOCATION/val', N), xmlItem, 1) as varchar);
-        privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VEVENT[%d]/CLASS/val', N));
+          subject := CAL.WA.strDecode (cast (xquery_eval ('SUMMARY/val', xmlEvent, 1) as varchar));
+          description := CAL.WA.strDecode (cast (xquery_eval ('DESCRIPTION/val', xmlEvent, 1) as varchar));
+          location := cast (xquery_eval ('LOCATION/val', xmlEvent, 1) as varchar);
+          privacy := CAL.WA.vcal_str2privacy (xmlEvent, 'CLASS/val');
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);
-          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VEVENT[%d]/CATEGORIES/', N)), oTags);
-        eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTSTART/', N), tzDict);
-        eEventEnd := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTEND/', N), tzDict);
+          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlEvent, 'CATEGORIES/'), oTags);
+          eEventStart := CAL.WA.vcal_str2date (xmlEvent, 'DTSTART/', tzDict);
+          eEventEnd := CAL.WA.vcal_str2date (xmlEvent, 'DTEND/', tzDict);
         if (isnull (eEventEnd))
         {
-          tmp := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DURATION/val', N), xmlItem, 1) as varchar);
+            tmp := cast (xquery_eval ('DURATION/val', xmlEvent, 1) as varchar);
           eEventEnd := CAL.WA.p_dateadd (eEventStart, tmp);
         }
-        event := case when (isnull (xquery_eval (sprintf ('IMC-VEVENT[%d]/DTSTART/VALUE', N), xmlItem, 1))) then 0 else 1 end;
-        CAL.WA.vcal_str2recurrence (xmlItem, sprintf ('IMC-VEVENT[%d]/RRULE/fld', N), eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil);
-        tmp := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DALARM/val', N), xmlItem, 1) as varchar);
-        eReminder := CAL.WA.vcal_str2reminder (xmlItem, sprintf ('IMC-VEVENT[%d]/IMC-VALARM/TRIGGER/', N));
-          updated := case when isnull (updatedBefore) then CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTSTAMP/', N), tzDict) else null end;
-          notes := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/X-OL-NOTES/val', N), xmlItem, 1) as varchar);
+          event := case when (isnull (xquery_eval ('DTSTART/VALUE', xmlEvent, 1))) then 0 else 1 end;
+          CAL.WA.vcal_str2recurrence (xmlEvent, 'RRULE', eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil);
+          tmp := cast (xquery_eval ('DALARM/val', xmlEvent, 1) as varchar);
+          eReminder := CAL.WA.vcal_str2reminder (xmlEvent, 'IMC-VALARM/TRIGGER/');
+          updated := case when isnull (updatedBefore) then CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP/', tzDict) else null end;
+          notes := cast (xquery_eval ('X-OL-NOTES/val', xmlEvent, 1) as varchar);
           connection_set ('__calendar_import', '1');
           id := CAL.WA.event_update
           (
@@ -6071,7 +6149,7 @@ create procedure CAL.WA.import_vcal (
           );
           if (not isnull (exchange_id))
             update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
-          attendees := CAL.WA.import_vcal_attendees (xmlItem, sprintf ('IMC-VEVENT[%d]/ATTENDEE', N));
+          attendees := CAL.WA.import_vcal_attendees (xmlEvent, 'ATTENDEE');
           if (length (attendees))
             CAL.WA.attendees_update2 (id, attendees, oMailAttendees);
           connection_set ('__calendar_import', '0');
@@ -6085,36 +6163,36 @@ create procedure CAL.WA.import_vcal (
       if (oTasks)
       {
       -- tasks (todo)
-      nLength := xpath_eval('count (IMC-VTODO)', xmlItem);
-      for (N := 1; N <= nLength; N := N + 1)
+        xmlEvents := xpath_eval ('./IMC-VTODO', xmlItem, 0);
+        foreach (any xmlEvent in xmlEvents) do
       {
-        uid := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/UID/val', N), xmlItem, 1) as varchar);
+          uid := cast (xquery_eval ('UID/val', xmlEvent, 1) as varchar);
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
           if ((id <> -1) and not isnull (updatedBefore))
           {
             if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
               goto _skip2;
           }
-          subject := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VTODO[%d]/SUMMARY/val', N), xmlItem, 1) as varchar));
-          description := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VTODO[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar));
-        privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VTODO[%d]/CLASS/val', N));
+          subject := CAL.WA.strDecode (cast (xquery_eval ('SUMMARY/val', xmlEvent, 1) as varchar));
+          description := CAL.WA.strDecode (cast (xquery_eval ('DESCRIPTION/val', xmlEvent, 1) as varchar));
+          privacy := CAL.WA.vcal_str2privacy (xmlEvent, 'CLASS/val');
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);
-          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VTODO[%d]/CATEGORIES/', N)), oTags);
-        eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTART/', N));
+          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlEvent, 'CATEGORIES/'), oTags);
+          eEventStart := CAL.WA.vcal_str2date (xmlEvent, 'DTSTART/');
         eEventStart := CAL.WA.dt_join (eEventStart, CAL.WA.dt_timeEncode (12, 0));
-        eEventEnd := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DUE/', N));
+          eEventEnd := CAL.WA.vcal_str2date (xmlEvent, 'DUE/');
         eEventEnd := CAL.WA.dt_join (eEventEnd, CAL.WA.dt_timeEncode (12, 0));
-        priority := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/PRIORITY/val', N), xmlItem, 1) as varchar);
+          priority := cast (xquery_eval ('PRIORITY/val', xmlEvent, 1) as varchar);
         if (isnull (priority))
           priority := '3';
-        status := CAL.WA.vcal_str2status (xmlItem, sprintf ('IMC-VTODO[%d]/STATUS/val', N));
-        complete := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/COMPLETE/val', N), xmlItem, 1) as varchar);
-        completed := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/COMPLETED/', N));
+          status := CAL.WA.vcal_str2status (xmlEvent, 'STATUS/val');
+          complete := cast (xquery_eval ('COMPLETE/val', xmlEvent, 1) as varchar);
+          completed := CAL.WA.vcal_str2date (xmlEvent, 'COMPLETED/');
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
-        updated := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTAMP/', N), tzDict);
-          notes := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/X-OL-NOTES/val', N), xmlItem, 1) as varchar);
-          attendees := CAL.WA.import_vcal_attendees (xmlItem, sprintf ('IMC-VTODO[%d]/ATTENDEE', N));
+          updated := CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP/', tzDict);
+          notes := cast (xquery_eval ('X-OL-NOTES/val', xmlEvent, 1) as varchar);
+          attendees := CAL.WA.import_vcal_attendees (xmlEvent, 'ATTENDEE');
           id := CAL.WA.import_task_update
           (
                   id,              -- id

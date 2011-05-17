@@ -485,6 +485,7 @@ CAL.WA.exec_no_error ('
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
 
     CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
+    CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
     CAL.WA.syncml_entry_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_KIND, \'D\');
   }
 ');
