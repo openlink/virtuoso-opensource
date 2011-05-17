@@ -3732,7 +3732,7 @@ retry_unrdf:
 		  dtp_t connvar_dtp;
 		  query_instance_t *qi = (query_instance_t *) qst;
 		  client_connection_t *cli;
-		  const char *val_tail, *val_end;
+		  const char *val_tail;
 
 		  field_start = fmt_tail;
 		  fmt_tail++;
@@ -4140,10 +4140,83 @@ retry_unrdf:
       case 'E':
       case 'f':
       case 'g':
-	goto sorry_unsupported;
+        {
+          const char *val_tail = val_start;
+          int fmt_idx = dk_set_length (res);
+          int e_found = 0;
+          caddr_t val_buf;
+          int exp_dtp = 0x80 | ((int)((fmt_idx < expected_dtp_len) ? (expected_dtp_strg[fmt_idx] & 0x7F) : 0));
+          if (('-' == val_tail[0]) || ('+' == val_tail[0]))
+            val_tail++;
+          if (!isdigit (val_tail[0]))
+            goto POP_format_mismatch_mid_field;
+          val_tail++;
+          while (isdigit (val_tail[0])) val_tail++;
+          if ('.' == val_tail[0])
+            {
+              val_tail++;
+              if (!isdigit (val_tail[0]))
+                goto POP_format_mismatch_mid_field;
+              val_tail++;
+              while (isdigit (val_tail[0])) val_tail++;
+            }
+          if (('f' != field_end[-1]) && (('e' == val_tail[0]) || ('E' == val_tail[0])))
+            {
+              const char *val_tail_try = val_tail+1;
+              if (('-' == val_tail_try[0]) || ('+' == val_tail_try[0]))
+                val_tail_try++;
+              if (isdigit (val_tail_try[0]))
+                {
+                  val_tail_try++;
+                  while (isdigit (val_tail_try[0])) val_tail_try++;
+                  val_tail = val_tail_try;
+                }
+              e_found = 1;
+            }
+          if (val_tail != val_end)
+            goto POP_format_mismatch_mid_field;
+          val_buf = box_dv_short_nchars (val_start, val_end - val_start);
+          switch (exp_dtp)
+            {
+            case DV_SINGLE_FLOAT:
+              {
+                float f = 0.0;
+                int sctr = sscanf (val_buf, "%f", &f);
+                dk_free_box (val_buf);
+                if (1 != sctr)
+                  goto POP_format_mismatch_mid_field;
+                dk_set_push (&res, box_float (f));
 	break;
+              }
+            case DV_DOUBLE_FLOAT:
+            default:
+              {
+                double d = 0.0;
+                int sctr = sscanf (val_buf, "%lf", &d);
+                dk_free_box (val_buf);
+                if (1 != sctr)
+                  goto POP_format_mismatch_mid_field;
+                dk_set_push (&res, box_float (d));
+                break;
+              }
+            case DV_NUMERIC:
+              {
+                numeric_t res = numeric_allocate ();
+                int errcode = numeric_from_string (res, val_buf);
+                dk_free_box (val_buf);
+                if (NUMERIC_STS_SUCCESS != errcode)
+                  {
+                    numeric_free (res);
+                    goto POP_format_mismatch_mid_field;
+                  }
+                return ((caddr_t) res);
+              }
+            }
+          break;
+        }
 
       case 'c':
+
 	goto sorry_unsupported;
 	break;
 

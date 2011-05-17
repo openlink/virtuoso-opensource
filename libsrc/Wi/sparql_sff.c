@@ -36,6 +36,7 @@ extern "C" {
 
 
 #define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
+#define isfloatchar(c) (('\0' != (c)) && (NULL != strchr ("0123456789eE+-.", (c))))
 /* This was: #define isplainURIchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c))) */
 #define isplainURIchar(c) ('\0' == DKS_ESC_CHARCLASS_ACTION((unsigned)(c), DKS_ESC_URI))
 
@@ -69,7 +70,7 @@ sprintff_is_proven_bijection (const char *f)
           continue;
         }
       tail++;
-      if (NULL == strchr ("DUdusc", tail[0]))
+      if (NULL == strchr ("DUdgusc", tail[0]))
         return 0; /* Unknown format so the bijection is not proven */
       fmt_type = tail[0];
       tail++;
@@ -93,6 +94,10 @@ sprintff_is_proven_bijection (const char *f)
             continue;
           case 'U':
             if (isplainURIchar (next) || (next & ~ 0x7F))
+              return 0;
+            continue;
+          case 'g':
+            if (isfloatchar (next))
               return 0;
             continue;
         }
@@ -136,7 +141,7 @@ sprintff_is_proven_unparseable (const char *f)
           continue;
         }
       tail++;
-      if (NULL == strchr ("DUdusc", tail[0]))
+      if (NULL == strchr ("DUduscg", tail[0]))
         return 1; /* Unknown format so the format is unparseable OR the filed has modifiers for length and the like */
       fmt_type = tail[0];
       tail++;
@@ -148,10 +153,12 @@ sprintff_is_proven_unparseable (const char *f)
       if ('s' == left_fmt_type)
         return 1; /* %s at left can not be a bijection */
       if (('U' == left_fmt_type) && ('s' != fmt_type))
-        return 1; /* %U can eat anything except unescaped chars like '/' that might be pronted by '%s' */
+        return 1; /* %U can eat anything except unescaped chars like '/' that might be printed by '%s' */
       if ('u' == fmt_type)
         return 1; /* Any character %u can eat is good for any format at left */
       if ('D' == fmt_type)
+        return 1; /* Any character %D can eat as first character is good for any format at left */
+      if ('g' == fmt_type)
         return 1; /* Any character %D can eat as first character is good for any format at left */
    }
   return 0;
@@ -499,7 +506,7 @@ again:
     }
   switch (f1_v)
     {
-    case 'D': case 'U': case 'd': case 's': case 'u': break;
+    case 'D': case 'U': case 'd': case 'g': case 's': case 'u': break;
     default: goto generic_tails; /* see below */
     }
 /* Now we slightly normalize the rest of processing to write code only for a half of f1_v and f2_v combinations */
@@ -521,6 +528,7 @@ again:
     case 'D': goto f1_v_is_D; /* see below */
     case 'U': goto f1_v_is_U; /* see below */
     case 'd': goto f1_v_is_d; /* see below */
+    case 'g': goto f1_v_is_g; /* see below */
     case 's': goto f1_v_is_s; /* see below */
     case 'u': goto f1_v_is_u; /* see below */
     default: GPF_T;
@@ -556,7 +564,7 @@ f1_v_is_D:
           goto res_tail_gets_f1_v; /* see below */
         }
       goto res_tail_gets_f1_v; /* see below */
-    case 'd': case 'u':
+    case 'd': case 'g': case 'u':
       goto res_tail_gets_f2_v; /* see below */
     case 's': goto generic_tails; /* see below */
     goto res_tail_gets_f2_v; /* see below */
@@ -577,13 +585,14 @@ f1_v_is_U:
           goto tails_are_in_sync; /* see below */
         }
       if ('\0' == f1_tail[0])
-        return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
+        return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
       return SFF_ISECT_DISJOIN;
     }
   switch (f2_v)
     {
     case 'U': goto res_tail_gets_f2_v; /* see below */
     case 'd': goto res_tail_gets_f2_v; /* see below */
+    case 'g': goto res_tail_gets_f2_v; /* see below */
     case 's': goto generic_tails; /* see below */
     case 'u': goto res_tail_gets_f2_v; /* see below */
     default: goto generic_tails; /* see below */
@@ -607,12 +616,42 @@ f1_v_is_u:
           goto tails_are_in_sync; /* see below */
         }
       if ('\0' == f1_tail[0])
-        return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
+        return SFF_ISECT_DIFF_END; /* One string ends with %d, other with non-%d fixed char */
       return SFF_ISECT_DISJOIN;
     }
   switch (f2_v)
     {
     case 'd': goto res_tail_gets_f2_v; /* see below */
+    case 'g': goto res_tail_gets_f1_v; /* see below */
+    case 's': goto generic_tails; /* see below */
+    case 'u': goto res_tail_gets_f2_v; /* see below */
+    default: goto generic_tails; /* see below */
+    }
+
+f1_v_is_g:
+  if (isfloatchar (f1_tail[0]))
+    goto generic_tails; /* see below */
+  /* The unambiguous '%g' in f1 may match any %g-like chars, f2 vars (%u to %u) */
+  if ('\0' == f2_v)
+    {
+      if (isdigit (f2_fix) || ('+' == f2_fix) || ('-' == f2_fix))
+        goto res_tail_gets_f2_fix; /* see below */
+      if ((f1_last_replaced != f1) && (('-' == f2_fix) || ('+' == f2_fix) || ('.' == f2_fix)))
+        goto res_tail_gets_f2_fix; /* see below */
+      if ((f1_tail[0] == f2_fix) && /* unambiguous synchronisation between f1 and f2... */
+        (f1_last_replaced == f1) ) /*... but integer output can not be empty so should make if result contains something for the field */
+        {
+          f2_tail = f2;
+          goto tails_are_in_sync; /* see below */
+        }
+      if ('\0' == f1_tail[0])
+        return SFF_ISECT_DIFF_END; /* One string ends with %g, other with non-%g fixed char */
+      return SFF_ISECT_DISJOIN;
+    }
+  switch (f2_v)
+    {
+    case 'd': goto res_tail_gets_f2_v; /* see below */
+    case 'g': goto res_tail_gets_f2_v; /* see below */
     case 's': goto generic_tails; /* see below */
     case 'u': goto res_tail_gets_f2_v; /* see below */
     default: goto generic_tails; /* see below */
@@ -849,6 +888,7 @@ again:
     case 'D': goto f2_v_is_D; /* see below */
     case 'U': goto f2_v_is_U; /* see below */
     case 'd': goto f2_v_is_d; /* see below */
+    case 'g': goto f2_v_is_g; /* see below */
     case 's': goto f2_v_is_s; /* see below */
     case 'u': goto f2_v_is_u; /* see below */
     default: goto generic_tails; /* see below */
@@ -928,7 +968,7 @@ f2_v_is_u:
           s1_tail += 2;
           s1_shifted = 1; continue;
         }
-      else if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
+      else if (s1_shifted && (f2_tail[0] == s1_tail[0])) /* unambiguous synchronisation between f2 and s1 */
         goto tails_are_in_sync; /* see below */
       else if ('\0' == f2_tail[0])
         return SFF_ISECT_DIFF_END; /* One string ends with %d, other with non-%d fixed char */
@@ -936,6 +976,44 @@ f2_v_is_u:
         return SFF_ISECT_DISJOIN;
     }
   GPF_T; /* never reached */
+
+f2_v_is_g:
+  if (isfloatchar (f2_tail[0]) || ('%' == f2_tail[0]))
+    goto generic_tails; /* see below */
+  /* The unambiguous '%d' in f2 may match any %d-like chars */
+  s1_tail = s1;
+  s1_shifted = 0;
+  if (('-' == s1_tail[0]) && isdigit (s1_tail[0]))
+    {
+      s1_tail += 2;
+      s1_shifted = 1;
+    }
+  while (isdigit (s1_tail[0]))
+    {
+      s1_tail++;
+      s1_shifted = 1;
+    }
+  if (s1_shifted && ('.' == s1_tail[0]) && isdigit (s1_tail[0]))
+    {
+      s1_tail += 2;
+      while (isdigit (s1_tail[0])) s1_tail++;
+    }
+  if (s1_shifted && (('e' == s1_tail[0]) || ('E' == s1_tail[0])))
+    {
+      if (('-' == s1_tail[1]) && isdigit (s1_tail[2]))
+        s1_tail += 3;
+      else if (isdigit (s1_tail[1]))
+        s1_tail += 2;
+      else
+        return SFF_ISECT_DIFF_END; /* 'E' in string does not match to f2_tail[0] char */
+      while (isdigit (s1_tail[0])) s1_tail++;
+    }
+  if (s1_shifted && (f2_tail[0] == s1_tail[0])) /* unambiguous synchronisation between f2 and s1 */
+    goto tails_are_in_sync; /* see below */
+  else if ('\0' == f2_tail[0])
+    return SFF_ISECT_DIFF_END; /* One string ends with %g, other with non-%g fixed char */
+  else
+    return SFF_ISECT_DISJOIN;
 
 f2_v_is_s:
   if ('\0' == f2_tail[0])
