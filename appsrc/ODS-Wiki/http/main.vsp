@@ -155,7 +155,7 @@ again:
   declare deadlock_cnt int;
   deadlock_cnt := 5;
  
-  declare exit handler for sqlstate '*', not found {
+  declare exit handler for sqlstate '*', NOT FOUND {
 major_exit_handler:
 	  if ( (__SQL_STATE = '42001') and (deadlock_cnt > 0))
 	    {
@@ -347,7 +347,8 @@ cont:
     }
   WV.WIKI.VSPHEADER (path,params,lines, _topic, _base_adjust);
 content:
-  if (_error is not null) {
+  if (_error is not null)
+    {
     http ('<div class="error"><span>' || _error || '</span></div>');
   }
   _error := null;
@@ -451,9 +452,11 @@ content:
 
   if (_cmd = 'edit')
     {
-      declare exit handler for sqlstate '42WV9' {
+      declare exit handler for sqlstate '42WV9'
+      {
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
+
   	http_rewrite();
         WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
 --        http_request_status ('HTTP/1.1 302 Found');
@@ -478,7 +481,8 @@ content:
       goto make_footer;
     }
 
-  if (_cmd = 'upstream_now') {
+  if (_cmd = 'upstream_now')
+    {
     declare exit handler for sqlstate '42WV9'
     {
       if (_user <> 'WikiGuest')
@@ -588,9 +592,11 @@ content:
     }
 	
 create_or_view:
+
   if (_topic.ti_id = 0)
     {
-      declare exit handler for sqlstate '42WV9' {
+      declare exit handler for sqlstate '42WV9'
+      {
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
 

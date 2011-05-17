@@ -121,7 +121,8 @@ create function WV.WIKI.VSPTOPICVIEW (
   _base_adjust := get_keyword ('baseadjust', params);
   _command := WV.WIKI.GET_COMMAND(params);
   declare _text, _is_hist varchar;  
-  declare exit handler for sqlstate '42WV9' {
+  declare exit handler for sqlstate '42WV9'
+  {
     --dbg_obj_princ ('WV.WIKI.VSPTOPICVIEW ', params);
     if (get_keyword ('lastop', params) is not null 
         or (get_keyword ('lastop', params) = 'Logout'))
@@ -138,11 +139,11 @@ create function WV.WIKI.VSPTOPICVIEW (
       WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=null'));
       return;
     }
-  }
-  ;
+  };
+
   whenever sqlstate '22005' goto wrong_rev;
+
   _topic.ti_rev_id := cast (get_keyword ('rev', params, 0) as integer);
-  --dbg_obj_print ('{{{{', _topic.ti_rev_id);
   if (0)
     {
       wrong_rev: 
@@ -152,12 +153,9 @@ create function WV.WIKI.VSPTOPICVIEW (
   _topic.ti_base_adjust := _base_adjust;
   
   _is_hist := '';
-  if (0 < DB.DBA.DAV_SEARCH_ID ( DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') ||
-  	'VVC/' || _topic.ti_local_name || '.txt/', 'C' ))
+  if (0 < DB.DBA.DAV_SEARCH_ID ( DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') || 'VVC/' || _topic.ti_local_name || '.txt/', 'C' ))
     _is_hist := 't';
-  --dbg_obj_print ( 101 );
     
---  _topic.ti_http_debug_print('VspTopicView: info about current topic');
   _topic.ti_curuser_wikiname := coalesce ((select UserName from WV.WIKI.USERS where UserId=_uid), '?');
   _topic.ti_curuser_username := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=_uid), '?');
   _topic.ti_base_adjust := _base_adjust;
