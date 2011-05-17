@@ -58,7 +58,7 @@ typedef struct _subqpred {
 
 typedef int (* pred_func_t) (caddr_t * qst, void * comp);
 
-typedef caddr_t (* ao_func_t) (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
+typedef caddr_t (* ao_func_t) (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
 
 
 typedef long jmp_label_t;
