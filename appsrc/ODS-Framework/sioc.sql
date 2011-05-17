@@ -1718,6 +1718,9 @@ create procedure sioc_forum (
     }
   if (wai_type_name = 'AddressBook')
     {
+      -- attach instance services
+      ods_object_services_attach (graph_iri, iri, DB.DBA.wa_type_to_app (wai_type_name));
+
       iri := forum_iri ('SocialNetwork', _wai_name);
       sioc_forum (graph_iri, site_iri, iri, _wai_name, 'SocialNetwork', wai_description);
     }
@@ -1727,6 +1730,9 @@ create procedure sioc_forum (
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), pers_iri);
       DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), iri);
     }
+
+  -- attach instance services
+  ods_object_services_attach (graph_iri, iri, DB.DBA.wa_type_to_app (wai_type_name));
 };
 
 create procedure cc_gen_rdf (in iri varchar, in lic_iri varchar)
@@ -2058,6 +2064,102 @@ create procedure ods_sioc_service (
     DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), id);
   commit work;
 };
+
+
+
+use sioc;
+
+-------------------------------------------------------------------------------
+--
+create procedure ods_object_services_iri (
+  in object_name varchar)
+{
+  return sprintf ('http://%s%s/services/%s', get_cname (), get_base_path (), object_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ods_object_service_iri (
+  in object_name varchar,
+  in service_name varchar)
+{
+  return sprintf ('http://%s%s/service/%s/%s', get_cname (), get_base_path (), object_name, service_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ods_object_service_url (
+  in service_name varchar,
+  in shortMode integer := 0)
+{
+  declare service_url varchar;
+  declare params any;
+  declare delimiter varchar;
+
+  service_url := sprintf ('http://%s/ods/api/%s', get_cname(), service_name);
+  if (not shortMode)
+  {
+    delimiter := '?';
+    params := procedure_cols ('ODS..' || service_name);
+    foreach (any param in params) do
+    {
+      service_url := sprintf ('%s%s%s={%s}', service_url, delimiter, param[3], internal_type_name (param[5]));
+      delimiter := '&';
+    }
+  }
+  return service_url;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ods_object_services (
+  in graph_iri varchar,
+  in svc_object vacrchar,
+  in svc_object_title vacrchar,
+  in svc_functions any)
+{
+  declare services_iri, service_iri, service_url varchar;
+
+  services_iri := ods_object_services_iri (svc_object);
+  DB.DBA.ODS_QUAD_URI (graph_iri, services_iri, rdf_iri ('type'), services_iri ('Services'));
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, services_iri, dc_iri ('title'), svc_object_title);
+  foreach (any svc_function in svc_functions) do
+  {
+    service_iri := ods_object_service_iri (svc_object, svc_function);
+    service_url := ods_object_service_url (svc_function);
+    ods_sioc_service (graph_iri, service_iri, services_iri, null, null, null, service_url, 'REST');
+  }
+}
+;
+
+create procedure ods_object_services_attach (
+  in graph_iri varchar,
+  in iri vacrchar,
+  in svc_object vacrchar)
+{
+  declare services_iri varchar;
+
+  services_iri := ods_object_services_iri (svc_object);
+  DB.DBA.ODS_QUAD_URI (graph_iri, services_iri, services_iri ('services_of'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, services_iri ('has_services'), services_iri);
+}
+;
+
+create procedure ods_object_services_dettach (
+  in graph_iri varchar,
+  in iri vacrchar,
+  in svc_object vacrchar)
+{
+  declare services_iri varchar;
+
+  services_iri := ods_object_services_iri (svc_object);
+  delete_quad_s_p_o (graph_iri, services_iri, services_iri ('services_of'), iri);
+  delete_quad_s_p_o (graph_iri, iri, services_iri ('has_services'), services_iri);
+}
+;
 
 -- the ods_sioc_tags* is used for text indexing the NNTP data
 -- the SKOS & SCOT tags are produced by scot_tags_insert & scot_tags_delete
@@ -3591,6 +3693,8 @@ create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing ol
     p_name := sprintf ('SIOC.DBA.clean_ods_%s_sioc2', DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
     if (__proc_exists (p_name))
 	    call (p_name) (O.WAM_INST, O.WAM_IS_PUBLIC);
+
+    SIOC..ods_object_services_dettach (graph_iri, forum_iri, DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
     }
 
   user_iri := user_iri (O.WAM_USER);
@@ -3650,6 +3754,8 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
     if (__proc_exists (p_name))
 	    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
+
+    SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, DB.DBA.wa_type_to_app (O.WAI_TYPE_NAME));
     return;
     }
 
