@@ -19,7 +19,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
------------------------------------------------------------------------------------------
 
 use ODS;
 
@@ -125,7 +124,7 @@ create procedure ODS.ODS_API."photo.album.new" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."photo.album.update" (
+create procedure ODS.ODS_API."photo.album.edit" (
   in inst_id integer,
   in name varchar,
   in new_name varchar := null,
@@ -276,7 +275,7 @@ create procedure ODS.ODS_API."photo.image.newUrl" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."photo.image.update" (
+create procedure ODS.ODS_API."photo.image.edit" (
   in inst_id integer,
   in album varchar,
   in name varchar,
@@ -547,14 +546,14 @@ create procedure ODS.ODS_API."photo.options.get" (
 ;
 
 grant execute on ODS.ODS_API."photo.album.new" to ODS_API;
-grant execute on ODS.ODS_API."photo.album.update" to ODS_API;
+grant execute on ODS.ODS_API."photo.album.edit" to ODS_API;
 grant execute on ODS.ODS_API."photo.album.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."photo.image.get" to ODS_API;
 grant execute on ODS.ODS_API."photo.image.new" to ODS_API;
 grant execute on ODS.ODS_API."photo.image.newUrl" to ODS_API;
 grant execute on ODS.ODS_API."photo.image.delete" to ODS_API;
-grant execute on ODS.ODS_API."photo.image.update" to ODS_API;
+grant execute on ODS.ODS_API."photo.image.edit" to ODS_API;
 
 grant execute on ODS.ODS_API."photo.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."photo.comment.new" to ODS_API;

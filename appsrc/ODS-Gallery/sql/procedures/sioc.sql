@@ -26,7 +26,13 @@ create procedure SIOC..fill_ods_photos_sioc (in graph_iri varchar, in site_iri v
   declare post_iri, forum_iri, creator_iri,private_tags,tags,user_pwd,cm_iri,title,links_to,c_link varchar;
   declare pos,dir,album,_ind,ts,modf,link, svc_iri any;
 
-  for select p.WAI_NAME as WAI_NAME, p.HOME_PATH as HOME_PATH,p.HOME_URL as HOME_URL, WAI_ID
+  -- init services
+  SIOC..fill_ods_photo_services ();
+
+  for select p.WAI_NAME as WAI_NAME,
+             p.HOME_PATH as HOME_PATH,
+             p.HOME_URL as HOME_URL,
+             WAI_ID
         from PHOTO..SYS_INFO p,
              DB.DBA.WA_INSTANCE i
       where p.WAI_NAME = i.WAI_NAME
@@ -62,6 +68,33 @@ create procedure SIOC..fill_ods_photos_sioc (in graph_iri varchar, in site_iri v
 	    }
     }
   }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure SIOC..fill_ods_photo_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('photo.album.new', 'photo.image.new', 'photo.image.newUrl', 'photo.options.set',  'photo.options.get');
+  ods_object_services (graph_iri, 'photo', 'ODS Gallery instance services', svc_functions);
+
+  -- album
+  svc_functions := vector ('photo.album.edit', 'photo.album.delete');
+  ods_object_services (graph_iri, 'photo/item', 'ODS Gallery item services', svc_functions);
+
+  -- image
+  svc_functions := vector ('photo.image.get', 'photo.image.edit', 'photo.image.delete', 'photo.comment.new');
+  ods_object_services (graph_iri, 'photo/item', 'ODS Gallery item services', svc_functions);
+
+  -- item comment
+  svc_functions := vector ('photo.comment.get', 'photo.comment.delete');
+  ods_object_services (graph_iri, 'photo/item/comment', 'ODS Gallery comment services', svc_functions);
+}
 ;
 
 create procedure SIOC..ods_photo_services (
@@ -131,6 +164,9 @@ create procedure SIOC..photo_insert (
     tags := DB.DBA.DAV_PROP_GET_INT (res_id, 'R', ':virtprivatetags', 0);
     if (not (isinteger(tags) and (tags < 0)))
       SIOC..scot_tags_insert (GALLERY_ID, post_iri, tags);
+
+    -- item services
+    SIOC..ods_object_services_attach (graph_iri, post_iri, 'photo/item');
   }
 }
 ;
@@ -171,6 +207,8 @@ create procedure SIOC..photo_delete (
       forum_iri     := photo_iri (WAI_NAME);
     post_iri    := post_iri_ex (forum_iri, res_id);
     SIOC..delete_quad_s_or_o (graph_iri, post_iri, post_iri);
+    -- item services
+    SIOC..ods_object_services_dettach (graph_iri, post_iri, 'photo/item');
   }
 }
 ;
@@ -279,6 +317,8 @@ create procedure SIOC..comment_insert (
     SIOC..ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , _create_date, _modify_date, c_link, _text);
     DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
     DB.DBA.ODS_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
+    -- services
+    SIOC..ods_object_services_attach (graph_iri, cm_iri, 'photo/item/comment');
   }
 }
 ;
@@ -303,6 +343,8 @@ create procedure SIOC..comment_delete (
   post_iri  := post_iri_ex (forum_iri, _res_id);
     cm_iri   := gallery_comment_iri (post_iri, _comment_id);
     SIOC..delete_quad_s_or_o (graph_iri, cm_iri, cm_iri);
+    -- services
+    SIOC..ods_object_services_dettach (graph_iri, cm_iri, 'photo/item/comment');
   }
 }
 ;
@@ -383,8 +425,7 @@ create procedure SIOC..gallery_comment_iri (in iri varchar, in comment_id int)
 }
 ;
 
-
-create procedure gallery_comment_url(in iri varchar, in comment_id int)
+create procedure SIOC..gallery_comment_url (in iri varchar, in comment_id int)
 {
   return sprintf ('%s:comment_%s',iri,cast(comment_id as varchar));
 }
