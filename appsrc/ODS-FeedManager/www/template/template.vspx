@@ -47,42 +47,38 @@
     <meta name="dc.title" content="<?V ENEWS.WA.utf2wide (ENEWS.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var imagePath="/ods/images/oat/";
-        
-        var featureList=["ajax", "json", "tree", "anchor", "dialog", "ghostdrag", "dav", "calendar"];
-      </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="/ods/tbl.js"></script>
-      <script type="text/javascript" src="/ods/app.js"></script>
-      <script type="text/javascript" src="js/enews.js"></script>
       <script type="text/javascript">
-        function myInit() {
-          if (!OAT._loaded) {
-            setTimeout(myInit, 50);
-            return;
-          }
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Preferences.showAjax = false;
 
-        	/* load stylesheets */
-        	OAT.Style.include("grid.css");
-        	OAT.Style.include("webdav.css");
-
-          // WebDAV
-          var options = { imagePath: OAT.Preferences.imagePath,
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
                           pathHome: '/home/',
                           path: '<?V ENEWS.WA.dav_logical_home (self.account_id) ?>',
                           user: '<?V ENEWS.WA.account_name (self.account_id) ?>',
                           connectionHeaders: {Authorization: '<?V ENEWS.WA.account_basicAuthorization (self.account_id) ?>'}
                         };
-          OAT.WebDav.init(options);
 
-          // a++
-          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-          OAT.Anchor.zIndex = 1001;
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "tree", "calendar"];
+        OAT.Loader.load(featureList);
+      </script>
+      <script type="text/javascript" src="/ods/tbl.js"></script>
+      <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript" src="js/enews.js"></script>
+      <script type="text/javascript">
+        function myInit() {
+          if (!OAT._loaded || !OAT.Tree) {
+            setTimeout(myInit, 50);
+            return;
+          }
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});

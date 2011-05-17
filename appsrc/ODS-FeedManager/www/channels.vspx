@@ -23,29 +23,7 @@
  -
 -->
 <v:page name="channels" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
 
-      if (self.c_order = columnName and self.c_direction = 'desc')
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      }
-      else if (self.c_order = columnName and self.c_direction = 'asc')
-      {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      }
-      else
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
       if (columnName = '')
@@ -101,7 +79,7 @@
       </v:before-render>
       <v:template name="t1" type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
           <div style="padding: 0 0 0.5em 0;">
-          <v:button name="btn_subscribe" action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
+          <v:button name="btn_subscribe" action="simple" value="subscribe" xhtml_class="button" xhtml_alt="Subscribe feed">
               <v:on-post>
                 <![CDATA[
                 self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx')));
@@ -158,7 +136,7 @@
             </v:on-post>
           </v:button>
             <div class="menuBar" id="exportBar">
-          <a class="menuButton button2" onMouseDown="return this.blur();" onClick="return menuPopup(this, 'exportMenu');" title="Export Feeds">export</a>
+            <a class="menuButton button2" onMouseDown="return this.blur();" onclick="return menuPopup(this, 'exportMenu');" title="Export Feeds">export</a>
               <div class="menu" id="exportMenu">
                 <?vsp
               http(sprintf('<a class="menuItem" href="%sOFM.ocs" target="_blank" title="%s"><img src="image/%s" border="0" alt="%s"/> %s</a>', ENEWS.WA.dav_url (self.domain_id), 'OCS Export', 'blue-icon-16.gif', 'OCS Export', 'OCS'));
@@ -183,24 +161,16 @@
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="channels" class="FM_grid" cellspacing="0">
-              <thead class="sortHeader">
+            <table id="channels" class="ODS_grid" cellspacing="0">
+              <thead>
                 <tr>
-                  <th class="checkbox" width="1%">
+                  <th class="checkbox">
                     <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')" title="Select All" />
                   </th>
-                  <th width="50%">
-                    <?vsp self.sortColumn('Title', 'EF_TITLE'); ?>
-                  </th>
-                  <th width="50%">
-                    <?vsp self.sortColumn('Feed URL', 'EF_URI'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Retrieved', 'EF_COUNT'); ?>
-                  </th>
-                  <th>
-                    Action
-                  </th>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Title', 'EF_TITLE', self.c_order, self.c_direction, ' width="50%"')); ?>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Feed URL', 'EF_URI', self.c_order, self.c_direction, ' width="50%"')); ?>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Retrieved', 'EF_COUNT', self.c_order, self.c_direction)); ?>
+                  <th class="action">Action</th>
                 </tr>
               </thead>
             </table>
@@ -219,7 +189,7 @@
             <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
-                  <td align="center">
+                  <td class="checkbox">
                     <?vsp
                       http (sprintf ('<input type="checkbox" name="cb_item" value="%d" title="%V" />', control.te_rowset[0], control.te_rowset[2]));
                     ?>
@@ -233,7 +203,7 @@
                   <td align="right">
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_COUNT')" format="%d"/>
                   </td>
-                  <td>
+                  <td class="action">
                     <v:button name="btn_edit" value="edit" action="simple" xhtml_class="button" xhtml_alt="edit feed">
                       <v:on-post>
                         <![CDATA[
