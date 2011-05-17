@@ -1306,7 +1306,7 @@ create procedure ODRIVE.WA.odrive_proc(
     group_name := '';
     foreach (any item in dirList) do
     {
-      if (isarray(item))
+      if (isarray(item) and not isnull (item[0]))
       {
         if (((item[1] = 'C') or (item[10] like dirFilter)) and (ODRIVE.WA.hiddens_check (dirHiddens, item[10]) = 0))
         {
@@ -1611,6 +1611,10 @@ create procedure ODRIVE.WA.account_mail(
 create procedure ODRIVE.WA.account_iri (
   in account_id integer)
 {
+  declare exit handler for sqlstate '*'
+  {
+    return ODRIVE.WA.account_name (account_id);
+  };
   return SIOC..person_iri (SIOC..user_iri (account_id, null));
 }
 ;
@@ -3519,7 +3523,7 @@ create procedure ODRIVE.WA.DAV_DIR_LIST (
 create procedure ODRIVE.WA.DAV_DIR_FILTER (
   in path varchar := '/DAV/',
   in recursive integer := 0,
-  inout filter any,
+  in filter any,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {

@@ -58,10 +58,8 @@ create procedure ODRIVE.WA.exec_no_error(in expr varchar, in execType varchar :=
 --
 create procedure ODRIVE.WA.odrive_vhost()
 {
-  declare
-    iIsDav integer;
-  declare
-    sHost varchar;
+  declare iIsDav integer;
+  declare sHost varchar;
 
   -- Add a virtual directory for oDrive - public www -------------------------
   sHost := registry_get('_oDrive_path_');
@@ -96,16 +94,6 @@ create procedure ODRIVE.WA.odrive_vhost()
                opts     => vector ('url_rewrite', 'ods_rulelist_briefcase')
              );
 
-  USER_CREATE ('SOAPODrive', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
-  USER_SET_QUALIFIER ('SOAPODrive', 'DBA');
-
-  VHOST_REMOVE (lpath => '/odrive/SOAP');
-  VHOST_REMOVE (lpath => '/dataspace/services/briefcase');
-  VHOST_DEFINE (lpath => '/dataspace/services/briefcase',
-                ppath => '/SOAP/',
-                soap_user => 'SOAPODrive',
-                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' ));
-
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'rdf_sink_rule1',
     1,
@@ -128,6 +116,14 @@ create procedure ODRIVE.WA.odrive_vhost()
 
   VHOST_REMOVE (lpath=>'/DAV');
   VHOST_DEFINE (lpath=>'/DAV', ppath=>'/DAV/', is_dav=>1, vsp_user=>'dba', is_brws=>1, opts=>vector ('url_rewrite', 'rdf_sink_rule_list'));
+
+  -- old SOAP
+  -- api user & url
+  ODRIVE.WA.exec_no_error ('USER_DROP (\'SOAPODrive\')');
+  VHOST_REMOVE (lpath => '/odrive/SOAP');
+  VHOST_REMOVE (lpath => '/dataspace/services/briefcase');
+  -- procs
+  ODRIVE.WA.exec_no_error ('DROP procedure DBA.SOAPODRIVE.Browse');
 }
 ;
 
