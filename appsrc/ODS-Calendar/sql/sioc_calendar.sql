@@ -109,6 +109,9 @@ create procedure fill_ods_calendar_sioc (
   declare c_iri, creator_iri, iri varchar;
 
   {
+    -- init services
+    SIOC..fill_ods_calendar_services ();
+
     for (select WAI_ID,
                 WAI_TYPE_NAME,
                 WAI_NAME,
@@ -289,6 +292,37 @@ create procedure fill_ods_calendar_sioc (
 
 -------------------------------------------------------------------------------
 --
+create procedure fill_ods_calendar_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('calendar.event.new', 'calendar.task.new', 'calendar.import', 'calendar.export', 'calendar.publication.new', 'calendar.subscription.new', 'calendar.upstream.new', 'calendar.options.set',  'calendar.options.get');
+  ods_object_services (graph_iri, 'calendar', 'ODS calendar instance services', svc_functions);
+
+  -- event
+  svc_functions := vector ('calendar.get', 'calendar.event.edit', 'calendar.delete', 'calendar.comment.new', 'calendar.annotation.new');
+  ods_object_services (graph_iri, 'calendar/event', 'ODS calendar item services', svc_functions);
+
+  -- task
+  svc_functions := vector ('calendar.get', 'calendar.task.edit', 'calendar.delete', 'calendar.comment.new', 'calendar.annotation.new');
+  ods_object_services (graph_iri, 'calendar/task', 'ODS calendar item services', svc_functions);
+
+  -- item comment
+  svc_functions := vector ('calendar.comment.get', 'calendar.comment.delete');
+  ods_object_services (graph_iri, 'calendar/item/comment', 'ODS calendar comment services', svc_functions);
+
+  -- item annotation
+  svc_functions := vector ('calendar.annotation.get', 'calendar.annotation.claim', 'calendar.annotation.delete');
+  ods_object_services (graph_iri, 'calendar/item/annotation', 'ODS calendar annotation services', svc_functions);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ods_calendar_services (
   in graph_iri varchar, 
   in forum_iri varchar,
@@ -352,8 +386,9 @@ create procedure event_insert (
       creator_iri := user_iri (WAM_USER);
     }
 
-  if (not isnull (graph_iri))
-  {
+  if (isnull (graph_iri))
+    return;
+
     iri := calendar_event_iri (domain_id, event_id);
 
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, subject, created, updated, CAL.WA.event_url (domain_id, event_id), description);
@@ -384,8 +419,11 @@ create procedure event_insert (
         DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('location'), location);
       if (not isnull (privacy))
         DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
+
+    -- event services
+    SIOC..ods_object_services_attach (graph_iri, iri, 'calendar/event');
     }
-    if (kind = 1)
+  else if (kind = 1)
     {
       DB.DBA.ODS_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
       if (not isnull (uid))
@@ -414,10 +452,11 @@ create procedure event_insert (
         DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('status'), status);
       if (not isnull (privacy))
         DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
+
+    -- task services
+    SIOC..ods_object_services_attach (graph_iri, iri, 'calendar/task');
   }
   }
-  return;
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -439,6 +478,10 @@ create procedure event_delete (
   iri := calendar_event_iri (domain_id, event_id);
   scot_tags_delete (domain_id, iri, tags);
   delete_quad_s_or_o (graph_iri, iri, iri);
+
+  -- event services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'calendar/event');
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'calendar/task');
 }
 ;
 
@@ -646,38 +689,47 @@ create procedure calendar_comment_insert (
       forum_iri := calendar_iri (WAI_NAME);
 		}
 
-	if (not isnull (graph_iri))
-	{
+	if (isnull (graph_iri))
+	  return;
+
 		comment_iri := calendar_comment_iri (domain_id, master_id, comment_id);
-    if (not isnull (comment_iri))
-    {
-		  master_iri := calendar_event_iri (domain_id, master_id);
+  if (isnull (comment_iri))
+	  return;
+
+  master_iri := SIOC..calendar_event_iri (domain_id, master_id);
       foaf_maker (graph_iri, u_url, u_name, u_mail);
       ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
       DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
       DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
-    }
-  }
+
+  SIOC..ods_object_services_attach (graph_iri, comment_iri, 'calendar/item/comment');
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure calendar_comment_delete (
+  in graph_iri varchar,
   inout domain_id integer,
-  inout item_id integer,
-  inout id integer)
+  inout master_id integer,
+  inout comment_id integer)
 {
+  declare master_iri, comment_iri varchar;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+  master_iri := SIOC..calendar_event_iri (domain_id, master_id);
+  if (isnull (graph_iri))
+    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
 
-  declare iri varchar;
+  if (isnull (graph_iri))
+    return;
 
-  iri := calendar_comment_iri (domain_id, item_id, id);
-  delete_quad_s_or_o (get_graph_ext (CAL.WA.domain_is_public (domain_id)), iri, iri);
+  comment_iri := calendar_comment_iri (domain_id, master_id, comment_id);
+  delete_quad_s_or_o (get_graph_ext (CAL.WA.domain_is_public (domain_id)), comment_iri, comment_iri);
+  SIOC..ods_object_services_dettach (graph_iri, comment_iri, 'calendar/item/comment');
 }
 ;
 
@@ -705,7 +757,8 @@ create trigger EVENT_COMMENTS_SIOC_I after insert on CAL.WA.EVENT_COMMENTS refer
 create trigger EVENT_COMMENTS_SIOC_U after update on CAL.WA.EVENT_COMMENTS referencing old as O, new as N
 {
   if (not isnull(O.EC_PARENT_ID))
-    calendar_comment_delete (O.EC_DOMAIN_ID,
+    calendar_comment_delete (null,
+                             O.EC_DOMAIN_ID,
                              O.EC_EVENT_ID,
                              O.EC_ID);
   if (not isnull(N.EC_PARENT_ID))
@@ -728,7 +781,8 @@ create trigger EVENT_COMMENTS_SIOC_U after update on CAL.WA.EVENT_COMMENTS refer
 create trigger EVENT_COMMENTS_SIOC_D before delete on CAL.WA.EVENT_COMMENTS referencing old as O
 {
   if (not isnull(O.EC_PARENT_ID))
-    calendar_comment_delete (O.EC_DOMAIN_ID,
+    calendar_comment_delete (null,
+                             O.EC_DOMAIN_ID,
                              O.EC_EVENT_ID,
                              O.EC_ID);
 }
@@ -747,8 +801,7 @@ create procedure cal_annotation_insert (
   inout created datetime,
   inout updated datetime)
 {
-  declare master_iri, annotattion_iri varchar;
-
+  declare master_iri, annotation_iri varchar;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -769,20 +822,20 @@ create procedure cal_annotation_insert (
       graph_iri := get_graph_ext (WAI_IS_PUBLIC);
     }
 
-  if (not isnull (graph_iri))
-  {
-    master_iri := calendar_event_iri (domain_id, cast (master_id as integer));
-    annotattion_iri := calendar_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
-	  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-	  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  if (isnull (graph_iri))
+    return;
 
-	  cal_claims_insert (graph_iri, annotattion_iri, claims);
-  }
-  return;
+    master_iri := calendar_event_iri (domain_id, cast (master_id as integer));
+  annotation_iri := calendar_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, an_iri ('annotates'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotation_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('author'), author);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('body'), body);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('created'), created);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('modified'), updated);
+
+  cal_claims_insert (graph_iri, annotation_iri, claims);
+  SIOC..ods_object_services_attach (graph_iri, annotation_iri, 'calendar/item/annotation');
 }
 ;
 
@@ -794,8 +847,7 @@ create procedure cal_annotation_delete (
   inout master_id integer,
   inout claims any)
 {
-  declare graph_iri, annotattion_iri varchar;
-
+  declare graph_iri, annotation_iri varchar;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -803,8 +855,9 @@ create procedure cal_annotation_delete (
   };
 
   graph_iri := get_graph_ext (CAL.WA.domain_is_public (domain_id));
-  annotattion_iri := calendar_annotation_iri (domain_id, master_id, annotation_id);
-  delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+  annotation_iri := calendar_annotation_iri (domain_id, master_id, annotation_id);
+  delete_quad_s_or_o (graph_iri, annotation_iri, annotation_iri);
+  SIOC..ods_object_services_dettach (graph_iri, annotation_iri, 'calendar/item/annotation');
 }
 ;
 
