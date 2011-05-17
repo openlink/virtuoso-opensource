@@ -30,13 +30,12 @@ function generateAPPAnchor(options, app)
   var useRDFB = options.useRDFB;
   var searchECRM = options.searchECRM;
   // If we use a separate image to make a++, then actual anchor is previous sibling
-  if (app.tagName == "IMG")
-  {
+  if (app.tagName == "IMG") {
     link = app.previousSibling;
     appHref = link.href;
   }
   var genRef = function() {
-    var ul = OAT.Dom.create("div",{paddingLeft:"20px",marginLeft:"0px"});
+    var ul = OAT.Dom.create("div",{paddingLeft:"5px",marginLeft:"0px"});
 
     // html link
     /*
@@ -65,8 +64,7 @@ function generateAPPAnchor(options, app)
     */
 
     // rdf link
-    if (appIRI)
-    {
+    if (appIRI) {
       var a = OAT.Dom.create("a");
       var img = OAT.Dom.image("/ods/images/icons/rdf-icon-16.gif");
       img.style["border"] = "0px";
@@ -81,8 +79,7 @@ function generateAPPAnchor(options, app)
       ul.appendChild(elm);
     }
 
-    if (ul.innerHTML != "")
-    {
+    if (ul.innerHTML != "") {
       var elm = OAT.Dom.create("hr");
       ul.appendChild(elm);
     }
@@ -107,29 +104,22 @@ function generateAPPAnchor(options, app)
       	var imgSrc = generateAPP_image (aType, imgPath);
       	var tp = "", sm = OAT.Dom.create("small");
       	var pos = aType.lastIndexOf ('#');
-      	if (pos == -1)
-      	{
+      	if (pos == -1) {
       	  aType.lastIndexOf ('/');
-      	}
-      	if (pos != -1)
-      	{
+      	} else {
       	  tp = aType.substring (pos+1);
       	  tp = ' ('+tp+')';
    	      sm.appendChild(OAT.Dom.text(tp));
       	}
-      	var elm = OAT.Dom.create("div");
+      	var elm = OAT.Dom.create("div", {className:"app_item"});
       	var a = OAT.Dom.create("a");
-        if (useRDFB == true)
-    	  {
+        if (useRDFB == true) {
           a.href = '/rdfbrowser/index.html?uri='+encodeURIComponent(aURL);
 	        a.target = "_blank";
-        }
-        else
-        {
+        } else {
 	        a.href = aURL;
         }
-      	if (imgSrc != "")
-      	{
+      	if (imgSrc != "") {
       	  var img = OAT.Dom.image(imgSrc);
       	  img.style["border"] = "0px";
       	  a.appendChild(img);
@@ -140,24 +130,19 @@ function generateAPPAnchor(options, app)
       	elm.appendChild(a);
       	ul.appendChild(elm);
       }
-      if (ul.innerHTML == "")
-      {
+      if (ul.innerHTML == "") {
         ul.innerHTML = "Empty list";
      	}
 	  }
     var search;
     //alert (app.childNodes[0].tagName);
-    if ((link.childNodes.length == 1) && (link.childNodes[0].tagName == "IMG"))
-    {
+    if ((link.childNodes.length == 1) && (link.childNodes[0].tagName == "IMG")) {
 	    search = link.childNodes[0].getAttribute("alt");
-    }
-    else
-    {
+    } else {
 	    search = link.innerHTML;
     }
     OAT.AJAX.GET("/ods_services/search/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}, onerror:function(){OAT.Dom.unlink(ul.lastChild);}});
-    if (searchECRM)
-    {
+    if (searchECRM) {
       OAT.AJAX.GET("/ods_services/search_ecrm/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}, onerror:function(){OAT.Dom.unlink(ul.lastChild);}});
     }
     return ul;
@@ -220,16 +205,13 @@ function generateAPP(appArea, optObj)
     useRDFB: false,
     searchECRM: false
   }
-  for (var p in optObj)
-  {
+  for (var p in optObj) {
     options[p] = optObj[p];
   }
   var appLinks = $(appArea).getElementsByTagName("a");
-  for (var i = 0; i < appLinks.length; i++)
-  {
+  for (var i = 0; i < appLinks.length; i++) {
     var app = appLinks[i];
-    if ((app.id) && (app.id.indexOf('cke_') != 0) && (app.href || app.onclick) && !OAT.Dom.isClass(app, 'noapp'))
-    {
+    if ((app.id) && (app.id.indexOf('cke_') != 0) && (app.href || app.onclick) && !OAT.Dom.isClass(app, 'noapp')) {
     	var img = OAT.Dom.image("/ods/images/icons/rdf_11.png");
     	img.style["border"] = "0px";
     	img.style["padding"] = "0 0 0 5px";
@@ -238,11 +220,10 @@ function generateAPP(appArea, optObj)
     	img.alt = "RDF";
     	img.title = "RDF";
     	var next = app.nextSibling;
-    	if (next != null)
-    	{
-    	  app.parentNode.insertBefore (img, next);
-    	} else {
+    	if (next) {
     	  app.parentNode.appendChild (img);
+    	} else {
+    	  app.parentNode.insertBefore (img, next);
     	}
     	generateAPPAnchor (options, img, OAT.Dom.isClass(app, 'searchECRM'));
     }
