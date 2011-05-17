@@ -188,15 +188,6 @@ create procedure ODS.ODS_API."briefcase.resource.info" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."briefcase.collection.info" (
-  in path varchar) __soap_http 'text/xml'
-{
-  return ODS.ODS_API."briefcase.info" (path, 'C');
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODS.ODS_API."briefcase.resource.vc.set" (
   in path varchar,
   in state varchar := 'on') __soap_http 'text/xml'
@@ -603,6 +594,15 @@ create procedure ODS.ODS_API."briefcase.resource.delete" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."briefcase.collection.info" (
+  in path varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."briefcase.info" (path, 'C');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."briefcase.collection.create" (
   in path varchar,
   in permissions varchar := '110100100RM') __soap_http 'text/xml'
@@ -665,10 +665,11 @@ create procedure ODS.ODS_API."briefcase.copy" (
   in overwrite integer := 1,
   in permissions varchar := '110100000RR') __soap_http 'text/xml'
 {
-  declare uname, upassword varchar;
+  declare uname, upassword, targetPath varchar;
   declare rc integer;
   declare uid, gid integer;
   declare inst_id, inst_id2 integer;
+  declare from_item, to_item any;
 
   declare exit handler for sqlstate '*'
   {
@@ -686,9 +687,20 @@ create procedure ODS.ODS_API."briefcase.copy" (
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  rc := -1;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
   upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
-  rc := DB.DBA.DAV_COPY (from_path, to_path, overwrite, permissions, uid, gid, uname, upassword);
+  from_item := ODRIVE.WA.DAV_INIT (from_path, uname, upassword);
+  if (ODRIVE.WA.dav_error (from_item))
+    return ods_serialize_int_res (from_item);
+  to_item := ODRIVE.WA.DAV_INIT (to_path, uname, upassword);
+  if (ODRIVE.WA.dav_error (to_item))
+    return ods_serialize_int_res (to_item);
+  targetPath := to_path || ODRIVE.WA.DAV_GET (from_item, 'name');
+  if (ODRIVE.WA.DAV_GET (from_item, 'type') = 'C')
+    targetPath := targetPath || '/';
+
+  rc := DB.DBA.DAV_COPY (from_path, targetPath, overwrite, permissions, uid, gid, uname, upassword);
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -701,9 +713,10 @@ create procedure ODS.ODS_API."briefcase.move" (
   in to_path varchar,
   in overwrite integer := 1) __soap_http 'text/xml'
 {
-  declare uname, upassword varchar;
+  declare uname, upassword, targetPath varchar;
   declare rc integer;
   declare inst_id, inst_id2 integer;
+  declare from_item, to_item any;
 
   declare exit handler for sqlstate '*'
   {
@@ -721,7 +734,17 @@ create procedure ODS.ODS_API."briefcase.move" (
     return ods_auth_failed ();
 
   upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
-  rc := DB.DBA.DAV_MOVE (from_path, to_path, overwrite, uname, upassword);
+  from_item := ODRIVE.WA.DAV_INIT (from_path, uname, upassword);
+  if (ODRIVE.WA.dav_error (from_item))
+    return ods_serialize_int_res (from_item);
+  to_item := ODRIVE.WA.DAV_INIT (to_path, uname, upassword);
+  if (ODRIVE.WA.dav_error (to_item))
+    return ods_serialize_int_res (to_item);
+  targetPath := to_path || ODRIVE.WA.DAV_GET (from_item, 'name');
+  if (ODRIVE.WA.DAV_GET (from_item, 'type') = 'C')
+    targetPath := targetPath || '/';
+
+  rc := DB.DBA.DAV_MOVE (from_path, targetPath, overwrite, uname, upassword);
   return ods_serialize_int_res (rc);
 }
 ;
@@ -901,7 +924,7 @@ create procedure ODS.ODS_API."briefcase.share.add" (
     return ods_auth_failed ();
 
   user_id := ODRIVE.WA.account_id ("user");
-  if (isnull (user_id))
+  if (user_id = -1)
     signal ('22023', 'The user name does not exist');
 
   "allow" := ODS.ODS_API.permissions2array ("allow");
@@ -967,7 +990,7 @@ create procedure ODS.ODS_API."briefcase.share.remove" (
     return ods_auth_failed ();
 
   user_id := ODRIVE.WA.account_id ("user");
-  if (isnull (user_id))
+  if (user_id = -1)
     signal ('22023', 'The user name does not exist');
 
   upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
@@ -1077,7 +1100,7 @@ create procedure ODS.ODS_API."briefcase.options.set" (
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oDrive'))
     return ods_serialize_sql_error ('37000', 'The instance is not found');
 
-	account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+	account_id := ODRIVE.WA.account_id (uname);
 	optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
 
 	settings := ODRIVE.WA.settings (account_id);
@@ -1117,7 +1140,7 @@ create procedure ODS.ODS_API."briefcase.options.get" (
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oDrive'))
     return ods_serialize_sql_error ('37000', 'The instance is not found');
 
-	account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+	account_id := ODRIVE.WA.account_id (uname);
 	settings := ODRIVE.WA.settings (account_id);
 	ODRIVE.WA.settings_init (settings);
 

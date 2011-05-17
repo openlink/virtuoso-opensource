@@ -89,9 +89,6 @@ ODRIVE.WA.exec_no_error ('DROP view DB.DBA.ODS_ODRIVE_TAGS');
 -- reinit
 ODS_RDF_VIEW_INIT ();
 
--- SOAP procs
-ODRIVE.WA.exec_no_error('DROP procedure DBA.SOAPODRIVE.Browse');
-
 -- dropping ODS procs
 ODRIVE.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_odrive_tags');
 

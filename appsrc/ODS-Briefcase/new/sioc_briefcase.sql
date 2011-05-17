@@ -85,6 +85,9 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
   declare iri, c_iri, creator_iri, t_iri, link, content varchar;
   declare linksTo, tags any;
 
+  -- init services
+  SIOC..fill_ods_briefcase_services ();
+
   for (select WAI_ID,
               WAI_NAME,
               WAM_USER,
@@ -172,6 +175,29 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure fill_ods_briefcase_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('briefcase.resource.store', 'briefcase.collection.create', 'briefcase.options.set',  'briefcase.options.get');
+  ods_object_services (graph_iri, 'briefcase', 'ODS briefcase instance services', svc_functions);
+
+  -- contact
+  svc_functions := vector ('briefcase.resource.info', 'briefcase.resource.get', 'briefcase.resource.delete', 'briefcase.copy', 'briefcase.move', 'briefcase.property.set', 'briefcase.property.get', 'briefcase.property.remove');
+  ods_object_services (graph_iri, 'briefcase/resource', 'ODS briefcase resource services', svc_functions);
+
+  -- contact comment
+  svc_functions := vector ('briefcase.collection.info', 'briefcase.collection.delete', 'briefcase.copy', 'briefcase.move', 'briefcase.property.set', 'briefcase.property.get', 'briefcase.property.remove');
+  ods_object_services (graph_iri, 'briefcase/collection', 'ODS briefcase collection services', svc_functions);
+}
+;
+
 create procedure ods_briefcase_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
 {
   declare iri, post_iri varchar;
@@ -207,8 +233,8 @@ create procedure briefcase_sioc_insert (
   declare graph_iri, iri, c_iri, creator_iri, t_iri, link varchar;
   declare linksTo, tags, content any;
 
-  declare exit handler for sqlstate '*' {
-    --dbg_obj_print (__SQL_MESSAGE);
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -217,7 +243,6 @@ create procedure briefcase_sioc_insert (
   {
     r_full_path := (select r.RES_FULL_PATH from WS.WS.SYS_DAV_RES r where r.RES_ID = r_id);
   }
-  --dbg_obj_print (r_id, r_full_path);
   if (r_full_path not like '/DAV/%/Public/%' or r_name[0] = ascii ('.'))
     return;
 
@@ -259,8 +284,11 @@ create procedure briefcase_sioc_insert (
       tags := '';
     scot_tags_insert (WAI_ID, iri, tags);
 
+    -- briefcase services
+    SIOC..ods_object_services_dettach (graph_iri, c_iri, 'briefcase/resource');
+
     -- SIOC data for 'application/foaf+xml' and AddressBook application
-    briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, U_NAME, r_content);
+    SIOC..briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, U_NAME, r_content);
   }
 }
 ;
@@ -274,11 +302,6 @@ create procedure briefcase_sioc_insert_ex (
   in r_ownerName varchar,
   inout r_content any)
 {
-  declare continue handler for SQLSTATE '*' {
-    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE )
-    ;
-  };
-
   declare K, L, M, N, is_xml, instance_id integer;
   declare appType, g_iri, c_iri, w_iri, also_iri, creator_iri, p_iri, a_iri, r_iri, e_iri any;
   declare personName any;
@@ -380,7 +403,8 @@ create procedure briefcase_sioc_insert_ex (
 
   -- is vCard or vCalendar file?
   --
-  if ((r_type = 'text/directory') or (r_type = 'text/calendar')) {
+  if ((r_type = 'text/directory') or (r_type = 'text/calendar'))
+  {
     -- main IRI-s
     g_iri := get_graph ();
     creator_iri := user_iri (r_owner);
@@ -528,7 +552,9 @@ create procedure briefcase_sioc_insert_ex (
             eLink := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/URL/val', N), xmlItem, 1) as varchar);
             eSummary := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
             eDescription := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
-            { declare continue handler for sqlstate '*' {
+            {
+              declare continue handler for sqlstate '*'
+              {
                 eCreated := null;
               };
               eCreated := stringdate (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DTSTAMP/val', N), xmlItem, 1) as varchar));
@@ -602,7 +628,8 @@ create procedure briefcase_sioc_delete (
     }
 
   also_iri := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_PARENT_ID = r_id and PROP_NAME = 'virt:graphIri');
-  if (not isnull (also_iri)) {
+  if (not isnull (also_iri))
+  {
     declare _g, _p, persons any;
 
     persons := briefcase_sparql (sprintf (' SPARQL ' ||
@@ -658,8 +685,8 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_I after insert on WS.WS.SYS_DAV_PROP 
 {
   declare meta, c_iri, iri, xt, graph_iri, path any;
   declare full_path, _wai_name varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };

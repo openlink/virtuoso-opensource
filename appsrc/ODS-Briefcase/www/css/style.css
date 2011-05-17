@@ -672,29 +672,7 @@ input.nolink {
   background-color: inherit;
 }
 
-/*====== Toolbars ======*/
-div.toolbar {
-}
-
-img.toolbar {
-	display: block;
-	float: left;
-  margin-top: 10px;
-  background-color: #7f94a5;
-}
-
-a.toolbar {
-	display: block;
-	float: left;
-	width: 70px;
-	padding: 10px 0 10px 0;
-	color: #4F56A6;
-	font-weight: bold;
-  font-size: 12px;
-	text-decoration: none;
-	text-align: center;
-}
-
+/* Toolbars */
 span.toolbar {
 	display: block;
 	float: left;
@@ -709,6 +687,13 @@ span.toolbar {
 
 span.toolbarLabel {
   font-size: 0.8em;
+}
+
+img.toolbar {
+  display: block;
+  float: left;
+  margin-top: 10px;
+  background-color: #7F94A5;
 }
 
 td.checkbox {
