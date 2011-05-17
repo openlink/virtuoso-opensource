@@ -243,108 +243,13 @@ table.sub_page_area {
   bottom:15pt;
 }
 
-/* The main navigation bar */
-.nav_bar {
-  display: block;
-  padding: 0;
-  margin: 0;
-  line-height: 1.9em;
-  font-size: 0.9em;
-}
-
-.nav_bar td.sel {
-}
-
-.nav_bar td {
-  background: #ddd;
-}
-
-.nav_bar td.filler {
-  background: #b0cde4;
-  width: 100%;
-}
-
-.nav_bar a {
-  display: block;
-  color: #444;
-  text-decoration: none;
-  font-weight: bold;
-  background: #99b3c5;
-  background-image: url(../image/stl_blu2_grad.gif);
-  background-repeat: repeat-x;
-  margin: 0;
-  padding: 0.25em 1em;
-  border-left: 1px solid #fff;
-  border-top: 1px solid #fff;
-  border-right: 1px solid #aaa;
-  white-space: nowrap;
-}
-
-.nav_bar a.les {
-  background: #b0cde4;
-  background-image: url(../image/sel_nav_grad2.gif);
-}
-
-.nav_bar a.les:hover {
-  color: black;
-  background: #99b3c5;
-}
-
-.nav_bar a:hover,
-.nav_bar a:active,
-.nav_bar a.sel:link,
-.nav_bar a.sel:visited {
-  background: #b0cde4;
-  background-image: url(../image/sel_nav_grad2.gif);
-  color: #000;
-}
-
-.nav_seperator {
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  background-color: #b0cde4;
-  line-height: 2.6em;
-  color: #b0cde4;
-}
-
-/*
-  Fields
-*/
+/* Fields */
 input[readonly] {
   background: #EFEFEF;
 }
 
 .readonly {
   background: #EFEFEF;
-}
-
-/* ====== lists ====== */
-table#list {
-  width: 100%;
-  border: solid #7f94a5;
-  border-width: 1px 1px 2px 1px;
-}
-
-table#list th {
-  font-size: 0.9em;
-  font-weight: bold;
-  text-align: center;
-  padding: 2px;
-  background-color: #b0cde4;
-  border: solid #7f94a5;
-  border-width: 0px 1px 1px 0px;
-}
-
-table#list th:last-child {
-  border-width: 0px 0px 1px 0px;
-}
-
-table#list thead input {
-  font-size: 0.9em;
-  font-weight: bold;
-  border: none;
-  background-color: #b0cde4;
 }
 
 /*====== trees ======*/
@@ -749,29 +654,7 @@ a.tab.activeTab2 {
   background-color: #FFF;
 }
 
-/*====== Toolbars ======*/
-div.toolbar {
-}
-
-img.toolbar {
-  display: block;
-  float: left;
-  margin-top: 10px;
-  background-color: #7F94A5;
-}
-
-a.toolbar {
-  display: block;
-  float: left;
-  width: 70px;
-  padding: 10px 0 10px 0;
-  color: #4F56A6;
-  font-weight: bold;
-  font-size: 12px;
-  text-decoration: none;
-  text-align: center;
-}
-
+/* Toolbars */
 span.toolbar {
   display: block;
   float: left;
@@ -786,6 +669,13 @@ span.toolbar {
 
 span.toolbarLabel {
   font-size: 0.8em;
+}
+
+img.toolbar {
+  display: block;
+  float: left;
+  margin-top: 10px;
+  background-color: #7F94A5;
 }
 
 /* panelbar */

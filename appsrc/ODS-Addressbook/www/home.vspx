@@ -24,6 +24,21 @@
 -->
 <v:page name="ab" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      self.ds.vc_reset ();
+      if (self.v_order = columnName)
+      {
+        self.v_direction := either (equ (self.v_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.v_direction := 'asc';
+      }
+      self.v_order := columnName;
+    ]]>
+  </v:method>
+
   <v:method name="mode_test" arglist="">
     <![CDATA[
       declare pos integer;
@@ -486,6 +501,9 @@
       AddressBook
     </vm:header>
     <vm:variables>
+      <v:variable name="v_order" type="varchar" default="'P_NAME'" />
+      <v:variable name="v_direction" type="varchar" default="'asc'" />
+
       <v:variable persist="0" name="abAction" type="varchar" param-name="action" default="'browse'" />
       <v:variable persist="0" name="abSubAction" type="varchar" default="''" />
       <v:variable persist="0" name="abSelected" type="any" default="null" />
@@ -1146,6 +1164,8 @@
                     }
                   }
 
+                      self.sortChange (get_keyword ('sortColumn', params, ''));
+                      control.ds_sql := concat (control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
                   control.ds_nrows := AB.WA.settings_rows (self.settings);
                   control.ds_parameters := vector ();
                 ]]>
@@ -1166,7 +1186,7 @@
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
                       </v:template>
-                          <th>Name</th>
+                          <?vsp http (DB.DBA.wa_show_column_header ('Name', 'P_NAME', self.v_order, self.v_direction)); ?>
                     </tr>
                   </thead>
                 </table>
@@ -4580,7 +4600,7 @@
                           <th class="checkbox">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                           </th>
-                          <th style="text-align: left;">Name</th>
+                          <th>Name</th>
                           <th class="action">Action</th>
                         </tr>
                       </thead>
@@ -4792,9 +4812,9 @@
                           <th class="checkbox">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                           </th>
-                          <th style="text-align: left;">Name</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
+                          <th>Name</th>
+                          <th width="5%" nowrap="nowrap">Executed On</th>
+                          <th width="5%" nowrap="nowrap">Status</th>
                           <th class="action">Action</th>
                         </tr>
                       </thead>

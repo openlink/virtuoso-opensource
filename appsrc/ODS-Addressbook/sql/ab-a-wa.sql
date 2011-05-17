@@ -93,6 +93,9 @@ create procedure AB.WA.vhost()
   );
   DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rulelist_addressbook', 1, vector ('ods_rule_addressbook'));
 
+  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
+  USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
+
   VHOST_REMOVE(lpath    => '/addressbook');
   VHOST_DEFINE(lpath    => '/addressbook',
                ppath    => '/DAV/VAD/wa/',
@@ -101,16 +104,6 @@ create procedure AB.WA.vhost()
                vsp_user => 'dba',
                opts     => vector ('url_rewrite', 'ods_rulelist_addressbook')
              );
-  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
-  USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
-
-  VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
-  VHOST_DEFINE (lpath => '/dataspace/services/addressbook',
-                ppath => '/SOAP/',
-                soap_user => 'SOAP_ADDRESSBOOK',
-                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )
-               );
-
   VHOST_REMOVE (lpath     => '/ods/portablecontacts');
   VHOST_DEFINE (lpath     => '/ods/portablecontacts',
                 ppath     => '/SOAP/Http/portablecontacts',
@@ -138,6 +131,13 @@ create procedure AB.WA.vhost()
                 soap_user => 'SOAP_ADDRESSBOOK',
                 opts      => vector ('atom-pub', 1)
                );
+
+  -- old SOAP
+  -- api url
+  VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
+  -- procs
+  AB.WA.exec_no_error ('DROP procedure DBA.DB.addressbook_import');
+  AB.WA.exec_no_error ('DROP procedure DBA.DB.addressbook_export');
 }
 ;
 

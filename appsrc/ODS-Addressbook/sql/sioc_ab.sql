@@ -117,6 +117,8 @@ create procedure fill_ods_addressbook_sioc2 (
   declare graph_iri, addressbook_iri, socialnetwork_iri, contact_iri, creator_iri, role_iri, iri varchar;
 
   {
+    fill_ods_addressbook_services ();
+
     for (select WAI_ID,
                 WAI_TYPE_NAME,
                 WAI_NAME,
@@ -287,6 +289,33 @@ create procedure fill_ods_addressbook_sioc2 (
 
 -------------------------------------------------------------------------------
 --
+create procedure fill_ods_addressbook_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('addressbook.search', 'addressbook.new', 'addressbook.import', 'addressbook.export', 'addressbook.publication.new', 'addressbook.subscription.new', 'addressbook.options.set',  'addressbook.options.get');
+  ods_object_services (graph_iri, 'addressbook', 'ODS AddressBook instance services', svc_functions);
+
+  -- contact
+  svc_functions := vector ('addressbook.get', 'addressbook.edit', 'addressbook.delete', 'addressbook.comment.new', 'addressbook.relationship.new', 'addressbook.relationship.delete', 'addressbook.annotation.new');
+  ods_object_services (graph_iri, 'addressbook/contact', 'ODS AddressBook contact services', svc_functions);
+
+  -- contact comment
+  svc_functions := vector ('addressbook.comment.get', 'addressbook.comment.delete');
+  ods_object_services (graph_iri, 'addressbook/contact/comment', 'ODS AddressBook comment services', svc_functions);
+
+  -- contact annotation
+  svc_functions := vector ('addressbook.annotation.get', 'addressbook.annotation.claim', 'addressbook.annotation.delete');
+  ods_object_services (graph_iri, 'addressbook/contact/annotation', 'ODS AddressBook annotation services', svc_functions);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure clean_ods_addressbook_sioc2 (
   in _wai_name varchar := null,
   in _access_mode integer := null)
@@ -341,22 +370,6 @@ create procedure clean_ods_addressbook_sioc2 (
     }
     commit work;
   }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ods_addressbook_services (
-  in graph_iri varchar, 
-  in forum_iri varchar,
-  in wai_id varchar := null,
-  in wai_name varchar := null)
-{
-  declare svc_iri varchar;
-  
-  -- dbg_obj_print (now (), 'ods_addressbook_services');
-  svc_iri := sprintf ('http://%s%s/services/addressbook', get_cname(), get_base_path ());
-  ods_sioc_service (graph_iri, svc_iri, forum_iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
 }
 ;
 
@@ -649,6 +662,10 @@ create procedure contact_insert (
         DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Country'), bCountry);
     }
   }
+
+  -- contact services
+  SIOC..ods_object_services_attach (graph_iri, iri2, 'addressbook/contact');
+
   SIOC..contact_comments_insert (graph_iri, addressbook_iri, domain_id, contact_id);
   SIOC..contact_annotations_insert (graph_iri, domain_id, contact_id);
 }
@@ -679,6 +696,8 @@ create procedure contact_delete (
   -- AB Data
 	scot_tags_delete (domain_id, iri, tags);
 	delete_quad_s_or_o (graph_iri, iri, iri);
+
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'addressbook/contact');
 
   -- Social Data
   iri := SIOC..socialnetwork_contact_iri (domain_id, contact_id);
@@ -1004,23 +1023,24 @@ create procedure contact_comment_insert (
   master_id := cast (master_id as integer);
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
 	if (isnull (graph_iri))
-		{
     graph_iri := get_graph_new (domain_id, null, master_iri);
+
     if (isnull (graph_iri))
       return;
-		}
+
   if (isnull (forum_iri))
-	{
     forum_iri := AB.WA.forum_iri (domain_id);
+
     if (isnull (forum_iri))
       return;
-  }
+
 		comment_iri := addressbook_comment_iri (domain_id, master_id, comment_id);
   if (isnull (comment_iri))
     return;
 
       foaf_maker (graph_iri, u_url, u_name, u_mail);
-      ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+  SIOC..ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+  SIOC..ods_object_services_attach (graph_iri, comment_iri, 'addressbook/contact/comment');
   DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
     }
@@ -1043,13 +1063,15 @@ create procedure contact_comment_delete (
   master_id := cast (master_id as integer);
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
   if (isnull (graph_iri))
-  {
     graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+
     if (isnull (graph_iri))
       return;
-  }
+
   comment_iri := SIOC..addressbook_comment_iri (domain_id, master_id, comment_id);
   delete_quad_s_or_o (graph_iri, comment_iri, comment_iri);
+  -- comment services
+  SIOC..ods_object_services_dettach (graph_iri, comment_iri, 'addressbook/contact/comment');
 }
 ;
 
@@ -1178,8 +1200,7 @@ create procedure contact_annotation_insert (
 	inout created datetime,
 	inout updated datetime)
 {
-	declare master_iri, annotattion_iri varchar;
-
+  declare master_iri, annotation_iri varchar;
 	declare exit handler for sqlstate '*'
 	{
 		sioc_log_message (__SQL_MESSAGE);
@@ -1194,15 +1215,16 @@ create procedure contact_annotation_insert (
     if (isnull (graph_iri))
       return;
 		}
-  annotattion_iri := addressbook_annotation_iri (domain_id, master_id, annotation_id);
-  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  annotation_iri := addressbook_annotation_iri (domain_id, master_id, annotation_id);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, an_iri ('annotates'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotation_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('author'), author);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('body'), body);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('created'), created);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('modified'), updated);
 
-	  addressbook_claims_insert (graph_iri, annotattion_iri, claims);
+  addressbook_claims_insert (graph_iri, annotation_iri, claims);
+  SIOC..ods_object_services_attach (graph_iri, annotation_iri, 'addressbook/contact/annotation');
 	}
 ;
 
@@ -1215,7 +1237,7 @@ create procedure contact_annotation_delete (
   inout annotation_id integer,
   inout claims any)
 {
-  declare master_iri, annotattion_iri varchar;
+  declare master_iri, annotation_iri varchar;
   declare exit handler for sqlstate '*'
   {
 		sioc_log_message (__SQL_MESSAGE);
@@ -1230,8 +1252,9 @@ create procedure contact_annotation_delete (
     if (isnull (graph_iri))
       return;
   }
-  annotattion_iri := addressbook_annotation_iri (domain_id, master_id, annotation_id);
-  SIOC..delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+  annotation_iri := addressbook_annotation_iri (domain_id, master_id, annotation_id);
+  SIOC..delete_quad_s_or_o (graph_iri, annotation_iri, annotation_iri);
+  SIOC..ods_object_services_dettach (graph_iri, annotation_iri, 'addressbook/contact/annotation');
 }
 ;
 
@@ -1239,7 +1262,7 @@ create procedure contact_annotation_delete (
 --
 create procedure addressbook_claims_insert (
   in graph_iri varchar,
-  in annotattion_iri varchar,
+  in annotation_iri varchar,
   in claims any)
 {
   declare N integer;
@@ -1256,7 +1279,7 @@ create procedure addressbook_claims_insert (
     } else {
       cPedicate := ODS.ODS_API."ontology.denormalize" (cPedicate);
   }
-    DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, cPedicate, cValue);
 }
 }
 ;
@@ -1329,9 +1352,24 @@ create procedure ods_addressbook_sioc_init ()
 }
 ;
 
---AB.WA.exec_no_error('ods_addressbook_sioc_init ()');
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.tmp_update ()
+{
+  if (registry_get ('ab_services_update') = '1')
+    return;
+  registry_set ('ab_services_update', '1');
 
+  SIOC..fill_ods_addressbook_services();
+}
+;
+
+AB.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
 use DB;
+
 -------------------------------------------------------------------------------
 --
 wa_exec_no_error ('drop view ODS_ADDRESSBOOK_CONTACTS');

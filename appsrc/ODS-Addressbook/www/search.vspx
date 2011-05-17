@@ -311,9 +311,7 @@
                   <table id="search" class="ODS_grid" style="border: 0px;">
                     <thead>
                       <tr>
-                        <th>
-                          Name
-                        </th>
+                        <th>Name</th>
                       </tr>
                     </thead>
                   </table>
