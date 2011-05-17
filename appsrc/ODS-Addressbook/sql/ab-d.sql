@@ -131,10 +131,6 @@ AB.WA.exec_no_error ('DROP view DB.DBA.ODS_ADDRESSBOOK_TAGS');
 -- reinit
 ODS_RDF_VIEW_INIT ();
 
--- dropping SIOC procs
-AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_import');
-AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_export');
-
 -- dropping API procs
 AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.get"');
 AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.new"');

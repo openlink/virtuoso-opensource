@@ -66,7 +66,7 @@
       	OAT.Style.include("webdav.css");
       	OAT.Style.include("winms.css");
         
-        var featureList=["ajax", "json", "anchor", "dimmer", "dialog", "panelbar", "combolist", "calendar"];
+        var featureList=["ajax", "json", "anchor", "dialog", "panelbar", "combolist", "calendar"];
         OAT.Loader.load(featureList);
       </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
@@ -78,15 +78,11 @@
         var askDialog;
 
         function myInit() {
-          if (!OAT._loaded) {
-            setTimeout(myInit, 50);
+          if (!OAT._loaded || !OAT.Panelbar) {
+            setTimeout(myInit, 100);
             return;
           }
 
-          // <a>++
-          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-          OAT.Anchor.zIndex = 1001;
-        
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             

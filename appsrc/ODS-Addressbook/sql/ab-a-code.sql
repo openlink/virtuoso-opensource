@@ -4016,7 +4016,7 @@ create procedure AB.WA.import_rdf_data (
       'homepage',                'P_H_WEB',
       'workplaceHomepage',       'P_B_WEB',
       'lat',                     'P_H_LAT',
-      'long',                    'P_H_LNG',
+      'lng',                     'P_H_LNG',
       'depiction',               'P_PHOTO'
     );
 

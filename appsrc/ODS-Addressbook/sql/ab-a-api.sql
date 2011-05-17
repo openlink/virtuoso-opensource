@@ -99,6 +99,10 @@ create procedure ODS.ODS_API."addressbook.search" (
 
 	if (not ods_check_auth (uname, inst_id, 'author'))
 		return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
 	account_id := AB.WA.domain_owner_id (inst_id);
 
   data := vector ();
@@ -178,6 +182,7 @@ create procedure ODS.ODS_API."addressbook.new" (
   in foaf varchar := null,
 	in photo varchar := null,
 	in interests varchar := null,
+  in relationships varchar := null,
   in mail varchar := null,
   in web varchar := null,
   in icq varchar := null,
@@ -231,6 +236,10 @@ create procedure ODS.ODS_API."addressbook.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
+  tags := coalesce (tags, '');
   rc := AB.WA.contact_update (
           -1,
           inst_id,
@@ -248,6 +257,7 @@ create procedure ODS.ODS_API."addressbook.new" (
           foaf,
 					photo,
 					interests,
+          relationships,
           mail,
           web,
           icq,
@@ -311,6 +321,7 @@ create procedure ODS.ODS_API."addressbook.edit" (
   in foaf varchar := null,
 	in photo varchar := null,
 	in interests varchar := null,
+  in relationships varchar := null,
   in mail varchar := null,
   in web varchar := null,
   in icq varchar := null,
@@ -385,6 +396,7 @@ create procedure ODS.ODS_API."addressbook.edit" (
           foaf,
 					photo,
 					interests,
+          relationships,
           mail,
           web,
           icq,
@@ -578,6 +590,9 @@ create procedure ODS.ODS_API."addressbook.import" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   if (lcase(sourceType) = 'string')
   {
     content := source;
@@ -638,6 +653,9 @@ create procedure ODS.ODS_API."addressbook.export" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   if (lcase (contentType) = 'vcard')
   {
@@ -723,7 +741,6 @@ create procedure ODS.ODS_API."addressbook.annotation.new" (
 --
 create procedure ODS.ODS_API."addressbook.annotation.claim" (
   in annotation_id integer,
-  in claimIri varchar,
   in claimRelation varchar,
   in claimValue varchar) __soap_http 'text/xml'
 {
@@ -745,7 +762,7 @@ create procedure ODS.ODS_API."addressbook.annotation.claim" (
   if (not exists (select 1 from AB.WA.ANNOTATIONS where A_ID = annotation_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
   claims := (select deserialize (A_CLAIMS) from AB.WA.ANNOTATIONS where A_ID = annotation_id);
-  claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
+	claims := vector_concat (claims, vector (vector (null, claimRelation, claimValue)));
   update AB.WA.ANNOTATIONS
      set A_CLAIMS = serialize (claims),
          A_UPDATED = now ()
@@ -917,6 +934,9 @@ create procedure ODS.ODS_API."addressbook.publication.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.addressbook_type_check (destinationType, destination);
 	options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
@@ -1121,6 +1141,9 @@ create procedure ODS.ODS_API."addressbook.subscription.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.addressbook_type_check (sourceType, source);
 	options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
