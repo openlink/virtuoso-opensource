@@ -694,11 +694,16 @@ create function WV.WIKI.POSTPROCESS_LINKS (in _cluster_id integer)
 -- _total - number of version in report, 0 means not such constraint
 create method ti_revisions(in _res_is_vect integer, in _total integer) returns any for WV.WIKI.TOPICINFO
 {
-  declare exit handler for sqlstate '*' {
+  declare exit handler for NOT FOUND
+  {
+    return null;
+  };
+  declare exit handler for sqlstate '*'
+  {
     --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     resignal;
-  }
-  ;
+  };
+
   declare _res, _ent any;
   declare path, revs varchar;
   if (_res_is_vect)
@@ -1167,7 +1172,7 @@ create trigger "WIKI_SYS_DAV_RES_AU" after update on WS.WS.SYS_DAV_RES order 1 r
         else
         {
           _topic.ti_e_mail := (select MailBox from WV.WIKI.TOPIC where TopicId = _id);
-          WV..ADD_HIST_ENTRY(_cluster_name, _local_name, 'U', sprintf ('1.%d', (select max(RV_ID) from ws.ws.sys_dav_res_version where RV_RES_ID = N.RES_ID)));
+          WV..ADD_HIST_ENTRY(_cluster_name, _local_name, 'U', sprintf ('1.%d', coalesce((select max(RV_ID) from ws.ws.sys_dav_res_version where RV_RES_ID = N.RES_ID), 1)));
     }
         _topic.ti_id := _id;
         _topic.ti_res_id := N.RES_ID;
@@ -2017,8 +2022,8 @@ create procedure WV.WIKI.CREATECLUSTER (in _cname varchar, in _src_col integer, 
 next:
     --dbg_obj_print ('9');
 
-  _xmlcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'xml', _owner, _group);
-  _attachcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'attach', _owner, _group);
+  -- _xmlcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'xml', _owner, _group);
+  -- _attachcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'attach', _owner, _group);
   declare _cluster_id integer;
   _cluster_id := WV.WIKI.NEWCLUSTERID();
   insert into WV.WIKI.CLUSTERS (ClusterId, ClusterName, ColId, ColHistoryId, ColXmlId, ColAttachId, AdminId, C_NEWS_ID)
