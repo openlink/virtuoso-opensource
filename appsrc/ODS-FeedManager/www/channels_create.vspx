@@ -255,13 +255,12 @@
                 </v:template>
                 <v:template type="simple" enabled="-- case when (self.v_source = 2) then 1 else 0 end">
                   <v:text name="source_2" xhtml_id="source_2" value="" xhtml_size="70" />
-                  <v:button action="browse" value="Browse...">
-                 	  <v:after-data-bind>
+                  <input type="button" id="source_2_button" value="Browse..." onclick="davBrowse ('source_2');" />
                  		  <![CDATA[
-                        control.vc_add_attribute ('onclick', 'javascript: davBrowse (''source_2'');');
+                	  <script type="text/javascript">
+                      OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                	  </script>
             			    ]]>
-            			  </v:after-data-bind>
-            		  </v:button>
                 </v:template>
                 <v:button action="simple" value="Subscribe" xhtml_alt="Subscribe feed" enabled="-- case when (self.v_source = 0) then 1 else 0 end">
                   <v:on-post>

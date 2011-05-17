@@ -558,6 +558,19 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
   doPost ('F1', fButton);
 }
 
+function odsPost(obj, fields, button) {
+  var form = getParent (obj, 'form');
+  var formName = form.name;
+  for (var i = 0; i < fields.length; i += 2)
+    createHidden(formName, fields[i], fields[i+1]);
+
+  if (button) {
+    doPost(formName, button);
+  } else {
+    form.submit();
+  }
+}
+
 function dateFormat(date, format) {
 	function long(d) {
 		return ((d < 10) ? "0" : "") + d;

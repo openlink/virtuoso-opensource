@@ -578,6 +578,18 @@ input.nolink2 {
   color: #000;
 }
 
+.button2 {
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+}
+
 .pane {
   color: black;
   background-color: #EFEFEF;
@@ -924,20 +936,6 @@ div.menu div.menuItemSep {
   border-top: 1px solid #7f94a5;
   border-bottom: 1px solid #f0f0f0;
   margin: 4px 2px;
-}
-
-/* ComboList */
-.combo_list_list {
-  background-color: white;
-  border: 1px solid black;
-  padding: 5px 10px 5px 10px;
-  height: 100px;
-  overflow: auto;
-}
-
-.combo_list_option:hover {
-  background-color: #99b3c5;
-  color: white;
 }
 
 /* Comments */
