@@ -94,7 +94,6 @@ xmlns:oplbb="&oplbb;">
           </xsl:when>
           <xsl:when test="$entity = 'product'">
             <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-   	    <rdf:type rdf:resource="&pto;Evri"/>
           </xsl:when>
         </xsl:choose>
         <xsl:for-each select="entity/properties/property">

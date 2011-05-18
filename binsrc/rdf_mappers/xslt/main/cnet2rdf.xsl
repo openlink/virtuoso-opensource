@@ -125,7 +125,6 @@
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;SoftwareProduct" />
-		<rdf:type rdf:resource="&pto;CNET.com"/>
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
@@ -144,7 +143,6 @@
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;TechProduct" />
-		<rdf:type rdf:resource="&pto;CNET.com"/>
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>

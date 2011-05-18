@@ -37,6 +37,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 xmlns:bibo="http://purl.org/ontology/bibo/"
 xmlns:vcard="http://www.w3.org/2006/vcard/ns#"
 xmlns:geo  ="http://www.w3.org/2003/01/geo/wgs84_pos#"
+xmlns:rnews  ="http://iptc.org/std/rnews/20110202/rnews.owl#"
 xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 xmlns:hnews="http://ontologi.es/hnews#"
 version="1.0">
@@ -55,9 +56,11 @@ version="1.0">
     <rdf:Description rdf:about="{$docproxyIRI}">
         <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hnews')}" />
     </rdf:Description>
-    <bibo:Article rdf:about="{vi:proxyIRI ($baseUri, '', 'hnews')}">
+	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'hnews')}">
+		<rdf:type rdf:resource="&bibo;Article"/>
+		<rdf:type rdf:resource="&rnews;NewsItem"/>
       <xsl:apply-templates mode="hnews"/>
-    </bibo:Article>
+    </rdf:Description>
   </xsl:template>
 
   <xsl:template match="*" mode="hnews">
@@ -87,18 +90,21 @@ version="1.0">
     <xsl:choose>
       
       <xsl:when test="contains($field, 'entry-title')">
-        <dc:title>
+        <rnews:title>
           <xsl:value-of select="." />
-        </dc:title>
+        </rnews:title>
+        <rdfs:label>
+          <xsl:value-of select="." />
+        </rdfs:label>
         <xsl:if test="@rel='bookmark'">
           <bibo:uri rdf:resource="{@href}" />
         </xsl:if>
       </xsl:when>
 
       <xsl:when test="contains($field, 'updated')">
-        <dcterms:modified>
+        <rnews:dateModified>
           <xsl:value-of select="@title" />
-        </dcterms:modified>
+        </rnews:dateModified>
       </xsl:when>
 
       <xsl:when test="contains($field, 'dateline')">
@@ -108,29 +114,35 @@ version="1.0">
       </xsl:when>
 
       <xsl:when test="$field='author vcard'">
-        <dcterms:creator>
-          <foaf:Person>
+        <rnews:createdBy>
+          <foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', 'author')}">
+            <rdfs:label>
+				<xsl:value-of select="./*[contains(@class, 'fn')]"/>
+			</rdfs:label>
             <foaf:name>
-              <xsl:value-of select="./*[@class='fn']"/>
+              <xsl:value-of select="./*[contains(@class, 'fn')]"/>
             </foaf:name>
           </foaf:Person>
-        </dcterms:creator>
+        </rnews:createdBy>
       </xsl:when>
       
       <xsl:when test="contains($field, 'source-org')">
-        <hnews:source-org>
+        <rnews:providedBy>
 			<foaf:Organization rdf:about="{vi:proxyIRI ($baseUri, '', 'source_org')}">
 				<foaf:name>
 					<xsl:value-of select="." />
 				</foaf:name>
 			</foaf:Organization>
-        </hnews:source-org>
+        </rnews:providedBy>
       </xsl:when>
       
       <xsl:when test="contains($field, 'entry-content')">
         <bibo:content>
           <xsl:value-of select="."/>
         </bibo:content>
+        <rnews:description>
+          <xsl:value-of select="."/>
+        </rnews:description>
       </xsl:when>
 
       <xsl:when test="contains($field, 'latitude')">
@@ -154,9 +166,9 @@ version="1.0">
       </xsl:when>
 
       <xsl:when test="contains($rel, 'item-license')">
-        <dc:rights>
+        <rnews:copyrightNotice>
           <xsl:value-of select=".."/>
-        </dc:rights>
+        </rnews:copyrightNotice>
       </xsl:when>
 
       <xsl:when test="contains($rel, 'principles')">

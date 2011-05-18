@@ -153,7 +153,7 @@ create procedure rdfdesc_label_1 (in _S any, in lines any := null)
   declare best_q, q float;
   declare lang, langs, label varchar;
 
-  if (not (registry_get ('fct_desc_value_labels') = '1'))
+  if (registry_get ('fct_desc_value_labels') = '0')
     return null;
 
   langs := 'en';

@@ -43,7 +43,7 @@
     xmlns:bibo="&bibo;"
     xmlns:gr="&gr;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
-    xmlns:cb="http://www.crunchbase.com/"
+    xmlns:oplcb="http://www.openlinksw.com/schemas/crunchbase#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:foaf="&foaf;">
 
@@ -54,7 +54,7 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="ns">http://www.crunchbase.com/</xsl:variable>
+    <xsl:variable name="ns">http://www.openlinksw.com/schemas/crunchbase#</xsl:variable>
     <xsl:param name="base"/>
     <xsl:param name="suffix"/>
 
@@ -385,7 +385,7 @@
 		    <rdfs:label><xsl:value-of select="funding_round/company/name"/></rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'competitions'">
-		    <rdfs:label><xsl:value-of select="competitor"/></rdfs:label>
+		    <rdfs:label><xsl:value-of select="competitor/name"/></rdfs:label>
 		</xsl:if>
 		    <xsl:apply-templates select="@*|node()"/>
 		</xsl:element>

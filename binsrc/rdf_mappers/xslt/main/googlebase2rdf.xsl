@@ -141,7 +141,6 @@
 				</xsl:when>
 				<xsl:otherwise>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-	  <rdf:type rdf:resource="&pto;Google"/>
 			<gr:amountOfThisGood>1</gr:amountOfThisGood>
           <gr:name>
             <xsl:value-of select="a:title"/>

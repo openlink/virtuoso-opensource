@@ -100,7 +100,6 @@
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 				<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 				<rdf:type rdf:resource="&oplbb;Product" />
-				<rdf:type rdf:resource="&pto;Zappos.com"/>
 				<gr:hasMakeAndModel>
 					<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 						<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>

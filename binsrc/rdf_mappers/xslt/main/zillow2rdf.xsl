@@ -98,7 +98,6 @@
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplzllw;Product" />
-			<rdf:type rdf:resource="&pto;Zillow.com"/>
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<gr:amountOfThisGood>1</gr:amountOfThisGood>
 				<xsl:apply-templates select="response/results/result" />

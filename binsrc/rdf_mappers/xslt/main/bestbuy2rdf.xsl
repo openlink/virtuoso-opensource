@@ -159,7 +159,6 @@
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
-						<rdf:type rdf:resource="&pto;Best_Buy"/>
                             <gr:hasMakeAndModel>
 			        <!-- For testing with standalone XSLT processor
 	                        <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">

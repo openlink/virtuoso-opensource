@@ -90,7 +90,6 @@
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
-				<rdf:type rdf:resource="&pto;ProductWiki"/>
 				   <xsl:apply-templates select="//product[1]" />
 				</rdf:Description>
 		</rdf:RDF>

@@ -74,6 +74,14 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_FOURSQUARE', null, 'Foursquare');
 	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://upcoming.yahoo.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_UPCOMING', null, 'Yahoo Upcoming');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*plancast.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_PLANCAST', null, 'Plancast');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*tumblr.com/.*',
     'URL', 'DB.DBA.RDF_LOAD_TUMBLR', null, 'Tumblr');
 
@@ -5661,6 +5669,107 @@ create procedure DB.DBA.RDF_LOAD_EVRI (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_PLANCAST (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, exif, tree any;
+	declare entity_id, email_, password_, what_ varchar;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	email_ := get_keyword ('email', opts);
+	password_ := get_keyword ('password', opts);
+	--if (( length (email_) * length (password_) ) = 0)
+	--	return 0;
+	if (new_origin_uri like 'http://plancast.com/p/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://plancast.com/p/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.plancast.com/02/plans/show.json?plan_id=%s&extensions=place,attendees,comments', entity_id);
+		what_ := 'plan';
+	}
+	else if (new_origin_uri like 'http://plancast.com/user/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://plancast.com/user/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.plancast.com/02/users/show.json?user_id=%s', entity_id);
+		what_ := 'user';
+	}
+	else
+		return 0;
+	declare bas, auth_header varchar;
+	bas := encode_base64 (concat(email_, ':', password_));
+    auth_header := 'Authorization: Basic '||bas;
+	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
+	tree := json_parse (tmp);
+	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/plancast2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'type', what_));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_UPCOMING (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, exif any;
+	declare entity_id, email_, password_ varchar;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://upcoming.yahoo.com/venue/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://upcoming.yahoo.com/venue/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://upcoming.yahooapis.com/services/rest/?api_key=%s&method=venue.getInfo&venue_id=%s', _key, entity_id);
+	}
+	else if (new_origin_uri like 'http://upcoming.yahoo.com/event/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://upcoming.yahoo.com/event/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://upcoming.yahooapis.com/services/rest/?api_key=%s&method=event.getInfo&event_id=%s', _key, entity_id);
+	}
+	else if (new_origin_uri like 'http://upcoming.yahoo.com/user/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://upcoming.yahoo.com/user/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://upcoming.yahooapis.com/services/rest/?api_key=%s&method=user.getInfo&user_id=%s', _key, entity_id);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/upcoming2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'entity', entity_id));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xd, host_part, xt, url, tmp, hdr, exif any;
@@ -5812,15 +5921,26 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_STORE (in graph_iri varchar, in new_orig
 		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
-	if (new_origin_uri like 'http://www.googlestore.com/%/%.axd%')
+	if (new_origin_uri like 'http://www.googlestore.com/%/%/%.axd%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.googlestore.com/%s/%s/%s.axd%s', 0);
+		soft_id := tmp[2];
+		if (soft_id is null)
+			return 0;
+		--pos := strrchr(soft_id, '-');
+		--if (pos is not null and pos <> 0)
+		--	soft_id := right(soft_id, length(soft_id) - (pos + 1));
+		url := sprintf('https://www.googleapis.com/shopping/search/v1/public/products?country=US&q=%s&key=%s&alt=atom', soft_id, _key);
+	}
+	else if (new_origin_uri like 'http://www.googlestore.com/%/%.axd%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.googlestore.com/%s/%s.axd%s', 0);
 		soft_id := tmp[1];
 		if (soft_id is null)
 			return 0;
-		pos := strrchr(soft_id, '-');
-		if (pos is not null and pos <> 0)
-			soft_id := right(soft_id, length(soft_id) - (pos + 1));
+		--pos := strrchr(soft_id, '-');
+		--if (pos is not null and pos <> 0)
+		--	soft_id := right(soft_id, length(soft_id) - (pos + 1));
 		url := sprintf('https://www.googleapis.com/shopping/search/v1/public/products?country=US&q=%s&key=%s&alt=atom', soft_id, _key);
 	}
 	else

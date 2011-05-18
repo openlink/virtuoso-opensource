@@ -148,7 +148,6 @@
 
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-		<rdf:type rdf:resource="&pto;Oreilly"/>
 		<xsl:choose>
 			<xsl:when test="$category='video'">
 				<rdf:type rdf:resource="&bibo;AudioVisualDocument"/>
