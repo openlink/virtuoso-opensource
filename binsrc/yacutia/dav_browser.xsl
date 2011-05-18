@@ -1643,7 +1643,7 @@ self.vc_data_bind (e);
                             <?vsp
                                 for (N := 0; N < length (properties); N := N + 1)
                                 {
-                                  http (sprintf ('OAT.Loader.load([], function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], replace (properties[N][1], '\n', ' ')));
+                                  http (sprintf ('OAT.Loader.load(["combolist"], function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], replace (properties[N][1], '\n', ' ')));
                               }
                             ?>
                       		    </script>
@@ -1689,7 +1689,7 @@ self.vc_data_bind (e);
 
                                 aci_values := DB.DBA.Y_ACI_LOAD (self.source_dir);
                                 for (N := 0; N < length (aci_values); N := N + 1)
-                                  http (sprintf ('OAT.Loader.load([], function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                  http (sprintf ('OAT.Loader.load(["combolist"], function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                               ?>
                       		    </script>
                       		  ]]>
