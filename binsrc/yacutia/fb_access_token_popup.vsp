@@ -152,9 +152,9 @@ auth_err: ;
       <p><strong>Please update your RDF Mappers VAD. The latest VAD saves access tokens to a Virtuoso table. Manual entry of access tokens in the API Key is no longer required.</strong></p>
     <?vsp } else { 
       declare entity_uri, about_sponge_uri, describe_sponge_uri varchar;
-      about_sponge_uri := sprintf ('http://%s/about/html/http/graph.facebook.com/%s', _host, og_user_id);
-      entity_uri := sprintf ('http://%s/about/id/http/graph.facebook.com/%s', _host, og_user_id);
-      describe_sponge_uri := sprintf ('http://%s/describe/?url=%U', _host, entity_uri);
+      about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/graph.facebook.com/%s?@Lookup@=&refresh=0', _host, _host, og_user_id);
+      entity_uri := sprintf ('http://%s/about/id/entity/http/graph.facebook.com/%s', _host, og_user_id);
+      describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
     ?>
       <p>Here are a variety of Linked Data oriented views of your Facebook profile:</p> 
       <div>
@@ -162,6 +162,23 @@ auth_err: ;
       <li><a href="<?=about_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
       <li><a href="<?=describe_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
       </ol>
+      </div>
+      <h3>Revoking your access token</h3>
+      <p>
+      You have authorised the Sponger to interact with you Facebook account. You can revoke access to your profile at any time by removing this application 
+      (<em><?=fb_app_name ?></em>) from the list of authorised applications shown in your Facebook profile. To remove an application, 
+      <a href="http://www.facebook.com/settings/?tab=privacy">access your Facebook privacy settings</a>, follow the <strong>Edit your settings</strong> 
+      link under the heading <strong>Apps and websites</strong>, then select the application you wish to remove.
+      </p> 
+      <h3>Useful OpenLink Links</h3>
+      <div>
+      <ul>
+      <li><a href="http://www.openlinksw.com/">OpenLink Software</a> - Company site</li>
+      <li><a href="http://linkeddata.uriburner.com/">URIBurner.com</a> - A service that delivers RDF-based structured descriptions of Web addressable resources (documents or real world objects)</li>
+      <li><a href="http://virtuoso.openlinksw.com/">OpenLink Virtuoso</a> - OpenLink&#39;s enterprise grade multi-model data server</li>
+      <li><a href="http://ode.openlinksw.com/">OpenLink Data Explorer (ODE)</a> - A browser extension for viewing Linked Data Sources</li>
+      <li><a href="http://oat.openlinksw.com/">OpenLink AJAX Toolkit (OAT)</a> - A JavaScript-based toolkit for browser-independent Rich Internet Application development</li>
+      </ul>
       </div>
     <?vsp } ?>
   <?vsp } ?>
