@@ -720,6 +720,20 @@ bif_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   NO_CADDR_T;
 }
 
+
+caddr_t  *
+bif_array_of_pointer_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp != DV_ARRAY_OF_POINTER)
+    sqlr_new_error ("22023", "SR014",
+  "Function %s needs a generic  array  as argument %d, not an arg of type %s (%d)",
+  func, nth + 1, dv_type_title (dtp), dtp);
+  return (caddr_t *)arg;
+}
+
+
 caddr_t
 bif_array_or_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
