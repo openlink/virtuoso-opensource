@@ -102,3 +102,4 @@ registry_remove ('__ods_briefcase_sioc_init');
 registry_remove ('odrive_items_upgrade');
 registry_remove ('odrive_path_upgrade');
 registry_remove ('odrive_path_upgrade2');
+registry_remove ('odrive_services_update');

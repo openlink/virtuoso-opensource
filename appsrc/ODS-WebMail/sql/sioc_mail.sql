@@ -93,11 +93,11 @@ create procedure fill_ods_mail_services ()
   graph_iri := get_graph ();
 
   -- instance
-  svc_functions := vector ('mail.new', 'mail.options.set',  'mail.options.get');
+  svc_functions := vector ('mail.message.new', 'mail.options.set',  'mail.options.get');
   ods_object_services (graph_iri, 'mail', 'ODS mail instance services', svc_functions);
 
   -- item
-  svc_functions := vector ('mail.get', 'mail.delete', 'mail.move');
+  svc_functions := vector ('mail.message.get', 'mail.message.delete', 'mail.message.move');
   ods_object_services (graph_iri, 'mail/item', 'ODS Mail item services', svc_functions);
 
 }
@@ -211,5 +211,19 @@ create procedure ods_mail_sioc_init ()
 ;
 
 --OMAIL.WA.exec_no_error ('ods_mail_sioc_init ()');
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.tmp_update ()
+{
+  if (registry_get ('omail_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_mail_services();
+  registry_set ('omail_services_update', '1');
+}
+;
+
+OMAIL.WA.tmp_update ();
 
 use DB;

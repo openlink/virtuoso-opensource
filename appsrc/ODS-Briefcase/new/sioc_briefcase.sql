@@ -845,6 +845,22 @@ create procedure ods_briefcase_sioc_init ()
 
 --ODRIVE.WA.exec_no_error ('ods_briefcase_sioc_init ()');
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_update ()
+{
+  if (registry_get ('odrive_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_briefcase_services();
+  registry_set ('odrive_services_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
 use DB;
 -- ODRIVE
 

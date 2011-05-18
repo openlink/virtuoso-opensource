@@ -27,7 +27,7 @@ create procedure SIOC..fill_ods_photos_sioc (in graph_iri varchar, in site_iri v
   declare pos,dir,album,_ind,ts,modf,link, svc_iri any;
 
   -- init services
-  SIOC..fill_ods_photo_services ();
+  SIOC..fill_ods_photos_services ();
 
   for select p.WAI_NAME as WAI_NAME,
              p.HOME_PATH as HOME_PATH,
@@ -72,7 +72,7 @@ create procedure SIOC..fill_ods_photos_sioc (in graph_iri varchar, in site_iri v
 
 -------------------------------------------------------------------------------
 --
-create procedure SIOC..fill_ods_photo_services ()
+create procedure SIOC..fill_ods_photos_services ()
 {
   declare graph_iri, services_iri, service_iri, service_url varchar;
   declare svc_functions any;
@@ -431,6 +431,8 @@ create procedure SIOC..gallery_comment_url (in iri varchar, in comment_id int)
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 use DB;
 -- PHOTO
 

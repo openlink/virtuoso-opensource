@@ -101,6 +101,7 @@ registry_remove ('cal_uid_version');
 registry_remove ('cal_attendee_update');
 registry_remove ('cal_path_upgrade2');
 registry_remove ('cal_atom_update');
+registry_remove ('cal_services_update');
 
 -- Procedures
 create procedure CAL.WA.drop_procedures()

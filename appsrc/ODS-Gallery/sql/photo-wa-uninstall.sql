@@ -118,7 +118,7 @@ PHOTO.WA._exec_no_error('delete from DB.DBA.WA_TYPES where WAT_NAME = \'oGallery
 PHOTO.WA._exec_no_error('delete from DB.DBA.WA_TYPES where WAT_NAME = \'oGallery\'');
 
 -- Registry
-
+registry_remove ('gallery_services_update');
 
 PHOTO.WA._exec_no_error('drop procedure PHOTO.WA._drop_procedures');
 PHOTO.WA._exec_no_error('drop procedure PHOTO.WA._exec_no_error');

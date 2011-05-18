@@ -104,6 +104,7 @@ registry_remove ('news_links_upgrade');
 registry_remove ('news_comment_upgrade');
 registry_remove ('news_path_upgrade2');
 registry_remove ('__ods_feeds_sioc_init');
+registry_remove ('news_services_update');
 
 -- Procedures
 create procedure ENEWS.WA.drop_procedures()

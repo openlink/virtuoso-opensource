@@ -132,6 +132,12 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on SOAP_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
+
+  if (registry_get ('gallery_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_photos_services();
+  registry_set ('gallery_services_update', '1');
 }
 ;
 

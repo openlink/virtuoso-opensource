@@ -99,6 +99,7 @@ registry_remove ('bmk_table_update');
 registry_remove ('bmk_index_version');
 registry_remove ('bmk_path_update');
 registry_remove ('bmk_path_upgrade2');
+registry_remove ('bmk_services_update');
 
 -- Procedures
 create procedure BMK.WA.drop_procedures()

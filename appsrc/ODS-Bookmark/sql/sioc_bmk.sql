@@ -917,7 +917,21 @@ create procedure ods_bookmark_sioc_init ()
 
 -------------------------------------------------------------------------------
 --
--- Bookmrks RDF Views
+create procedure BMK.WA.tmp_update ()
+{
+  if (registry_get ('bmk_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_bookmark_services();
+  registry_set ('bmk_services_update', '1');
+}
+;
+
+BMK.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+-- Bookmarks RDF Views
 --
 -------------------------------------------------------------------------------
 use DB;
