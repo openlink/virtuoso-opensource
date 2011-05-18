@@ -3320,13 +3320,19 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
   if (og_id is null or length (og_id) = 0)
     return null;
 
-  -- First look for a non-expiring access token
+  -- First look for a non-expiring access token.
+  -- Facebook grants the same access token in response to repeated requests for a 
+  -- non-expiring token for a particular Facebook app by the same user.
+  -- If more than one non-expiring access token exists in OPENGRAPH_ACCESS_TOKENS 
+  -- for the same combination of user (and app), all but the most recent 
+  -- are assumed to have been revoked by the user and hence be invalid.
   for (select top 1 
          OGAT_ACCESS_TOKEN as _token
        from 
          DB.DBA.OPENGRAPH_ACCESS_TOKENS 
        where 
          OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES is null
+       order by OGAT_CREATED desc
       )
   do
   {
