@@ -1128,6 +1128,8 @@ create procedure sioc_user_info (
     	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
 	    }
 	}
+  -- contact services
+  SIOC..ods_object_services_attach (public_graph_iri, iri, 'user');
 };
 
 create procedure sioc_user_info_delete (
@@ -1184,6 +1186,9 @@ create procedure sioc_user_info_delete (
     delete_quad_s_or_o (graph_iri, crt_iri, crt_iri);
     delete_quad_s_or_o (graph_iri, crt_exp, crt_exp);
     delete_quad_s_or_o (graph_iri, crt_mod, crt_mod);
+
+    -- contact services
+    SIOC..ods_object_services_dettach (graph_iri, iri, 'user');
     	}
     }
 ;
@@ -1719,6 +1724,7 @@ create procedure sioc_forum (
   if (wai_type_name = 'AddressBook')
     {
       -- attach instance services
+      ods_object_services_attach (graph_iri, iri, 'instance');
       ods_object_services_attach (graph_iri, iri, DB.DBA.wa_type_to_app (wai_type_name));
 
       iri := forum_iri ('SocialNetwork', _wai_name);
@@ -1732,6 +1738,7 @@ create procedure sioc_forum (
     }
 
   -- attach instance services
+  ods_object_services_attach (graph_iri, iri, 'instance');
   ods_object_services_attach (graph_iri, iri, DB.DBA.wa_type_to_app (wai_type_name));
 };
 
@@ -2105,7 +2112,7 @@ create procedure ods_object_service_url (
     params := procedure_cols ('ODS..' || service_name);
     foreach (any param in params) do
     {
-      service_url := sprintf ('%s%s%s={%s}', service_url, delimiter, param[3], internal_type_name (param[5]));
+      service_url := sprintf ('%s%s%s={%s}', service_url, delimiter, param[3], param[3]);
       delimiter := '&';
     }
   }
@@ -2117,8 +2124,8 @@ create procedure ods_object_service_url (
 --
 create procedure ods_object_services (
   in graph_iri varchar,
-  in svc_object vacrchar,
-  in svc_object_title vacrchar,
+  in svc_object varchar,
+  in svc_object_title varchar,
   in svc_functions any)
 {
   declare services_iri, service_iri, service_url varchar;
@@ -2137,8 +2144,8 @@ create procedure ods_object_services (
 
 create procedure ods_object_services_attach (
   in graph_iri varchar,
-  in iri vacrchar,
-  in svc_object vacrchar)
+  in iri varchar,
+  in svc_object varchar)
 {
   declare services_iri varchar;
 
@@ -2150,8 +2157,8 @@ create procedure ods_object_services_attach (
 
 create procedure ods_object_services_dettach (
   in graph_iri varchar,
-  in iri vacrchar,
-  in svc_object vacrchar)
+  in iri varchar,
+  in svc_object varchar)
 {
   declare services_iri varchar;
 
@@ -2302,8 +2309,8 @@ create procedure fill_ods_sioc (in doall int := 0)
   }
 
   ods_ping_svc_init (graph_iri, site_iri);
-
   scot_tags_init ();
+  fill_ods_services ();
 
   -- init users
   {
@@ -2683,8 +2690,25 @@ create procedure fill_ods_sioc (in doall int := 0)
   ods_sioc_result ('The RDF data is reloaded');
   --checkpoint_interval (cpt);
   log_enable (1);
-  return;
-};
+}
+;
+
+create procedure fill_ods_services ()
+{
+  declare graph_iri varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('instance.create', 'instance.update', 'instance.delete', 'instance.join', 'instance.disjoin', 'instance.join_approve', 'instance.search', 'instance.get', 'instance.get.id', 'instance.freeze', 'instance.unfreeze' );
+  ods_object_services (graph_iri, 'instance', 'ODS instance services', svc_functions);
+
+  -- user
+  svc_functions := vector ('user.login', 'user.validate', 'user.logout', 'user.update', 'user.password_change', 'user.delete', 'user.enable', 'user.disable', 'user.get', 'user.info', 'user.info.webID', 'user.search');
+  ods_object_services (graph_iri, 'user', 'ODS user services', svc_functions);
+}
+;
 
 create procedure ods_sioc_version_reset (in ver any := '0')
 {
@@ -3694,6 +3718,7 @@ create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing ol
     if (__proc_exists (p_name))
 	    call (p_name) (O.WAM_INST, O.WAM_IS_PUBLIC);
 
+    SIOC..ods_object_services_dettach (graph_iri, forum_iri, 'instance');
     SIOC..ods_object_services_dettach (graph_iri, forum_iri, DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
     }
 
@@ -3755,6 +3780,7 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     if (__proc_exists (p_name))
 	    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
 
+    SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, 'instance');
     SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, DB.DBA.wa_type_to_app (O.WAI_TYPE_NAME));
     return;
     }
@@ -4906,7 +4932,8 @@ create procedure std_pref_declare ()
          ' prefix bio: <http://vocab.org/bio/0.1/> \n' ||
 	 ' prefix cert: <' || cert_iri ('') || '> \n' ||
 	 ' prefix rsa: <' || rsa_iri ('') || '> \n' ||
-	 ' prefix gr: <' || offer_iri ('') || '> \n'
+	 ' prefix gr: <' || offer_iri ('') || '> \n' ||
+	 ' prefix svc: <http://rdfs.org/sioc/services#> \n'
 	 ;
 };
 
@@ -5138,6 +5165,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?org dc:title ?orgtit .
 	    ?person foaf:depiction ?depiction .
 	    ?person foaf:homepage ?homepage .
+	    ?person svc:has_services ?svc .
+	    ?svc svc:services_of ?person .
+	    ?svc rdf:type svc:Services .
 	  }
 	  WHERE
 	  {
@@ -5173,6 +5203,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
 	      optional { ?person foaf:depiction ?depiction } .
 	      optional { ?person foaf:homepage ?homepage } .
+        optional { ?person svc:has_services ?svc } .
 	      }
 	    }
 	  }',
@@ -6008,11 +6039,9 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			?member rdfs:seeAlso ?see_also .
 			?forum sioc:has_space ?host .
 			?forum sioc:type ?type .
-			?forum svc:has_service ?svc .
-			?svc svc:service_endpoint ?endp .
-			?svc svc:service_protocol ?proto .
-			?svc svc:service_of ?forum .
-			?svc rdf:type svc:Service .
+                 			   ?forum svc:has_services ?svc .
+                 			   ?svc svc:services_of ?forum .
+                 			   ?svc rdf:type svc:Services .
                  		   }
                  		   where
             	{
@@ -6027,11 +6056,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 		    sioc:scope_of ?role .
 		    ?role sioc:function_of ?member .
 		    ?member rdfs:seeAlso ?see_also .
-   		    optional {
-  		      ?forum svc:has_service ?svc .
-  		      ?svc svc:service_endpoint ?endp .
-  		      ?svc svc:service_protocol ?proto .
-		    }
+                           optional { ?forum svc:has_services ?svc . }
 		  }
                  		   }', wai_name, graph, wai_name);
       rset := null;
@@ -6290,8 +6315,20 @@ create procedure WA_INTEREST_UPGRADE ()
 WA_INTEREST_UPGRADE ()
 ;
 
-DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/wa/RDFData/', sioc..get_graph ());
+create procedure ods_object_services_update ()
+{
+  if (registry_get ('ods_services_update') = '1')
+    return;
 
+  SIOC..fill_ods_services ();
+  registry_set ('ods_services_update', '1');
+}
+;
+
+ods_object_services_update ()
+;
+
+DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/wa/RDFData/', sioc..get_graph ());
 
 delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'ODS_SIOC_RDF';
 delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = sioc.DBA.get_graph ();

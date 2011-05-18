@@ -181,7 +181,9 @@ DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix');
 DB.DBA.VHOST_REMOVE(lpath=>'/wikiview');
 DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview');
 
+-- Registry
 registry_remove('wiki default uri');
+registry_remove('wiki_services_update');
 
 -- NNTP
 DROP procedure DB.DBA.oWiki_NEWS_MSG_I;
