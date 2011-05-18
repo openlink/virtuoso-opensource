@@ -97,6 +97,7 @@ registry_remove ('omail_version_upgrade');
 registry_remove ('omail_path_upgrade2');
 registry_remove ('mail_index_version');
 registry_remove ('__ods_mail_sioc_init');
+registry_remove ('omail_services_update');
 
 -- Procedures
 create procedure OMAIL.WA.omail_drop_procedures()

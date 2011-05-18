@@ -65,6 +65,7 @@ registry_remove ('polls_settings_update');
 registry_remove ('polls_index_version');
 registry_remove ('polls_path_upgrade2');
 registry_remove ('__ods_polls_sioc_init');
+registry_remove ('polls_services_update');
 
 -- Procedures
 create procedure POLLS.WA.drop_procedures()

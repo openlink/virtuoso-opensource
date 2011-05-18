@@ -1358,9 +1358,9 @@ create procedure AB.WA.tmp_update ()
 {
   if (registry_get ('ab_services_update') = '1')
     return;
-  registry_set ('ab_services_update', '1');
 
   SIOC..fill_ods_addressbook_services();
+  registry_set ('ab_services_update', '1');
 }
 ;
 

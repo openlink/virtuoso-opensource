@@ -955,6 +955,19 @@ create procedure ods_calendar_sioc_init ()
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_calendar_services();
+  registry_set ('cal_services_update', '1');
+}
+;
+
+CAL.WA.tmp_update ();
+-------------------------------------------------------------------------------
+--
 -- RDF Views
 --
 use DB;

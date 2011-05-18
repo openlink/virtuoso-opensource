@@ -566,6 +566,20 @@ create procedure ods_polls_sioc_init ()
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.tmp_update ()
+{
+  if (registry_get ('polls_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_polls_services();
+  registry_set ('polls_services_update', '1');
+}
+;
+
+POLLS.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
 -- Polls RDF Views
 --
 -------------------------------------------------------------------------------
