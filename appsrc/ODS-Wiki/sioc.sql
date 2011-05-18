@@ -72,6 +72,9 @@ create procedure user_iri_by_uname (in uname varchar)
 create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, c_iri varchar;
+
+  fill_ods_wiki_services ();
+
   for select c.CLUSTERID as CLUSTERID, CLUSTERNAME, TOPICID, LOCALNAME, TITLETEXT, U_NAME, U_E_MAIL, T_OWNER_ID, T_CREATE_TIME, T_PUBLISHED, RES_CONTENT, RES_MOD_TIME, RES_ID, U_ID, WAI_ID
         from WV.WIKI.TOPIC t,
              WV.WIKI.CLUSTERS c,
@@ -156,6 +159,29 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
     }
   commit work;
  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure fill_ods_wiki_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('wiki.topic.new', 'wiki.upstream.new', 'wiki.options.set',  'wiki.options.get');
+  ods_object_services (graph_iri, 'wiki', 'ODS Wiki instance services', svc_functions);
+
+  -- item
+  svc_functions := vector ('wiki.topic.get', 'wiki.topic.edit', 'wiki.topic.delete', 'wiki.topic.sync', 'wiki.topic.versions', 'wiki.topic.versions.get', 'wiki.topic.versions.diff', 'wiki.comment.new');
+  ods_object_services (graph_iri, 'wiki/item', 'ODS Wiki item services', svc_functions);
+
+  -- item comment
+  svc_functions := vector ('wiki.comment.get', 'wiki.comment.delete');
+  ods_object_services (graph_iri, 'wiki/item/comment', 'ODS Wiki comment services', svc_functions);
 
 }
 ;
@@ -203,6 +229,9 @@ create procedure wiki_sioc_post (inout _topic WV.WIKI.TOPICINFO)
 	null,
 	person_iri(uname));
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('topic'), c_iri);
+  -- services
+  SIOC..ods_object_services_attach (graph_iri, iri, 'wiki/item');
+
 }
 ;
 
@@ -265,6 +294,8 @@ create procedure wiki_sioc_post_delete (inout _topic WV.WIKI.TOPICINFO)
   graph_iri := get_graph ();
   iri := wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name);
   delete_quad_s_or_o (graph_iri, iri, iri);
+  -- services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'wiki/item');
 }
 ;
 
@@ -300,6 +331,8 @@ create procedure wiki_sioc_comment_insert (
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
+  -- services
+  SIOC..ods_object_services_attach (graph_iri, iri, 'wiki/item/comment');
 }
 ;
 
@@ -316,6 +349,8 @@ create procedure wiki_sioc_comment_delete (
     graph_iri := get_graph ();
   iri := wiki_comment_iri (topic_id, comment_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
+  -- services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'wiki/item/comment');
 }
 ;
 
