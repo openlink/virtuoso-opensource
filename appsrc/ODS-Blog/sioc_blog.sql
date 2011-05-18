@@ -58,6 +58,8 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
   declare links any;
 
  {
+    fill_ods_weblog_services ();
+
     declare deadl, cnt any;
     declare _pid any;
 
@@ -164,6 +166,26 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
     }
 };
 
+create procedure fill_ods_weblog_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('weblog.get', 'weblog.post.new', 'weblog.upstreaming.set', 'weblog.upstreaming.get', 'weblog.upstreaming.remove', 'weblog.options.set',  'weblog.options.get');
+  ods_object_services (graph_iri, 'weblog', 'ODS weblog instance services', svc_functions);
+
+  -- item
+  svc_functions := vector ('weblog.post.get', 'weblog.post.edit', 'weblog.post.delete', 'weblog.comment.new');
+  ods_object_services (graph_iri, 'weblog/contact', 'ODS weblog contact services', svc_functions);
+
+  -- item comment
+  svc_functions := vector ('weblog.comment.get', 'weblog.comment.approve', 'weblog.comment.delete');
+  ods_object_services (graph_iri, 'weblog/contact/comment', 'ODS weblog comment services', svc_functions);
+}
+;
 
 create procedure ods_weblog_sioc_init ()
 {
@@ -247,7 +269,8 @@ create trigger SYS_BLOGS_SIOC_I after insert on BLOG..SYS_BLOGS order 10 referen
       	where PL_BLOG_ID = N.B_BLOG_ID and PL_POST_ID = N.B_POST_ID);
   ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, N.B_TITLE, N.B_TS, N.B_MODIFIED,
       home ||'?id='||N.B_POST_ID, N.B_CONTENT, null, links, null, att);
-  return;
+  -- services
+  SIOC..ods_object_services_attach (graph_iri, iri, 'weblog/item');
 };
 
 create trigger SYS_BLOGS_SIOC_D before delete on BLOG..SYS_BLOGS referencing old as O
@@ -260,7 +283,8 @@ create trigger SYS_BLOGS_SIOC_D before delete on BLOG..SYS_BLOGS referencing old
   graph_iri := get_graph ();
   iri := blog_post_iri (O.B_BLOG_ID, O.B_POST_ID);
   delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
+  -- services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'weblog/item');
 };
 
 create trigger SYS_BLOGS_SIOC_U after update on BLOG..SYS_BLOGS order 10 referencing old as O, new as N
@@ -304,7 +328,8 @@ create trigger SYS_BLOGS_SIOC_U after update on BLOG..SYS_BLOGS order 10 referen
       (select DB.DBA.VECTOR_AGG (vector (PL_TITLE,PL_LINK)) from BLOG..BLOG_POST_LINKS
       	where PL_BLOG_ID = N.B_BLOG_ID and PL_POST_ID = N.B_POST_ID);
   ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, N.B_TITLE, N.B_TS, N.B_MODIFIED, null, N.B_CONTENT, null, links, null, att);
-  return;
+  -- services
+  SIOC..ods_object_services_attach (graph_iri, iri, 'weblog/item');
 };
 
 create trigger BLOG_COMMENTS_SIOC_I after insert on BLOG..BLOG_COMMENTS referencing new as N
@@ -336,7 +361,8 @@ create trigger BLOG_COMMENTS_SIOC_I after insert on BLOG..BLOG_COMMENTS referenc
   post_iri := blog_post_iri (N.BM_BLOG_ID, N.BM_POST_ID);
   DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, sioc_iri ('has_reply'), iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), post_iri);
-  return;
+  -- services
+  SIOC..ods_object_services_attach (graph_iri, iri, 'weblog/item/comment');
 };
 
 create trigger BLOG_COMMENTS_SIOC_D after delete on BLOG..BLOG_COMMENTS referencing old as O
@@ -349,7 +375,8 @@ create trigger BLOG_COMMENTS_SIOC_D after delete on BLOG..BLOG_COMMENTS referenc
   graph_iri := get_graph ();
   iri := blog_comment_iri (O.BM_BLOG_ID, O.BM_POST_ID, O.BM_ID);
   delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
+  -- services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'weblog/item/comment');
 };
 
 create trigger BLOG_COMMENTS_SIOC_U after update on BLOG..BLOG_COMMENTS referencing old as O, new as N
@@ -416,6 +443,20 @@ create trigger BLOG_TAG_SIOC_D after delete on BLOG..BLOG_TAG referencing old as
       scot_tags_delete (WAI_ID, post_iri, O.BT_TAGS);
     }
 };
+
+-------------------------------------------------------------------------------
+--
+create procedure BLOG.DBA.tmp_update ()
+{
+  if (registry_get ('weblog_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_weblog_services();
+  registry_set ('weblog_services_update', '1');
+}
+;
+
+BLOG.DBA.tmp_update ();
 
 use DB;
 -- BLOG
