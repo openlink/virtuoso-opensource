@@ -78,6 +78,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_UPCOMING', null, 'Yahoo Upcoming');
 	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*eventbrite.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_EVENTBRITE', null, 'Eventbrite');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*plancast.com/.*',
     'URL', 'DB.DBA.RDF_LOAD_PLANCAST', null, 'Plancast');
 	
@@ -3316,13 +3320,19 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
   if (og_id is null or length (og_id) = 0)
     return null;
 
-  -- First look for a non-expiring access token
+  -- First look for a non-expiring access token.
+  -- Facebook grants the same access token in response to repeated requests for a 
+  -- non-expiring token for a particular Facebook app by the same user.
+  -- If more than one non-expiring access token exists in OPENGRAPH_ACCESS_TOKENS 
+  -- for the same combination of user (and app), all but the most recent 
+  -- are assumed to have been revoked by the user and hence be invalid.
   for (select top 1 
          OGAT_ACCESS_TOKEN as _token
        from 
          DB.DBA.OPENGRAPH_ACCESS_TOKENS 
        where 
          OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES is null
+       order by OGAT_CREATED desc
       )
   do
   {
@@ -5762,6 +5772,42 @@ create procedure DB.DBA.RDF_LOAD_UPCOMING (in graph_iri varchar, in new_origin_u
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/upcoming2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'entity', entity_id));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_EVENTBRITE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, exif any;
+	declare entity_id, app_key_, user_key_ varchar;
+	declare pos int;
+	app_key_ := get_keyword ('app_key', opts);
+	user_key_ := get_keyword ('user_key', opts);
+	if (( length (app_key_) * length (user_key_) ) = 0)
+		return 0;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.eventbrite.com/event/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.eventbrite.com/event/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('https://www.eventbrite.com/xml/event_get?app_key=%s&user_key=%s&id=%s', app_key_, user_key_, entity_id);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/eventbrite2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'entity', entity_id));
 	xd := serialize_to_UTF8_xml (xt);
 	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
