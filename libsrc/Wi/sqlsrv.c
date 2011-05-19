@@ -83,7 +83,7 @@ int in_srv_global_init = 0;
 
 int it_n_maps = 256;
 int rdf_obj_ft_rules_size;
-int disable_listen_on_tcp_sock;
+extern int disable_listen_on_tcp_sock;
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
