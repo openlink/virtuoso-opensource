@@ -3907,6 +3907,7 @@ srv_global_init (char *mode)
 
   ddl_ensure_stat_tables ();
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, bootstrap_cli);
+  bootstrap_cli->cli_user = sec_id_to_user (U_ID_DBA);
   if (!in_crash_dump)
     sql_code_global_init ();
   /* and a third time to process grants over the sqls_define procs */
