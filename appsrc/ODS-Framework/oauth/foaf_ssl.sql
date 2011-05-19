@@ -181,6 +181,10 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       connection_set ('SPARQLUserId', VS_UID);
       return 1;
     }
+
+  if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK (agent))
+    goto authenticated;
+
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   graph := DB.DBA.vspx_uri_compose (hf);
@@ -241,6 +245,9 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
       goto err_ret;
     }
   ;
+
+  if (agent like 'ldap://%')
+   return DB.DBA.FOAF_SSL_LDAP_CHECK (agent);
 
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
@@ -364,5 +371,46 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
   exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
   return rc;
+}
+;
+
+create procedure DB.DBA.FOAF_SSL_LDAP_CHECK (in agent varchar := null)
+{
+  declare host, str, ss varchar;
+  declare arr, rc, cert, res any;
+  declare i int;
+  res := 0;
+  if (agent is null)
+    agent := FOAF_SSL_WEBID_GET ();
+  if (agent is null or agent not like 'ldap://%')
+    goto failed;
+  arr := sprintf_inverse (agent, 'ldap://%s/%s', 1);
+  if (length (arr) <> 2) 
+    goto failed;
+  host := arr[0];
+  if (strchr (host, ':') is null)
+    host := host || ':389';
+  host := 'ldap://' || host;
+  arr[1] := replace (arr[1], '%2C', ',');
+  str := split_and_decode (arr[1], 0, '%+,=');
+  ss := '(&';
+  for (i := 0; i < length (str); i := i + 2)
+    {
+      ss := ss || sprintf ('(%s=%s)', str[i], str[i+1]);
+    }
+  ss := ss || ')';
+  host := replace (host, 'openlinksw.com', 'usnet.private'); 
+  for select * from SYS_LDAP_SERVERS where LS_ADDRESS = host do
+    {
+      rc := ldap_search (host, LS_TRY_SSL, LS_BASE, ss, sprintf('%s=%s, %s', LS_UID_FLD, LS_ACCOUNT, LS_BIND_DN), LS_PASSWORD);
+      if (isvector (rc) and length (rc) > 1)
+        {	
+          cert := get_keyword ('userCertificate;binary', rc[1]);
+          if (isvector (cert) and length (cert) and get_certificate_info (6) = get_certificate_info (6, cert[0], 1))
+	    res := 1;
+        }
+    }
+failed:
+  return res;
 }
 ;
