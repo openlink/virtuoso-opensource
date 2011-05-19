@@ -1372,8 +1372,6 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   return DVC_MATCH;
 }
 
-int itc_sample_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf);
-
 int
 itc_sample_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 {
