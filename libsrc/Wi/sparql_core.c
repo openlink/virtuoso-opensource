@@ -1701,7 +1701,7 @@ spar_list_triple_vars_in_gp (sparp_t *sparp, SPART *tree, dk_set_t *all_varnames
           SPART **retvals = tree->_.gp.subquery->_.req_top.retvals;
           if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (retvals))
             {
-              DO_BOX_FAST_REV (SPART *, memb, ctr, tree->_.req_top.retvals)
+              DO_BOX_FAST_REV (SPART *, memb, ctr, retvals)
                 {
                   spar_list_triple_vars_in_gp (sparp, memb, all_varnames_ret);
                 }
