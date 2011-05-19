@@ -6304,7 +6304,7 @@ err_end:
 #define CSV_FIELD(set,ses) \
     do \
 	{ \
-	  dk_set_push (&set, csv_field (ses)); \
+	  dk_set_push (&set, csv_field (ses, mode)); \
 	  strses_flush (ses); \
 	  quoted = 0; \
 	  state = CSV_FIELD_NOT_STARTED; \
@@ -6331,10 +6331,14 @@ err_end:
 #define CSV_LAX		2
 
 static caddr_t
-csv_field (dk_session_t * ses)
+csv_field (dk_session_t * ses, int mode)
 {
   caddr_t regex, ret = NULL, str = strses_string (ses);
-  if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
+  if (mode == CSV_LAX && !strcmp (str, "NULL"))
+    {
+      ret = NEW_DB_NULL;
+    }
+  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
     {
       float d = 0;
       sscanf (str, "%f", &d);
