@@ -583,6 +583,31 @@ bif_ldap_search (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_set_t s = NULL;
   caddr_t * ret;
   caddr_t alloced_passwd = NULL;
+  int is_null;
+#if !defined (WIN32)
+  struct timeval tv;
+  long secs = 0;
+#endif
+  /* version */
+  if (BOX_ELEMENTS (args) > 6)
+    {
+      long ver;
+      ver = bif_long_or_null_arg (qst, args, 6, "ldap_search", &is_null);
+      if (!is_null && ver >= LDAP_VERSION_MIN && ver <= LDAP_VERSION_MAX)
+	version = ver;
+    }
+#if !defined (WIN32)
+  if (BOX_ELEMENTS (args) > 7)
+    {
+      secs = bif_long_or_null_arg (qst, args, 7, "ldap_search", &is_null);
+      if (secs > 0)
+	{
+	  tv.tv_sec = secs;
+	  tv.tv_usec = 0;
+	}
+    }
+#endif
+
 
 #ifdef WIN32
   if (!ldap_module)
@@ -608,6 +633,11 @@ bif_ldap_search (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("2E000", "LD006",
 	"Failed to set LDAP version option: %s (%d)", ldap_err2string (rc),
 	rc);
+
+#if !defined (WIN32)
+  if (secs > 0 && (rc = ldap_set_option (ld, LDAP_OPT_NETWORK_TIMEOUT, &tv)) != LDAP_OPT_SUCCESS)
+    sqlr_new_error ("2E000", "LD006", "Failed to set LDAP version option: %s (%d)", ldap_err2string (rc), rc);
+#endif
 
 #ifndef WIN32
   if (tls && (rc = ldap_start_tls_s (ld, NULL, NULL)) != LDAP_SUCCESS)
