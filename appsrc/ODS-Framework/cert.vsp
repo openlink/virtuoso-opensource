@@ -37,7 +37,7 @@
        webid := get_keyword ('webid', params, webid);
        if (length (webid))
          {  
-	   webid := 'URI:' || webid;
+	   webid := 'URI:' || replace (webid, ',', '%2C');
 	   exts := vector ('subjectAltName', webid, 'nsComment', 'Virtuoso Generated Certificate');
          }
        else

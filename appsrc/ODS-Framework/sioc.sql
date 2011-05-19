@@ -4984,6 +4984,11 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   set_user_id ('dba');
   info := get_certificate_info (9);
   agent := ODS.ODS_API.SSL_WEBID_GET (); 
+
+  if (agent is not null and agent like 'ldap://%')
+    {
+      return DB.DBA.FOAF_SSL_LDAP_CHECK (agent);
+    }
   if (agent is null)
     {
       agent := DB.DBA.FOAF_SSL_WEBFINGER ();
