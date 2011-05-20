@@ -141,7 +141,7 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
 }
 ;
 
-create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
+create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, in use_session int := 1)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
   declare agent varchar;
@@ -209,6 +209,7 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       if ('nobody' = uid and allow_nobody = 0)
 	goto err_ret;
       connection_set ('SPARQLUserId', uid);
+	      if (use_session)
       insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'FOAF+SSL', uid, now ());
       exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
       commit work;
@@ -399,9 +400,9 @@ create procedure DB.DBA.FOAF_SSL_LDAP_CHECK (in agent varchar := null)
       ss := ss || sprintf ('(%s=%s)', str[i], str[i+1]);
     }
   ss := ss || ')';
-  host := replace (host, 'openlinksw.com', 'usnet.private'); 
   for select * from SYS_LDAP_SERVERS where LS_ADDRESS = host do
     {
+      declare exit handler for sqlstate '*' { goto failed; };
       rc := ldap_search (host, LS_TRY_SSL, LS_BASE, ss, sprintf('%s=%s, %s', LS_UID_FLD, LS_ACCOUNT, LS_BIND_DN), LS_PASSWORD);
       if (isvector (rc) and length (rc) > 1)
         {	
