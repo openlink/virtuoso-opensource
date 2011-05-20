@@ -151,9 +151,17 @@
 			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PROXY" value="PROXY" render-only="1"/>
 		      </td>
                       <?vsp
+		        if (vad_check_version ('rdf_mappers') is not null)
+			  {
+		      ?>
+		      <td class="<?V self.astyle ('Sponger') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=Sponger" value="Sponger" render-only="1"/>
+		      </td>
+                      <?vsp
+		          }
                         declare i, fnd integer;
                         i := 0; fnd := 0;
-			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY') do
+			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY', 'Sponger') do
                         {
 			  if (self.acl_name not in ('HTTP','NEWS','PROXY') and HA_LIST = self.acl_name)
 			    fnd := 1;
@@ -166,7 +174,7 @@
                           i := i + 1;
                         }
 
-			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY'))
+			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY', 'Sponger'))
 			  {
 			  ?>
 			  <td class="<?V self.astyle (self.acl_name) ?>" align="center">
