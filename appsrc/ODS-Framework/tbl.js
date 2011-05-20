@@ -841,7 +841,7 @@ TBL.createCell50 = function (td, prefix, fldName, No, fldOptions) {
 TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  if (document.forms[0].elements['sid']) {
+
   td.appendChild(OAT.Dom.text(' '));
   var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
@@ -851,7 +851,12 @@ TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
     img.style.cssText = fldOptions.imgCssText;
 
   td.appendChild(img);
-  }
+
+  var ta = new TypeAhead(fld.id, 'webIDs', {checkMode: 1, userParams: TBL.typeheadProperty});
+  fld.setAttribute('autocomplete', 'off');
+  fld.form.onsubmit = CheckSubmit;
+  taVars[taVars.length] = ta;
+
   return fld;
 }
 
@@ -894,34 +899,6 @@ TBL.clickCell52 = function (fld)
     fldName = fldName.replace('fld_3', 'fld_4');
   }
   $(fldName).checked = false;
-}
-
-TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  td.appendChild(OAT.Dom.text(' '));
-  var img = OAT.Dom.image('/ods/images/select.gif');
-  img.id = fldName+'_img';
-  img.className = "pointer";
-  img.onclick = function (){TBL.webidShow(fld, {})};
-  if (fldOptions.imgCssText)
-    img.style.cssText = fldOptions.imgCssText;
-
-  td.appendChild(img);
-  return fld;
-}
-
-
-TBL.createCell54 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createCell53 (td, prefix, fldName, No, fldOptions);
-
-	var ta = new TypeAhead(fld.id, 'webIDs', {checkMode: 1});
-	fld.setAttribute('autocomplete', 'off');
-	fld.form.onsubmit = CheckSubmit;
-	taVars[taVars.length] = ta;
-
-  return fld;
 }
 
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
@@ -1094,12 +1071,23 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
   }
 }
 
-TBL.webidShow = function(obj, fldOptions)
+TBL.webidProperty = function(obj)
 {
   var S = 'p';
   if (obj.id.replace('fld_2', 'fld_1') != obj.id)
     S = $v(obj.id.replace('fld_2', 'fld_1'))[0];
 
+  return S;
+}
+
+TBL.typeheadProperty = function(obj)
+{
+  return '&depend=' + TBL.webidProperty(obj);
+}
+
+TBL.webidShow = function(obj, fldOptions)
+{
+  var S = TBL.webidProperty(obj);
   var frm = TBL.parent(obj, 'form');
   var F = '&form='+frm.name;
   var M = '&mode='+((fldOptions.formMode)? fldOptions.formMode: S);

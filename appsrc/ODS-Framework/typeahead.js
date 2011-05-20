@@ -82,7 +82,9 @@ function TypeAhead (id, key, optObj)
 							self.divScroll();
 							break;
 						case 38:	// arrow up
-							if(suggestedIndex > 1) suggestedIndex --;
+					if (suggestedIndex > 1)
+					  suggestedIndex --;
+
 							self.suggest();
 							self.divScroll();
 							break;
@@ -145,13 +147,12 @@ function TypeAhead (id, key, optObj)
 		  if(isWaitingForSuggestions) self.showSuggestionList();
 	  }
 		var S = self.typeAheadServiceURL + "&param="+encodeURIComponent(self.userText);
+		if (self.options.userParams)
+		  S += self.options.userParams(self.inputElement);
 
     var inputForm = self.inputElement.form;
     if (inputForm && inputForm.sid)
 		  S += "&realm=" + encodeURIComponent(inputForm.realm.value) + "&sid="+encodeURIComponent(inputForm.sid.value);
-
-		if (self.options.depend)
-		  S += "&depend="+encodeURIComponent(self.options.depend.value);
 
     OAT.AJAX.GET (S, false, x);
 		debug("request sent: " + S);

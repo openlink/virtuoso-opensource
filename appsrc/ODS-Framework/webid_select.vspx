@@ -141,12 +141,7 @@
                 }
                 if (self.v_filter <> 'g')
                 {
-                  if (DB.DBA.wa_check_app ('AddressBook', self.u_id))
-                  {
-                    user_sql := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1', self.u_id);
-                  } else {
-                    user_sql := 'select ''Person'' F1, '''' F2, '''' F3 from DB.DBA.SYS_USERS where 0 = 1';
-                  }
+                    user_sql := sprintf ('select x.F1, x.F2, x.F3 from DB.DBA.wa_webid_users(user_id) (F1 varchar, F2 varchar, F3 varchar) x where x.user_id = %d', self.u_id);;
                 }
                 if (user_sql = '')
                 {

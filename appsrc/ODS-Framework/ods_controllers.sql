@@ -1052,9 +1052,14 @@ create procedure ODS.ODS_API."lookup.list" (
       uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
       paramTest := '';
       if ("param" <> '')
-        paramTest := sprintf (' and a.P_IRI like ''%%%s%%''', "param");
+        paramTest := sprintf (' and lcase (x.F2) like ''%%%s%%''', lcase("param"));
 
-      sql := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1 %s', uid, paramTest);
+      if (depend = '' or depend = 'p')
+        sql := sprintf ('select x.F1, x.F2, x.F3 from DB.DBA.wa_webid_users(user_id) (F1 varchar, F2 varchar, F3 varchar) x where x.user_id = %d %s', uid, paramTest);
+
+      if (depend = 'g')
+        sql := sprintf ('select x.* from (select ''Group'' F1, SIOC..acl_group_iri (%d, WACL_NAME) F2, WACL_DESCRIPTION F3 from WA_GROUPS_ACL where WACL_USER_ID = %d) x where 1=1 %s', uid, uid, paramTest);
+
       set_user_id ('dba');
       st := '00000';
       exec (sql, st, msg, vector (), 0, meta, rows);

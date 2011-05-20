@@ -519,7 +519,7 @@
                       for (N := 0; N < length (self.fg_members); N := N + 1)
                       {
                         if (length (self.fg_members[N]))
-                          http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 54, className: "_validate_ _uri_", value: "%s"}});});});', self.fg_members[N]));
+                          http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 51, className: "_validate_ _uri_", value: "%s"}});});});', self.fg_members[N]));
                       }
                     ?>
             		    </script>
@@ -528,7 +528,7 @@
                 </table>
               </td>
               <td valign="top" nowrap="nowrap">
-                <span class="button pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 54, className: '_validate_ _uri_'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span>
+                <span class="button pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 51, className: '_validate_ _uri_'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span>
               </td>
             </tr>
           </table>

@@ -8031,3 +8031,32 @@ create procedure wa_show_column_header (
   return sprintf ('<th %s %s>%s%s</th>', columnProperties, onclick, columnLabel, image);
 }
 ;
+
+create procedure wa_webid_users (
+  in user_id integer)
+{
+  declare S, st, msg, meta, rows any;
+  declare c1, c2, c3 varchar;
+
+  result_names (c1, c2, c3);
+  for (select 'Person' F1, SIOC..person_iri (SIOC..user_iri (U_ID)) F2, '' F3
+         from DB.DBA.SYS_USERS
+        where U_IS_ROLE = 0 and U_DAV_ENABLE = 1 and U_ACCOUNT_DISABLED = 0) do
+  {
+    result (F1, F2, F3);
+  }
+  if (DB.DBA.wa_check_app ('AddressBook', user_id))
+  {
+    S := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1', user_id);
+    st := '00000';
+    exec (S, st, msg, vector(), 0, meta, rows);
+    if (st = '00000')
+    {
+      foreach (any row in rows) do
+      {
+        result (row[0], row[1], row[2]);
+      }
+    }
+  }
+}
+;
