@@ -51,8 +51,11 @@
 	  <?vsp
 	  if (length (self.err))
 	    {
-	      declare xt, xp any;
-	      xt := xtree_doc (self.err);
+	      declare xt, xp, err_text any;
+              err_text := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.err); 
+	      xt := xtree_doc (err_text);
+	      delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.err; 
+	      commit work;
 	      xp := xpath_eval ('/error', xt, 0); 
 	      if (length (xp))
 	        http_value ('Errors', 'div');
