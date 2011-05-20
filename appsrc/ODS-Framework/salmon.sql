@@ -210,6 +210,17 @@ create procedure sp_load_rsa_keys (in x any)
       if (n is not null)
 	vectorbld_acc (ret, n);
     }
+  if (is_https_ctx ())
+    {
+      declare k, kn any;
+      k := client_attr ('client_certificate');
+      if (k is not null)
+	{ 
+	  kn := xenc_rand_bytes (8, 1);
+	  xenc_key_create_cert (kn, k, 'X.509');
+	  vectorbld_acc (ret, kn);
+	}
+    } 
   vectorbld_final (ret);
   return ret;
 }

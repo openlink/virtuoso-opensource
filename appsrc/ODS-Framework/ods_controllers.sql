@@ -5050,11 +5050,38 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
 {
   declare foafIRI, alts any;
   declare V any;
+  declare certLogin, certLoginEnable any;
 
+  certLogin := 0;
+  certLoginEnable := 0;
   foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
   if (not isnull (foafIRI))
   {
     try_auth:
+    if (foafIRI like 'ldap://%')
+      {
+	declare i, arr, rc any;
+	V := vector ();
+	rc := DB.DBA.FOAF_SSL_LDAP_CHECK_INT (foafIRI, arr);
+	arr := arr[1];
+	for (i := 0; i < length (arr); i := i + 2)
+	   {
+	     if (arr[i] = 'mail')
+	       appendProperty (V, 'mbox', cast (arr[i+1][0] as varchar));
+	     else if (arr[i] = 'cn')
+	       appendProperty (V, 'name', cast (arr[i+1][0] as varchar));
+	   }
+	if (rc)
+	  {
+	    appendProperty (V, 'iri', foafIRI);
+	  }
+    	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
+  	  {
+  	    certLogin := 1;
+  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
+	  }
+      }
+    else
     V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
     return case when outputMode then params2json (V) else V end;
   }
@@ -5064,9 +5091,6 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
     agent := DB.DBA.FOAF_SSL_WEBFINGER ();
     if (agent is not null)
       {
-	declare certLogin, certLoginEnable any;
-	certLogin := 0;
-	certLoginEnable := 0;
 	V := vector ();
 	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
 	  {
