@@ -377,10 +377,18 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
 
 create procedure DB.DBA.FOAF_SSL_LDAP_CHECK (in agent varchar := null)
 {
+  declare dummy any;
+  return DB.DBA.FOAF_SSL_LDAP_CHECK_INT (agent, dummy);
+}
+;
+
+create procedure DB.DBA.FOAF_SSL_LDAP_CHECK_INT (in agent varchar := null, out data any)
+{
   declare host, str, ss varchar;
   declare arr, rc, cert, res any;
   declare i int;
   res := 0;
+  data := null;
   if (agent is null)
     agent := FOAF_SSL_WEBID_GET ();
   if (agent is null or agent not like 'ldap://%')
@@ -408,7 +416,10 @@ create procedure DB.DBA.FOAF_SSL_LDAP_CHECK (in agent varchar := null)
         {	
           cert := get_keyword ('userCertificate;binary', rc[1]);
           if (isvector (cert) and length (cert) and get_certificate_info (6) = get_certificate_info (6, cert[0], 1))
+	    {
 	    res := 1;
+	      data := rc;
+	    }
         }
     }
 failed:
