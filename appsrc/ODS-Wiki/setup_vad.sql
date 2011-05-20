@@ -34,8 +34,6 @@ create procedure WV.WIKI.USERROLE_DROP (in _role varchar)
   }
 };
 
--- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')');
--- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiUser\', 1)');
 WV.WIKI.SILENT_EXEC('drop trigger WV.Wiki.WIKI_USERS_U');

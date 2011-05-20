@@ -312,8 +312,6 @@ cont:
 	  goto major_exit_handler;
   	http_rewrite();
         WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
---        http_request_status ('HTTP/1.1 302 Found');
---        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
         return;
       };
 
@@ -401,8 +399,6 @@ content:
 	  goto major_exit_handler;
   	http_rewrite();
         WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
---        http_request_status ('HTTP/1.1 302 Found');
---        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
         return;
       };
 	WV.WIKI.VSPTOPICATTACH (path, lines, _topic,
@@ -493,7 +489,7 @@ content:
       return;
     };
     declare _filename varchar;
---    _topic.ti_text := _text;
+
     _filename := coalesce ((select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), concat (_topic.ti_local_name,'.txt'));
     WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id, 'Upstream is not allowed by owner of this cluster.');
     declare _lock_uid int;

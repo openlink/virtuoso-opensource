@@ -1276,8 +1276,8 @@ create function WV.WIKI.READONLYWIKIWORDLINK (
   _topic.ti_parse_raw_name ();
   if (_topic.ti_cluster_name = '')
     return '';
+
   return _topic.ti_cluster_name || '/' || _topic.ti_local_name;
---  return '?WikiCluster=' || _topic.ti_cluster_name || '&WikiWord=' || _topic.ti_local_name;
 }
 ;
 

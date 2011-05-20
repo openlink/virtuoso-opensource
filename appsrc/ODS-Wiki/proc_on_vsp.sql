@@ -75,12 +75,6 @@ create function WV.WIKI.VSPTOPICCREATE (
   _topic.ti_fill_cluster_by_name();
   WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id, 'Owner of this cluster does not allow you to create new topics');
 
---  _topic.ti_http_debug_print('VspTopicCreate: info about current topic');
---  if (0 = WS.WS.CHECK_READ_ACCESS (_uid, _topic.ti_res_id))
---    {
---      VspReportFailedReadAccess (path, params, lines, _topic.ti_cluster_name, _topic.ti_local_name, '');
---      return;
---    }
   declare _ext_params any;
   declare _template varchar;
   if (_topic.ti_local_name like 'Category%')
@@ -337,7 +331,6 @@ create function WV.WIKI.VSPTOPICEDIT (
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
        
---  _topic.ti_http_debug_print('VspTopicView: info about current topic');
   WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   _topic.ti_curuser_wikiname := coalesce ((select UserName from WV.WIKI.USERS where UserId=_uid), '?');
@@ -1014,20 +1007,10 @@ create procedure WV.WIKI.VSPHEADER (
     http ('<script type="text/javascript">\n');
     http ('  // OAT\n');
     http ('  var toolkitPath="/ods/oat";\n');
---    http ('  var featureList=["dialog"];\n');
     http ('</script>\n');
     http ('<script type="text/javascript" src="/ods/oat/loader.js"></script>\n');
     http ('<script type="text/javascript" src="js/wiki.js"></script>\n');
---    http ('<script type="text/javascript">\n');
---    http (' 	var showInfo;\n');
---    http (' 	function myInit ()\n');
---    http (' 	{\n');
---    http (' 	  showInfo = new OAT.Dialog("Secondary Skin", "infoDiv", {width:400, modal:1, buttons:0});\n');
---    http (' 	}\n');
---    http ('   OAT.MSG.attach(OAT,"OAT_LOAD",myInit);\n');
---    http ('</script>\n');
   }
-
   if (topic_or_title <> 'Settings')
     {
       http ('</head>');
