@@ -55,7 +55,6 @@ create procedure PHOTO.WA.rss_output(in current_instance photo_instance,inout pa
 
   http_value(XMLELEMENT('rss',
              XMLATTRIBUTES('2.0' 'version'),
---             XMLELEMENT("ttl",40),
              XMLELEMENT("channel",
                          XMLELEMENT("title",current_instance.name),
                          XMLELEMENT("link",sprintf('http://%s%s',_host,concat(current_instance.home_url,_current_folder))),

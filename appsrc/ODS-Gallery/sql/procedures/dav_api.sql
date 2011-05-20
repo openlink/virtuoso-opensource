@@ -367,7 +367,6 @@ create procedure PHOTO.WA.edit_album(
   in old_name varchar,
   in new_name varchar,
   in visibility integer,
---  in pub_date datetime,
   in start_date datetime,
   in end_date datetime,
   in description varchar,
@@ -401,14 +400,13 @@ create procedure PHOTO.WA.edit_album(
 
   if(col_id > 0){
     declare res any;
---    DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'pub_date',current_user.auth_uid,current_user.auth_pwd);
+
     DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'start_date',current_user.auth_uid,current_user.auth_pwd);
     DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'end_date',current_user.auth_uid,current_user.auth_pwd);
     DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'description',current_user.auth_uid,current_user.auth_pwd);
     DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'geolocation',current_user.auth_uid,current_user.auth_pwd);
     DB.DBA.DAV_PROP_REMOVE (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'obsolete',current_user.auth_uid,current_user.auth_pwd);
 
---    res := DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(pub_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     res := DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'start_date',cast(start_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     res := DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'end_date',cast(end_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     res := DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'description',description,current_user.auth_uid,current_user.auth_pwd);

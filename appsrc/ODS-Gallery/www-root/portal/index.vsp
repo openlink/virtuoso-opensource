@@ -185,10 +185,7 @@
   http(sprintf('<dc_instance_description>%V</dc_instance_description>', PHOTO.WA.xml2string (current_instance.description)), _xml);
   http(sprintf('<map>%d</map>',PHOTO.WA.gallery_show_map (current_instance.gallery_id)),_xml);
   http(sprintf('<is_discussion>%d</is_discussion>', PHOTO.WA.discussion_check ()),_xml);
-
---  if(PHOTO.WA.isDav()){
     http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oGallery', params, lines)),_xml);
---  }
   http(user_gallery,_xml);
   http(PHOTO.WA.get_lastest_users(current_user),_xml);
   http('</root>',_xml);
