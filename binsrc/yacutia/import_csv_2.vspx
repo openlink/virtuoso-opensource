@@ -212,8 +212,16 @@
 		    }
 		  else
 		    nrec := tmp;
-		     
-		  self.vc_redirect (sprintf ('import_csv_3.vspx?tb=%U&nrec=%d&err=%U', tb, nrec, err));
+		  declare msg_path any;
+		  msg_path := sprintf ('/DAV/temp/%s.xml', xenc_rand_bytes (10, 1));    
+		  if (length (err))
+		    {
+		      YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
+		      DB.DBA.YACUTIA_DAV_RES_UPLOAD (msg_path, err, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+		    }   
+		  else
+                    msg_path := '';
+		  self.vc_redirect (sprintf ('import_csv_3.vspx?tb=%U&nrec=%d&err=%U', tb, nrec, msg_path));
                   ]]>
                 </v:on-post>
               </v:button>
