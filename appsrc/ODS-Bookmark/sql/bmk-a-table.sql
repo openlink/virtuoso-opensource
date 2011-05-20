@@ -237,7 +237,7 @@ create procedure BMK.WA.tags_update (
 
 -------------------------------------------------------------------------------
 --
--- Conatins domain bookmarks
+-- Contains domain bookmarks
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('

@@ -43,6 +43,7 @@
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/common.css" type="text/css" />
+    <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
     <meta name="dc.description" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -72,6 +73,7 @@
       </script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
+      <script type="text/javascript" src="/ods/typeahead.js"></script>
       <script type="text/javascript" src="/ods/validate.js"></script>
       <script type="text/javascript" src="js/bookmark.js"></script>
       <script type="text/javascript">

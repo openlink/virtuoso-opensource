@@ -21,7 +21,7 @@
 --
 ------------------------------------------------------------------------------
 -- bmk-d.sql
--- script for cleaning wa instalation.
+-- script for cleaning wa installation.
 -- Copyright (C) 2004 OpenLink Software
 ------------------------------------------------------------------------------
 

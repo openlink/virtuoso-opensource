@@ -293,7 +293,7 @@ create procedure briefcase_sioc_insert (
 }
 ;
 
--- SIOC data for 'application/foaf+xml' and SocialNetwork application
+-- SIOC data for 'application/foaf+xml' and AddressBook application
 --
 create procedure briefcase_sioc_insert_ex (
   in r_full_path varchar,
