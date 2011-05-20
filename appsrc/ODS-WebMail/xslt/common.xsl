@@ -238,6 +238,7 @@
   <xsl:template name="css">
     <link type="text/css" rel="stylesheet" href="/oMail/i/css/styles.css" />
     <link type="text/css" rel="stylesheet" href="/oMail/i/css/print.css" media="print" />
+    <link type="text/css" rel="stylesheet" href="typeahead.css" />
     <link type="text/css" rel="stylesheet" href="/ods/oat/styles/webdav.css" />
   </xsl:template>
 
@@ -269,6 +270,7 @@
     <script type="text/javascript" src="/oMail/i/js/script.js"></script>
     <script type="text/javascript" src="/ods/tbl.js"></script>
     <script type="text/javascript" src="/oMail/i/js/tbl.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
       function myInit() {

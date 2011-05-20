@@ -303,7 +303,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins directory structure
+-- Contains directory structure
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('

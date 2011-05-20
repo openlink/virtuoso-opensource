@@ -2955,8 +2955,6 @@ create procedure BMK.WA.export_rss_sqlx_int(
 }
 ;
 
---  http('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', BMK.WA.dt_iso8601 (EFI_PUBLISH_DATE)), \n', retValue);
-
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.export_rss_sqlx(
