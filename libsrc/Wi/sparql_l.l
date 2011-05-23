@@ -410,6 +410,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{B}{Y}				{ return BY_L		; }
 <SPARQL>{C}{L}{A}{S}{S}			{ return CLASS_L	; }
 <SPARQL>{C}{L}{E}{A}{R}			{ return CLEAR_L	; }
+<SPARQL>{C}{O}{A}{L}{E}{S}{C}{E}	{ return COALESCE_L	; }
 <SPARQL>{C}{O}{N}{S}{T}{R}{U}{C}{T}	{ return CONSTRUCT_L	; }
 <SPARQL>{C}{O}{U}{N}{T}			{ BEGIN SPARQL_AFTER_COUNT; }
 <SPARQL>{C}{R}{E}{A}{T}{E}		{ return CREATE_L	; }
@@ -432,6 +433,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L	; }
 <SPARQL>{G}{R}{O}{U}{P}			{ return GROUP_L	; }
 <SPARQL>{H}{A}{V}{I}{N}{G}		{ return HAVING_L	; }
+<SPARQL>{I}{F}				{ return IF_L		; }
 <SPARQL>{I}{F}{P}			{ return IFP_L		; }
 <SPARQL>{I}{N}				{ return IN_L		; }
 <SPARQL>{I}{N}{D}{E}{X}			{ return INDEX_L	; }

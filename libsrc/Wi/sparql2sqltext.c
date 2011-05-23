@@ -1667,6 +1667,23 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L: case BOUND_L:
 	case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: return SSG_VALMODE_BOOL;
         case IRI_L: case DATATYPE_L: return SSG_VALMODE_LONG;
+        case COALESCE_L:
+          {
+            ssg_valmode_t union_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[0]);
+            int argctr;
+            for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
+              {
+                ssg_valmode_t arg_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[argctr]);
+                union_valmode = ssg_smallest_union_valmode (union_valmode, arg_valmode);
+              }
+            return union_valmode;
+          }
+        case IF_L:
+          {
+            ssg_valmode_t t_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[1]);
+            ssg_valmode_t f_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[2]);
+            return ssg_smallest_union_valmode (t_branch_valmode, f_branch_valmode);
+          }
         default: return SSG_VALMODE_SQLVAL;
         }
     case SPAR_FUNCALL:
@@ -1938,6 +1955,24 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           return SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
         case IRI_L: return SPART_VARR_IS_REF ;
         case DATATYPE_L: return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
+        case COALESCE_L:
+          {
+            ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+            int argctr;
+            for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
+              {
+                ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
+                if (!(arg_bits & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT)))
+                  union_bits &= arg_bits;
+              }
+            return union_bits & ~SPART_VARR_NOT_NULL;
+          }
+        case IF_L:
+          {
+            ptrlong t_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[1]);
+            ptrlong f_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[2]);
+            return t_bits & f_bits;
+          }
         default: return 0;
         }
     case SPAR_FUNCALL:
@@ -3395,6 +3430,33 @@ expanded_sameterm_ready:
           ssg_puts (" as varchar) like cast ("); ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
           ssg_puts (" as varchar))");
         }
+      return;
+    case COALESCE_L:
+      {
+        ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        if (union_valmode != needed)
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, NULL_ASNAME);
+        else
+          {
+            int argctr, argcount = BOX_ELEMENTS (tree->_.builtin.args);
+            ssg_puts (" coalesce ("); ssg->ssg_indent++;
+            for (argctr = 0; argctr < argcount; argctr++)
+              {
+                if (argctr) ssg_putchar (',');
+                ssg_print_scalar_expn (ssg, tree->_.builtin.args[argctr], union_valmode, NULL_ASNAME);
+              }
+            ssg_putchar (')'); ssg->ssg_indent--;
+          }
+        return;
+      }
+    case IF_L:
+      ssg_puts (" case ("); ssg->ssg_indent++;
+      ssg_print_valmoded_scalar_expn (ssg, arg1, SSG_VALMODE_BOOL, arg1_native, NULL_ASNAME);
+      ssg_puts (") when 0 then (");
+      ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], needed, NULL_ASNAME);
+      ssg_puts (") else (");
+      ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], needed, NULL_ASNAME);
+      ssg_puts (") end"); ssg->ssg_indent--;
       return;
     case IN_L:
       if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))

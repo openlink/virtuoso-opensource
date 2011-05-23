@@ -172,6 +172,7 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case ASC_L: return "ASC";
     case ASK_L: return "ASK";
     case BOUND_L: return "BOUND";
+    case COALESCE_L: return "COALESCE";
     case CONSTRUCT_L: return "CONSTRUCT";
     /*case CREATE_L: return "quad mapping name";*/
     case DATATYPE_L: return "DATATYPE";
@@ -182,8 +183,9 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
     /* case GRAPH_L: return "GRAPH"; */
-    case IRI_L: return "IRI";
+    case IF_L: return "IF";
     case IN_L: return "IN";
+    case IRI_L: return "IRI";
     case isBLANK_L: return "isBLANK";
     case isIRI_L: return "isIRI";
     case isLITERAL_L: return "isLITERAL";

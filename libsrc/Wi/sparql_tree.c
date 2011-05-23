@@ -3685,6 +3685,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case ASC_L: return "ascending order";
     case ASK_L: return "ASK result-mode";
     case BOUND_L: return "BOUND builtin";
+    case COALESCE_L: return "COALESCE builtin";
     case CONSTRUCT_L: return "CONSTRUCT result-mode";
     case CREATE_L: return "quad mapping name";
     case DATATYPE_L: return "DATATYPE builtin";
@@ -3695,8 +3696,9 @@ spart_dump_opname (ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
     case GRAPH_L: return "GRAPH gp";
-    case IRI_L: return "IRI builtin";
+    case IF_L: return "IF conditional builtin";
     case IN_L: return "IN";
+    case IRI_L: return "IRI builtin";
     case isBLANK_L: return "isBLANK builtin";
     case isIRI_L: return "isIRI builtin";
     case isLITERAL_L: return "isLITERAL builtin";
