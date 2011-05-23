@@ -37,6 +37,7 @@
 <!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
+<!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
 <!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
 ]>
@@ -51,6 +52,7 @@
     xmlns:mo="&mo;"
     xmlns:c="&c;"
 	xmlns:vcard="&vcard;"
+    xmlns:exif="&exif;"
     xmlns:og="&og;"
     xmlns:oplog="&oplog;"
     xmlns:owl="&owl;"	
