@@ -410,7 +410,7 @@
 	</xsl:template>
 
     <xsl:template name="artist">
-		<mo:MusicArtist rdf:about="{vi:proxyIRI(url)}">
+		<mo:MusicArtist rdf:about="{$resourceURL}">
 			<foaf:name>
 				<xsl:value-of select="name"/>
 			</foaf:name>

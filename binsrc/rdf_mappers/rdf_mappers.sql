@@ -4564,7 +4564,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM2 (in url varchar, in new_origin_uri varc
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/lastfm2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
-	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	--RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 	return 1;
@@ -4616,10 +4616,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 		id0 := tmp[0];
 	else
 		return 0;
-	--gr_iri := iri_to_id (coalesce (dest, graph_iri));
-	--##DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1, 0);
 	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
-	--RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	if (id0 = 'music')
 	{
 		if (id1 is not null and id1 <> '')
@@ -4628,6 +4625,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 			{
 				if (id3 is not null and id3 <> '')
 				{
+					RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+					
 					url := sprintf('http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&artist=%s&track=%s', api_key, id1, id3);
 					DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, opts);
 					url := sprintf('http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=%s&track=%s&api_key=%s', id1, id3, api_key);
@@ -4637,6 +4636,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 				{
 					if (strchr(id2, '+') = 0)  -- todo: perhaps it needs some processing?
 					{
+						RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+						
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
 						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, opts);
 
@@ -4651,6 +4652,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 					}
 					else if (id1 = '+noredirect')
 					{
+						RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+						
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id2, api_key);
 						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
 
@@ -4665,6 +4668,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 					}
 					else
 					{
+						RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+						
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=%s&artist=%s&album=%s', api_key, id1, id2);
 						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
 					}
@@ -4672,9 +4677,10 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 			}
 			else
 			{
+				RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+				
 				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
 				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
-
 				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
 				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
 
@@ -4692,6 +4698,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 	{
 		if (id1 is not null and id1 <> '')
 		{
+			RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+			
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
 
@@ -4714,6 +4722,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 			pos := strchr(id1, '+');
 			if (pos > 0)
 				id1 := left(id1, pos);
+			RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+			
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=event.getinfo&event=%s&api_key=%s', id1, api_key);
 			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
 		}
@@ -4724,6 +4734,8 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 	{
 		if (id1 is not null and id1 <> '' and (id2 = '' or id2 is null))
 		{
+			RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+			
 			url := sprintf('http://ws.audioscrobbler.com/1.0/user/%s/profile.xml', id1);
 			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri,  opts);
 
