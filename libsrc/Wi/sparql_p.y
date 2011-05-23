@@ -149,6 +149,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token CLASS_L		/*:: PUNCT_SPAR_LAST("CLASS") ::*/
 %token CLEAR_L		/*:: PUNCT_SPAR_LAST("CLEAR") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
+%token COALESCE_L	/*:: PUNCT_SPAR_LAST("COALESCE") ::*/
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
@@ -172,6 +173,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
 %token HAVING_L		/*:: PUNCT_SPAR_LAST("HAVING") ::*/
 %token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
+%token IF_L		/*:: PUNCT_SPAR_LAST("IF") ::*/
 %token IFP_L		/*:: PUNCT_SPAR_LAST("IFP") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
@@ -429,18 +431,14 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_qm_stmts
 %type <nothing> spar_qm_stmt
 %type <tree> spar_qm_simple_stmt
-%type <tree> spar_qm_create_iri_class
-%type <tree> spar_qm_drop_iri_class
+%type <tree> spar_qm_create_iol_class
+%type <tree> spar_qm_drop_iol_class
 %type <tree> spar_qm_create_iri_subclass
-%type <tree> spar_qm_create_literal_class
-%type <tree> spar_qm_drop_literal_class
-%type <trees> spar_qm_iri_class_optionlist_opt
-%type <backstack> spar_qm_iri_class_option_commalist
-%type <trees> spar_qm_iri_class_option
+%type <trees> spar_qm_iol_class_optionlist_opt
+%type <backstack> spar_qm_iol_class_option_commalist
+%type <trees> spar_qm_iol_class_option
 %type <backstack> spar_qm_sprintff_list
-%type <trees> spar_qm_literal_class_optionlist_opt
-%type <backstack> spar_qm_literal_class_option_commalist
-%type <boxes> spar_qm_literal_class_option
+%type <token_type> spar_iol
 %type <nothing> spar_qm_create_quad_storage
 %type <nothing> spar_qm_alter_quad_storage
 %type <tree> spar_qm_drop_quad_storage
@@ -1560,6 +1558,12 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "isREF (built-in call)"); }
 	    _LPAR spar_expn _RPAR
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isREF_L, t_list (1, $4)); }
+	| IF_L _LPAR spar_expn _COMMA spar_expn _COMMA spar_expn _RPAR	/*... | ( 'IF' '(' Expn ',' Expn ',' Expn ')' ) */
+		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "IF (built-in call)");
+		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IF_L, t_list (3, $3, $5, $7)); }
+	| COALESCE_L _LPAR spar_expns _RPAR	/*... | ( 'COALESCE' '(' Expn ( ',' Expn )* ')' ) */
+		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "COALESCE (built-in call)");
+		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)COALESCE_L, t_revlist_to_array ($3)); }
 	;
 
 spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn )? ')'	*/
@@ -1815,64 +1819,45 @@ spar_qm_stmt		/* [Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterSt
 	;
 
 spar_qm_simple_stmt	/* [Virt]	QmSimpleStmt	 ::=  */
-			/*... QmCreateIRIClass | QmCreateLiteralClass | QmDropIRIClass | QmDropLiteralClass	*/
+			/*... QmCreateIRIorLiteralClass | QmDropIRIorLiteralClass	*/
 			/*... | QmCreateIRISubclass | QmDropQuadStorage | QmDropQuadMap */
-	: spar_qm_create_iri_class
-	| spar_qm_create_literal_class
-	| spar_qm_drop_iri_class
-	| spar_qm_drop_literal_class
+	: spar_qm_create_iol_class
+	| spar_qm_drop_iol_class
 	| spar_qm_create_iri_subclass
 	| spar_qm_drop_quad_storage
 	| spar_qm_drop_quad_map_mapping
 	;
 
-spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS' QmIRIrefConst	*/
-			/*... ( ( String QmSqlfuncArglist )	*/
-			/*...| ( 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader ) )	*/
-	: CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn SPARQL_STRING spar_qm_sqlfunc_arglist spar_qm_iri_class_optionlist_opt {
+spar_qm_create_iol_class	/* [Virt]	QmCreateIRIorLiteralClass	 ::=  'CREATE' ( 'IRI' | 'LITERAL' ) 'CLASS' QmIRIrefConst	*/
+			/*... ( ( String QmSqlfuncArglist ) | ( 'USING' QmSqlfuncHeader ( ',' QmSqlfuncHeader )* ) )	*/
+			/*... QmIRIorLiteralClassOptions?	*/
+	: CREATE_L spar_iol CLASS_L spar_qm_iriref_const_expn SPARQL_STRING spar_qm_sqlfunc_arglist spar_qm_iol_class_optionlist_opt {
 		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
-		  spar_error (sparp_arg, "The identifier of IRI class %.100s is already used in the previous part of the statement", $4);
-		t_set_push (&(sparp_arg->sparp_created_jsos), "IRI class");
+		  spar_error (sparp_arg, "The identifier of %s class %.100s is already used in the previous part of the statement",
+		    ((IRI_L == $2) ? "IRI" : "literal"), $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), ((IRI_L == $2) ? "IRI class" : "literal class"));
 		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
-		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT",
+		$$ = spar_make_qm_sql (sparp_arg,
+		  ((IRI_L == $2) ? "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT" : "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT"),
 		  (SPART **)t_list (3, $4, $5, $6), $7 );
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
-	| CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_iri_class_optionlist_opt {
+	| CREATE_L spar_iol CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_iol_class_optionlist_opt {
 		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
-		  spar_error (sparp_arg, "The identifier of IRI class %.100s is already used in the previous part of the statement", $4);
-		t_set_push (&(sparp_arg->sparp_created_jsos), "IRI class");
+		  spar_error (sparp_arg, "The identifier of %s class %.100s is already used in the previous part of the statement",
+		    ((IRI_L == $2) ? "IRI" : "literal"), $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), ((IRI_L == $2) ? "IRI class" : "literal class"));
 		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
-		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS",
+		$$ = spar_make_qm_sql (sparp_arg,
+		  ((IRI_L == $2) ? "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS" : "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS"),
 		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 );
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	;
 
-spar_qm_create_literal_class	/* [Virt]	QmCreateLiteralClass	 ::=  'CREATE' 'LITERAL' 'CLASS' QmIRIrefConst	*/
-			/*... 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader QmLiteralClassOptions?	*/
-	: CREATE_L LITERAL_L CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_literal_class_optionlist_opt {
-		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
-		  spar_error (sparp_arg, "The identifier of literal class %.100s is already used in the previous part of the statement", $4);
-		t_set_push (&(sparp_arg->sparp_created_jsos), "literal class");
-		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
-		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS",
-		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 );
-                sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
-	;
-
-spar_qm_drop_iri_class		/* [Virt]	QmDropIRIClass	 ::=  'DROP' 'SILENT'? 'IRI' 'CLASS' QmIRIrefConst	*/
-	: DROP_L spar_silent_opt IRI_L CLASS_L spar_qm_iriref_const_expn {
+spar_qm_drop_iol_class		/* [Virt]	QmDropIRIorLiteralClass	 ::=  'DROP' 'SILENT'? ( 'IRI' | 'LITERAL' ) 'CLASS' QmIRIrefConst	*/
+	: DROP_L spar_silent_opt spar_iol CLASS_L spar_qm_iriref_const_expn {
 		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $5, NULL))
-		  spar_error (sparp_arg, "The identifier of IRI class %.100s is already used in the previous part of the statement", $5);
-		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_CLASS",
-		  (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL );
-                sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadMapFormat , $5);
-                sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
-	;
-
-spar_qm_drop_literal_class		/* [Virt]	QmDropLiteralClass	 ::=  'DROP' 'SILENT'? 'LITERAL' 'CLASS' QmIRIrefConst	*/
-	: DROP_L spar_silent_opt LITERAL_L CLASS_L spar_qm_iriref_const_expn {
-		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $5, NULL))
-		  spar_error (sparp_arg, "The identifier of literal class %.100s is already used in the previous part of the statement", $5);
+		  spar_error (sparp_arg, "The identifier of %s class %.100s is already used in the previous part of the statement",
+		    ((IRI_L == $3) ? "IRI" : "literal"), $5);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_CLASS",
 		  (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL );
                 sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadMapFormat , $5);
@@ -1890,56 +1875,24 @@ spar_qm_create_iri_subclass	/* [Virt]	QmCreateIRISubclass	 ::=  'IRI' 'CLASS' Qm
 		sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	;
 
-spar_qm_iri_class_optionlist_opt	/* [Virt]	QmIRIClassOptions	 ::=  'OPTION' '(' QmIRIClassOption (',' QmIRIClassOption)* ')'	*/
+spar_qm_iol_class_optionlist_opt	/* [Virt]	QmIRIorLiteralClassOptions	 ::=  'OPTION' '(' QmIRIorLiteralClassOption (',' QmIRIorLiteralClassOption)* ')'	*/
         : /* empty */		{ $$ = (SPART **)t_list (0); }
 	| OPTION_L _LPAR _RPAR	{ $$ = (SPART **)t_list (0); }
-	| OPTION_L _LPAR spar_qm_iri_class_option_commalist _RPAR	{ $$ = (SPART **)t_revlist_to_array ($3); }
+	| OPTION_L _LPAR spar_qm_iol_class_option_commalist _RPAR	{ $$ = (SPART **)t_revlist_to_array ($3); }
 	;
 
-spar_qm_iri_class_option_commalist
-	: spar_qm_iri_class_option	{
+spar_qm_iol_class_option_commalist
+	: spar_qm_iol_class_option	{
 		$$ = NULL;
 		t_set_push (&($$), $1[0]);
 		t_set_push (&($$), $1[1]); }
-	| spar_qm_iri_class_option_commalist _COMMA spar_qm_iri_class_option	{
+	| spar_qm_iol_class_option_commalist _COMMA spar_qm_iol_class_option	{
 		$$ = $1;
 		t_set_push (&($$), $3[0]);
 		t_set_push (&($$), $3[1]); }
 	;
 
-spar_qm_iri_class_option	/* [Virt]	QmIRIClassOption	 ::=  */
-	: BIJECTION_L		{			/*... 'BIJECTION'	*/
-		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("BIJECTION"), (ptrlong)1); }
-	| DEREF_L		{			/*... | 'DEREF'	*/
-		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("DEREF"), (ptrlong)1); }
-	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
-		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("RETURNS"),
-		    spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($2)) ); }
-	;
-
-spar_qm_sprintff_list
-	: SPARQL_STRING	{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_qm_sprintff_list UNION_L SPARQL_STRING	{ $$ = $1; t_set_push (&($$), $3); }
-	;
-
-spar_qm_literal_class_optionlist_opt	/* [Virt]	QmLiteralClassOptions	 ::=  'OPTION' '(' QmLiteralClassOption (',' QmLiteralClassOption)* ')'	*/
-        : /* empty */		{ $$ = (SPART **)t_list (0); }
-	| OPTION_L _LPAR _RPAR	{ $$ = (SPART **)t_list (0); }
-	| OPTION_L _LPAR spar_qm_literal_class_option_commalist _RPAR	{ $$ = (SPART **)t_revlist_to_array ($3); }
-	;
-
-spar_qm_literal_class_option_commalist
-	: spar_qm_literal_class_option	{
-		$$ = NULL;
-		t_set_push (&($$), $1[0]);
-		t_set_push (&($$), $1[1]); }
-	| spar_qm_literal_class_option_commalist _COMMA spar_qm_literal_class_option	{
-		$$ = $1;
-		t_set_push (&($$), $3[0]);
-		t_set_push (&($$), $3[1]); }
-	;
-
-spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
+spar_qm_iol_class_option	/* [Virt]	QmIRIorLiteralClassOption	 ::=  */
 	: DATATYPE_L spar_qm_iriref_const_expn	{	/*... ( 'DATATYPE' QmIRIrefConst )	*/
 		$$ = t_list (2, t_box_dv_uname_string ("DATATYPE"), t_box_dv_uname_string ($2)); }
 	| LANG_L SPARQL_STRING	{			/*... | ( 'LANG' STRING )	*/
@@ -1953,6 +1906,11 @@ spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
 	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
 		$$ = t_list (2, t_box_dv_uname_string ("RETURNS"),
 		    spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($2)) ); }
+	;
+
+spar_qm_sprintff_list
+	: SPARQL_STRING	{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_qm_sprintff_list UNION_L SPARQL_STRING	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
 spar_qm_create_quad_storage	/* [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STORAGE' QmIRIrefConst QmSourceDecl* QmMapTopGroup	*/
@@ -1979,6 +1937,11 @@ spar_qm_create_quad_storage	/* [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STO
 		spar_qm_pop_bookmark (sparp_arg);
 		sparp_env()->spare_storage_name = NULL; }
         ;
+
+spar_iol
+	: IRI_L		{ $$ = IRI_L; }
+	| LITERAL_L	{ $$ = LITERAL_L; }
+	;
 
 spar_qm_alter_quad_storage	/* [Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAGE' QmIRIrefConst QmSourceDecl* QmMapTopGroup	*/
 	: ALTER_L QUAD_L STORAGE_L spar_qm_iriref_const_expn {

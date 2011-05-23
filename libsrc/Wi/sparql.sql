@@ -2491,7 +2491,7 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
     }
   if (1 <> sys_stat ('cl_run_local_only'))
     {
-      DB.DBA.TTLP_CL (strg, base, graph, flags);
+      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
   if (126 = __tag (strg))
@@ -8709,6 +8709,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   declare needs_arg_dtps integer;
   declare arg_dtps varchar;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (get_keyword_ucase ('DATATYPE', options) is not null or get_keyword_ucase ('LANG', options) is not null)
+    signal ('22023', 'IRI class <' || classiri || '> can not have DATATYPE or LANG options specified');
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
   sffs := get_keyword_ucase ('RETURNS', options);
@@ -8919,6 +8921,8 @@ fheaders is, say,
   declare res any;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   superformatsid := classiri || '--SuperFormats';
+  if (get_keyword_ucase ('DATATYPE', options) is not null or get_keyword_ucase ('LANG', options) is not null)
+    signal ('22023', 'IRI class <' || classiri || '> can not have DATATYPE or LANG options specified');
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
   sffs := get_keyword_ucase ('RETURNS', options);
@@ -9055,6 +9059,209 @@ fheaders is, say,
         }
     }
   return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ') using ' || uriprintname)));
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any, in options any, in origclassiri varchar := null) returns any
+{
+  declare graphiri varchar;
+  declare sprintffsid, superformatsid varchar;
+  declare basetype, basetypeiri varchar;
+  declare const_dt, dt_expn, const_lang varchar;
+  declare bij, deref integer;
+  declare sffs, res any;
+  declare argctr, arglist_len, isnotnull, sff_ctr, sff_count, bij_sff_count integer;
+  declare needs_arg_dtps integer;
+  declare arg_dtps varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  const_dt := get_keyword_ucase ('DATATYPE', options);
+  const_lang := get_keyword_ucase ('LANG', options);
+  bij := get_keyword_ucase ('BIJECTION', options, 0);
+  deref := get_keyword_ucase ('DEREF', options, 0);
+  sffs := get_keyword_ucase ('RETURNS', options);
+  if (sffs is null)
+    sffs := vector (iritmpl); -- note that this is before macroexpand
+  sff_count := length (sffs);
+  iritmpl := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (iritmpl);
+  sprintffsid := classiri || '--Sprintffs';
+  superformatsid := classiri || '--SuperFormats';
+  res := vector ();
+  foreach (any arg in arglist) do
+    if (UNAME'in' <> arg[0])
+      signal ('22023', 'Only "in" parameters are now supported in argument lists of class formats, "' || arg[0] || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
+  arglist_len := length (arglist);
+  isnotnull := 1;
+  needs_arg_dtps := 0;
+  arg_dtps := '';
+  if (arglist_len <> 1)
+    {
+      declare type_name varchar;
+      declare dtp integer;
+      if (arglist_len = 0)
+        basetype := 'zeropart-literal';
+      else
+        basetype := 'multipart-literal';
+      for (argctr := 0; (argctr < arglist_len) and isnotnull; argctr := argctr + 1)
+        {
+          if (not (coalesce (arglist[argctr][3], 0)))
+            isnotnull := 0;
+          type_name := lower (arglist[argctr][2]);
+          dtp := case (type_name)
+            when 'integer' then __tag of integer
+            when 'varchar' then __tag of varchar
+            when 'date' then __tag of date
+            when 'datetime' then __tag of datetime
+            when 'doubleprecision' then __tag of double precision
+            when 'numeric' then __tag of numeric
+            when 'nvarchar' then __tag of nvarchar
+            else 255 end;
+          if (type_name = 'nvarchar')
+            needs_arg_dtps := 1;
+          arg_dtps := arg_dtps || chr (bit_and (127, dtp));
+        }
+    }
+  else /* arglist is 1 item long */
+    {
+      basetype := lower (arglist[0][2]);
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric', 'nvarchar')))
+        signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE LITERAL CLASS <' || classiri || '>' );
+      basetype := 'sql-' || basetype || '-literal';
+      if (not (coalesce (arglist[0][3], 0)))
+        isnotnull := 0;
+      if (basetype = 'nvarchar')
+        {
+          needs_arg_dtps := 1;
+          arg_dtps := chr (bit_and (127, __tag of nvarchar));
+        }
+    }
+  if (not isnotnull)
+    basetype := basetype || '-nullable';
+  basetypeiri := 'http://www.openlinksw.com/virtrdf-data-formats#' || basetype;
+  if (const_dt is not null)
+    dt_expn := ' ' || WS.WS.STR_SQL_APOS (const_dt);
+  else
+    dt_expn := NULL;
+  if (origclassiri is null)
+    {
+      if (isnotnull and (arglist_len > 0))
+        {
+          declare arglist_copy any;
+          if (classiri like '%-nullable')
+            signal ('22023', 'The name of non-nullable literal class in CREATE LITERAL CLASS <' || classiri || '> is misleading' );
+          arglist_copy := arglist;
+          for (argctr := 0; (argctr < arglist_len); argctr := argctr + 1)
+            arglist_copy[argctr][3] := 0;
+          res := vector_concat (res,
+            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (classiri || '-nullable', iritmpl, arglist_copy, options, NULL) );
+        }
+      origclassiri := classiri;
+    }
+  if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
+    {
+      declare side_s IRI_ID;
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      if (side_s is not null)
+        {
+          declare tmpname varchar;
+          declare old_descr, new_descr any;
+          tmpname := uuid();
+          { declare exit handler for sqlstate '*' {
+              signal ('22023', 'Can not change literal class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>; moreover, the new declaration may be invalid.'); };
+            DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (tmpname, iritmpl, arglist, options, classiri);
+          }
+          old_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(classiri);
+          new_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(tmpname);
+          if (md5 (serialize (old_descr)) = md5 (serialize (new_descr)))
+            {
+              sparql define input:storage ""
+              delete from graph <http://www.openlinksw.com/schemas/virtrdf#>  { `iri(?:tmpname)` ?p ?o }
+              where { `iri(?:tmpname)` ?p ?o };
+              return vector (vector ('00000', 'Previous definition of literal class <' || classiri || '> is identical to the new one, not touched'));
+            }
+          signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
+        }
+      res := vector_concat (res, vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped')));
+    }
+  else
+    res := vector ();
+  if (bij)
+    {
+      if (__sprintff_is_proven_unparseable (iritmpl))
+        signal ('22023', 'Literal class <' || classiri || '> has OPTION (BIJECTION) but its format string can not be unambiguously parsed by sprintf_inverse()');
+    }
+  else
+    {
+      if (__sprintff_is_proven_bijection (iritmpl))
+        bij := 1;
+    }
+  bij_sff_count := 0;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:sprintffsid)) };
+  for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
+    {
+      declare sff varchar;
+      sff := sffs [sff_ctr];
+      sff := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (sff);
+      if ((not bij) and __sprintff_is_proven_bijection (sff))
+        bij_sff_count := bij_sff_count + 1;
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
+          `iri(?:sprintffsid)`
+            `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff };
+    }
+  if ((not bij) and (bij_sff_count = sff_count) and (bij_sff_count > 0))
+    bij := 1;
+  if (not needs_arg_dtps)
+    arg_dtps := NULL;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:classiri)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:superformatsid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
+    {
+      `iri(?:classiri)`
+        rdf:type virtrdf:QuadMapFormat ;
+        virtrdf:inheritFrom `iri(?:basetypeiri)`;
+        virtrdf:noInherit virtrdf:qmfName ;
+        virtrdf:noInherit virtrdf:qmfCustomString1 ;
+        virtrdf:qmfName `bif:concat (?:basetype, '-user-', ?:origclassiri)` ;
+        virtrdf:qmfCustomString1 ?:iritmpl ;
+        virtrdf:qmfDatatypeOfShortTmpl ?:dt_expn ;
+        virtrdf:qmfColumnCount ?:arglist_len ;
+        virtrdf:qmfSuperFormats `iri(?:superformatsid)` ;
+        virtrdf:qmfIsBijection ?:bij ;
+        virtrdf:qmfDerefFlags ?:deref ;
+        virtrdf:qmfArgDtps ?:arg_dtps ;
+        virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_LIT ;
+        virtrdf:qmfValRange-rvrDatatype ?:const_dt ;
+        virtrdf:qmfValRange-rvrLanguage ?:const_lang ;
+        virtrdf:qmfValRange-rvrSprintffs `iri(?:sprintffsid)` ;
+        virtrdf:qmfValRange-rvrSprintffCount ?:sff_count .
+      `iri(?:sprintffsid)`
+        rdf:type virtrdf:array-of-string .
+      `iri(?:superformatsid)`
+        rdf:type virtrdf:array-of-QuadMapFormat };
+  if (const_dt is not null)
+    {
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
+          `iri(?:classiri)`
+            virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_TYPED };
+    }
+  return vector_concat (res, vector_concat (res, vector (vector ('00000', 'Literal class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
 }
 ;
 
@@ -11934,7 +12141,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2010-08-29 0001v6g';
+  ver := '2011-05-21 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {

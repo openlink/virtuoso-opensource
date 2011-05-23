@@ -1281,11 +1281,13 @@ because const=str(var) is never recognized as a special condition on t_in or t_o
               break;
             }
 #ifdef DEBUG
+          case COALESCE_L:
           case IRI_L:
           case STR_L:
           case LANG_L: case LANGMATCHES_L: case DATATYPE_L:
           case REGEX_L:
           case LIKE_L:
+          case IF_L:
           case IN_L:
             break;
           default: spar_internal_error (sparp, "sparp_" "filter_to_equiv(): unsupported built-in");
@@ -4743,7 +4745,7 @@ sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_ma
     return 0;
   if (!key_qmv->qmvColumnsFormKey) /* No key -- no reuse */
     return 0;
-  if (!key_qmv->qmvFormat->qmfIsBijection)	/* Non-bijection format is unsafe for reuse, different SHORTs may result is same LONG */
+  if (!key_qmv->qmvFormat->qmfIsBijection)	/* Non-bijection format is unsafe for reuse, different SHORTs may result in same LONG */
     return 0;
   DO_BOX_FAST (qm_atable_t *, at, ctr, key_qmv->qmvATables)
     {
