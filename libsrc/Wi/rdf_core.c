@@ -49,6 +49,16 @@ extern "C" {
 #define rdf_dbg_printf(x)
 #endif
 
+#ifdef _SSL
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
+#define MD5Init MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final MD5_Final
+#else
+#include "../util/md5.h"
+#endif /* _SSL */
+
 int uriqa_dynamic_local = 0;
 
 caddr_t
@@ -1826,13 +1836,47 @@ re_search:
   return iri;
 }
 
+int32 rdf_shorten_long_iri = 0;
+
+static const char ctohex[] = "0123456789abcdef";
+
+static char *
+iri_shorten (char * iri, char * buf, size_t buf_len, int * ret_len)
+{
+  unsigned char digest[16];
+  MD5_CTX ctx;
+  int inx = 0;
+  char *end = buf + buf_len - 1, *tail = buf + buf_len - 33, *str = iri + buf_len - 33;
+
+  memcpy (buf, iri, buf_len - 33); /* hex md5 + zero byte */
+  memset (&ctx, 0, sizeof (MD5_CTX));
+  MD5Init (&ctx);
+  MD5Update (&ctx, (unsigned char *) str, strlen (str));
+  MD5Final (digest, &ctx);
+  while (tail < end)
+    {
+      unsigned c = (unsigned) digest[inx++];
+      *(tail++) = ctohex[0xf & (c >> 4)];
+      *(tail++) = ctohex[0xf & c];
+    }
+  *tail = 0;
+  *ret_len = strlen (buf);
+  return buf;
+}
+
 int
 iri_split (char * iri, caddr_t * pref, caddr_t * name)
 {
   char * local_start;
   int len = strlen (iri);
+  char tmp[MAX_RULING_PART_BYTES - 20];
   if (len > MAX_RULING_PART_BYTES - 20)
+    {
+      if (rdf_shorten_long_iri)
+	iri = iri_shorten (iri, tmp, sizeof (tmp), &len);
+      else
     return 0;
+    }
   if (('_' == iri[0]) && (':' == iri[1]))
     { /* named blank node is a special case. Label can contain weird chars but it is treated as */
       local_start = iri + 2;
