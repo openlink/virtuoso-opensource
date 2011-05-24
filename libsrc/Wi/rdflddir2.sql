@@ -207,7 +207,7 @@ create procedure ld_array ()
   declare cr cursor for
       select top 100 LL_FILE, LL_GRAPH
         from DB.DBA.LOAD_LIST table option (index ll_state)
-        where LL_STATE = 0
+        where LL_STATE = 0 and file_stat (LL_FILE, 1) <> 0
 	for update;
   declare fill int;
   declare f, g varchar;
@@ -224,8 +224,6 @@ create procedure ld_array ()
     {
       next:
       fetch cr into f, g;
-      if (file_stat (f, 1) = 0)
-	goto next;
       if (0 = first) first := f;
       last := f;
       arr[fill] := vector (f, g);
@@ -241,6 +239,7 @@ create procedure ld_array ()
   if (1 <> sys_stat ('cl_run_local_only'))
     local := sys_stat ('cl_this_host');
   update load_list set ll_state = 1, ll_started = curdatetime (), LL_HOST = local where ll_file in (fs);
+  close cr;
   return arr;
 }
 ;
