@@ -2192,6 +2192,7 @@ dfe_table_cost_ic (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       index_choice_t in_ic;
       memset (&in_ic, 0, sizeof (in_ic));
       SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t) (ptrlong) inx);
+      dfe->dfe_unit = 0;
       dfe_table_cost_ic_1 (dfe, &in_ic, inx_only);
       ic->ic_unit += in_ic.ic_unit;
       ic->ic_arity += in_ic.ic_arity;
