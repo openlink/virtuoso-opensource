@@ -1824,7 +1824,9 @@ iri_cast_nt_absname (query_instance_t *qi, caddr_t iri, caddr_t *iri_ret, ptrlon
 /*                                             0123456789 */
         if ((iri_boxlen > 9) && !memcmp (iri, "nodeID://", 9))
           {
-            iri_ret[0] = box_sprintf (30, "_:%s", iri + 9);
+            iri_ret[0] = box_dv_short_nchars (iri + (9-2), iri_boxlen - (9-2));
+            iri_ret[0][0] = '_';
+            iri_ret[0][1] = ':';
             is_bnode_ret[0] = 1;
             return 1;
           }
