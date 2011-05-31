@@ -88,8 +88,8 @@ typedef struct triple_feed_s {
   caddr_t tf_default_graph_iid;	/*!< Default graph iri ID, local */
   caddr_t tf_current_graph_iid;	/*!< Current graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
-  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED__REQUIRED];	/*!< Callback names, owned by caller */
-  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED__REQUIRED];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
+  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED__ALL];	/*!< Callback names, owned by caller */
+  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED__ALL];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
   ptrlong tf_triple_count;	/*!< Number of triples that are sent to callbacks already, must be boxed before sending to SQL callbacks! */
   ptrlong tf_message_count;	/*!< Number of messages that are reported already, must be boxed before sending to SQL callbacks! */
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
