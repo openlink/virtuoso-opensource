@@ -6558,6 +6558,148 @@ err:
 }
 
 static caddr_t
+bif_xenc_x509_csr_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char * me = "xenc_x509_csr_generate";
+  caddr_t key_name = bif_string_arg (qst, args, 0, me);
+  caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 1, me);
+  caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 2, me);
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  X509_REQ *x = NULL;
+  EVP_PKEY *pk = NULL;
+  RSA *rsa = NULL;
+  DSA *dsa = NULL;
+  X509_NAME *name = NULL;
+  char buf [512];
+  int i;
+  BIO * b;
+  char *data_ptr;
+  int len;
+  caddr_t ret = NULL;
+  STACK_OF(X509_EXTENSION) *st_exts = NULL;
+
+  if (!key)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing key");
+      goto err;
+    }
+
+  if (key->xek_type != DSIG_KEY_RSA && key->xek_type != DSIG_KEY_DSA)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Key is not DSA nor RSA");
+      goto err;
+    }
+
+  rsa = key->xek_type == DSIG_KEY_RSA ? key->xek_private_rsa : NULL;
+  dsa = key->xek_type == DSIG_KEY_DSA ? key->xek_private_dsa : NULL;
+
+  if (!rsa && !dsa)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing private key");
+      goto err;
+    }
+
+  if ((BOX_ELEMENTS (subj) % 2) != 0)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Subject array must be name/value pairs");
+      goto err;
+    }
+
+  if ((BOX_ELEMENTS (exts) % 2) != 0)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Extension array must be name/value pairs");
+      goto err;
+    }
+
+  pk = key->xek_evp_private_key;
+
+  if (!pk)
+    {
+      if ((pk=EVP_PKEY_new()) == NULL)
+	{
+	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not create pkey");
+	  goto err;
+	}
+
+      if (rsa && !EVP_PKEY_assign_RSA (pk,rsa))
+	{
+	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not assign primary key");
+	  goto err;
+	}
+      else if (dsa && !EVP_PKEY_assign_DSA (pk,dsa))
+	{
+	  *err_ret = srv_make_new_error ("42000", "XECXX", "Can not assign primary key");
+	  goto err;
+	}
+      key->xek_evp_private_key = pk;
+    }
+
+
+  if ((x = X509_REQ_new()) == NULL)
+    {
+      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not create x.509 structure");
+      goto err;
+    }
+
+
+  X509_REQ_set_pubkey (x, pk);
+  name = X509_REQ_get_subject_name(x);
+  st_exts = sk_X509_EXTENSION_new_null();
+
+  for (i = 0; i < BOX_ELEMENTS (subj); i += 2)
+    {
+      if (DV_STRINGP (subj[i]) && DV_STRINGP (subj[i + 1]) && box_length (subj[i + 1]) &&
+	  0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_ASC, (unsigned char *) subj[i+1], -1, -1, 0))
+	{
+	  sqlr_warning ("01V01", "QW001", "Unknown name entry %s", subj[i]);
+	}
+    }
+
+  for (i = 0; i < BOX_ELEMENTS (exts); i += 2)
+    {
+      int nid;
+      X509_EXTENSION *ex;
+      if (!DV_STRINGP (exts[i]) || !DV_STRINGP (exts[i + 1]) || !box_length (exts[i + 1]))
+	continue;
+      nid = OBJ_sn2nid (exts[i]);
+      if (nid == NID_undef)
+	{
+	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
+	  continue;
+	}
+      ex = X509V3_EXT_conf_nid(NULL, NULL, nid, exts[i+1]);
+      if (ex)
+	sk_X509_EXTENSION_push(st_exts, ex);
+    }
+  X509_REQ_add_extensions(x, st_exts);
+  if (!X509_REQ_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1())))
+    {
+      pk = NULL; /* keep one in the xenc_key */
+      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate : %s", get_ssl_error_text (buf, sizeof (buf)));
+      goto err;
+    }
+
+  b = BIO_new (BIO_s_mem());
+  PEM_write_bio_X509_REQ (b, x);
+  len = BIO_get_mem_data (b, &data_ptr);
+  if (len > 0 && data_ptr)
+    {
+      ret = dk_alloc_box (len + 1, DV_STRING);
+      memcpy (ret, data_ptr, len);
+      ret[len] = 0;
+    }
+  BIO_free (b);
+  X509_REQ_free (x);
+  sk_X509_EXTENSION_pop_free(st_exts, X509_EXTENSION_free);
+  return ret;
+err:
+  EVP_PKEY_free (pk);
+  X509_REQ_free (x);
+  sk_X509_EXTENSION_pop_free(st_exts, X509_EXTENSION_free);
+  return NEW_DB_NULL;
+}
+
+static caddr_t
 bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pkcs12_export");
@@ -6927,6 +7069,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_delete_temp_keys", bif_delete_temp_keys);
   bif_define ("xenc_x509_ss_generate", bif_xenc_x509_ss_generate);
   bif_define ("xenc_x509_generate", bif_xenc_x509_generate);
+  bif_define ("xenc_x509_csr_generate", bif_xenc_x509_csr_generate);
   bif_define ("xenc_pkcs12_export", bif_xenc_pkcs12_export);
   bif_define ("xenc_pem_export", bif_xenc_pem_export);
   bif_define ("xenc_pubkey_pem_export", bif_xenc_pubkey_pem_export);
