@@ -3060,6 +3060,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	  NEW_VARZ (col_stat_t, cs);
 	  sethash ((void*)current_col, itc->itc_st.cols, (void*) cs);
 	  cs->cs_distinct = id_hash_allocate (1001, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+          id_hash_set_rehash_pct (cs->cs_distinct, 200);
 	  col_stat = cs;
 	}
 
