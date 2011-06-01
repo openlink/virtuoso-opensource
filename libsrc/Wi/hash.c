@@ -714,7 +714,11 @@ hash_cast (query_instance_t * qi, hash_area_t * ha, int inx, state_slot_t * ssl,
       || (DV_IRI_ID_8 == target_dtp && DV_IRI_ID == dtp))
     return data;
   if (SSL_CONSTANT == ssl->ssl_type)
+#ifndef NDEBUG
     GPF_T1 ("constant ssl in hash_cast");
+#else
+    sqlr_new_error ("42000", ".....", "constant ssl in hash_cast, please report statement compiled");
+#endif
   if (IS_BLOB_DTP (target_dtp))
     target_dtp = DV_BLOB_INLINE_DTP (target_dtp);  /* non blob value for blob col. Will be inlined */
   data = box_cast_to (qst, data, dtp,
