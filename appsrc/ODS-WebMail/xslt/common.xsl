@@ -238,7 +238,7 @@
   <xsl:template name="css">
     <link type="text/css" rel="stylesheet" href="/oMail/i/css/styles.css" />
     <link type="text/css" rel="stylesheet" href="/oMail/i/css/print.css" media="print" />
-    <link type="text/css" rel="stylesheet" href="typeahead.css" />
+    <link type="text/css" rel="stylesheet" href="/ods/typeahead.css" />
     <link type="text/css" rel="stylesheet" href="/ods/oat/styles/webdav.css" />
   </xsl:template>
 

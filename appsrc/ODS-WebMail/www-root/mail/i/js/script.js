@@ -448,8 +448,9 @@ function addChecked (objForm, objName, selectionMsq)
 
 function davBrowse (fld)
 {
-  var options = { mode: 'browser',
-                  onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
+  var options = {
+    mode: 'browser',
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
   OAT.WebDav.open(options);
 }
@@ -688,7 +689,11 @@ OMAIL.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
   if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS Webmail', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;

@@ -977,7 +977,6 @@ create procedure OMAIL.WA.external_account_check (
             {
               _checked := vector_concat (_checked, vector (_folderName));
               _messages := imap_get (_server, EA_USER, _password, _buffer, 'select', _folderName);
-              -- dbg_obj_print ('', _folderName, length (_messages));
               foreach (any _message in _messages) do
               {
                 _msgId := (select MSG_ID from OMAIL.WA.MESSAGES where DOMAIN_ID = EA_DOMAIN_ID and USER_ID = EA_USER_ID and MSG_SOURCE = EA_ID and UNIQ_MSG_ID = _message[0]);
@@ -1764,7 +1763,6 @@ create procedure OMAIL.WA.imap_folder_erase (
 
   _buffer := 10000000;
   _retCode := imap_get (_server, _user, _password, _buffer, 'delete', _folder);
-  -- dbg_obj_print ('imap_folder_erase', _retCode);
 
   return 1;
 }
@@ -1798,7 +1796,6 @@ create procedure OMAIL.WA.imap_folder_move (
   _newFolder := _folder2 || '.' || OMAIL.WA.folder_name (_domain_id, _user_id, _folder_id);
   _buffer := 10000000;
   _retCode := imap_get (_server, _user, _password, _buffer, 'rename', '', vector (_folder, _newFolder));
-  -- dbg_obj_print ('imap_folder_move', _retCode);
 
   return 1;
 }
@@ -1825,7 +1822,6 @@ create procedure OMAIL.WA.imap_folder_rename (
   _newFolder := _folder || '.' || _name;
   _buffer := 10000000;
   _retCode := imap_get (_server, _user, _password, _buffer, 'rename', '', vector (_folder, _newFolder));
-  -- dbg_obj_print ('imap_folder_rename', _retCode);
 
   return 1;
 }
@@ -3246,7 +3242,6 @@ create procedure OMAIL.WA.imap_message_erase (
 
   _buffer := 10000000;
   _retCode := imap_get (_server, _user, _password, _buffer, 'message_delete', _folder, vector (cast (_unique_id as integer)));
-  -- dbg_obj_print ('imap_message_erase', _retCode);
 
   return 1;
     }
@@ -5781,7 +5776,6 @@ create procedure OMAIL.WA.omail_receive_message(
       {
         declare continue handler for SQLSTATE '*'
         {
-          -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
           _options := vector ();
           goto _1;
         };
@@ -8476,8 +8470,8 @@ create procedure OMAIL.WA.test (
   {
     return value;
   }
-  value := OMAIL.WA.validate2 (valueClass, value);
 
+  value := OMAIL.WA.validate2 (valueClass, cast (value as varchar));
   if (valueType = 'integer')
   {
     tmp := get_keyword('minValue', params);
@@ -8487,8 +8481,9 @@ create procedure OMAIL.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull(tmp) and (value > tmp))
       signal('MAX', cast(tmp as varchar));
-
-  } else if (valueType = 'float') {
+  }
+  else if (valueType = 'float')
+  {
     tmp := get_keyword('minValue', params);
     if (not isnull(tmp) and (value < tmp))
       signal('MIN', cast(tmp as varchar));
@@ -8496,8 +8491,9 @@ create procedure OMAIL.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull(tmp) and (value > tmp))
       signal('MAX', cast(tmp as varchar));
-
-  } else if (valueType = 'varchar') {
+  }
+  else if (valueType = 'varchar')
+  {
     tmp := get_keyword('minLength', params);
     if (not isnull(tmp) and (length(value) < tmp))
       signal('MINLENGTH', cast(tmp as varchar));
@@ -10046,8 +10042,6 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
 
   if (not isnull (N_NM_REF))
   {
-    --declare exit handler for sqlstate '*' { return dbg_obj_print(__SQL_MESSAGE);};
-
     refs := split_and_decode (N_NM_REF, 0, '\0\0 ');
     if (length (refs))
     {
