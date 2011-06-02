@@ -5098,7 +5098,7 @@
                         User
                       </th>
                       <td>
-                        <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" />
+                        <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
                       </td>
                     </tr>
                     <tr>
@@ -5106,7 +5106,7 @@
                         Password
                       </th>
                       <td>
-                        <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" />
+                        <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
                       </td>
                     </tr>
                     <tr>
