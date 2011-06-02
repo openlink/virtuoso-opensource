@@ -292,7 +292,7 @@
       if (isnull (e_time))
         return;
 
-        e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
+      e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone, self.cDaylight);
       http (self.showTagEventDate (e_time, self.showEventDate (e_time, e_timeProperty, case when e_event = 1 then 'date' else 'dateTime' end, 0)));
     ]]>
   </v:method>
@@ -302,7 +302,7 @@
       if (isnull (e_time))
         return;
 
-        e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
+      e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone, self.cDaylight);
       http (self.showTagEventDate (e_time, self.showEventDate (e_time, e_timeProperty, case when e_event = 1 then 'date' else 'dateTime' end, 1)));
     ]]>
   </v:method>
@@ -314,8 +314,8 @@
       if (isnull (e_start))
         return self.showEventEnd (e_event, e_end, 'dtend');
 
-      e_start := CAL.WA.event_gmt2user (e_start, self.cTimezone);
-      e_end := CAL.WA.event_gmt2user (e_end, self.cTimezone);
+      e_start := CAL.WA.event_gmt2user (e_start, self.cTimezone, self.cDaylight);
+      e_end := CAL.WA.event_gmt2user (e_end, self.cTimezone, self.cDaylight);
       if (CAL.WA.dt_compare (e_start, e_end))
       {
         if (e_event = 1)
@@ -367,9 +367,12 @@
       declare S varchar;
 
       S := '';
-        if (CAL.WA.dt_dateClear (e_start) < CAL.WA.dt_dateClear (dt))
+      dt := CAL.WA.dt_dateClear (dt);
+      e_start := CAL.WA.dt_dateClear (e_start);
+      e_end := CAL.WA.dt_dateClear (e_end);
+      if (e_start < dt)
           S := '<img src="image/tr_close2.gif" border="0" />';
-        if (CAL.WA.dt_dateClear (e_end) > CAL.WA.dt_dateClear (dt))
+      if (e_end > dt)
         {
           if (S <> '')
           {
@@ -849,8 +852,8 @@
         self.v_privacy,
         self.v_tags,
         self.v_event,
-        CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone),
-        CAL.WA.event_user2gmt (self.v_eventEnd, self.cTimezone),
+                     CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone, self.cDaylight),
+                     CAL.WA.event_user2gmt (self.v_eventEnd, self.cTimezone, self.cDaylight),
         self.v_repeat,
         self.v_repeatParam1,
         self.v_repeatParam2,
@@ -984,8 +987,8 @@
         self.v_attendees,
         self.v_privacy,
         self.v_tags,
-        CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone),
-        CAL.WA.event_user2gmt (self.v_eventEnd, self.cTimezone),
+                     CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone, self.cDaylight),
+                     CAL.WA.event_user2gmt (self.v_eventEnd, self.cTimezone, self.cDaylight),
         self.v_priority,
         self.v_status,
         self.v_complete,
@@ -1274,14 +1277,12 @@
                         if (cCommand = 'create')
                         {
                     self.cAction := 'create';
+                          self.cSubAction := get_keyword ('mode', params, 'event');
                           if (get_keyword ('mode', params, 'event') = 'task')
                     {
-                      self.cScope := 'tasks';
                       self.initNewTask ();
                     } else {
                       self.initNewEvent ();
-                      if ((self.cScope = 'tasks') or (self.cScope = 'search'))
-                        self.cScope := 'events';
                     }
                           if (get_keyword ('onDate', params, '') <> '')
                             self.on_date := cast (get_keyword ('onDate', params) as integer);
@@ -1428,15 +1429,7 @@
                           {
                             return;
                           }
-                    kind := CAL.WA.event_kind (self.v_id);
-                    if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
-                          {
-                      self.cScope := 'events';
-                          }
-                          else if (kind = 'task')
-                          {
-                      self.cScope := 'tasks';
-                  }
+                          self.cSubAction := CAL.WA.event_kind (self.v_id);
                 }
                       }
 
@@ -1452,11 +1445,7 @@
                             return;
 
                           self.cAction := 'view';
-                          kind := CAL.WA.event_kind (self.v_id);
-                          if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
-                            self.cScope := 'events';
-                          if (kind = 'task')
-                            self.cScope := 'tasks';
+                          self.cSubAction := CAL.WA.event_kind (self.v_id);
                         }
                       }
 
@@ -1728,6 +1717,7 @@
               <v:on-post>
                 <![CDATA[
                   self.cAction := 'create';
+                                self.cSubAction := case when (self.cScope = 'events') then 'event' else 'task' end;
           		    self.vc_data_bind(e);
                 ]]>
               </v:on-post>
@@ -2305,7 +2295,7 @@
         <v:text name="dateFormat" xhtml_id="dateFormat" type="hidden" value="--self.cDateFormat" />
       </vm:if>
 
-            <v:template type="simple" name="template_edit_event" enabled="--case when ((self.cScope <> 'tasks') and (self.cAction in ('create', 'edit'))) then 1 else 0 end">
+            <v:template type="simple" name="template_edit_event" enabled="--case when (self.cAction in ('create', 'edit')) and (self.cSubAction = 'event') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             declare params any;
@@ -2326,8 +2316,8 @@
                              E_PRIVACY,
                        E_TAGS,
                        E_EVENT,
-                       CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
-                       CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
+                             CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone, self.cDaylight),
+                             CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone, self.cDaylight),
                        E_REPEAT,
                        E_REPEAT_PARAM1,
                        E_REPEAT_PARAM2,
@@ -3174,7 +3164,7 @@
         </div>
       </v:template>
 
-            <v:template type="simple" name="template_view_event" enabled="--case when ((self.cScope <> 'tasks') and (self.cAction = 'view')) then 1 else 0 end">
+            <v:template type="simple" name="template_view_event" enabled="--case when (self.cAction = 'view') and (self.cSubAction = 'event') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             declare exit handler for not found goto _end;
@@ -3186,8 +3176,8 @@
                          E_PRIVACY,
                    E_TAGS,
                    E_EVENT,
-                   CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
-                   CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
+                         E_EVENT_START,
+                         E_EVENT_END,
                    E_REPEAT,
                    E_REPEAT_PARAM1,
                    E_REPEAT_PARAM2,
@@ -3372,7 +3362,7 @@
         </div>
       </v:template>
 
-            <v:template type="simple" name="template_edit_task" enabled="--case when ((self.cScope = 'tasks') and (self.cAction in ('create', 'edit'))) then 1 else 0 end">
+            <v:template type="simple" name="template_edit_task" enabled="--case when (self.cAction in ('create', 'edit')) and (self.cSubAction = 'task') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
                   if (isnull (get_keyword ('t_subject', self.vc_page.vc_event.ve_params)))
@@ -3388,9 +3378,9 @@
                              E_ATTENDEES,
                              E_PRIVACY,
                        E_TAGS,
-                       CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
-                       CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
-                       CAL.WA.event_gmt2user (E_COMPLETED, self.cTimezone),
+                             CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone, self.cDaylight),
+                             CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone, self.cDaylight),
+                             CAL.WA.event_gmt2user (E_COMPLETED, self.cTimezone, self.cDaylight),
                        E_PRIORITY,
                        E_STATUS,
                        E_COMPLETE,
@@ -3771,7 +3761,7 @@
         </div>
       </v:template>
 
-            <v:template type="simple" name="template_view_task" enabled="--case when ((self.cScope = 'tasks') and (self.cAction in ('view'))) then 1 else 0 end">
+            <v:template type="simple" name="template_view_task" enabled="--case when (self.cAction = 'view') and (self.cSubAction = 'task') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             declare exit handler for not found goto _end;
@@ -3779,9 +3769,9 @@
             select E_SUBJECT,
                    E_DESCRIPTION,
                    E_TAGS,
-                   CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
-                   CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
-                   CAL.WA.event_gmt2user (E_COMPLETED, self.cTimezone),
+                         CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone, self.cDaylight),
+                         CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone, self.cDaylight),
+                         CAL.WA.event_gmt2user (E_COMPLETED, self.cTimezone, self.cDaylight),
                    E_PRIORITY,
                    E_STATUS,
                    E_COMPLETE,
@@ -4022,7 +4012,7 @@
                       User
                   </th>
                   <td>
-                      <v:text name="i_user" value="--self.icUser" xhtml_class="" />
+                      <v:text name="i_user" value="--self.icUser" null-value="''" xhtml_class="" />
                     </td>
                   </tr>
                   <tr id="imp_tr_32" style="<?V case when self.icSource < 1 then 'display: none;' else '' end ?>;">
@@ -4030,7 +4020,7 @@
                       Password
                     </th>
                     <td>
-                      <v:text name="i_password" type="password" value="--''" xhtml_class="" />
+                      <v:text name="i_password" type="password" value="--''" null-value="''" xhtml_class="" />
                   </td>
                 </tr>
               <tr>
@@ -4235,7 +4225,7 @@
                       User
                     </th>
                     <td>
-                      <v:text name="ex_user" value="--self.exUser" xhtml_class="" />
+                      <v:text name="ex_user" value="--self.exUser" null-value="''" xhtml_class="" />
                     </td>
                   </tr>
                   <tr id="ex_tr_1" style="<?V case when self.exType < 1 then 'display: none;' else '' end ?>;">
@@ -4243,7 +4233,7 @@
                       Password
                     </th>
                     <td>
-                      <v:text name="ex_password" type="password" value="--''" xhtml_class="" />
+                      <v:text name="ex_password" type="password" value="--''" null-value="''" xhtml_class="" />
                     </td>
                   </tr>
                   <tr>
@@ -4371,7 +4361,7 @@
                       self.exUser := trim (self.ex_user.ufl_value);
                       self.exPassword := self.ex_password.ufl_value;
                       self.exEvents := case when self.ex_events.ufl_selected then 1 else 0 end;
-                      self.exTasks := case when self.ex_events.ufl_selected then 1 else 0 end;
+                      self.exTasks := case when self.ex_tasks.ufl_selected then 1 else 0 end;
                       exOptions := vector ('events', self.exEvents, 'tasks', self.exTasks, 'periodFrom', self.exPeriodFrom, 'periodTo', self.exPeriodTo, 'tagsInclude', self.exTagsInclude, 'tagsExclude', self.exTagsExclude);
 
                       content := CAL.WA.export_vcal (self.domain_id, null, exOptions);
@@ -4555,7 +4545,7 @@
                           <th>Name</th>
                           <th width="5%" nowrap="nowrap">Executed On</th>
                           <th width="5%" nowrap="nowrap">Status</th>
-                          <th clas="action">Action</th>
+                          <th class="action">Action</th>
                         </tr>
                       </thead>
                     </table>
@@ -4865,7 +4855,7 @@
                       User
                     </th>
                           <td>
-                      <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" />
+                      <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
                           </td>
                         </tr>
                         <tr>
@@ -4873,7 +4863,7 @@
                       Password
                     </th>
                           <td>
-                      <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" />
+                      <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
                           </td>
                         </tr>
                         <tr>
@@ -5014,15 +5004,13 @@
                           tmp := '11_';
                         }
                         if (not CAL.WA.dav_check_authenticate (_nameTest, _user, _password, tmp))
-                        {
                           signal ('TEST', 'The user has no rights for this folder.<>');
                         }
-                      }
 
                       _attendees := cast (self.exc_options_attendees.ufl_value as integer);
                       _mode := cast (self.exc_options_mode.ufl_value as integer);
                     _events := case when self.exc_options_events.ufl_selected then 1 else 0 end;
-                    _tasks := case when self.exc_options_events.ufl_selected then 1 else 0 end;
+                      _tasks := case when self.exc_options_tasks.ufl_selected then 1 else 0 end;
 
                       self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'mailAttendees', _attendees, 'mode', _mode, 'events', _events, 'tasks', _tasks);
 
@@ -5641,11 +5629,24 @@
                     </td>
                   </tr>
                           <tr>
-                            <th>
-                              Effective timezone
-                            </th>
+                            <th>Effective timezone</th>
                             <td>
                               <?vsp http (self.showTimeZone (self.cTimeZone / 60)); ?>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Daylight Saving Time (DST)</th>
+                            <td>
+                              <v:select-list name="s_daylight">
+                                <v:item value="0" name="No" />
+                                <v:item value="1" name="Last Sunday in March - Last Sunday in October (Europa)" />
+                                <v:item value="2" name="Second Sunday in March - First Sunday in November (US)" />
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_daylight (self.settings);
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:select-list>
                             </td>
                           </tr>
                         </table>
@@ -5732,6 +5733,8 @@
                           self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
                           self.settings := CAL.WA.set_keyword ('timeFormat', self.settings, self.s_timeFormat.ufl_value);
                           self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('daylight', self.settings, self.s_daylight.ufl_value);
+
                           CAL.WA.remove_keyword ('timeZone', self.settings);
                           CAL.WA.remove_keyword ('timeZoneName', self.settings);
                           if (not is_empty_or_null (self.s_timeZone.ufl_value))

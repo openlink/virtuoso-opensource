@@ -724,7 +724,7 @@ create procedure ODS.ODS_API."calendar.publication.new" (
 
   declare rc integer;
   declare uname varchar;
-  declare _type, options any;
+  declare _type, _name, _permissions, options any;
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
@@ -733,6 +733,20 @@ create procedure ODS.ODS_API."calendar.publication.new" (
     return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.calendar_type_check (destinationType, destination);
+  _name := trim (destination);
+  if (_type = 1)
+  {
+    _name := '/' || _name;
+    _name := replace (_name, '//', '/');
+  }
+  _name := ODS..dav_path_normalize(_name);
+  if (_type = 1)
+  {
+    _name := CAL.WA.dav_parent (_name);
+    _permissions := '11_';
+    if (not CAL.WA.dav_check_authenticate (_name, userName, userPassword, _permissions))
+      signal ('TEST', 'The user has no rights for this folder.<>');
+  }
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
     values (inst_id, 0, name, updateType, updatePeriod, updateFreq, serialize (options));
@@ -825,7 +839,7 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
   declare rc integer;
   declare uname varchar;
   declare inst_id integer;
-  declare _type, options any;
+  declare _type, _name, _permissions, options any;
 
   inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = publication_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
@@ -835,6 +849,20 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   _type := ODS.ODS_API.calendar_type_check (destinationType, destination);
+  _name := trim (destination);
+  if (_type = 1)
+  {
+    _name := '/' || _name;
+    _name := replace (_name, '//', '/');
+  }
+  _name := ODS..dav_path_normalize(_name);
+  if (_type = 1)
+  {
+    _name := CAL.WA.dav_parent (_name);
+    _permissions := '11_';
+    if (not CAL.WA.dav_check_authenticate (_name, userName, userPassword, _permissions))
+      signal ('TEST', 'The user has no rights for this folder.<>');
+  }
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   update CAL.WA.EXCHANGE
      set EX_NAME = name,
@@ -930,7 +958,7 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
 
   declare rc integer;
   declare uname varchar;
-  declare _type, options any;
+  declare _type, _name, _permissions, options any;
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
@@ -939,6 +967,20 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
     return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.calendar_type_check (sourceType, source);
+  _name := trim (source);
+  if (_type = 1)
+  {
+    _name := '/' || _name;
+    _name := replace (_name, '//', '/');
+  }
+  _name := ODS..dav_path_normalize(_name);
+  if (_type = 1)
+  {
+    _name := CAL.WA.dav_parent (_name);
+    _permissions := '1__';
+    if (not CAL.WA.dav_check_authenticate (_name, userName, userPassword, _permissions))
+      signal ('TEST', 'The user has no rights for this folder.<>');
+  }
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
     values (inst_id, 1, name, updateType, updatePeriod, updateFreq, serialize (options));
@@ -1031,7 +1073,7 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
   declare rc integer;
   declare uname varchar;
   declare inst_id integer;
-  declare _type, options any;
+  declare _type, _name, _permissions, options any;
 
   inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = subscription_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
@@ -1041,6 +1083,20 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   _type := ODS.ODS_API.calendar_type_check (sourceType, source);
+  _name := trim (source);
+  if (_type = 1)
+  {
+    _name := '/' || _name;
+    _name := replace (_name, '//', '/');
+  }
+  _name := ODS..dav_path_normalize(_name);
+  if (_type = 1)
+  {
+    _name := CAL.WA.dav_parent (_name);
+    _permissions := '1__';
+    if (not CAL.WA.dav_check_authenticate (_name, userName, userPassword, _permissions))
+      signal ('TEST', 'The user has no rights for this folder.<>');
+  }
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   update CAL.WA.EXCHANGE
      set EX_NAME = name,
@@ -1284,6 +1340,7 @@ create procedure ODS.ODS_API."calendar.options.set" (
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'dateFormat');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'timeZone');
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'showTasks');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'daylichtEnable');
 	if (CAL.WA.discussion_check ())
 	{
   ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'conv');
@@ -1354,6 +1411,7 @@ create procedure ODS.ODS_API."calendar.options.get" (
   http (ODS.ODS_API.calendar_setting_xml (settings, 'dateFormat'));
   http (ODS.ODS_API.calendar_setting_xml (settings, 'timeZone'));
   http (ODS.ODS_API.calendar_setting_xml (settings, 'showTasks'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'daylichEnable'));
 
   http (ODS.ODS_API.calendar_setting_xml (settings, 'conv'));
   http (ODS.ODS_API.calendar_setting_xml (settings, 'conv_init'));

@@ -143,6 +143,7 @@
       <v:variable persist="0" name="cTimeZone" type="integer" default="0" />
       <v:variable persist="0" name="cTimeFormat" type="varchar" default="'e'" />
       <v:variable persist="0" name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
+      <v:variable persist="0" name="cDaylight" type="integer" default="0" />
       <v:on-init>
         <![CDATA[
           declare tmp any;
@@ -169,6 +170,7 @@
           self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
           self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
           self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
+          self.cDaylight := CAL.WA.settings_daylight (self.settings);
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
           self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
