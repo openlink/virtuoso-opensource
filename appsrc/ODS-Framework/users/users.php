@@ -189,6 +189,8 @@
         }
       }
     }
+    -- var_dump($_REQUEST);
+
     $_formTab = intval((isset ($_REQUEST['formTab'])) ? $_REQUEST['formTab'] : "0");
     $_formTab2 = intval((isset ($_REQUEST['formTab2'])) ? $_REQUEST['formTab2'] : "0");
     $_formTab3 = intval((isset ($_REQUEST['formTab3'])) ? $_REQUEST['formTab3'] : "0");
@@ -851,7 +853,7 @@
       }
   ?>
   <body onunload="myCheckLeave (document.forms['page_form'])">
-    <form name="page_form" id="page_form" method="post" enctype="multipart/form-data" action="users.php">
+    <form name="page_form" id="page_form" method="post" enctype="multipart/form-data">
       <input type="hidden" name="mode" id="mode" value="php" />
       <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
       <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
@@ -869,7 +871,7 @@
               print sprintf ('<b>User</b>: %s', $_xml->fullName);
 
             if ($_validate == 1)
-              print sprintf (', <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>');
+              print sprintf (', <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return loginUrl();">View</a>');
           ?>
         </div>
         <div id="ob_right">

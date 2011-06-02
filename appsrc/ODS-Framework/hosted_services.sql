@@ -7387,7 +7387,7 @@ create procedure  ods_bar_css (in img_path varchar) {
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
     1,
-    '/~(.*)',
+    '^/~(.*)',
     vector('uname'),
     1,
     '/home/%s',
@@ -7444,25 +7444,145 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users',
       ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
 
+  -- JS & HTML
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_javascript_users_rule',
+      1,
+      '/javascript/users',
+      vector('dummy'),
+      0,
+      '/javascript/users/users.html',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_javascript_users_rule2',
+      1,
+      '/javascript/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/javascript/users/users.html?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_javascript_users_list', 1, vector('ods_javascript_users_rule', 'ods_javascript_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/javascript/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/javascript/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.html', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_javascript_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- PHP
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_php_users_rule',
+      1,
+      '/php/users',
+      vector('dummy'),
+      0,
+      '/php/users/users.php',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_php_users_rule2',
+      1,
+      '/php/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/php/users/users.php?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_php_users_list', 1, vector('ods_php_users_rule', 'ods_php_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/php/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/php/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.php', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_php_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- JSP
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_jsp_users_rule',
+      1,
+      '/jsp/users',
+      vector('dummy'),
+      0,
+      '/jsp/users/users.jsp',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_jsp_users_rule2',
+      1,
+      '/jsp/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/jsp/users/users.jsp?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_jsp_users_list', 1, vector('ods_jsp_users_rule', 'ods_jsp_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/jsp/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/jsp/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'http://localhost:8080/users/jsp', def_page=>'users.jsp', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_jsp_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- Ruby
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_ruby_users_rule',
+      1,
+      '/ruby/users',
+      vector('dummy'),
+      0,
+      '/ruby/users/users.rb',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_ruby_users_rule2',
+      1,
+      '/ruby/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/ruby/users/users.rb?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_ruby_users_list', 1, vector('ods_ruby_users_rule', 'ods_ruby_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ruby/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ruby/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.rb', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_ruby_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- VSP
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_vsp_users_rule',
+      1,
+      '/vsp/users',
+      vector('dummy'),
+      0,
+      '/vsp/users/users.vsp',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_vsp_users_rule2',
+      1,
+      '/vsp/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/vsp/users/users.vsp?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_vsp_users_list', 1, vector('ods_vsp_users_rule', 'ods_vsp_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.vsp', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_vsp_users_list'), sec=>_sec, auth_opts=>_opts);
 
   -- RDF folder
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf');

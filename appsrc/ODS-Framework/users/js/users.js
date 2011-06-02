@@ -823,6 +823,15 @@ function init()
     if (typeof (uriParams['userName']) != 'undefined' && uriParams['userName'] != '')
       userName = uriParams['userName'];
 
+    if (!userName) {
+      var path = document.location.pathname.split('/');
+      if (path.length > 3) {
+        var tmp = path[3];
+        if (tmp.indexOf('~') == 0)
+          userName = tmp.substring(1);
+      }
+    }
+
     if (validateSession || userName)
       selectProfile(userName);
   }
@@ -1819,7 +1828,7 @@ function showProfileNew(xmlDoc) {
         div.innerHTML = OAT.Xml.serializeXmlDoc(result);
     }
     }
-    OAT.AJAX.GET('users.xsl', false, x);
+    OAT.AJAX.GET('/ods/users/users.xsl', false, x);
   }
 }
 
@@ -2038,9 +2047,15 @@ function addProfileTableRowValue(tbl, values, delimiters, leftTag) {
   }
 }
 
+
+function logoutUrl() {
+  var path = document.location.pathname.split('/');
+  document.location = document.location.protocol + '//' + document.location.host + '/' + path[1] + '/' + path[2];
+}
+
 function logoutSubmit() {
 		var S = '/ods/api/user.logout?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
-	OAT.AJAX.GET(S, '', function (){document.location = document.location.protocol + '//' + document.location.host + document.location.pathname;});
+  OAT.AJAX.GET(S, '', logoutUrl);
   return false;
 }
 
@@ -2104,35 +2119,33 @@ function loginSubmit(mode, prefix) {
 	return false;
 }
 
-function afterLogin(data, prefix) {
+function loginUrl() {
+  var x = function (data) {
 	var xml = OAT.Xml.createXmlDoc(data);
 	if (!hasError(xml)) {
 		/* user data */
-		$('sid').value = OAT.Xml.textValue(xml.getElementsByTagName('sid')[0]);
-		$('realm').value = 'wa';
-    validateSession = true;
-		var T = $('form');
-		if (T) {
-			T.value = ((prefix == 'rf')? 'profile': 'user');
-			T.form.submit();
-		} else {
-      ufCertificateGenerator();
-			OAT.Dom.show("ob_right_logout");
-			OAT.Dom.hide("ob_links");
-			OAT.Dom.hide("lf");
-			OAT.Dom.hide("rf");
-			OAT.Dom.hide("uf");
-			OAT.Dom.hide("pf");
-			if (prefix == 'rf') {
-			OAT.Dom.show("pf");
-			ufProfileSubmit();
+      var user = xml.getElementsByTagName('user')[0];
+      if (user) {
+        var userName = tagValue(user, 'name');
+        var path = document.location.pathname.split('/');
+        document.location = document.location.protocol + '//' + document.location.host + '/' + path[1] + '/' + path[2]+ '/~' + userName + '?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'));
+      }
 			} else {
-			  pfCancelSubmit();
+      logoutUrl();
 			}
 		}
+  var S = '/ods/api/user.info?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&short=1';
+  OAT.AJAX.GET(S, '', x);
+}
+
+function afterLogin(data, prefix) {
+  var xml = OAT.Xml.createXmlDoc(data);
+  if (!hasError(xml)) {
+    $('sid').value = OAT.Xml.textValue(xml.getElementsByTagName('sid')[0]);
+    $('realm').value = 'wa';
+    loginUrl();
 	} else {
-		$('sid').value = '';
-		$('realm').value = '';
+    logoutUrl();
 	}
 	return false;
 }

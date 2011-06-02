@@ -226,7 +226,8 @@ create procedure WF_PROFILE_GET (in acct varchar)
 }
 ;
 
-create procedure FINGERPOINT_WEBID_GET (in cert varchar := null, in mail varchar := null)
+-- /* take webid using fingerpoint prtocol */
+create procedure FINGERPOINT_WEBID_GET (in cert varchar := null, in mail varchar := null, in cert_type int := 0)
 {
   declare webid, domain, page, template, url, fp, links, head, xd, tmpcert, res, tmp, link, qr, xp any;
 
@@ -238,7 +239,7 @@ create procedure FINGERPOINT_WEBID_GET (in cert varchar := null, in mail varchar
     };
 
   if (mail is null)
-    mail := DB.DBA.FOAF_SSL_MAIL_GET (cert);
+    mail := DB.DBA.FOAF_SSL_MAIL_GET (cert, cert_type);
   else
     {
       declare h any;

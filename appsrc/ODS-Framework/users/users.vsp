@@ -985,7 +985,7 @@
     }
   ?>
   <body onunload="myCheckLeave (document.forms['page_form'])">
-    <form name="page_form" id="page_form" method="post" enctype="multipart/form-data" action="users.vsp">
+    <form name="page_form" id="page_form" method="post" enctype="multipart/form-data">
       <input type="hidden" name="mode" id="mode" value="vsp" />
       <input type="hidden" name="sid" id="sid" value="<?V vSid ?>" />
       <input type="hidden" name="realm" id="realm" value="<?V vRealm ?>" />
@@ -1003,7 +1003,7 @@
             {
               http (sprintf ('<b>User</b>: %s', xpath_eval ('string (/user/fullName)', vXml)));
               if (vValidate)
-                http (sprintf (', <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>'));
+                http (sprintf (', <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return loginUrl();">View</a>'));
             }
           ?>
         </div>

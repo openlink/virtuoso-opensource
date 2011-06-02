@@ -63,7 +63,7 @@ html:
 	The return values are:
 	<ul>
 	  <li>webid: the webid have been verified</li>
-	  <li>error: error code if vefirication fails </li>
+	  <li>error: error code if verification fails </li>
 	  <li>ts: timestamp in ISO 8601 format</li>
 	  <li>signature: SHA1 digest over returning URL</li>
 	</ul>

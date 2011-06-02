@@ -5581,7 +5581,7 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
 
 --  dbg_obj_print (u_name, fmt);
   set http_charset='utf-8';
-  if (fmt = 'text/rdf+n3')
+  if (fmt = 'text/rdf+n3' or fmt = 'text/n3')
     fmt := 'n3';
   else if (fmt = 'application/rdf+xml')
     fmt := 'rdf';
@@ -5687,7 +5687,7 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
 --  dbg_obj_print (u_name, fmt);
   set http_charset='utf-8';
   maybe_more := 1;
-  if (fmt = 'text/rdf+n3')
+  if (fmt = 'text/rdf+n3' or fmt = 'text/n3')
     fmt := 'n3';
   else if (fmt = 'application/rdf+xml')
     fmt := 'rdf';

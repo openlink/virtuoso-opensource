@@ -1054,10 +1054,10 @@ create procedure ODS.ODS_API."lookup.list" (
       if ("param" <> '')
         paramTest := sprintf (' and lcase (x.F2) like ''%%%s%%''', lcase("param"));
 
-      if (depend = '' or depend = 'p')
+      if ("depend" = '' or "depend" = 'p')
         sql := sprintf ('select x.F1, x.F2, x.F3 from DB.DBA.wa_webid_users(user_id) (F1 varchar, F2 varchar, F3 varchar) x where x.user_id = %d %s', uid, paramTest);
 
-      if (depend = 'g')
+      if ("depend" = 'g')
         sql := sprintf ('select x.* from (select ''Group'' F1, SIOC..acl_group_iri (%d, WACL_NAME) F2, WACL_DESCRIPTION F3 from WA_GROUPS_ACL where WACL_USER_ID = %d) x where 1=1 %s', uid, uid, paramTest);
 
       set_user_id ('dba');
