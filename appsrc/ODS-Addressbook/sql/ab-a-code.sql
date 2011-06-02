@@ -2492,8 +2492,10 @@ create procedure AB.WA.test (
   } else if (is_empty_or_null(value)) {
     return value;
   }
-  value := AB.WA.validate2 (valueClass, cast (value as varchar));
-  if (valueType = 'integer') {
+
+  value := OMAIL.WA.validate2 (valueClass, cast (value as varchar));
+  if (valueType = 'integer')
+  {
     tmp := get_keyword('minValue', params);
     if ((not isnull (tmp)) and (value < tmp))
       signal('MIN', cast (tmp as varchar));
@@ -2501,8 +2503,9 @@ create procedure AB.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull (tmp) and (value > tmp))
       signal('MAX', cast (tmp as varchar));
-
-  } else if (valueType = 'float') {
+  }
+  else if (valueType = 'float')
+  {
     tmp := get_keyword('minValue', params);
     if (not isnull (tmp) and (value < tmp))
       signal('MIN', cast (tmp as varchar));
@@ -2510,8 +2513,9 @@ create procedure AB.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull (tmp) and (value > tmp))
       signal('MAX', cast (tmp as varchar));
-
-  } else if (valueType = 'varchar') {
+  }
+  else if (valueType = 'varchar')
+  {
     tmp := get_keyword('minLength', params);
     if (not isnull (tmp) and (length(AB.WA.utf2wide(value)) < tmp))
       signal('MINLENGTH', cast (tmp as varchar));

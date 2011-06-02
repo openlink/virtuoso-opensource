@@ -535,7 +535,10 @@ function updateGeodata(mode) {
 }
 
 function davBrowse(fld) {
-	var options = {mode: 'browser', onConfirmClick: function(path, fname) {$(fld).value = path + fname;}};
+  var options = {
+    mode: 'browser',
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
+  };
   OAT.WebDav.open(options);
 }
 

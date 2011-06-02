@@ -69,9 +69,9 @@ AB.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'AddressBook\'');
 AB.WA.exec_no_error ('DROP type wa_AddressBook');
 
 -- Views
-AB.WA.exec_no_error ('DROP view AB..TAGS_VIEW');
-AB.WA.exec_no_error ('DROP view AB..GRANDS_PERSON_VIEW');
-AB.WA.exec_no_error ('DROP view AB..GRANDS_VIEW');
+AB.WA.exec_no_error ('DROP view AB.DBA.TAGS_VIEW');
+AB.WA.exec_no_error ('DROP view AB.DBA.GRANTS_PERSON_VIEW');
+AB.WA.exec_no_error ('DROP view AB.DBA.GRANTS_VIEW');
 
 -- Registry
 registry_remove ('ab_path');
