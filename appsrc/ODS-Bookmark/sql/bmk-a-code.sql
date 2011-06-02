@@ -4138,6 +4138,7 @@ create procedure BMK.WA.test (
     --resignal;
   };
 
+  if (isstring (value))
   value := trim(value);
   if (is_empty_or_null(params))
     return value;
@@ -4146,23 +4147,26 @@ create procedure BMK.WA.test (
   valueType := coalesce(get_keyword('type', params), get_keyword('class', params));
   valueName := get_keyword('name', params, 'Field');
   valueMessage := get_keyword('message', params, '');
+
   tmp := get_keyword('canEmpty', params);
-  if (isnull(tmp)) {
+  if (isnull(tmp))
+  {
     if (not isnull(get_keyword('minValue', params))) {
       tmp := 0;
     } else if (get_keyword('minLength', params, 0) <> 0) {
       tmp := 0;
     }
   }
-  if (not isnull(tmp) and (tmp = 0) and is_empty_or_null(value)) {
+  if (not isnull(tmp) and (tmp = 0) and is_empty_or_null(value))
+  {
     signal('EMPTY', '');
   } else if (is_empty_or_null(value)) {
     return value;
   }
 
-  value := BMK.WA.validate2 (valueClass, value);
-
-  if (valueType = 'integer') {
+  value := OMAIL.WA.validate2 (valueClass, cast (value as varchar));
+  if (valueType = 'integer')
+  {
     tmp := get_keyword('minValue', params);
     if ((not isnull(tmp)) and (value < tmp))
       signal('MIN', cast(tmp as varchar));
