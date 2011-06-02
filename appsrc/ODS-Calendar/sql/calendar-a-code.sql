@@ -2282,12 +2282,8 @@ create procedure CAL.WA.dt_format (
   in dt datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
-
+  declare N integer;
+  declare ch, S varchar;
   declare exit handler for sqlstate '*' {
     return '';
   };
@@ -2301,76 +2297,57 @@ create procedure CAL.WA.dt_format (
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(dt), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(dt), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(dt), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring (xslt_format_number(year(dt), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(dt), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(dt), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(dt), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(dt), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(dt), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(dt), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(dt), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(dt), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
+    }
     N := N + 1;
-  };
+  }
   return S;
 }
 ;
@@ -2421,7 +2398,8 @@ create procedure CAL.WA.dt_deformat_tmp (
   declare V any;
 
   V := regexp_parse('[0-9]+', S, N);
-  if (length (V) > 1) {
+  if (length (V) > 1)
+  {
     N := V[1];
     return atoi (subseq (S, V[0], V[1]));
   }
@@ -2538,21 +2516,26 @@ create procedure CAL.WA.dt_stringtime (
   am := 0;
   pm := 0;
   pString := lcase (pString);
-  if (not isnull (strstr (pString, 'am'))) {
+  if (not isnull (strstr (pString, 'am')))
+  {
     am := 1;
     pString := replace (pString, 'am', '');
   }
-  if (not isnull (strstr (pString, 'pm'))) {
+  if (not isnull (strstr (pString, 'pm')))
+  {
     pm := 1;
     pString := replace (pString, 'pm', '');
   }
   pTime := stringtime (trim (pString));
-  if (am = 1) {
+  if (am = 1)
+  {
     if (hour (pTime) = 12)
       pTime := dateadd ('hour', 12, pTime);
   }
-  if (pm = 1) {
-    if (hour (pTime) = 12) {
+  if (pm = 1)
+  {
+    if (hour (pTime) = 12)
+    {
       pTime := dateadd ('hour', -12, pTime);
     } else {
       pTime := dateadd ('hour', 12, pTime);
@@ -2568,15 +2551,18 @@ create procedure CAL.WA.dt_timeFloor (
   in pTime datetime,
   in pRound integer := 0)
 {
+  declare h, m integer;
   declare exit handler for SQLSTATE '*' {
     return pTime;
   };
-  declare h, m integer;
 
-  if (pRound = 0)
-    return pTime;
+  if (pRound)
+  {
   CAL.WA.dt_timeDecode (pTime, h, m);
-  return CAL.WA.dt_timeEncode (h, floor (cast (m as float) / pRound) * pRound);
+    if (mod (m, pRound))
+      pTime := CAL.WA.dt_timeEncode (h, floor (cast (m as float) / pRound) * pRound);
+  }
+  return pTime;
 }
 ;
 
@@ -2586,10 +2572,18 @@ create procedure CAL.WA.dt_timeCeiling (
   in pTime datetime,
   in pRound integer := 0)
 {
+  declare h, m integer;
   declare exit handler for SQLSTATE '*' {
     return pTime;
   };
-  return CAL.WA.dt_timeFloor (dateadd ('minute', pRound, pTime), pRound);
+
+  if (pRound)
+  {
+    CAL.WA.dt_timeDecode (pTime, h, m);
+    if (mod (m, pRound))
+      pTime := CAL.WA.dt_timeFloor (dateadd ('minute', pRound, pTime), pRound);
+  }
+  return pTime;
 }
 ;
 
@@ -2862,17 +2856,18 @@ create procedure CAL.WA.p_dateadd (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.tz_decode (
-  in S any,
-  inout pMinutes integer)
+  in S any)
 {
+  declare minutes integer;
   declare continue handler for SQLSTATE '*' {
-    pMinutes := 0;
-    return;
+    return 0;
   };
 
-  pMinutes := atoi (substring (S, 2, 2)) * 60 + atoi (substring (S, 4, 2));
+  minutes := atoi (substring (S, 2, 2)) * 60 + atoi (substring (S, 4, 2));
   if (substring (S, 1, 1) = '+')
-    pMinutes := -pMinutes;
+    minutes := -minutes;
+
+  return minutes;
 }
 ;
 
@@ -3237,6 +3232,29 @@ create procedure CAL.WA.tz_value (in tzName varchar)
 }
 ;
 
+create procedure CAL.WA.dt_daylightRRules (
+  in pDaylight integer,
+  inout pStartRRule any,
+  inout pEndRRule any)
+{
+  if (pDaylight = 1)
+  {
+    pStartRRule := vector ('Y2', 5, 7,  3, null);
+    pEndRRule := vector ('Y2', 5, 7, 10, null);
+  }
+  else if (pDaylight = 2)
+  {
+    pStartRRule := vector ('Y2', 2, 7,  3, null);
+    pEndRRule := vector ('Y2', 1, 7, 11, null);
+  }
+  else
+  {
+    pStartRRule := null;
+    pEndRRule := null;
+  }
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 -- Durations
@@ -3352,6 +3370,7 @@ create procedure CAL.WA.test (
     --resignal;
   };
 
+  if (isstring (value))
   value := trim(value);
   if (is_empty_or_null(params))
     return value;
@@ -3360,23 +3379,26 @@ create procedure CAL.WA.test (
   valueType := coalesce (get_keyword ('type', params), get_keyword ('class', params));
   valueName := get_keyword ('name', params, 'Field');
   valueMessage := get_keyword ('message', params, '');
+
   tmp := get_keyword ('canEmpty', params);
-  if (isnull (tmp)) {
+  if (isnull (tmp))
+  {
     if (not isnull (get_keyword ('minValue', params))) {
       tmp := 0;
     } else if (get_keyword ('minLength', params, 0) <> 0) {
       tmp := 0;
     }
   }
-  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null(value)) {
+  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null(value))
+  {
     signal('EMPTY', '');
   } else if (is_empty_or_null(value)) {
     return value;
   }
 
-  value := CAL.WA.validate2 (valueClass, value);
-
-  if (valueType = 'integer') {
+  value := CAL.WA.validate2 (valueClass, cast (value as varchar));
+  if (valueType = 'integer')
+  {
     tmp := get_keyword ('minValue', params);
     if ((not isnull (tmp)) and (value < tmp))
       signal('MIN', cast (tmp as varchar));
@@ -3384,8 +3406,9 @@ create procedure CAL.WA.test (
     tmp := get_keyword ('maxValue', params);
     if (not isnull (tmp) and (value > tmp))
       signal('MAX', cast (tmp as varchar));
-
-  } else if (valueType = 'float') {
+  }
+  else if (valueType = 'float')
+  {
     tmp := get_keyword ('minValue', params);
     if (not isnull (tmp) and (value < tmp))
       signal('MIN', cast (tmp as varchar));
@@ -3393,8 +3416,9 @@ create procedure CAL.WA.test (
     tmp := get_keyword ('maxValue', params);
     if (not isnull (tmp) and (value > tmp))
       signal('MAX', cast (tmp as varchar));
-
-  } else if (valueType = 'varchar') {
+  }
+  else if (valueType = 'varchar')
+  {
     tmp := get_keyword ('minLength', params);
     if (not isnull (tmp) and (length (CAL.WA.utf2wide(value)) < tmp))
       signal('MINLENGTH', cast (tmp as varchar));
@@ -3703,7 +3727,8 @@ create procedure CAL.WA.settings_init (
   CAL.WA.set_keyword ('dateFormat', settings, get_keyword ('dateFormat', settings, 'dd.MM.yyyy'));
   CAL.WA.set_keyword ('timeZone', settings, tz);
   CAL.WA.set_keyword ('timeZoneName', settings, get_keyword ('timeZoneName', settings, case when tz = 0 then 'Etc/GMT' else CAL.WA.tz_name (tz) end));
-  CAL.WA.set_keyword ('showTasks', settings, cast (get_keyword ('showTasks', settings, '0') as integer));
+  CAL.WA.set_keyword ('daylight', settings, CAL.WA.settings_daylight (settings));
+  CAL.WA.set_keyword ('showTasks', settings, cast (get_keyword ('showTasks', settings, '1') as integer));
   CAL.WA.set_keyword ('mailAttendees', settings, cast (get_keyword ('mailAttendees', settings, '1') as integer));
 
   CAL.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
@@ -3876,6 +3901,24 @@ create procedure CAL.WA.settings_timeFormat2 (
   in domain_id integer)
 {
   return CAL.WA.settings_timeFormat (CAL.WA.settings (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_daylight (
+  in settings any)
+{
+  return cast (get_keyword ('daylight', settings, '0') as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_daylight2 (
+  in domain_id integer)
+{
+  return CAL.WA.settings_daylight (CAL.WA.settings (domain_id));
 }
 ;
 
@@ -4239,12 +4282,17 @@ create procedure CAL.WA.event_check_privacy (
 --
 create procedure CAL.WA.event_gmt2user (
   in pDate datetime,
-  in pTimezone integer := 0)
+  in pTimezone integer := 0,
+  in pDaylight integer := 0)
 
 {
-  if (isnull (pDate))
+  if (not isnull (pDate))
+  {
+    pDate := dateadd ('minute', pTimezone, pDate);
+    if (pDaylight)
+      pDate := CAL.WA.event_daylight (pDate, pDaylight, 1);
+  }
     return pDate;
-  return dateadd ('minute', pTimezone, pDate);
 }
 ;
 
@@ -4252,11 +4300,93 @@ create procedure CAL.WA.event_gmt2user (
 --
 create procedure CAL.WA.event_user2gmt (
   in pDate datetime,
-  in pTimezone integer := 0)
+  in pTimezone integer := 0,
+  in pDaylight integer := 0)
 {
-  if (isnull (pDate))
+  if (not isnull (pDate))
+  {
+    pDate := dateadd ('minute', -pTimezone, pDate);
+    if (pDaylight)
+      pDate := CAL.WA.event_daylight (pDate, pDaylight, -1);
+  }
     return pDate;
-  return dateadd ('minute', -pTimezone, pDate);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_daylight (
+  in pDate datetime,
+  in pDaylight integer,
+  in pStep integer := 0)
+{
+  declare _day, _month integer;
+  declare startRRule, endRRule any;
+
+  CAL.WA.dt_daylightRRules (pDaylight, startRRule, endRRule);
+  _month := month (pDate);
+  if (_month < startRRule[3])
+    return pDate;
+
+  if (_month = startRRule[3])
+  {
+    _day := CAL.WA.event_findDay (pDate, startRRule[1], startRRule[2]);
+    if (dayofmonth (pDate) < _day)
+      return pDate;
+
+    return dateadd ('hour', pStep, pDate);
+  }
+
+  if (_month < endRRule[3])
+    return dateadd ('hour', pStep, pDate);
+
+  if (_month = endRRule[3])
+  {
+    _day := CAL.WA.event_findDay (pDate, endRRule[1], endRRule[2]);
+    if (dayofmonth (pDate) >= _day)
+      return pDate;
+
+    return dateadd ('hour', pStep, pDate);
+  }
+  return pDate;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_daylightCheck (
+  in pDate datetime,
+  in pStartRRule any,
+  in pEndRRule any)
+
+{
+  declare _day, _month integer;
+
+  _month := month (pDate);
+  if (_month < pStartRRule[3])
+    return 0;
+
+  if (_month = pStartRRule[3])
+  {
+    _day := CAL.WA.event_findDay (pDate, pStartRRule[1], pStartRRule[2]);
+    if (dayofmonth (pDate) <= _day)
+      return 0;
+
+    return 1;
+  }
+
+  if (_month < pEndRRule[3])
+    return 1;
+
+  if (_month = pEndRRule[3])
+  {
+    _day := CAL.WA.event_findDay (pDate, pEndRRule[1], pEndRRule[2]);
+    if (dayofmonth (pDate) > _day)
+      return 0;
+
+    return 1;
+  }
+  return 0;
 }
 ;
 
@@ -4308,6 +4438,8 @@ create procedure CAL.WA.event_occurAtDate (
   else if (eRepeat = 'W1')
   {
   -- Every N-th week on ...
+    if (eRepeatParam2 = 0)
+      eRepeatParam2 := bit_or (eRepeatParam2, power (2, dayofweek (eEventStart)-1));
     if (mod (datediff ('day', eEventStart, dtEnd) / 7, eRepeatParam1) = 0)
       if (bit_and (eRepeatParam2, power (2, CAL.WA.dt_WeekDay (dt, weekStarts)-1)))
         return 1;
@@ -4392,6 +4524,8 @@ create procedure CAL.WA.event_checkDate (
   {
   -- Every N-th week on ...
     iInterval := 1;
+    if (eRepeatParam2 = 0)
+      eRepeatParam2 := bit_or (eRepeatParam2, power (2, dayofweek (eEventStart)-1));
     if (mod (datediff ('day', eEventStart, dtEnd) / 7, eRepeatParam1) = 0)
       if (bit_and (eRepeatParam2, power (2, CAL.WA.dt_WeekDay (dt, weekStarts)-1)))
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
@@ -4699,7 +4833,7 @@ create procedure CAL.WA.events_forPeriod (
   in pTaskMode integer := 0,
   in pRights varchar := '')
 {
-  declare dt_offset, dtTimezone, account_id integer;
+  declare dt_offset, dtTimezone, dtDaylight, account_id integer;
   declare dtWeekStarts varchar;
   declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
 
@@ -4710,8 +4844,10 @@ create procedure CAL.WA.events_forPeriod (
 
   dtTimezone := CAL.WA.settings_timeZone2 (pDomainID);
   dtWeekStarts := CAL.WA.settings_weekStarts2 (pDomainID);
-  dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), dtTimezone);
-  dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), dtTimezone);
+  dtDaylight := CAL.WA.settings_daylight2 (pDomainID);
+
+  dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), dtTimezone, dtDaylight);
+  dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), dtTimezone, dtDaylight);
   account_id := CAL.WA.domain_owner_id (pDomainID);
 
     if (pTaskMode)
@@ -4744,8 +4880,8 @@ create procedure CAL.WA.events_forPeriod (
       result (E_ID,
               E_EVENT,
               E_SUBJECT,
-                CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone),
-                CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone),
+              CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone, dtDaylight),
+              CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone, dtDaylight),
               E_REPEAT,
               null,
               E_REMINDER,
@@ -4781,8 +4917,8 @@ create procedure CAL.WA.events_forPeriod (
     result (E_ID,
             E_EVENT,
             E_SUBJECT,
-              CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone),
-              CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone),
+            CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone, dtDaylight),
+            CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone, dtDaylight),
             E_REPEAT,
             null,
             E_REMINDER,
@@ -4819,33 +4955,34 @@ create procedure CAL.WA.events_forPeriod (
                )
               )) do
   {
-      tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone);
-      tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, dtTimezone);
+    tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone, dtDaylight);
+    tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, dtTimezone, dtDaylight);
     dt := dtStart;
       while (dt < dtEnd)
       {
-        tzDT := CAL.WA.event_gmt2user (dt, dtTimezone);
-      if (CAL.WA.event_occurAtDate (tzDT,
+      tzDT := CAL.WA.event_gmt2user (dt, dtTimezone, dtDaylight);
+      if (CAL.WA.event_occurAtDate (dt,
                                     E_EVENT,
-                                    tzEventStart,
+                                    E_EVENT_START,
                                     E_REPEAT,
                                     E_REPEAT_PARAM1,
                                     E_REPEAT_PARAM2,
                                     E_REPEAT_PARAM3,
-                                    tzRepeatUntil,
+                                    E_REPEAT_UNTIL,
                                     E_REPEAT_EXCEPTIONS,
                                       dtWeekStarts)) {
           if (E_EVENT = 1)
           {
-          dt_offset := datediff ('day', dateadd ('hour', -12, E_EVENT_START), dt);
+          dt_offset := datediff ('hour', dateadd ('hour', -12, E_EVENT_START), dt);
         } else {
-          dt_offset := datediff ('day', E_EVENT_START, dateadd ('second', 86399, dt));
+          dt_offset := datediff ('hour', E_EVENT_START, dateadd ('second', 86399, dt));
         }
+        dt_offset := floor (dt_offset / 24);
         result (E_ID,
                 E_EVENT,
                 E_SUBJECT,
-                  CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_START), dtTimezone),
-                  CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_END), dtTimezone),
+                CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_START), dtTimezone, dtDaylight),
+                CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_END), dtTimezone, dtDaylight),
                 E_REPEAT,
                 dt_offset,
                 E_REMINDER,
@@ -5380,7 +5517,7 @@ create procedure CAL.WA.vcal_str (
   T := null;
   while (1)
   {
-    S := cast (xquery_eval (xmlPath || sprintf ('val[%d]', N), xmlItem, 1) as varchar);
+    S := cast (xquery_eval (xmlPath || sprintf ('/val[%d]', N), xmlItem, 1) as varchar);
     if (is_empty_or_null (S))
       goto _exit;
     if (isnull (T))
@@ -5404,16 +5541,24 @@ create procedure CAL.WA.vcal_str2date (
   in xmlPath varchar,
   in tzDict any := null)
 {
-  declare S, dt, tzID, tzOffset any;
+  declare S, dt, tzID, tzObject, tzStartRRule, tzEndRRule, tzOffset any;
 
-  S := cast (xquery_eval (xmlPath || 'val', xmlItem, 1) as varchar);
+  S := CAL.WA.vcal_str (xmlItem, xmlPath);
   dt := CAL.WA.vcal_iso2date (S);
   if ((not isnull (dt)) and (not isnull (tzDict)) and (chr (S[length(S)-1]) <> 'Z'))
   {
-      tzID := cast (xquery_eval (xmlPath || 'TZID', xmlItem, 1) as varchar);
+    tzID := cast (xquery_eval (xmlPath || '/TZID', xmlItem, 1) as varchar);
     if (not isnull (tzID))
     {
-        tzOffset := dict_get (tzDict, tzID, 0);
+      tzObject := dict_get (tzDict, tzID, 0);
+      tzOffset := get_keyword ('standardTo', tzObject);
+      tzStartRRule := get_keyword ('daylightRRule', tzObject);
+      if (not isnull (tzStartRRule))
+      {
+        tzEndRRule := get_keyword ('standartRRule', tzObject);
+        if (CAL.WA.event_daylightCheck (dt, tzStartRRule, tzEndRRule))
+          tzOffset := get_keyword ('daylightTo', tzObject);
+      }
         dt := dateadd ('minute', tzOffset, dt);
       }
     }
@@ -5431,7 +5576,7 @@ create procedure CAL.WA.vcal_str2status (
   declare S, V any;
 
   V := vector ('Not Started', 'In Progress', 'Completed', 'Waiting', 'Deferred');
-  S := cast (xquery_eval (xmlPath, xmlItem, 1) as varchar);
+  S := CAL.WA.vcal_str (xmlItem, xmlPath);
   for (N := 0; N < length (V); N := N + 1)
     if (lcase (S) = lcase (V[N]))
       return V[N];
@@ -5450,7 +5595,7 @@ create procedure CAL.WA.vcal_str2privacy (
   declare S, V any;
 
   V := vector ('SHARED', 2, 'PUBLIC', 1, 'PRIVATE', 0);
-  S := cast (xquery_eval (xmlPath, xmlItem, 1) as varchar);
+  S := CAL.WA.vcal_str (xmlItem, xmlPath);
   for (N := 0; N < length (V); N := N + 2)
     if (lcase (S) = lcase (V[N]))
       return V[N+1];
@@ -5741,9 +5886,9 @@ create procedure CAL.WA.vcal_recurrence2str (
     {
       S := S || ';BYMONTHDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam2);
   }
-    else if ((eRepeatParam3 >= 0) and (eRepeatParam3 <= 7))
+    else if ((eRepeatParam3 >= 1) and (eRepeatParam3 <= 7))
     {
-      S := S || ';BYDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam2) || weekdays[eRepeatParam3];
+      S := S || ';BYDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam2) || weekdays[eRepeatParam3-1];
   }
   }
   else if (eRepeat = 'Y1')
@@ -5761,9 +5906,9 @@ create procedure CAL.WA.vcal_recurrence2str (
     {
       S := S || ';BYMONTHDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam1);
     }
-    else if ((eRepeatParam2 >= 0) and (eRepeatParam2 <= 7))
+    else if ((eRepeatParam2 >= 1) and (eRepeatParam2 <= 7))
     {
-      S := S || ';BYDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam1) || weekdays[eRepeatParam2];
+      S := S || ';BYDAY=' || CAL.WA.vcal_recurrenceByDay2str(eRepeatParam1) || weekdays[eRepeatParam2-1];
     }
   }
   if (not isnull (S) and not isnull (eRepeatUntil))
@@ -5783,6 +5928,19 @@ create procedure CAL.WA.vcal_str2reminder (
 
   S := CAL.WA.vcal_str (xmlItem, xmlPath);
   return abs (CAL.WA.d_decode (S));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.vcal_tzDecode (
+  in xmlItem any,
+  in xmlPath varchar)
+{
+  declare S varchar;
+
+  S := CAL.WA.vcal_str (xmlItem, xmlPath);
+  return CAL.WA.tz_decode (S);
 }
 ;
 
@@ -5875,9 +6033,19 @@ create procedure CAL.WA.export_vcal_line (
   in value any,
   inout sStream any)
 {
+  declare prefix varchar;
+
   if (is_empty_or_null (value))
     return;
-  http (sprintf ('%s:%s\r\n', property, cast (value as varchar)), sStream);
+
+  prefix := '';
+  value := sprintf ('%s:%s', property, replace (cast (value as varchar), '\n', '\\n'));
+  while (length (value) > lenght (prefix))
+  {
+    http (subseq (value, 0, 73) || '\r\n', sStream);
+    value := prefix || subseq (value, 73);
+    prefix := ' ';
+  }
 }
 ;
 
@@ -5888,9 +6056,10 @@ create procedure CAL.WA.export_vcal (
   in entries any := null,
   in options any := null)
 {
-  declare tz integer;
+  declare tz, toTz, fromTz, daylight integer;
   declare oEvents, oTasks, oPeriodFrom, oPeriodTo, oTagsInclude, oTagsExclude any;
-  declare S, url, tzID, tzName varchar;
+  declare S, url, tzID, tzName, tzName2 varchar;
+  declare startRRule, endRRule any;
   declare sStream any;
 
   oEvents := 1;
@@ -5910,23 +6079,48 @@ create procedure CAL.WA.export_vcal (
   }
 
   tz := CAL.WA.settings_timeZone2 (domain_id);
+  daylight := CAL.WA.settings_daylight2 (domain_id);
   url := sprintf ('http://%s%s/%U/calendar/%U/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
   -- tzID := sprintf ('GMT%s%04d', case when cast (tz as integer) < 0 then '-' else '+' end,  tz);
   tzID := CAL.WA.settings_timeZoneName2 (domain_id);
   tzName := sprintf ('GMT %s%02d:00', case when cast (tz as integer) < 0 then '-' else '+' end,  abs(floor (tz / 60)));
+  tzName2 := sprintf ('GMT %s%02d:00', case when cast ((tz+60) as integer) < 0 then '-' else '+' end,  abs(floor ((tz+60) / 60)));
 
   sStream := string_output();
 
   -- start
   http ('BEGIN:VCALENDAR\r\n', sStream);
   http ('VERSION:2.0\r\n', sStream);
+  http (sprintf ('X-WR-CALNAME:%s\r\n', CAL.WA.domain_name (domain_id)), sStream);
+
   http ('BEGIN:VTIMEZONE\r\n', sStream);
   http (sprintf ('TZID:%s\r\n', tzID), sStream);
+  CAL.WA.dt_daylightRRules(daylight, startRRule, endRRule);
+  fromTz := tz;
+  toTz := tz;
+  if (startRRule)
+  {
+    fromTz := tz;
+    toTz := tz + 60;
+    http ('BEGIN:DAYLIGHT\r\n', sStream);
+    http (sprintf ('TZOFFSETFROM:%s\r\n', CAL.WA.tz_string (fromTz)), sStream);
+    http (sprintf ('TZOFFSETTO:%s\r\n', CAL.WA.tz_string (toTz)), sStream);
+    http (sprintf ('TZNAME:%s\r\n', tzName2), sStream);
+    http ('DTSTART:19700329T020000\r\n', sStream);
+    CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (startRRule[0], startRRule[1], startRRule[2], startRRule[3], startRRule[4]), sStream);
+    http ('END:DAYLIGHT\r\n', sStream);
+    fromTz := tz + 60;
+    toTz := tz;
+  }
   http ('BEGIN:STANDARD\r\n', sStream);
-  http (sprintf ('TZOFFSETFROM:%s\r\n', CAL.WA.tz_string (tz)), sStream);
-  http (sprintf ('TZOFFSETTO:%s\r\n', CAL.WA.tz_string (tz)), sStream);
+  http (sprintf ('TZOFFSETFROM:%s\r\n', CAL.WA.tz_string (fromTz)), sStream);
+  http (sprintf ('TZOFFSETTO:%s\r\n', CAL.WA.tz_string (toTz)), sStream);
   http (sprintf ('TZNAME:%s\r\n', tzName), sStream);
+  if (endRRule)
+  {
   http ('DTSTART:19700101T000000\r\n', sStream);
+    CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (endRRule[0], endRRule[1], endRRule[2], endRRule[3], endRRule[4]), sStream);
+  }
   http ('END:STANDARD\r\n', sStream);
   http ('END:VTIMEZONE\r\n', sStream);
 
@@ -5935,7 +6129,7 @@ create procedure CAL.WA.export_vcal (
   {
     for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and (entries is null or CAL.WA.vector_contains (entries, E_ID))) do
     {
-      if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz), CAL.WA.event_gmt2user (E_EVENT_END, tz), E_REPEAT_UNTIL) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
+      if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight), CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight), E_REPEAT_UNTIL) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
       {
         http ('BEGIN:VEVENT\r\n', sStream);
         CAL.WA.export_vcal_line ('UID', E_UID, sStream);
@@ -5949,11 +6143,11 @@ create procedure CAL.WA.export_vcal (
         CAL.WA.export_vcal_line ('CATEGORIES', E_TAGS, sStream);
         if (E_EVENT)
         {
-          CAL.WA.export_vcal_line ('DTSTART;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.event_gmt2user (E_EVENT_START, tz)), sStream);
-          CAL.WA.export_vcal_line ('DTEND;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.event_gmt2user (E_EVENT_END, tz)), sStream);
+          CAL.WA.export_vcal_line ('DTSTART;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight)), sStream);
+          CAL.WA.export_vcal_line ('DTEND;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight)), sStream);
         } else {
-          CAL.WA.export_vcal_line (sprintf ('DTSTART;TZID=%s', tzID), CAL.WA.vcal_datetime2str (CAL.WA.event_gmt2user (E_EVENT_START, tz)), sStream);
-          CAL.WA.export_vcal_line (sprintf ('DTEND;TZID=%s', tzID), CAL.WA.vcal_datetime2str (CAL.WA.event_gmt2user (E_EVENT_END, tz)), sStream);
+          CAL.WA.export_vcal_line (sprintf ('DTSTART;TZID=%s', tzID), CAL.WA.vcal_datetime2str (CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight)), sStream);
+          CAL.WA.export_vcal_line (sprintf ('DTEND;TZID=%s', tzID), CAL.WA.vcal_datetime2str (CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight)), sStream);
         }
         CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
         CAL.WA.export_vcal_reminder (E_REMINDER, sStream);
@@ -5970,7 +6164,7 @@ create procedure CAL.WA.export_vcal (
   {
     for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and ((entries is null) or CAL.WA.vector_contains (entries, E_ID))) do
     {
-      if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz), CAL.WA.event_gmt2user (E_EVENT_END, tz)) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
+      if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight), CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight)) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
       {
         http ('BEGIN:VTODO\r\n', sStream);
         CAL.WA.export_vcal_line ('UID', E_UID, sStream);
@@ -5981,9 +6175,9 @@ create procedure CAL.WA.export_vcal (
         CAL.WA.export_vcal_line ('SUMMARY', E_SUBJECT, sStream);
         CAL.WA.export_vcal_line ('DESCRIPTION', E_DESCRIPTION, sStream);
         CAL.WA.export_vcal_line ('CATEGORIES', E_TAGS, sStream);
-        CAL.WA.export_vcal_line ('DTSTART;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_START, tz))), sStream);
-        CAL.WA.export_vcal_line ('DUE;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_END, tz))), sStream);
-        CAL.WA.export_vcal_line ('COMPLETED;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_COMPLETED, tz))), sStream);
+        CAL.WA.export_vcal_line ('DTSTART;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight))), sStream);
+        CAL.WA.export_vcal_line ('DUE;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight))), sStream);
+        CAL.WA.export_vcal_line ('COMPLETED;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_COMPLETED, tz, daylight))), sStream);
         CAL.WA.export_vcal_line ('PRIORITY', E_PRIORITY, sStream);
         CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
         CAL.WA.export_vcal_attendees (E_ID, E_DOMAIN_ID, E_ATTENDEES, sStream);
@@ -6012,8 +6206,9 @@ create procedure CAL.WA.import_vcal (
 {
   declare N, nLength integer;
   declare oEvents, oTasks, oTags, oSync, oMailAttendees any;
-  declare tmp, xmlData, xmlItems, xmlEvents, itemName, V any;
+  declare tmp, xmlData, xmlItems, xmlTimezones, xmlEvents, itemName, V any;
   declare id,
+          recurenceId,
           uid,
           subject,
           description,
@@ -6071,22 +6266,42 @@ create procedure CAL.WA.import_vcal (
     if (itemName = 'IMC-VCALENDAR')
     {
       -- vCalendar version
-      vcalVersion := cast (xquery_eval ('VERSION/val', xmlItem, 1) as varchar);
+      vcalVersion := CAL.WA.vcal_str (xmlItem, 'VERSION');
 
       -- timezone
+      declare tzObject any;
+
       tzDict := dict_new();
-      nLength := xpath_eval('count (IMC-VTIMEZONE)', xmlItem);
-      for (N := 1; N <= nLength; N := N + 1)
+      xmlTimezones := xpath_eval ('./IMC-VTIMEZONE', xmlItem, 0);
+      foreach (any xmlTimezone in xmlTimezones) do
       {
-        tzID := cast (xquery_eval (sprintf ('IMC-VTIMEZONE[%d]/TZID/val', N), xmlItem, 1) as varchar);
+        tzID := CAL.WA.vcal_str (xmlTimezone, 'TZID');
         if (not isnull (tzID))
         {
-          tmp := cast (xquery_eval (sprintf ('IMC-VTIMEZONE[%d]/IMC-STANDARD/TZOFFSETTO/val', N), xmlItem, 1) as varchar);
-          CAL.WA.tz_decode (tmp, tzOffset);
+          tzObject := vector ();
+          tzOffset := CAL.WA.vcal_tzDecode (xmlTimezone, 'IMC-STANDARD/TZOFFSETFROM');
           if (not isnull (tzOffset))
-          {
-            dict_put (tzDict, tzID, tzOffset);
-        }
+            tzObject := vector_concat (tzObject, vector ('standartFrom', tzOffset));
+
+          tzOffset := CAL.WA.vcal_tzDecode (xmlTimezone, 'IMC-STANDARD/TZOFFSETTO');
+          if (not isnull (tzOffset))
+            tzObject := vector_concat (tzObject, vector ('standartTo', tzOffset));
+
+          CAL.WA.vcal_str2recurrence (xmlTimezone, 'IMC-STANDARD/RRULE', eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil);
+          tzObject := vector_concat (tzObject, vector ('standartRRule', vector (eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil)));
+
+          tzOffset := CAL.WA.vcal_tzDecode (xmlTimezone, 'IMC-DAYLIGHT/TZOFFSETFROM');
+          if (not isnull (tzOffset))
+            tzObject := vector_concat (tzObject, vector ('daylightFrom', tzOffset));
+
+          tzOffset := CAL.WA.vcal_tzDecode (xmlTimezone, 'IMC-DAYLIGHT/TZOFFSETTO');
+          if (not isnull (tzOffset))
+            tzObject := vector_concat (tzObject, vector ('daylightTo', tzOffset));
+
+          CAL.WA.vcal_str2recurrence (xmlTimezone, 'IMC-DAYLIGHT/RRULE', eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil);
+          tzObject := vector_concat (tzObject, vector ('daylightRRule', vector (eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil)));
+
+          dict_put (tzDict, tzID, tzObject);
       }
       }
 
@@ -6096,33 +6311,30 @@ create procedure CAL.WA.import_vcal (
         xmlEvents := xpath_eval ('./IMC-VEVENT', xmlItem, 0);
         foreach (any xmlEvent in xmlEvents) do
       {
-          uid := cast (xquery_eval ('UID/val', xmlEvent, 1) as varchar);
+          uid := CAL.WA.vcal_str (xmlEvent, 'UID');
+          recurenceId := CAL.WA.vcal_str (xmlEvent, 'RECURRENCE-ID');
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
-          if ((id <> -1) and not isnull (updatedBefore))
-          {
-            if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
+          if ((id <> -1) and not isnull (recurenceId))
               goto _skip;
-          }
-          subject := CAL.WA.strDecode (cast (xquery_eval ('SUMMARY/val', xmlEvent, 1) as varchar));
-          description := CAL.WA.strDecode (cast (xquery_eval ('DESCRIPTION/val', xmlEvent, 1) as varchar));
-          location := cast (xquery_eval ('LOCATION/val', xmlEvent, 1) as varchar);
-          privacy := CAL.WA.vcal_str2privacy (xmlEvent, 'CLASS/val');
+          if ((id <> -1) and not isnull (updatedBefore) and exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
+            goto _skip;
+          subject := CAL.WA.strDecode (CAL.WA.vcal_str (xmlEvent, 'SUMMARY'));
+          description := CAL.WA.strDecode (CAL.WA.vcal_str (xmlEvent, 'DESCRIPTION'));
+          location := CAL.WA.vcal_str (xmlEvent, 'LOCATION');
+          privacy := CAL.WA.vcal_str2privacy (xmlEvent, 'CLASS');
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);
-          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlEvent, 'CATEGORIES/'), oTags);
-          eEventStart := CAL.WA.vcal_str2date (xmlEvent, 'DTSTART/', tzDict);
-          eEventEnd := CAL.WA.vcal_str2date (xmlEvent, 'DTEND/', tzDict);
+          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlEvent, 'CATEGORIES'), oTags);
+          eEventStart := CAL.WA.vcal_str2date (xmlEvent, 'DTSTART', tzDict);
+          eEventEnd := CAL.WA.vcal_str2date (xmlEvent, 'DTEND', tzDict);
         if (isnull (eEventEnd))
-        {
-            tmp := cast (xquery_eval ('DURATION/val', xmlEvent, 1) as varchar);
-          eEventEnd := CAL.WA.p_dateadd (eEventStart, tmp);
-        }
+            eEventEnd := CAL.WA.p_dateadd (eEventStart, CAL.WA.vcal_str (xmlEvent, 'DURATION'));
           event := case when (isnull (xquery_eval ('DTSTART/VALUE', xmlEvent, 1))) then 0 else 1 end;
           CAL.WA.vcal_str2recurrence (xmlEvent, 'RRULE', eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil);
-          tmp := cast (xquery_eval ('DALARM/val', xmlEvent, 1) as varchar);
-          eReminder := CAL.WA.vcal_str2reminder (xmlEvent, 'IMC-VALARM/TRIGGER/');
-          updated := case when isnull (updatedBefore) then CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP/', tzDict) else null end;
-          notes := cast (xquery_eval ('X-OL-NOTES/val', xmlEvent, 1) as varchar);
+          tmp := CAL.WA.vcal_str (xmlEvent, 'DALARM');
+          eReminder := CAL.WA.vcal_str2reminder (xmlEvent, 'IMC-VALARM/TRIGGER');
+          updated := case when isnull (updatedBefore) then CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP', tzDict) else null end;
+          notes := CAL.WA.vcal_str (xmlEvent, 'X-OL-NOTES');
           connection_set ('__calendar_import', '1');
           id := CAL.WA.event_update
           (
@@ -6166,32 +6378,29 @@ create procedure CAL.WA.import_vcal (
         xmlEvents := xpath_eval ('./IMC-VTODO', xmlItem, 0);
         foreach (any xmlEvent in xmlEvents) do
       {
-          uid := cast (xquery_eval ('UID/val', xmlEvent, 1) as varchar);
+          uid := CAL.WA.vcal_str (xmlEvent, 'UID');
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
-          if ((id <> -1) and not isnull (updatedBefore))
-          {
-            if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
+          if ((id <> -1) and not isnull (updatedBefore) and exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
               goto _skip2;
-          }
-          subject := CAL.WA.strDecode (cast (xquery_eval ('SUMMARY/val', xmlEvent, 1) as varchar));
-          description := CAL.WA.strDecode (cast (xquery_eval ('DESCRIPTION/val', xmlEvent, 1) as varchar));
-          privacy := CAL.WA.vcal_str2privacy (xmlEvent, 'CLASS/val');
+          subject := CAL.WA.strDecode (CAL.WA.vcal_str (xmlEvent, 'SUMMARY'));
+          description := CAL.WA.strDecode (CAL.WA.vcal_str (xmlEvent, 'DESCRIPTION'));
+          privacy := CAL.WA.vcal_str2privacy (xmlEvent, 'CLASS');
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);
-          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlEvent, 'CATEGORIES/'), oTags);
-          eEventStart := CAL.WA.vcal_str2date (xmlEvent, 'DTSTART/');
+          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlEvent, 'CATEGORIES'), oTags);
+          eEventStart := CAL.WA.vcal_str2date (xmlEvent, 'DTSTART');
         eEventStart := CAL.WA.dt_join (eEventStart, CAL.WA.dt_timeEncode (12, 0));
-          eEventEnd := CAL.WA.vcal_str2date (xmlEvent, 'DUE/');
+          eEventEnd := CAL.WA.vcal_str2date (xmlEvent, 'DUE');
         eEventEnd := CAL.WA.dt_join (eEventEnd, CAL.WA.dt_timeEncode (12, 0));
-          priority := cast (xquery_eval ('PRIORITY/val', xmlEvent, 1) as varchar);
+          priority := CAL.WA.vcal_str (xmlEvent, 'PRIORITY');
         if (isnull (priority))
           priority := '3';
-          status := CAL.WA.vcal_str2status (xmlEvent, 'STATUS/val');
-          complete := cast (xquery_eval ('COMPLETE/val', xmlEvent, 1) as varchar);
-          completed := CAL.WA.vcal_str2date (xmlEvent, 'COMPLETED/');
+          status := CAL.WA.vcal_str2status (xmlEvent, 'STATUS');
+          complete := CAL.WA.vcal_str (xmlEvent, 'COMPLETE');
+          completed := CAL.WA.vcal_str2date (xmlEvent, 'COMPLETED');
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
-          updated := CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP/', tzDict);
-          notes := cast (xquery_eval ('X-OL-NOTES/val', xmlEvent, 1) as varchar);
+          updated := CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP', tzDict);
+          notes := CAL.WA.vcal_str (xmlEvent, 'X-OL-NOTES');
           attendees := CAL.WA.import_vcal_attendees (xmlEvent, 'ATTENDEE');
           id := CAL.WA.import_task_update
           (
@@ -6616,12 +6825,10 @@ create procedure CAL.WA.exchange_exec_internal (
           };
           retContent := http_get (_name, resHeader, 'PUT', reqHeader, _content);
           if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
-          {
             signal ('cal02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           }
         }
       }
-    }
     -- subscribe
     else if (_direction = 1)
     {
@@ -7124,7 +7331,7 @@ create procedure CAL.WA.alarm_scheduler ()
   {
     fetch cr into eID, eDomainID, eEvent, eEventStart, eEventEnd, eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil, eRepeatExceptions, eReminder, eReminderDate;
 
-    nextReminderDate := CAL.WA.event_addReminder (CAL.WA.event_user2gmt (dt, CAL.WA.settings_timeZone2 (eDomainID)),
+    nextReminderDate := CAL.WA.event_addReminder (CAL.WA.event_user2gmt (dt, CAL.WA.settings_timeZone2 (eDomainID), CAL.WA.settings_daylight2 (eDomainID)),
                                                   eID,
                                                   eDomainID,
                                                   eEvent,
