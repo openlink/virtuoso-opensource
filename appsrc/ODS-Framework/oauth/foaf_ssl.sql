@@ -34,10 +34,10 @@ create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
 }
 ;
 
-create procedure FOAF_SSL_WEBID_GET (in cert any := null)
+create procedure FOAF_SSL_WEBID_GET (in cert any := null, in cert_type int := 0)
 {
   declare agent, alts any;
-  agent := get_certificate_info (7, cert, 0, '', '2.5.29.17');
+  agent := get_certificate_info (7, cert, cert_type, '', '2.5.29.17');
   if (agent is not null)
     {
       alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
@@ -50,13 +50,13 @@ create procedure FOAF_SSL_WEBID_GET (in cert any := null)
 }
 ;
 
-create procedure FOAF_SSL_MAIL_GET (in cert any := null)
+create procedure FOAF_SSL_MAIL_GET (in cert any := null, in cert_type int := 0)
 {
   declare alts, mail any;
-  mail := get_certificate_info (10, cert, 0, '', 'emailAddress');
+  mail := get_certificate_info (10, cert, cert_type, '', 'emailAddress');
   if (mail is null)
     {
-      alts := get_certificate_info (7, cert, 0, '', '2.5.29.17');
+      alts := get_certificate_info (7, cert, cert_type, '', '2.5.29.17');
       if (alts is not null)
 	{
 	  alts := regexp_replace (alts, ',[ ]*', ',', 1, null);
@@ -72,12 +72,12 @@ create procedure FOAF_SSL_MAIL_GET (in cert any := null)
 --
 -- WHEN USE try_loading_webid must clear the graph named as webid
 -- 
-create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0)
+create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0, in cert_type int := 0)
 {
   declare mail, webid, domain, host_info, xrd, template, url any;
   declare xt, xd, tmpcert any;
 
-  mail := FOAF_SSL_MAIL_GET (cert);
+  mail := FOAF_SSL_MAIL_GET (cert, cert_type);
   if (mail is null)
     return null;
 
@@ -99,7 +99,7 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid i
     {
       x := cast (x as varchar);
       tmpcert := http_get (x);
-      if (get_certificate_info (6, cert, 0, '') = get_certificate_info (6, tmpcert, 0, ''))
+      if (get_certificate_info (6, cert, cert_type, '') = get_certificate_info (6, tmpcert, 0, ''))
 	{
 	  webid := null;
 	  if (try_loading_webid)
@@ -141,9 +141,9 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
 }
 ;
 
-create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, in use_session int := 1)
+create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in allow_nobody int := 0, in use_session int := 1)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
+  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
   acc := 0;
@@ -155,22 +155,22 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, 
   ;
 
   gr := uuid ();
-  info := get_certificate_info (9);
-  fing := get_certificate_info (6);
-  agent := FOAF_SSL_WEBID_GET ();
+  info := get_certificate_info (9, cert, ctype);
+  fing := get_certificate_info (6, cert, ctype);
+  agent := FOAF_SSL_WEBID_GET (cert, ctype);
 
   if (not isarray (info))
     return 0;
   if (agent is null)
     {
-      agent := FOAF_SSL_WEBFINGER ();
+      agent := FOAF_SSL_WEBFINGER (cert, 0, ctype);
       if (agent is not null)
 	{
 	  goto authenticated;
 	}
       else
 	{
-	  agent := ODS..FINGERPOINT_WEBID_GET ();
+	  agent := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
 	}
     }
   if (agent is null)
@@ -182,7 +182,7 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, 
       return 1;
     }
 
-  if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK (agent))
+  if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (agent, cert, ctype, dummy))
     goto authenticated;
 
   hf := rfc1808_parse_uri (agent);
@@ -231,6 +231,14 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, 
   commit work;
 --  dbg_obj_print (stat, data);
   return 0;
+}
+;
+
+create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, in use_session int := 1)
+{
+  declare cert any;
+  cert := client_attr ('client_certificate');
+  return WEBID_AUTH_GEN (cert, 0, realm, allow_nobody, use_session);
 }
 ;
 
@@ -384,13 +392,21 @@ create procedure DB.DBA.FOAF_SSL_LDAP_CHECK (in agent varchar := null)
 
 create procedure DB.DBA.FOAF_SSL_LDAP_CHECK_INT (in agent varchar := null, out data any)
 {
+  return DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (agent, null, 0, data);
+}
+;
+
+create procedure DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (in agent varchar := null, in incert any := null, in incert_type int := 0, out data any)
+{
   declare host, str, ss varchar;
   declare arr, rc, cert, res any;
   declare i int;
   res := 0;
   data := null;
+  if (incert is null)
+    incert := client_attr ('client_certificate');
   if (agent is null)
-    agent := FOAF_SSL_WEBID_GET ();
+    agent := FOAF_SSL_WEBID_GET (incert, incert_type);
   if (agent is null or agent not like 'ldap://%')
     goto failed;
   arr := sprintf_inverse (agent, 'ldap://%s/%s', 1);
@@ -415,7 +431,7 @@ create procedure DB.DBA.FOAF_SSL_LDAP_CHECK_INT (in agent varchar := null, out d
       if (isvector (rc) and length (rc) > 1)
         {	
           cert := get_keyword ('userCertificate;binary', rc[1]);
-          if (isvector (cert) and length (cert) and get_certificate_info (6) = get_certificate_info (6, cert[0], 1))
+          if (isvector (cert) and length (cert) and get_certificate_info (6, incert, incert_type) = get_certificate_info (6, cert[0], 1))
 	    {
 	    res := 1;
 	      data := rc;

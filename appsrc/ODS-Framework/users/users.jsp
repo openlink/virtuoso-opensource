@@ -311,6 +311,7 @@
     String $_userName = getParameter(items, request, "userName");
     String $_sid = getParameter(items, request, "sid");
     String $_realm = "wa";
+    // System.out.println($_sid);
     if ($_sid != null) {
       params = httpParam( "", "sid", $_sid) +
                httpParam("&", "realm", $_realm);
@@ -1025,7 +1026,7 @@
     }
   %>
   <body>
-    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formTab2 == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>" action="users.jsp">
+    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formTab2 == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>">
       <input type="hidden" name="mode" id="mode" value="jsp" />
       <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
       <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
@@ -1039,10 +1040,10 @@
       <div id="ob">
         <div id="ob_left">
         <%
-          if ($_form.equals("profile") || $_form.equals("user"))
+          if (($_validate) && ($_form.equals("profile") || $_form.equals("user")))
           {
         %>
-          <b>User: </b><% out.print(xpathEvaluate($_document, "/user/fullName")); %>, <b>Profile: </b><a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>
+          <b>User: </b><% out.print(xpathEvaluate($_document, "/user/fullName")); %>, <b>Profile: </b><a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return loginUrl();">View</a>
         <%
           }
         %>
