@@ -1382,14 +1382,15 @@ ODRIVE.searchGetPredicate = function (No)
 
 ODRIVE.searchGetCompares = function (predicate)
 {
-  if (predicate)
-  {}
+  if (predicate) {}
   return null;
 }
 
 ODRIVE.davFolderSelect = function (fld)
 {
-  var options = { mode: 'browser',
+  var options = {
+    mode: 'browser',
+    foldersOnly: true,
                   onConfirmClick: function(path) {$(fld).value = '/DAV' + path;}
                 };
   OAT.WebDav.open(options);
@@ -1397,8 +1398,9 @@ ODRIVE.davFolderSelect = function (fld)
 
 ODRIVE.davFileSelect = function (fld)
 {
-  var options = { mode: 'browser',
-                  onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
+  var options = {
+    mode: 'browser',
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
   OAT.WebDav.open(options);
 }
