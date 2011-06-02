@@ -424,7 +424,8 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 	  if (DFE_COLUMN == op->dfe_type)
 	    {
 	      op_table_t * defd = (op_table_t *) op->dfe_tables->data;
-	      if (defd->ot_table && !defd->ot_is_outer && op->_.col.col && op->_.col.col->col_sqt.sqt_non_null)
+	      remote_table_t * rt = defd->ot_table ? find_remote_table (defd->ot_table->tb_name, 0) : NULL;
+	      if (defd->ot_table && !defd->ot_is_outer && op->_.col.col && op->_.col.col->col_sqt.sqt_non_null && !rt)
 		return DFE_FALSE;
 	    }
 	  return dfe;
