@@ -6742,7 +6742,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
           idlen = strlen (tmp);
           ft_arg1_strlen = box_length (ft_arg1_str) - 1;
           len = ft_arg1_strlen + (2 + 25 + 2) + idlen;
-          patched_ft_arg1 = (SPART *)(tail = dk_alloc_box (len, DV_STRING));
+          patched_ft_arg1 = (SPART *)(tail = t_alloc_box (len, DV_STRING));
           (tail++)[0] = '^'; (tail++)[0] = '\''; memcpy (tail, tmp, idlen); tail += idlen;
                       /*  0         1          2       */
                       /* .012345678901234.567890.12345 */
