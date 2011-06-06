@@ -6700,6 +6700,164 @@ err:
 }
 
 static caddr_t
+bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char * me = "xenc_x509_from_csr";
+  caddr_t key_name = bif_string_arg (qst, args, 0, me);
+  caddr_t cli_name = bif_string_arg (qst, args, 1, me);
+  caddr_t csr_str  = bif_string_arg (qst, args, 2, me);
+  long serial = bif_long_arg (qst, args, 3, me);
+  long days = bif_long_arg (qst, args, 4, me);
+  float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, me) : 0;
+  xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1), * k = xenc_get_key_by_name (cli_name, 1);
+  X509 *x = NULL;
+  X509_REQ *req = NULL;
+  EVP_PKEY *pk = NULL, *cli_pk = NULL;
+  RSA *rsa = NULL;
+  DSA *dsa = NULL;
+  char * enc_algoname, * sign_algoname;
+  X509_NAME *name = NULL, *xn;
+  int i;
+  BIO *b;
+  STACK_OF(X509_EXTENSION) *exts = NULL;
+  X509_EXTENSION *ext;
+
+  if (k)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "The key [%s] already exists", cli_name);
+      goto err;
+    }
+
+  /* check ca cert */
+  if (!ca_key || !ca_key->xek_evp_private_key || !ca_key->xek_x509)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Missing or invalid signer certificate");
+      goto err;
+    }
+
+  b = BIO_new (BIO_s_mem());
+  BIO_write (b, csr_str, box_length (csr_str) - 1);
+  req = PEM_read_bio_X509_REQ (b, NULL, NULL, NULL);
+  BIO_free (b);
+
+
+  if (!req)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Invalid certificate request");
+      goto err;
+    }
+
+  cli_pk = X509_REQ_get_pubkey(req);
+  if (!cli_pk)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Invalid certificate request public key");
+      goto err;
+    }
+
+  i = X509_REQ_verify (req, cli_pk);
+  if (i <= 0)
+    {
+      /* XXX: free */
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Signature did not match the certificate request");
+      goto err;
+    }
+
+  xn = X509_REQ_get_subject_name(req);
+  if (!xn)
+    {
+      *err_ret = srv_make_new_error ("22023", "XECXX", "Invalid certificate request subject name");
+      goto err;
+    }
+
+
+  pk = ca_key->xek_evp_private_key;
+
+  if ((x = X509_new()) == NULL)
+    {
+      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not create x.509 structure");
+      goto err;
+    }
+
+
+  X509_set_version (x,2);
+  ASN1_INTEGER_set (X509_get_serialNumber (x), serial);
+  X509_gmtime_adj (X509_get_notBefore (x), 0);
+  X509_gmtime_adj (X509_get_notAfter (x), (long) (((days * 24) + hours) * 60 * 60));
+  X509_set_pubkey (x, cli_pk);
+  X509_set_subject_name (x, X509_NAME_dup (xn));
+  name = X509_get_subject_name (x);
+
+  /* issuer */
+  X509_set_issuer_name(x, X509_NAME_dup (X509_get_subject_name (ca_key->xek_x509)));
+
+  /* Add standard extensions */
+  x509_add_ext (x, NID_subject_key_identifier, "hash");
+  exts = X509_REQ_get_extensions (req);
+  for (i = 0; i < sk_X509_EXTENSION_num (exts); i++)
+    {
+      ext = sk_X509_EXTENSION_value (exts, i);
+      if (!X509_add_ext(x, ext, -1))
+	sqlr_warning ("01V01", "QW001", "Unknown extension entry");
+    }
+
+  if (!X509_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1()) ))
+    {
+      pk = NULL; /* keep one in the xenc_key */
+      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate");
+      goto err;
+    }
+  switch (EVP_PKEY_type (cli_pk->type))
+    {
+      case EVP_PKEY_DSA:
+	  sign_algoname = DSIG_DSA_SHA1_ALGO;
+	  enc_algoname = XENC_DSA_ALGO;
+	  dsa = cli_pk->pkey.dsa;
+	  break;
+      case EVP_PKEY_RSA:
+	  sign_algoname = DSIG_RSA_SHA1_ALGO;
+	  enc_algoname = XENC_RSA_ALGO;
+	  rsa = cli_pk->pkey.rsa;
+	  break;
+      default:
+	  *err_ret = srv_make_new_error ("42000", "XECXX", "The type of public key is not supported mus tbe RSA or DSA");
+	  goto err;
+    }
+  mutex_enter (xenc_keys_mtx);
+  k = xenc_key_create (cli_name, enc_algoname, sign_algoname, 0);
+  if (!k)
+    {
+      mutex_leave (xenc_keys_mtx);
+      *err_ret = srv_make_new_error ("42000", "XECXX", "Can not create a key");
+      goto err;
+    }
+  if (rsa)
+    {
+      k->xek_rsa = rsa;
+      k->xek_private_rsa = 0;
+      k->ki.rsa.pad = RSA_PKCS1_PADDING;
+    }
+  else if (dsa)
+    {
+      k->xek_dsa = dsa;
+      k->xek_private_dsa = 0;
+    }
+  k->xek_evp_key = cli_pk;
+  k->xek_x509_ref = xenc_next_id ();
+  k->xek_x509 = x;
+  k->xek_x509_KI = xenc_x509_KI_base64 (x);
+  if (k->xek_x509_KI)
+    xenc_certificates_hash_add (k->xek_x509_KI, k, 0);
+  mutex_leave (xenc_keys_mtx);
+  X509_REQ_free (req);
+  return box_num (1);
+err:
+  X509_REQ_free (req);
+  X509_free (x);
+  return 0;
+}
+
+
+static caddr_t
 bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pkcs12_export");
@@ -7070,6 +7228,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_x509_ss_generate", bif_xenc_x509_ss_generate);
   bif_define ("xenc_x509_generate", bif_xenc_x509_generate);
   bif_define ("xenc_x509_csr_generate", bif_xenc_x509_csr_generate);
+  bif_define ("xenc_x509_from_csr", bif_xenc_x509_from_csr);
   bif_define ("xenc_pkcs12_export", bif_xenc_pkcs12_export);
   bif_define ("xenc_pem_export", bif_xenc_pem_export);
   bif_define ("xenc_pubkey_pem_export", bif_xenc_pubkey_pem_export);
