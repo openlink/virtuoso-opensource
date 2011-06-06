@@ -1679,6 +1679,8 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
 {
   CON (con, hdbc);
 
+  set_error (&con->con_error, NULL, NULL, NULL);
+
   if (con->con_session)
     {
       /* if client by some reason do SQLFreeConnect but not SQLDisconnect */
@@ -1708,6 +1710,12 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
   if (con->con_dsn)
     dk_free_box ((box_t) con->con_dsn);
 
+  if (con->con_rdf_langs)
+    hash_table_free (con->con_rdf_langs);
+
+  if (con->con_rdf_types)
+    hash_table_free (con->con_rdf_types);
+
   mutex_free (con->con_mtx);
 
   dk_set_delete (&con->con_environment->env_connections, (void *) con);
@@ -1729,6 +1737,8 @@ virtodbc__SQLFreeEnv (SQLHENV henv)
 {
   ENV (env, henv);
 
+  set_error (&env->env_error, NULL, NULL, NULL);
+
   mutex_free (env->env_mtx);
 
   dk_free ((caddr_t) env, sizeof (cli_environment_t));
@@ -1744,6 +1754,7 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
   future_t *f;
 
   cli_dbg_printf (("virtodbc__SQLFreeStmt (hstmt=%p, fOption=%u)\n", (void *) hstmt, (unsigned) fOption));
+  set_error (&stmt->stmt_error, NULL, NULL, NULL);
 
   switch (fOption)
     {
