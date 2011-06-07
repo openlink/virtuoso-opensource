@@ -948,9 +948,6 @@ key_stats (void)
 }
 
 
-#define mutex_try_enter(m) \
-  (mutex_enter (m), 1)
-
 semaphore_t * ps_sem;
 
 void
@@ -1488,14 +1485,14 @@ stat_desc_t dbf_descs [] =
     {"cl_con_drop_rate", &cl_con_drop_rate, SD_INT32},
     {"cl_keep_alive_interval", &cl_keep_alive_interval, SD_INT32},
     {"cl_max_keep_alives_missed", &cl_max_keep_alives_missed, SD_INT32},
-    {"cl_non_logged_write_mode", &cl_non_logged_write_mode},
+    {"cl_non_logged_write_mode", &cl_non_logged_write_mode, SD_INT32},
     {"cl_dead_w_interval", &cl_dead_w_interval, SD_INT32},
     {"timeout_resolution_sec", &atomic_timeout.to_sec, SD_INT32},
     {"timeout_resolution_usec", &atomic_timeout.to_usec, SD_INT32},
     {"ha_rehash_pct", &ha_rehash_pct, SD_INT32},
     {"c_use_aio", &c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception},
-    {"sqlo_sample_dep_cols", &sqlo_sample_dep_cols},
+    {"sqlo_sample_dep_cols", &sqlo_sample_dep_cols, SD_INT32},
     {NULL, NULL, NULL}
   };
 
