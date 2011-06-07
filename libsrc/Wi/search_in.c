@@ -367,6 +367,16 @@ match:
 CMPF_END
 
 
+CMPF_HEADER (iri64n_iri64n_anyn_gt_lt)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (1, 1, lt, gt)
+ANYK1_NN (2, 2, lt, m1)
+m1:
+ANYK1_NN (2, 3, match, gt)
+match:
+CMPF_END
+
+
 CMPF_HEADER (iri64n_iri64n_lte)
 IRI64K_NN (0, 0, lt, gt)
 IRI64K_NN (1, 1, match, gt)
@@ -381,6 +391,14 @@ IRI64K_NN (2, 2, lt, gt)
 IRI64K_NN (3, 3, match, gt)
 match:
 CMPF_END
+
+
+CMPF_HEADER (iri64n_anyn_iri64n)
+IRI64K_NN (0, 0, lt, gt)
+ANYK1_NN (1, 1, lt, gt)
+IRI64K_NN (2, 2, lt, gt)
+CMPF_END
+
 
 
 CMPF_HEADER (anyn_iri64n_iri64n_iri64n_lte)
@@ -637,6 +655,18 @@ search_inline_init ()
     {CMP_EQ, CMP_NONE, DV_ANY, 1},
     {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
     {CMP_NONE, CMP_LTE, DV_IRI_ID_8, 1}
+  SPF_END;
+
+  SPF (iri64n_anyn_iri64n)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_ANY, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}
+  SPF_END;
+
+  SPF (iri64n_iri64n_anyn_gt_lt)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_GT, CMP_LT, DV_ANY, 1}
   SPF_END;
 
   SPF (iri64n_iri64n_anyn_iri64n_lte)
