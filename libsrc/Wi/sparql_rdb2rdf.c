@@ -1331,7 +1331,7 @@ bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int opcode = bif_long_range_arg (qst, args, 1, "sparql_rdb2rdf_codegen", RDB2RDF_CODEGEN_EXPLAIN, COUNTOF__RDB2RDF_CODEGEN);
   int rule_id_seed = (3 <= BOX_ELEMENTS (args)) ?
     bif_long_arg (qst, args, 2, "sparql_rdb2rdf_codegen") :
-    (adler32_of_buffer (table_name, box_length (table_name)-1) ^ opcode);
+    (adler32_of_buffer ((unsigned char *)table_name, box_length (table_name)-1) ^ opcode);
   return bif_sparql_rdb2rdf_impl (qst, table_name, opcode, rule_id_seed, 0);
 }
 
