@@ -445,20 +445,22 @@ hash_queue_get (id_hash_t * ht, query_instance_t * qi, int next, int last)
 }
 
 
-void rdf_sas_ensure (caddr_t * qst);
+void rdf_sas_ensure (caddr_t * qst, caddr_t * err_ret);
 
 void
 ri_same_as_iri (rdf_inf_pre_node_t * ri, query_instance_t * qi, caddr_t iri, query_t * qr)
 {
   caddr_t * qst = (caddr_t *)qi;
   ptrlong one = 1;
-  caddr_t err;
+  caddr_t err = NULL;
   local_cursor_t * lc;
   id_hash_t * reached = (id_hash_t *) QST_GET (qi, ri->ri_sas_reached);
   id_hash_t * out = (id_hash_t *) QST_GET (qi, ri->ri_sas_out);
   id_hash_t * follow = (id_hash_t *) QST_GET (qi, ri->ri_sas_follow);
   int ginx;
-  rdf_sas_ensure (qst);
+  rdf_sas_ensure (qst, &err);
+  if (err)
+    sqlr_resignal (err);
   DO_BOX (state_slot_t *, g_ssl, ginx, ri->ri_sas_g)
     {
       caddr_t g = qst_get (qst, g_ssl);
@@ -1269,7 +1271,7 @@ bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-rdf_sas_ensure (caddr_t * qst)
+rdf_sas_ensure (caddr_t * qst, caddr_t * err_ret)
 {
 }
 
@@ -1277,7 +1279,7 @@ rdf_sas_ensure (caddr_t * qst)
 caddr_t
 bif_rdf_sas_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  rdf_sas_ensure (qst);
+  rdf_sas_ensure (qst, err_ret);
   return box_copy_tree (same_as_iri);
 }
 
