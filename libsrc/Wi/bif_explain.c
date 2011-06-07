@@ -863,6 +863,15 @@ node_print (data_source_t * node)
       insert_node_t *ins = (insert_node_t *) node;
       stmt_printf (("Insert %s ", ins->ins_table->tb_name));
       ssl_list_print (ins->ins_values);
+      if (ins->ins_key_only)
+	stmt_printf ((" only key %s ", ins->ins_key_only));
+      if (ins->ins_daq)
+	{
+	  stmt_printf ((" DAQ ("));
+	  ssl_print (ins->ins_daq);
+	  stmt_printf ((")"));
+	}
+      stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) select_node_input_subq)
     {
