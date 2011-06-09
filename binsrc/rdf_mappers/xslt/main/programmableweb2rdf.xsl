@@ -83,6 +83,7 @@
 	<xsl:template match="entry/content/pw:api|entry/content/pw:mashup">
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&foaf;Project" />
+			<rdf:type rdf:resource="http://sw.opencyc.org/concept/Mx4rvVkF3ZwpEbGdrcN5Y29ycA"/>
 			<xsl:if test="string-length(name) &gt; 0">
 				<foaf:name>
 					<xsl:value-of select="name" />

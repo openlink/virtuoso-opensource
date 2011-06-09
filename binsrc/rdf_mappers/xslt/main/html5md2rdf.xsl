@@ -112,11 +112,11 @@
 		<xsl:variable name="root" select="/"/>
 		
 		<xsl:choose>
-            <xsl:when test="@id">
+            <!--xsl:when test="@id">
 				<xsl:variable name="item_id" select="@id"/>
 				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $item_id)"/>
-			</xsl:when>
-			<xsl:when test="not $itemid">
+			</xsl:when-->
+			<xsl:when test="string-length($itemid) = 0">
 				<xsl:variable name="item_id" select="generate-id(.)"/>
 				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $item_id)"/>
 			</xsl:when>
@@ -228,7 +228,14 @@
 						</xsl:call-template>
 					</xsl:when>
 					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when test="string-length($obj/@content) &gt; 0">
+								<xsl:value-of select="$obj/@content"/>
+							</xsl:when>
+							<xsl:otherwise>
 						<xsl:value-of select="$obj"/>
+					</xsl:otherwise>
+				</xsl:choose>
 					</xsl:otherwise>
 				</xsl:choose>
 			</xsl:element>
