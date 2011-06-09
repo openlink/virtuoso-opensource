@@ -174,6 +174,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern int32 enable_p_stat;
 extern int aq_max_threads;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
@@ -1335,6 +1336,8 @@ cfg_setup (void)
     c_sparql_max_mem_in_use = 0;
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
+  if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
+    enable_p_stat = 1;
 
   /* Now open the HTTP log */
   if (http_log_file)
