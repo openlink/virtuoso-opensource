@@ -342,7 +342,7 @@
                               	    <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
                               	    <?vsp } ?>
                               	    <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
-                              	    <a href="fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
+                              	    <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
                                     <?vsp } ?>
                                     <br />
                                     <span class="fm_ctl_btn">
