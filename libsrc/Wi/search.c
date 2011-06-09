@@ -3531,7 +3531,7 @@ samples_stddev (int64 * samples, int n_samples, float * mean_ret, float * stddev
   *mean_ret = mean;
 }
 
-int enable_p_stat = 1;
+int32 enable_p_stat = 1;
 
 int
 itc_sample_is_rdf_p (it_cursor_t * itc)

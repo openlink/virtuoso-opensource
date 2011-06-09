@@ -1762,7 +1762,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
 }
 
 
-extern int enable_p_stat;
+extern int32 enable_p_stat;
 
 caddr_t
 sqlo_const_iri (sqlo_t * so, df_elt_t * dfe)
