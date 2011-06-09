@@ -383,7 +383,7 @@
               <xsl:attribute name="checked"/>
             </xsl:if>
           </input>
-  			  Required (can't send message unless all recipeints have certificates)
+  			  Required (can't send message unless all recipients have certificates)
   	    </label>
       </td>
     </tr>

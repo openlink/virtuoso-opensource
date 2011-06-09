@@ -94,6 +94,9 @@ create procedure ODS.ODS_API."calendar.get" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   ods_describe_iri (SIOC..calendar_event_iri (inst_id, event_id));
   return '';
 }
@@ -202,6 +205,9 @@ create procedure ODS.ODS_API."calendar.event.edit" (
   inst_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = event_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   cTimezone := CAL.WA.settings_usedTimeZone (inst_id);
   eventStart := CAL.WA.event_user2gmt (eventStart, cTimezone);
@@ -323,6 +329,9 @@ create procedure ODS.ODS_API."calendar.task.edit" (
   inst_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = event_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Calendar'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   cTimezone := CAL.WA.settings_usedTimeZone (inst_id);
   eventStart := CAL.WA.event_user2gmt (CAL.WA.dt_join (CAL.WA.dt_dateClear (eventStart), CAL.WA.dt_timeEncode (12, 0)), cTimezone);

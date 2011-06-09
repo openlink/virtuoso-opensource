@@ -92,9 +92,11 @@ create procedure ODS.ODS_API."bookmark.get" (
 
   inst_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
-  {
     return ods_auth_failed ();
-  }
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   ods_describe_iri (SIOC..bmk_post_iri (inst_id, bookmark_id));
   return '';
 }

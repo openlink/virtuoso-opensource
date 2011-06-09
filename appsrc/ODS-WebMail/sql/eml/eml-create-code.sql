@@ -6685,6 +6685,8 @@ create procedure OMAIL.WA.omail_send_msg(
       _addr := replace (_addr, '>', '');
       _addr := replace (_addr, '\t', '');
       _addr := trim (_addr);
+      _cert := null;
+      if (__proc_exists ('AB.WA.contact_certificate'))
       _cert := AB.WA.contact_certificate (_user_id, _addr);
       if (isnull (_cert) or (get_certificate_info (10, _cert, 0, '', 'emailAddress') <> _addr))
         signal ('08006', '');

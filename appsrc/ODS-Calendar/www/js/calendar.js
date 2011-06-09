@@ -773,6 +773,13 @@ function urlParam(fldName) {
   return S;
 }
 
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function checkReminder() {
   var cb = function(txt) {
     setTimeout("checkReminder()", 60000);
@@ -909,7 +916,11 @@ CAL.aboutDialog = function() {
 	if (aboutDiv)
 		OAT.Dom.unlink(aboutDiv);
 
-	aboutDiv = OAT.Dom.create('div', {width: '430px', height: '150px'});
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
 	aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
 	aboutDialog.cancel = aboutDialog.hide;

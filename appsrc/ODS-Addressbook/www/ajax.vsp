@@ -111,7 +111,7 @@
 	}
   else if (action = 'about')
   {
-    http (         '<div style="padding: 1em;">');
+    http (         '<div style="padding: 1em; overflow: hidden;">');
     http (         '<table style="width: 100%;">');
     http (         '  <tr>');
     http (         '    <td align="right" width="50%">');
