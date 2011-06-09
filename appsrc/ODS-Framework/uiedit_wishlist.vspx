@@ -37,7 +37,7 @@
 	<v:variable name="wl_newProperties" type="any" default="null" />
 
 	<v:form name="usr_personal_055" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-    <h3>My Offers (GoodRelations Ontologies)</h3>
+    <h3>I Want, Seek, or Need</h3>
     <vm:if test="self.wl_mode = 'WL/browse'">
       <?vsp
         if (0)

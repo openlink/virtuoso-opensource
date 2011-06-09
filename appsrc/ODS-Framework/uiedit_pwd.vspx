@@ -658,7 +658,7 @@
             <table>
         <tr>
                 <th width="135px">
-		Key Name
+                  Key Name (*)
                 </th>
 	      <td align="left">
 		  <v:text name="kn" value="">
@@ -739,8 +739,6 @@
               <v:button name="bt_gen7" value="Generate Key" action="simple" enabled="--equ (self.inpsel.ufl_selected, 0)">
                 <v:on-post>
                   <![CDATA[
-  		    declare agent, mail varchar;
-
                     if (self.vc_is_valid = 0)
 		      return;
 
@@ -750,14 +748,16 @@
 		       self.vc_is_valid := 0;
 		       return;
 		    };
-		    if (not length (self.kn.ufl_value))
+                          declare kn varchar;
+                          declare kl integer;
+
+                          kn := trim (self.kn.ufl_value);
+                          if (not length (kn))
                       {
-		        self.vc_error_message := 'You must specify key name';
+                            self.vc_error_message := 'Please specify Key Name';
 			self.vc_is_valid := 0;
 			return;
 		      }  
-		    declare kl int;
-                    
 		    kl := atoi (self.kl.ufl_value);
 		    set_user_id (self.u_name); 
 		    set_qualifier ('DB');
@@ -769,7 +769,7 @@
 		      { 
 		        xenc_key_DSA_create (self.kn.ufl_value, kl);
 		      }
-		    USER_KEY_STORE (self.u_name, self.kn.ufl_value, self.kt.ufl_value, 'DER', '');
+                          USER_KEY_STORE (self.u_name, kn, self.kt.ufl_value, 'DER', '');
                     set_user_id ('dba');
                     self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=7');
                   ]]>
@@ -778,18 +778,32 @@
               <v:button name="bt_set7" value="Import Key" action="simple" enabled="--equ (self.inpsel.ufl_selected, 1)">
                 <v:on-post>
                   <![CDATA[
-  		    declare agent, mail varchar;
-
                     if (self.vc_is_valid = 0)
                       return;
+
 		    declare exit handler for sqlstate '*', not found
 		    {
 		       self.vc_error_message := __SQL_MESSAGE;
 		       self.vc_is_valid := 0;
 		       return;
 		    };
+                          declare kn varchar;
+
+                          kn := trim (self.kn.ufl_value);
+                          if (not length (kn))
+                          {
+                            self.vc_error_message := 'Please specify Key Name';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          if (not length (get_keyword ('k_value', e.ve_params)))
+                          {
+                            self.vc_error_message := 'Please specify file to import';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
 		    set_user_id (self.u_name);
-		    USER_KEY_LOAD (self.kn.ufl_value, get_keyword ('k_value', e.ve_params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
+                          USER_KEY_LOAD (kn, get_keyword ('k_value', e.ve_params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
                     self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=7');
                   ]]>
                 </v:on-post>

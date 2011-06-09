@@ -37,7 +37,7 @@
 	<v:variable name="ol_newProperties" type="any" default="null" />
 
 	<v:form name="usr_personal_054" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-    <h3>My Offers (GoodRelations Ontologies)</h3>
+    <h3>My Offers</h3>
     <vm:if test="self.ol_mode = 'OL/browse'">
       <?vsp
         if (0)

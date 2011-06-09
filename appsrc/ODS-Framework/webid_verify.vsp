@@ -2,15 +2,21 @@
   declare info, res, cb, mod, exp, webid, ret_url, cert, ctype any;
   cb := {?'callback'};
   cert := {?'certificate'};
-  if (not length (cb) or not length (cert))
+  if ((length (cb) = 0) or ((length (cert) = 0) and not is_http_ctx ()))
     {
       goto html;
     }
   ctype := 1;
+  if (not length (cert))
+    {
+      cert := client_attr ('client_certificate');
+      ctype := 0;
+    } else {
   if (strstr (cert, '-----BEGIN CERTIFICATE-----') is null)
     cert := decode_base64 (cert);
   else
     ctype := 0;
+    }
   if (strchr (cb, '?') is null)
     cb := cb || '?';
   else
