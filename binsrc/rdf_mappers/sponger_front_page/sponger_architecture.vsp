@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <?vsp
+    declare skinpfx, banner_txt, strapline varchar;
+    skinpfx := registry_get ('_sponger_fp_SkinPrefix');
+    banner_txt := registry_get ('_sponger_fp_Banner');
+    strapline := registry_get ('_sponger_fp_Strapline');
+    if (skinpfx = 0) skinpfx := 'skin';
+    if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
+    if (strapline = 0) strapline := '';
+  ?>
+  <head>
+    <meta name="generator" content="HTML Tidy, see www.w3.org"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Virtuoso Sponger</title>
+    <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+  </head>
+
+  <body>
+    <div id="outer">
+      <div id="header">
+        <div id="header_logo">
+        <a href="http://www.openlinksw.com/"><img id="openlink_logo"
+         title="OpenLink Software" alt="[OpenLink Software logo]"
+        src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
+        </div>
+        <div id="header_text">
+          <h1><?=banner_txt?></h1><?=strapline?>
+        </div>
+      </div>
+
+      <div id="navbar">
+        <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp">How It Works</a> | 
+        <a href= "sponger_setup.vsp">Sponger Setup</a> | 
+        <a href="examples.vsp">Live Sponger Examples</a> | 
+        <a href= "http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a> |
+		<a href="http://virtuoso.openlinksw.com/">Virtuoso</a>
+      </div>
+
+      <div id="content">
+        <div class="topic-text">
+          <div id="sponge_arch_toc_container">
+          <div id="sponge_arch_toc">
+            <table>
+              <tr><td><a href="#what_is_the_sponger">What Is The Sponger?</a></td></tr>
+              <tr><td><a href="#why_important">Why Is It Important?</a></td></tr>
+              <tr><td><a href="#how_does_it_work">How Does It Work?</a></td></tr>
+            </table>
+          </div>
+          </div>
+          <div id="lmargin_architect">
+              <div id="what">
+                <h2><a id="what_is_the_sponger"></a>What Is The Sponger?</h2>
+
+                <p>The Virtuoso Sponger is the Linked Data middleware component of Virtuoso that generates 
+                Linked Data from a variety of data sources, supporting a wide variety of data representation and serialization formats. 
+                The Sponger is transparently integrated into Virtuoso's SPARQL Query Processor where it delivers URI de-referencing 
+                within SPARQL query patterns, across disparate data spaces. It also delivers configurable smart HTTP caching services.
+                Optionally, it can be used by the Virtuoso Content Crawler to periodically populate and replenish data within the native Quad Store.</p>
+
+                <p>
+                The Sponger is a fully fledged service that is also directly accessible via SOAP or REST interaction patterns.
+                It is also integrated into Virtuoso's SPARQL query processor, Web Content Crawler and Smart WebDAV folders functionality.
+                (Smart WebDAV folders are 'sink' folders which act as conduits for populating the Virtuoso Quad Store with structured data
+                extracted from documents placed in them.)
+                </p>
+
+                <p>
+                As depicted below, OpenLink's broad portfolio of Linked-Data-aware products supports a number of routes for creating 
+                or consuming Linked Data. The Sponger provides a key platform for developers to generate quality data meshes from 
+                unstructured or semi-structured data sources.
+                </p>
+
+                <img src="<?=skinpfx?>/i/linked_data_gen_opts3a.png" title="Linked Data generation options" 
+                alt="[Linked Data generation options]" class="img_centre" />
+
+                <p>
+                Architecturally, the Sponger is comprised of a number of cartridges for specific data sources. Basically, each cartridge
+                is the equivalent of a data access driver.
+                </p>
+                <p>
+                The Sponger supports two types of cartridge: Extractor and Meta Cartridges. Extractor cartridges handle raw data extraction
+                and transformation, while Meta Cartridges handle lookups and joins across other Linked Data spaces and Web 2.0 style APIs.
+                Both cartridge types are themselves comprised of data extractor and schema/ontology mapper components.
+                </p>
+
+                <p>
+                Cartridges are highly customizable. Custom cartridges can be developed using any language supported by the Virtuoso Server 
+                Extensions API, enabling structured Linked Data generation from resource types not available in the default Sponger cartridge 
+                collection bundled as part of the Virtuoso Sponger VAD package (rdf_mappers_dav.vad).
+                </p>
+              </div> <!-- what -->
+            
+              <div id="why_important">
+                <h2>Why Is It Important?</h2>
+
+                <p>
+                A majority of the world's data naturally resides in non-Linked Data form at the current time. The Sponger delivers middleware 
+                that accelerates the boot-strapping of the Data Web by generating Linked Data from unstructured sources, unobtrusively. 
+                This "Swiss army knife" for on-the-fly Linked Data generation provides a bridge between the traditional Document Web and the Linked Data Web ("Data Web").
+                </p>
+
+                <p>
+                Sponging data from non-Linked Data sources and converting it to Linked Data exposes the data in a canonical form for querying 
+                and inference, and enables fast and easy construction of Linked Data driven mesh-ups as opposed to code driven Web 2.0 mash-ups.
+                </p>
+
+            </div> <!-- why_important -->
+
+
+              <div id="how_it_works">
+                <h2><a id="how_does_it_work"></a>How Does It Work?</h2>
+
+                <p>Designed with a pluggable architecture, the Sponger's core functionality is provided
+                by cartridges. Each cartridge includes data extractors which extract data from one or more
+                data sources, and ontology mappers which map the extracted data to one or more ontologies/schemas,
+                en route to producing Linked Data.
+                </p>
+
+                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr><td align="center">
+                <object id="sponger_animation" width="600" height="450" alt="simple Flash animation of Virtuoso Sponger activity">
+                <embed 
+                    src="http://virtuoso.openlinksw.com/screencasts/virtuoso-rdf-middleware3.swf" 
+                    type="application/x-shockwave-flash" width="600" height="450" alt="simple Flash animation of Virtuoso Sponger activity">
+                </embed>
+                </object>
+                </td></tr>
+                </table>
+
+              </div> <!-- how_it_works -->
+          </div> <!-- lmargin -->
+
+        </div>
+      </div>
+
+      <div class="reset">
+        <div id="footer">
+          Copyright (C) OpenLink Software 2011. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

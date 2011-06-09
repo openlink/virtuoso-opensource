@@ -191,6 +191,11 @@ directory_init() {
   mkdir vad/vsp/rdf_mappers/rdfdesc/oat/styles
   mkdir vad/vsp/rdf_mappers/rdfdesc/oat/xslt
 
+  mkdir vad/vsp/rdf_mappers/sponger_front_page
+  mkdir vad/vsp/rdf_mappers/sponger_front_page/skin
+  mkdir vad/vsp/rdf_mappers/sponger_front_page/skin/i
+  mkdir vad/vsp/rdf_mappers/sponger_front_page/skin/ss
+
   for f in `find rdfdesc -type f | grep -v "/CVS/" | grep -v "\.sql"`
   do
      cp $f vad/vsp/rdf_mappers/$f  
@@ -209,6 +214,10 @@ directory_init() {
   cp xslt/main/*.xsl vad/vsp/rdf_mappers/xslt/main/
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
   cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
+
+  cp sponger_front_page/* vad/vsp/rdf_mappers/sponger_front_page/
+  cp sponger_front_page/skin/i/* vad/vsp/rdf_mappers/sponger_front_page/skin/i/
+  cp sponger_front_page/skin/ss/* vad/vsp/rdf_mappers/sponger_front_page/skin/ss/
 
   #
   #  GZip the ontologies sources to save space
@@ -393,6 +402,11 @@ fi
   do
       name=`echo $file | cut -b21-`
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  done
+
+  for file in `find sponger_front_page -type f -print | grep -v CVS | sort`
+  do
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER

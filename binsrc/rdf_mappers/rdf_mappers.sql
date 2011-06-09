@@ -182,7 +182,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_EOL', null, 'Eol');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)',
+	values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)|(http://del.icio.us/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_DELICIOUS', null, 'Delicious');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -301,7 +301,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('.+\\.csv\x24', 'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
         
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)',
+	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -376,7 +376,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
     '(http://reviews.cnet.com/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
 
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)'
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_EBAY_ARTICLE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
@@ -392,7 +392,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
 
 update DB.DBA.SYS_RDF_MAPPERS 
-	set RM_PATTERN = 'http://.*delicious.com/.*'
+	set RM_PATTERN = '(http://.*delicious.com/.*)|(http://del.icio.us/.*)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -3375,7 +3375,7 @@ DB.DBA.VHOST_DEFINE (
 	 lhost=>'*ini*',
 	 vhost=>'*ini*',
 	 lpath=>'/facebook_oauth',
-	 ppath=>'/DAV/VAD/conductor/',
+	 ppath=>'/DAV/VAD/rdf_mappers/sponger_front_page/',
 	 is_dav=>1,
 	 def_page=>'fb_access_token_popup.vsp',
 	 vsp_user=>'dba',
@@ -5235,20 +5235,24 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	if (new_origin_uri like 'http://%delicious.com/tags/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/tags/%')
+	if (new_origin_uri like 'http://%del.icio.us/tags/%' or new_origin_uri like 'http://%delicious.com/tags/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/tags/%')
 		what := 'tags';
-	else if (new_origin_uri like 'http://%delicious.com/url/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/url/%')
+	else if (new_origin_uri like 'http://%del.icio.us/url/%' or new_origin_uri like 'http://%delicious.com/url/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/url/%')
 	{
 		what := 'url';
 		return 1;
 	}
-	else if (new_origin_uri like 'http://%delicious.com/%/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/%/%')
+	else if (new_origin_uri like 'http://%del.icio.us/%/%' or new_origin_uri like 'http://%delicious.com/%/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/%/%')
 		what := 'tag';
 	else
 		what := 'user';
-	if (new_origin_uri like 'http://%delicious.com/%')
+	if (new_origin_uri like 'http://%delicious.com/%' or new_origin_uri like 'http://%del.icio.us/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://%sdelicious.com/%s', 0);
+		if (tmp is null or tmp = '')
+			tmp := sprintf_inverse (new_origin_uri, 'http://%sdel.icio.us/%s', 0);
+		if (tmp is null or tmp = '')
+			return 0;
 		section_name := trim(tmp[1]);
 		section_name := trim(section_name, '/');
 		if (section_name is null)
@@ -7176,12 +7180,18 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
       tmp := sprintf_inverse (new_origin_uri, 'http://cgi.sandbox.ebay.com/%s&item=%s&%s', 0);
       use_sandbox := 1;
     }
-  else if (new_origin_uri like 'http://cgi.ebay.com/%QQitemZ%QQ%')
-    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%sQQitemZ%sQQ%s', 0);
-  else if (new_origin_uri like 'http://cgi.ebay.com/%/eBayISAPI.dll?ViewItem&item=%')
-    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%s/eBayISAPI.dll?ViewItem&item=%s', 0);
-  else if (new_origin_uri like 'http://cgi.ebay.com/%/%?%')
-    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%s/%s?%s', 0);
+  else if (new_origin_uri like 'http://cgi.ebay.%/%QQitemZ%QQ%')
+    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.%s/%sQQitemZ%sQQ%s', 0);
+  else if (new_origin_uri like 'http://cgi.ebay.%/%/eBayISAPI.dll?ViewItem&item=%')
+    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.%s/%s/eBayISAPI.dll?ViewItem&item=%s', 0);
+  else if (new_origin_uri like 'http://cgi.ebay.%/%/%?%')
+    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.%s/%s/%s?%s', 0);
+  else if (new_origin_uri like 'http://cgi.ebay.%/%/%')
+  {
+    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.%s/%s/%s', 0);
+	if (atoi(tmp[2]) = 0)
+		return 0;
+  }
   else
     return 0;
 
@@ -7190,9 +7200,9 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
   if (tmp is null or not isstring (api_key))  -- length (tmp) <> 3
     return 0;
 
-  item_id := tmp[1];
-
+  item_id := tmp[2];
   url := sprintf ('http://open.api.ebay.com/shopping?callname=GetSingleItem&responseencoding=XML&appid=%s&siteid=0&version=515&ItemID=%s&IncludeSelector=Description,Details,ItemSpecifics', api_key, item_id);
+
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
@@ -9561,3 +9571,23 @@ create procedure CLEAN_SPONGE (in d int := 30, in n int := 2000)
 ;
 
 RDFS_RULE_SET ('http://www.w3.org/2000/01/rdf-schema#', 'http://www.w3.org/2000/01/rdf-schema#');
+
+-- Sponger splash screen
+DB.DBA.VHOST_REMOVE (
+	 lhost=>'*ini*',
+	 vhost=>'*ini*',
+	 lpath=>'/sponger'
+);
+
+DB.DBA.VHOST_DEFINE (
+	 lhost=>'*ini*',
+	 vhost=>'*ini*',
+	 lpath=>'/sponger',
+	 ppath=>'/DAV/VAD/rdf_mappers/sponger_front_page/',
+	 is_dav=>1,
+	 def_page=>'index.vsp',
+	 vsp_user=>'dba',
+	 ses_vars=>0,
+	 opts=>vector ('executable', 'yes', 'browse_sheet', ''),
+	 is_default_host=>0
+);
