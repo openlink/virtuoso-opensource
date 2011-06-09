@@ -646,6 +646,12 @@ client_connection_free (client_connection_t * cli)
   LEAVE_TXN;
 #endif
   dk_free_tree (cli->cli_info);
+  if (NULL != cli->cli_ns_2dict)
+    {
+      xml_ns_2dict_clean (cli->cli_ns_2dict);
+      dk_free (cli->cli_ns_2dict, sizeof (xml_ns_2dict_t));
+      cli->cli_ns_2dict = NULL;
+    }
   dk_free ((caddr_t) cli, sizeof (client_connection_t));
 }
 
