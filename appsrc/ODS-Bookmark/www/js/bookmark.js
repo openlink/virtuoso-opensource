@@ -626,6 +626,13 @@ function urlParam (fldName)
   return '';
 }
 
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 var progressTimer = null;
 var progressID = null;
 var progressMax = null;
@@ -1420,7 +1427,11 @@ BMK.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
   if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS Booomarks', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;

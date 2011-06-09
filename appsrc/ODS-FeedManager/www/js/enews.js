@@ -509,7 +509,11 @@ Feeds.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
   if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS FeedsManager', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
@@ -1026,6 +1030,13 @@ function urlParam(fldName)
   if (O && O.value != '')
     return '&' + fldName + '=' + encodeURIComponent(O.value);
   return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
 }
 
 function urlParams(mask)
