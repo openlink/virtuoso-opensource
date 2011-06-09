@@ -1435,7 +1435,7 @@ ordering_spec_commalist
 
 ordering_spec
 	: scalar_exp opt_asc_desc
-		{ $$ = t_listst (3, ORDER_BY, INTEGERP ($1) ? (caddr_t) unbox_ptrlong ((caddr_t) $1) : (caddr_t) $1, (ptrlong) $2);  }
+		{ $$ = t_listst (3, ORDER_BY, (caddr_t) $1, (ptrlong) $2);  }
 	|  mssql_xml_col opt_asc_desc
 		{ $$ = (ST*) t_list (3, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2); }
 	;
