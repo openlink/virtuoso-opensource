@@ -668,7 +668,6 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
       propertyType = 'data';
     }
   	var fld;
-  	var fldLanguage;
     if (propertyType == 'xsd:boolean') {
     	fld = TBL.createCellSelect(fldName);
       TBL.selectOption(fld, property.value, 'Yes', 'true');
@@ -690,10 +689,6 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
         fld.className = fldClassName;
     }
     td.appendChild(fld);
-    if (fldLanguage) {
-      td.appendChild(OAT.Dom.text(' '));
-      td.appendChild(fldLanguage);
-    }
   }
   var fld = OAT.Dom.create('input');
   fld.type = 'hidden';
@@ -789,6 +784,7 @@ TBL.createCell49 = function (td, prefix, fldName, No, fldOptions) {
         fld.value = '';
       }
       fld.defaultValue = fld.value;
+      fld.title = 'Language';
       fld.style.width = '20px';
     }
   }
