@@ -974,7 +974,8 @@ st_collect_ps_info (dk_set_t * arr)
 		  while (hit_next (&it, (char **) & text, (char **) & stmt))
 		    {
 		      caddr_t * inst = (caddr_t *) (*stmt)->sst_inst;
-		      if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query)
+		      if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query &&
+			  (*stmt)->sst_inst->qi_trx && (*stmt)->sst_inst->qi_trx->lt_threads)
 			{
 			  dk_set_push (arr, box_string ((*stmt)->sst_query->qr_text));
 			  dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
