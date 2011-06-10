@@ -452,7 +452,9 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
   out target_vhost_pkey any,
   out http_redir int,
   out http_headers varchar,
-  inout lines any)
+  inout lines any,
+  in meth varchar
+  )
   returns integer
 {
 -- dbg_obj_princ('in side! ', rulelist_iri);
@@ -462,7 +464,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
         {
           if (DB.DBA.URLREWRITE_APPLY_RECURSIVE (cur_iri, nice_host,
             nice_lhost, nice_lpath, nice_get_params, nice_frag, post_params, accept_header, long_url, params,
-            rule_iri, target_vhost_pkey, http_redir, http_headers, lines) = 1)
+            rule_iri, target_vhost_pkey, http_redir, http_headers, lines, meth) = 1)
             return 1;
         }
       else
@@ -486,6 +488,13 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 	          accept_val := regexp_match (URR_ACCEPT_PATTERN, accept_header);
 	          if (accept_val is null)
 		    goto next_rule;
+		}
+	      -- cannot do redirect on POST or PUT or something having a content sent as part of the request
+	      if (URR_HTTP_REDIRECT is not null and URR_HTTP_REDIRECT > 299 and URR_HTTP_REDIRECT < 304 and meth not in ('GET', 'MGET', 'HEAD'))
+		{
+		  if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+		    dbg_printf ('skipping rule=[%s] because HTTP redirect cannot be done for HTTP %s', URR_NICE_FORMAT, meth);
+		  goto next_rule;
 		}
 
               if (URR_RULE_TYPE = 0)
@@ -634,7 +643,8 @@ create procedure DB.DBA.URLREWRITE_APPLY (
     target_vhost_pkey,
     http_redir,
     http_headers,
-    lines);
+    lines,
+    'GET');
 }
 ;
 
@@ -1197,7 +1207,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare params, lines any;
   declare nice_vhost_pkey any;
   declare top_rulelist_iri varchar;
-  declare rule_iri, in_path, qstr varchar;
+  declare rule_iri, in_path, qstr, meth varchar;
   declare target_vhost_pkey, hf, accept, http_headers any;
   declare result, http_redir, http_tcn_code, tcn_rc, keep_lpath int;
   declare http_tcn_headers varchar;
@@ -1211,6 +1221,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   accept := null;
   qstr := null;
   keep_lpath := 0;
+  meth := 'GET';
 
   if (is_http_ctx ())
     {
@@ -1227,6 +1238,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
       accept := http_request_header (lines, 'Accept');
       if (not isstring (accept))
 	accept := '*/*';
+      meth := http_request_get ('REQUEST_METHOD');
     }
   else
     {
@@ -1236,12 +1248,15 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   if (length (qstr))
     in_path := in_path || '?' || qstr;
 
+  if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+    dbg_printf ('Input URL=[%s]', in_path);
+
   http_tcn_headers := http_headers := null;
   http_tcn_code := http_redir := null;
   tcn_rc := DB.DBA.URLREWRITE_APPLY_TCN (rule_list, in_path, lines, http_tcn_code, http_tcn_headers);
 --  dbg_obj_print ('http headers', http_tcn_code, http_tcn_headers);
   result := DB.DBA.URLREWRITE_APPLY_RECURSIVE (rule_list, null, null, in_path, '', qstr, post_params, accept,
-  	long_url, params, rule_iri, target_vhost_pkey, http_redir, http_headers, lines);
+  	long_url, params, rule_iri, target_vhost_pkey, http_redir, http_headers, lines, meth);
   if (registry_get ('__debug_url_rewrite') in ('1', '2') and length (long_url))
     dbg_printf ('*** RETURN rule=[%s] URL=[%s]', rule_iri, long_url);
   if (not tcn_rc and length (long_url))
@@ -1302,18 +1317,21 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	  http_status_set (http_redir);
 	  http_header (http_header_get () || 'Location: '|| DB.DBA.HTTP_LOC_NEW_URL (long_url) ||'\r\n');
 	  http_body_read ();
+	  if (registry_get ('__debug_url_rewrite') in ('1', '2')) dbg_printf ('HTTP redirect');
 	  return 1;
 	}
       else if (http_redir = 300) -- TCN
         {
 	  http_status_set (http_redir);
 	  http_body_read ();
+	  if (registry_get ('__debug_url_rewrite') in ('1', '2')) dbg_printf ('HTTP redirect');
 	  return 1;
         }
       else if (isinteger (http_redir) and http_redir > 399)
 	{
 	  http_status_set (http_redir);
 	  http_body_read ();
+	  if (registry_get ('__debug_url_rewrite') in ('1', '2')) dbg_printf ('HTTP status');
 	  return 1;
 	}
       else
@@ -1325,6 +1343,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	  http_internal_redirect (full_path, p_full_path, long_url, keep_lpath);
 	  pars := vector_concat (params, pars);
 	  http_set_params (pars);
+	  if (registry_get ('__debug_url_rewrite') in ('1', '2')) dbg_printf ('Internal redirect');
         }
     }
   return 0;
