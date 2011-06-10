@@ -1421,7 +1421,7 @@ itc_register (it_cursor_t * itc, buffer_desc_t * buf)
     GPF_T1 ("must have write on the buffer for registration");
   rdbg_printf_2 (("  register itc=%x on L=%d \n", it, it->itc_page));
   itc->itc_is_registered = 1;
-#if 1
+#ifndef NDEBUG
   {
     it_cursor_t * ck = buf->bd_registered;
     while (ck)
