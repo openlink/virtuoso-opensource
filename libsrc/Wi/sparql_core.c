@@ -108,12 +108,18 @@ spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
   if (SPAR_CODEGEN == type)
     {
       if (spart_count_specific_elems_by_type (type) > sizeof (caddr_t) * (length-1))
-        spar_internal_error (sparp, "length mismatch in spartlist()");
+	{
+	  va_end (ap);
+	  spar_internal_error (sparp, "length mismatch in spartlist()");
+	}
     }
   else
     {
       if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length-1))
-        spar_internal_error (sparp, "length mismatch in spartlist()");
+	{
+	  va_end (ap);
+	  spar_internal_error (sparp, "length mismatch in spartlist()");
+	}
     }
 #endif
   length += 1;
@@ -151,7 +157,10 @@ spartlist_with_tail_impl (sparp_t *sparp, ptrlong length, caddr_t tail, ptrlong 
   va_start (ap, type);
 #ifdef DEBUG
   if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length+tail_len-1))
-    spar_internal_error (sparp, "length mismatch in spartlist()");
+    {
+      va_end (ap);
+      spar_internal_error (sparp, "length mismatch in spartlist()");
+    }
 #endif
 #ifdef MALLOC_DEBUG
   tree = (SPART *) dbg_dk_alloc_box (spartlist_impl_file, spartlist_impl_line, sizeof (caddr_t) * (1+length+tail_len), DV_ARRAY_OF_POINTER);
@@ -309,17 +318,15 @@ void
 spar_error (sparp_t *sparp, const char *format, ...)
 {
   va_list ap;
+  caddr_t msg;
   va_start (ap, format);
-  if (NULL == sparp)
-    sqlr_new_error ("37000", "SP031",
-      "SPARQL generic error: %.1500s",
-      box_vsprintf (1500, format, ap) );
-  else
-    sqlr_new_error ("37000", "SP031",
-      "%.400s: %.1500s",
-      sparp->sparp_err_hdr,
-      t_box_vsprintf (1500, format, ap) );
+  msg = box_vsprintf (1500, format, ap);
   va_end (ap);
+  if (NULL == sparp)
+    sqlr_new_error ("37000", "SP031", "SPARQL generic error: %.1500s", msg);
+  else
+    sqlr_new_error ("37000", "SP031", "%.400s: %.1500s",
+      sparp->sparp_err_hdr, msg );
 }
 
 int
@@ -332,6 +339,7 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
   caddr_t msg;
   va_start (ap, format);
   msg = t_box_vsprintf (1500, format, ap);
+  va_end (ap);
 #ifdef SPAR_ERROR_DEBUG
   txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
   printf ("Internal SPARQL audit error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
