@@ -228,6 +228,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SERVICE_L	/*:: PUNCT_SPAR_LAST("SERVICE") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
+%token SQLQUERY_L	/*:: PUNCT("SQLQUERY"), SPAR, LAST1("SQLQUERY {"), LAST1("SQLQUERY ("), LAST1("SQLQUERY #cmt\n{"), LAST1("SQLQUERY\r\n("), ERR("SQLQUERY"), ERR("SQLQUERY bad") ::*/
 %token STORAGE_L	/*:: PUNCT_SPAR_LAST("STORAGE") ::*/
 %token STR_L		/*:: PUNCT_SPAR_LAST("STR") ::*/
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
@@ -273,7 +274,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token <box> SPARQL_DOUBLE	/*:: LITERAL("%d"), SPAR, LAST("1234.56e1") ::*/
 
 %token <box> SPARQL_STRING /*:: LITERAL("%s"), SPAR, LAST("'sq'"), LAST("\"dq\""), LAST("'''sq1\nsq2'''"), LAST("\"\"\"dq1\ndq2\"\"\""), LAST("'\"'"), LAST("'-\\\\-\\t-\\v-\\r-\\'-\\\"-\\u1234-\\U12345678-\\uaAfF-'") ::*/
-%token <box> SPARQL_CONDITION_AFTER_WHERE_LPAR /*:: LITERAL("%s)"), SPAR, LAST("WHERE ('sq')"), LAST("WHERE (\"dq)\")"), LAST("WHERE ('sq1'')sq2')"), LAST("WHERE (--cmt1)\n)"), LAST("WHERE (/" "*)*" "/") ::*/
+%token <box> SPARQL_SQLTEXT /*:: LITERAL("%s)"), SPAR, LAST("WHERE ('sq')"), LAST("WHERE (\"dq)\")"), LAST("WHERE ('sq1'')sq2')"), LAST("WHERE (--cmt1)\n)"), LAST("WHERE (/" "*)*" "/") ::*/
 %token <box> LANGTAG	/*:: LITERAL("@%s"), SPAR, LAST("@ES") ::*/
 
 %token <box> QNAME	/*:: LITERAL("%s"), SPAR, LAST("pre.fi-X.1:_f.Rag.2"), LAST(":_f.Rag.2") ::*/
@@ -327,7 +328,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_bindings_clause_opt
 %type <tree> spar_bindings_clause
 %type <backstack> spar_bindings_vars
-%type <tree> spar_bindings_var
+%type <box> spar_bindings_var
 %type <backstack> spar_bindings_opt
 %type <backstack> spar_bindings
 %type <trees> spar_binding
@@ -476,6 +477,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_qm_where_list_opt
 %type <backstack> spar_qm_where_list
 %type <box> spar_qm_where
+%type <box> spar_qm_sqlquery
 %type <trees> spar_qm_options_opt
 %type <backstack> spar_qm_option_commalist
 %type <trees> spar_qm_option
@@ -2005,13 +2007,17 @@ spar_qm_drop_mapping		/* [Virt]	QmDrop	 ::=  'DROP' 'SLIENT'? ('GRAPH' ('IDENTIF
 spar_qm_from_where_list_opt	/* [Virt]	QmSourceDecl	 ::=  */
 	: /* empty */ {}
 	| spar_qm_from_where_list_opt FROM_L SPARQL_SQL_QTABLENAME AS_L SPARQL_PLAIN_ID {	/*... ( 'FROM' QTABLE 'AS' PLAIN_ID QmTextLiteral* )	*/
-		spar_qm_add_aliased_table (sparp_arg, $3, $5);
+		spar_qm_add_aliased_table_or_sqlquery (sparp_arg, $3, $5);
 		sparp_env()->spare_qm_current_table_alias = $5; }
 	    spar_qm_text_literal_list_opt {
 		sparp_env()->spare_qm_current_table_alias = NULL; }
 	| spar_qm_from_where_list_opt FROM_L SPARQL_PLAIN_ID AS_L SPARQL_PLAIN_ID {		/*... | ( 'FROM' PLAIN_ID 'AS' PLAIN_ID QmTextLiteral* )	*/
 		spar_qm_add_aliased_alias (sparp_arg, $3, $5);
 		sparp_env()->spare_qm_current_table_alias = $5; }
+	| spar_qm_from_where_list_opt FROM_L SQLQUERY_L spar_qm_sqlquery AS_L SPARQL_PLAIN_ID {		/*... | ( 'FROM' 'SQLQUERY' QmSqlQuery 'AS' PLAIN_ID QmTextLiteral* )	*/
+		caddr_t qry = t_box_sprintf (100 + strlen($4), "/*???*/ %s", $4);
+		spar_qm_add_aliased_table_or_sqlquery (sparp_arg, qry, $6);
+		sparp_env()->spare_qm_current_table_alias = $6; }
 	    spar_qm_text_literal_list_opt {
 		sparp_env()->spare_qm_current_table_alias = NULL; }
 	| spar_qm_from_where_list_opt spar_qm_where {						/*... | QmCondition	*/
@@ -2273,8 +2279,13 @@ spar_qm_where_list
 	;
 
 spar_qm_where	/* [Virt]	QmCondition	 ::=  'WHERE' ( ( '(' SQLTEXT ')' ) | String )	*/
-	: WHERE_L _LPAR SPARQL_CONDITION_AFTER_WHERE_LPAR { $$ = $3; }
+	: WHERE_L _LPAR SPARQL_SQLTEXT { $$ = $3; }
 	| WHERE_L SPARQL_STRING { $$ = $2; }
+	;
+
+spar_qm_sqlquery	/* [Virt]	QmSqlQuery	 ::=  ( '(' SQLTEXT ')' ) | String	*/
+	: _LPAR SPARQL_SQLTEXT { $$ = $2; }
+	| SPARQL_STRING { $$ = $1; }
 	;
 
 spar_qm_options_opt	/* [Virt]	QmOptions	 ::=  'OPTION' '(' QmOption ( ',' QmOption )* ')'	*/

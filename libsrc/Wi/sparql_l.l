@@ -304,7 +304,7 @@ static int sparscn_NUMBER_double (void *yylval, sparp_t *sparp)
 	/* Whitespace between 'COUNT' keyword and '(' or 'DISTINCT' after it */
 %x SPARQL_AFTER_COUNT
 
-	/* Whitespace between 'WHERE' keyword and '(' or '{' after it */
+	/* Whitespace between 'WHERE'/'SQLQUERY' keyword and '(' or '{' after it */
 %x SPARQL_AFTER_WHERE
 
 	/* Whitespace between 'IDENTIFIED' keyword and 'BY' keyword */
@@ -520,6 +520,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 
 <SPARQL>{I}{D}{E}{N}{T}{I}{F}{I}{E}{D}	{ BEGIN SPARQL_AFTER_IDENTIFIED; return IDENTIFIED_L	; }
 <SPARQL>{W}{H}{E}{R}{E}			{ BEGIN SPARQL_AFTER_WHERE; return WHERE_L	; }
+<SPARQL>{S}{Q}{L}{Q}{U}{E}{R}{Y}	{ BEGIN SPARQL_AFTER_WHERE; return SQLQUERY_L	; }
 
 	/* Keyword punctuators of the SPARQL described in first drafts of W3C spec */
 
@@ -664,7 +665,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
     if (SPARQL == GET_CURRENT_BEGIN)
       {
         sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng-1);
-        return SPARQL_CONDITION_AFTER_WHERE_LPAR;
+        return SPARQL_SQLTEXT;
       }
     else
       yymore();
@@ -702,7 +703,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 
 <SPARQL_AFTER_COUNT>.	{ sparyyerror ("Only '(' and 'DISTINCT' are allowed after COUNT keyword in SPARQL expression"); }
 <SPARQL_AFTER_IDENTIFIED>.	{ sparyyerror ("Ill formed IDENTIFIED BY term"); }
-<SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE keyword in SPARQL expression"); }
+<SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE or SQLQUERY keyword in SPARQL expression"); }
 <SPARQL>.		{ sparyyerror ("Invalid character in SPARQL expression"); }
 
 %%

@@ -1161,7 +1161,7 @@ sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_a
       if ('.' == cmd [cmdlen-1])
         {
           caddr_t alias = t_box_dv_short_nchars (cmd, cmdlen - 1);
-          caddr_t qtable = spar_qm_find_base_table (sparp, alias);
+          caddr_t qtable = spar_qm_find_base_table_or_sqlquery (sparp, alias);
           if (NULL == qtable)
             spar_error (sparp, "Template string refers to unspecified alias in macro ^{%.100s.}^", alias);
           if (0 > dk_set_position_of_string (used_aliases[0], alias))
@@ -4082,19 +4082,21 @@ const char *ssg_tmpl_ref_short_of_X (qm_format_t *qm_fmt, ssg_valmode_t native)
   return NULL; /* Never reached, to keep compiler happy */
 }
 
+#define SSG_IDENTITY_VALMODED_TMPL ((const char *)1)
+
 const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
 {
   if (SSG_VALMODE_LONG == needed)
     {
-      if (SSG_VALMODE_LONG	== native)	return " ^{tree}^";
+      if (SSG_VALMODE_LONG	== native)	return SSG_IDENTITY_VALMODED_TMPL;
       if (SSG_VALMODE_SQLVAL	== native)	return " DB.DBA.RDF_LONG_OF_SQLVAL (^{tree}^)";
-      if (SSG_VALMODE_NUM	== native)	return " ^{tree}^";
+      if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
     }
   else if (SSG_VALMODE_SQLVAL == needed)
     {
       if (SSG_VALMODE_LONG	== native)	return " __rdf_sqlval_of_obj /*l*/ (^{tree}^)";
-      if (SSG_VALMODE_SQLVAL	== native)	return " ^{tree}^";
-      if (SSG_VALMODE_NUM	== native)	return " ^{tree}^";
+      if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
     }
   else if (SSG_VALMODE_DATATYPE == needed)
     {
@@ -4111,15 +4113,15 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
     }
   else if (SSG_VALMODE_BOOL == needed)
     {
-      if (SSG_VALMODE_NUM	== native)	return " (^{tree}^)";
+      if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
       if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_BOOL_OF_LONG (^{tree}^)";
-      if (SSG_VALMODE_SQLVAL	== native)	return " (^{tree}^)";
+      if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
     }
   else if (SSG_VALMODE_NUM == needed)
     {
-      if (SSG_VALMODE_SQLVAL	== native)	return " (^{tree}^)";
-      if (SSG_VALMODE_LONG	== native)	return " (^{tree}^)";
-      return ((native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql) ? " ^{tree}^" : native->qmfLongOfShortTmpl);
+      if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_LONG	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      return ((native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql) ? SSG_IDENTITY_VALMODED_TMPL : native->qmfLongOfShortTmpl);
     }
   spar_internal_error (NULL, "ssg_tmpl_X_of_Y(): bad mode needed");
   return NULL; /* Never reached, to keep compiler happy */
@@ -4129,6 +4131,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
 void
 ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, ssg_valmode_t native, const char *asname)
 {
+  const char *tmpl;
   if (native == needed)
     {
 #if 0
@@ -4283,7 +4286,11 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
       ssg_print_valmoded_scalar_expn (ssg, tree, SSG_VALMODE_LONG, native, asname);
       return;
     }
-  ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_Y (needed, native), NULL, NULL, tree, asname);
+  tmpl = ssg_tmpl_X_of_Y (needed, native);
+  if (SSG_IDENTITY_VALMODED_TMPL == tmpl)
+    ssg_print_scalar_expn (ssg, tree, native, asname);
+  else
+    ssg_print_tmpl (ssg, native, tmpl, NULL, NULL, tree, asname);
   return;
 }
 
@@ -4883,12 +4890,16 @@ retval_without_var:
 #endif
   if (NULL != tree->_.retval.tabid)
     {
+      if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_tabids, tree->_.retval.tabid))
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "print_retval(): tabid is used outside its scope");
       ssg_prin_id (ssg, tree->_.retval.tabid);
       ssg_putchar ('.');
       full_vname = ssg_triple_retval_alias (ssg, tree->_.retval.triple, tree->_.retval.tr_idx, 0, tree->_.retval.vname);
     }
   else if (NULL != tree->_.retval.selid)
     {
+      if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, tree->_.retval.selid))
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "print_retval(): selid is used outside its scope");
       ssg_prin_id (ssg, tree->_.retval.selid);
       ssg_putchar ('.');
       full_vname = tree->_.retval.vname;
@@ -5487,6 +5498,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           caddr_t tabid = var->_.var.tabid;
           if (NULL == tabid)
             continue;
+          if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_tabids, tabid))
+            continue;
           ssg_print_tr_var_expn (ssg, var, needed, asname);
           return 1;
         }
@@ -5501,6 +5514,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           SPART *var = eq->e_vars[var_ctr];
           caddr_t selid = var->_.var.selid;
           if (NULL == selid)
+            continue;
+          if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, selid))
             continue;
           SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
           memcpy (&(rv->_.retval), &(var->_.var), sizeof (rv->_.var));
@@ -5529,6 +5544,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           SPART_buf rv_buf;
           SPART *rv;
           ssg_valmode_t native;
+          if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, gp->_.gp.selid))
+            spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equiv_retval_expn(): union selid is out of scope");
           SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
           rv->_.retval.equiv_idx = eq->e_own_idx;
           sparp_rvr_copy (ssg->ssg_sparp, &(rv->_.retval.rvr), &(eq->e_rvr));
@@ -5558,6 +5575,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
       {
         SPART_buf rv_buf;
         SPART *rv;
+        if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, gp->_.gp.selid))
+          spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equiv_retval_expn(): select selid is out of scope");
         SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
         rv->_.retval.equiv_idx = eq->e_own_idx;
         sparp_rvr_copy (ssg->ssg_sparp, &(rv->_.retval.rvr), &(eq->e_rvr));
@@ -6625,7 +6644,9 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, cc
 void
 ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_len, int flags, ptrlong *retlist_restr_bits, SPART *auto_valmode_gp, ssg_valmode_t needed)
 {
-  int res_ctr;
+  int memb_ctr, res_ctr;
+  dk_set_t saved_valid_ret_selids = ssg->ssg_valid_ret_selids;
+  dk_set_t saved_valid_ret_tabids = ssg->ssg_valid_ret_tabids;
   if (0 == res_len)
     {
       if (SSG_VALMODE_SQLVAL == needed)
@@ -6646,6 +6667,15 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
   if ((NULL != retlist_restr_bits) && !(flags & SSG_RETVAL_USES_ALIAS))
     spar_internal_error (ssg->ssg_sparp, "Inconsistent retval list: bits without aliases");
 #endif
+  DO_BOX_FAST_REV (SPART *, memb, memb_ctr, gp->_.gp.members)
+    {
+      switch (memb->type)
+        {
+        case SPAR_GP: t_set_push (&(ssg->ssg_valid_ret_selids), memb->_.gp.selid); break;
+        case SPAR_TRIPLE: t_set_push (&(ssg->ssg_valid_ret_tabids), memb->_.triple.tabid); break;
+        }
+    }
+  END_DO_BOX_FAST_REV;
   for (res_ctr = 0; res_ctr < res_len; res_ctr++)
     {
       SPART *ret_column = retlist[res_ctr];
@@ -6659,6 +6689,8 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
         ssg_puts (" ANY");
     }
   ssg->ssg_indent--;
+  ssg->ssg_valid_ret_selids = saved_valid_ret_selids;
+  ssg->ssg_valid_ret_tabids = saved_valid_ret_tabids;
 }
 
 void
@@ -6819,7 +6851,8 @@ default_modification_only:
 static void
 ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_sets, int tree_set_count, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
 {
-  caddr_t tabid = tree_sets[0][0]->_.triple.tabid;
+  SPART *very_first_tree = tree_sets[0][0];
+  caddr_t tabid = very_first_tree->_.triple.tabid;
   caddr_t sub_tabid = t_box_sprintf (100, "%s-int", tabid);
   int save_where_l_printed;
   const char *save_where_l_text;
@@ -6924,6 +6957,7 @@ no_extra_ft_tables: ;
     { /* This is a special case of quad map with four constants and no one quad map value. */
       ssg_puts (" DB.DBA.SYS_FAKE_1 AS ");
       ssg_prin_id (ssg, tabid);
+      t_set_push (&(ssg->ssg_valid_ret_tabids), tabid);
       ssg->ssg_indent--;
       return;
     }
@@ -7084,6 +7118,7 @@ contains_print_scalar:
   ssg->ssg_where_l_text = save_where_l_text;
   ssg_puts (") AS ");
   ssg_prin_id (ssg, tabid);
+  t_set_push (&(ssg->ssg_valid_ret_tabids), tabid);
   ssg->ssg_indent--;
 }
 
@@ -7126,6 +7161,7 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"IFP", "SAME_AS", 
       ssg_qr_uses_table (ssg, qm->qmTableName);
       ssg_puts (" AS ");
       ssg_prin_id (ssg, tabid);
+      t_set_push (&(ssg->ssg_valid_ret_tabids), tabid);
       active_inference = ssg->ssg_sparp->sparp_env->spare_inference_name;
       opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree);
       if (NULL != opts)
@@ -7190,6 +7226,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
 {
   sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
   sql_comp_t subq_sc;
+  caddr_t wrapping_selid = wrapping_gp->_.gp.selid;
   t_NEW_VARZ (spar_sqlgen_t, subq_ssg);
 #ifdef NDEBUG
   ssg_puts (" (");
@@ -7227,7 +7264,8 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   ssg_puts (" /* subq end */ ) AS ");
 #endif
   ssg->ssg_indent--;
-  ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
+  ssg_prin_id (ssg, wrapping_selid);
+  t_set_push (&(ssg->ssg_valid_ret_selids), wrapping_selid);
 }
 
 void
@@ -7609,6 +7647,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
             ssg->ssg_indent--;
             ssg_puts (") AS ");
             ssg_prin_id (ssg, tree->_.gp.selid);
+            t_set_push (&(ssg->ssg_valid_ret_selids), tree->_.gp.selid);
           }
         break;
       }
@@ -7796,6 +7835,7 @@ fld_restrictions_may_vary:
   ssg->ssg_indent--;
   ssg_puts (") AS ");
   ssg_prin_id (ssg, first_mcase->_.gp.selid);
+  t_set_push (&(ssg->ssg_valid_ret_selids), first_mcase->_.gp.selid);
 }
 
 ccaddr_t
@@ -8058,6 +8098,7 @@ retval_list_complete:
           else
             ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD WHERE 0) AS ");
           ssg_prin_id (ssg, buf);
+          /* no t_set_push (&(ssg->ssg_valid_ret_selids), ...); because it's single-use stub */
           need_self_joins_in_where = 'Y';
           goto end_of_table_list; /* see below */
         }
@@ -8068,6 +8109,7 @@ retval_list_complete:
           snprintf (buf, sizeof (buf), "lojstub-%s", member->_.gp.selid);
           ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
           ssg_prin_id (ssg, buf);
+          /* no t_set_push (&(ssg->ssg_valid_ret_selids), ...); because it's single-use stub */
           if (OPTIONAL_L == first_itm->_.gp.subtype)
           ssg_puts (" LEFT OUTER JOIN");
           else
@@ -8294,6 +8336,7 @@ ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
   ssg->ssg_indent--;
   ssg_puts (") AS ");
   ssg_prin_id (ssg, rbc_selid);
+  t_set_push (&(ssg->ssg_valid_ret_selids), rbc_selid);
 }
 
 void ssg_print_limofs_expn (spar_sqlgen_t *ssg)
@@ -8623,6 +8666,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         case ASK_L:
           ssg_puts (" ) AS ");
           ssg_prin_id (ssg, top_selid);
+          t_set_push (&(ssg->ssg_valid_ret_selids), top_selid);
           ssg_print_tail_query_options (ssg);
           ssg->ssg_indent--;
           break;

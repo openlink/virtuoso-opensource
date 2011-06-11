@@ -4236,6 +4236,7 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
       int union_idx;
       int case_ctr, case_count;
       int curr_had_one_member = ((1 >= BOX_ELEMENTS (curr->_.gp.members)) ? 1 : 0);
+      int join_glued_filters_count, union_glued_filters_count;
       SPART *sub_union;
       SPART **detached_join_parts;
       SPART **detached_join_filters;
@@ -4269,8 +4270,12 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
             return 0; /* This restricts the size of the resulting SQL statement */
         }
       sparp_equiv_audit_all (sparp, 0);
+      union_glued_filters_count = sub_union->_.gp.glued_filters_count;
+      sub_union->_.gp.glued_filters_count = 0;
       detached_union_filters = sparp_gp_detach_all_filters (sparp, sub_union, NULL);
       detached_union_parts = sparp_gp_detach_all_members (sparp, sub_union, NULL);
+      join_glued_filters_count = curr->_.gp.glued_filters_count;
+      curr->_.gp.glued_filters_count = 0;
       detached_join_filters = sparp_gp_detach_all_filters (sparp, curr, NULL);
       detached_join_parts = sparp_gp_detach_all_members (sparp, curr, NULL);
       if (curr_had_one_member)
@@ -4301,7 +4306,6 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
           SPART *new_join = new_union->_.gp.members [case_ctr]; /* equal to union_part if curr_had_one_member */
           SPART **new_filts_u = (last_case ? detached_union_filters : sparp_treelist_full_clone (sparp, detached_union_filters));
           SPART **new_filts_j = (last_case ? detached_join_filters : sparp_treelist_full_clone (sparp, detached_join_filters));
-          SPART **new_join_filts = (SPART **)t_list_concat ((caddr_t)new_filts_u, (caddr_t)new_filts_j);
           if (!curr_had_one_member)
             {
               int join_part_ctr;
@@ -4322,7 +4326,10 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
               sparp_gp_attach_many_members (sparp, new_join, new_join_parts, 0, NULL);
               sparp_equiv_audit_all (sparp, 0);
             }
-          sparp_gp_attach_many_filters (sparp, new_join, new_join_filts, 0, NULL);
+          sparp_gp_attach_many_filters (sparp, new_join, new_filts_u, BOX_ELEMENTS (new_join->_.gp.filters) - new_join->_.gp.glued_filters_count, NULL);
+          new_join->_.gp.glued_filters_count += union_glued_filters_count;
+          sparp_gp_attach_many_filters (sparp, new_join, new_filts_j, BOX_ELEMENTS (new_join->_.gp.filters) - new_join->_.gp.glued_filters_count, NULL);
+          new_join->_.gp.glued_filters_count += join_glued_filters_count;
           sparp_gp_tighten_by_eq_replaced_filters (sparp, new_join, sub_union, 0);
           sparp_gp_tighten_by_eq_replaced_filters (sparp, new_join, curr, 0);
           sparp_equiv_audit_all (sparp, 0);

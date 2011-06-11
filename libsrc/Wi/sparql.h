@@ -793,10 +793,14 @@ extern void spar_qm_pop_key (sparp_t *sparp, int key_to_pop);
 
 extern caddr_t spar_make_iri_from_template (sparp_t *sparp, caddr_t tmpl);
 
+#define SPAR_TABLE_IS_SQLQUERY(strg) (('/' == strg[0]) && ('*' == strg[1]))
+#define SPAR_SQLQUERY_PLACE(strg) t_box_dv_short_nchars (strg + 2, strstr (strg, "*/") - (strg+2))
+
+extern caddr_t spar_qm_table_or_sqlquery_report_name (caddr_t atbl);
 extern caddr_t spar_qm_find_base_alias (sparp_t *sparp, caddr_t descendant_alias);
-extern caddr_t spar_qm_find_base_table (sparp_t *sparp, caddr_t descendant_alias);
+extern caddr_t spar_qm_find_base_table_or_sqlquery (sparp_t *sparp, caddr_t descendant_alias);
 extern dk_set_t spar_qm_find_descendants_of_alias (sparp_t *sparp, caddr_t base_alias);
-extern void spar_qm_add_aliased_table (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias);
+extern void spar_qm_add_aliased_table_or_sqlquery (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias);
 extern void spar_qm_add_aliased_alias (sparp_t *sparp, caddr_t parent_alias, caddr_t new_alias);
 extern void spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl);
 extern void spar_qm_add_text_literal (sparp_t *sparp, caddr_t ft_type, caddr_t ft_table_alias, SPART *ft_col, SPART **qmv_cols, SPART **options);
