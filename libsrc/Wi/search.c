@@ -2819,7 +2819,7 @@ em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr
 	    continue;
 	  leaves[fill++] = other_dp;
 	  if (fill >= max)
-	    break;
+	    return fill;
 	}
     }
   return fill;
