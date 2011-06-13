@@ -925,9 +925,20 @@ buf_order_ck (buffer_desc_t * buf)
 #define buf_order_ck(b)
 #endif
 
+#ifdef NDEBUG
+static long
+pf_count_registered (buffer_desc_t * buf)
+{
+  long cr_fill = 0;
+  it_cursor_t * cr = buf->bd_registered;
+  for (cr = cr; cr; cr = cr->itc_next_on_page)
+    cr_fill++;
+  return cr_fill;
+}
+#endif
 
 void
-pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf)
+pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf, it_cursor_t * itc)
 {
   int cr_fill = 0;
   it_cursor_t * cr = buf->bd_registered;
@@ -936,7 +947,14 @@ pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf)
     {
       pf->pf_registered[cr_fill++] = (placeholder_t *) cr;
       if (cr_fill >= MAX_ITCS_ON_PAGE)
+	{
+#ifdef NDEBUG
+	  log_error ("Too many cursors: %ld on splitting page.", pf_count_registered (buf));
+	  itc_bust_this_trx (itc, buf, ITC_BUST_THROW);
+#else
 	GPF_T1 ("too many cursors on splitting page.");
+#endif
+	}
     }
   pf->pf_cr_fill = cr_fill;
 }
@@ -2243,7 +2261,7 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
   pf.pf_org = buf;
   pf.pf_current = t_buf;
   if (op != PA_REWRITE_ONLY)
-    pf_fill_registered (&pf, buf);
+    pf_fill_registered (&pf, buf, itc);
   if (org_pm->pm_bytes_free < bytes_delta)
     {
       if (!itc->itc_n_pages_on_hold && op != PA_REWRITE_ONLY)
