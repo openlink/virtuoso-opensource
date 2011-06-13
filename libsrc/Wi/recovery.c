@@ -912,6 +912,7 @@ bif_backup_prepare (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   caddr_t file = bif_string_arg (qst, args, 0, "backup_prepare");
+  sec_check_dba (qi, "backup_prepare");
   backup_prepare (qi, file);
   return NULL;
 }
@@ -930,6 +931,7 @@ bif_backup_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t row = bif_arg (qst, args, 0, "backup_row");
   dtp_t tag = DV_TYPE_OF (row);
   ITC_INIT (itc, qi->qi_space, qi->qi_trx);
+  sec_check_dba (qi, "backup_row");
   if (!lt->lt_backup)
     sqlr_new_error ("42000", "SR112", "Transaction not in backup mode");
   if (tag != DV_SHORT_CONT_STRING && tag != DV_LONG_CONT_STRING)
@@ -956,6 +958,7 @@ bif_backup_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int rc;
   query_instance_t *qi = (query_instance_t *) qst;
   lock_trx_t *lt = qi->qi_trx;
+  sec_check_dba (qi, "backup_flush");
   if (!lt->lt_backup)
     sqlr_new_error ("42000", "SR114", "Transaction not in backup mode");
 
@@ -978,12 +981,14 @@ bif_backup_close (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   lock_trx_t *lt = qi->qi_trx;
+  sec_check_dba (qi, "backup_close");
   if (!lt->lt_backup)
     sqlr_new_error ("42000", "SR116", "Transaction not in backup mode");
 
   backup_close (qi->qi_trx);
   if (!srv_have_global_lock(THREAD_CURRENT_THREAD))
     LEAVE_CPT(qi->qi_trx);
+  log_info ("Backup finished.");
   return NULL;
 }
 
@@ -1227,6 +1232,44 @@ db_check (query_instance_t * qi)
   return 1;
 }
 
+static caddr_t
+bif_log_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  dbe_key_t * key = bif_key_arg (qst, args, 0, "log_index");
+  buffer_desc_t *buf;
+  it_cursor_t *itc;
+
+  sec_check_dba (qi, "backup_index");
+  memset (levels, 0, sizeof (levels));
+
+  itc = itc_create (NULL , qi->qi_trx);
+  itc_from (itc, key);
+  itc->itc_isolation = ISO_UNCOMMITTED;
+  ITC_FAIL (itc)
+    {
+      itc->itc_random_search = RANDOM_SEARCH_ON; /* do not use root image cache */
+      buf = itc_reset (itc);
+      itc->itc_random_search = RANDOM_SEARCH_OFF;
+      itc_try_land (itc, &buf);
+      /* the whole traversal is in landed (PA_WRITE() mode. page_transit_if_can will not allow mode change in transit */
+      if (!buf->bd_content_map)
+	{
+	  log_error ("Blog ref'referenced as index tree top node dp=%d key=%s\n", buf->bd_page, itc->itc_insert_key->key_name);
+	}
+      else
+	walk_dbtree (itc, &buf, 0, log_page, 0);
+      itc_page_leave (itc, buf);
+    }
+  ITC_FAILED
+    {
+      itc_free (itc);
+    }
+  END_FAIL (itc);
+  itc_free (itc);
+  return NULL;
+}
+
 void
 recovery_init (void)
 {
@@ -1234,6 +1277,7 @@ recovery_init (void)
   bif_define ("backup_row", bif_backup_row);
   bif_define ("backup_flush", bif_backup_flush);
   bif_define ("backup_close", bif_backup_close);
+  bif_define ("backup_index", bif_log_index);
 #if 0
   bif_define ("crash_recovery_log_check", bif_crash_recovery_log_check);
 #endif
