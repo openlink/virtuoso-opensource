@@ -5739,7 +5739,7 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
 
 void
 ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set_t jleft_aliases,
-  ccaddr_t jright_alias, int print_join_conds, int print_equs_to_globals )
+  ccaddr_t jright_alias, int print_cross_join_conds, int print_inner_filter_conds, int print_equs_to_globals )
 {
   int var_ctr, var2_ctr;
   int sub_ctr, sub2_ctr;
@@ -5952,8 +5952,12 @@ print_cross_equs:
   /* Printing cross-equalities, i.e. join conditions (what can be placed in ON (...) after join */
   if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq))
     return; /* As soon as all are equal to globals, no need in cross-equalities */
-  if (!print_join_conds)
+  if (!print_cross_join_conds)
+    {
+      if (!print_inner_filter_conds)
     return;
+      goto print_sub_eq_sub; /* see below */
+    }
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
       SPART *var = eq->e_vars[var_ctr];
@@ -6148,6 +6152,7 @@ print_cross_equs:
             }
         }
     }
+print_sub_eq_sub:
   for (sub_ctr = 0; sub_ctr < BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr++)
     {
       ptrlong sub_eq_idx = eq->e_subvalue_idxs[sub_ctr];
@@ -6163,7 +6168,10 @@ print_cross_equs:
           ssg_valmode_t sub_native, sub2_native, common_native;
           SPART *left_sub_gp = NULL;
           int col_ctr, col_count, is_good;
-
+          if (!print_inner_filter_conds && (sub_gp == sub2_gp))
+            continue;
+          if (!print_cross_join_conds && (sub_gp != sub2_gp))
+            continue;
           if (NULL != jright_alias)
             { /* Note that left_sub_gp is not set if both subs are from jright_alias */
               if (!strcmp (jright_alias, sub_selid))
@@ -7565,6 +7573,8 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   sub_sparp->sparp_env = wrapping_gp->_.gp.subquery->_.req_top.shared_spare;
   subq_ssg->ssg_sources = subq_ssg->ssg_tree->_.req_top.sources;
   subq_ssg->ssg_out = ssg->ssg_out;
+  subq_ssg->ssg_valid_ret_selids = ssg->ssg_valid_ret_selids;
+  subq_ssg->ssg_valid_ret_tabids = ssg->ssg_valid_ret_tabids;
   subq_ssg->ssg_indent = ssg->ssg_indent;
   if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_AUTO == needed))
     sub_sparp->sparp_env->spare_output_valmode_name = t_box_dv_short_string ("LONG");
@@ -7828,7 +7838,7 @@ fld_restrictions_may_vary:
       int eq_idx = first_mcase->_.gp.equiv_indexes[equiv_ctr];
       sparp_equiv_t *eq = ssg->ssg_equivs[eq_idx];
       /* ssg_puts (t_box_sprintf (100, "/" "* eq = %d *" "/", eq_idx)); */
-      ssg_print_equivalences (ssg, first_mcase, eq, NULL, NULL, 1 /* print join conds */, 1 /* print equalities to globals */);
+      ssg_print_equivalences (ssg, first_mcase, eq, NULL, NULL, 1 /* print cross join conds */, 1 /* print inner filters */, 1 /* print equalities to globals */);
     }
   ssg->ssg_where_l_printed = save_where_l_printed;
   ssg->ssg_where_l_text = save_where_l_text;
@@ -7904,7 +7914,7 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
           for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
             {
               sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
-              ssg_print_equivalences (ssg, member, eq, prev_itm_aliases, itm_alias, 1 /* print join conds */, 0 /* do not print equalities to globals */);
+              ssg_print_equivalences (ssg, member, eq, prev_itm_aliases, itm_alias, 1 /* print join conds */, 0 /* do not print inner filters */, 0 /* do not print equalities to globals */);
             }
         }
       if (print_glued_filters)
@@ -8183,7 +8193,7 @@ end_of_table_list: ;
       for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
         {
           sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
-          ssg_print_equivalences (ssg, member, eq, NULL, NULL, ('Y' == need_self_joins_in_where) /* print join conds only for 0 or 1 item */, 1 /* print equalities to globals */);
+          ssg_print_equivalences (ssg, member, eq, NULL, NULL, ('Y' == need_self_joins_in_where) /* print join conds only for 0 or 1 item */, 1 /* print inner filters */, 1 /* print equalities to globals */);
         }
       filter_count = BOX_ELEMENTS_0 (member->_.gp.filters) - member->_.gp.glued_filters_count;
       for (filter_idx = 0; filter_idx < filter_count; filter_idx++)
