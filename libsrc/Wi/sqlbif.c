@@ -10465,7 +10465,14 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   it->itc_insert_key = key;
   if (key->key_is_bitmap)
     {
-      key_bm_insert (it, &rd);
+      ITC_FAIL (it)
+	{
+          key_bm_insert (it, &rd);
+	}
+      ITC_FAILED
+	{
+	}
+      END_FAIL (it);
       itc_free_owned_params (it);
       return (caddr_t)DVC_LESS;
     }
