@@ -4843,12 +4843,12 @@ dk_ssl_free (void *old)
 }
 #endif
 
+#if defined (_SSL) && !defined (NO_THREAD)
 int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name);
 
 static void 
 ssl_server_key_setup ()
 {
-#ifndef NO_THREAD
   char err_buf[1024];
 
   if (!c_ssl_server_port)
@@ -4890,8 +4890,8 @@ ssl_server_key_setup ()
 	    log_debug ("ODBC Server Using X509 Client CA %s", ca_buf);
 	}
     }
-#endif
 }
+#endif
 
 static void
 ssl_server_init ()
