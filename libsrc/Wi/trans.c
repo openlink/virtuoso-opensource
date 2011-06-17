@@ -1029,7 +1029,11 @@ tn_lowest_sas_result (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
     }
   END_DO_SET();
   if (!res)
-    return;
+    {
+      if (tn->tn_input[0] == tn->tn_output[0])
+	qn_send_output ((data_source_t*)tn, inst);
+      return;
+    }
   cl_ts_set_context ((table_source_t *)tn, itcl, inst, QST_INT (inst, tn->clb.clb_nth_set) - 1);
   qst_set (inst, tn->tn_output[0], box_iri_id (res));
   qn_send_output ((data_source_t*)tn, inst);
