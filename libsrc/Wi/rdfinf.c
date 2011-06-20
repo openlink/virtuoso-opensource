@@ -792,7 +792,6 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
   if (!place)
     {
       caddr_t n2 = box_copy (ctx_name);
-      NEW_VARZ (rdf_inf_ctx_t, c1);
       return ric_allocate (n2);
     }
   else
