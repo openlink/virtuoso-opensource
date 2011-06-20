@@ -715,7 +715,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
 	break;
 
       case DV_IRI_ID:
-	ln1 = (iri_id_t) (unsigned long) LONG_REF_NA (dv1 + 1) + offset;
+	ln1 = (iri_id_t) (unsigned int32) LONG_REF_NA (dv1 + 1) + offset;
 	break;
       case DV_IRI_ID_8:
 	dtp1 = DV_IRI_ID;
