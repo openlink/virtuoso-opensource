@@ -10370,7 +10370,7 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ITC_INIT (it, NULL, qi->qi_trx);
   memset (&rd, 0, sizeof (row_delta_t));
   if (!key || dk_set_length (key->key_parts) != BOX_ELEMENTS (arr) - 1)
-    sqlr_new_error ("42000", "KI...", "No key for the id or bad number of columns in key_insert_co;cols");
+    sqlr_new_error ("42000", "KI...", "No key for the id or bad number of columns in key_replay_insert");
   rd.rd_allocated = RD_AUTO;
   rd.rd_key = key;
   rd.rd_op = RD_INSERT;
@@ -10465,6 +10465,8 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   it->itc_insert_key = key;
   if (key->key_is_bitmap)
     {
+      if (!qi->qi_non_txn_insert)
+	rd.rd_make_ins_rbe = 1;
       ITC_FAIL (it)
 	{
           key_bm_insert (it, &rd);
@@ -10480,7 +10482,7 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     ins_mode = INS_REPLACING;
   else
     ins_mode = INS_SOFT;
-  if (KI_TEMP != key->key_id)
+  if (KI_TEMP != key->key_id && !qi->qi_non_txn_insert)
     rd.rd_make_ins_rbe = 1;
   ITC_FAIL (it)
     {
