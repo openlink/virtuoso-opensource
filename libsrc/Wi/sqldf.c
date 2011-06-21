@@ -5294,27 +5294,37 @@ dfe_suitable_for_next (df_elt_t * dfe, df_elt_t * must_be_next)
 
 
 df_elt_t *
-sqlo_next_joined (df_elt_t * dt_dfe)
+sqlo_next_joined (sqlo_t * so, df_elt_t * dt_dfe)
 {
   /* if there is an outer that must come at this point, return it */
-  op_table_t * ot = dt_dfe->_.sub.ot;
-  df_elt_t * last = NULL, * placed;
+  op_table_t *ot = dt_dfe->_.sub.ot;
+  df_elt_t *last = NULL, *placed;
   dk_set_t from;
   for (placed = dt_dfe->_.sub.first; placed; placed = placed->dfe_next)
     {
       if (DFE_TABLE == placed->dfe_type || DFE_DT == placed->dfe_type)
 	last = placed;
-
     }
   for (from = ot->ot_from_dfes; from && from->next; from = from->next)
     {
       if ((df_elt_t *) from->data == last)
 	{
-	  df_elt_t * next_from = (df_elt_t *) from->next->data;
+	  df_elt_t *next_from = (df_elt_t *) from->next->data;
 	  int next_outer = dfe_is_join (next_from);
-	  remote_table_t * rt = DFE_TABLE == next_from->dfe_type ? find_remote_table (next_from->_.table.ot->ot_table->tb_name, 0) : NULL ;
+	  remote_table_t *rt =
+	      DFE_TABLE == next_from->dfe_type ? find_remote_table (next_from->_.table.ot->ot_table->tb_name, 0) : NULL;
 	  if (!next_from->dfe_is_placed && next_outer && rt)
-	    return next_from;
+	    {
+	      df_elt_t *preds = sqlo_df_elt (so, next_from->_.table.ot->ot_join_cond);
+	      char old = next_from->dfe_is_placed;
+	      next_from->dfe_is_placed = DFE_PLACED;
+	      if (dfe_reqd_placed (preds))
+		{
+		  next_from->dfe_is_placed = old;
+		  return next_from;
+		}
+	      next_from->dfe_is_placed = old;
+	    }
 	}
     }
   return NULL;
@@ -5794,7 +5804,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
   dk_set_t sort_set = NULL, new_leaves = NULL;
   float this_score;
   int any_tried = 0;
-  must_be_next = sqlo_next_joined (ot->ot_work_dfe);
+  must_be_next = sqlo_next_joined (so, ot->ot_work_dfe);
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &any_tried, 8000))
     sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DK_MEM_RESERVE)
