@@ -188,7 +188,7 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	sqlo_print (("Table %s(%s %s) by %s %s", dfe->_.table.ot->ot_table->tb_name,
 	      dfe->_.table.ot->ot_prefix ? dfe->_.table.ot->ot_prefix : "",
 	      dfe->_.table.ot->ot_new_prefix,
-	      dfe->_.table.key->key_name,
+	      dfe->_.table.key ? dfe->_.table.key->key_name : "<no key>",
 		     dfe->_.table.hash_role == HR_FILL ? " hash filler " : dfe->_.table.hash_role == HR_REF ? "hash join" : ""));
 	if (compiler_unit_msecs)
 	  sqlo_print (("  Reached %9.2g unit %9.2g (%g msecs) arity %9.2g\n",
