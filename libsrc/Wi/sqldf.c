@@ -5318,7 +5318,7 @@ sqlo_next_joined (sqlo_t * so, df_elt_t * dt_dfe)
 	      df_elt_t *preds = sqlo_df_elt (so, next_from->_.table.ot->ot_join_cond);
 	      char old = next_from->dfe_is_placed;
 	      next_from->dfe_is_placed = DFE_PLACED;
-	      if (dfe_reqd_placed (preds))
+	      if (preds && dfe_reqd_placed (preds))
 		{
 		  next_from->dfe_is_placed = old;
 		  return next_from;
