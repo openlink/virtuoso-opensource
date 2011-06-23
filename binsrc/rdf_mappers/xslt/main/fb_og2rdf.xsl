@@ -200,7 +200,7 @@
 				<xsl:if test="normalize-space (name) != ''">
 				<dc:title><xsl:value-of select="concat(name, ' (container)')"/></dc:title>
 				</xsl:if>
-				<owl:sameAs rdf:resource="{$docIRI}"/>
+				<owl:sameAs rdf:resource="{$baseUri}"/>
 		    </rdf:Description>
 		</rdf:RDF>
 	</xsl:template>
@@ -215,10 +215,19 @@
 				<xsl:if test="normalize-space (name) != ''">
 				    <dc:title><xsl:value-of select="concat(document/name, ' (container)')"/></dc:title>
                 </xsl:if>
-				<owl:sameAs rdf:resource="{$docIRI}"/>
+				<owl:sameAs rdf:resource="{$baseUri}"/>
 		    </rdf:Description>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
+        		<xsl:choose>
+		            <xsl:when test="document/category = 'Public figure'">
+				<rdf:type rdf:resource="&foaf;Person" />
+		                <rdf:type rdf:resource="&oplog;User" />
+			    </xsl:when>
+			    <xsl:otherwise>
 				<rdf:type rdf:resource="&oplog;Page" />
+			    </xsl:otherwise>
+        		</xsl:choose>
                 <xsl:if test="document/id">
                     <oplog:id><xsl:value-of select="document/id"/></oplog:id>
 		    <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('https://graph.facebook.com/', document/id))}"/>
@@ -255,6 +264,7 @@
 	<xsl:template match="/results" mode="application">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Agent" />
                 <rdf:type rdf:resource="&oplog;Application" />
                 <xsl:if test="id">
@@ -284,6 +294,7 @@
 	<xsl:template match="/results" mode="photo">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Image" />
                 <rdf:type rdf:resource="&exif;IFD" />
                 <rdf:type rdf:resource="&oplog;Photo" />
@@ -311,14 +322,30 @@
 					<foaf:depiction rdf:resource="{icon}"/>
 				</xsl:if>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                      <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                        <xsl:value-of select="$time_without_bad_offset"/>
+                      </xsl:when>
+                      <xsl:otherwise>
 					<xsl:value-of select="created_time"/>
+                      </xsl:otherwise>
+                    </xsl:choose>
 				</dcterms:created>
                 <xsl:if test="position">
                     <oplog:position><xsl:value-of select="position"/></oplog:position>
                 </xsl:if>
                 <xsl:if test="updated_time">
     				<dcterms:modified rdf:datatype="&xsd;dateTime">
+                      <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                      <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                          <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
 						<xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:for-each select="comments/data">
@@ -334,7 +361,15 @@
 								<xsl:value-of select="message" />
 							</dc:description>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
+                                <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                <xsl:choose>
+                                  <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                    <xsl:value-of select="$time_without_bad_offset"/>
+                                  </xsl:when>
+                                  <xsl:otherwise>
 								<xsl:value-of select="created_time"/>
+                                  </xsl:otherwise>
+                                </xsl:choose>
 							</dcterms:created>
 							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -351,6 +386,7 @@
 	<xsl:template match="/results" mode="group">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Group" />
                 <rdf:type rdf:resource="&oplog;Group" />
                 <xsl:if test="id">
@@ -374,7 +410,15 @@
                 </xsl:if>
                 <xsl:if test="updated_time">
     				<dcterms:modified rdf:datatype="&xsd;dateTime">
+                      <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                      <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                          <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
 						<xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
 					</dcterms:modified>
                 </xsl:if>
                 <xsl:if test="email">
@@ -390,6 +434,7 @@
 	<xsl:template match="/results" mode="album">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&sioct;ImageGallery" />
                 <rdf:type rdf:resource="&oplog;Album" />
                 <xsl:if test="id">
@@ -409,11 +454,27 @@
                     <oplog:count><xsl:value-of select="count"/></oplog:count>
                 </xsl:if>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                      <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                        <xsl:value-of select="$time_without_bad_offset"/>
+                      </xsl:when>
+                      <xsl:otherwise>
 					<xsl:value-of select="created_time"/>
+                      </xsl:otherwise>
+                    </xsl:choose>
 				</dcterms:created>
                 <xsl:if test="updated_time">
     				<dcterms:modified rdf:datatype="&xsd;dateTime">
+                      <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                      <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                          <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
 						<xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:for-each select="comments/data">
@@ -429,7 +490,15 @@
 								<xsl:value-of select="message" />
 							</dc:description>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
 								<xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 							</dcterms:created>
 							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -451,9 +520,9 @@
 	<xsl:template match="/results" mode="user">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Person" />
                 <rdf:type rdf:resource="&oplog;User" />
-
                 <xsl:if test="id">
                     <oplog:id><xsl:value-of select="id"/></oplog:id>
                 </xsl:if>
@@ -484,7 +553,15 @@
                 </xsl:if>
                 <xsl:if test="updated_time">
     				<dcterms:modified rdf:datatype="&xsd;dateTime">
+                      <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                      <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                          <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
 						<xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:if test="verified">
@@ -500,6 +577,7 @@
 	<xsl:template match="/results" mode="event">
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&c;Vevent" />
                 <rdf:type rdf:resource="&oplog;Event" />
 				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', owner/id))}"/>
@@ -519,7 +597,15 @@
 					<xsl:value-of select="end_time"/>
 				</c:dtend>
 				<dcterms:modified>
+                  <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                  <xsl:choose>
+                    <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                      <xsl:value-of select="$time_without_bad_offset"/>
+                    </xsl:when>
+                    <xsl:otherwise>
 					<xsl:value-of select="updated_time"/>
+                    </xsl:otherwise>
+                  </xsl:choose>
 				</dcterms:modified>
 				<c:location rdf:resource="{vi:proxyIRI($baseUri, '', 'adr')}"/>
 				<!--xsl:for-each select="metadata/connections/*">
@@ -559,6 +645,7 @@
 	<xsl:template match="/results" mode="user_friends">
 		<rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <foaf:knows>
@@ -580,6 +667,7 @@
         <xsl:if test="picture">
 		    <rdf:RDF>
                 <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                     <foaf:img rdf:resource="{picture}"/>
 		        </rdf:Description>
 		    </rdf:RDF>
@@ -590,6 +678,7 @@
 	<xsl:template match="/results" mode="user_activities">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_activity>
@@ -600,7 +689,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -613,6 +710,7 @@
 	<xsl:template match="/results" mode="page_events">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <sioc:container_of>
@@ -657,6 +755,7 @@
 	<xsl:template match="/results" mode="page_notes">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <sioc:container_of>
@@ -673,10 +772,26 @@
 								<foaf:depiction rdf:resource="{icon}"/>
 							</xsl:if>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
     				        <dcterms:modified rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="updated_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:modified>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
@@ -693,7 +808,15 @@
 											<xsl:value-of select="message" />
 										</dc:description>
 										<dcterms:created rdf:datatype="&xsd;dateTime">
+                                          <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                          <xsl:choose>
+                                            <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                              <xsl:value-of select="$time_without_bad_offset"/>
+                                            </xsl:when>
+                                            <xsl:otherwise>
 											<xsl:value-of select="created_time"/>
+                                            </xsl:otherwise>
+                                          </xsl:choose>
 										</dcterms:created>
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -710,6 +833,7 @@
 	<xsl:template match="/results" mode="user_links">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
@@ -735,7 +859,15 @@
 								<foaf:depiction rdf:resource="{icon}"/>
 							</xsl:if>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 							<xsl:for-each select="comments/data">
 								<sioc:topic>
@@ -750,7 +882,15 @@
 											<xsl:value-of select="message" />
 										</dc:description>
 										<dcterms:created rdf:datatype="&xsd;dateTime">
+                                          <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                          <xsl:choose>
+                                            <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                              <xsl:value-of select="$time_without_bad_offset"/>
+                                            </xsl:when>
+                                            <xsl:otherwise>
 											<xsl:value-of select="created_time"/>
+                                            </xsl:otherwise>
+                                          </xsl:choose>
 										</dcterms:created>
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -768,6 +908,7 @@
 	<xsl:template match="/results" mode="user_albums">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_album>
@@ -789,11 +930,27 @@
 								<oplog:count><xsl:value-of select="count"/></oplog:count>
 							</xsl:if>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
 								<xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 							</dcterms:created>
 							<xsl:if test="updated_time">
 								<dcterms:modified rdf:datatype="&xsd;dateTime">
+                                  <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                                  <xsl:choose>
+                                    <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                      <xsl:value-of select="$time_without_bad_offset"/>
+                                    </xsl:when>
+                                    <xsl:otherwise>
 									<xsl:value-of select="updated_time"/>
+                                    </xsl:otherwise>
+                                  </xsl:choose>
 								</dcterms:modified>
 							</xsl:if>
 							<xsl:if test="type">
@@ -812,7 +969,15 @@
 											<xsl:value-of select="message" />
 										</dc:description>
 										<dcterms:created rdf:datatype="&xsd;dateTime">
+                                          <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                          <xsl:choose>
+                                            <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                              <xsl:value-of select="$time_without_bad_offset"/>
+                                            </xsl:when>
+                                            <xsl:otherwise>
 											<xsl:value-of select="created_time"/>
+                                            </xsl:otherwise>
+                                          </xsl:choose>
 										</dcterms:created>
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -830,6 +995,7 @@
 	<xsl:template match="/results" mode="page_statuses">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
@@ -843,7 +1009,15 @@
 							</xsl:if>
 							<xsl:if test="updated_time">
 								<dcterms:modified rdf:datatype="&xsd;dateTime">
+                                  <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                                  <xsl:choose>
+                                    <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                      <xsl:value-of select="$time_without_bad_offset"/>
+                                    </xsl:when>
+                                    <xsl:otherwise>
 									<xsl:value-of select="updated_time"/>
+                                    </xsl:otherwise>
+                                  </xsl:choose>
 								</dcterms:modified>
 							</xsl:if>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -861,6 +1035,7 @@
 	<xsl:template match="/results" mode="user_accounts">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_account>
@@ -882,6 +1057,7 @@
 	<xsl:template match="/results" mode="user_likes">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_interest>
@@ -892,7 +1068,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -905,6 +1089,7 @@
 	<xsl:template match="/results" mode="user_interests">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_interest>
@@ -915,7 +1100,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -929,6 +1122,7 @@
 	<xsl:template match="/results" mode="user_movies">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_movie>
@@ -941,7 +1135,15 @@
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
                             <dc:description><xsl:value-of select="description"/></dc:description>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<foaf:depiction rdf:resource="{picture}"/>
@@ -951,7 +1153,15 @@
 								<xsl:value-of select="embed_html" />
 							</bibo:content>
     				        <dcterms:modified rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="updated_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:modified>
 							<xsl:for-each select="comments/data">
 								<sioc:topic>
@@ -966,7 +1176,15 @@
 											<xsl:value-of select="message" />
 										</dc:description>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                                          <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                          <xsl:choose>
+                                            <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                              <xsl:value-of select="$time_without_bad_offset"/>
+                                            </xsl:when>
+                                            <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                            </xsl:otherwise>
+                                          </xsl:choose>
 					        </dcterms:created>
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
@@ -985,6 +1203,7 @@
 	<xsl:template match="/results" mode="user_music">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_music>
@@ -995,7 +1214,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1008,6 +1235,7 @@
 	<xsl:template match="/results" mode="user_games">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_games>
@@ -1018,7 +1246,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1032,6 +1268,7 @@
 	<xsl:template match="/results" mode="user_books">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_book>
@@ -1043,7 +1280,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1057,6 +1302,7 @@
 	<xsl:template match="/results" mode="user_television">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_tv_programme>
@@ -1067,7 +1313,15 @@
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
 	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1080,8 +1334,16 @@
 	<xsl:template match="/results" mode="page">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
+        		<xsl:choose>
+		            <xsl:when test="category = 'Public figure'">
+				<rdf:type rdf:resource="&foaf;Person" />
+		                <rdf:type rdf:resource="&oplog;User" />
+			    </xsl:when>
+			    <xsl:otherwise>
                 <rdf:type rdf:resource="&oplog;Page" />
-
+			    </xsl:otherwise>
+        		</xsl:choose>
                 <xsl:if test="id">
                     <oplog:id><xsl:value-of select="id"/></oplog:id>
                 </xsl:if>
@@ -1129,6 +1391,7 @@
 	<xsl:template match="/results" mode="user_posts">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
@@ -1137,10 +1400,26 @@
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                                <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                <xsl:choose>
+                                  <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                    <xsl:value-of select="$time_without_bad_offset"/>
+                                  </xsl:when>
+                                  <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                  </xsl:otherwise>
+                                </xsl:choose>
 					        </dcterms:created>
     				        <dcterms:modified rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="updated_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:modified>
                             <!--
                             <xsl:if test="name">
@@ -1169,6 +1448,7 @@
 	<xsl:template match="/results" mode="page_feed">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
@@ -1178,10 +1458,26 @@
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
                             <oplog:to><xsl:value-of select="concat (to/data/name, ' (', to/data/id, ')')"/></oplog:to>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:created>
     				        <dcterms:modified rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
                                 <xsl:value-of select="updated_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
 					        </dcterms:modified>
                             <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
                             <xsl:if test="description">
