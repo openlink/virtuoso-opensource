@@ -563,6 +563,12 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 		}
 	    }
 	  END_DO_BOX;
+	  if (!members)
+	    {
+	      SRC_IN_STATE ((data_source_t *)ii, inst) = NULL;
+	      qst_set (inst, ii->ii_values_array, NULL);
+	      return;
+	    }
 	  arr = (caddr_t*)list_to_array (dk_set_nreverse (members));
 	  qst_set (inst, ii->ii_values_array, (caddr_t)arr);
 	  n_total = BOX_ELEMENTS (arr);
