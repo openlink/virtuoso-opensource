@@ -66,7 +66,7 @@ OAT.RDFAtom = function (tag, value, ns) {
     //
 
     this.getValueDt = function () {
-
+	// XXX no-op
     }
 
     //
@@ -125,19 +125,29 @@ OAT.RDFAtom = function (tag, value, ns) {
 // Global IRI repository
 // 
 
+
 OAT.IRIDB = {
+
+//
+// Some "Well-known" namespaces
+//
+
     _default_iris: [
+	["http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf"],
+	["http://purl.org/dc/elements/1.1/",            "dc"],
+	["http://www.w3.org/2002/07/owl#",              "owl"],
 	["http://rdfs.org/sioc/ns#",                    "sioc"],
 	["http://www.w3.org/2000/01/rdf-schema#",       "rdfs"],
+        ["http://www.w3.org/2001/XMLSchema#",           "xsd"],
 	["http://xmlns.com/foaf/0.1/",                  "foaf"],
 	["http://umbel.org/umbel#",                     "umbel"],
-	["http://purl.org/dc/elements/1.1/",            "dc"],
-	["http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf"],
-	["http://dbpedia.org/resource/",                "dbpedia"],
-        ["http://www.w3.org/2001/XMLSchema#",           "xsd"],
 	["http://purl.org/goodrelations/v1#",           "gr"],
+	["http://www.openlinksw.com/schemas/xbrl/",     "xbrl"],
+	["http://www.openlinksw.com/schemas/rdfs/",     "oplrdfs"],
+	["http://dbpedia.org/resource/",                "dbpedia"],
         ["http://dbpedia.org/ontology/",                "dbo"],
-        ["http://dbpedia.org/property/",                "dbpprop"]
+        ["http://dbpedia.org/property/",                "dbpprop"],
+	["http://dbpedia.org/class/yago/",              "yago"]
 ], // IRI array 
 
     _iri_a:  [],
@@ -148,6 +158,7 @@ OAT.IRIDB = {
     _ns_pref: {},
     _ciri_unres: [], // iids with unresolved CIRI
     _enableHTML5LocalStorage:false,
+    _ns_cnt: 0,  // count of "anon" ns pfxes
 
     //
     // Insert IRI, update ns prefix, or just get IID of existing IRI
@@ -230,6 +241,14 @@ OAT.IRIDB = {
 	return (r ? r : false);
     }, 
 
+    makeNSPrefix:function() {
+	return 'isparql'+this._ns_cnt++;
+    },
+
+    //
+    //  Resolve CIRI (IRI with NS Prefix) and cache
+    //
+
     resolveCIRI:function (iid) {
 	var ciri = this._iri_a[iid][1];
 	if (!!ciri) return ciri;
@@ -238,19 +257,28 @@ OAT.IRIDB = {
 
 	var i_a = this.splitIRI (iri); // http://www.zonk.net/onto/cli/ 
 	
-	var pfx_str = iri.substr(0, i_a.index);
-	var pfx_iid = this._iri_h [pfx_str];
+	var ns_iri = iri.substr(0, i_a.index);
+	var ns_iid = this._iri_h [ns_iri];
 
-	if (pfx_iid)
+	if (ns_iid) {
+            if (this._iri_a[ns_iid][1]) {
+		ciri = this._iri_a[ns_iid][1] + ":" + i_a[0]; // Already have a ns prefix
+	    } else {
+		var new_ns = this.makeNSPrefix(); // ns IRI exists but no prefix - synthesize and save
+		ciri = new_ns + ':' + i_a[0];
+		this._iri_a[ns_iid][1] = new_ns;
+	    }
+	}
+	else
 	    {
-		ciri = this._iri_a[pfx_iid][1] + ":" + i_a[0];
-		if (typeof ciri == "object") throw "resolveCIRI: invalid ciri - cannot have an object here";
-		this._iri_a[iid][1] = ciri; 
-
-		return ciri;
+	    var new_ns = this.makeNSPrefix();
+	    this.insertIRI(ns_iri, new_ns);
+	    ciri = new_ns + ":" + i_a[0];	    
 	    }
 
-	return false;
+	this._iri_a[iid][1] = ciri; // cache CIRI with the IRI
+
+	return ciri;
     },
 
     init: function () {
@@ -266,11 +294,14 @@ OAT.IRIDB = {
 		OAT.IRIDB._iri_h = idb._iri_h;
 		OAT.IRIDB._iri_c = idb._iri_c;
 		OAT.IRIDB._iri_d = idb._iri_d;
-	    }
+	    } else {
 	    this.insertIRIArr (this._default_iris);
-	    
+		this.save();
+	    }
 	    OAT.MSG.attach ("*","OAT_RDF_STORE_LOADED", this.save);
 	}
+	else
+	    this.insertIRIArr (this._default_iris);
     },	    
 
     getStats: function () {

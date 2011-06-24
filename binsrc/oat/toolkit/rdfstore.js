@@ -704,21 +704,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 
 	_iid = (iid.constructor == OAT.RDFAtom) ? iid._value : iid;
 
-	var ciri = OAT.IRIDB.resolveCIRI (_iid);
-
-	if (!!ciri) 
-	    return ciri;
-	else 
-	{
-	    var iri = OAT.IRIDB.getIRI(_iid);
-
-	    spliri = OAT.IRIDB.splitIRI(iri);
-
-	    if (!!spliri) 
-		return (spliri[1]);
-	    else 
-		return iri;
-	    }
+	return OAT.IRIDB.resolveCIRI (_iid);
 	    }
 
     this.getTitle = function(item) {
