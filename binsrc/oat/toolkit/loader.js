@@ -1058,7 +1058,7 @@ OAT.Dom = {
 	    var key = part.substring(0,index);
 	    var val = part.substring(index+1);
 	    key = decodeURIComponent(key);
-	    val = decodeURIComponent(val);
+	    val = decodeURIComponent(val.replace(/\+/g,  " "));
 
 	    var r = false;
 	    if ((r = key.match(/(.*)\[\]$/))) {
