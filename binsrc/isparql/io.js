@@ -79,22 +79,38 @@ iSPARQL.IO = {
 	'<ISparqlDynamicPage>\n'+
 	'</ISparqlDynamicPage>\n'+
 	'</iSPARQL>';
+
 	var xml = OAT.Xml.createXmlDoc(xmlTemplate);
-	var page = xml.getElementsByTagName("ISparqlDynamicPage")[0];
-	var isparql = xml.getElementsByTagName("iSPARQL")[0];
-	var title = xml.getElementsByTagName("title")[0];
-	var creator = xml.getElementsByTagName("creator")[0];
-	var description = xml.getElementsByTagName("description")[0];
+
+	var page =        OAT.Xml.getElementsByLocalName(xml,"ISparqlDynamicPage")[0];
+	var isparql =     OAT.Xml.getElementsByLocalName(xml,"iSPARQL")[0];
+	var title =       OAT.Xml.getElementsByLocalName(xml,"title")[0];
+	var creator =     OAT.Xml.getElementsByLocalName(xml,"creator")[0];
+	var description = OAT.Xml.getElementsByLocalName(xml,"description")[0];
 
 	var addNode = function(p,ns,name,text,nenc) {
-	    var node = xml.createElementNS(ns,name);
+	    var node;
 	    var t = text || "";
+
+	    if (OAT.Browser.isIE) {
+		node = xml.createElement(name)
+
+		if (nenc) {
+		    node.text = t;
+		}
+		else {
+		    node.text = OAT.Dom.toSafeXML(t);
+		}
+	    }
+	    else {
+		node = xml.createElementNS(ns,name);
 	    if (nenc) {
 		node.textContent = t;
             }
             else {
 		node.textContent = OAT.Dom.toSafeXML(t);
             }
+	    }
 	    p.appendChild(node);
 	    return node;
 	}
@@ -106,7 +122,12 @@ iSPARQL.IO = {
 
 	if (dataObj.query) {
           qn = addNode(page,iNS,"query",dataObj.query,true);
- 	      if (dataObj.maxrows) { qn.setAttributeNS (iNS, 'maxrows', dataObj.maxrows.toString()); }
+ 	    if (dataObj.maxrows) { 
+		if (OAT.Browser.isIE)
+		    qn.setAttribute ('maxrows', dataObj.maxrows.toString());
+		else
+		    qn.setAttributeNS (iNS, 'maxrows', dataObj.maxrows.toString()); 
+	    }
         }
 	if (dataObj.prefixes) {
 	    var schemas = addNode(page, iNS, "schemas");
@@ -145,10 +166,16 @@ iSPARQL.IO = {
 	if (dataObj.canvas) { addNode(isparql,iNS,"canvas",dataObj.canvas); }
 
 	if (dataObj.metaDataOpts) {
+	    if (OAT.Browser.isIE) {
+		title.text       = OAT.Dom.toSafeXML(dataObj.metaDataOpts.title);
+		creator.text     = OAT.Dom.toSafeXML(dataObj.metaDataOpts.creator);
+		description.text = OAT.Dom.toSafeXML(dataObj.metaDataOpts.description);
+	    } else {
 	    title.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.title);
 	    creator.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.creator);
 	    description.textContent = OAT.Dom.toSafeXML(dataObj.metaDataOpts.description);
 	}
+	}	
 
 	return OAT.Xml.serializeXmlDoc(xml);
     },
