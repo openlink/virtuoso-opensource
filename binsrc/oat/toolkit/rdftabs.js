@@ -159,15 +159,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 	    var p_ctr = OAT.Dom.create("div",{className:"rdf_p"});
 	    var p_a = OAT.Dom.create("a");
 	    var p_iri = OAT.IRIDB.getIRI(p);
-	    var p_ciri = OAT.IRIDB.getCIRIByID(p);
-
-	    if (!p_ciri) {
-		var spiri = OAT.IRIDB.splitIRI(p_iri);
-		if (!spiri) 
-		    p_ciri = p_iri;
-		else
-		    p_ciri = spiri[0];
-	    }
+	    var p_ciri = OAT.IRIDB.resolveCIRI(p);
 
 	    p_a.href = p_iri;
 
@@ -381,9 +373,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 
     this.options = {
 	limit:5,
-	description:"This module is used to navigate through locally cached data, one resource at a time. Note that filters are not applied here.",
+	description:"This module is used to navigate through locally cached data, one resource at a time. Filters are not applied.",
 	desc:"Navigate through locally cached data (Filters not applied)"
     }
+
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
     this.initialized = false;
@@ -473,6 +466,8 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
     this.getTypeObject = function() { /* object of resource types */
 	var obj = [];
 	var noTypeArr = [];
+
+	OAT.IRIDB.insertIRI('http://openlinksw.com/schemas/oat/rdftabs#','oatrdftabs');
 	var ntIID = OAT.IRIDB.insertIRI('http://openlinksw.com/schemas/oat/rdftabs#isReferencedBy');
 
 	var data = self.parent.data.all;
@@ -1320,7 +1315,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	desc:"Plots all geodata onto a map",
 	clickPopup:true,
 	hoverPopup:true,
-	height: "600px"
+	height: "600px",
+	useMobileOpts:false,
+	supportedMobileDetected:false
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -1337,6 +1334,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
     if (useragent.indexOf('iPhone') != -1 || useragent.indexOf('Android') != -1 ) {
 	self.elm.style.width = '100%';
 	self.elm.style.height = '100%';
+	self.options.supportedMobileDetected = true;
     } else {
     this.elm.style.height = self.options.height;
     }
@@ -1598,8 +1596,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 // Return marker content for item
 //    
 
-    this.drawAllProps = function (item) {
-	var div = OAT.Dom.create ("div",{className:"all_props_ctr"});
+    this.drawAllProps = function (item, container) {
 	var preds = item.preds;
 	for (var p in preds) {
 	    if (self.markerPredBlacklist.find(parseInt(p)) != -1) continue; // Not all predicates are created equal
@@ -1614,7 +1611,15 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		OAT.Dom.append([predV,content],[predC,predT,predV],[div,predC]);
 	    } /* only interesting data */
 	} /* for all predicates */
-	return div;
+	return container;
+    }
+
+    this.showMarkerPopup = function () {
+
+    }
+
+    this.hideMarkerPopup = function () {
+
     }
 
     this.drawMarker = function (item) {
@@ -1622,7 +1627,13 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	var title = self.parent.getTitle(item);
 	var titleHref='';
+	var popup_ctr;
 
+	if (self.options.supportedMobileDetected && self.options.useMobileOpts) {
+	    var titleA = OAT.Dom.create ("a");
+	    OAT.Dom.attach (titleA,"click",self.showMarkerPopup);
+	}
+	else {
 	if (title.match(/^http/i)) {
 	    self.parent.processLink(titleH,title);
 	    titleH.style.cursor = "pointer";
@@ -1645,11 +1656,12 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	var abstrC = OAT.Dom.create("div",{className:'abstract'});
 	    abstrC.innerHTML = abstr;
 	}	
+	}
 	
 	//	if (self.parent.store.itemHasType (item, "")) { }
 	//	if (self.parent.store.itemHasType (item, "")) { }
 
-	var ap = self.drawAllProps (item);
+	var ap = self.drawAllProps (item, ctr);
 
 	if (abstr)
 	OAT.Dom.append([ctr,titleH,abstrC,ap]);

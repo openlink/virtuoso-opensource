@@ -172,24 +172,32 @@ OAT.RDFMini = function(div,optObj) {
 	this.getContent = function(data_,disabledActions) {
 		var content = false;
 	    var data;
+	var label = false;
+	var ciri;
 
 	    if (data_.constructor == OAT.RDFAtom)
 		switch (data_.getTag()) {
 		case OAT.RDFTag.IRI:
 		    data = data_.getIRI();
-		    var ciri = OAT.IRIDB.getCIRIByID(data_.getValue());
+		ciri = OAT.IRIDB.resolveCIRI(data_.getValue());
 		    break;
 		case OAT.RDFTag.LIT:
 		    data = data_.getValue();
 		    break;
 	    }
+	else if (typeof data_ == 'object') {
+	    ciri = OAT.IRIDB.resolveCIRI(data_.iid);
+	    data = OAT.IRIDB.getIRI(data_.iid);
+	    label = data_.label;
+	}
+	
 
 		var type = self.getContentType(data);
 
 		switch (type) {
 			case 3:
 				content = OAT.Dom.create("img");
-				content.title = data;
+	    content.title = (label ? label : data);
 				content.src = data;
 				self.processLink(content,data);
 			break;
@@ -202,14 +210,19 @@ OAT.RDFMini = function(div,optObj) {
 			case 1:
 				content = OAT.Dom.create("span");
 				var a = OAT.Dom.create("a");
-		a.innerHTML = (ciri ? ciri : data);
+	    a.innerHTML = (label ? label : ciri);
 				a.href = data;
 				content.appendChild(a);
 				self.processLink(a,data,disabledActions);
 			break;
 			default:
 				content = OAT.Dom.create("span");
-		content.innerHTML = (ciri ? ciri : data);
+
+	    if (data.match(/(#this$|#me$)/))
+		content.innerHTML = (label ? label : ciri);
+	    else
+		content.innerHTML = (label ? label : data);
+
 				/* create dereference a++ lookups for all anchors */
 				var anchors_ = content.getElementsByTagName("a");
 				var anchors = [];
