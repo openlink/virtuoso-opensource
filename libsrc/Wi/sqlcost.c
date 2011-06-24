@@ -940,6 +940,7 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
   return MIN (tb_count, res);
 }
 
+int32 enable_p_stat = 0;
 extern caddr_t rdfs_type;
 
 int64
