@@ -34,12 +34,12 @@ iSPARQL.Defaults = {
 			   ['rdfs:seeAlso',    'http://www.w3.org/2000/01/rdf-schema#',true],
 			   ['owl:sameAs',      'http://www.w3.org/2002/07/owl#',       true]],
 
-    query:        'SELECT * WHERE {?s ?p ?o}',
-    sponge:       'none',
+    query:        "SELECT * WHERE {?s ?p ?o}",
+    sponge:       "none",
     grabLimit:    100,
     grabDepth:    2,
     grabAll:      false,
-    graph:        '',
+    graph:        "",
     queryTimeout: 2000, // ms
     auth:         {user:'dav',password:'dav'},
     tab:          0,

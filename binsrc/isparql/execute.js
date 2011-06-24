@@ -394,14 +394,26 @@ var QueryExec = function(optObj) {
     };
 
     this.resultType = function(data) {
+
 		if (data.documentElement == null) 
 			return iSPARQL.ResultType.ERROR; // OPERA returns XMLDocument with all members null
-		if (data.documentElement.localName == "sparql")
+
+		var fElm;
+		
+		if (OAT.Browser.isIE) {
+			fElm = data.documentElement.baseName;
+		} else {
+			fElm = data.documentElement.localName;
+		}
+		
+		switch (fElm) {
+		case "sparql":
 			return iSPARQL.ResultType.RESSET;
-		if (data.documentElement.localName == "RDF")
+		case "RDF":
 			return iSPARQL.ResultType.GRAPH;
-		if (data.documentElement.localName == "parsererror")
+		default:
 			return iSPARQL.ResultType.ERROR;
+		}
     };
 	
     //
@@ -443,8 +455,17 @@ var QueryExec = function(optObj) {
 			
 		var req_href;
 		
-		if (opts.endpoint && !opts.endpoint.match (/^http/))
-			req_href = unescape(request.substring(4));
+		// FIXME (ghard) this is wrong
+
+		if (opts.endpoint) {
+			if (opts.endpoint.match (/^http/))
+				req_href = opts.endpoint + "?" + request;
+			else
+				req_href = 
+				document.location.protocol + "//" +
+				document.location.host + 
+				opts.endpoint + "?" + request; 
+		}
 		else
 			req_href = 
 			document.location.protocol + "//" +
@@ -1101,8 +1122,7 @@ var QueryExec = function(optObj) {
 						'<a class="addthis_button_preferred_3"></a>' +
 						'<a class="addthis_button_preferred_4"></a>' +
 						'</div>'
-				}
-*/
+				}*/
 //				item.content = OAT.Dom.create ("div",{className: "rdf_mini_ctr"});
 				
 
