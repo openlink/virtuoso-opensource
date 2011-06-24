@@ -44,7 +44,7 @@ function init() {
 	iSPARQL.Common.initAdv(); // XXX warning defines global adv
 	
 
-	if (!OAT.Browser.isIE && !OAT.Browser.isScreenOnly)
+		if (OAT.Browser.hasSVG)
 	    iSPARQL.Common.initQBE(); // XXX warning defines global qbe
 
     	iSPARQL.Common.initQE();  // XXX warning defines global qe, uses global qbe
@@ -55,12 +55,10 @@ function init() {
 
 	iSPARQL.StatusUI.hide();
 
-	if (!OAT.Browser.isIE || !OAT.Browser.isScreenOnly) {
+		if (OAT.Browser.hasSVG) {
 	    if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
-	}
-
-		if (OAT.Browser.isIE || OAT.Browser.isScreenOnly && iSPARQL.Settings.view == 0)
 			tab.go (1); /* is 0-based index... */
+		}
 		else
 			tab.go (iSPARQL.Settings.view);
 
@@ -161,11 +159,11 @@ iSPARQL.QueryExec = function(optObj) {
     self.go(optObj);
 }
 
-iSPARQL.LayoutMgr = {
-	resize_h: function () {
-		
-	},
-}
+//iSPARQL.LayoutMgr = {
+//	resize_h: function () {
+//		
+//	},
+//}
 
 iSPARQL.Advanced = function () {
     var self = this;
@@ -825,7 +823,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	var _o = {
 		endpoint: '/sparql',
 		useProxy: true,
-		pragmas: [],
+		pragmas: []
 	};
 
 	for (p in optsObj) {
@@ -1576,14 +1574,17 @@ iSPARQL.Common = {
 	tab = new OAT.Tab ("main_col",
 						   {//dockMode:false,
 							//dockElement:"tabs",
-					goCallback:tab_goCallback,
+							goCallback:tab_goCallback
 							//onDock:onDock,
 							//onUnDock:onUnDock,
 							//dockWindowWidth:1000,
 							//dockWindowHeight:600
 						   });
 
+		if (OAT.Browser.hasSVG) {
 	tab_qbe =     tab.add ("tab_qbe",    "page_qbe");
+		}
+
 	tab_query =   tab.add ("tab_query",  "page_query");
 	tab_results = tab.add ("tab_results","page_results");
 
@@ -1598,6 +1599,7 @@ iSPARQL.Common = {
 
 	OAT.Event.attach ("browse_btn", "click", iSPARQL.Common.fileRef);
 
+		if (OAT.Browser.hasSVG) {
 	var loadToQBE = OAT.Dom.create("li",{},"nav");
 	loadToQBE.title = 'Load query into QBE';
 	var img = OAT.Dom.create("img");
@@ -1630,16 +1632,7 @@ iSPARQL.Common = {
 		       });
 
 	OAT.Dom.append([qe.dom.ul,loadToAdvanced],[loadToAdvanced,img]);
-
-	/* qbe_unsupp */
-	iSPARQL.dialogs.qbe_unsupp = new OAT.Dialog("SVG Not Available","qbe_unsupported_div",{width:400,modal:1});
-
-	iSPARQL.dialogs.qbe_unsupp.ok = function() {
-	    tab.go(1);
-	    iSPARQL.dialogs.qbe_unsupp.hide();
 	}
-
-	iSPARQL.dialogs.qbe_unsupp.cancel = iSPARQL.dialogs.qbe_unsupp.ok;
 
 	iSPARQL.StatusUI.statMsg ("Prefixes&#8230;");
 	var sel_elm = $("prefix");
@@ -2006,7 +1999,7 @@ iSPARQL.Common = {
 
     setData:function(data) {
 	iSPARQL.dataObj.data = data;
-		OAT.Debug.log(0,'setData:' + iSPARQL.dataObj.data);
+		OAT.Debug.log(0,'setData');
     },
 
     // sessionStorage handling
