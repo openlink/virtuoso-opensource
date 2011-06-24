@@ -331,6 +331,18 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML"; return;
       default: return;
       }
+  if (!strcmp (name, "HTML;MICRODATA"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA"; return;
+      default: return;
+      }
+  if (!strcmp (name, "JSON;MICRODATA"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA"; return;
+      default: return;
+      }
   if (!strcmp (name, "_JAVA_"))
     switch (subtype)
       {

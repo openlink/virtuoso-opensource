@@ -1873,7 +1873,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (25*2,
+      tmp = (caddr_t *)list (23*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -1889,16 +1889,14 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/html"				, "HTML"	, /* 12 */
         "application/vnd.ms-excel"		, "HTML"	, /* 13 */
         "application/javascript"		, "JS"		, /* 14 */
-        "application/rdf+json"			, "JSON;TALIS"	, /* 15 */
-        "application/x-rdf+json"		, "JSON;TALIS"	, /* 16 */
-        "application/rdf+xml"			, "RDFXML"	, /* 17 */
-        "application/atom+xml"			, "ATOM;XML"	, /* 18 */
-        "application/odata+json"		, "JSON;ODATA"	, /* 19 */
-        "text/rdf+nt"				, "NT"		, /* 20 */
-        "text/plain"				, "NT"		, /* 21 */
-        "text/cxml+qrcode"			, "CXML"	, /* 22 */
-        "text/cxml"				, "CXML"	, /* 23 */
-        "text/csv"				, "CSV" /* 24 Increase count in this list() call when add more MIME types! */ );
+        "application/rdf+xml"			, "RDFXML"	, /* 15 */
+        "application/atom+xml"			, "ATOM;XML"	, /* 16 */
+        "application/odata+json"		, "JSON;ODATA"	, /* 17 */
+        "text/rdf+nt"				, "NT"		, /* 18 */
+        "text/plain"				, "NT"		, /* 19 */
+        "text/cxml+qrcode"			, "CXML"	, /* 20 */
+        "text/cxml"				, "CXML"	, /* 21 */
+        "text/csv"				, "CSV" /* 22 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -1907,7 +1905,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (26*2,
+      tmp = (caddr_t *)list (30*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -1925,7 +1923,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/xhtml+xml"			, "RDFA;XHTML"	, /* 14 */
         "text/plain"				, "NT"		, /* 15 */
         "application/sparql-results+json"	, "JSON;RES"	, /* 16 */
-        "text/html"				, "HTML"	, /* 17 */
+        "text/html"				, "HTML;MICRODATA"	, /* 17 */
         "application/vnd.ms-excel"		, "HTML"	, /* 18 */
         "application/javascript"		, "JS"		, /* 19 */
         "application/atom+xml"			, "ATOM;XML"	, /* 20 */
@@ -1933,7 +1931,11 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/sparql-results+xml"	, "XML"		, /* 22 */
         "text/cxml+qrcode"			, "CXML;QRCODE"	, /* 23 */
         "text/cxml"				, "CXML"	, /* 24 */
-        "text/csv"				, "CSV" /* 25 Increase count in this list() call when add more MIME types! */ );
+        "text/md+html"				, "HTML;MICRODATA"	, /* 25 */
+        "text/microdata+html"			, "HTML;MICRODATA"	, /* 26 */
+        "application/microdata+json"		, "JSON;MICRODATA"	, /* 27 */
+        "application/x-json+ld"			, "JSON;LD"		, /* 28 */
+        "text/csv"				, "CSV" /* 29 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
@@ -2731,7 +2733,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('\"', ses);
         if (NULL == type_uri)
-          switch (DT_DT_TYPE(obj))
+          switch (DT_DT_TYPE(obj_box_value))
             {
             case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
             case DT_TYPE_TIME: type_uri = uname_xmlschema_ns_uri_hash_time; break;
@@ -2875,6 +2877,218 @@ fail:
   if (obj_iri_is_new) dk_free_box (obj_iri);
   return (caddr_t)((ptrlong)status);
 }
+
+#define ld_json_env_t talis_json_env_t
+#define iri_cast_ld_json_qname iri_cast_talis_json_qname
+
+static void
+http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp)
+{
+  caddr_t obj_box_value;
+  dtp_t obj_box_value_dtp;
+  ccaddr_t type_uri = NULL;
+  if (DV_RDF == obj_dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)obj;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, qi->qi_trx, qi);
+      obj_box_value = rb->rb_box;
+      obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
+      rb_dt_lang_check(rb);
+      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+        type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+    }
+  else
+    {
+      obj_box_value = obj;
+      obj_box_value_dtp = obj_dtp;
+      switch (obj_box_value_dtp)
+        {
+        case DV_LONG_INT:
+        case DV_DOUBLE_PREC:
+          {
+            caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+            session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            return;
+          }
+        }
+    }
+  if ((NULL != type_uri) && !strcmp (type_uri, uname_xmlschema_ns_uri_hash_boolean) && (DV_LONG_INT == obj_box_value_dtp))
+    {
+      if (unbox (obj_box_value))
+        session_buffered_write (ses, "true", 4);
+      else
+        session_buffered_write (ses, "false", 5);
+      return;
+    }
+                             /* 0          1       */
+                             /* 01.234567890.12345 */
+  session_buffered_write (ses, "{ \"@literal\" : ", 15);
+  switch (obj_box_value_dtp)
+    {
+    case DV_DATETIME:
+      {
+        char temp [50];
+        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        session_buffered_write_char ('\"', ses);
+        session_buffered_write (ses, temp, strlen (temp));
+        session_buffered_write_char ('\"', ses);
+        if (NULL == type_uri)
+          switch (DT_DT_TYPE(obj_box_value))
+            {
+            case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
+            case DT_TYPE_TIME: type_uri = uname_xmlschema_ns_uri_hash_time; break;
+            default : type_uri = uname_xmlschema_ns_uri_hash_dateTime; break;
+            }
+        break;
+      }
+    case DV_STRING:
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
+      break;
+    case DV_XML_ENTITY:
+      {
+        http_json_write_xe (ses, qi, (xml_entity_t *)(obj_box_value));
+        type_uri = uname_rdf_ns_uri_XMLLiteral;
+        break;
+      }
+    case DV_DB_NULL:
+      session_buffered_write (ses, "(NULL)", 6);
+      break;
+    default:
+      {
+        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        if (DV_RDF == obj_dtp)
+          session_buffered_write_char ('\"', ses);
+        session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+        if (DV_RDF == obj_dtp)
+          session_buffered_write_char ('\"', ses);
+        dk_free_box (tmp_utf8_box);
+        if (NULL == type_uri)
+          type_uri = xsd_type_of_box (obj_box_value);
+        break;
+      }
+    }
+  if (DV_RDF == obj_dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)obj;
+      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+        {
+          caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
+          if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
+                                         /* 0          1           */
+            {                            /* 012.3456789012.3456.78 */
+              session_buffered_write (ses, " , \"@language\" : \"", 18);
+              lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
+              if (NULL != lang_id)
+                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+              session_buffered_write_char ('\"', ses);
+            }
+        }
+    }
+  if (NULL != type_uri)
+    {
+      if (!IS_BOX_POINTER (type_uri))
+        sqlr_new_error ("22023", "SR625", "Unsupported datatype %d in LD-style JSON serialization of an RDF object", obj_dtp);
+                                 /* 0          1           */
+                                 /* 012.3456789012.3456.78 */
+      session_buffered_write (ses, " , \"@datatype\" : \"", 18);
+      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
+    }
+  session_buffered_write (ses, " }", 2);
+}
+
+caddr_t
+bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple");
+  caddr_t subj_iri_or_id = bif_arg (qst, args, 1, "http_ld_json_triple");
+  caddr_t pred_iri_or_id = bif_arg (qst, args, 2, "http_ld_json_triple");
+  caddr_t obj = bif_arg (qst, args, 3, "http_ld_json_triple");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ld_json_triple");
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
+  int subj_iri_is_new = 0, pred_iri_is_new = 0, obj_iri_is_new = 0;
+  int is_bnode, obj_is_bnode;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
+    (sizeof (ld_json_env_t) != box_length ((caddr_t)env)) ||
+    ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred))) )
+    sqlr_new_error ("22023", "SR607", "Argument 1 of http_ld_json_triple() should be an array of special format");
+  if (!iri_cast_ld_json_qname (qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never used after return */))
+    goto fail; /* see below */
+  if (!iri_cast_ld_json_qname (qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never used after return */))
+    goto fail; /* see below */
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_ld_json_qname (qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
+        goto fail; /* see below */
+    }
+  if ((DV_STRING != DV_TYPE_OF (env->tje_prev_subj)) && (DV_UNAME != DV_TYPE_OF (env->tje_prev_subj)))
+    {
+      dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
+      dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+    }
+  if ((NULL == env->tje_prev_subj) || strcmp (env->tje_prev_subj, subj_iri))
+    {
+      if (NULL != env->tje_prev_pred)
+        {                            /* 012345.6789 */
+          session_buffered_write (ses, " ] } ,\n  ", 9);
+          dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
+          dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+        }
+                                 /* 01.23.456.78 */
+      session_buffered_write (ses, "{ \"@\": \"", 8);
+      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                                 /* .01.23 */
+      session_buffered_write (ses, "\",\n", 3);
+      env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
+    }
+  if ((NULL == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
+    {
+      if (NULL != env->tje_prev_pred)
+        {                            /* 0123.456789 */
+          session_buffered_write (ses, " ] ,\n    ", 9);
+          dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+        }
+      session_buffered_write_char ('\"', ses);
+      if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
+        session_buffered_write_char ('a', ses);
+      else
+        dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                                 /* .0123456 */
+      session_buffered_write (ses, "\" : [ ", 6);
+      env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
+    }
+  else                         /* 01.23456789 */
+    session_buffered_write (ses, " ,\n      ", 9);
+  if (obj_is_iri)
+    {
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
+    }
+  else
+    http_ld_json_write_literal_obj (ses, qi, obj, obj_dtp);
+  status = 1;
+fail:
+  if (subj_iri_is_new) dk_free_box (subj_iri);
+  if (pred_iri_is_new) dk_free_box (pred_iri);
+  if (obj_iri_is_new) dk_free_box (obj_iri);
+  return (caddr_t)((ptrlong)status);
+}
+
 
 caddr_t
 bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -4246,6 +4460,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_nt_triple);
   bif_define ("http_talis_json_triple", bif_http_talis_json_triple);
   bif_set_uses_index (bif_http_talis_json_triple);
+  bif_define ("http_ld_json_triple", bif_http_ld_json_triple);
+  bif_set_uses_index (bif_http_ld_json_triple);
   bif_define ("http_nt_object", bif_http_nt_object);
   bif_set_uses_index (bif_http_nt_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);

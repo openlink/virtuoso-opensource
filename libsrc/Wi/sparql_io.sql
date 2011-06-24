@@ -1387,10 +1387,19 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
       else if (ret_format in ('JSON', 'JSON;TALIS'))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
+      else if (ret_format = 'JSON;LD')
+        DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
       else if (ret_format = 'RDFA;XHTML')
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
+      else if (ret_format = 'HTML;MICRODATA')
+	{
+          DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses);
+	  ret_mime := 'text/html';
+	}
+      else if (ret_format = 'JSON;MICRODATA')
+        DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (triples, ses);
       else if (ret_format = 'ATOM;XML')
         DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (triples, 1, ses);
       else if (ret_format = 'JSON;ODATA')
@@ -1783,12 +1792,15 @@ create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_q
     {
       opts := vector (
       		vector ('text/rdf+n3', 'N3/Turtle'),
-      		vector ('application/rdf+json', 'JSON'),
+      		vector ('application/rdf+json', 'RDF/JSON'),
       		vector ('application/rdf+xml', 'RDF/XML'),
       		vector ('text/plain', 'NTriples'),
       		vector ('application/xhtml+xml', 'XHTML+RDFa'),
       		vector ('application/atom+xml', 'ATOM+XML'),
-      		vector ('application/odata+json', 'ODATA/JSON')
+      		vector ('application/odata+json', 'ODATA/JSON'),
+      		vector ('application/x-json+ld', 'JSON-LD'),
+      		vector ('text/html', 'HTML+Microdata'),
+      		vector ('application/microdata+json', 'Microdata/JSON')
       );
     }
   else
@@ -2004,18 +2016,21 @@ http('  if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) 
 http('    for(var i = format.options.length; i > 0; i--)\n');
 http('      format.options[i] = null;');
 http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
-http('    format.options[2] = new Option(\'JSON\',\'application/rdf+json\');\n');
+http('    format.options[2] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
 http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
+http('    format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
 http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
 http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-http('    format.options[8] = new Option(\'CSV\',\'text/csv\');\n');
+http('    format.options[8] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+http('    format.options[9] = new Option(\'HTML+Microdata\',\'text/html\');\n');
+http('    format.options[10] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+http('    format.options[11] = new Option(\'CSV\',\'text/csv\');\n');
 if (can_cxml)
   {
-    http('    format.options[9] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+    http('    format.options[12] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
     if (can_qrcode)
-      http('    format.options[10] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+      http('    format.options[13] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
   }
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
@@ -2031,7 +2046,7 @@ http('    format.options[4] = new Option(\'JSON\',\'application/sparql-results+j
 http('    format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
 http('    format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-http('    format.options[8] = new Option(\'NTriples\',\'text/plain\');\n');
+http('    format.options[8] = new Option(\'N-Triples\',\'text/plain\');\n');
 http('    format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
 if (can_cxml)
   http('    format.options[10] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
@@ -3102,8 +3117,14 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
       else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
+      else if ('application/x-json+ld' = mime)
+        DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
       else if ('application/xhtml+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, out_ses);
+      else if ('text/html' = mime)
+        DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, out_ses);
+      else if ('application/microdata+json' = mime)
+        DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (triples, out_ses);
       rc := DB.DBA.DAV_RES_UPLOAD (split, out_ses, mime, old_perms, old_uid, old_gid, uid, pwd);
       if (isinteger (rc) and rc < 0)
         signal ('RDFXX', sprintf ('Unable to change "%.200s" in DAV: %s', split, DB.DBA.DAV_PERROR (rc)));
