@@ -86,26 +86,26 @@
 
   if ('1' = addthis_key) addthis_key := 'xa-4ce13e0065cdadc0';
 ?>
-{  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
-   query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
-   sponge:'<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>',
-   auth: {
-       user:    '<?vsp http(replace(default_user,'\'','\\\'')); ?>',
-       pass:    '<?vsp http(replace(default_pass,'\'','\\\'')); ?>'
+{  "graph":"<?vsp http(replace(default_dgu,'\'','\\\'')); ?>",
+   "query":"<?vsp http(replace(def_qry,'\'','\\\'')); ?>",
+   "sponge":"<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>",
+   "auth":{
+       "user":"<?vsp http(replace(default_user,'\'','\\\'')); ?>",
+       "pass":"<?vsp http(replace(default_pass,'\'','\\\'')); ?>"
    },<?vsp 
         if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
-          http('        getInitialCredentials:''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''',\n');
+          http('"getInitialCredentials":"' || registry_get('iSPARQL_GET_INITIAL_AUTH') || '"');
         if (isstring(registry_get('iSPARQL_AUTH_ENDPOINT')))
-          http('        authEndpoint:''' || registry_get('iSPARQL_AUTH_ENDPOINT') || ''',\n');
+          http('"authEndpoint":"' || registry_get('iSPARQL_AUTH_ENDPOINT') || '"');
 ?>
-   map_type: '<?= map_type ?>',
-   api_key: '<?=api_key ?>',
+   "map_type":"<?= map_type ?>",
+   "api_key":"<?= api_key ?>",
 <?vsp if (0 = addthis_key) { ?>
-   addthis_key: false,
+   "addthis_key":false,
 <?vsp } else { ?>
-   addthis_key: '<?= addthis_key ?>',
+   "addthis_key":"<?= addthis_key ?>",
 <?vsp } ?>
-   pivotInstalled: <?= pivot_installed ?>,
-   curiInstalled: <?= curi_installed ?>,
-   setup_done: <?= setup_done ?>
+   "pivotInstalled":<?= pivot_installed ?>,
+   "curiInstalled":<?= curi_installed ?>,
+   "setup_done":<?= setup_done ?>
 }
