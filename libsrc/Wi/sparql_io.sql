@@ -1832,6 +1832,104 @@ create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_q
 }
 ;
 
+create procedure WS.WS.sparql_predefined_nsdecl ()
+{
+  http ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">');
+  http ('<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">');
+
+  declare label varchar;
+  label := 'Predefined name space prefixes';
+
+  http ('  <head>');
+  http (sprintf ('    <title>%V</title>', label));
+  WS.WS.sparql_style ();
+  http ('  </head>');
+  http ('  <body>');
+  http ('    <div id="header">');
+  http ('      <div id="hd_l">');
+  http ('        <h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>');
+  http ('      </div>');
+  http ('    </div>');
+  http ('    <div id="content">');
+  http ('      <table class="tableresult" border="1">');
+  	  http (sprintf ('<tr><th>Prefix</th><th>URI</th></tr>'));
+  	  for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
+  	    {
+  	       http (sprintf ('<tr><td>%V</td><td>%V</td></tr>', NS_PREFIX, NS_URL));
+  	    }
+  http ('      </table>');
+  http ('    </div>');
+  http('		<div id="footer">\n');
+  http('		<div id="ft_b">\n');
+  http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
+  http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
+  http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
+  http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
+  http('		</div>\n');
+  http('		</div>\n');
+  http('	</body>\n');
+  http('</html>\n');
+}
+;
+
+create procedure WS.WS.sparql_predefined_rdfinf ()
+{
+  http ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">');
+  http ('<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">');
+
+  declare label varchar;
+  label := 'Predefined inference rules';
+
+  http ('  <head>');
+  http (sprintf ('    <title>%V</title>', label));
+  WS.WS.sparql_style ();
+  http ('  </head>');
+  http ('  <body>');
+  http ('    <div id="header">');
+  http ('      <div id="hd_l">');
+  http ('        <h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>');
+  http ('      </div>');
+  http ('    </div>');
+  http ('    <div id="content">');
+  http ('      <table class="tableresult" border="1">');
+  	  http (sprintf ('<tr><th>Name</th><th>URI</th></tr>'));
+  	  for select * from SYS_RDF_SCHEMA order by 1 do
+  	    {
+  	       http (sprintf ('<tr><td>%V</td><td>%V</td></tr>', RS_NAME, RS_URI));
+  	    }
+  http ('      </table>');
+  http ('    </div>');
+  http('		<div id="footer">\n');
+  http('		<div id="ft_b">\n');
+  http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
+  http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
+  http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
+  http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
+  http('		</div>\n');
+  http('		</div>\n');
+  http('	</body>\n');
+  http('</html>\n');
+}
+;
+
+create procedure WS.WS.sparql_style ()
+{
+http('		<style type="text/css">\n');
+http('		label.n { display: inline; margin-top: 10pt; }\n');
+http('		body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }\n');
+http('		fieldset { border: 2px solid #86b9d9; }\n');
+http('		legend { font-size: 12pt; color: #86b9d9; }\n');
+http('		label { font-weight: bold; }\n');
+http('		h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
+http('		textarea { width: 100%; padding: 3px; }\n');
+http('          #footer { width: 100%; float: left; clear: left; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}\n');
+http('          #ft_r { float: right; clear: right;}\n');
+http('          #ft_t { text-align: center; }\n');
+http('          #ft_b { text-align: center; margin-top: 0.7ex }\n');
+http('		</style>\n');
+}
+;
+
 -- Web service endpoint.
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
@@ -1960,6 +2058,17 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   if (__debug_mode) dbg_printf ('%d', soap_ver);
 
+  if (get_keyword ('nsdecl', params) is not null)
+    {
+      WS.WS.sparql_predefined_nsdecl ();
+      return;
+    }
+  if (get_keyword ('rdfinf', params) is not null)
+    {
+      WS.WS.sparql_predefined_rdfinf ();
+      return;
+    }
+
   can_sponge := coalesce ((select top 1 1
       from DB.DBA.SYS_USERS as sup
         join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
@@ -1992,19 +2101,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 http('<html xmlns="http://www.w3.org/1999/xhtml">\n');
 http('	<head>\n');
 http('		<title>Virtuoso SPARQL Query Form</title>\n');
-http('		<style type="text/css">\n');
-http('		label.n { display: inline; margin-top: 10pt; }\n');
-http('		body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }\n');
-http('		fieldset { border: 2px solid #86b9d9; }\n');
-http('		legend { font-size: 12pt; color: #86b9d9; }\n');
-http('		label { font-weight: bold; }\n');
-http('		h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
-http('		textarea { width: 100%; padding: 3px; }\n');
-http('          #footer { width: 100%; float: left; clear: left; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}\n');
-http('          #ft_r { float: right; clear: right;}\n');
-http('          #ft_t { text-align: center; }\n');
-http('          #ft_b { text-align: center; margin-top: 0.7ex }\n');
-http('		</style>\n');
+WS.WS.sparql_style ();
 http('		<script language="JavaScript">\n');
 http('var last_format = 1;\n');
 http('function format_select(query_obg)\n');
@@ -2069,6 +2166,7 @@ if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
   http('			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>\n');
 else
   http('			You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
+  http('		<p>For your convenience we have a set of <a href="/sparql?nsdecl">predefined name space prefixes</a> and <a href="/sparql?rdfinf">inference rules</a></p>\n');
 http('			<form action="" method="GET">\n');
 http('			<fieldset>\n');
 http('			<legend>Query</legend>\n');
