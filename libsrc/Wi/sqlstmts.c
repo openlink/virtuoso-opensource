@@ -1143,7 +1143,7 @@ sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts)
       sc->sc_update_keyset = NULL;
       return;
     }
-  if (!key || !upd)
+  if (!key || !upd || key->key_no_pk_ref)
     {
       sc->sc_update_keyset = NULL;
       return;
