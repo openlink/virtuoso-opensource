@@ -5832,6 +5832,20 @@ create procedure DB.DBA.RDF_LOAD_EVENTBRITE (in graph_iri varchar, in new_origin
 			entity_id := left(entity_id, pos);
 		url := sprintf('https://www.eventbrite.com/xml/event_get?app_key=%s&user_key=%s&id=%s', app_key_, user_key_, entity_id);
 	}
+	else if (new_origin_uri like 'http://%.eventbrite.com%')
+	{
+		tmp := http_client (url=>new_origin_uri, timeout=>30, proxy=>connection_get ('sparql-get:proxy'));
+		xt := xtree_doc (tmp, 2);
+		url := cast (xpath_eval('//meta[@property="og:url"]/@content', xt) as varchar);
+		if (url is null or length(url) = 0)
+			return 0;
+		tmp := sprintf_inverse (url, 'http://www.eventbrite.com/event/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('https://www.eventbrite.com/xml/event_get?app_key=%s&user_key=%s&id=%s', app_key_, user_key_, entity_id);
+	}
 	else
 		return 0;
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
@@ -6165,31 +6179,126 @@ create procedure DB.DBA.RDF_LOAD_PROGRAMMABLEWEB (in graph_iri varchar, in new_o
 }
 ;
 
+create procedure DB.DBA.sign_hmac_sha1 (
+  in meth varchar,
+  in url varchar,
+  in params varchar,
+  in consumer_secret varchar,
+  in token_secret varchar)
+{
+  declare str, k, kname, ret varchar;
+  str := meth || '&' || replace (sprintf ('%U', url), '/', '%2F') || '&' || sprintf ('%U', params);
+  -- dbg_obj_print ('str=',str);
+  k := sprintf ('%U', consumer_secret) || '&' || sprintf ('%U', coalesce (token_secret, ''));
+  -- dbg_printf ('k=[%s]', k);
+  -- dbg_printf ('s=[%s]', str);
+  kname := md5 (cast (now () as varchar));
+  xenc_key_RAW_read (kname, encode_base64 (k));
+  ret := xenc_hmac_sha1_digest (str, kname);
+  xenc_key_remove (kname);
+  return ret;
+}
+;
+
+create procedure DB.DBA.normalize_params (
+  in params any)
+{
+  declare arr, newarr any;
+  declare str varchar;
+  arr := split_and_decode (params, 0, '\0\0&');
+  arr := __vector_sort (arr);
+  str := '';
+  foreach (any elm in arr) do
+  {
+    if ((elm not like 'oauth_signature=%'))
+      str := str || '&' || elm;
+  }
+  return ltrim (str, '&');
+}
+;
+
+
+create procedure DB.DBA.normalize_url (in url any, in lines any)
+{
+  declare hf any;
+  hf := rfc1808_parse_uri (url);
+  hf[0] := lower (hf[0]);
+  hf[1] := lower (hf[1]);
+  return sprintf ('%s://%s%s', hf[0], hf[1], hf[2]);
+}
+;
+
+create procedure DB.DBA.sign_request (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in sid varchar := null, in tz int := 0, in oauth_token varchar, 
+	in consumer_secret varchar, in oauth_secret varchar)
+{
+  declare signature, nonce varchar;
+  declare ret varchar;
+  declare timest int;
+
+  nonce := xenc_rand_bytes (8, 1);
+  timest := datediff ('second', stringdate ('1970-1-1'), now ());
+  if (tz)
+    timest := timest - timezone (now()) * 60;
+  if (length (params) and params not like '%&')
+    params := params || '&';
+
+  params := params ||
+            sprintf ('oauth_consumer_key=%s&oauth_signature_method=HMAC-SHA1&oauth_timestamp=%d&oauth_nonce=%s&oauth_version=1.0',
+                  	 consumer_key,
+                 		 timest,
+                 		 nonce);
+  if (length (oauth_token))
+    params := params || sprintf ('&oauth_token=%s', oauth_token);
+  url := normalize_url (url, vector ());
+  params := normalize_params (params);
+
+  declare exit handler for not found {signal ('OAUTH', 'Cannot find secret');};
+
+  signature := sign_hmac_sha1 (meth, url, params, consumer_secret, oauth_secret);
+  if (meth = 'GET')
+    ret := url||'?'||params||'&oauth_signature='||sprintf ('%U', signature);
+  else
+    ret := params||'&oauth_signature='||sprintf ('%U', signature);
+  return ret;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-	declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
+	declare xd, host_part, xt, url, tmp, api_key, hdr, exif, tree any;
 	declare pos int;
-	declare link varchar;
+	declare id varchar;
+	declare consumer_key, oauth_token, consumer_secret, oauth_secret varchar;
 	declare exit handler for sqlstate '*'
 	{
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	if (new_origin_uri like 'http://%.yelp.com/%')
+	consumer_key := get_keyword ('consumer_key', opts, null);
+	oauth_token := get_keyword ('oauth_token', opts, null);
+	consumer_secret := get_keyword ('consumer_secret', opts, null);
+	oauth_secret := get_keyword ('oauth_secret', opts, null);
+	
+    if (not isstring (consumer_key) and isstring (oauth_token) and isstring (consumer_secret) and isstring (oauth_secret))
+		return 0;
+	if (new_origin_uri like 'http://%.yelp.com/biz/%')
 	{
-		tmp := http_client (new_origin_uri, proxy=>get_keyword_ucase ('get:proxy', opts));
-		xt := xtree_doc (tmp, 2);
-		url := xpath_eval ('//link[ @rel="alternate" and @type="application/rss+xml" ]/@href', xt, 0);
-		if (length(url) > 0)
-			url := cast(url[0] as varchar);
-		else
+		tmp := sprintf_inverse (new_origin_uri, 'http://%syelp.com/biz/%s', 0);
+		id := trim(tmp[1], '/');
+		if (id is null)
 			return 0;
+		pos := strchr(id, '/');
+		if (pos is not null and pos <> 0)
+			id := left(id, pos);
+		url := concat('http://api.yelp.com/v2/business/', id);
+		url := sign_request ('GET', url, '', consumer_key, null, 0, oauth_token, consumer_secret, oauth_secret);
 	}
 	else
 		return 0;
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
-	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/yelp2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+	tree := json_parse (tmp);
+	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/yelp2rdf.xsl', xt, vector ('baseUri', new_origin_uri));
 	xd := serialize_to_UTF8_xml (xt);
         RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));

@@ -28,6 +28,7 @@
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 <!ENTITY mo "http://purl.org/ontology/mo/">
 <!ENTITY og "http://ogp.me/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY oplog "http://www.openlinksw.com/schemas/opengraph#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY rdfns  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -54,6 +55,7 @@
 	xmlns:vcard="&vcard;"
     xmlns:exif="&exif;"
     xmlns:og="&og;"
+    xmlns:opl="&opl;"
     xmlns:oplog="&oplog;"
     xmlns:owl="&owl;"	
     xmlns:rdf="&rdfns;"
@@ -74,6 +76,7 @@
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
 	<xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	<xsl:variable name="providedByIRI" select="concat (vi:proxyIRI ($baseUri, '', 'Provider'))"/>
 	
 	<xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" standalone="no" indent="yes" />
 
@@ -202,6 +205,12 @@
 				</xsl:if>
 				<owl:sameAs rdf:resource="{$baseUri}"/>
 		    </rdf:Description>
+            <!-- Attribution resource -->
+	        <rdf:Description rdf:about="{$providedByIRI}">
+				<rdf:type rdf:resource="&foaf;Organization"/>
+	            <foaf:name>Facebook Inc.</foaf:name>
+	            <foaf:homepage rdf:resource="http://www.facebook.com"/>
+	        </rdf:Description>
 		</rdf:RDF>
 	</xsl:template>
 
@@ -230,7 +239,7 @@
         		</xsl:choose>
                 <xsl:if test="document/id">
                     <oplog:id><xsl:value-of select="document/id"/></oplog:id>
-		    <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('https://graph.facebook.com/', document/id))}"/>
+		            <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', document/id))}"/>
                 </xsl:if>
                 <xsl:if test="document/name">
                     <dc:title><xsl:value-of select="document/name"/></dc:title>
@@ -254,8 +263,9 @@
                 <xsl:if test="document/likes">
                     <fb:like><xsl:value-of select="document/likes"/></fb:like>
                 </xsl:if>
+
 				<!--xsl:for-each select="document/metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -264,6 +274,7 @@
 	<xsl:template match="/results" mode="application">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Agent" />
                 <rdf:type rdf:resource="&oplog;Application" />
@@ -285,7 +296,7 @@
                     <oplog:uri rdf:resource="{link}"/>
                 </xsl:if>
 				<!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -294,6 +305,7 @@
 	<xsl:template match="/results" mode="photo">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Image" />
                 <rdf:type rdf:resource="&exif;IFD" />
@@ -306,10 +318,10 @@
                 </xsl:if>
 				<foaf:depiction rdf:resource="{picture}"/>
 				<foaf:depiction rdf:resource="{source}"/>
-                <oplog:height>
+                <oplog:height rdf:datatype="&xsd;integer">
 					<xsl:value-of select="height"/>
 				</oplog:height>
-                <oplog:width>
+                <oplog:width rdf:datatype="&xsd;integer">
 					<xsl:value-of select="width"/>
 				</oplog:width>
 				<xsl:for-each select="images">
@@ -333,7 +345,7 @@
                     </xsl:choose>
 				</dcterms:created>
                 <xsl:if test="position">
-                    <oplog:position><xsl:value-of select="position"/></oplog:position>
+                    <oplog:position rdf:datatype="&xsd;integer"><xsl:value-of select="position"/></oplog:position>
                 </xsl:if>
                 <xsl:if test="updated_time">
     				<dcterms:modified rdf:datatype="&xsd;dateTime">
@@ -351,6 +363,7 @@
 				<xsl:for-each select="comments/data">
 					<sioc:topic>
 						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdfs:label>
 								<xsl:value-of select="message"/>
 							</rdfs:label>
@@ -377,7 +390,7 @@
 					</sioc:topic>
 				</xsl:for-each>
                 <!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -386,6 +399,7 @@
 	<xsl:template match="/results" mode="group">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Group" />
                 <rdf:type rdf:resource="&oplog;Group" />
@@ -425,7 +439,7 @@
                     <foaf:mbox rdf:resource="{email}"/>
                 </xsl:if>
 				<!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -434,6 +448,7 @@
 	<xsl:template match="/results" mode="album">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&sioct;ImageGallery" />
                 <rdf:type rdf:resource="&oplog;Album" />
@@ -451,7 +466,7 @@
                     <oplog:cover_photo rdf:resource="{concat('https://graph.facebook.com/', cover_photo)}"/>
                 </xsl:if>
                 <xsl:if test="count">
-                    <oplog:count><xsl:value-of select="count"/></oplog:count>
+                    <oplog:count rdf:datatype="&xsd;integer"><xsl:value-of select="count"/></oplog:count>
                 </xsl:if>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
                     <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
@@ -480,6 +495,7 @@
 				<xsl:for-each select="comments/data">
 					<sioc:topic>
 						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdfs:label>
 								<xsl:value-of select="message"/>
 							</rdfs:label>
@@ -506,7 +522,7 @@
 					</sioc:topic>
 				</xsl:for-each>
 				<!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -520,6 +536,7 @@
 	<xsl:template match="/results" mode="user">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&foaf;Person" />
                 <rdf:type rdf:resource="&oplog;User" />
@@ -568,7 +585,7 @@
                     <oplog:verified><xsl:value-of select="verified"/></oplog:verified>
                 </xsl:if>
 				<!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -577,6 +594,7 @@
 	<xsl:template match="/results" mode="event">
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&c;Vevent" />
                 <rdf:type rdf:resource="&oplog;Event" />
@@ -609,7 +627,7 @@
 				</dcterms:modified>
 				<c:location rdf:resource="{vi:proxyIRI($baseUri, '', 'adr')}"/>
 				<!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 			<vcard:ADR rdf:about="{vi:proxyIRI($baseUri, '', 'adr')}">
@@ -645,16 +663,18 @@
 	<xsl:template match="/results" mode="user_friends">
 		<rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <foaf:knows>
 	                        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Friend_', $id))}">
+		                        <opl:providedBy rdf:resource="{$providedByIRI}" />
                                 <rdf:type rdf:resource="&foaf;Person" />
                                 <rdf:type rdf:resource="&oplog;User" />
                                 <oplog:id><xsl:value-of select="id"/></oplog:id>
                                 <foaf:name><xsl:value-of select="name"/></foaf:name>
-	                            <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                            <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </foaf:knows>
                 </xsl:for-each>
@@ -667,6 +687,7 @@
         <xsl:if test="picture">
 		    <rdf:RDF>
                 <rdf:Description rdf:about="{$resourceURL}">
+		            <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                     <foaf:img rdf:resource="{picture}"/>
 		        </rdf:Description>
@@ -678,11 +699,13 @@
 	<xsl:template match="/results" mode="user_activities">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_activity>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Activity_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Activity" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
@@ -699,7 +722,7 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:likes_activity>
                 </xsl:for-each>
@@ -710,11 +733,13 @@
 	<xsl:template match="/results" mode="page_events">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <sioc:container_of>
 						<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Event_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdf:type rdf:resource="&c;Vevent" />
 							<rdf:type rdf:resource="&oplog;Event" />
 							<xsl:if test="id">
@@ -755,11 +780,13 @@
 	<xsl:template match="/results" mode="page_notes">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <sioc:container_of>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Note_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Note" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="subject"/></oplog:name>
@@ -794,10 +821,11 @@
                               </xsl:choose>
 					        </dcterms:modified>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 							<xsl:for-each select="comments/data">
 								<sioc:topic>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="message"/>
 										</rdfs:label>
@@ -833,11 +861,13 @@
 	<xsl:template match="/results" mode="user_links">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Link_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Link" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
@@ -872,6 +902,7 @@
 							<xsl:for-each select="comments/data">
 								<sioc:topic>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="concat('Comment from ', from/name, ' ', from/id)"/>
 										</rdfs:label>
@@ -897,7 +928,7 @@
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
-	                        <!--rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" /-->
+	                        <!--foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" /-->
 		                </rdf:Description>
                     </oplog:posted>
                 </xsl:for-each>
@@ -908,11 +939,13 @@
 	<xsl:template match="/results" mode="user_albums">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_album>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Album_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdf:type rdf:resource="&sioct;ImageGallery" />
 							<rdf:type rdf:resource="&oplog;Album" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
@@ -927,7 +960,7 @@
 								<oplog:cover_photo rdf:resource="{concat('https://graph.facebook.com/', cover_photo)}"/>
 							</xsl:if>
 							<xsl:if test="count">
-								<oplog:count><xsl:value-of select="count"/></oplog:count>
+								<oplog:count rdf:datatype="&xsd;integer"><xsl:value-of select="count"/></oplog:count>
 							</xsl:if>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
                               <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
@@ -954,11 +987,12 @@
 								</dcterms:modified>
 							</xsl:if>
 							<xsl:if test="type">
-								<oplog:type><xsl:value-of select="type"/></oplog:type>
+								<oplog:album_type><xsl:value-of select="type"/></oplog:album_type>
 							</xsl:if>
 							<xsl:for-each select="comments/data">
 								<sioc:topic>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="message"/>
 										</rdfs:label>
@@ -984,7 +1018,7 @@
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:has_album>
                 </xsl:for-each>
@@ -995,11 +1029,13 @@
 	<xsl:template match="/results" mode="page_statuses">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Status_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdf:type rdf:resource="&oplog;StatusMessage" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <rdfs:label><xsl:value-of select="concat('Message from ', from/name, ' ', id)"/></rdfs:label>
@@ -1024,7 +1060,7 @@
 							<xsl:for-each select="likes/data">
 								<oplog:liked_by rdf:resource="{vi:proxyIRI ($baseUri, '', id)}"/>
 							</xsl:for-each>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:posted>
                 </xsl:for-each>
@@ -1035,17 +1071,19 @@
 	<xsl:template match="/results" mode="user_accounts">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_account>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Account_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Account" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
                             <rdfs:label><xsl:value-of select="name"/></rdfs:label>
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:has_account>
                 </xsl:for-each>
@@ -1057,11 +1095,13 @@
 	<xsl:template match="/results" mode="user_likes">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_interest>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Interest_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Interest" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
@@ -1078,7 +1118,7 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:has_interest>
                 </xsl:for-each>
@@ -1089,11 +1129,13 @@
 	<xsl:template match="/results" mode="user_interests">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:has_interest>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Interest_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Interest" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
@@ -1110,7 +1152,7 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:has_interest>
                 </xsl:for-each>
@@ -1122,11 +1164,13 @@
 	<xsl:template match="/results" mode="user_movies">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_movie>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Movie_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Movie" />
                             <rdf:type rdf:resource="&video;Movie" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
@@ -1166,6 +1210,7 @@
 							<xsl:for-each select="comments/data">
 								<sioc:topic>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="message"/>
 										</rdfs:label>
@@ -1191,7 +1236,7 @@
 									</sioct:Comment>
 								</sioc:topic>
 							</xsl:for-each>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:likes_movie>
                 </xsl:for-each>
@@ -1203,11 +1248,13 @@
 	<xsl:template match="/results" mode="user_music">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_music>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Music_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Music" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
@@ -1224,7 +1271,7 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:likes_music>
                 </xsl:for-each>
@@ -1235,11 +1282,13 @@
 	<xsl:template match="/results" mode="user_games">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
-                    <oplog:likes_games>
+                    <oplog:likes_game>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Games_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Game" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
@@ -1256,9 +1305,9 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
-                    </oplog:likes_games>
+                    </oplog:likes_game>
                 </xsl:for-each>
 		    </rdf:Description>
 	    </rdf:RDF>
@@ -1268,11 +1317,13 @@
 	<xsl:template match="/results" mode="user_books">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_book>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Book_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Book" />
                             <rdf:type rdf:resource="&bibo;Book" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
@@ -1290,7 +1341,7 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:likes_book>
                 </xsl:for-each>
@@ -1302,11 +1353,13 @@
 	<xsl:template match="/results" mode="user_television">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:likes_tv_programme>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Television_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;TvProgramme" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:name><xsl:value-of select="name"/></oplog:name>
@@ -1323,7 +1376,7 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:created>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:likes_tv_programme>
                 </xsl:for-each>
@@ -1334,6 +1387,7 @@
 	<xsl:template match="/results" mode="page">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
         		<xsl:choose>
 		            <xsl:when test="category = 'Public figure'">
@@ -1381,7 +1435,7 @@
                     <fb:like><xsl:value-of select="likes"/></fb:like>
                 </xsl:if>
 				<!--xsl:for-each select="metadata/connections/*">
-					<rdfs:seeAlso rdf:resource="{.}"/>
+					<foaf:focus rdf:resource="{.}"/>
 				</xsl:for-each-->
 		    </rdf:Description>
 		</rdf:RDF>
@@ -1391,11 +1445,13 @@
 	<xsl:template match="/results" mode="user_posts">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Post_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
@@ -1437,7 +1493,7 @@
 		                        <xsl:variable name="link" select="actions/link" />
                                 <oplog:link rdf:resource="{$link}" />
                             </xsl:if>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:posted>
                 </xsl:for-each>
@@ -1448,11 +1504,13 @@
 	<xsl:template match="/results" mode="page_feed">
 	    <rdf:RDF>
             <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			<owl:sameAs rdf:resource="{$docIRI}"/>
                 <xsl:for-each select="data">
 		            <xsl:variable name="id" select="id" />
                     <oplog:posted>
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Post_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
@@ -1490,7 +1548,7 @@
 		                        <xsl:variable name="link" select="actions/link" />
                                 <oplog:link rdf:resource="{$link}" />
                             </xsl:if>
-	                        <rdfs:seeAlso rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
+	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
                     </oplog:posted>
                 </xsl:for-each>
