@@ -22,6 +22,13 @@
         <dc:title>OpenLink schema for Open Graph</dc:title>
     </owl:Ontology>
 
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Account">
+        <rdfs:comment>A class representing an account listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Account</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
     <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Activity">
         <rdfs:comment>A class representing an activity listed in a user's profile</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
@@ -75,6 +82,13 @@
         <rdfs:comment>A Facebook friend list</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>FriendList</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Game">
+        <rdfs:comment>A class representing a game listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Game</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
     </owl:Class>
 
@@ -182,17 +196,17 @@
         <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
     </owl:Class>
 
-    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#TVProgramme">
-        <rdfs:comment>A class representing a TV programme listed in a user's profile</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
-        <rdfs:label>TV programme</rdfs:label>
-        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
-    </owl:Class>
-
     <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#Thread">
         <rdfs:comment>A message thread in the Facebook messaging system</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>Thread</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/opengraph#TvProgramme">
+        <rdfs:comment>A class representing a TV programme listed in a user's profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>TV programme</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
     </owl:Class>
 
@@ -210,11 +224,35 @@
         <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
     </owl:Class>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#album_type">
+        <rdfs:comment>The type of the album: profile, mobile, wall, normal or album</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Album"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>album type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#category">
         <rdfs:comment>The Page's category</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Page"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>category</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#count">
+        <rdfs:comment>The number of photos in an album</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Album"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>count</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#cover_photo">
+        <rdfs:comment>The album cover photo ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Album"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>cover photo</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
@@ -240,6 +278,14 @@
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>has account</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_album">
+        <rdfs:comment>An album listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>has album</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Album"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#has_comment">
@@ -304,6 +350,14 @@
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
     </owl:ObjectProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#height">
+        <rdfs:comment>The height of a photo in pixels</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Photo"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>height</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#id">
         <rdfs:comment>A Facebook object ID</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
@@ -334,6 +388,14 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes book</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Book"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_game">
+        <rdfs:comment>A game listed on a user's profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>likes game</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Game"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_movie">
@@ -392,6 +454,14 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#position">
+        <rdfs:comment>The position of a photo in an album</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Photo"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>position</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#posted">
         <rdfs:comment>A post by a Facebook user</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
@@ -399,6 +469,14 @@
         <rdfs:label>posted</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
     </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#privacy">
+        <rdfs:comment>The privacy setting of a group</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Group"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>privacy</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#tagged_by">
         <rdfs:comment>The photos, videos, and posts in which this application has been tagged</rdfs:comment>
@@ -408,6 +486,22 @@
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
     </owl:ObjectProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#third_party_id">
+        <rdfs:comment>An anonymous but unique identifier for the user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>third_party_id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#to">
+        <rdfs:comment>A Facebook profile targeted in this post</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Post"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>to</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#uri">
         <rdfs:comment>The URI of a Facebook user's Facebook home page</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Product"/>
@@ -415,5 +509,28 @@
         <rdfs:label>uri</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
     </owl:DatatypeProperty>
-</rdf:RDF>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#username">
+        <rdfs:comment>A user's Facebook username</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>username</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#verified">
+        <rdfs:comment>A user's account verification status</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>verified</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#width">
+        <rdfs:comment>The width of a photo in pixels</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Photo"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>width</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
