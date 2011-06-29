@@ -205,11 +205,11 @@ create procedure ld_array ()
 {
   declare first, last, arr, fs, len, local any;
   declare cr cursor for
-      select top 100 LL_FILE, LL_GRAPH
+      select top 200 LL_FILE, LL_GRAPH
         from DB.DBA.LOAD_LIST table option (index ll_state)
-        where LL_STATE = 0 and file_stat (LL_FILE, 1) <> 0
+        where LL_STATE = 0
 	for update;
-  declare fill int;
+  declare fill, inx int;
   declare f, g varchar;
   declare r any;
   whenever not found goto done;
@@ -217,13 +217,15 @@ create procedure ld_array ()
   last := 0;
  arr := make_array (100, 'any');
   fs  := make_array (100, 'any');
-  fill := 0;
+  fill := 0; inx := 0;
   open cr;
   len := 0;
   for (;;)
     {
-      next:
       fetch cr into f, g;
+      inx := inx + 1;
+      if (file_stat (f, 1) = 0)
+	goto next;
       if (0 = first) first := f;
       last := f;
       arr[fill] := vector (f, g);
@@ -232,6 +234,7 @@ create procedure ld_array ()
       fill := fill + 1;
       if (len > 2000000 or fill >= 100)
 	goto done;
+      next:;
     }
  done:
   if (0 = first)
