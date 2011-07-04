@@ -36,14 +36,15 @@ DROP TABLE demo.Countries;
 
 CREATE TABLE demo.Countries
 	(Name VARCHAR NOT NULL,
-	 Code VARCHAR not null unique,
+	 Code VARCHAR not null,
 	 SmallFlagDAVResourceName varchar,
 	 LargeFlagDAVResourceName varchar,
 	 SmallFlagDAVResourceURI varchar,
 	 LargeFlagDAVResourceURI varchar,
 	 Lat REAL,
 	 Lng REAL,
-	 PRIMARY KEY(Name));
+	 PRIMARY KEY(Name))
+CREATE UNIQUE INDEX Countries_Code on demo.Countries (Code);
 
 CREATE TABLE demo.Flags
 	(CountryCode VARCHAR(128) references Countries (Code) on update cascade on delete cascade,
@@ -354,10 +355,13 @@ create procedure fill_flags_and_country_code ()
   update Demo..Countries set SmallFlagDAVResourceURI = '/DAV/sample_data/images/flags/'||SmallFlagDAVResourceName,
 	 LargeFlagDAVResourceURI = '/DAV/sample_data/images/flags/' || LargeFlagDAVResourceName
 	     where SmallFlagDAVResourceName is not null and LargeFlagDAVResourceName is not null;
-  update Demo.demo.Suppliers set CountryCode = (select Code from Demo.demo.Countries where Name = Country);
-  update Demo.demo.Customers set CountryCode = (select Code from Demo.demo.Countries where Name = Country);
-  update Demo.demo.Employees set CountryCode = (select Code from Demo.demo.Countries where Name = Country);
-  update Demo.demo.Orders set ShipCountryCode = (select Code from Demo.demo.Countries where Name = ShipCountry);
+  for select * from Demo.demo.Countries do
+    {
+      update Demo.demo.Suppliers set CountryCode = Code  where Name = Country;
+      update Demo.demo.Customers set CountryCode = Code  where Name = Country;
+      update Demo.demo.Employees set CountryCode = Code  where Name = Country;
+      update Demo.demo.Orders set ShipCountryCode = Code where Name = ShipCountry;
+    }
 };
 
 fill_flags_and_country_code ();
