@@ -107,5 +107,18 @@
 <?vsp } ?>
    "pivotInstalled":<?= pivot_installed ?>,
    "curiInstalled":<?= curi_installed ?>,
-   "setup_done":<?= setup_done ?>
+   "setup_done":<?= setup_done ?>,
+   "namespaces":[
+<?vsp
+  declare _fst integer;
+  _fst := 0; 
+  set isolation = 'committed';
+  for select ns_prefix, ns_url from DB.DBA.SYS_XML_PERSISTENT_NS_DECL do 
+  {
+?>
+    <?=case when _fst = 1 then ',' else '' end?>["<?=ns_url?>","<?=ns_prefix?>"]
+<?vsp
+    _fst := 1;
 }
+?>
+   ]}

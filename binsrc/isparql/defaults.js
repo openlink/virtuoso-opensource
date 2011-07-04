@@ -125,6 +125,8 @@ iSPARQL.Defaults = {
 			iSPARQL.Defaults.auth[authParm] = iSPARQL.serverDefaults.auth[authParm];
 		}
 		continue;
+	    } else if (defName == 'namespaces') {
+		OAT.IRIDB.insertIRIArr (iSPARQL.serverDefaults[defName]);
 	    }
 	    iSPARQL.Defaults[defName] = iSPARQL.serverDefaults[defName];
 	}
