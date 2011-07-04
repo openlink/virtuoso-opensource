@@ -6576,6 +6576,18 @@ create procedure OMAIL.WA.omail_send_msg(
     return;
   };
 
+  declare exit handler for SQLSTATE '01903'
+  {
+    _error := 1903;
+    return;
+  };
+
+  declare exit handler for SQLSTATE '01904'
+  {
+    _error := 1904;
+    return;
+  };
+
   _error     := 0;
   _xslt_url  := OMAIL.WA.omail_xslt_full('construct_mail.xsl');
   _xslt_url2 := OMAIL.WA.omail_xslt_full('construct_recip.xsl');
@@ -6630,7 +6642,7 @@ create procedure OMAIL.WA.omail_send_msg(
     _certificate := xenc_pem_export (get_keyword ('security_sign', _settings), 1);
     set_user_id ('dba');
     if (isnull (_certificate))
-      signal ('08006', '');
+      signal ('01903', '');
 
     _tmp := '<message>' ||
             sprintf ('<boundary>%s</boundary>', '------_NextPart_' || md5 (cast (now() as varchar))) ||
@@ -6680,16 +6692,10 @@ create procedure OMAIL.WA.omail_send_msg(
     _addrs := split_and_decode (_rec, 0, '\0\0,');
     for (N := 0; N < length (_addrs); N := N + 1)
     {
-      _addr := _addrs[N];
-      _addr := replace (_addr, '<', '');
-      _addr := replace (_addr, '>', '');
-      _addr := replace (_addr, '\t', '');
-      _addr := trim (_addr);
-      _cert := null;
-      if (__proc_exists ('AB.WA.contact_certificate'))
-      _cert := AB.WA.contact_certificate (_user_id, _addr);
-      if (isnull (_cert) or (get_certificate_info (10, _cert, 0, '', 'emailAddress') <> _addr))
-        signal ('08006', '');
+      _addr := OMAIL.WA.omail_address2xml ('to', _addrs[N], 2);
+      _cert := OMAIL.WA.contact_certificate (_user_id, _addr);
+      if (isnull (_cert))
+        signal ('01904', '');
 
       _certs := vector_concat (_certs, vector (_cert));
     }
@@ -6713,6 +6719,51 @@ create procedure OMAIL.WA.omail_send_msg(
       OMAIL.WA.message_erase (_domain_id, _user_id, _msg_id);
     }
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.contact_certificate (
+  in _user_id integer,
+  in _addr varchar)
+{
+  declare _cert, webid, domain, host_info, xrd, template, url any;
+  declare xt, xd, tmpcert any;
+
+  _cert := null;
+  if (__proc_exists ('AB.WA.contact_certificate'))
+    _cert := AB.WA.contact_certificate (_user_id, _addr);
+
+  if (is_empty_or_null (_cert))
+  {
+    declare exit handler for sqlstate '*'
+    {
+      -- connection error or parse error
+      return null;
+    };
+
+    domain := subseq (_addr, position ('@', _addr));
+    host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
+    xd := xtree_doc (host_info);
+    template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
+    url := replace (template, '{uri}', 'acct:' || _addr);
+    xrd := http_get (url);
+    xd := xtree_doc (xrd);
+    xt := xpath_eval ('/XRD/Property[@type="certificate"]/@href', xd, 0);
+    foreach (any x in xt) do
+    {
+      _cert := http_get (cast (x as varchar));
+      if ((DB.DBA.FOAF_SSL_MAIL_GET (_cert) = _addr))
+        return _cert;
+    }
+  }
+  else
+  {
+    if ((DB.DBA.FOAF_SSL_MAIL_GET (_cert) = _addr))
+      return _cert;
+  }
+  return null;
 }
 ;
 
@@ -9605,7 +9656,8 @@ _skip:
   insert into OMAIL.WA.CONVERSATION (C_DOMAIN_ID, C_USER_ID, C_ADDRESS, C_ADDRESSES, C_DESCRIPTION, C_TS)
     values (domain_id, user_id, dcc_address, _from, _dcc, now());
 
-  insert soft OMAIL.WA.FOLDERS(DOMAIN_ID, USER_ID, FOLDER_ID, NAME) values (domain_id, user_id, 100, 'Inbox');
+  insert soft OMAIL.WA.FOLDERS(DOMAIN_ID, USER_ID, FOLDER_ID, NAME)
+    values (domain_id, user_id, 100, 'Inbox');
 
   return connection_get('conversation_address');
 }

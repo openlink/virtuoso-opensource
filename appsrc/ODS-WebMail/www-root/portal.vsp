@@ -152,7 +152,7 @@ exec_start:;
     _page_mode := concat(' mode="popup"');
 
   _xml := call (procName)(path, lines, params);
-  _xml := sprintf('<page id="%s"%s><ods><name>%s</name><link>%s</link><bar><![CDATA[%s]]></bar></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, ODS.BAR._EXEC('oMail', params, lines), _xml);
+  _xml := sprintf('<page id="%s"%s><ods><name>%V</name><link>%s</link><bar><![CDATA[%s]]></bar></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, ODS.BAR._EXEC('oMail', params, lines), _xml);
 
   -- XSL Transformation--------------------------------------------------------------
   OMAIL.WA.utl_myhttp (_xml, null, get_keyword ('vv', params), hParams, hLines, path);
