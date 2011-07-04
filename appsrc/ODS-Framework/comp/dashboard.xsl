@@ -90,7 +90,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-blogs">
-    <div class="widget w_db_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -118,7 +118,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-news">
-    <div class="widget w_db_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -146,7 +146,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-wiki">
-    <div class="widget w_db_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -174,7 +174,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-blog-summary">
-    <div class="widget w_db_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"

@@ -32,6 +32,12 @@
       else if (WEBID_AUTH_GEN (cert, ctype, null, 1, 0))
         {
           webid := FOAF_SSL_WEBID_GET (cert, ctype);
+	  if (webid is null)
+	    {
+	      webid := FOAF_SSL_WEBFINGER (cert, 0, ctype);
+	      if (webid is null)
+		webid := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
+	    }
 	  res := 'success'; 
         }
       else

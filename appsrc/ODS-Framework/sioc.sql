@@ -6298,6 +6298,84 @@ ret:
 };
 
 
+-----------------------------------------------------------------------------------------
+--
+create procedure SIOC..rdf_links_header (in iri any)
+{
+  declare links, desc_link varchar;
+
+  if (iri is null)
+    return;
+
+  desc_link := sprintf ('http://%{WSHost}s/sparql?default-graph-uri=%U&query=%U', SIOC..get_graph (), sprintf ('DESCRIBE <%s>', iri));
+
+  links := 'Link: ' ||
+    sprintf ('<%s&output=application%%2Frdf%%2Bxml>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)",', desc_link);
+  links := links ||
+    sprintf ('<%s&output=text%%2Fn3>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)",', desc_link);
+  links := links ||
+    sprintf ('<%s&output=application%%2Frdf%%2Bjson>; rel="alternate"; type="application/rdf+json"; title="Structured Descriptor Document (RDF/JSON format)",', desc_link);
+  links := links ||
+    sprintf ('<%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="Structured Descriptor Document (OData/Atom format)",', desc_link);
+  links := links ||
+    sprintf ('<%s&output=application%%2Fodata%%2Bjson>; rel="alternate"; type="application/odata+json"; title="Structured Descriptor Document (OData/JSON format)",', desc_link);
+  links := links ||
+    sprintf ('<%s&output=text%%2Fcxml>; rel="alternate"; type="text/cxml"; title="Structured Descriptor Document (CXML format)",', desc_link);
+  links := links ||
+    sprintf ('<%s&output=text%%2Fcsv>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)",', desc_link);
+  links := links ||
+    sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', iri);
+  links := links ||
+    sprintf ('<%s>; rev="describedby"\r\n', iri);
+
+  http_header (http_header_get () || links);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure SIOC..rdf_links_head (in iri any)
+{
+  declare links, blank, desc_link varchar;
+
+  if (iri is null)
+    return;
+
+  blank := repeat (' ', 4);
+  desc_link := sprintf ('http://%{WSHost}s/sparql?default-graph-uri=%U&query=%U', SIOC..get_graph (), sprintf ('DESCRIBE <%s>', iri));
+
+  links := '\n' ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml" title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bjson" rel="alternate" type="application/rdf+json" title="Structured Descriptor Document (RDF/JSON format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bxml" rel="alternate" type="application/atom+xml" title="Structured Descriptor Document (OData/Atom format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bjson" rel="alternate" type="application/atom+json" title="Structured Descriptor Document (OData/JSON format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=text%%2Fcxml" rel="alternate" type="text/cxml" title="Structured Descriptor Document (CXML format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V&amp;output=text%%2Fcsv" rel="alternate" type="text/csv" title="Structured Descriptor Document (CSV format)" />\n', desc_link);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', iri);
+  links := links ||
+    blank ||
+    sprintf ('<link href="%V" rev="describedby" />\n', iri);
+
+  http (links);
+}
+;
+
 use DB;
 
 create procedure WA_INTEREST_UPGRADE ()

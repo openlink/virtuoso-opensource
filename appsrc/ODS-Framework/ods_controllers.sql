@@ -533,10 +533,11 @@ create procedure ODS.ODS_API."qrcode" (
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
   in ontology varchar,
+  in prefix varchar,
   in dependentOntology varchar := null) __soap_http 'application/json'
 {
   declare S, data any;
-  declare tmp, classes, retValue, dependency any;
+  declare tmp, classes, clazz, subClasses, retValue, dependency any;
 
   set_user_id ('dba');
   -- load ontology
@@ -584,10 +585,26 @@ create procedure ODS.ODS_API."ontology.classes" (
          ontology,
          dependency,
          ontology);
+  clazz := '';
+  subClasses := vector ();
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0]), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
+    if (clazz <> ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[0]))
+    {
+      if (clazz <> '')
+      {
+        tmp := vector_concat (jsonObject (), vector ('name', clazz, 'subClassOf', subClasses));
+        classes := vector_concat (classes, vector (tmp));
+      }
+      clazz := ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[0]);
+      subClasses := vector ();
+    }
+    subClasses := vector_concat (subClasses, vector (case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[1]) end));
+  }
+  if (clazz <> '')
+  {
+    tmp := vector_concat (jsonObject (), vector ('name', clazz, 'subClassOf', subClasses));
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
@@ -596,15 +613,15 @@ create procedure ODS.ODS_API."ontology.classes" (
 ;
 
 create procedure ODS.ODS_API."ontology.classProperties" (
+  in ontology varchar,
+  in prefix varchar,
   in ontologyClass varchar) __soap_http 'application/json'
 {
   declare N integer;
   declare S, data any;
-  declare prefix, ontology, tmp, property, properties any;
+  declare tmp, property, properties any;
 
   -- select class properties ontology
-    prefix := ODS.ODS_API."ontology.prefix" (ontologyClass);
-  ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
   properties := vector ();
   S := sprintf(
          '\n SPARQL' ||
@@ -659,13 +676,13 @@ create procedure ODS.ODS_API."ontology.classProperties" (
     if (property[0] <> item[0])
     {
       if (property[0] <> '')
-          properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+        properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (ontology, prefix, property)));
       property := vector (item[0], vector (), vector ());
     }
-    tmp := ODS.ODS_API."ontology.normalize"(item[1]);
+    tmp := ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[1]);
     if (tmp = 'owl:ObjectProperty')
     {
-      tmp := ODS.ODS_API."ontology.normalize"(item[2]);
+      tmp := ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[2]);
       if (tmp not like 'nodeID:%')
       {
         property[1] := vector_concat (property[1], vector (tmp));
@@ -675,17 +692,18 @@ create procedure ODS.ODS_API."ontology.classProperties" (
     }
     else if (tmp = 'owl:DatatypeProperty')
     {
-      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'xsd:string'))));
+      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize2" (ontology, prefix, coalesce (item[2], 'xsd:string'))));
     }
   }
   if (property[0] <> '')
-      properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (ontology, prefix, property)));
   return obj2json (properties, 10);
 }
 ;
 
 create procedure ODS.ODS_API."ontology.objects" (
-  in ontology varchar) __soap_http 'application/json'
+  in ontology varchar,
+  in prefix varchar) __soap_http 'application/json'
 {
   declare S, data any;
   declare tmp, objects any;
@@ -708,7 +726,7 @@ create procedure ODS.ODS_API."ontology.objects" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0]), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
+    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[0]), 'class', ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[1])));
     objects := vector_concat (objects , vector (tmp));
   }
   return obj2json (objects , 10);
@@ -763,11 +781,13 @@ create procedure ODS.ODS_API."ontology.load" (
 ;
 
 create procedure ODS.ODS_API."ontology.objectProperty" (
+  in ontology varchar,
+  in prefix varchar,
   in property any)
 {
   declare retValue any;
 
-  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize"(property[0])));
+  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize2" (ontology, prefix, property[0])));
   if (length (property[1]))
     retValue := vector_concat (retValue, vector ('objectProperties', property[1]));
   if (length (property[2]))
@@ -833,12 +853,14 @@ create procedure ODS.ODS_API."ontology.byPrefix" (
 ;
 
 create procedure ODS.ODS_API."ontology.normalize" (
-  in inValue varchar)
+  in inValue varchar,
+  in ontologies any := null)
 {
   if (not isnull (inValue))
   {
-    declare N, ontologies any;
+    declare N integer;
 
+    if (isnull (ontologies))
     ontologies := ODS.ODS_API."ontology.array" ();
     for (N := 0; N < length (ontologies); N := N + 2)
     {
@@ -850,13 +872,29 @@ create procedure ODS.ODS_API."ontology.normalize" (
 }
 ;
 
-create procedure ODS.ODS_API."ontology.denormalize" (
+create procedure ODS.ODS_API."ontology.normalize2" (
+  in ontology varchar,
+  in prefix varchar,
   in inValue varchar)
 {
   if (not isnull (inValue))
   {
-    declare N, pos, tmp, ontologies any;
+    if (inValue like (ontology || '%'))
+      return prefix || ':' || subseq (inValue, length (ontology));
+  }
+  return ODS.ODS_API."ontology.normalize" (inValue);
+}
+;
 
+create procedure ODS.ODS_API."ontology.denormalize" (
+  in inValue varchar,
+  in ontologies any := null)
+{
+  if (not isnull (inValue))
+  {
+    declare N, pos, tmp any;
+
+    if (isnull (ontologies))
     ontologies := ODS.ODS_API."ontology.array" ();
     pos := strrchr (inValue, ':');
     if (pos is not null)
@@ -870,6 +908,20 @@ create procedure ODS.ODS_API."ontology.denormalize" (
     }
   }
   return inValue;
+}
+;
+
+create procedure ODS.ODS_API."ontology.denormalize2" (
+  in ontology varchar,
+  in prefix varchar,
+  in inValue varchar)
+{
+  if (not isnull (inValue))
+  {
+    if (inValue like (prefix || ':%'))
+      return ontology || subseq (inValue, length (prefix)+1);
+  }
+  return ODS.ODS_API."ontology.denormalize" (inValue);
 }
 ;
 
