@@ -1637,14 +1637,12 @@ iSPARQL.Common = {
 	iSPARQL.StatusUI.statMsg ("Prefixes&#8230;");
 	var sel_elm = $("prefix");
 
-	for (var i=0;i<window.defaultPrefixes.length;i++) {
-	    var p_obj = window.defaultPrefixes[i];
-	    if (! (!!p_obj.hidden)) {
-		var opt_val = "PREFIX " + p_obj.label + ": <" + p_obj.uri + ">";
-		var opt_ct  = p_obj.label.toUpperCase();
+		for (var i=0;i<iSPARQL.Defaults.namespaces.length;i++) {
+			var p_obj = iSPARQL.Defaults.namespaces[i];
+			var opt_val = "PREFIX " + p_obj[1] + ": <" + p_obj[0] + ">";
+			var opt_ct  = p_obj[1].toUpperCase();
 		var opt_elm = OAT.Dom.option (opt_ct, opt_val, sel_elm);
 	    }
-	}
 
 	iSPARQL.StatusUI.statMsg ("MetaData UI&#8230;");
 	iSPARQL.mdUI = new iSPARQL.MetaDataOptsUI (iSPARQL.mdOpts,
