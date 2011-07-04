@@ -1555,6 +1555,7 @@
                    where P_ID = self.v_id;
                   self.v_grants := self.shareSelect (self.v_id);
                     self.v_photo_preview_path := '';
+                    self.rdf_iri := SIOC..addressbook_contact_iri (self.domain_id, self.v_id);
                 }
                 _end:;
               ]]>

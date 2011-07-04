@@ -166,6 +166,7 @@
                                   where EF_ID = %d
                                     and coalesce(EFI_DELETE_FLAG, 0) <> 1';
               sql := sprintf (sql, node_id);
+              self.rdf_iri := SIOC..feed_iri (node_id);
             }
             else if ((node_type = 'c') and (self.domain_id > 0))
             {
@@ -182,6 +183,7 @@
                                   where EFD_ID = %d
                                     and coalesce(EFI_DELETE_FLAG, 0) <> 1';
               sql := sprintf (sql, self.account_id, node_id);
+              self.rdf_iri := SIOC..feed_iri ((select EFD_FEED_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = node_id));
             }
             else if (node_type = 'f')
             {

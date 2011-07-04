@@ -80,6 +80,39 @@ create procedure briefcase_sparql (
 
 -------------------------------------------------------------------------------
 --
+create procedure briefcase_resource_iri (
+  in full_path varchar)
+{
+  declare id, path, wai_name any;
+
+  path := split_and_decode (full_path, 0, '\0\0/');
+  if (length (path) < 6 or path [4] <> 'Public')
+    return null;
+
+  wai_name := (select WAI_NAME
+                 from DB.DBA.WA_INSTANCE,
+                      DB.DBA.WA_MEMBER,
+                      DB.DBA.SYS_USERS
+                where WAI_TYPE_NAME = 'oDrive'
+                  and WAM_INST = WAI_NAME
+                  and WAM_USER = U_ID
+                  and WAM_IS_PUBLIC = 1
+                  and U_NAME = path[3]
+                  and U_ACCOUNT_DISABLED = 0
+                  and U_DAV_ENABLE = 1);
+  if (isnull (wai_name))
+    return null;
+
+  id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = full_path);
+  if (isnull (id))
+    return null;
+
+  return post_iri_ex (briefcase_iri (wai_name), id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, c_iri, creator_iri, t_iri, link, content varchar;

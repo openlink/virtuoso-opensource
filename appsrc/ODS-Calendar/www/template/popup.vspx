@@ -26,6 +26,10 @@
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V CAL.WA.host_url () || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
+    <?vsp
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
+    ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/common.css" type="text/css" />
     <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
@@ -77,18 +81,17 @@
   </head>
   <body>
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
-      <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="owner_id" type="integer" default="null" />
         <v:variable persist="0" name="account_rights" type="varchar" default="''"/>
         <v:variable persist="0" name="settings" type="any" />
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
         <v:variable persist="0" name="cWeekStarts" type="varchar" default="'m'" />
         <v:variable persist="0" name="cTimeZone" type="integer" default="0" />
         <v:variable persist="0" name="cTimeFormat" type="varchar" default="'e'" />
         <v:variable persist="0" name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
         <v:variable persist="0" name="cDaylight" type="integer" default="0" />
-      </vm:variables>
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';

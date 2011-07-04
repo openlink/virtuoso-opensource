@@ -84,6 +84,8 @@
                   where EFI_ID = item_id) do
             {
               declare lt, ut, en, rt, ft, mt, bt, ct, tt varchar;
+
+            self.rdf_iri := SIOC..feed_item_iri (EF_ID, item_id);
               if (isnull(EFI_LINK))
               {
               lt := EFI_TITLE;
@@ -191,6 +193,8 @@
                     where EFI_ID = item_id) do
             {
               declare lt, ut, en, rt, ft, mt, bt, ct, tt, cv, an varchar;
+
+            self.rdf_iri := SIOC..feed_item_iri (EF_ID, item_id);
               if (isnull(EFI_LINK))
               {
               lt := EFI_TITLE;

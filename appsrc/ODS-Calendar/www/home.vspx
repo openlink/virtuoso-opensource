@@ -2350,6 +2350,7 @@
 
                        self.v_attendees := CAL.WA.attendees_return (self.v_id);
                        self.v_grants := self.shareSelect (self.v_id);
+                       self.rdf_iri := SIOC..calendar_event_iri (self.domain_id, self.v_id);
                  return;
               }
             _end:;
@@ -3207,6 +3208,7 @@
              where E_ID = self.v_id;
 
                   self.v_attendees := CAL.WA.attendees_return (self.v_id);
+                  self.rdf_iri := SIOC..calendar_event_iri (self.domain_id, self.v_id);
             return;
 
           _end:;
@@ -3404,6 +3406,7 @@
 
                        self.v_attendees := CAL.WA.attendees_return (self.v_id);
                        self.v_grants := self.shareSelect (self.v_id);
+                       self.rdf_iri := SIOC..calendar_event_iri (self.domain_id, self.v_id);
                  return;
               }
             _end:;
@@ -3790,6 +3793,7 @@
              where E_ID = self.v_id;
 
                   self.v_attendees := CAL.WA.attendees_return (self.v_id);
+                  self.rdf_iri := SIOC..calendar_event_iri (self.domain_id, self.v_id);
              return;
 
           _end:;

@@ -2045,7 +2045,7 @@ create procedure ODRIVE.WA.odrive_name_home() returns varchar
 --
 create procedure ODRIVE.WA.shared_name() returns varchar
 {
-  return 'Shared Folders';
+  return 'Shared Resources';
 }
 ;
 
@@ -3493,7 +3493,11 @@ create procedure ODRIVE.WA.DAV_API_PARAMS (
     gname := (select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = gid);
 
   if (isnull(auth_name))
+  {
     auth_name := ODRIVE.WA.account();
+    if (auth_name = 'dba')
+      auth_name := 'dav';
+  }
   if (isnull(auth_pwd)) {
     auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_name), '');
     if (auth_pwd[0] = 0)

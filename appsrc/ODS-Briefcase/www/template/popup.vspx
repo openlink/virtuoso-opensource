@@ -26,6 +26,10 @@
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V ODRIVE.WA.host_url () || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
+    <?vsp
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
+    ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/common.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
@@ -63,13 +67,12 @@
   </head>
   <body>
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
-      <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
         <v:variable persist="0" name="settings" type="any" />
-      </vm:variables>
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';

@@ -973,13 +973,16 @@
 
                 params := e.ve_params;
                 _action := get_keyword ('_cmd', params, '');
+
                 if (_action = 'home')
                 {
+                _home:
                   self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
                   self.command_set (0, 0);
                 }
                 else if (_action = 'shared')
                 {
+                _shared:
                   self.dir_path := ODRIVE.WA.shared_name();
                   self.command_set (0, 0);
                 }
@@ -1059,6 +1062,15 @@
                 else if (_action = 'select')
                 {
                   _path := get_keyword ('_path', params, '');
+                  if (self.dir_path = '')
+                  {
+                    if (trim (_path, '/') = ODRIVE.WA.odrive_name_home ())
+                      goto _home;
+
+                    if (trim (_path, '/') = ODRIVE.WA.shared_name ())
+                      goto _shared;
+                  }
+
                   if (_path <> '')
                   {
                     if (ODRIVE.WA.odrive_permission (_path) = '')
@@ -1404,6 +1416,8 @@
             }
             if (not isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
               self.dc_prepare();
+
+            self.rdf_iri := SIOC..briefcase_resource_iri (self.dav_path);
           ]]>
         </v:before-data-bind>
         <v:text name="formRight" type="hidden" value="--self.dav_enable" />

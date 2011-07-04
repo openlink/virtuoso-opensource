@@ -766,6 +766,9 @@
                 declare N integer;
                 params := self.vc_page.vc_event.ve_params;
 
+                if (self.pAction = 'edit')
+                  self.rdf_iri := SIOC..poll_post_iri (self.domain_id, self.v_id);
+
                 if ((self.pAction = 'edit') and (self.v_step = ''))
                 {
                   select P_NAME,
@@ -1700,6 +1703,7 @@
                   }
                   http ('</p>');
                 }
+                self.rdf_iri := SIOC..poll_post_iri (self.domain_id, self.v_id);
               ?>
             </div>
             <div class="form-footer">
@@ -1893,6 +1897,7 @@
                   http ('</p>');
                 }
               _end:;
+                self.rdf_iri := SIOC..poll_post_iri (self.domain_id, self.v_id);
               ?>
             </div>
             <div class="form-footer">
