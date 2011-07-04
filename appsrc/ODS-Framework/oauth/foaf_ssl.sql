@@ -205,7 +205,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     {
       declare arr, uid any;
 	      authenticated:
-      uid := coalesce ((select FS_UID from FOAF_SSL_ACL where FS_URI = agent), 'nobody');
+	      uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
       if ('nobody' = uid and allow_nobody = 0)
 	goto err_ret;
       connection_set ('SPARQLUserId', uid);

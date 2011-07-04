@@ -572,7 +572,10 @@ TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
 
       for (i = 0; i < properties.length; i++)
         options.push(properties[i].name);
-      selectOption46(options, fldValue, ontologyClass.subClassOf);
+
+      if (ontologyClass.subClassOf instanceof Array)
+        for (var i=0; i<ontologyClass.subClassOf.length; i++)
+          selectOption46(options, fldValue, ontologyClass.subClassOf[i]);
     }
   }
 

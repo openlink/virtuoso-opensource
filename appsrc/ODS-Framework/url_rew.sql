@@ -256,7 +256,7 @@ create procedure DB.DBA.ODS_URLREW_XRDS (in path varchar)
 
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
-    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('type', 'uname'), 1,
+    '/dataspace/(person/|organization/)([^/#\\?]*)', vector('type', 'uname'), 1,
 --    '/ods/uhome.vspx?page=1&ufname=%U&utype=%U', vector('uname', 'type'),
     '/ods/index.vsp?uname=%U&utype=%U', vector( 'uname','type'), --this line is related to the new UI. without it will not work correct. Old UI will keep working as expected.
     NULL,
@@ -275,7 +275,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_yadis', 1,
 
 -- Application instances page as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_html', 1,
-    '/dataspace/((?!person)(?!organization)(?!all)[^/]*)/([^\\./\\?]*)/?', vector('uname', 'app'), 2,
+    '/dataspace/((?!person)(?!organization)(?!all)(?!doc)[^/]*)/([^\\./\\?]*)/?', vector('uname', 'app'), 2,
     '/ods/app_my_inst.vspx?app=%s&ufname=%s&l=1', vector('app', 'uname'),
     'DB.DBA.ODS_APPS_PAGE',
     NULL,
@@ -294,7 +294,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_yadis', 1,
     '/ods/yadis.vsp?uname=%U&type=%U', vector('uname', 'type'),
     NULL,
     NULL,
-    2);
+    1);
 
 -- APML file
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apml', 1,
@@ -302,15 +302,16 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apml', 1,
     '/ods/apml.vsp?uname=%U', vector('uname'),
     NULL,
     NULL,
-    2);
+    1);
 
+-- START Feeds
 -- A feed page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_html', 1,
     '/dataspace/feed/([^/\\?]*)', vector('fid'), 1,
     '/subscriptions/news.vspx?feed=%U', vector('fid'),
     NULL,
     NULL,
-    2);
+    1);
 
 -- Feed item page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html', 1,
@@ -318,7 +319,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html', 1,
     '/subscriptions/news.vspx?feed=%s&link=%s', vector('fid', 'link'),
     NULL,
     NULL,
-    2);
+    1);
 
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html2', 1,
@@ -326,24 +327,34 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html2', 1,
     '/enews2/%U/news.vspx?feed=%s&link=%s', vector('instance', 'fid', 'link'),
     NULL,
     NULL,
-    2);
+    1);
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html3', 1,
     '/dataspace/([^/]*)/subscriptions/([^/]*)/news.vspx', vector('uname', 'inst'), 1,
     '/enews2/%U/news.vspx', vector('inst'),
     'DB.DBA.ODS_ATOM_PAGE',
     NULL,
-    2);
+    1);
+
+-- END Feeds
 
 -- A rule returning home page for a given instance.
 -- NB: all instances have a <home url> except discussion
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html_post', 1,
     '/dataspace/([^/]*)/(weblog|ecrm|wiki|addressbook|socialnetwork|bookmark|briefcase|eCRM|calendar|community|subscriptions|photos|polls|mail|IM)/([^/\\?]+)',
     vector('ufname', 'app', 'inst'), 3,
     '%s', vector('inst'),
     'DB.DBA.ODS_INST_HOME_PAGE',
     NULL,
     2);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
+    '/dataspace/doc/([^/]*)/(weblog|ecrm|wiki|addressbook|socialnetwork|bookmark|briefcase|eCRM|calendar|community|subscriptions|photos|polls|mail|IM)/([^/\\?]+)\x24',
+    vector('ufname', 'app', 'inst'), 3,
+    '%s', vector('inst'),
+    'DB.DBA.ODS_INST_HOME_PAGE',
+    NULL,
+    1);
 
 -- Discussion home
 
@@ -382,7 +393,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_page', 1,
 
 -- A rule returning home page for a given item within instance all of these having a form of <home>?id=<item id>
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
-    '/dataspace/([^/]*)/(weblog|addressbook|ecrm|bookmark|briefcase|community|subscriptions|polls|mail|eCRM|IM)/([^/]*)/((?!gems)(?!tag)[^/\\?]*)',
+    '/dataspace/doc/([^/]*)/(weblog|addressbook|ecrm|bookmark|briefcase|community|subscriptions|polls|mail|eCRM|IM)/([^/]*)/((?!gems)(?!tag)[^/\\?]*)',
     vector('uname', 'app', 'inst', 'item'), 3,
     '%s?id=%s', vector('inst', 'item'),
     'DB.DBA.ODS_ITEM_PAGE',
@@ -391,7 +402,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
 
 -- Wiki item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
-    '/dataspace/([^/]*)/wiki/([^/]*)/([^\\?]*)',
+    '/dataspace/doc/([^/]*)/wiki/([^/]*)/([^\\?]*)',
     vector('uname', 'inst', 'item'), 3,
     '%s%s', vector('inst', 'item'),
     'DB.DBA.ODS_WIKI_ITEM_PAGE',
@@ -400,7 +411,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
 
 -- Wiki item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_item_html1', 1,
-    '/dataspace/([^/]*)/ecrm/([^/]*)/([^\\?]*)',
+    '/dataspace/doc/([^/]*)/ecrm/([^/]*)/([^\\?]*)',
     vector('uname', 'inst', 'item'), 3,
     '%s%s', vector('inst', 'item'),
     'DB.DBA.ODS_WIKI_ITEM_PAGE',
@@ -409,7 +420,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_item_html1', 1,
 
 -- Wiki item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_item_html2', 1,
-    '/dataspace/([^/]*)/eCRM/([^/]*)/([^\\?]*)',
+    '/dataspace/doc/([^/]*)/eCRM/([^/]*)/([^\\?]*)',
     vector('uname', 'inst', 'item'), 3,
     '%s%s', vector('inst', 'item'),
     'DB.DBA.ODS_WIKI_ITEM_PAGE',
@@ -419,7 +430,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_item_html2', 1,
 
 -- Wiki atop-pub is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_atom_html', 1,
-    '/dataspace/([^/]*)/wiki/([^/]*)/atom-pub([^\\?]*)',
+    '/dataspace/doc/([^/]*)/wiki/([^/]*)/atom-pub([^\\?]*)',
     vector('uname', 'inst', 'action'), 3,
     '/wiki/Atom/%s%s', vector('inst', 'action'),
     'DB.DBA.ODS_ATOM_PAGE',
@@ -428,7 +439,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_atom_html', 1,
 
 -- Photo item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_item_html', 1,
-    '/dataspace/([^/]*)/photos/([^/]*)/([^/\\?]*)',
+    '/dataspace/doc/([^/]*)/photos/([^/]*)/([^/\\?]*)',
     vector('uname', 'inst', 'item'), 3,
     '/photos/%s/%s', vector('uname','item'),
     'DB.DBA.ODS_PHOTO_ITEM_PAGE',
@@ -442,10 +453,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_gems_html', 1,
     NULL,
     2);
 
-
 -- Calendar item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_item_html', 1,
-    '/dataspace/([^/]*)/calendar/([^/]*)/(Task|Event)/([^/\\?]*)',
+    '/dataspace/doc/([^/]*)/calendar/([^/]*)/(Task|Event)/([^/\\?]*)',
     vector('uname', 'inst', 'item_type', 'item'), 4,
     '%s?id=%s', vector('inst', 'item'),
     'DB.DBA.ODS_ITEM_PAGE',
@@ -582,20 +592,13 @@ create procedure DB.DBA.ODS_RDF_URI_LOC (in id int, in variant varchar)
 ;
 
 delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ods_rule_list1';
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.rdf', 'application/rdf+xml', 0.95,
-    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.n3', 'text/rdf+n3', 0.80,
-    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.nt', 'text/n3', 0.80,
-    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.turtle', 'text/turtle', 0.70,
-    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.ttl', 'text/rdf+ttl', 0.70,
-    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
---DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.txt', 'text/plain', 0.65,
---    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.json', 'application/json', 0.80,
-    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.json',   'application/json',    1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.txt',    'text/plain',          1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.turtle', 'text/turtle',         1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.ttl',    'text/rdf+ttl',        1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.n3',     'text/rdf+n3',         1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.nt',     'text/n3',             1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.rdf',    'application/rdf+xml', 1.0, location_hook=>null);
 
 create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 {
@@ -660,27 +663,48 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 ;
 
 -- RDF data rules - these was returning 303
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_html', 1,
+    '/dataspace/((?!(doc|person|organization|raw)/)[^\\?]*)\x24', vector('path'), 1,
+    '/dataspace/doc/%s', vector('path'),
+    null, --'DB.DBA.ODS_DET_REF',
+    '(text/html)|(\\*/\\*)',
+    2,
+    303,
+    null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
+    );
+
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     '/dataspace/([^\\?]*)', vector('path'), 1,
-    '/ods/data/rdf/%U', vector('path'),
-    'DB.DBA.ODS_DET_REF',
+    '/dataspace/raw/%s/sioc', vector('path'),
+    null, --'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)',
     2,
-    null,
-    '^{sql:DB.DBA.ODS_URLREW_HDR}^');
+    303,
+    null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
+    );
 
--- RDF data rule
+-- XXX: RDF data rule
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     '/dataspace/(.*)/page/([0-9]*)', vector('path', 'page'), 1,
     '/ods/data/rdf/%U.%U?page=%U', vector('path', '*accept*', 'page'),
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)',
     2,
-    null,
-    '^{sql:DB.DBA.ODS_URLREW_HDR}^');
+    303,
+    null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
+    );
 
 -- Rule for about, sioc, foaf etc. RDF resources
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
+    '/dataspace/raw/(.*)/(about|foaf|sioc)\\.([^\\?]*)', vector('path', 'dummy', 'ext'), 1,
+    '/ods/data/rdf/%U.%U', vector('path', 'ext'),
+    'DB.DBA.ODS_DET_REF',
+    NULL,
+    2,
+    null,
+    '^{sql:DB.DBA.ODS_URLREW_HDR}^');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res_2', 1,
     '/dataspace/(.*)/(about|foaf|sioc)\\.([^\\?]*)', vector('path', 'dummy', 'ext'), 1,
     '/ods/data/rdf/%U.%U', vector('path', 'ext'),
     'DB.DBA.ODS_DET_REF',
@@ -715,7 +739,11 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_all_apps_html',
 	  'ods_yadis',
 	  'ods_apml',
+	  'ods_feed_item_html2',
+	  'ods_feed_item_html3',
+	  'ods_feed_item_html',
 	  'ods_feed_html',
+	  'ods_inst_html_post',
 	  'ods_inst_html',
 	  'ods_discussion_page',
 	  'ods_discussion_home_html',
@@ -727,9 +755,6 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_wiki_atom_html',
 	  'ods_ecrm_item_html1',
 	  'ods_ecrm_item_html2',
-	  'ods_feed_item_html',
-	  'ods_feed_item_html2',
-	  'ods_feed_item_html3',
 	  'ods_photo_item_html',
 	  'ods_photo_gems_html',
 	  'ods_cal_item_html',
@@ -738,14 +763,16 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_cal_atom_html',
 	  'ods_apps_gems_html',
 	  'ods_apps_tags_html',
-	  'ods_apps_page',
 	  'ods_discussion_item_html',
 	  'ods_blog_tag',
 	  'ods_main',
 	  'ods_space_html',
+	  'ods_html',
+	  'ods_apps_page',
 	  'ods_rdf',
-	  'ods_rdf_next',
+	  --'ods_rdf_next',
 	  'ods_rdf_res',
+	  'ods_rdf_res_2',
 	  'ods_moat_res',
 	  'ods_ecrm_rdf',
 	  'ods_error'

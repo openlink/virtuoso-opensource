@@ -641,7 +641,6 @@ RDF.ontologies['xsd'] = {"name": 'http://www.w3.org/2001/XMLSchema#', "hidden": 
 RDF.loadOntology = function (ontologyName, cb, options)
 {
   var ontology = this.getOntologyByName(ontologyName);
-  var dependent = ontology.dependent;
   var prefix = this.ontologyPrefix(ontologyName);
   if (!prefix) {
     var N = 0;
@@ -654,9 +653,12 @@ RDF.loadOntology = function (ontologyName, cb, options)
   }
 
   // load ontology classes
-  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontologyName);
-  if (dependent)
+  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontologyName)+ '&prefix='+encodeURIComponent(prefix);
+  var dependent;
+  if (ontology && ontology.dependent) {
+    dependent = ontology.dependent;
     S += '&dependentOntology='+encodeURIComponent(this.getOntologyByPrefix(dependent).name);
+  }
   var x = function(data) {
     var o = null;
     try {
@@ -706,11 +708,9 @@ RDF.getOntologyByClass = function(className)
 RDF.getOntologyClass = function(className)
 {
   var ontology = this.getOntologyByClass(className);
-  if (ontology)
-  {
+  if (ontology) {
     var classes = ontology.classes;
-    for (var i = 0; i < classes.length; i++)
-    {
+    for (var i = 0; i < classes.length; i++) {
       if (classes[i].name == className)
         return classes[i];
     }
@@ -734,8 +734,13 @@ RDF.getOntologyClassProperty = function(className, propertyName)
       if (properties[i].name == propertyName)
         return properties[i];
     }
-    if (ontologyClass.subClassOf)
-      return this.getOntologyClassProperty(ontologyClass.subClassOf, propertyName)
+
+      if (ontologyClass.subClassOf instanceof Array)
+        for (var i=0; i<ontologyClass.subClassOf.length; i++) {
+          var property = this.getOntologyClassProperty(ontologyClass.subClassOf[i], propertyName);
+          if (property)
+            return property;
+        }
   }
   }
   return null;
@@ -765,8 +770,11 @@ RDF.isKindOfClass = function(objectClassName, propertyClassName)
     return true;
 
   var ontologyClass = this.getOntologyClass(objectClassName);
-  if (ontologyClass && ontologyClass.subClassOf)
-    return this.isKindOfClass (ontologyClass.subClassOf, propertyClassName);
+  if (ontologyClass && (ontologyClass.subClassOf instanceof Array))
+    for (var i = 0; i < ontologyClass.subClassOf; i++) {
+      if (this.hasClassProperties(ontologyClass.subClassOf[i]))
+        return true;
+    }
 
   return false;
 }
@@ -779,18 +787,23 @@ RDF.loadClassProperties = function(ontologyClass, cbFunction)
   }
   var ontologyName = RDF.getOntologyByClass(ontologyClass.name).name;
   var prefix = RDF.ontologyPrefix(ontologyName);
-  var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name)+'&ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix;
+  var S = '/ods/api/ontology.classProperties?ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix+'&ontologyClass='+encodeURIComponent(ontologyClass.name);
   var x = function(data) {
     var o = null;
     try {
       o = OAT.JSON.parse(data);
     } catch (e) { o = null; }
     ontologyClass.properties = o;
-    var ontologySubClass = RDF.getOntologyClass(ontologyClass.subClassOf);
+    if (ontologyClass.subClassOf instanceof Array) {
+      for (var i = 0; i < ontologyClass.subClassOf.length; i++) {
+        var ontologySubClass = RDF.getOntologyClass(ontologyClass.subClassOf[i]);
     if (ontologySubClass) {
       RDF.loadClassProperties(ontologySubClass, cbFunction)
-      return;
+          cbFunction = null;
+        }
     }
+    }
+    if (cbFunction)
     cbFunction();
   }
   OAT.AJAX.GET(S, '', x, {});
@@ -812,8 +825,11 @@ RDF.hasClassProperties = function(className)
     if (ontologyClass.properties.length)
       return true;
 
-    if (ontologyClass.subClassOf)
-      return this.hasClassProperties(ontologyClass.subClassOf);
+    if (ontologyClass.subClassOf instanceof Array)
+      for (var i = 0; i < ontologyClass.subClassOf.length; i++) {
+        if (this.hasClassProperties(ontologyClass.subClassOf[i]))
+          return true;
+      }
   }
   return false;
 }
@@ -847,8 +863,7 @@ RDF.showRDF = function(prefix, format)
   function preparePropertiesWork(prefix, ontologyNo, itemNo) {
     var form = document.forms['page_form'];
     var itemProperties = [];
-    for (var L = 0; L < form.elements.length; L++)
-    {
+    for (var L = 0; L < form.elements.length; L++) {
       if (!form.elements[L])
         continue;
 
@@ -1259,11 +1274,10 @@ RDF.addItemToSelects = function(item)
   var tbl = $(this.tablePrefix+'_tbl');
   if (!tbl) {return;}
 
-  var selects = tbl.getElementsByTagName('select');
-  if (!selects) {return;}
-  for (var i = 0; i < selects.length; i++)
-  {
-    var obj = selects[i];
+  var combolists = tbl.getElementsByTagName('input');
+  if (!combolists) {return;}
+  for (var i = 0; i < combolists.length; i++) {
+    var obj = combolists[i];
     if ((obj.id.indexOf('_prop_') != -1) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
     {
       var ontologyClassProperty = this.getOntologyClassProperty(obj.item.className, obj.value);
@@ -1273,7 +1287,7 @@ RDF.addItemToSelects = function(item)
         {
           if (item.className == ontologyClassProperty.objectProperties[j])
           {
-      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
+      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_3_'));
             if (fld && fld.combolist)
               fld.combolist.addOption(RDF.getItemName(item));
     	    }
@@ -1298,16 +1312,16 @@ RDF.itemInSelects = function(item, mode)
   var tbl = $(this.tablePrefix+'_tbl');
   if (!tbl) {return;}
 
-  var selects = tbl.getElementsByTagName('select');
-  if (!selects) {return;}
-  for (var i = 0; i < selects.length; i++) {
-    var obj = selects[i];
+  var combolists = tbl.getElementsByTagName('input');
+  if (!combolists) {return;}
+  for (var i = 0; i < combolists.length; i++) {
+    var obj = combolists[i];
     if ((obj.id.indexOf('_prop_') != -1) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != '')) {
       var ontologyClassProperty = this.getOntologyClassProperty(obj.item.className, obj.value);
       if (ontologyClassProperty.objectProperties) {
         for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++) {
           if (item.className == ontologyClassProperty.objectProperties[j]) {
-      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
+      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_3_'));
             if (fld && fld.combolist) {
               if ((fld.value == RDF.getItemName(item)) && (mode == 'check'))
                     return confirm ('The selected object is used. Delete?');
