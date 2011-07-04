@@ -286,6 +286,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_ZILLOW', null, 'Zillow');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(http://www.zoopla.co.uk/.*)',
+	'URL', 'DB.DBA.RDF_LOAD_ZOOPLA', null, 'Zoopla');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://socialgraph.apis.google.com/lookup\\?.*)|'||
 	'(http://socialgraph.apis.google.com/otherme\\?.*)',
 	'URL', 'DB.DBA.RDF_LOAD_SOCIALGRAPH', null, 'SocialGraph');
@@ -362,6 +366,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('.+\\.pptx\x24', 'URL', 'DB.DBA.RDF_LOAD_PPTX_DOCUMENT', null, 'Powerpoint documents', null);
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+	values ('http://.*.linkedin.com/.*', 'URL', 'DB.DBA.RDF_LOAD_LINKEDIN', null, 'LinkedIn', vector (
+        'consumer_key', '', 'consumer_secret', '', 'consumer_name', ''));
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
@@ -3076,6 +3084,31 @@ EXEC_STMT(
 create index OPENGRAPH_ACCESS_TOKENS_USER_ID on DB.DBA.OPENGRAPH_ACCESS_TOKENS (OGAT_GRANTOR_ID)', 0)
 ;
 
+EXEC_STMT(
+'create table DB.DBA.LINKEDIN_ACCESS_TOKENS (
+    LIAT_ACCESS_TOKEN varchar,           -- LinkedIn access token
+    LIAT_ACCESS_TOKEN_SECRET varchar,    -- LinkedIn access token secret
+    LIAT_GRANTOR_ID varchar,             -- LinkedIn ID of user granting the access token
+    LIAT_GRANTOR_NAME varchar,           -- LinkedIn username of user granting the access token
+    LIAT_GRANTOR_URL varchar,            -- LinkedIn public profile URL of user granting the access token
+    LIAT_APP_SITE_URL varchar,           -- LinkedIn app which is being given access
+    LIAT_APP_ID varchar,                 -- LinkedIn App ID of app being given access
+    LIAT_CREATED datetime,               -- Date/Time access token was created
+    LIAT_LIFETIME int,                   -- Token lifetime (secs) from creation time, after which token is invalid. null implies a non-expiring token
+    LIAT_EXPIRES datetime,       
+    primary key (LIAT_ACCESS_TOKEN)
+)
+create index LINKEDIN_ACCESS_TOKENS_USER_ID on DB.DBA.LINKEDIN_ACCESS_TOKENS (LIAT_GRANTOR_ID)', 0)
+;
+
+EXEC_STMT(
+'create table DB.DBA.OAUTH_TOKEN_REQUESTS (
+    OAUTH_REQ_TOKEN varchar,
+    OAUTH_REQ_SECRET varchar
+)
+create index OAUTH_TOKEN_REQUESTS_OAUTH_REQ_TOKEN on DB.DBA.OAUTH_TOKEN_REQUESTS (OAUTH_REQ_TOKEN)', 0)
+;
+
 create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
     declare qr, path any;
@@ -3381,6 +3414,89 @@ DB.DBA.VHOST_DEFINE (
 	 opts=>vector ('executable', 'yes', 'browse_sheet', ''),
 	 is_default_host=>0
 );
+
+-- Define virtual dir /linkedin_oauth for use when retrieving Facebook OAuth access tokens
+
+DB.DBA.VHOST_REMOVE (
+	 lhost=>'*ini*',
+	 vhost=>'*ini*',
+	 lpath=>'/linkedin_oauth'
+);
+
+DB.DBA.VHOST_DEFINE (
+	 lhost=>'*ini*',
+	 vhost=>'*ini*',
+	 lpath=>'/linkedin_oauth',
+	 ppath=>'/DAV/VAD/rdf_mappers/sponger_front_page',
+	 is_dav=>1,
+	 def_page=>'linkedin_access_token.vsp',
+	 vsp_user=>'dba',
+	 ses_vars=>0,
+	 opts=>vector ('executable', 'yes', 'browse_sheet', ''),
+	 is_default_host=>0
+);
+
+create procedure DB.DBA.RDF_LOAD_ZOOPLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xt, xd any;
+	declare test int;
+    declare url, tmp, ses, query varchar;
+    if (not isstring (_key))
+        return 0;
+    declare exit handler for sqlstate '*'
+    {
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+        return 0;
+    };
+    if (new_origin_uri like 'http://www.zoopla.co.uk/property/%')
+    {
+        tmp := sprintf_inverse (new_origin_uri, 'http://www.zoopla.co.uk/property/%s', 0);
+		query := trim(tmp[0], '/#?');
+		test := strchr(query, '#');
+		if (test is not NULL)
+			query := subseq(query, 0, test);
+		test := strchr(query, '?');
+		if (test is not NULL)
+			query := subseq(query, 0, test);
+		query := trim(query, '/#?');
+		test := strrchr(query, '/');
+		if (test is not NULL)
+			query := subseq(query, test+1);
+		if (length(query) > 0)
+			url := sprintf ('http://api.zoopla.co.uk/api/v1/zoopla_estimates?property_id=%s&api_key=%s', query, _key);
+		else
+			return 0;
+    }
+	else if (new_origin_uri like 'http://www.zoopla.co.uk/to-rent/details/%')
+    {
+        tmp := sprintf_inverse (new_origin_uri, 'http://www.zoopla.co.uk/to-rent/details/%s', 0);
+		query := trim(tmp[0], '/#?');
+		test := strchr(query, '#');
+		if (test is not NULL)
+			query := subseq(query, 0, test);
+		test := strchr(query, '?');
+		if (test is not NULL)
+			query := subseq(query, 0, test);
+		query := trim(query, '/#?');
+		test := strrchr(query, '/');
+		if (test is not NULL)
+			query := subseq(query, 0, test);
+		if (length(query) > 0)
+			url := sprintf ('http://api.zoopla.co.uk/api/v1/property_listings?listing_id=%s&api_key=%s', query, _key);
+		else
+			return 0;
+    }
+    else
+        return 0;
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zoopla2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+    xd := serialize_to_UTF8_xml (xt);
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -6228,8 +6344,7 @@ create procedure DB.DBA.normalize_url (in url any, in lines any)
 }
 ;
 
-create procedure DB.DBA.sign_request (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in sid varchar := null, in tz int := 0, in oauth_token varchar, 
-	in consumer_secret varchar, in oauth_secret varchar)
+create procedure DB.DBA.sign_request (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in consumer_secret varchar, in oauth_token varchar, in oauth_secret varchar, in tz int := 0)
 {
   declare signature, nonce varchar;
   declare ret varchar;
@@ -6244,15 +6359,11 @@ create procedure DB.DBA.sign_request (in meth varchar := 'GET', in url varchar, 
 
   params := params ||
             sprintf ('oauth_consumer_key=%s&oauth_signature_method=HMAC-SHA1&oauth_timestamp=%d&oauth_nonce=%s&oauth_version=1.0',
-                  	 consumer_key,
-                 		 timest,
-                 		 nonce);
+                  	 consumer_key, timest, nonce);
   if (length (oauth_token))
     params := params || sprintf ('&oauth_token=%s', oauth_token);
   url := normalize_url (url, vector ());
   params := normalize_params (params);
-
-  declare exit handler for not found {signal ('OAUTH', 'Cannot find secret');};
 
   signature := sign_hmac_sha1 (meth, url, params, consumer_secret, oauth_secret);
   if (meth = 'GET')
@@ -6291,7 +6402,7 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 		if (pos is not null and pos <> 0)
 			id := left(id, pos);
 		url := concat('http://api.yelp.com/v2/business/', id);
-		url := sign_request ('GET', url, '', consumer_key, null, 0, oauth_token, consumer_secret, oauth_secret);
+		url := sign_request ('GET', url, '', consumer_key, consumer_secret, oauth_token,  oauth_secret, 0);
 	}
 	else
 		return 0;
@@ -9187,6 +9298,269 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
     }
   return 1;
 };
+
+create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xt, cnt, xd any;
+  declare linkedin_id, tmp, required_profile_fields varchar;
+  declare is_owner_key integer;
+  declare api_url, url, public_profile_url any;
+  declare consumer_key, consumer_secret, oauth_token, oauth_secret varchar;
+  declare oauth_keys any;
+  declare li_object_type varchar; -- Type of LinkedIn object being handled
+
+  declare exit handler for sqlstate '*'
+  {
+	DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    return 0;
+  };
+
+  -- Get cartridge options
+  consumer_key := get_keyword ('consumer_key', opts);
+  consumer_secret := get_keyword ('consumer_secret', opts);
+
+  if (subseq (new_origin_uri, 0, 5) = 'https')
+    new_origin_uri := 'http' || subseq (new_origin_uri, 5);
+
+  -- NOTE: new_origin_uri like 'http://%.linkedin.com/profile/view?id=%'
+  -- The id in this url pattern is NOT the id returned by api.linkedin.com as part of a user's profile.
+  -- It doesn't identify a user
+
+  if (new_origin_uri like 'http://%.linkedin.com/pub/%')
+  {
+    -- Public profile URL
+    -- e.g. http://uk.linkedin.com/pub/hugh-williams/0/1a0/559
+    public_profile_url := new_origin_uri;
+  }
+  else if (new_origin_uri like 'http://%.linkedin.com/in/%')
+  {
+    -- Public profile URL
+    -- e.g. http://www.linkedin.com/in/kidehen
+    public_profile_url := new_origin_uri;
+  }
+  else
+  {
+    return 0;
+  }
+
+  -- Get any unexpiring LinkedIn access token, to be used for signing requests, until we know the LinkedIn user's id
+  oauth_keys := DB.DBA.LINKEDIN_GET_ACCESS_TOKEN (public_profile_url);
+  oauth_token := oauth_keys[0];
+  oauth_secret := oauth_keys[1];
+  is_owner_key := oauth_keys[2];
+
+  if (oauth_token is null or oauth_secret is null)
+  {
+    log_message ('LINKEDIN_GET_ACCESS_TOKEN: No non-expiring access tokens are available to sign LinkedIn API requests');
+    return 0;
+  }
+
+  -- LinkedIn rejects the entire request if an attempt is made to retrieve a user's connections with an access token granted by someone-else
+  required_profile_fields := 'id,public-profile-url,first-name,last-name,headline,industry,location,num-connections,summary,specialties,associations,interests,honors,positions,num-recommenders,recommendations-received,member-url-resources,picture-url,certifications,date-of-birth,im-accounts,educations,languages,main-address,phone-numbers,publications,skills';
+  if (is_owner_key)
+    required_profile_fields := required_profile_fields || ',connections,twitter-accounts';
+
+  api_url := sprintf ('https://api.linkedin.com/v1/people/url=%U:(%s)', public_profile_url, required_profile_fields);
+  url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+  cnt := http_get (url);
+
+  li_object_type := 'unknown';
+  xd := xtree_doc (cnt);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd, 
+    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+  xd := serialize_to_UTF8_xml (xt);
+
+  RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+  return 1;
+}
+;
+
+create procedure DB.DBA.LINKEDIN_SAVE_ACCESS_TOKEN (
+  in li_user_id varchar,
+  in li_user_name varchar,
+  in li_user_public_profile_url varchar,
+  in li_app_site_url varchar,
+  in li_app_id varchar,
+  in oauth_token varchar,
+  in oauth_secret varchar,
+  in oauth_token_expiry int
+  )
+{
+  declare dt_expires datetime;
+
+  dt_expires := null;
+  if (oauth_token_expiry is not null and oauth_token_expiry > 0)
+    dt_expires := dateadd ('second', oauth_token_expiry , now ());
+  else
+    oauth_token_expiry := null;
+
+  insert soft DB.DBA.LINKEDIN_ACCESS_TOKENS (
+    LIAT_GRANTOR_ID, LIAT_GRANTOR_NAME, LIAT_GRANTOR_URL, LIAT_APP_SITE_URL, LIAT_APP_ID, 
+    LIAT_ACCESS_TOKEN, LIAT_ACCESS_TOKEN_SECRET, LIAT_CREATED, LIAT_LIFETIME, LIAT_EXPIRES)
+    values (li_user_id, li_user_name, li_user_public_profile_url, li_app_site_url, li_app_id, oauth_token, oauth_secret, now (), oauth_token_expiry, dt_expires);
+}
+;
+
+create procedure DB.DBA.LINKEDIN_GET_ACCESS_TOKEN (in li_public_profile_url varchar, in li_id varchar := null)
+{
+  declare access_token, secret varchar;
+  declare is_owner_key integer; 
+  
+  -- is_owner_key:
+  -- 1 => returned access token was granted by the owner of the given public profile URL
+  -- 0 => returned access token was granted by some other user
+
+  access_token := null;
+  secret := null;
+  is_owner_key := 1;
+
+  if (li_public_profile_url is not null)
+  {
+    -- Find access token by LinkedIn public profile URL
+
+    -- First look for a non-expiring access token.
+    -- If more than one non-expiring access token exists in LINKEDIN_ACCESS_TOKENS 
+    -- for the same user, all but the most recent are assumed to have been 
+    -- revoked by the user and hence be invalid.
+    for (select top 1 
+           LIAT_ACCESS_TOKEN as _token,
+           LIAT_ACCESS_TOKEN_SECRET as _secret
+         from 
+           DB.DBA.LINKEDIN_ACCESS_TOKENS 
+         where 
+           LIAT_GRANTOR_URL = li_public_profile_url and LIAT_EXPIRES is null
+         order by LIAT_CREATED desc
+        )
+    do
+    {
+      access_token := _token;
+      secret := _secret;
+    }
+
+    if (access_token is not null)
+      goto done;
+
+    -- Then look for an unexpired expiring access token
+    for (select top 1 
+           LIAT_ACCESS_TOKEN as _token,
+           LIAT_ACCESS_TOKEN_SECRET as _secret
+         from 
+           DB.DBA.LINKEDIN_ACCESS_TOKENS 
+         where 
+           LIAT_GRANTOR_URL = li_public_profile_url and LIAT_EXPIRES > now()
+        )
+    do
+    {
+      access_token := _token;
+      secret := _secret;
+    }
+
+    if (access_token is not null)
+      goto done;
+  }
+  else if (li_id is not null)
+  {
+    -- Find access token by LinkedIn user ID
+
+    -- First look for a non-expiring access token.
+    for (select top 1 
+           LIAT_ACCESS_TOKEN as _token,
+           LIAT_ACCESS_TOKEN_SECRET as _secret
+         from 
+           DB.DBA.LINKEDIN_ACCESS_TOKENS 
+         where 
+           LIAT_GRANTOR_ID = li_id and LIAT_EXPIRES is null
+         order by LIAT_CREATED desc
+        )
+    do
+    {
+      access_token := _token;
+      secret := _secret;
+    }
+
+    if (access_token is not null)
+      goto done;
+
+    -- Then look for an unexpired expiring access token
+    for (select top 1 
+           LIAT_ACCESS_TOKEN as _token,
+           LIAT_ACCESS_TOKEN_SECRET as _secret
+         from 
+           DB.DBA.LINKEDIN_ACCESS_TOKENS 
+         where 
+           LIAT_GRANTOR_ID = li_id and LIAT_EXPIRES > now()
+        )
+    do
+    {
+      access_token := _token;
+      secret := _secret;
+    }
+
+    if (access_token is not null)
+      goto done;
+  }
+
+  -- Use any available non-expiring access token to sign requests 
+  for (select top 1 
+       LIAT_ACCESS_TOKEN as _token,
+       LIAT_ACCESS_TOKEN_SECRET as _secret
+     from 
+       DB.DBA.LINKEDIN_ACCESS_TOKENS 
+     where 
+       LIAT_EXPIRES is null
+     order by LIAT_CREATED desc
+    )
+  do
+  {
+    access_token := _token;
+    secret := _secret;
+    is_owner_key := 0;
+  }
+
+done:
+  return vector (access_token, secret, is_owner_key);
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_LINKEDIN_REQUEST_ACCESS_TOKEN (in consumer_key varchar, in consumer_secret varchar)
+{
+  declare oauth_token, oauth_secret varchar;
+  declare url, cnt, req_token_resp_params any;
+  declare li_resp varchar;
+  declare linkedin_api_host, request_token_path varchar;
+  declare request_auth_url, request_token, request_secret varchar;
+  declare oauth_server_redirect_url varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    log_message (sprintf ('RDF_LOAD_LINKEDIN_REQUEST_ACCESS_TOKEN exit handler:\n %s', __SQL_MESSAGE));
+    return 0;
+  };
+
+  linkedin_api_host := 'https://api.linkedin.com';
+  request_token_path := '/uas/oauth/requestToken';
+
+  url := DB.DBA.sign_request ('GET', linkedin_api_host || request_token_path, '', consumer_key, consumer_secret, null, null, 1);
+  cnt := http_get (url);
+  req_token_resp_params := split_and_decode (cnt);
+  request_auth_url := get_keyword ('xoauth_request_auth_url', req_token_resp_params);
+  request_token := get_keyword ('oauth_token', req_token_resp_params);
+  request_secret := get_keyword ('oauth_token_secret', req_token_resp_params);
+
+  insert into DB.DBA.OAUTH_TOKEN_REQUESTS (OAUTH_REQ_TOKEN, OAUTH_REQ_SECRET) values (request_token, request_secret);
+  commit work;
+
+  -- TO DO:
+  -- Use a programmatically constructed authorize_path above in place of xoauth_request_auth_url 
+  -- which must be set in the LinkedIn application settings?
+
+  -- Forward the user to the LinkedIn authorization server where they'll be asked to authorize this application
+  oauth_server_redirect_url := sprintf('%s?oauth_token=%s', request_auth_url, request_token);
+  return oauth_server_redirect_url;
+}
+;
 
 -- /* import all namespaces to SYS_XML_PERSISTENT_NS_DECL */
 create procedure DB.DBA.RM_LOAD_PREFIXES ()
