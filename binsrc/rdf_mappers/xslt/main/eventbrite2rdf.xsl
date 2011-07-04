@@ -34,8 +34,10 @@
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY gn "http://www.geonames.org/ontology#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
+<!ENTITY tio "http://purl.org/tio/ns#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -48,6 +50,8 @@
     xmlns:bibo="&bibo;"
     xmlns:dc="&dc;"
     xmlns:c="&c;"	
+    xmlns:gr="&gr;"	
+    xmlns:tio="&tio;"	
     xmlns:nyt="&nyt;"
     xmlns:sioc="&sioc;"
     xmlns:vcard="&vcard;"
@@ -126,6 +130,35 @@
 			<c:dtend>
 				<xsl:value-of select="end_date"/>
 			</c:dtend>
+
+			<xsl:for-each select="tickets/ticket">
+			<gr:includes>
+   			<xsl:variable name="pos" select="concat('ticket_', id)" />
+   			<xsl:variable name="res">
+   				<xsl:value-of select="vi:proxyIRI ($baseUri,'', $pos)"/>
+   			</xsl:variable>
+   			<rdf:Description rdf:about="{$res}">
+				<rdf:type rdf:resource="&tio;Ticket" />
+   				<rdfs:label><xsl:value-of select="name"/></rdfs:label>
+				<dc:title><xsl:value-of select="name"/></dc:title>
+   				<tio:ticketID><xsl:value-of select="id"/></tio:ticketID>
+   				<tio:validThrough><xsl:value-of select="end_date"/></tio:validThrough>
+     				<gr:hasPriceSpecification>
+      					<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('price_', id))}">
+      						<rdfs:label>
+      							<xsl:value-of select="concat(price, ' (', currency ,')')"/>	
+      						</rdfs:label>
+      						<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>	
+      						<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="price"/></gr:hasCurrencyValue>
+      						<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="currency"/></gr:hasCurrency>
+      						<gr:priceType rdf:datatype="&xsd;string">Price</gr:priceType>
+      					</gr:UnitPriceSpecification>
+      				</gr:hasPriceSpecification>
+   			</rdf:Description>
+			</gr:includes>
+			</xsl:for-each>
+
+
 			<c:location>
 				<vcard:ADR rdf:about="{vi:proxyIRI($baseUri, '', 'adr')}">
 					<foaf:name>

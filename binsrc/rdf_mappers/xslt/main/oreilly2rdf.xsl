@@ -199,12 +199,14 @@
   </xsl:template>
 
 	<xsl:template match="meta[translate (@name, $uc, $lc)='book.isbn']">
+	<xsl:if test="string-length(@content) &gt; 0">
     	<bibo:isbn13>
 	  		<xsl:value-of select="@content"/>
       	</bibo:isbn13>
       	<dcterms:identifier>
 	  		<xsl:value-of select="@content"/>
       	</dcterms:identifier>
+	</xsl:if>
 	</xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
@@ -234,9 +236,11 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='ean']">
+	<xsl:if test="string-length(@content) &gt; 0">
       <gr:hasEAN_UCC-13>
 		<xsl:value-of select="@content"/>
       </gr:hasEAN_UCC-13>
+       </xsl:if>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic']">

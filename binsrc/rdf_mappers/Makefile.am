@@ -68,5 +68,11 @@ EXTRA_DIST = \
 	rdfdesc/statics/*.png \
 	rdfdesc/statics/*.svg \
 	rdfdesc/style/*.css \
+	sponger_front_page/*.js \
+	sponger_front_page/*.vsp \
+	sponger_front_page/skin/i/*.gif \
+	sponger_front_page/skin/i/*.jpg \
+	sponger_front_page/skin/i/*.png \
+	sponger_front_page/skin/ss/*.css \
 	vad_version \
 	xslt/main/*.xsl

@@ -45,6 +45,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:awol="&awol;"
   xmlns:dcterms="&dcterms;"
+  xmlns:xhv="http://www.w3.org/1999/xhtml/vocab#"
   version="1.0">
   <xsl:output method="xml" indent="yes" encoding="utf-8"/>
   <xsl:param name="baseUri" />
@@ -92,7 +93,7 @@
   </xsl:template>
 
   <xsl:template match="link[@rel='alternate']">
-      <rdfs:seeAlso rdf:resource="{@href}"/>
+      <xhv:alternate rdf:resource="{@href}"/>
   </xsl:template>
 
   <xsl:template match="*" mode="rdf-in-comment">

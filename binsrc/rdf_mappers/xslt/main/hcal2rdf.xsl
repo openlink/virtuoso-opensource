@@ -322,6 +322,9 @@
 			<xsl:element name="{$class}" namespace="&CalNS;">
 		<xsl:variable name="when">
 		    <xsl:choose>
+						<xsl:when test="$cur/*[@class = 'value-title' and @title]">
+							<xsl:value-of select="$cur/*[@class = 'value-title'][1]/@title"/>
+						</xsl:when>
 						<xsl:when test="$cur/@title and $cur/@title != ''">
 							<xsl:value-of select="$cur/@title"/>
 			</xsl:when>

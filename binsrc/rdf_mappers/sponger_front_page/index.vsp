@@ -56,7 +56,7 @@
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
-        <a href="sponger_architecture.vsp">How It Works</a> | 
+        <a href="sponger_architecture.vsp">Architecture</a> | 
         <a href= "sponger_setup.vsp">Sponger Setup</a> | 
         <a href="examples.vsp">Live Sponger Examples</a> | 
         <a href= "http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a> |
@@ -281,7 +281,11 @@ href="http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}"
                   <li><a href="sponge_social_profile.vsp?site=Twitter"><img alt="Twitter icon" src=
                   "<?=skinpfx?>/i/twitter.jpg" title="Sponge your Twitter profile" /></a></li>
 
+                  <!--
                   <li><a href="sponge_uri.vsp?site=LinkedIn"><img alt="LinkedIn icon" src=
+                  "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
+                  -->
+                  <li><a href="linkedin_access_token.vsp"><img alt="LinkedIn icon" src=
                   "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
 
                   <!--

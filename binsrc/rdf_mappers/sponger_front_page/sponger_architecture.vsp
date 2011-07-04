@@ -32,7 +32,7 @@
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
-        <a href="sponger_architecture.vsp">How It Works</a> | 
+        <a href="sponger_architecture.vsp">Architecture</a> | 
         <a href= "sponger_setup.vsp">Sponger Setup</a> | 
         <a href="examples.vsp">Live Sponger Examples</a> | 
         <a href= "http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a> |
@@ -44,15 +44,15 @@
           <div id="sponge_arch_toc_container">
           <div id="sponge_arch_toc">
             <table>
-              <tr><td><a href="#what_is_the_sponger">What Is The Sponger?</a></td></tr>
+              <tr><td><a href="#sponger_architecture">Architecture</a></td></tr>
               <tr><td><a href="#why_important">Why Is It Important?</a></td></tr>
-              <tr><td><a href="#how_does_it_work">How Does It Work?</a></td></tr>
+              <tr><td><a href="#how_it_works">How It Works</a></td></tr>
             </table>
           </div>
           </div>
           <div id="lmargin_architect">
               <div id="what">
-                <h2><a id="what_is_the_sponger"></a>What Is The Sponger?</h2>
+                <h2><a id="sponger_architecture"></a>Architecture</h2>
 
                 <p>The Virtuoso Sponger is the Linked Data middleware component of Virtuoso that generates 
                 Linked Data from a variety of data sources, supporting a wide variety of data representation and serialization formats. 
@@ -62,7 +62,9 @@
 
                 <p>
                 The Sponger is a fully fledged service that is also directly accessible via SOAP or REST interaction patterns.
-                It is also integrated into Virtuoso's SPARQL query processor, Web Content Crawler and Smart WebDAV folders functionality.
+                It is also integrated into Virtuoso's SPARQL query processor, 
+                <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSetCrawlerJobsGuide">Web Content Crawler</a> and 
+                <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoRDFSinkFolder">Smart WebDAV folders</a> functionality.
                 (Smart WebDAV folders are 'sink' folders which act as conduits for populating the Virtuoso Quad Store with structured data
                 extracted from documents placed in them.)
                 </p>
@@ -111,12 +113,15 @@
 
 
               <div id="how_it_works">
-                <h2><a id="how_does_it_work"></a>How Does It Work?</h2>
+                <h2><a id="how_it_works"></a>How It Works</h2>
 
-                <p>Designed with a pluggable architecture, the Sponger's core functionality is provided
-                by cartridges. Each cartridge includes data extractors which extract data from one or more
-                data sources, and ontology mappers which map the extracted data to one or more ontologies/schemas,
-                en route to producing Linked Data.
+                <p>
+                Designed with a pluggable architecture, the Sponger's core functionality is provided by a cartridge pipeline. Each cartridge includes data 
+                extractors to extract data from one or more data sources, and ontology mappers which map the extracted data to one or more ontologies/schemas, 
+                en route to producing Linked Data. Cartridges for a wide variety of both open and proprietary formats are included, a few of which are depicted 
+                in the animation below. After the initial structured data generation by one or more extractor cartridges, the Linked Data is further enriched 
+                by meta-cartridges which take named entities created from the initial pass and submit these to third party lookup services (such as DBpedia, Calais 
+                and Zemanta) which in turn provide additional context.
                 </p>
 
                 <table width="100%" border="0" cellspacing="0" cellpadding="0">
