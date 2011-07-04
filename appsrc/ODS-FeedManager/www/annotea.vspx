@@ -172,6 +172,8 @@
                        self.v_claims
                   from ENEWS.WA.ANNOTATIONS
                  where A_ID = self.v_id;
+
+                self.rdf_iri := SIOC..feed_annotation_iri (self.domain_id, self.v_oid, self.v_id);
               }
             ]]>
           </v:before-data-bind>

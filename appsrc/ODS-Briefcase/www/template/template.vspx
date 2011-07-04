@@ -32,6 +32,9 @@
         http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (N3/Turtle)" href="%s" />', replace(ODRIVE.WA.sioc_url (self.domain_id), 'sioc.rdf', 'sioc.ttl')));
       }
       http (ODRIVE.WA.geo_url (self.domain_id, self.account_id));
+
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css" />
     <link rel="stylesheet" href="/ods/common.css" type="text/css" />
@@ -100,7 +103,7 @@
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
         <v:variable persist="0" name="settings" type="any" />
-
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';

@@ -40,6 +40,9 @@
       http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.atom'));
       http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.opml'));
       http (BMK.WA.geo_url (self.domain_id, self.account_id));
+
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/common.css" type="text/css" />
@@ -114,6 +117,7 @@
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
       <v:variable persist="0" name="account_rights" type="varchar" default="''" />
         <v:variable persist="0" name="settings" type="any" />
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';

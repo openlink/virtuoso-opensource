@@ -281,6 +281,7 @@
                           left join ENEWS.WA.FEED_DIRECTORY c on c.EFD_FEED_ID = a.EFD_FEED_ID
                 where a.EFD_ID = self.v_id;
 
+              self.rdf_iri := SIOC..feed_iri (self.v_feed_id);
               return;
             }
 

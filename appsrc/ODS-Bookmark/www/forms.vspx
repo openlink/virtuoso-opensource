@@ -1245,6 +1245,7 @@
 
               self.v_folder_name := '';
               self.v_grants := self.shareSelect (BMK.WA.make_node ('b', self.v_id));
+              self.rdf_iri := SIOC..bmk_post_iri (self.domain_id, self.v_id);
 
               return;
             }
