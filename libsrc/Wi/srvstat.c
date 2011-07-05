@@ -985,8 +985,8 @@ st_collect_ps_info (dk_set_t * arr)
 		}
 	      else
 		{
-		  dk_set_push (arr, box_string (" client not available, pending compile, time shown is since last exec"));
-		  dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
+		  dk_set_push (arr, box_string (" client not available, pending compile"));
+		  dk_set_push (arr, box_num (0));
 		}
 
 	    }
