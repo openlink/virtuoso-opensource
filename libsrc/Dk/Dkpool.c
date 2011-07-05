@@ -73,6 +73,11 @@ mem_pool_alloc (void)
 void
 mp_free (mem_pool_t * mp)
 {
+  DO_SET (caddr_t, box, &mp->mp_trash)
+  {
+    dk_free_tree (box);
+  }
+  END_DO_SET ();
   while (mp->mp_fill)
     {
       caddr_t buf;
@@ -86,16 +91,30 @@ mp_free (mem_pool_t * mp)
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
-  DO_SET (caddr_t, box, &mp->mp_trash)
-  {
-    dk_free_tree (box);
-  }
-  END_DO_SET ();
-  dk_set_free (mp->mp_trash);
   dk_free ((caddr_t) mp->mp_allocs, mp->mp_size * sizeof (caddr_t));
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
+#ifdef MALLOC_DEBUG
+void
+mp_check (mem_pool_t * mp)
+{
+  int fill;
+  if (!mp)
+    return;
+  fill = mp->mp_fill;
+  while (fill)
+    {
+      caddr_t buf;
+      const char *err;
+      fill -= 1;
+      buf = mp->mp_allocs[fill];
+      err = dbg_find_allocation_error (buf, mp);
+      if (NULL != err)
+	GPF_T1 (err);
+    }
+}
+#endif
 
 void
 mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
@@ -138,6 +157,11 @@ void
 mp_free (mem_pool_t * mp)
 {
   mem_block_t *mb = mp->mp_first, *next;
+  DO_SET (caddr_t, box, &mp->mp_trash)
+  {
+    dk_free_tree (box);
+  }
+  END_DO_SET ();
   while (mb)
     {
       next = mb->mb_next;
@@ -146,13 +170,6 @@ mp_free (mem_pool_t * mp)
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
-  DO_SET (caddr_t, box, &mp->mp_trash)
-  {
-    dk_free_tree (box);
-  }
-  END_DO_SET ();
-  dk_set_free (mp->mp_trash);
-
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
@@ -244,10 +261,14 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   if (bh_len)
     {
 #endif
+      if (DV_NON_BOX != dtp)
+	{
       WRITE_BOX_HEADER (ptr, len1, dtp);
+	}
 #ifndef LACERATED_POOL
     }
 #endif
+  if (DV_NON_BOX != dtp)
   memset (ptr, 0, len1);
   return ((caddr_t) ptr);
 }
@@ -398,7 +419,7 @@ DBG_NAME (mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 	    if (box_tmp_copier[dtp])
 	      return box_tmp_copier[dtp] (mp, box);
 	    cp = box_copy (box);
-	    dk_set_push (&mp->mp_trash, (void*)cp);
+	    mp_set_push (mp, &mp->mp_trash, (void*)cp);
 	    return cp;
 	  }
 	{
@@ -566,6 +587,33 @@ DBG_NAME (t_box_num_and_zero) (DBG_PARAMS boxint n)
 
 
 caddr_t
+DBG_NAME (mp_box_iri_id) (DBG_PARAMS mem_pool_t * mp, iri_id_t n)
+{
+  caddr_t box;
+  MP_INT (box, mp, n, DV_IRI_TAG_WORD);
+  return box;
+}
+
+
+caddr_t
+DBG_NAME (mp_box_double) (DBG_PARAMS mem_pool_t * mp, double n)
+{
+  caddr_t box;
+  MP_DOUBLE (box, mp, n, DV_DOUBLE_TAG_WORD);
+  return box;
+}
+
+
+caddr_t
+DBG_NAME (mp_box_float) (DBG_PARAMS mem_pool_t * mp, float n)
+{
+  caddr_t box;
+  MP_FLOAT (box, mp, n, DV_FLOAT_TAG_WORD);
+  return box;
+}
+
+
+caddr_t
 DBG_NAME (t_box_iri_id) (DBG_PARAMS int64 n)
 {
   iri_id_t *box = (iri_id_t *) DBG_T_ALLOC_BOX (sizeof (iri_id_t), DV_IRI_ID);
@@ -642,6 +690,23 @@ t_list (long n, ...)
   return ((caddr_t *) box);
 }
 #endif
+
+caddr_t *
+t_list_nc (long n, ...)
+{
+  caddr_t *box;
+  va_list ap;
+  int inx;
+  va_start (ap, n);
+  box = (caddr_t *) t_alloc_box (sizeof (caddr_t) * n, DV_ARRAY_OF_POINTER);
+  for (inx = 0; inx < n; inx++)
+    {
+      caddr_t child = va_arg (ap, caddr_t);
+      box[inx] = child;
+    }
+  va_end (ap);
+  return ((caddr_t *) box);
+}
 
 caddr_t *
 t_list_concat_tail (caddr_t list, long n, ...)
@@ -759,7 +824,8 @@ t_sc_list (long n, ...)
 void
 DBG_NAME (mp_set_push) (DBG_PARAMS mem_pool_t * mp, dk_set_t * set, void *elt)
 {
-  s_node_t *s = (s_node_t *) DBG_NAME (mp_alloc_box) (DBG_ARGS mp, sizeof (s_node_t), DV_NON_BOX);
+  s_node_t *s;
+  MP_BYTES (s, mp, sizeof (s_node_t));
   s->data = elt;
   s->next = *set;
   *set = s;
@@ -769,7 +835,9 @@ DBG_NAME (mp_set_push) (DBG_PARAMS mem_pool_t * mp, dk_set_t * set, void *elt)
 dk_set_t
 DBG_NAME (t_cons) (DBG_PARAMS void *car, dk_set_t cdr)
 {
-  s_node_t *s = (s_node_t *) t_alloc_box (sizeof (s_node_t), DV_NON_BOX);
+  mem_pool_t * mp = THR_TMP_POOL;
+  s_node_t *s;
+  MP_BYTES (s, mp, sizeof (s_node_t));
   s->data = car;
   s->next = cdr;
   return s;
@@ -998,7 +1066,7 @@ t_box_sprintf (size_t buflen_eval, const char *format, ...)
 void
 mp_trash (mem_pool_t * mp, caddr_t box)
 {
-  dk_set_push (&mp->mp_trash, (void *) box);
+  mp_set_push (mp, &mp->mp_trash, (void *) box);
 }
 
 

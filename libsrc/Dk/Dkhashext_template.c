@@ -80,6 +80,7 @@ DBG_HASHEXT_NAME (id_hash_clear) (DBG_PARAMS id_hash_t * hash)
   id_hashed_key_t n;
   for (n = 0; n < hash->ht_buckets; n++)
     {
+#ifndef FROM_POOL
       char *ext = BUCKET_OVERFLOW (BUCKET (hash, n), hash);
       if (ext != (char *) -1L)
 	{
@@ -91,6 +92,9 @@ DBG_HASHEXT_NAME (id_hash_clear) (DBG_PARAMS id_hash_t * hash)
 	    }
 	  BUCKET_OVERFLOW (BUCKET (hash, n), hash) = (char *) -1L;
 	}
+#else
+      BUCKET_OVERFLOW (BUCKET (hash, n), hash) = (char *) -1L;
+#endif
     }
   hash->ht_inserts = 0;
   hash->ht_deletes = 0;
@@ -106,7 +110,7 @@ DBG_HASHEXT_NAME (id_hash_set) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t 
   caddr_t place = id_hash_get_with_hash_number (ht, key, inx);
   if (place)
     {
-      memcpy (place, data, ht->ht_data_length);
+      memcpy_8 (place, data, ht->ht_data_length);
     }
   else
     {
@@ -119,16 +123,16 @@ DBG_HASHEXT_NAME (id_hash_set) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t 
       if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
 	{
 	  bucket = BUCKET (ht, inx);
-	  memcpy (bucket, key, ht->ht_key_length);
-	  memcpy (bucket + ht->ht_data_inx, data, ht->ht_data_length);
+	  memcpy_8 (bucket, key, ht->ht_key_length);
+	  memcpy_8c (bucket + ht->ht_data_inx, data, ht->ht_data_length);
 	  BUCKET_OVERFLOW (bucket, ht) = NULL;
 	}
       else
 	{
 	  ht->ht_overflows++;
 	  bucket = (char *) DBG_HASHEXT_ALLOC (ht->ht_bucket_length);
-	  memcpy (bucket, key, ht->ht_key_length);
-	  memcpy (bucket + ht->ht_data_inx, data, ht->ht_data_length);
+	  memcpy_8 (bucket, key, ht->ht_key_length);
+	  memcpy_8c (bucket + ht->ht_data_inx, data, ht->ht_data_length);
 	  BUCKET_OVERFLOW (bucket, ht) = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
 	  BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = bucket;
 	}
@@ -142,7 +146,7 @@ DBG_HASHEXT_NAME (id_hash_set_with_hash_number) (DBG_PARAMS id_hash_t * ht, cadd
   caddr_t place = id_hash_get_with_hash_number (ht, key, inx);
   if (place)
     {
-      memcpy (place, data, ht->ht_data_length);
+      memcpy_8 (place, data, ht->ht_data_length);
     }
   else
     {
@@ -155,16 +159,16 @@ DBG_HASHEXT_NAME (id_hash_set_with_hash_number) (DBG_PARAMS id_hash_t * ht, cadd
       if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
 	{
 	  bucket = BUCKET (ht, inx);
-	  memcpy (bucket, key, ht->ht_key_length);
-	  memcpy (bucket + ht->ht_data_inx, data, ht->ht_data_length);
+	  memcpy_8 (bucket, key, ht->ht_key_length);
+	  memcpy_8c (bucket + ht->ht_data_inx, data, ht->ht_data_length);
 	  BUCKET_OVERFLOW (bucket, ht) = NULL;
 	}
       else
 	{
 	  ht->ht_overflows++;
 	  bucket = (char *) DBG_HASHEXT_ALLOC (ht->ht_bucket_length);
-	  memcpy (bucket, key, ht->ht_key_length);
-	  memcpy (bucket + ht->ht_data_inx, data, ht->ht_data_length);
+	  memcpy_8 (bucket, key, ht->ht_key_length);
+	  memcpy_8c (bucket + ht->ht_data_inx, data, ht->ht_data_length);
 	  BUCKET_OVERFLOW (bucket, ht) = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
 	  BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = bucket;
 	}
@@ -191,18 +195,18 @@ DBG_HASHEXT_NAME (id_hash_add_new) (DBG_PARAMS id_hash_t * ht, caddr_t key, cadd
   if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
     {
       bucket = BUCKET (ht, inx);
-      memcpy (bucket, key, ht->ht_key_length);
+      memcpy_8 (bucket, key, ht->ht_key_length);
       res = bucket + ht->ht_data_inx;
-      memcpy (res, data, ht->ht_data_length);
+      memcpy_8c (res, data, ht->ht_data_length);
       BUCKET_OVERFLOW (bucket, ht) = NULL;
     }
   else
     {
       ht->ht_overflows++;
       bucket = (char *) DBG_HASHEXT_ALLOC (ht->ht_bucket_length);
-      memcpy (bucket, key, ht->ht_key_length);
+      memcpy_8 (bucket, key, ht->ht_key_length);
       res = bucket + ht->ht_data_inx;
-      memcpy (res, data, ht->ht_data_length);
+      memcpy_8c (res, data, ht->ht_data_length);
       BUCKET_OVERFLOW (bucket, ht) = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
       BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = bucket;
     }
@@ -258,6 +262,57 @@ DBG_HASHEXT_NAME (id_hash_remove) (DBG_PARAMS id_hash_t * ht, caddr_t key)
   return 0;
 }
 
+int
+DBG_HASHEXT_NAME (id_hash_get_and_remove) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data)
+{
+  id_hashed_key_t inx = ht->ht_hash_func (key);
+  ID_HASHED_KEY_CHECK (inx);
+  inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;
+
+  if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
+    return 0;
+  if (ht->ht_cmp (BUCKET (ht, inx), key))
+    {
+      /* The thing is in the bucket. Pop first on overflow list
+         in. Mark bucket empty if no overflow list. */
+      char *overflow = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      memcpy (found_key, BUCKET (ht, inx), ht->ht_key_length);
+      memcpy (found_data, BUCKET (ht, inx) + ht->ht_data_inx, ht->ht_data_length);
+      if (overflow)
+	{
+	  memcpy (BUCKET (ht, inx), overflow, ht->ht_data_length + ht->ht_key_length + sizeof (caddr_t));
+	  DBG_HASHEXT_FREE (overflow, ht->ht_bucket_length);
+	}
+      else
+	{
+	  BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = (char *) -1L;
+	}
+      ht->ht_deletes++;
+      ht->ht_count--;
+      return 1;
+    }
+  else
+    {
+      char **prev = &BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      char *ext = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      while (ext)
+	{
+	  if (ht->ht_cmp (ext, key))
+	    {
+              memcpy (found_key, ext, ht->ht_key_length);
+              memcpy (found_data, ext + ht->ht_data_inx, ht->ht_data_length);
+	      *prev = BUCKET_OVERFLOW (ext, ht);
+	      DBG_HASHEXT_FREE (ext, ht->ht_bucket_length);
+	      ht->ht_deletes++;
+	      ht->ht_count--;
+	      return 1;
+	    }
+	  prev = &BUCKET_OVERFLOW (ext, ht);
+	  ext = *prev;
+	}
+    }
+  return 0;
+}
 
 int
 DBG_HASHEXT_NAME (id_hash_remove_rnd) (DBG_PARAMS id_hash_t * ht, int inx, caddr_t key, caddr_t data)
@@ -270,8 +325,8 @@ DBG_HASHEXT_NAME (id_hash_remove_rnd) (DBG_PARAMS id_hash_t * ht, int inx, caddr
      * in. Mark bucket empty if no overflow list. */
 
     char *overflow = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
-    memcpy (key, BUCKET (ht, inx), ht->ht_key_length);
-    memcpy (data, BUCKET (ht, inx) + ht->ht_data_inx, ht->ht_data_length);
+    memcpy_8 (key, BUCKET (ht, inx), ht->ht_key_length);
+    memcpy_8c (data, BUCKET (ht, inx) + ht->ht_data_inx, ht->ht_data_length);
     if (overflow)
       {
 	memcpy (BUCKET (ht, inx), overflow, ht->ht_data_length + ht->ht_key_length + sizeof (caddr_t));
@@ -324,7 +379,7 @@ DBG_HASHEXT_NAME (id_hash_copy) (DBG_PARAMS id_hash_t * to, id_hash_t * from)
 /*#define ID_HT_STATS*/
 void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key_t new_sz)
 {
-  long o1, o2, o3, o4, o5;
+  long o_ins, o_del, o_ovf, o_refc, o_ver, o_mmem, o_mem, o_c;
   id_hash_t ht_buffer;
   new_sz = hash_nextprime (new_sz);
 
@@ -359,19 +414,25 @@ void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key
 	DBG_HASHEXT_NAME (id_hash_add_new) (DBG_ARGS & ht_buffer, kp, dp);
     }
   while (0);
-  o1 = ht->ht_inserts;
-  o2 = ht->ht_deletes;
-  o3 = ht->ht_overflows;
-  o4 = ht->ht_dict_refctr;
-  o5 = ht->ht_count;
+  o_ins = ht->ht_inserts;
+  o_del = ht->ht_deletes;
+  o_ovf = ht->ht_overflows;
+  o_refc = ht->ht_dict_refctr;
+  o_ver = ht->ht_dict_version;
+  o_mmem = ht->ht_dict_max_mem_in_use;
+  o_mem = ht->ht_dict_mem_in_use;
+  o_c = ht->ht_count;
   DBG_HASHEXT_NAME (id_hash_clear) (DBG_ARGS ht);
   ID_HASH_FREE_INTERNALS (ht);
   ht->ht_array = ht_buffer.ht_array;
   ht->ht_buckets = ht_buffer.ht_buckets;
-  ht->ht_inserts = o1;
-  ht->ht_deletes = o2;
-  ht->ht_overflows = o3;
-  ht->ht_dict_refctr = o4;
-  ht->ht_count = o5;
+  ht->ht_inserts = o_ins;
+  ht->ht_deletes = o_del;
+  ht->ht_overflows = o_ovf;
+  ht->ht_dict_refctr = o_refc;
+  ht->ht_dict_version = o_ver + 1;
+  ht->ht_dict_max_mem_in_use = o_mmem;
+  ht->ht_dict_mem_in_use = o_mem;
+  ht->ht_count = o_c;
 }
 #endif

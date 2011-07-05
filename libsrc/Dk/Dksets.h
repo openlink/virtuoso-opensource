@@ -122,6 +122,9 @@ uint32 dk_set_length (s_node_t * set);
 dk_set_t dk_set_last (dk_set_t set);
 dk_set_t dk_set_conc (dk_set_t s1, dk_set_t s2);
 
+EXE_EXPORT (caddr_t, list_to_array, (dk_set_t l));
+EXE_EXPORT (caddr_t, copy_list_to_array, (dk_set_t l));
+EXE_EXPORT (caddr_t, revlist_to_array, (dk_set_t l));
 EXE_EXPORT (int, dk_set_delete, (dk_set_t * set, void *item));
 EXE_EXPORT (void *, dk_set_delete_nth, (dk_set_t * set, int idx));
 EXE_EXPORT (void, dk_set_push, (s_node_t ** set, void *item));
@@ -162,7 +165,6 @@ dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
 #else
 dk_set_t dk_set_cons (void *s1, dk_set_t s2);
 void **dk_set_to_array (s_node_t * set);
-caddr_t list_to_array (dk_set_t l);
 caddr_t copy_list_to_array (dk_set_t l);
 caddr_t revlist_to_array (dk_set_t l);
 void dk_set_pushnew (s_node_t ** set, void *item);

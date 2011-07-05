@@ -44,6 +44,7 @@ struct mem_pool_s
 {
   int 			mp_fill;
   int 			mp_size;
+  int 			mp_block_size;
   caddr_t *		mp_allocs;
   size_t 		mp_bytes;
   dk_hash_t *		mp_unames;
@@ -100,6 +101,9 @@ extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, cad
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxint num);
+extern caddr_t dbg_mp_box_iri_id (const char *file, int line, mem_pool_t * mp, iri_id_t num);
+extern caddr_t dbg_mp_box_double (const char *file, int line, mem_pool_t * mp, double num);
+extern caddr_t dbg_mp_box_float (const char *file, int line, mem_pool_t * mp, float num);
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
@@ -110,6 +114,9 @@ extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxi
 #define mp_box_copy_tree(mp, box) dbg_mp_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_full_box_copy_tree(mp, box) dbg_mp_full_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_box_num(mp, num) dbg_mp_box_num (__FILE__, __LINE__, (mp), (num))
+#define mp_box_iri_id(mp, num) dbg_mp_box_iri_id (__FILE__, __LINE__, (mp), (num))
+#define mp_box_double(mp, num) dbg_mp_box_double (__FILE__, __LINE__, (mp), (num))
+#define mp_box_float(mp, num) dbg_mp_box_float (__FILE__, __LINE__, (mp), (num))
 #else
 extern caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp);
 extern caddr_t mp_box_string (mem_pool_t * mp, const char *str);
@@ -121,6 +128,9 @@ extern caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_box_num (mem_pool_t * mp, boxint num);
+extern caddr_t mp_box_iri_id (mem_pool_t * mp, iri_id_t num);
+extern caddr_t mp_box_double (mem_pool_t * mp, double num);
+extern caddr_t mp_box_float (mem_pool_t * mp, float num);
 #endif
 
 #ifdef LACERATED_POOL
@@ -305,6 +315,7 @@ dk_set_t t_set_copy (dk_set_t s);
 #endif
 
 #ifdef MALLOC_DEBUG
+void mp_check (mem_pool_t * mp);
 void mp_check_tree (mem_pool_t * mp, box_t box);
 #define t_check_tree(box) 			mp_check_tree (THR_TMP_POOL, (box))
 #else
@@ -347,6 +358,24 @@ extern box_tmp_copy_f box_tmp_copier[256];
   }
 
 
+#define MP_DOUBLE(x, mp, v, tag_word)		\
+  { \
+    MP_BYTES (x, mp, 16); \
+    x = ((char *)x) + 8; \
+    *(double *)x = v; \
+    ((int32*)x)[-1] = tag_word; \
+  }
+
+
+#define MP_FLOAT(x, mp, v, tag_word)		\
+  { \
+    MP_BYTES (x, mp, 16); \
+    x = ((char *)x) + 8; \
+    *(float *)x = v; \
+    ((int32*)x)[-1] = tag_word; \
+  }
+
+
 typedef struct auto_pool_s
 {
   caddr_t 	ap_area;
@@ -365,5 +394,19 @@ caddr_t ap_box_num (auto_pool_t * ap, int64 i);
 caddr_t ap_alloc_box (auto_pool_t * ap, int n, dtp_t tag);
 caddr_t *ap_list (auto_pool_t * apool, long n, ...);
 caddr_t ap_box_iri_id (auto_pool_t * ap, int64 n);
+extern caddr_t *t_list_nc (long n, ...);
+
+
+#define WITHOUT_TMP_POOL \
+  { \
+    mem_pool_t * __mp = THR_TMP_POOL; \
+    SET_THR_TMP_POOL (NULL);
+
+#define END_WITHOUT_TMP_POOL \
+    SET_THR_TMP_POOL (__mp); \
+  }
+
+#define NO_TMP_POOL \
+  if (THR_TMP_POOL) GPF_T1 ("not supposed to have a tmp pool in effect here");
 
 #endif /* ifdef __DKPOOL_H */

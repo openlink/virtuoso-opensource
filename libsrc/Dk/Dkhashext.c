@@ -32,6 +32,17 @@
 #undef NEXT4
 #define NEXT4(X)	_RNDUP((X), SIZEOF_VOID_P)
 
+
+#define memcpy_8(target, source, len) \
+  {if (sizeof (caddr_t) == len) *(caddr_t*)(target) = *(caddr_t*)(source); \
+  else memcpy (target, source, len);}
+
+#define memcpy_8c(target, source, len) \
+  {if (sizeof (caddr_t) == len) *(caddr_t*)(target) = *(caddr_t*)(source); \
+    else if (len) memcpy (target, source, len);}
+
+
+
 caddr_t
 id_hash_get (id_hash_t * ht, caddr_t key)
 {
@@ -392,8 +403,8 @@ DBG_NAME (box_dv_dict_iterator) (DBG_PARAMS caddr_t ht_box)
   id_hash_iterator_t *res = (id_hash_iterator_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS sizeof (id_hash_iterator_t), DV_DICT_ITERATOR);
   id_hash_t *ht = (id_hash_t *) ht_box;
   res->hit_hash = ht;
-  res->hit_bucket = 0;
-  res->hit_chilum = NULL;
+  res->hit_bucket = -1;
+  res->hit_chilum = (void *)(-1);
   if (NULL != ht)
     {
       if (NULL != ht->ht_mutex)
@@ -569,12 +580,12 @@ id_hash_set_rehash_pct (id_hash_t * ht, uint32 pct)
 #define DBG_HASHEXT_ALLOC(SZ) dbg_mp_alloc_box (DBG_ARGS THR_TMP_POOL, (SZ), DV_CUSTOM)
 #else
 #define DBG_HASHEXT_NAME(name) t_##name
-#define DBG_HASHEXT_ALLOC(SZ) mp_alloc_box (THR_TMP_POOL, (SZ), DV_CUSTOM)
+#define DBG_HASHEXT_ALLOC(SZ) mp_alloc_box_ni (THR_TMP_POOL, (SZ), DV_CUSTOM)
 #endif
 #define DBG_HASHEXT_FREE(BOX,SZ)
-
+#define FROM_POOL
 #include "Dkhashext_template.c"
-
+#undef FROM_POOL
 #undef DBG_HASHEXT_NAME
 #undef DBG_HASHEXT_ALLOC
 #undef DBG_HASHEXT_FREE

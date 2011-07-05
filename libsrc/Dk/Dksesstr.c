@@ -61,30 +61,51 @@ char *ses_tmp_dir;
 
 */
 
+long strses_file_reads = 0;
+long strses_file_seeks = 0;
+long strses_file_writes = 0;
+long strses_file_wait_msec = 0;
+
 long read_wides_from_utf8_file (dk_session_t * ses, long nchars, unsigned char *dest, int copy_as_utf8, unsigned char **dest_ptr_out);
 
 OFF_T 
 strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
 {
+  OFF_T ret;
+  long start_time = get_msec_real_time ();
+  strses_file_seeks ++;
   if (NULL != sesfile->ses_lseek_func)
-    return sesfile->ses_lseek_func (sesfile, offset, whence);
-  return LSEEK (sesfile->ses_file_descriptor, offset, whence);
+    ret = sesfile->ses_lseek_func (sesfile, offset, whence);
+  else
+    ret = LSEEK (sesfile->ses_file_descriptor, offset, whence);
+  strses_file_wait_msec += (get_msec_real_time () - start_time);
+  return ret;
 }
 
 size_t 
 strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
 {
+  size_t ret;
+  long start_time = get_msec_real_time ();
+  strses_file_reads ++;
   if (NULL != sesfile->ses_read_func)
-    return sesfile->ses_read_func (sesfile, buf, nbyte);
-  return read (sesfile->ses_file_descriptor, buf, nbyte);
+    ret = sesfile->ses_read_func (sesfile, buf, nbyte);
+  else
+    ret = read (sesfile->ses_file_descriptor, buf, nbyte);
+  strses_file_wait_msec += (get_msec_real_time () - start_time);
+  return ret;
 }
 
 static size_t 
 strf_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
 {
+  size_t ret;
+  strses_file_writes ++;
   if (NULL != sesfile->ses_wrt_func)
-    return sesfile->ses_wrt_func (sesfile, buf, nbyte);
-  return write (sesfile->ses_file_descriptor, buf, nbyte);
+    ret = sesfile->ses_wrt_func (sesfile, buf, nbyte);
+  else
+    ret = write (sesfile->ses_file_descriptor, buf, nbyte);
+  return ret;
 }
 
 /*

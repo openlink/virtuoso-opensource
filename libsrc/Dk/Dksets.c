@@ -449,4 +449,24 @@ dk_set_push (s_node_t ** set, void *item)
 {
   dbg_dk_set_push (__FILE__, __LINE__, set, item);
 }
+
+#undef list_to_array
+caddr_t
+list_to_array (dk_set_t l)
+{
+  return dbg_list_to_array (__FILE__, __LINE__, l);
+}
+
+#undef copy_list_to_array
+caddr_t
+copy_list_to_array (dk_set_t l)
+{
+  return dbg_copy_list_to_array (__FILE__, __LINE__, l);
+}
+#undef revlist_to_array
+caddr_t
+revlist_to_array (dk_set_t l)
+{
+  return dbg_revlist_to_array (__FILE__, __LINE__, l);
+}
 #endif

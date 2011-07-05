@@ -41,6 +41,9 @@
 /*#define DV_UNAME_UNIT_DEBUG*/
 /*#define DV_UNAME_STATS*/
 
+#ifndef DOUBLE_ALIGN
+#error boxes must be aligned at 8
+#endif
 
 #ifdef _DEBUG
 long box_types_alloc[256];	/* implicit zero-fill assumed */
@@ -159,21 +162,22 @@ dk_alloc_box (size_t bytes, dtp_t tag)
   if (bytes & ~0xffffff)
     GPF_T1 ("box to allocate is too large");
 #endif
+
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes);
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
 #else
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-#ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dk_alloc (align_bytes) + 4;
-#else
-#error boxes must be aligned at 8
-  align_bytes += 4;
   ptr = (unsigned char *) dk_alloc (align_bytes);
+  if (!ptr)
+    return (box_t) ptr;
+
+#ifdef DOUBLE_ALIGN
+  ptr += 4;
 #endif
+
 #ifdef _DEBUG
   box_types_alloc[(unsigned) tag]++;
 #endif
@@ -192,21 +196,22 @@ dk_alloc_box_long (size_t bytes, dtp_t tag)
   if (bytes > 100000000)
     GPF_T1 ("malloc debug only check for large boxes, over 100M");
 #endif
+
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes);
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
 #else
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-#ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dk_alloc (align_bytes) + 4;
-#else
-#error boxes must be aligned at 8
-  align_bytes += 4;
   ptr = (unsigned char *) dk_alloc (align_bytes);
+  if (!ptr)
+    return (box_t) ptr;
+
+#ifdef DOUBLE_ALIGN
+  ptr += 4;
 #endif
+
 #ifdef _DEBUG
   box_types_alloc[(unsigned) tag]++;
 #endif
@@ -228,25 +233,25 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   if (bytes & ~0xffffff)
     GPF_T1 ("box to allocate is too large");
 #endif
-  /* This assumes dk_alloc aligns at least at 4 */
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
 
+  /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
-  align_bytes += 8;
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
+#else
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
+#endif
+
   ptr = (unsigned char *) dk_try_alloc (align_bytes);
   if (!ptr)
     return (box_t) ptr;
-  ptr += 4;
-#else
-  align_bytes += 4;
-  ptr = (unsigned char *) dk_try_alloc (align_bytes);
-#endif
+
 #ifdef _DEBUG
   box_types_alloc[(unsigned) tag]++;
 #endif
 
-  if (!ptr)
-    return (box_t) ptr;
+#ifdef DOUBLE_ALIGN
+  ptr += 4;
+#endif
 
   WRITE_BOX_HEADER (ptr, bytes, tag);
   /* memset (ptr, 0, bytes); */
@@ -262,15 +267,20 @@ dk_alloc_box_zero (size_t bytes, dtp_t tag)
   size_t align_bytes;
 
   /* This assumes dk_alloc aligns at least at 4 */
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+#ifdef DOUBLE_ALIGN
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
+#else
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
+#endif
+
+  ptr = (unsigned char *) dk_alloc (align_bytes);
+  if (!ptr)
+    return (box_t) ptr;
 
 #ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dk_alloc (align_bytes) + 4;
-#else
-  align_bytes += 4;
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr += 4;
 #endif
+
 #ifdef _DEBUG
   box_types_alloc[tag]++;
 #endif
@@ -290,15 +300,20 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   uint32 align_bytes;
 
   /* This assumes dk_alloc aligns at least at 4 */
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+#ifdef DOUBLE_ALIGN
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
+#else
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
+#endif
+
+  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  if (!ptr)
+    return (box_t) ptr;
 
 #ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes) + 4;
-#else
-  align_bytes += 4;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr += 4;
 #endif
+
 #ifdef _DEBUG
   box_types_alloc[tag]++;
 #endif
@@ -317,15 +332,20 @@ dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
   uint32 align_bytes;
 
   /* This assumes dk_alloc aligns at least at 4 */
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+#ifdef DOUBLE_ALIGN
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
+#else
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
+#endif
+
+  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  if (!ptr)
+    return (box_t) ptr;
 
 #ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes) + 4;
-#else
-  align_bytes += 4;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr += 4;
 #endif
+
 #ifdef _DEBUG
   box_types_alloc[tag]++;
 #endif
@@ -346,17 +366,20 @@ dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   uint32 align_bytes;
 
   /* This assumes dk_alloc aligns at least at 4 */
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
-
 #ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes) + 4;
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
 #else
-  align_bytes += 4;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
+
+  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
   if (!ptr)
     return (box_t) ptr;
+
+#ifdef DOUBLE_ALIGN
+  ptr += 4;
+#endif
+
 #ifdef _DEBUG
   box_types_alloc[tag]++;
 #endif
@@ -375,15 +398,20 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
   uint32 align_bytes;
 
   /* This assumes dk_alloc aligns at least at 4 */
-  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+#ifdef DOUBLE_ALIGN
+  align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
+#else
+  align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
+#endif
+
+  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  if (!ptr)
+    return (box_t) ptr;
 
 #ifdef DOUBLE_ALIGN
-  align_bytes += 8;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes) + 4;
-#else
-  align_bytes += 4;
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr += 4;
 #endif
+
 #ifdef _DEBUG
   box_types_alloc[tag]++;
 #endif
@@ -564,7 +592,11 @@ dk_free_box (box_t box)
       if (box_destr[tag])
 	if (0 != box_destr[tag] (box))
 	  return 0;
+#ifdef DOUBLE_ALIGN
+      len = ALIGN_8 (len);
+#else
       len = ALIGN_4 (len);
+#endif
     }
 
 #ifndef NDEBUG
@@ -648,9 +680,19 @@ dk_free_tree (box_t box)
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
       {
-	uint32 count = len / sizeof (box_t), inx;
+	uint32 count = len / sizeof (box_t), inx = 0;
 	box_t *obj = (box_t *) box;
-	for (inx = 0; inx < count; inx++)
+	if (count > 3)
+	  {
+	    for (inx = 0; inx < count - 3; inx += 2)
+	      {
+		__builtin_prefetch (obj[inx + 2]);
+		__builtin_prefetch (obj[inx + 3]);
+		dk_free_tree (obj[inx]);
+		dk_free_tree (obj[inx + 1]);
+	      }
+	  }
+	for (inx = inx; inx < count; inx++)
 	  dk_free_tree (obj[inx]);
 #ifdef MALLOC_DEBUG
 	if (len != ALIGN_4 (len))
@@ -678,7 +720,11 @@ dk_free_tree (box_t box)
       if (box_destr[tag])
 	if (0 != box_destr[tag] (box))
 	  return 0;
+#ifdef DOUBLE_ALIGN
+      len = ALIGN_8 (len);
+#else
       len = ALIGN_4 (len);
+#endif
     }
 
 #ifndef NDEBUG
@@ -711,7 +757,7 @@ box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
 }
 
 
-#ifdef DEBUG
+#ifdef DK_ALLOC_BOX_DEBUG
 void
 dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
 {
@@ -723,12 +769,10 @@ dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
   tag = box_tag (box);
   if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
     return;
-#ifndef NDEBUG
   if (TAG_FREE == tag)
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
-#endif
   if (!box_can_appear_twice_in_tree[tag])
     {
       box_t other_parent = gethash (box, known);
@@ -765,12 +809,10 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
   tag = box_tag (box);
   if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
     return;
-#ifndef NDEBUG
   if (TAG_FREE == tag)
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
-#endif
   if (!box_can_appear_twice_in_tree[tag])
     {
       box_t other_parent = gethash (box, known);
@@ -809,12 +851,10 @@ dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known
   tag = box_tag (box);
   if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
     return;
-#ifndef NDEBUG
   if (TAG_FREE == tag)
     GPF_T1 ("Domain of connectivity contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Domain of connectivity contains a pointer to a box marked bad");
-#endif
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
@@ -1141,7 +1181,16 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
       len = box_length (box);
       copy = (box_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS len, tag);
       len /= sizeof (box_t);
-      for (inx = 0; inx < len; inx++)
+      inx = 0;
+      if (len > 1)
+	{
+	  for (inx = 0; inx < len - 1; inx++)
+	    {
+	      __builtin_prefetch (((box_t*)box)[inx + 1]);
+	      copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
+	    }
+	}
+      for (inx = inx; inx < len; inx++)
 	copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
       return (box_t) copy;
 
@@ -1293,7 +1342,7 @@ DBG_NAME (box_dv_short_string) (DBG_PARAMS const char *string)
 rdf_box_t *
 rb_allocate (void)
 {
-  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
+  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_bigbox_t), DV_RDF);
   rb->rb_ref_count = 1;
   return rb;
 }
@@ -1311,12 +1360,18 @@ rbb_allocate (void)
 caddr_t 
 rbb_from_id (int64 n)
 {
-  rdf_box_t * rb = (rdf_box_t*)rbb_allocate ();
-  rb->rb_ro_id = n;
-  rb->rb_is_outlined = 1;
-  rb->rb_type = RDF_BOX_DEFAULT_TYPE;
-  rb->rb_lang = RDF_BOX_DEFAULT_LANG;
-  return (caddr_t)rb;
+  rdf_bigbox_t * rbb = rbb_allocate ();
+  rbb->rbb_base.rb_ro_id = n;
+  rbb->rbb_base.rb_is_outlined = 1;
+#if 0
+  rbb->rbb_base.rb_type = RDF_BOX_ILL_TYPE;
+  rbb->rbb_base.rb_lang = RDF_BOX_ILL_LANG;
+#else
+  rbb->rbb_base.rb_type = RDF_BOX_DEFAULT_TYPE;
+  rbb->rbb_base.rb_lang = RDF_BOX_DEFAULT_LANG;
+#endif
+  rbb->rbb_box_dtp = DV_STRING;
+  return (caddr_t)rbb;
 }
 
 
@@ -1329,6 +1384,8 @@ rdf_box_audit_impl (rdf_box_t * rb)
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
+  if (rb->rb_is_complete)
+    rb_dt_lang_check(rb);
 }
 
 
@@ -1538,10 +1595,7 @@ box_equal (cbox_t b1, cbox_t b2)
   if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
     {
       uint32 inx;
-      l1 = BOX_ELEMENTS (b1);
-      l2 = BOX_ELEMENTS (b2);
-      if (l1 != l2)
-	return 0;
+      l1 /= sizeof (caddr_t);
       for (inx = 0; inx < l1; inx++)
 	{
 	  if (!box_equal (((box_t *) b1)[inx], ((box_t *) b2)[inx]))
@@ -1549,7 +1603,11 @@ box_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
-  return (memcmp (b1, b2, l1) ? 0 : 1);
+  memcmp_8 (b1, b2, l1, neq);
+  return 1;
+ neq:
+  return 0;
+  /*return (memcmp (b1, b2, l1) ? 0 : 1); */
 }
 
 

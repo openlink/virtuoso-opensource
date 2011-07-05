@@ -49,6 +49,19 @@ basket_add (basket_t * bsk, void *token)
 }
 
 
+void
+mp_basket_add (mem_pool_t * mp, basket_t * bsk, void *token)
+{
+  basket_t *newn = (basket_t *) mp_alloc (mp, sizeof (basket_t));
+  if (bsk->bsk_count == 0)
+    basket_init (bsk);
+
+  newn->bsk_pointer = token;
+  LISTPUTBEFORE (bsk, newn, bsk_next, bsk_prev);
+  bsk->bsk_count++;
+}
+
+
 void *
 basket_peek (basket_t * bsk)
 {
@@ -86,6 +99,25 @@ basket_first (basket_t * bsk)
   if (bsk->bsk_count == 0)
     return NULL;
   return bsk->bsk_next->bsk_pointer;
+}
+
+
+void *
+mp_basket_get (basket_t * bsk)
+{
+  void *data;
+
+  if (bsk->bsk_count == 0)
+    return NULL;
+
+  bsk->bsk_count--;
+  bsk = bsk->bsk_next;
+
+  LISTDELETE (bsk, bsk_next, bsk_prev);
+
+  data = bsk->bsk_pointer;
+
+  return data;
 }
 
 

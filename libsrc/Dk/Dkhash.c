@@ -183,7 +183,7 @@ static PRIME primetable[] =
     8089, 8093, 8101, 8111, 8117, 8123, 8147, 8161,
     8167, 8171, 8179, */ 8191,
 
-    32003, 65521, 131071, 262139, 524287, ht_max_sz
+  32003, 65521, 131071, 262139, 300007, 400009, 524287, ht_max_sz
 };
 
 /*
@@ -344,9 +344,9 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
 
   if (HASH_EMPTY == next)
     {
-      elt->next = NULL;
-      elt->key = key;
       elt->data = data;
+      elt->key = key;
+      elt->next = NULL;
       ht->ht_count++;
 #ifdef HT_STATS
       ht->ht_stats[0]++;

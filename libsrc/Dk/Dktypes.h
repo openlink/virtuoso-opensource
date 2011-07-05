@@ -111,7 +111,7 @@
 #endif
 #define ptr_long 		ptrlong
 #define ptr_ulong 		uptrlong
-
+#define uint64 unsigned int64
 
 #if defined (OS2) || defined (WIN32)
 # define ssize_t		signed int

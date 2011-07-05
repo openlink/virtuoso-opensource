@@ -198,8 +198,7 @@ ptr += 4
 #ifdef _MSC_VER
 
 #define _DO_BOX(inx, arr) \
-	for (inx = 0; inx < (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx ++) \
-	  {
+  _DO_BOX_FAST(inx, arr)
 
 #define _DO_BOX_FAST(inx, arr) \
 	do { \
@@ -210,9 +209,7 @@ ptr += 4
 #else
 
 #define _DO_BOX(inx, arr) \
-	for (inx = 0; inx < ((arr) ? BOX_ELEMENTS(arr) : 0); inx ++) \
-	  {
-
+  _DO_BOX_FAST(inx, arr)
 #define _DO_BOX_FAST(inx, arr) \
 	do { \
 	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
@@ -226,12 +223,15 @@ ptr += 4
 	    for (inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx--; /* no step */) \
 	      {
 
+
 #define DO_BOX(dtp, v, inx, arr) \
-	_DO_BOX(inx, (arr)) \
+	_DO_BOX_FAST(inx, (arr)) \
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
 
 #define END_DO_BOX \
-}
+  }} while (0);
+
+
 
 #define DO_BOX_FAST(dtp, v, inx, arr) \
 	_DO_BOX_FAST(inx, (arr)) \
@@ -490,7 +490,9 @@ typedef int64 boxint;
 
 typedef unsigned int64 iri_id_t;
 #define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
+#define MAX_32BIT_BNODE_IRI_ID ((iri_id_t)1999999999)
 #define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
+#define MAX_64BIT_BNODE_IRI_ID ((((iri_id_t)1) << 63)-1)
 #define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
 #define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
 #define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
@@ -600,10 +602,15 @@ uname_blk_t;
 #define RDF_BOX_DEFAULT_LANG 		0x0101
 #define RDF_BOX_MAX_TYPE 		0x7F01
 #define RDF_BOX_MAX_LANG 		0x7F01
+#define RDF_BOX_ILL_TYPE 		0x7F02
+#define RDF_BOX_ILL_LANG 		0x7F03
 #define RDF_BOX_GEO 0x100
 #define RDF_BOX_INTERVAL 0xff
 #define RDF_BOX_STRING_ID 0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
 #define RDF_BOX_MIN_TYPE 0xfe
+
+#define rb_dt_lang_check(f)
+
 
 typedef struct rdf_box_s
 {
@@ -650,13 +657,17 @@ EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 #define dk_alloc_list(n) 		((caddr_t *)dk_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
 
 #ifdef MALLOC_DEBUG
+#define DK_ALLOC_BOX_DEBUG
+#endif
+
+#ifdef MALLOC_DEBUG
 void dk_alloc_box_assert (box_t box);
 #else
 #define dk_alloc_box_assert(box)	;
 #endif
 
 EXE_EXPORT (int, dk_free_box, (box_t box));
-#ifdef DEBUG
+#ifdef DK_ALLOC_BOX_DEBUG
 extern void dk_check_tree (box_t box);
 extern void dk_check_tree_heads (box_t box, int count_of_sample_children);
 extern void dk_check_domain_of_connectivity (box_t box);
@@ -832,12 +843,17 @@ extern void dkbox_terminate_module (void);
 #define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD 		
 #define DV_IRI_TAG_WORD 		0x080000f3
 #define DV_IRI_TAG_WORD_64  DV_IRI_TAG_WORD
+#define DV_DOUBLE_TAG_WORD 		0x080000bf
+#define DV_FLOAT_TAG_WORD 		0x080000be
+
 
 #else
 #define DV_INT_TAG_WORD  		0xbd000008
 #define DV_INT_TAG_WORD_64 0xbd00000800000000
 #define DV_IRI_TAG_WORD 		0xf3000008
 #define DV_IRI_TAG_WORD_64 		0xf300000800000000
+#define DV_DOUBLE_TAG_WORD  0xbf000008
+#define DV_FLOAT_TAG_WORD 0xbe000008
 #endif
 
 /* values for box_flags */

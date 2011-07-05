@@ -67,8 +67,10 @@ typedef struct
 
 #ifdef MTX_DEBUG
 #define HT_REQUIRE_MTX(h, m) h->ht_required_mtx = m
+#define HT_NO_REQUIRE_MTX(ht) ht->ht_required_mtx = NULL
 #else
 #define HT_REQUIRE_MTX(h, m)
+#define HT_NO_REQUIRE_MTX(ht)
 #endif
 
 typedef struct
