@@ -112,17 +112,16 @@
 			<rdf:type rdf:resource="&audio;Album"/>
 			<sioc:has_container rdf:resource="{concat($base,'release/',@id)}"/>
 			<xsl:if test="artists/artist/name">
-				<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>
 				<dcterms:creator rdf:resource="{vi:proxyIRI (concat($base,'artist/', translate(artists/artist/name, ' ', '+')))}"/>
 			</xsl:if>
 			<xsl:if test="title">
-				<dcterms:title><xsl:value-of select="title"/></dcterms:title>
+				<dc:title><xsl:value-of select="title"/></dc:title>
 			</xsl:if>
 			<xsl:if test="format">
 				<dc:format><xsl:value-of select="format"/></dc:format>
 			</xsl:if>
 			<xsl:if test="year">
-				<dcterms:published><xsl:value-of select="year"/></dcterms:published>
+				<dcterms:created><xsl:value-of select="year"/></dcterms:created>
 			</xsl:if>
 			<xsl:for-each select="tracklist/track">
 				<media:contains rdf:resource="{vi:proxyIRI (concat($base,'release/', ../../@id), '', position)}"/>
@@ -143,9 +142,9 @@
 			<mo:track_number>
 				<xsl:value-of select="position"/>
 			</mo:track_number>
-			<dcterms:title>
+			<dc:title>
 				<xsl:value-of select="title"/>
-			</dcterms:title>
+			</dc:title>
 			<media:duration rdf:datatype="&xsd;integer">
 				<xsl:value-of select="duration"/>
 			</media:duration>

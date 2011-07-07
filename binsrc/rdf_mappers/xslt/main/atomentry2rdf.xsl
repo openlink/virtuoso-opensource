@@ -36,6 +36,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
+  xmlns:dcterms = "http://purl.org/dc/terms/"
   xmlns:rss="http://purl.org/rss/1.0/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
@@ -83,19 +84,15 @@
 </xsl:template>
 
 <xsl:template match="a:title">
-  <title><xsl:value-of select="." /></title>
+  <dc:title><xsl:value-of select="." /></dc:title>
 </xsl:template>
 
 <xsl:template match="a:content">
   <dc:description><xsl:call-template name="removeTags" /></dc:description>
-  <description><xsl:value-of select="." /></description>
-  <!--xsl:if test="not(../content:encoded)">
-    <content:encoded><xsl:value-of select="." /></content:encoded>
-  </xsl:if-->
 </xsl:template>
 
 <xsl:template match="a:published">
-    <dc:date><xsl:value-of select="."/></dc:date>
+    <dcterms:created><xsl:value-of select="."/></dcterms:created>
 </xsl:template>
 
 <xsl:template match="a:link[@href]">
@@ -103,25 +100,17 @@
 </xsl:template>
 
 <xsl:template match="a:author">
-    <xsl:choose>
-	<xsl:when test="//yt:*">
-	    <foaf:maker rdf:resource="http://www.youtube.com/user/{a:name}"/>
-	</xsl:when>
-	<xsl:otherwise>
-	    <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
-<foaf:mbox rdf:resource="mailto:{a:email}"/>
-	</xsl:otherwise>
-    </xsl:choose>
+  <dcterms:creator rdf:resource="{vi:proxyIRI(concat('http://www.youtube.com/user/', a:name)) }"/>
 </xsl:template>
 
 <xsl:template match="a:entry">
     <xsl:apply-templates select="media:*|yt:*" mode="media"/>
-    <item rdf:about="{a:link[@href]/@href}">
+    <rdf:Description rdf:about="{$resourceURL}">
 	<xsl:apply-templates/>
 	<xsl:if test="a:category[@term]">
 	    <xsl:for-each select="a:category[@term]">
 		<sioc:topic>
-		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
+              <skos:Concept rdf:about="{vi:proxyIRI ($baseUri, '', @term)}">
 			<skos:prefLabel>
 			    <xsl:value-of select="@term"/>
 			</skos:prefLabel>
@@ -129,8 +118,7 @@
 		</sioc:topic>
 	    </xsl:for-each>
 	</xsl:if>
-	<xsl:apply-templates select="g:*|gd:*"/>
-    </item>
+    </rdf:Description>
 </xsl:template>
 
 <xsl:template match="yt:statistics" mode="media">
@@ -150,19 +138,11 @@
 		<nfo:duration>
 			<xsl:value-of select="yt:duration/@seconds"/>
 		</nfo:duration>
-	</rdf:Description>
-	<xsl:apply-templates select="media:*" mode="media"/>
-</xsl:template>
-
-<xsl:template match="text()" mode="media"/>
-
-<xsl:template match="media:content[@yt:format='5']" mode="media">
-    <rdf:Description rdf:about="{$resourceURL}">
 	<content:encoded rdf:parseType="Literal">
 	    <object width="425" height="350" xmlns="">
-		<param name="movie" value="{@url}">
+				<param name="movie" value="{media:content[@yt:format='5']/@url}">
 		</param>
-		<embed src="{@url}" type="{@type}" width="425" height="350">
+				<embed src="{media:content[@yt:format='5']/@url}" type="{media:content[@yt:format='5']/@type}" width="425" height="350">
 		</embed>
 	    </object>
 	</content:encoded>
@@ -170,14 +150,15 @@
 </xsl:template>
 
 <xsl:template match="g:*|gd:*">
-    <xsl:element name="{local-name(.)}" namespace="http://www.openlinksw.com/schemas/google-base#">
-	<xsl:value-of select="."/>
-    </xsl:element>
+    <xsl:copy-of select="." />
 </xsl:template>
 
 <xsl:template name="removeTags">
     <xsl:variable name="post" select="document-literal (., '', 2, 'UTF-8')"/>
     <xsl:value-of select="normalize-space(string($post))" />
 </xsl:template>
+
+<xsl:template match="text()" mode="media"/>
+
 
 </xsl:stylesheet>

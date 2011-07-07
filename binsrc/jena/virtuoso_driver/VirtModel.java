@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2008 OpenLink Software
+ *  Copyright (C) 1998-2010 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@ import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.impl.ModelCom;
 
+import virtuoso.jdbc3.VirtuosoDataSource;
 
 public class VirtModel extends ModelCom {
 
@@ -39,14 +40,25 @@ public class VirtModel extends ModelCom {
     }
 	
 	
+    public static VirtModel openDefaultModel(VirtuosoDataSource ds) 
+    {
+    	return new VirtModel(new VirtGraph(ds));
+    }
+
+    public static VirtModel openDatabaseModel(String graphName, 
+	VirtuosoDataSource ds)
+    {
+	return new VirtModel(new VirtGraph(graphName, ds));
+    }
+
+
     public static VirtModel openDefaultModel(String url, String user, 
 	String password) 
     {
     	return new VirtModel(new VirtGraph(url, user, password));
     }
 
-
-    public static Model openDatabaseModel(String graphName, String url, 
+    public static VirtModel openDatabaseModel(String graphName, String url, 
     	String user, String password) 
     {
 	return new VirtModel(new VirtGraph(graphName, url, user, password));
@@ -62,6 +74,28 @@ public class VirtModel extends ModelCom {
 		super.removeAll();
 	}
 	return this;
+    }
+
+
+    public void createRuleSet(String ruleSetName, String uriGraphRuleSet) 
+    {
+        ((VirtGraph)this.graph).createRuleSet(ruleSetName, uriGraphRuleSet);
+    }
+
+
+    public void removeRuleSet(String ruleSetName, String uriGraphRuleSet) 
+    {
+        ((VirtGraph)this.graph).removeRuleSet(ruleSetName, uriGraphRuleSet);
+    }
+
+    public void setRuleSet(String _ruleSet)
+    {
+        ((VirtGraph)this.graph).setRuleSet(_ruleSet);
+    }
+
+    public void setSameAs(boolean _sameAs)
+    {
+        ((VirtGraph)this.graph).setSameAs(_sameAs);
     }
 	
 }

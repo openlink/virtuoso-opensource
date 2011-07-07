@@ -122,7 +122,7 @@
 <xsl:choose>
      	<xsl:when test="$groupLink">
   		<xsl:for-each select="$groupLink">
-			<xsl:element name='foaf:maker'>
+			<xsl:element name='dcterms:creator'>
 				<xsl:attribute name='rdf:nodeID'>
 					<xsl:value-of select="generate-id()"/>
 				</xsl:attribute>
@@ -131,7 +131,7 @@
 	</xsl:when>
     	<xsl:otherwise>
   		<xsl:for-each select="$groupLinkalt">
-			<xsl:element name='foaf:maker'>
+			<xsl:element name='dcterms:creator'>
 				<xsl:attribute name='rdf:nodeID'>
 					<xsl:value-of select="generate-id()"/>
 				</xsl:attribute>
@@ -210,7 +210,7 @@
 <xsl:template name="published">
 <xsl:param name="pubdate" select="descendant::*[contains(concat(' ',normalize-space(attribute::class),' '),' published ')]"/>
 <xsl:if test="$pubdate">
-	<dc:date><xsl:value-of select="$pubdate" /></dc:date>
+	<dcterms:issued><xsl:value-of select="$pubdate" /></dcterms:issued>
 </xsl:if>
 </xsl:template>
 
@@ -289,7 +289,7 @@
 <xsl:template name="trackLink">
 <xsl:param name="audio" select="/.//*[contains(concat(' ',normalize-space(attribute::class),' '),' contributor ')][1]"/>
 <xsl:for-each select="$audio">
-	<xsl:element name='foaf:maker'>
+	<xsl:element name='dcterms:creator'>
   		<xsl:attribute name='rdf:nodeID'>
 				<xsl:value-of select="generate-id()"/>
 		</xsl:attribute>

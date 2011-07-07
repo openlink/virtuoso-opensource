@@ -191,18 +191,33 @@ directory_init() {
   mkdir vad/vsp/rdf_mappers/rdfdesc/oat/styles
   mkdir vad/vsp/rdf_mappers/rdfdesc/oat/xslt
 
+  mkdir vad/vsp/rdf_mappers/sponger_front_page
+  mkdir vad/vsp/rdf_mappers/sponger_front_page/skin
+  mkdir vad/vsp/rdf_mappers/sponger_front_page/skin/i
+  mkdir vad/vsp/rdf_mappers/sponger_front_page/skin/ss
+
   for f in `find rdfdesc -type f | grep -v "/CVS/" | grep -v "\.sql"`
   do
      cp $f vad/vsp/rdf_mappers/$f  
   done
 
-  cp *.sql vad/code/rdf_mappers
+
+  #cp *.sql vad/code/rdf_mappers
+
+  cp rdf_mappers.sql vad/code/rdf_mappers
+  cp rdf_mappers_drop.sql vad/code/rdf_mappers
+  cp virt_rdf_label.sql vad/code/rdf_mappers
+
   cp data/*.sql vad/code/rdf_mappers
   cp data/*.gz vad/code/rdf_mappers
   cp rdfdesc/*.sql vad/code/rdf_mappers
   cp xslt/main/*.xsl vad/vsp/rdf_mappers/xslt/main/
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
   cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
+
+  cp sponger_front_page/* vad/vsp/rdf_mappers/sponger_front_page/
+  cp sponger_front_page/skin/i/* vad/vsp/rdf_mappers/sponger_front_page/skin/i/
+  cp sponger_front_page/skin/ss/* vad/vsp/rdf_mappers/sponger_front_page/skin/ss/
 
   #
   #  GZip the ontologies sources to save space
@@ -298,7 +313,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -330,6 +345,7 @@ if [ "$ISDAV" = "1" ] ; then
 else
   echo "	registry_set('_"$VAD_NAME"_path_', 'file://vad/vsp/$VAD_NAME/');" >> $STICKER
 fi
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/virt_rdf_label.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/description.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/yelp_categories.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "	DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/rdf_mappers.sql', 0, 'report', $ISDAV);" >> $STICKER
@@ -359,6 +375,7 @@ fi
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/iso_country_codes.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/virt_rdf_label.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/nyt_people.nt.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
   for file in `find xslt/main -type f -print | grep -v CVS | sort`
@@ -371,7 +388,7 @@ fi
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
-  for file in `find ontologies/owl -type f -print | grep -v CVS | grep -v '.n3' | sort`
+  for file in `find ontologies/owl -type f -print | grep -v CVS | grep -v '.n3' | grep -v '.ttl'| sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
@@ -385,6 +402,11 @@ fi
   do
       name=`echo $file | cut -b21-`
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  done
+
+  for file in `find sponger_front_page -type f -print | grep -v CVS | sort`
+  do
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER
@@ -492,7 +514,6 @@ vad_create $STICKER_DAV $VAD_NAME_RELEASE
 virtuoso_shutdown
 chmod 644 $VAD_NAME_DEVEL
 chmod 644 $VAD_NAME_RELEASE
-directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
@@ -501,6 +522,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

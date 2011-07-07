@@ -27,9 +27,11 @@ import java.io.File;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.openrdf.model.BNodeFactory;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.URIFactory;
 import org.openrdf.model.LiteralFactory;
+import org.openrdf.model.impl.BNodeFactoryImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.impl.LiteralFactoryImpl;
 import org.openrdf.model.impl.URIFactoryImpl;
@@ -55,7 +57,9 @@ import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
  */
 public class VirtuosoRepository implements Repository {
 	
-	private ValueFactoryImpl vf = new ValueFactoryImpl();
+	private URIFactory uf = new URIFactoryImpl();
+	private LiteralFactory lf = new LiteralFactoryImpl();
+	private BNodeFactory bf = new BNodeFactoryImpl();
 
 	File dataDir;
 	
@@ -73,7 +77,9 @@ public class VirtuosoRepository implements Repository {
 
 	boolean useLazyAdd = false;
 	int prefetchSize = 200;
+	int queryTimeout = 0;
 	private boolean initialized = false;
+	String ruleSet;
     
 	
 
@@ -104,7 +110,6 @@ public class VirtuosoRepository implements Repository {
          *
 	 */
 	public VirtuosoRepository(String hostlist, String user, String password, String defGraph, boolean useLazyAdd) {
-
 	        super();
 		this.host = hostlist;
 		this.user = user;
@@ -343,6 +348,23 @@ public class VirtuosoRepository implements Repository {
 
 
 	/**
+	 * Set the query timeout(default 0) 
+	 * 
+	 * @param seconds
+	 *        queryTimeout seconds, 0 - unlimited.
+	 */
+	public void setQueryTimeout(int seconds) {
+		this.queryTimeout = seconds;
+	}
+
+	/**
+	 * Get the query timeout seconds
+	 */
+	public int getQueryTimeout() {
+		return this.queryTimeout;
+	}
+
+	/**
 	 * Set the RoundRobin state for connection(default false) 
 	 * 
 	 * @param sz
@@ -375,7 +397,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	@Deprecated
 	public ValueFactory getValueFactory() {
-		return vf;
+		return new ValueFactoryImpl(bf, uf, lf);
 	}
 
 	/**
@@ -385,7 +407,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public URIFactory getURIFactory()
 	{
-		return vf.getURIFactory();
+		return uf;
 	}
 
 	/**
@@ -395,7 +417,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public LiteralFactory getLiteralFactory()
 	{
-		return vf.getLiteralFactory();
+		return lf;
 	}
 
 	/**
@@ -410,6 +432,26 @@ public class VirtuosoRepository implements Repository {
 	}
 
 
+	/**
+	 * Set inference RuleSet name
+	 * 
+	 * @param name
+	 *        RuleSet name.
+	 */
+	public void setRuleSet(String name) {
+		if (name != null && name.equals("null"))
+		  	name = null;
+		this.ruleSet = name;
+	}
+
+	/**
+	 * Get the RoundRobin state for connection
+	 */
+	public String getRuleSet() {
+		return this.ruleSet;
+	}
+
+	
 	/**
 	 * Get the directory where data and logging for this repository is stored.
 	 * 
@@ -446,5 +488,18 @@ public class VirtuosoRepository implements Repository {
 		this.readOnly = readOnly;
 	}
 
+
+        public void createRuleSet(String ruleSetName, String uriGraphRuleSet) throws StoreException
+        {
+          java.sql.Connection con = ((VirtuosoRepositoryConnection)getConnection()).getQuadStoreConnection();
+
+          try {
+	    java.sql.Statement st = con.createStatement();
+	    st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"')");
+	    st.close();
+          } catch (Exception e) {
+            throw new StoreException(e);
+          }
+        }
 
 }

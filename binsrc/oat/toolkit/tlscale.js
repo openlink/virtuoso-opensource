@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -27,8 +27,8 @@ OAT.TlScale = {
 	},
 
 	genericElement:function() {
-		var l = OAT.Dom.create("div",{position:"absolute",height:"100%",top:"0px",zIndex:2},"timeline_bar")
-		l.txt = OAT.Dom.create("div",{position:"absolute",left:"3px",bottom:"2px"},"timeline_date");
+		var l = OAT.Dom.create("div",{position:"absolute",height:"100%",top:"0px",zIndex:2,className:"timeline_bar"});
+		l.txt = OAT.Dom.create("div",{position:"absolute",left:"3px",bottom:"2px",className:"timeline_date"});
 		l.appendChild(l.txt);
 		return l;
 	},

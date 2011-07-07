@@ -25,6 +25,7 @@
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Text;
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -741,8 +742,21 @@ namespace OpenLink.Data.Virtuoso
 			object cd = GetColumnData (i);
 			if (cd is String)
 			  return (String) cd;
-			else
-			  return cd.ToString ();
+            else if (cd is System.Byte[])
+            {
+                byte[] v = (byte[])cd;
+                StringBuilder buf = new StringBuilder(v.Length*2);
+                string hex = "0123456789ABCDEF";
+
+                for (int j = 0; j < v.Length; j++)
+                {
+                  buf.Append(hex[(v[j] >> 4) & 0x0f]);
+                  buf.Append(hex[v[j] & 0x0f]);
+                }
+                return buf.ToString();
+            }
+            else
+                return cd.ToString();
 		}
 
 #if ADONET2
@@ -845,13 +859,37 @@ namespace OpenLink.Data.Virtuoso
                 		if (column.data is IConvertData)
                     			return ((IConvertData)column.data).ConvertData(type);
                 		else if (column.data is IConvertible)
+                          {
+                            switch (column.data.GetType().FullName)
+                            {
+                                case "System.Int32":
+                                case "System.Single":
+                                case "System.Double":
+                                case "System.Decimal":
+                                case "System.DateTime":
+                                case "System.TimeSpan":
+                                    return column.data;
+                                default:
                     			return Convert.ChangeType(column.data, type);
+                            }
+                          }
                         	else if (column.data is SqlExtendedString)
                                 	return column.data;
                         	else if (column.data is SqlRdfBox)
                                 	return column.data;
                 		else
+                          {
+                            switch (column.data.GetType().FullName)
+                            {
+                                case "System.DateTime":
+                                case "System.DateTimeOffset":
+                                case "System.TimeSpan":
+                                case "System.Byte[]":
+                                    return column.data;
+                                default:
                     			return column.data.ToString();
+            		}
+                          }
             		}
             		else
 				return column.data;

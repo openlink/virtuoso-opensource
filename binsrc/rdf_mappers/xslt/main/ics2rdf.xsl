@@ -26,6 +26,8 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
@@ -35,13 +37,16 @@
     xmlns:ical   ="&ical;"
     xmlns:foaf   ="&foaf;"
     xmlns:bibo   ="&bibo;"
+    xmlns:dcterms="&dcterms;"
     xmlns:sioc="&sioc;"
     xmlns     ="http://www.w3.org/2002/12/cal/ical#"
     xmlns:vi   ="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:xml   ="xml"
+    xmlns:rdfs="&rdfs;"    
     version="1.0"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     >
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
@@ -124,8 +129,30 @@
 
     <xsl:template match="IMC-VEVENT|IMC-VTODO|IMC-VJOURNAL|IMC-VFREEBUSY|IMC-VTIMEZONE" priority="10">
 	<xsl:variable name="elt"><xsl:call-template name="vname"/></xsl:variable>
+	<xsl:variable name="elt2">
+		<xsl:choose>
+			<xsl:when test="UID">
+				<xsl:value-of select="UID/val"/>
+			</xsl:when>
+			<xsl:when test="TZID">
+				<xsl:value-of select="TZID/val"/>
+			</xsl:when>
+			<xsl:when test="SUMMARY">
+				<xsl:value-of select="replace(SUMMARY/val, ' ', '_')"/>
+			</xsl:when>
+			 <xsl:otherwise>
+                <xsl:value-of select="UID/val"/>
+            </xsl:otherwise>
+		</xsl:choose>				
+	</xsl:variable>
 	<component>
 	    <xsl:element name="{$elt}" namespace="&ical;">
+	    <xsl:attribute name="about" namespace="&rdf;"><xsl:value-of select="vi:proxyIRI($baseUri, '', $elt2)"/></xsl:attribute>
+		<xsl:if test="SUMMARY/val">
+			<rdfs:label>
+				<xsl:value-of select="vi:string2date3(normalize-space(SUMMARY/val))"/>
+			</rdfs:label>
+		</xsl:if>
 		<xsl:apply-templates select="*"/>
 	    </xsl:element>
 	</component>
@@ -139,6 +166,27 @@
 	</xsl:element>
     </xsl:template>
 
+    <xsl:template match="X-WR-CALNAME" priority="10">
+		<xsl:if test="string-length(val) &gt; 0">
+			<dc:title>
+				<xsl:value-of select="val"/>
+			</dc:title>
+			<rdfs:label>
+				<xsl:value-of select="val"/>
+			</rdfs:label>
+		</xsl:if>
+    </xsl:template>
+
+    <xsl:template match="X-WR-CALDESC" priority="10">
+		<xsl:if test="string-length(val) &gt; 0">
+			<dc:description>
+				<xsl:value-of select="val"/>
+			</dc:description>
+		</xsl:if>
+    </xsl:template>
+
+    <xsl:template match="X-WR-TIMEZONE" priority="10">
+    </xsl:template>
 
     <xsl:template match="LAST-MODIFIED"  priority="10">
 	<lastModified rdf:datatype="&xsd;dateTime">
@@ -152,6 +200,11 @@
 	    <xsl:attribute name="datatype" namespace="&rdf;">&xsd;dateTime</xsl:attribute>
 		<xsl:apply-templates select="val"/>
 	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="GEO"  priority="10">
+	<geo:lat><xsl:value-of select="fld[1]"/></geo:lat>
+	<geo:long><xsl:value-of select="fld[2]"/></geo:long>
     </xsl:template>
 
     <xsl:template match="fld" priority="10">
@@ -170,14 +223,14 @@
     <xsl:template match="*[*[local-name (.) != 'val' and local-name (.) != 'fld']]">
 	<xsl:variable name="elt"><xsl:call-template name="ename"/></xsl:variable>
 	<xsl:element name="{$elt}" namespace="&ical;">
-	    <xsl:attribute name="parseType" namespace="&rdf;">Resource</xsl:attribute>
+	    <!--xsl:attribute name="parseType" namespace="&rdf;">Resource</xsl:attribute-->
 	    <xsl:apply-templates />
 	</xsl:element>
     </xsl:template>
 
-    <xsl:template match="val">
-	<xsl:value-of select="normalize-space(.)"/>
-    </xsl:template>
+    <xsl:template match="CHARSET"></xsl:template>
+
+    <xsl:template match="val"><xsl:value-of select="vi:string2date3(normalize-space(.))"/></xsl:template>
 
     <xsl:template match="URL|DIR" priority="1">
 	<ical:url rdf:resource="{val}"/>

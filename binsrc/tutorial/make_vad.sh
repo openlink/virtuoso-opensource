@@ -334,7 +334,7 @@ sticker_init() {
   echo "  <name package=\"tutorial\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Virtuoso Developer Tutorial\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -555,11 +555,11 @@ vad_create() {
 generate_files() {
   do_command_safe $DSN "load dev.sql"
   do_command_safe $DSN "TUT_generate_files('/vad_files/vsp/tutorial')"
-    if [ "x$HOST_OS" = "x" ]
-    then
-      tar xzf $HOME/binsrc/samples/IBuySpy/ibuyspy_mono_virtuoso_client.tar.gz
-      mv PortalCS $LOGDIR/vad_files/vsp 
-    fi
+    #if [ "x$HOST_OS" = "x" ]
+    #then
+      #tar xzf $HOME/binsrc/samples/IBuySpy/ibuyspy_mono_virtuoso_client.tar.gz
+      #mv PortalCS $LOGDIR/vad_files/vsp 
+    #fi
 }
 
 $myrm "$LOGFILE" 2>/dev/null

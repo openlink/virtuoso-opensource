@@ -71,6 +71,7 @@ GenDefPage ()
 <strong>Page $1</strong><br>
 <a href="page1.html">page1</a><br>
 <a href="errpage.html">page with errors</a><br>
+<a href="honeypot.html"></a><br>
 <img src="image.gif">
 </body>
 </html>
@@ -538,7 +539,7 @@ CHECK_HTTP_PORT()
   stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
   while [ "z$stat" = "z" ]
   do
-    sleep 5
+    sleep 1
     stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
   done
   LOG "PASSED: Virtuoso HTTP/WebDAV Server successfully started on port $port"
@@ -567,7 +568,16 @@ mkdir dir3/sub31
 mkdir dir3/sub32
 
 GenDefPage
+echo "Generating robots.txt"
+    cat > robots.txt <<END_PAGE
+User-agent: *
+Disallow: /honeypot
+END_PAGE
 GenErrPage
+echo "Generating honeypot.html page"
+    cat > honeypot.html<<END_PAGE
+This is a trap!!!    
+END_PAGE
 GenStartPage
 GenPage 2 sub11 ./dir1/
 GenEndPage 4 ./dir1/sub11/

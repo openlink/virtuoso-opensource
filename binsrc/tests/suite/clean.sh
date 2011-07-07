@@ -90,7 +90,6 @@ rm -f wierr.rep3
 rm -f witemp.cfg
 rm -f xmemdump.txt
 rm -f xslt.vsp
-rm -f virtuoso.cpt-after-recov
 
 #
 #  Removing directories
@@ -131,6 +130,7 @@ rm -rf vad
 rm -rf vspx
 rm -rf wcopy
 rm -rf xslt
+rm -rf cl?
 rm -rf tpcdremote[12]
 
 exit 0

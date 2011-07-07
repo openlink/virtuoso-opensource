@@ -27,7 +27,9 @@
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -37,6 +39,7 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:vcard="&vcard;"	
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -44,30 +47,75 @@
     xmlns:sioc="&sioc;"
     xmlns:owl="&owl;"
     xmlns:dcterms="&dcterms;"
+    xmlns:pto="&pto;" 
     xmlns:gr="&gr;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
-    xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"	
     xmlns:oplbb="&oplbb;">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
     <xsl:param name="currentDateTime"/>
+    <xsl:param name="is_store"/>
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-    <!-- TO DO: For testing with standalone XSLT processor
-    <xsl:variable name="resourceURL" select="$baseUri"/>
-    <xsl:variable  name="docIRI" select="$baseUri"/>
-    <xsl:variable  name="docproxyIRI" select="$baseUri"/>
-    -->
 
     <xsl:variable name="quote"><xsl:text>"</xsl:text></xsl:variable>
 
     <xsl:template match="/">
 		<rdf:RDF>
+			<xsl:choose>
+				<xsl:when test="$is_store = '1'">
+					<rdf:Description rdf:about="{$docproxyIRI}">
+						<rdf:type rdf:resource="&bibo;Document"/>
+						<sioc:container_of rdf:resource="{$resourceURL}"/>
+						<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+						<dcterms:subject rdf:resource="{$resourceURL}"/>
+					</rdf:Description>
+					<gr:LocationOfSalesOrServiceProvisioning rdf:about="{$resourceURL}">
+						<gr:hasOpeningHoursSpecification>
+							<gr:OpeningHoursSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'OpenHoursSpecification')}">
+								<gr:opens><xsl:value-of select="/stores/store/hours"/></gr:opens>
+							</gr:OpeningHoursSpecification>
+						</gr:hasOpeningHoursSpecification>
+						<rdfs:label><xsl:value-of select="/stores/store/longName"/></rdfs:label>
+						<gr:name><xsl:value-of select="/stores/store/name"/></gr:name>
+						<gr:legalName><xsl:value-of select="/stores/store/longName"/></gr:legalName> 
+						<geo:lat rdf:datatype="&xsd;float">
+							<xsl:value-of select="/stores/store/lat"/>
+						</geo:lat>
+						<geo:long rdf:datatype="&xsd;float">
+							<xsl:value-of select="/stores/store/lng"/>
+						</geo:long>
+						<foaf:phone rdf:resource="tel:{/stores/store/phone}"/>
+						<vcard:ADR>
+							<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Address')}">
+								<rdf:type rdf:resource="&vcard;ADR"/>
+								<vcard:Locality>
+									<xsl:value-of select="/stores/store/city" />
+								</vcard:Locality>
+								<vcard:Region>
+									<xsl:value-of select="/stores/store/region"/>
+								</vcard:Region>
+								<vcard:Country>
+									<xsl:value-of select="/stores/store/country"/>
+								</vcard:Country>
+								<vcard:Pcode>
+									<xsl:value-of select="/stores/store/postalCode"/>
+								</vcard:Pcode>
+								<vcard:Extadd>
+									<xsl:value-of select="/stores/store/address"/>
+								</vcard:Extadd>
+								<rdfs:label><xsl:value-of select="concat(/stores/store/address, ', ', /stores/store/city, ', ', /stores/store/postalCode, ', ', /stores/store/country)"/></rdfs:label>
+							</rdf:Description>
+						</vcard:ADR>
+					</gr:LocationOfSalesOrServiceProvisioning>
+				</xsl:when>
+				<xsl:otherwise>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
@@ -80,7 +128,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-			    <rdfs:label><xsl:value-of select="products/product/name"/></rdfs:label>
+						<rdfs:label><xsl:value-of select="concat('Offer: ', //product/name)"/></rdfs:label>
 			    <!-- For testing with standalone XSLT processor
 			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 			    -->
@@ -118,16 +166,17 @@
 	                        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	                            <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	                            <rdf:type rdf:resource="&oplbb;Product"/>
-				    <xsl:apply-templates select="products/product" mode="manufacturer" />
+				    <xsl:apply-templates select="//product" mode="manufacturer" /> 
 		                   <!-- TO DO
 		                   <rdfs:comment>!!#{manufacturer} #{modelNumber}</rdfs:comment>
 		                   -->
 	                       </rdf:Description>
 	                   </gr:hasMakeAndModel>
 
-			   <xsl:apply-templates select="products/product" />
+			   <xsl:apply-templates select="//product" />
 			</rdf:Description>
-
+				</xsl:otherwise>
+			</xsl:choose>
 		</rdf:RDF>
     </xsl:template>
 
@@ -143,11 +192,13 @@
 	    <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
 	    -->
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
-	        <rdfs:label>sale price</rdfs:label>
+	        <rdfs:label>
+			<xsl:value-of select="concat( ., ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 		<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
-		<!-- Absence of gr:priceType property indicates this is the actual sale price not, say, a suggested retail price (SRP) -->
+	        <gr:priceType rdf:datatype="&xsd;string">regular price</gr:priceType>
 	    </gr:UnitPriceSpecification>
 	</gr:hasPriceSpecification>
     </xsl:template>
@@ -158,7 +209,9 @@
 	    <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification_SRP')}">
 	    -->
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification_SRP')}">
-	        <rdfs:label>suggested retail price</rdfs:label>
+	        <rdfs:label>
+			<xsl:value-of select="concat( ., ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 	        <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 	        <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
@@ -173,11 +226,14 @@
 	    <gr:DeliveryChargeSpecification rdf:about="{concat ($baseUri, '#', 'DeliveryChargeSpecification')}">
 	    -->
 	    <gr:DeliveryChargeSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'DeliveryChargeSpecification')}">
-	        <rdfs:label>shipping charge</rdfs:label>
+	        <rdfs:label>
+			<xsl:value-of select="concat('shipping charge: ', ., ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 	        <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
 	        <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 		<gr:eligibleRegions rdf:datatype="&xsd;string">US</gr:eligibleRegions>
+	        <gr:priceType rdf:datatype="&xsd;string">shipping price</gr:priceType>
 	    </gr:DeliveryChargeSpecification>
 	</gr:hasPriceSpecification>
     </xsl:template>
@@ -190,9 +246,9 @@
 		<rdfs:label>
 			<xsl:value-of select="."/>
 		</rdfs:label>
-		<dc:title>
+		<gr:name>
 			<xsl:value-of select="."/>
-		</dc:title>
+		</gr:name>
     </xsl:template>
 
     <xsl:template match="product/dollarSavings" mode="offering">
@@ -201,6 +257,9 @@
 	    <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'DollarSaving')}">
 	    -->
 	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'DollarSaving')}">
+	        <rdfs:label>
+			<xsl:value-of select="concat(., ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">USD</gr:hasUnitOfMeasurement>
 		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
 	    </gr:QuantitativeValueFloat>
@@ -282,10 +341,16 @@
 	    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
 	    -->
 	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
-		<rdfs:label>Manufacturer</rdfs:label>
+		<rdfs:label>
+			<xsl:value-of select="."/>	
+		</rdfs:label>
 		<gr:legalName><xsl:value-of select="."/></gr:legalName>
 	    </gr:BusinessEntity>
 	</gr:hasManufacturer>
+    </xsl:template>
+
+    <xsl:template match="product/manufacturer">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
     </xsl:template>
 
     <xsl:template match="product/details/detail">
@@ -314,18 +379,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'lb'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'lb')), ' (LBR)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'oz')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'oz'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'oz')), ' (ONZ)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">ONZ</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' (LBR)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -334,7 +402,7 @@
     </xsl:template>
 
     <xsl:template match="product/shippingWeight">
-        <oplbb:shippingWeight> <!-- or cl:??? -->
+        <oplbb:shippingWeight> <!-- or cl -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'ShippingWeight')}">
 	  -->
@@ -344,18 +412,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'lb'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'lb')), ' (LBR)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'oz')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'oz'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'oz')), ' (ONZ)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">ONZ</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' (LBR)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -374,18 +445,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., $quote)), ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'in')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'in')), ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -404,18 +478,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., $quote)), ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'in')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'in')), ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
@@ -434,18 +511,21 @@
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., $quote))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., $quote)), ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:when test="contains(. , 'in')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="normalize-space(substring-before(., 'in'))"/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(normalize-space(substring-before(., 'in')), ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:when>
 	      <xsl:otherwise>
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
 	          <xsl:value-of select="."/>
 		</gr:hasValueFloat>
+		<rdfs:label><xsl:value-of select="concat(., ' (INH)')"/></rdfs:label>
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>

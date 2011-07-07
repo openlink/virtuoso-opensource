@@ -33,7 +33,6 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY wf "http://www.w3.org/2005/01/wf/flow#">
@@ -90,21 +89,25 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<dc:date rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="vi:http_string_date (issue_when)"/>
-				</dc:date>
-				<dc:creator>
-					<xsl:value-of select="who"/>
-				</dc:creator>
+				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
-				<sioc:has_creator rdf:resource="{concat(who/@name, ' (', who, ')' )}"/>
+				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
 				</dc:description>
+				<rdfs:label><xsl:value-of select="concat('Created by: ', who/@name, ' on ', issue_when)"/></rdfs:label>
 				<dcterms:created rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="vi:http_string_date (issue_when)"/>
 				</dcterms:created>
+			</rdf:Description>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}">
+				<rdf:type rdf:resource="&foaf;Person"/>
+				<sioc:creator_of rdf:resource="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}"/>
+			    <xsl:if test="who/@name">
+					<foaf:name><xsl:value-of select="who/@name"/></foaf:name>
+			    </xsl:if>
+			    <foaf:mbox rdf:resource="mailto:{who}"/>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
@@ -132,14 +135,10 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<dc:date rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="vi:http_string_date (bug_when)"/>
-				</dc:date>
-				<dc:creator>
-					<xsl:value-of select="who"/>
-				</dc:creator>
+				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
-				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', urlify (replace(who/@name, ' ', '_')))}"/>
+				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
+				<rdfs:label><xsl:value-of select="concat('Created by: ', who/@name, ' on ', bug_when)"/></rdfs:label>
 				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
@@ -148,10 +147,13 @@
 					<xsl:value-of select="vi:http_string_date (bug_when)"/>
 				</dcterms:created>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', urlify (replace(who/@name, ' ', '_')))}">
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}">
 			    <rdf:type rdf:resource="&foaf;Person"/>
+			    <xsl:if test="who/@name">
 			    <foaf:name><xsl:value-of select="who/@name"/></foaf:name>
+			    </xsl:if>
 			    <foaf:mbox rdf:resource="mailto:{who}"/>
+			    <sioc:creator_of rdf:resource="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}"/>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>

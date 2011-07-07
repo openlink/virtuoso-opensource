@@ -71,8 +71,13 @@ import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
+import org.openrdf.model.URIFactory;
+import org.openrdf.model.LiteralFactory;
 import org.openrdf.model.impl.StatementImpl;
 import org.openrdf.model.impl.NamespaceImpl;
+import org.openrdf.model.impl.ValueFactoryImpl;
+import org.openrdf.model.impl.LiteralFactoryImpl;
+import org.openrdf.model.impl.URIFactoryImpl;
 import org.openrdf.query.Dataset;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.BooleanQuery;
@@ -162,6 +167,7 @@ import virtuoso.sql.RdfBox;
  * 
  */
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
+	private ValueFactoryImpl vf;
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
@@ -180,8 +186,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
+		URIFactory uf = repository.getURIFactory();
+		LiteralFactory lf = repository.getLiteralFactory();
+		this.vf = new ValueFactoryImpl(uf, lf);
 		this.nilContext = getValueFactory().createURI(repository.defGraph);
 		this.repository.initialize();
+
 	}
 
 	/**
@@ -235,7 +245,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * @return A repository-specific ValueFactory.
 	 */
 	public ValueFactory getValueFactory() {
-		return repository.getValueFactory();
+		return vf;
         }
 
 	/**
@@ -473,19 +483,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		      break;
 		}
 
-		if(type.equals("select")) {
+		flushDelayAdd();
+
+		if(type.equals("select"))
 			return prepareTupleQuery(language, query, baseURI);
-		}
-		else if(type.equals("construct") || type.equals("describe")) {
+		else if(type.equals("construct") || type.equals("describe"))
 			return prepareGraphQuery(language, query, baseURI);
-		}
-		else if(type.equals("ask")) {
+		else if(type.equals("ask"))
 			return prepareBooleanQuery(language, query, baseURI);
-		}
-		else {
-			sendDelayAdd();
+		else
 			return new VirtuosoQuery();
-		}
 	}
 
 	/**
@@ -536,7 +543,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleResult evaluate() throws StoreException
 			{
-				return executeSPARQLForTupleResult(query, getDataset());
+				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred(), getBindings());
 			}
 		};
 		return q;
@@ -589,7 +596,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphResult evaluate() throws StoreException {
-				return executeSPARQLForGraphResult(query, getDataset());
+				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred(), getBindings());
 			}
 		};
 		return q;
@@ -642,7 +649,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean ask() throws StoreException {
-				return executeSPARQLForBooleanResult(query, getDataset());
+				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred(), getBindings());
 			}
 		};
 		return q;
@@ -660,12 +667,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 		List<Resource> v = new LinkedList<Resource>();
 
 		String query = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(query);
 
 			// begin at onset one
@@ -1067,11 +1074,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public boolean isEmpty() throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 		boolean result = false;
 		String query = "sparql define input:storage \"\" select * where {?s ?o ?p} limit 1";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(query);
 			result = !rs.next();
                         rs.close();
@@ -1112,7 +1119,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		verifyIsOpen();
 		verifyNotTxnActive("Connection already has an active transaction");
-		sendDelayAdd();
+		flushDelayAdd();
 		try {
 			getQuadStoreConnection().setAutoCommit(false);
 		}
@@ -1132,7 +1139,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		verifyIsOpen();
 //--		verifyTxnActive();
-		sendDelayAdd();
+		flushDelayAdd();
 		try {
 			getQuadStoreConnection().commit();
 			getQuadStoreConnection().setAutoCommit(true);
@@ -1328,7 +1335,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			parser.setVerifyData(true);
 			parser.setStopAtFirstError(true);
 			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
-			final PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			final PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			final Resource[] _contexts = checkDMLContext(contexts);
 
                         RDFHandlerBase rdfInserter = new RDFHandlerBase() {
@@ -1354,7 +1361,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				public void handleNamespace(String prefix, String name) throws RDFHandlerException {
 					String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 					try {
-						PreparedStatement psn = getQuadStoreConnection().prepareStatement(query);
+						PreparedStatement psn = prepareStatement(query);
 						psn.setString(1, prefix);
 						psn.setString(2, name);
 						psn.execute();
@@ -1599,7 +1606,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 
 		try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
 
 			while (it.hasNext()) {
@@ -1690,7 +1697,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
   
 		try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
 
 			Statement st;
@@ -1802,7 +1809,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new StoreException("Repository is ReadOnly");
 		}
 
-		sendDelayAdd();
+		flushDelayAdd();
 
 		contexts = checkDMLContext(contexts);
 		boolean autoCommit = isAutoCommit();
@@ -1883,7 +1890,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new StoreException("Repository is ReadOnly");
 		}
 
-		sendDelayAdd();
+		flushDelayAdd();
 
 		Resource[] _contexts;
 		Iterator<? extends Statement> it = statements.iterator();
@@ -1961,7 +1968,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new StoreException("Repository is ReadOnly");
 		}
 
-		sendDelayAdd();
+		flushDelayAdd();
 
 		boolean autoCommit = isAutoCommit();
 		if (autoCommit) {
@@ -2025,7 +2032,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new StoreException("Repository is ReadOnly");
 		}
 
-		sendDelayAdd();
+		flushDelayAdd();
 
 		contexts = checkDMLContext(contexts);
 
@@ -2072,11 +2079,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 		List<Namespace> namespaceList = new LinkedList<Namespace>();
 		String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			ResultSet rs = stmt.executeQuery(query);
 
 			// begin at onset one
@@ -2109,11 +2116,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public String getNamespace(String prefix) throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 		String retVal = null;
 		String query = "SELECT __xml_get_ns_uri (?, 3)";
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ResultSet rs = ps.executeQuery();
 
@@ -2145,13 +2152,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 		if (repository.isReadOnly()) {
 			throw new StoreException("Repository is ReadOnly");
 		}
 		String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ps.setString(2, name);
 			ps.execute();
@@ -2179,10 +2186,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		if (repository.isReadOnly()) {
 			throw new StoreException("Repository is ReadOnly");
 		}
-		sendDelayAdd();
+		flushDelayAdd();
 		String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ps.execute(query);
 		}
@@ -2206,10 +2213,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new StoreException("Repository is ReadOnly");
 		}
 
-		sendDelayAdd();
+		flushDelayAdd();
 		String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			java.sql.Statement stmt = createStatement();
 			stmt.execute(query);
 		}
 		catch (SQLException e) {
@@ -2218,15 +2225,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleResult executeSPARQLForTupleResult(String query, Dataset dataset) throws StoreException
+	protected TupleResult executeSPARQLForTupleResult(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws StoreException
 	{
 		List<String> names = new LinkedList<String>();
 		try {
 			verifyIsOpen();
-			sendDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			flushDelayAdd();
+			java.sql.Statement stmt = createStatement();
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -2239,34 +2245,33 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return new TupleResultImpl(names, new CursorBindingSet(rs));
 		}
 		catch (SQLException e) {
-			throw new StoreException(e);
+			throw new StoreException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 	
-	protected GraphResult executeSPARQLForGraphResult(String query, Dataset dataset) throws StoreException
+	protected GraphResult executeSPARQLForGraphResult(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws StoreException
 	{
 		try {
 			verifyIsOpen();
-			sendDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			flushDelayAdd();
+			java.sql.Statement stmt = createStatement();
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 			return new GraphResultImpl(new HashMap<String,String>(), new CursorGraphResult(rs));
 		}
 		catch (SQLException e) {
-			throw new StoreException(e);
+			throw new StoreException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 		
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) throws StoreException
+	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws StoreException
 	{
 		boolean result = false;
 		try {
 			verifyIsOpen();
-			sendDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			flushDelayAdd();
+			java.sql.Statement stmt = createStatement();
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 
 			while(rs.next())
 			{
@@ -2278,7 +2283,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return result;
 		}
 		catch (SQLException e) {
-			throw new StoreException(e);
+			throw new StoreException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 
@@ -2303,8 +2308,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 
 		try {
-			sendDelayAdd();
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			flushDelayAdd();
+			java.sql.Statement stmt = createStatement();
 			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
 			return stmt.getUpdateCount();
 		}
@@ -2334,10 +2339,79 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
-	private String fixQuery(String query, Dataset dataset) 
+
+	private java.sql.Statement createStatement() throws java.sql.SQLException
+	{
+	  java.sql.Statement stmt = quadStoreConnection.createStatement();
+	  int timeout = repository.getQueryTimeout();
+          if (timeout > 0)
+            stmt.setQueryTimeout(timeout);
+          stmt.setFetchSize(prefetchSize);
+          return stmt;
+	}
+
+	private java.sql.PreparedStatement prepareStatement(String sql) throws java.sql.SQLException
+	{
+	  java.sql.PreparedStatement stmt = quadStoreConnection.prepareStatement(sql);
+	  int timeout = repository.getQueryTimeout();
+          if (timeout > 0)
+            stmt.setQueryTimeout(timeout);
+          stmt.setFetchSize(prefetchSize);
+          return stmt;
+	}
+	
+	
+	private String substBindings(String query, BindingSet bindings) 
+	{
+		StringBuffer buf = new StringBuffer();
+		String delim = " ,)(;.";
+	  	int i = 0;
+	  	char ch;
+	  	int qlen = query.length();
+	  	while( i < qlen) {
+	    		ch = query.charAt(i++);
+	    		if (ch == '\\') {
+	    			buf.append(ch);
+	    			if (i < qlen)
+	    				buf.append(query.charAt(i++)); 
+
+	    		} else if (ch == '"' || ch == '\'') {
+	      			char end = ch;
+	      			buf.append(ch);
+	      			while (i < qlen) {
+	        			ch = query.charAt(i++);
+	        			buf.append(ch);
+	        			if (ch == end)
+	          				break;
+	      			}
+	    		} else  if ( ch == '?' ) {  //Parameter
+	      			String varData = null;
+	      			int j = i;
+	      			while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
+	      			if (j != i) {
+	        			String varName = query.substring(i, j);
+	        			Value val = bindings.getValue(varName);
+	        			if (val != null) {
+                  				varData = stringForValue(val);
+                  				i=j;
+                			}
+	      			}
+	      			if (varData != null)
+	        			buf.append(varData);
+	      			else
+	        			buf.append(ch);
+	    		} else {
+	      			buf.append(ch);
+	    		}
+	  	}
+		return buf.toString();
+	}
+
+	private String fixQuery(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
 	{
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = "";
+		StringBuffer ret = new StringBuffer("sparql\n ");
 
 		while(tok.hasMoreTokens()) {
 		    s = tok.nextToken().toLowerCase();
@@ -2345,11 +2419,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			break;
 		}
 
-		StringBuffer ret = new StringBuffer();
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			ret.append("sparql\n define output:format '_JAVA_'\n ");
-		else 
-			ret.append("sparql\n ");
+		    ret.append("define output:format '_JAVA_'\n ");
+
+
+		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
+		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
+
+		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{
@@ -2375,7 +2452,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		     }
 		   }
 		}
-		ret.append(query);
+		ret.append(substBindings(query, bindings));
 		return ret.toString();
 	}
 
@@ -2395,7 +2472,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        if (!isAutoCommit && useLazyAdd) {
 		        	synchronized(this) {
 		        		if (psInsert == null)
-						psInsert = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
 					for (int i = 0; i < contexts.length; i++) {
 						psInsert.setString(1, contexts[i].stringValue());
@@ -2413,7 +2490,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					}
 				}
 		        } else {
-				PreparedStatement ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+				PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
 				for (int i = 0; i < contexts.length; i++) {
 					ps.setString(1, contexts[i].stringValue());
@@ -2447,6 +2524,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	private void flushDelayAdd() throws StoreException 
+	{
+		synchronized(this) {
+			try {
+				if (psInsertCount > 0 && psInsert!=null) {
+					psInsert.executeBatch();
+					psInsert.clearBatch();
+					psInsertCount = 0;
+				}
+			}
+			catch (Exception e) {
+			}
+		}
+	}
+
 	private void dropDelayAdd() throws StoreException 
 	{
 		synchronized(this) {
@@ -2465,7 +2557,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
                 if (contexts!=null && contexts.length > 0)
 		  try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			for (int i = 0; i < contexts.length; i++) {
 				ps.setString(1, contexts[i].stringValue());
 				ps.execute();
@@ -2482,7 +2574,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 
 		String s = "?s";
 		String p = "?p";
@@ -2514,7 +2606,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 		try {
-		        java.sql.Statement st = getQuadStoreConnection().createStatement();
+		        java.sql.Statement st = createStatement();
 		        ResultSet rs = st.executeQuery(query.toString());
 
 			if (rs.next())
@@ -2532,7 +2624,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		throws StoreException 
 	{
 		verifyIsOpen();
-		sendDelayAdd();
+		flushDelayAdd();
 
 		ResultSet rs = null;
 		String s = "?s";
@@ -2566,8 +2658,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			query.append(" LIMIT 1");
 
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.setFetchSize(prefetchSize);
+			java.sql.Statement stmt = createStatement();
 			rs = stmt.executeQuery(query.toString());
 		}
 		catch (SQLException e) {
@@ -2592,13 +2683,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    if (subject == null && predicate == null && object == null && context != null) {
 			String  query = "sparql clear graph iri(??)";
 
-			ps = getQuadStoreConnection().prepareStatement(query);
+			ps = prepareStatement(query);
 			ps.setString(1, context.stringValue());
 			ps.execute();
 
 		    } else if (subject != null && predicate != null && object != null && context != null) {
 
-		    	ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
+		    	ps = prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
 
 			ps.setString(1, context.stringValue());
 			bindResource(ps, 2, subject);
@@ -2626,7 +2717,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
   				"> { "+S+" "+P+" "+O+" } from <"+context+
   				"> where { "+S+" "+P+" "+O+" }";
 
-		    	java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+		    	java.sql.Statement stmt = createStatement();
 		    	stmt.execute(query);
 		    }
 		}
@@ -2700,6 +2791,19 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 	
 
+	private String escapeString(String s) {
+		StringBuffer buf = new StringBuffer(s.length());
+	  	int i = 0;
+	  	char ch;
+	  	while( i < s.length()) {
+	    		ch = s.charAt(i++);
+	    		if (ch == '\'') 
+				buf.append('\\');
+			buf.append(ch);
+	  	}
+		return buf.toString();
+	}
+
 	private String stringForResource(Resource n) 
 	{
 		if (n instanceof URI) 
@@ -2729,14 +2833,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return stringForResource((Resource) n);
 		else if (n instanceof Literal) {
 			Literal lit = (Literal) n;
-			String o = "\"" + lit.stringValue() + "\"";
+			String o = "'" + escapeString(lit.stringValue()) + "'";
 			if (lit.getLanguage() != null) 
 				return o + "@" + lit.getLanguage();
 			else if (lit.getDatatype() != null) 
 				return o + "^^<" + lit.getDatatype() + ">";
 			return o;
 		}
-		else return "\"" + n.stringValue() + "\"";
+		else return "'" + escapeString(n.stringValue()) + "'";
 	}
 
 	

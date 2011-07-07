@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -92,6 +92,29 @@ OAT.Preferences = {
     allowDefaultResize: 1,
     allowDefaultDrag: 1
 }
+
+OAT.Debug = {
+    levels: {
+	WARNING: 1,
+	ERROR: 2,
+	CRITICAL: 3 },
+
+    level_msg: ["OAT Warning",
+		"OAT Error",
+		"OAT Critical"],
+
+    log: function (lvl,msg) {
+	if (!!window.console && OAT.Preferences.debug) {
+	    window.console.log (OAT.Debug.level_msg[lvl] + ': ' + msg);
+	}
+    },
+
+    reportObsolete: function (where) {
+	OAT.Debug.log (OAT.Debug.levels.WARNING,'Obsolete call: ' + where)
+	OAT.MSG.send (OAT,'OBSOLETE_CALL',where);
+    }
+};
+
 
 OAT.ApiKeys = {
     services: {
@@ -248,7 +271,7 @@ if (!Array.prototype.forEach) {
 	var len = this.length;
 	for (var i=0;i<len;i++) {
 	    if (i in this) { cb.call(_this, this[i], i, this); }
-	}
+    }
     }
 }
 
@@ -1035,7 +1058,7 @@ OAT.Dom = {
 	    var key = part.substring(0,index);
 	    var val = part.substring(index+1);
 	    key = decodeURIComponent(key);
-	    val = decodeURIComponent(val);
+	    val = decodeURIComponent(val.replace(/\+/g,  " "));
 
 	    var r = false;
 	    if ((r = key.match(/(.*)\[\]$/))) {
@@ -1196,11 +1219,13 @@ OAT.Browser = {
     isKonqueror:!!navigator.userAgent.match(/konqueror/i),
     isKHTML:!!navigator.userAgent.match(/khtml/i),
 
-    isIE:(document.attachEvent && !document.addEventListener),
+    isIE: !!navigator.userAgent.match(/msie/i),
+    isIE6:!!navigator.userAgent.match(/msie 6/i),
     isIE7:!!navigator.userAgent.match(/msie 7/i),
+    isIE8:!!navigator.userAgent.match(/msie 8/i),
+    isIE9:!!navigator.userAgent.match(/msie 9/i),
 
     /* !isIE && !isIE7 */
-    isIE6:( (document.attachEvent && !document.addEventListener) && !navigator.userAgent.match(/msie 7/i) ),
 
     isGecko:(!navigator.userAgent.match(/khtml/i) && !!navigator.userAgent.match(/Gecko/i)),
 
@@ -1210,7 +1235,7 @@ OAT.Browser = {
     /* OS detection */
     isMac:!!navigator.platform.toString().match(/mac/i),
     isLinux:!!navigator.platform.toString().match(/linux/i),
-    isWindows:!!navigator.userAgent.toString().match(/windows/i),
+    isWindows:!!navigator.userAgent.match(/windows/i),
 
     /* mozilla chrome */
     isChrome:function() {
@@ -1228,13 +1253,32 @@ OAT.Browser = {
     isIpod:!!navigator.platform.toString().match(/ipod/i),
     isSymbian:!!navigator.platform.toString().match(/symbian/i),
     isS60:!!navigator.platform.toString().match(/series60/i),
-    isAndroid:!!navigator.platform.toString().match(/android/i),
+    isAndroid:!!navigator.userAgent.match(/android/i),
 
     isScreenOnly:(!!navigator.platform.toString().match(/iphone/i) ||
 		  !!navigator.platform.toString().match(/symbian/i) ||
 		  !!navigator.platform.toString().match(/ipod/i) ||
-		  !!navigator.platform.toString().match(/android/i))
+		  !!navigator.userAgent.match(/android/i)),
+
+    hasXmlParser: ((!!document.implementation && 
+		    !!document.implementation.createDocument) ||
+		   (!!document.getImplementation &&
+		    !!document.getImplementation().createDocument)),
+
+    hasSVG:(!!document.implementation && 
+            document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1")),
+    hasHtml5Storage: function () {
+	try {
+	    return 'localStorage' in window && window['localStorage'] !== null;
+	}
+	catch (e) {
+	    return false;
+	}
+    }
+    
 }
+
+
 
 /**
  * @namespace Event helper
@@ -1244,7 +1288,7 @@ OAT.Event = {
     /**
      * attaches event to a given element, optionally with a callback
      * and/or scope from which the callback will be executed
-     * @param {node} elm atach the event to this element
+     * @param {node} elm attach the event to this element
      * @param {event} event event to be attached
      * @param {function} callback callback to execute when event fires up
      * @param {object} scope scope object
@@ -1430,8 +1474,8 @@ OAT.Loader = {
     _finished: function(name) {
 	this._loaded.push(name);
 	var arr = this._callbacks[name];
-	delete this._callbacks[name];
 	for (var i=0;i<arr.length;i++) { arr[i](); }
+        delete this._callbacks[name];
     },
 
     /**
@@ -1577,7 +1621,7 @@ OAT.Loader = {
     },
 
     _depends: {
-	ajax:"xml",
+	ajax:["crypto","xml"],
 	anchor:"win",
 	calendar:["drag","notify"],
 	color:"drag",
@@ -1620,6 +1664,7 @@ OAT.Loader = {
 	webclip:"webclipbinding",
 	win:["drag","layers"],
 	ws:["xml","soap","ajax","schema","connection"],
+	xml:["xpath"],
 	xmla:["soap","xml","connection"]
     },
 

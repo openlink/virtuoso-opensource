@@ -43,7 +43,6 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:a="http://www.w3.org/2005/Atom"
-    xmlns:xn="http://www.ning.com/atom/1.0"
     xmlns:gs="&gs;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
@@ -83,9 +82,9 @@
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="a:updated"/>
 			</dcterms:modified>
-			<dcterms:published>
+			<dcterms:created>
 				<xsl:value-of select="a:published"/>
-			</dcterms:published>
+			</dcterms:created>
 			<dc:title>
 				<xsl:value-of select="a:title"/>
 			</dc:title>
@@ -96,7 +95,7 @@
 			<dc:creator><xsl:value-of select="a:author/a:name"/> <xsl:value-of select="a:author/a:email" /></dc:creator>
 		</rdf:Description>
 
-    </xsl:template>
+	</xsl:template>
 
 	<xsl:template match="@*|*" />
 

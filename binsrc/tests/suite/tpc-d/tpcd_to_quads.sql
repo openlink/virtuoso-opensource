@@ -6,7 +6,7 @@ create procedure tpcd_to_quads ()
   for (sparql define output:valmode "LONG" select ?s ?p ?o from <http://example.com/tpcd> where { ?s ?p ?o}) do
     {
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-      values (graph_iid, "s", "p", DB.DBA.RDF_OBJ_OF_LONG ("o"));
+      values (graph_iid, "s", "p", DB.DBA.RDF_OBJ_OF_SQLVAL ("o"));
     }
   log_enable(1, 0);
 }

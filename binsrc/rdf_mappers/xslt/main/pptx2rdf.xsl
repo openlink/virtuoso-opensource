@@ -9,7 +9,7 @@
 <!ENTITY dcmitype "http://purl.org/dc/dcmitype/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY sioc "http://rdfs.org/sioc/ns#/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY cp "http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
 <!ENTITY ep "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
@@ -52,8 +52,13 @@
   <xsl:param name="sourceDoc" />
   <xsl:param name="slideUri" />
 
+    <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
+    <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+
+
   <xsl:variable name="documentResourceURL">
-    <xsl:value-of select="$baseUri"/>
+    <xsl:value-of select="$resourceURL"/>
   </xsl:variable>
 
   <xsl:variable name="sourceDoc">
@@ -113,6 +118,16 @@
 	<dcterms:hasFormat rdf:resource="{$documentResourceURL}"/>
       </rdf:Description>
       -->
+
+      	<rdf:Description rdf:about="{$docproxyIRI}">
+      		<rdf:type rdf:resource="&bibo;Document"/>
+      		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+      		<sioc:container_of rdf:resource="{$resourceURL}"/>
+      		<dcterms:subject rdf:resource="{$resourceURL}"/>
+      		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+      		<owl:sameAs rdf:resource="{$docIRI}"/>
+      	</rdf:Description>
+      	
 
       <!-- The PPTX representation of the presentation i.e. .pptx file URI *including* file suffix -->
       <rdf:Description rdf:about="{$documentResourceURL}">

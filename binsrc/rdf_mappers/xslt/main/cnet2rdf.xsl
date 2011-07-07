@@ -28,8 +28,9 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
-<!ENTITY cnet "http://developer.api.cnet.com/rest/v1.0/ns">
+<!ENTITY cnet "http://api.cnet.com/restApi/v1.0/ns">
 <!ENTITY oplcn "http://www.openlinksw.com/schemas/cnet#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -40,6 +41,7 @@
   xmlns:foaf="&foaf;"
   xmlns:bibo="&bibo;"
   xmlns:sioc="&sioc;"
+  xmlns:pto="&pto;" 
   xmlns:gr="&gr;"
   xmlns:dcterms="&dcterms;"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -74,6 +76,7 @@
 					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
 					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}"/>
 					<dcterms:subject rdf:resource="{$resourceURL}"/>
+					<owl:sameAs rdf:resource="{$docIRI}"/>
 				</rdf:Description>
 
 	               		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
@@ -100,7 +103,7 @@
 			                <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 					<xsl:apply-templates mode="offering" />
 				</gr:Offering>
-				<xsl:apply-templates />
+				<xsl:apply-templates select="cnet:CNETResponse" mode="product" />
 			</xsl:otherwise>
 		</xsl:choose>
 	</rdf:RDF>
@@ -109,7 +112,6 @@
   <xsl:template match="cnet:SoftwareProduct" mode="offering">
  	<gr:includes rdf:resource="{$resourceURL}"/>
 	<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeDirectDownload"/>
-	<xsl:apply-templates mode="offering" />
   </xsl:template>
 
   <xsl:template match="cnet:TechProduct" mode="offering">
@@ -117,10 +119,9 @@
 		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
-	<xsl:apply-templates mode="offering" />
   </xsl:template>
 
-  <xsl:template match="cnet:SoftwareProduct">
+  <xsl:template match="cnet:SoftwareProduct"  mode="product">    
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;SoftwareProduct" />
@@ -134,11 +135,11 @@
 		               	-->
 	              	</rdf:Description>
 	       	</gr:hasMakeAndModel>
-		<xsl:apply-templates  />
+		<xsl:apply-templates select="*"  />
 	</rdf:Description>
   </xsl:template>
 
-  <xsl:template match="cnet:TechProduct">
+  <xsl:template match="cnet:TechProduct"  mode="product">    
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;TechProduct" />
@@ -152,7 +153,7 @@
 		               	-->
 	              	</rdf:Description>
 	       	</gr:hasMakeAndModel>
-		<xsl:apply-templates  />
+		<xsl:apply-templates select="*" />
 	</rdf:Description>
   </xsl:template>
 
@@ -188,6 +189,10 @@
 	</gr:hasManufacturer>
   </xsl:template>
 
+    <xsl:template match="cnet:Manufacturer/cnet:Name">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
+    </xsl:template>
+
   <xsl:template match="cnet:Specs">
   	<oplcn:specification><xsl:value-of select="string(.)"/></oplcn:specification>
   </xsl:template>
@@ -212,7 +217,7 @@
   	<oplcn:bottomLine><xsl:value-of select="."/></oplcn:bottomLine>
   </xsl:template>
 
-  <xsl:template match="cnet:TechProduct/cnet:UserRatingSummary">
+  <xsl:template match="cnet:UserRatingSummary">
   	<oplcn:userRating><xsl:value-of select="concat(cnet:Rating, ' out of ', cnet:Rating/@outOf, ' from ', cnet:TotalVotes, ' votes' )"/></oplcn:userRating>
   	<oplcn:userStarRating><xsl:value-of select="concat(cnet:StarRating, ' out of ', cnet:StarRating/@outOf, ' from ', cnet:TotalVotes, ' votes' )"/></oplcn:userStarRating>
   </xsl:template>
@@ -220,14 +225,17 @@
   <xsl:template match="cnet:LowPrice" mode="offering">
 	<gr:hasPriceSpecification>
 	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
-			<rdfs:label>sale price</rdfs:label>
 			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 			<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
 			<xsl:choose>
 				<xsl:when test="string(.) = string(../cnet:HighPrice)">
+                			<rdfs:label>
+                			<xsl:value-of select="concat( translate (., '$', ''), ' (USD)')"/>	
+                			</rdfs:label>
 					<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
 				</xsl:when>
 				<xsl:otherwise>
+                			<rdfs:label>sale price</rdfs:label>
 					<gr:hasMinCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasMinCurrencyValue>
 					<gr:hasMaxCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (../cnet:HighPrice, '$', '')"/></gr:hasMaxCurrencyValue>
 				</xsl:otherwise>
@@ -259,7 +267,9 @@
   <xsl:template match="cnet:Price">
 	<gr:hasPriceSpecification>
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-		<rdfs:label>sale price</rdfs:label>
+		<rdfs:label>
+      			<xsl:value-of select="concat( translate (., '$', ''), ' (USD)')"/>	
+		</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
 		<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
@@ -334,7 +344,7 @@
     </xsl:template>
 
     <xsl:template match="cnet:Description">
-	<dc:description><xsl:value-of select="string(.)"/></dc:description>
+	<gr:description><xsl:value-of select="string(.)"/></gr:description>
 	<oplcn:description><xsl:value-of select="string(.)"/></oplcn:description>
     </xsl:template>
 
@@ -347,9 +357,9 @@
   <!-- Applies to SoftwareProduct | TechProduct -->
 
   <xsl:template match="cnet:TechProduct/cnet:Name | cnet:SoftwareProduct/cnet:Name" mode="offering">
-	<rdfs:label><xsl:value-of select="."/></rdfs:label>
+	<rdfs:label><xsl:value-of select="concat('Offer: ', .)"/></rdfs:label>
   </xsl:template>
-  <xsl:template match="cnet:TechProduct/cnet:Name | cnet:SoftwareProduct/cnet:Name">
+  <xsl:template match="cnet:Name">
 	<rdfs:label><xsl:value-of select="."/></rdfs:label>
   </xsl:template>
   <xsl:template match="cnet:EditorsRating">

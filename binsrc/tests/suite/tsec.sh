@@ -473,7 +473,8 @@ fi
 #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
 if test -f ../wb/SparqlSec.sql
 then
-  RUN $ISQL $DSN dba dba ../wb/SparqlSec.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+  cat ../wb/SparqlSec.sql | grep -v "set echo on;" > ../wb/SparqlSec_noecho.sql
+  RUN $ISQL $DSN dba dba ../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
   if test $STATUS -ne 0
   then
     LOG "***ABORTED: ../wb/SparqlSec.sql Sparql graph level security tests"

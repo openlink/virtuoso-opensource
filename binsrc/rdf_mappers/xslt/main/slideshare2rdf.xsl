@@ -65,9 +65,9 @@
 				</bibo:identifier>
 			</xsl:if>
 			<xsl:if test="Meta/Query">
-				<dcterms:title>
+				<dc:title>
 					<xsl:value-of select="Meta/Query" />
-				</dcterms:title>
+				</dc:title>
 			</xsl:if>
 			<xsl:for-each select="Slideshow">
 				<xsl:choose>
@@ -87,6 +87,7 @@
 				</foaf:nick>
 				<xsl:for-each select="Slideshow">
 					<foaf:made rdf:resource="{vi:proxyIRI(Permalink)}" />
+					<sioc:creator_of rdf:resource="{vi:proxyIRI(Permalink)}" />
 				</xsl:for-each>
 			</foaf:Person>
 		</xsl:for-each>
@@ -140,11 +141,11 @@
 				</xsl:otherwise>
 			</xsl:choose>
 			<bibo:uri rdf:resource="{vi:proxyIRI($res)}" />
-			<dcterms:title>
+			<dc:title>
 				<xsl:value-of select="Title" />
-			</dcterms:title>
+			</dc:title>
 			<bibo:owner rdf:resource="{$owner}" />
-			<foaf:maker rdf:resource="{$owner}" />
+			<dcterms:creator rdf:resource="{$owner}" />
 			<bibo:identifier>
 				<xsl:choose>
 					<xsl:when test="Id">

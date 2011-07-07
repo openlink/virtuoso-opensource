@@ -1,7 +1,13 @@
 html { margin: 0; padding: 0; }
 body { font-family: sans-serif; font-size: 80%; margin: 0; padding: 1.2em 2em;  background: #cec; }
 
-#header { width: 100%; float: left; clear: left; border-bottom: 2px solid #696; margin: 0 0 1.2em; padding: 0 0 0.3em; }
+#header { 
+  width: 100%; 
+  float: left; 
+  clear: left; 
+  border-bottom: 2px solid #696; 
+  margin: 0 0 1.2em; padding: 0 0 0.3em; }
+
 #hd_l { width: 80%; float: left;}
 #hd_r {float: right; clear: right;}
 
@@ -25,7 +31,13 @@ img { border: none; }
 
 #content {width: 100%; float: left; clear: left;}
 
-#footer { width: 100%;float: left; clear: left;border-top: 2px solid #696; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}
+#footer { 
+  width: 100%; float: left; clear: left;
+  border-top: 2px solid #696; 
+  margin: 1.2em 0 0; 
+  padding: 0.3em; 
+  background-color: #fff;}
+
 #ft_r { float: right; clear: right;}
 #ft_t { text-align: center; }
 #ft_b { text-align: center; margin-top: 0.7ex }

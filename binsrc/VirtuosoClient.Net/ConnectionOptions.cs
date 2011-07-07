@@ -187,14 +187,20 @@ namespace OpenLink.Data.Virtuoso
 		internal const string ENCRYPT = "Encrypt";
 		internal const string PERSISTSECURITYINFO = "PersistSecurityInfo";
 		internal const string PERSIST_SECURITY_INFO = "Persist Security Info";
-		internal const string CONNECTTIMEOUT = "Connect Timeout";
-		internal const string CONNECTIONTIMEOUT = "Connection Timeout";
-		internal const string CONNECTIONLIFETIME = "Connection Lifetime";
-		internal const string MINPOOLSIZE = "Min Pool Size";
-		internal const string MAXPOOLSIZE = "Max Pool Size";
+		internal const string CONNECTTIMEOUT = "ConnectTimeout";
+		internal const string CONNECT_TIMEOUT = "Connect Timeout";
+		internal const string CONNECTIONTIMEOUT = "ConnectionTimeout";
+		internal const string CONNECTION_TIMEOUT = "Connection Timeout";
+		internal const string CONNECTIONLIFETIME = "ConnectionLifetime";
+		internal const string CONNECTION_LIFETIME = "Connection Lifetime";
+		internal const string MINPOOLSIZE = "MinPoolSize";
+		internal const string MIN_POOL_SIZE = "Min Pool Size";
+		internal const string MAXPOOLSIZE = "MaxPoolSize";
+		internal const string MAX_POOL_SIZE = "Max Pool Size";
 		internal const string POOLING = "Pooling";
 		internal const string ENLIST = "Enlist";
-		internal const string ROUNDROBIN = "Round Robin";
+		internal const string ROUNDROBIN = "RoundRobin";
+		internal const string ROUND_ROBIN = "Round Robin";
 
 		private BooleanOption odbc;
 		private ListOption host;
@@ -262,13 +268,19 @@ namespace OpenLink.Data.Virtuoso
 			options.Add (PERSISTSECURITYINFO, persistSecurityInfo);
 			options.Add (PERSIST_SECURITY_INFO, persistSecurityInfo);
 			options.Add (CONNECTTIMEOUT, connectionTimeout);
+			options.Add (CONNECT_TIMEOUT, connectionTimeout);
 			options.Add (CONNECTIONTIMEOUT, connectionTimeout);
+			options.Add (CONNECTION_TIMEOUT, connectionTimeout);
 			options.Add (CONNECTIONLIFETIME, connectionLifetime);
+			options.Add (CONNECTION_LIFETIME, connectionLifetime);
 			options.Add (MINPOOLSIZE, minPoolSize);
+			options.Add (MIN_POOL_SIZE, minPoolSize);
 			options.Add (MAXPOOLSIZE, maxPoolSize);
+			options.Add (MAX_POOL_SIZE, maxPoolSize);
 			options.Add (POOLING, pooling);
 			options.Add (ENLIST, enlist);
 			options.Add (ROUNDROBIN, roundrobin);
+			options.Add (ROUND_ROBIN, roundrobin);
 		}
 
 		internal void Reset ()

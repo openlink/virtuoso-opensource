@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -23,7 +23,7 @@ OAT.RDFMini = function(div,optObj) {
 			["browser","Raw Triples",{removeNS:true}],
 			["triples","Grid view",{}],
 			["svg","SVG Graph",{}],
-			["map","Yahoo Map",{provider:2}],
+			["map","Google Map",{provider:OAT.Map.TYPE_G3}],
 			["timeline","Timeline",{}],
 			["images","Images",{}],
 			["tagcloud","Tag Cloud",{}]
@@ -31,12 +31,13 @@ OAT.RDFMini = function(div,optObj) {
 		querySearchURI:false,
 		showSearch:true,
 		imagePath:OAT.Preferences.imagePath,
-		endpoint:"/sparql?query="
+	endpoint:"/sparql?query=",
+	store: false
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 
 	this.parent = $(div);
-	this.content = OAT.Dom.create("div",{},"rdf_mini");
+	this.content = OAT.Dom.create("div",{className:"rdf_mini"});
 	this.tabs = [];
 	this.select = false;
 
@@ -102,12 +103,32 @@ OAT.RDFMini = function(div,optObj) {
 			}
 			OAT.Event.attach(s,"change",self.redraw);
 			self.select = s;
-			OAT.Dom.append([self.parent,OAT.Dom.text("Visualization: "),s]);
+
+	    var sel_ctr = OAT.Dom.create("div",{className:"rdfmini_view_sel_ctr"});
+	    var sel_lbl = OAT.Dom.create("label");
+
+	    OAT.Dom.append([self.parent,sel_ctr],[sel_ctr,sel_lbl,s]);
+	    sel_lbl.innerHTML = "View:";
 		} else {
 			var t = self.options.tabs[0];
 			var obj = new OAT.RDFTabs[t[0]](self,t[2]);
 			self.tabs.push(obj);
 		}
+
+	var ua = navigator.userAgent;
+
+	if (ua.indexOf('iPhone') != -1 || ua.indexOf('Android') != -1 ) {
+	    vp = OAT.Dom.getViewport();
+
+	    self.content.style.width = vp[1]+'px';
+	    self.content.style.height = vp[0]+'px';
+	    console.info ('viewport: '+vp[1]+'x'+vp[0]);
+	    self.content.scrollIntoView(true);
+	}
+//	else {
+//	    self.content.style.height = '600px';
+//	}
+
 		self.parent.appendChild(self.content);
 	}
 
@@ -138,18 +159,45 @@ OAT.RDFMini = function(div,optObj) {
 	var ajaxStart = function() { OAT.Dom.show(self.throbber); }
 	var ajaxEnd = function() { OAT.Dom.hide(self.throbber); }
 
-	this.store = new OAT.RDFStore(self.reset,{onstart:ajaxStart,onend:ajaxEnd});
+    if (this.options.store) {
+	this.store = this.options.store;
+	this.store.options.onstart = ajaxStart;
+	this.store.options.onend = ajaxEnd;
+	this.store.reset = this.reset;
+    }
+    else this.store = new OAT.RDFStore(this.reset,{onstart:ajaxStart,onend:ajaxEnd});
+
 	this.data = self.store.data;
 
 	this.getContent = function(data_,disabledActions) {
 		var content = false;
-		var data = (typeof(data_) == "object" ? data_.uri : data_);
+	    var data;
+	var label = false;
+	var ciri;
+
+	    if (data_.constructor == OAT.RDFAtom)
+		switch (data_.getTag()) {
+		case OAT.RDFTag.IRI:
+		    data = data_.getIRI();
+		ciri = OAT.IRIDB.resolveCIRI(data_.getValue());
+		    break;
+		case OAT.RDFTag.LIT:
+		    data = data_.getValue();
+		    break;
+	    }
+	else if (typeof data_ == 'object') {
+	    ciri = OAT.IRIDB.resolveCIRI(data_.iid);
+	    data = OAT.IRIDB.getIRI(data_.iid);
+	    label = data_.label;
+	}
+	
+
 		var type = self.getContentType(data);
 
 		switch (type) {
 			case 3:
 				content = OAT.Dom.create("img");
-				content.title = data;
+	    content.title = (label ? label : data);
 				content.src = data;
 				self.processLink(content,data);
 			break;
@@ -162,14 +210,19 @@ OAT.RDFMini = function(div,optObj) {
 			case 1:
 				content = OAT.Dom.create("span");
 				var a = OAT.Dom.create("a");
-				a.innerHTML = data;
+	    a.innerHTML = (label ? label : ciri);
 				a.href = data;
 				content.appendChild(a);
 				self.processLink(a,data,disabledActions);
 			break;
 			default:
 				content = OAT.Dom.create("span");
-				content.innerHTML = data;
+
+	    if (data.match(/(#this$|#me$)/))
+		content.innerHTML = (label ? label : ciri);
+	    else
+		content.innerHTML = (label ? label : data);
+
 				/* create dereference a++ lookups for all anchors */
 				var anchors_ = content.getElementsByTagName("a");
 				var anchors = [];

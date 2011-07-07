@@ -425,7 +425,7 @@
                                   http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                             ?>
                               <td class="listing_col"><?V name_part((control as vspx_row_template).te_rowset[0],2) ?></td>
-                              <td class="listing_col"><?V left((control as vspx_row_template).te_rowset[1], 255) ?></td>
+                              <td class="listing_col"><?V subseq((control as vspx_row_template).te_rowset[1], 0, 255) ?></td>
                               <td  class="listing_col_action">
                                 <v:button name="trig_edit" value="Edit" style="url" action="simple">
                                   <v:on-post><v:script><![CDATA[

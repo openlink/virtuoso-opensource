@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
+      "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:rdfa="http://www.w3.org/ns/rdfa#"
+ xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xml:lang="en-US">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <title>XHTML Vocabulary</title>
+  <base  href="http://www.w3.org/1999/xhtml/vocab" />
+  <link rel="stylesheet" type="text/css"
+  href="http://www.w3.org/StyleSheets/TR/base.css" />
+</head>
+
+<body>
+
+<div class="head">
+<p><a href="http://www.w3.org/"><img class="head"
+src="http://www.w3.org/Icons/WWW/w3c_home" alt="W3C" /></a></p>
+</div>
+
+<h1><abbr title="Extensible HyperText Markup Language">XHTML</abbr>
+Vocabulary</h1>
+
+<p>This is a vocabulary collection utilized by <abbr>XHTML</abbr> Family
+modules and document types using <a
+href="http://www.w3.org/TR/xhtml-modularization"><abbr>XHTML</abbr>
+Modularization</a>, including <a
+href="http://www.w3.org/TR/xhtml-role"><abbr>XHTML</abbr> Role</a> and XHTML +
+RDFa as defined in <a
+href="http://www.w3.org/TR/rdfa-syntax">rdfa-syntax</a>.</p>
+
+<p>The <abbr>XHTML</abbr> specifications are developed by the <a
+href="http://www.w3.org/MarkUp/"><abbr
+title="World Wide Web Consortium">W3C</abbr> <abbr
+title="Extensible HyperText Markup Language">XHTML</abbr> 2 Working Group</a>
+as part of the <a href="http://www.w3.org/MarkUp/Activity"><abbr>W3C</abbr>
+<abbr>HTML</abbr> Activity</a>.</p>
+
+<p>For more information about <abbr>XML</abbr>, please refer to the <a
+href="http://www.w3.org/TR/REC-xml">Extensible Markup Language
+(<abbr>XML</abbr>) 1.0</a> specification.</p>
+
+<p>Version date: <!--$date=-->2010-01-27<!--$--></p>
+<hr />
+
+<h2>1. Introduction</h2>
+
+<p>XHTML Modularization [<a href="#ref_XHTMLMOD">XHTMLMOD</a>] permits the
+development of XHTML modules and XHTML family markup languages. These modules
+and markup languages may, in turn, define local vocabulary items for use as
+values of attributes. This document describes the items that are available in
+the default XHTML vocabulary space:
+<code>http://www.w3.org/1999/xhtml/vocab#</code>. </p>
+
+<h2 id="XHTMLMetaInformationModule">2. XHTML Metainformation Vocabulary</h2>
+
+<p>The XHTML Metainformation Module defined as part of XHTML+RDFa [<a
+    href="#ref_XHTMLRDFa">XHTMLRDFa</a>] specifies the following vocabulary items.</p>
+
+<div id="relrev-properties" about="#relrev-properties" typeof="rdf:Bag">
+
+<div about="#relrev-properties" rev="rdfs:member">
+<dl>
+  <dt id="alternate" about="#alternate" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">alternate</dt>
+    <dd about="#alternate" property="rdfs:comment" datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#alternate'>alternate</span> 
+    designates alternate versions for a resource.</dd>
+  <dt id="appendix" about="#appendix" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">appendix</dt>
+    <dd about="#appendix" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#appendix'>appendix</span> refers to a resource serving
+      as an appendix in a collection. </dd>
+  <dt id="bookmark" about="#bookmark" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">bookmark</dt>
+    <dd about="#bookmark" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#bookmark'>bookmark</span> refers to a bookmark - a link
+      to a key entry point within an extended document. </dd>
+  <dt id="cite" about="#cite" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">cite</dt>
+    <dd about="#cite" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#cite'>cite</span> refers to a resource that defines
+      a citation. </dd>
+  <dt id="chapter" about="#chapter" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">chapter</dt>
+    <dd about="#chapter" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#chapter'>chapter</span> refers to a resource serving
+      as a chapter in a collection. </dd>
+  <dt id="contents" about="#contents" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">contents</dt>
+    <dd about="#contents" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#contents'>contents</span> refers to a resource serving
+      as a table of contents. </dd>
+  <dt id="copyright" about="#copyright" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">copyright</dt>
+    <dd about="#copyright" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#copyright'>copyright</span> refers to a copyright
+      statement for the resource. </dd>
+  <dt id="first" about="#first" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">first</dt>
+    <dd about="#first" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#first'>first</span> refers the first item in a
+      collection (see also start and top).</dd>
+  <dt id="glossary" about="#glossary" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">glossary</dt>
+    <dd about="#glossary" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#glossary'>glossary</span> refers to a resource
+      providing a glossary of terms. </dd>
+  <dt id="help" about="#help" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">help</dt>
+    <dd about="#help" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#help'>help</span> refers to a resource offering
+      help. </dd>
+  <dt id="icon" about="#icon" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">icon</dt>
+    <dd about="#icon" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#icon'>icon</span> refers to a resource that
+      represents an icon. </dd>
+  <dt id="index" about="#index" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">index</dt>
+    <dd about="#index" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#index'>index</span> refers to a resource providing
+      an index. </dd>
+  <dt id="itsRules" about="#itsRules" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">itsRules</dt>
+    <dd about="#itsRules" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#itsRules'>itsRules</span> indicates that the designated
+      resource is an [<a href="#ref_ITS">ITS</a>] rule set.</dd>
+  <dt id="last" about="#last" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">last</dt>
+    <dd about="#last" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#last'>last</span> refers to the last resource in a
+      collection of resources. </dd>
+  <dt id="license" about="#license" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">license</dt>
+    <dd about="#license" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#license'>license</span> refers to a resource that
+      defines the associated license. </dd>
+  <dt id="meta" about="#meta" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">meta</dt>
+    <dd about="#meta" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#meta'>meta</span> refers to a resource that
+      provides metadata. </dd>
+  <dt id="next" about="#next" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">next</dt>
+    <dd about="#next" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#next'>next</span> refers to the next resource
+      (after the current one) in an ordered collection of resources. </dd>
+  <dt id="p3pv1" about="#p3pv1" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">p3pv1</dt>
+    <dd about="#p3pv1" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#p3pv1'>p3pv1</span> refers to a P3P Policy Reference
+      File [<a href="#ref_P3P">P3P</a>]. </dd>
+  <dt id="prev" about="#prev" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">prev</dt>
+    <dd about="#prev" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#prev'>prev</span> refers to a previous resource
+      (before the current one) in an ordered collection of resources. </dd>
+  <dt id="role" about="#role" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Bag rdf:Property">role</dt>
+    <dd about="#role" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#role'>role</span> indicates the purpose of the
+      resource. See <a href="#XHTMLRoleVocabulary">the XHTML Role
+      Vocabulary</a> for roles in this vocabulary space, and <a
+      href="#ref_XHTMLROLE">XHTMLROLE</a> for information on extending the
+      collection of roles. </dd>
+  <dt id="section" about="#section" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">section</dt>
+    <dd about="#section" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#section'>section</span> refers to a resource serving
+      as a section in a collection. </dd>
+  <dt id="stylesheet" about="#stylesheet" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">stylesheet</dt>
+    <dd about="#stylesheet" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#stylesheet'>stylesheet</span> refers to a resource
+      serving as a stylesheet for a resource. </dd>
+  <dt id="subsection" about="#subsection" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">subsection</dt>
+    <dd about="#subsection" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#subsection'>subsection</span> refers to a resource
+      serving as a subsection in a collection. </dd>
+  <dt id="start" about="#start" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">start</dt>
+    <dd about="#start" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#start'>start</span> refers to the first resource in
+      a collection of resources. </dd>
+  <dt id="top" about="#top" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">top</dt>
+    <dd about="#top" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#top'>top</span> is a synonym for start. </dd>
+  <dt id="up" about="#up" property='rdfa:term' lang='' xml:lang='' typeof="rdf:Property">up</dt>
+    <dd about="#up" property="rdfs:comment"
+      datatype="xsd:string"><span property='rdfa:uri' lang='' xml:lang='' content='http://www.w3.org/1999/xhtml/vocab#up'>up</span> refers to a resource "above" in a
+      hierarchically structured set. </dd>
+</dl>
+</div>
+</div>
+
+<h2 id="XHTMLRoleVocabulary">3. XHTML Role Vocabulary</h2>
+
+<h3 id="XHTMLRoleModule">3.1 Items from the XHTML Role Module</h3>
+
+<p id="role-properties" about="#role-properties" typeof="rdf:Bag">The values in
+this section are defined for use in the <code>role</code> attribute as
+specified in the <a href="#ref_XHTMLROLE">XHTML Role Attribute Module</a>. Note
+that the values in <a href="#XHTMLMetaInformationModule"
+resource="#relrev-properties" rev="rdfs:member">Section 2</a> and <a
+href="#WAIARIA">Section 3.2</a> are also available.</p>
+
+<div about="#role-properties" rev="rdfs:member">
+<dl>
+  <dt id="banner" about="#banner" typeof="rdf:Property">banner</dt>
+    <dd about="#banner" property="rdfs:comment" datatype="xsd:string">contains
+      the prime heading or internal title of a page. </dd>
+  <dt id="complementary" about="#complementary"
+  typeof="rdf:Property">complementary</dt>
+    <dd about="#complementary" property="rdfs:comment"
+      datatype="xsd:string">indicates that the section supports but is
+      separable from the main content of resource.</dd>
+  <dt id="contentinfo" about="#contentinfo"
+  typeof="rdf:Property">contentinfo</dt>
+    <dd about="#contentinfo" property="rdfs:comment"
+      datatype="xsd:string"><span></span>contains meta information about the
+      content on the page or the page as a whole.</dd>
+  <dt id="definition" about="#definition" typeof="rdf:Property">definition</dt>
+    <dd about="#definition" property="rdfs:comment"
+      datatype="xsd:string">indicates the definition of a term or concept.</dd>
+  <dt id="main" about="#main" typeof="rdf:Property">main</dt>
+    <dd about="#main" property="rdfs:comment" datatype="xsd:string">acts as the
+      main content of the document. </dd>
+  <dt id="navigation" about="#navigation" typeof="rdf:Property">navigation</dt>
+    <dd about="#navigation" property="rdfs:comment"
+      datatype="xsd:string">indicates a collection of items suitable for
+      navigating the document or related documents.</dd>
+  <dt id="note" about="#note" typeof="rdf:Property">note</dt>
+    <dd about="#note" property="rdfs:comment" datatype="xsd:string">indicates
+      the content is parenthetic or ancillary to the main content of the
+      resource. </dd>
+  <dt id="search" about="#search" typeof="rdf:Property">search</dt>
+    <dd about="#search" property="rdfs:comment" datatype="xsd:string">indicates
+      that the section provides a search facility. </dd>
+</dl>
+</div>
+
+<h3 id="WAIARIA">3.2 Items from the Accessible Rich Internet Applications
+Vocabulary</h3>
+
+<div about="#role-properties" typeof="rdfs:member">
+  <dl>
+    <dt id="alert" about="#alert" typeof="rdf:Property">alert</dt>
+    <dd about="#alert" property="rdfs:comment" datatype="xsd:string">A message
+      with important, and usually time-sensitive, information. Also see alertdialog
+      and status.</dd>
+    <dt id="alertdialog" about="#alertdialog" typeof="rdf:Property">alertdialog</dt>
+    <dd about="#alertdialog" property="rdfs:comment" datatype="xsd:string">A
+      type of dialog that contains an alert message, where initial focus goes
+      an element within the dialog. Also see alert and dialog.</dd>
+    <dt id="application" about="#application" typeof="rdf:Property">application</dt>
+    <dd about="#application" property="rdfs:comment" datatype="xsd:string">A
+      region declared as a web application, as opposed to a web document.</dd>
+    <dt id="article" about="#article" typeof="rdf:Property">article</dt>
+    <dd about="#article" property="rdfs:comment" datatype="xsd:string">A section
+      of a page that consists of a composition that forms an independent part
+      of a document, page, or site.</dd>
+    <dt id="button" about="#button" typeof="rdf:Property">button</dt>
+    <dd about="#button" property="rdfs:comment" datatype="xsd:string">An input
+      that allows for user-triggered actions when clicked or pressed. Also see
+      link.</dd>
+    <dt id="checkbox" about="#checkbox" typeof="rdf:Property">checkbox</dt>
+    <dd about="#checkbox" property="rdfs:comment" datatype="xsd:string">A checkable
+      input that has three possible values: true, false, or mixed.</dd>
+    <dt id="columnheader" about="#columnheader" typeof="rdf:Property">columnheader</dt>
+    <dd about="#columnheader" property="rdfs:comment" datatype="xsd:string">A
+      cell containing header information for a column.</dd>
+    <dt id="combobox" about="#combobox" typeof="rdf:Property">combobox</dt>
+    <dd about="#combobox" property="rdfs:comment" datatype="xsd:string">A presentation
+      of a select; usually similar to a textbox where users can type ahead to
+      select an option, or type to enter arbitrary text as a new item in the
+      list. Also see listbox.</dd>
+    <dt id="dialog" about="#dialog" typeof="rdf:Property">dialog</dt>
+    <dd about="#dialog" property="rdfs:comment" datatype="xsd:string">A dialog
+      is an application window that is designed to interrupt the current processing
+      of an application in order to prompt the user to enter information or require
+      a response. Also see alertdialog.</dd>
+    <dt id="directory" about="#directory" typeof="rdf:Property">directory</dt>
+    <dd about="#directory" property="rdfs:comment" datatype="xsd:string">A list
+      of references to members of a group, such as a static table of contents.</dd>
+    <dt id="document" about="#document" typeof="rdf:Property">document</dt>
+    <dd about="#document" property="rdfs:comment" datatype="xsd:string">A region
+      containing related information that is declared as document content, as
+      opposed to a web application.</dd>
+    <dt id="form" about="#form" typeof="rdf:Property">form</dt>
+    <dd about="#form" property="rdfs:comment" datatype="xsd:string">A landmark
+      region that contains a collection of items and objects that, as a whole,
+      combine to create a form. Also see search.</dd>
+    <dt id="grid" about="#grid" typeof="rdf:Property">grid</dt>
+    <dd about="#grid" property="rdfs:comment" datatype="xsd:string">A grid is
+      an interactive control which contains cells of tabular data arranged in
+      rows and columns, like a table.</dd>
+    <dt id="gridcell" about="#gridcell" typeof="rdf:Property">gridcell</dt>
+    <dd about="#gridcell" property="rdfs:comment" datatype="xsd:string">A cell
+      in a grid or treegrid.</dd>
+    <dt id="group" about="#group" typeof="rdf:Property">group</dt>
+    <dd about="#group" property="rdfs:comment" datatype="xsd:string">A set of
+      user interface objects which are not intended to be included in a page
+      summary or table of contents by assistive technologies.</dd>
+    <dt id="heading" about="#heading" typeof="rdf:Property">heading</dt>
+    <dd about="#heading" property="rdfs:comment" datatype="xsd:string">A heading
+      for a section of the page.</dd>
+    <dt id="img" about="#img" typeof="rdf:Property">img</dt>
+    <dd about="#img" property="rdfs:comment" datatype="xsd:string">A container
+      for a collection of elements that form an image.</dd>
+    <dt id="link" about="#link" typeof="rdf:Property">link</dt>
+    <dd about="#link" property="rdfs:comment" datatype="xsd:string">An interactive
+      reference to an internal or external resource that, when activated, causes
+      the user agent to navigate to that resource. Also see button.</dd>
+    <dt id="list" about="#list" typeof="rdf:Property">list</dt>
+    <dd about="#list" property="rdfs:comment" datatype="xsd:string">A group of
+      non-interactive list items. Also see listbox.</dd>
+    <dt id="listbox" about="#listbox" typeof="rdf:Property">listbox</dt>
+    <dd about="#listbox" property="rdfs:comment" datatype="xsd:string">A widget
+      that allows the user to select one or more items from a list of choices.
+      Also see combobox and list.</dd>
+    <dt id="listitem" about="#listitem" typeof="rdf:Property">listitem</dt>
+    <dd about="#listitem" property="rdfs:comment" datatype="xsd:string">A single
+      item in a list or directory.</dd>
+    <dt id="log" about="#log" typeof="rdf:Property">log</dt>
+    <dd about="#log" property="rdfs:comment" datatype="xsd:string">A type of
+      live region where new information is added in meaningful order and old
+      information may disappear. Also see marquee.</dd>
+    <dt id="marquee" about="#marquee" typeof="rdf:Property">marquee</dt>
+    <dd about="#marquee" property="rdfs:comment" datatype="xsd:string">A type
+      of live region where non-essential information changes frequently. Also
+      see log.</dd>
+    <dt id="math" about="#math" typeof="rdf:Property">math</dt>
+    <dd about="#math" property="rdfs:comment" datatype="xsd:string">Content that
+      represents a mathematical expression. </dd>
+    <dt id="menu" about="#menu" typeof="rdf:Property">menu</dt>
+    <dd about="#menu" property="rdfs:comment" datatype="xsd:string">A type of
+      widget that offers a list of choices to the user.</dd>
+    <dt id="menubar" about="#menubar" typeof="rdf:Property">menubar</dt>
+    <dd about="#menubar" property="rdfs:comment" datatype="xsd:string">A presentation
+      of menu that usually remains visible and is usually presented horizontally.</dd>
+    <dt id="menuitem" about="#menuitem" typeof="rdf:Property">menuitem</dt>
+    <dd about="#menuitem" property="rdfs:comment" datatype="xsd:string">An option
+      in a group of choices contained by a menu or menubar.</dd>
+    <dt id="menuitemcheckbox" about="#menuitemcheckbox" typeof="rdf:Property">menuitemcheckbox</dt>
+    <dd about="#menuitemcheckbox" property="rdfs:comment" datatype="xsd:string">A
+      checkable menuitem that has three possible values: true, false, or mixed.</dd>
+    <dt id="menuitemradio" about="#menuitemradio" typeof="rdf:Property">menuitemradio</dt>
+    <dd about="#menuitemradio" property="rdfs:comment" datatype="xsd:string">A
+      checkable menuitem in a group of menuitemradio roles, only one of which
+      can be checked at a time.</dd>
+    <dt id="option" about="#option" typeof="rdf:Property">option</dt>
+    <dd about="#option" property="rdfs:comment" datatype="xsd:string">A selectable
+      item in a select list.</dd>
+    <dt id="presentation" about="#presentation" typeof="rdf:Property">presentation</dt>
+    <dd about="#presentation" property="rdfs:comment" datatype="xsd:string">An
+      element whose implicit native role semantics will not be mapped to the
+      accessibility API.</dd>
+    <dt id="progressbar" about="#progressbar" typeof="rdf:Property">progressbar</dt>
+    <dd about="#progressbar" property="rdfs:comment" datatype="xsd:string">An
+      element that displays the progress status for tasks that take a long time.</dd>
+    <dt id="radio" about="#radio" typeof="rdf:Property">radio</dt>
+    <dd about="#radio" property="rdfs:comment" datatype="xsd:string">A checkable
+      input in a group of radio roles, only one of which can be checked at a
+      time.</dd>
+    <dt id="radiogroup" about="#radiogroup" typeof="rdf:Property">radiogroup</dt>
+    <dd about="#radiogroup" property="rdfs:comment" datatype="xsd:string">A group
+      of radio buttons.</dd>
+    <dt id="region" about="#region" typeof="rdf:Property">region</dt>
+    <dd about="#region" property="rdfs:comment" datatype="xsd:string">A large
+      perceivable section of a web page or document, that the author feels is
+      important enough to be included in a page summary or table of contents,
+      for example, an area of the page containing live sporting event statistics.</dd>
+    <dt id="row" about="#row" typeof="rdf:Property">row</dt>
+    <dd about="#row" property="rdfs:comment" datatype="xsd:string">A row of cells
+      in a grid.</dd>
+    <dt id="rowgroup" about="#rowgroup" typeof="rdf:Property">rowgroup</dt>
+    <dd about="#rowgroup" property="rdfs:comment" datatype="xsd:string">A group
+      containing one or more row elements in a grid.</dd>
+    <dt id="rowheader" about="#rowheader" typeof="rdf:Property">rowheader</dt>
+    <dd about="#rowheader" property="rdfs:comment" datatype="xsd:string">A cell
+      containing header information for a row in a grid.</dd>
+    <dt id="scrollbar" about="#scrollbar" typeof="rdf:Property">scrollbar</dt>
+    <dd about="#scrollbar" property="rdfs:comment" datatype="xsd:string">A graphical
+      object that controls the scrolling of content within a viewing area, regardless
+      of whether the content is fully displayed within the viewing area.</dd>
+    <dt id="separator" about="#separator" typeof="rdf:Property">separator</dt>
+    <dd about="#separator" property="rdfs:comment" datatype="xsd:string">A divider
+      that separates and distinguishes sections of content or groups of menuitems.</dd>
+    <dt id="slider" about="#slider" typeof="rdf:Property">slider</dt>
+    <dd about="#slider" property="rdfs:comment" datatype="xsd:string">A user
+      input where the user selects a value from within a given range.</dd>
+    <dt id="spinbutton" about="#spinbutton" typeof="rdf:Property">spinbutton</dt>
+    <dd about="#spinbutton" property="rdfs:comment" datatype="xsd:string">A form
+      of range that expects a user to select from amongst discrete choices.</dd>
+    <dt id="status" about="#status" typeof="rdf:Property">status</dt>
+    <dd about="#status" property="rdfs:comment" datatype="xsd:string">A container
+      whose content is advisory information for the user but is not important
+      enough to justify an alert. Also see alert.</dd>
+    <dt id="tab" about="#tab" typeof="rdf:Property">tab</dt>
+    <dd about="#tab" property="rdfs:comment" datatype="xsd:string">A grouping
+      label providing a mechanism for selecting the tab content that is to be
+      rendered to the user.</dd>
+    <dt id="tablist" about="#tablist" typeof="rdf:Property">tablist</dt>
+    <dd about="#tablist" property="rdfs:comment" datatype="xsd:string">A list
+      of tab elements, which are references to tabpanel elements.</dd>
+    <dt id="tabpanel" about="#tabpanel" typeof="rdf:Property">tabpanel</dt>
+    <dd about="#tabpanel" property="rdfs:comment" datatype="xsd:string">A container
+      for the resources associated with a tab, where each tab is contained in
+      a tablist.</dd>
+    <dt id="textbox" about="#textbox" typeof="rdf:Property">textbox</dt>
+    <dd about="#textbox" property="rdfs:comment" datatype="xsd:string">Input
+      that allows free-form text as its value.</dd>
+    <dt id="timer" about="#timer" typeof="rdf:Property">timer</dt>
+    <dd about="#timer" property="rdfs:comment" datatype="xsd:string">A type of
+      live region containing a numerical counter which indicates an amount of
+      elapsed time from a start point, or the time remaining until an end point.</dd>
+    <dt id="toolbar" about="#toolbar" typeof="rdf:Property">toolbar</dt>
+    <dd about="#toolbar" property="rdfs:comment" datatype="xsd:string">A collection
+      of commonly used function buttons represented in compact visual form.</dd>
+    <dt id="tooltip" about="#tooltip" typeof="rdf:Property">tooltip</dt>
+    <dd about="#tooltip" property="rdfs:comment" datatype="xsd:string">A contextual
+      popup that displays a description for an element.</dd>
+    <dt id="tree" about="#tree" typeof="rdf:Property">tree</dt>
+    <dd about="#tree" property="rdfs:comment" datatype="xsd:string">A type of
+      list that may contain sub-level nested groups that can be collapsed and
+      expanded.</dd>
+    <dt id="treegrid" about="#treegrid" typeof="rdf:Property">treegrid</dt>
+    <dd about="#treegrid" property="rdfs:comment" datatype="xsd:string">A grid
+      whose rows can be expanded and collapsed in the same manner as for a tree.</dd>
+    <dt id="treeitem" about="#treeitem" typeof="rdf:Property">treeitem</dt>
+    <dd about="#treeitem" property="rdfs:comment" datatype="xsd:string">An option
+      item of a tree. This is an element within a tree that may be expanded or
+      collapsed if it contains a sub-level group of treeitems.</dd>
+  </dl>
+</div>
+
+<h2>Appendix A - References</h2>
+<dl>
+  <dt><a id="ref_ITS" class="normref">[ITS]</a></dt>
+    <dd>"<cite><a href="http://www.w3.org/TR/2007/REC-its-20070403/">The
+      Internationalization Tag Set (ITS) Version 1.0</a></cite>", W3C
+      Recommendation, C. Lieske, F. Sasaki, 3 April 2007.<br />
+      Available at: http://www.w3.org/TR/2007/REC-its-20070403/</dd>
+  <dt><a id="ref_P3P" class="normref">[P3P]</a></dt>
+    <dd>"<cite><a href="http://www.w3.org/TR/2002/REC-P3P-20020416/">The
+      Platform for Privacy Preferences 1.0 (P3P1.0) Specification</a></cite>",
+      W3C Recommendation, L. Cranor <i xml:lang="la">et al.</i>, 16 April
+      2002.<br />
+      Available at: http://www.w3.org/TR/2002/REC-P3P-20020416/</dd>
+  <dt>[<a id="ref_XHTMLMOD" class="normref">XHTMLMOD</a>]</dt>
+    <dd><cite><a
+      href="http://www.w3.org/TR/2008/REC-xhtml-modularization-20081008">XHTML
+      Modularization 1.1</a></cite>, W3C Recommendation, Shane McCarron, <em>et
+      al.</em>, 8 October 2008<br />
+      http://www.w3.org/TR/2008/REC-xhtml-modularization-20081008</dd>
+  <dt class="label" id="ref_XHTMLRDFa">[XHTMLRDFa]</dt>
+    <dd>"<cite><a
+      href="http://www.w3.org/TR/2008/REC-rdfa-syntax-20081014">RDFa in XHTML:
+      Syntax and Processing</a></cite>", W3C Recommendation, B. Adida, <em>et
+      al.</em>, 14 October 2008.<br />
+      http://www.w3.org/TR/2008/REC-rdfa-syntax-20081014.</dd>
+  <dt class="label" id="ref_XHTMLROLE">[XHTMLROLE]</dt>
+    <dd>"<cite><a href="http://www.w3.org/TR/2008/WD-xhtml-role-20080407">XHTML
+      Role Attribute Module</a></cite>", W3C Working Draft, M. Birbeck, et. al.
+      7 April 2008. http://www.w3.org/TR/2008/WD-xhtml-role-20080407<br />
+    </dd>
+</dl>
+<hr />
+<address>
+  <a href="http://www.cwi.nl/~steven/">Steven Pemberton</a>, W3C HTML Activity
+  Lead 
+</address>
+<address>
+  Last edited: <!--$date=-->2010-01-27</address>
+</body>
+</html>

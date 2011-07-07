@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -231,7 +231,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		url.value = self.options.defaultURL;
 		self.store.url = url;
 
-		var btn1 = OAT.Dom.button("Query");
+		var btn1 = OAT.Dom.create("input", {type:"button",value:"Query"});
 		self.btnStart = self.throbberReplace(self.store.div,false);
 
 		var h = OAT.Dom.create("h3");

@@ -1103,14 +1103,14 @@ ECHO BOTH ": " $LAST[1];
 ECHO BOTH " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select soap_dt_define ('', file_to_string ('xsd/m2.xsd'));
-ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": STATE=" $STATE " MESSAGE=" $MESSAGE;
 select xpath_eval ('string(/complexType/@name)', xml_tree_doc (file_to_string ('xsd/m2.xsd')), 1);
 ECHO BOTH " (" $LAST[1] ")\n";
 
 select soap_dt_define ('', file_to_string ('xsd/m3.xsd'));
-ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": STATE=" $STATE " MESSAGE=" $MESSAGE;
 select xpath_eval ('string(/complexType/@name)', xml_tree_doc (file_to_string ('xsd/m3.xsd')), 1);
@@ -1150,7 +1150,7 @@ ECHO BOTH ": " $LAST[1];
 ECHO BOTH " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select soap_dt_define ('', file_to_string ('xsd/o4.xsd'));
-ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": STATE=" $STATE " MESSAGE=" $MESSAGE;
 select xpath_eval ('string(/complexType/@name)', xml_tree_doc (file_to_string ('xsd/o4.xsd')), 1);

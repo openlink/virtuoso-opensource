@@ -184,15 +184,3 @@ sparql insert in <http://mix7> { <s1> <p1> ?o1 } where { graph `iri(bif:concat (
 sparql select (count (1)) from <http://mix7> where { ?s ?p ?o };
 echo both $if $equ $last[1] 100000 "PASSED" "***FAILED";
 echo both ": count in http://mix7\n";
-
-sparql clear graph <http://mix7>;
-sparql select (count (1)) from <http://mix7> where { ?s ?p ?o };
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": cleared http://mix7\n";
-
-
-sparql delete from  <http://mix6> {?s ?p ?o} where { graph <http://mix6> { ?s ?p ?o }};
-sparql select (count (1)) from <http://mix6> where { ?s ?p ?o };
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": delete http://mix6\n";
-

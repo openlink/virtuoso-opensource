@@ -26,23 +26,28 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY opltesco "http://www.openlinksw.com/schemas/tesco#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
     xmlns:foaf="&foaf;"
+    xmlns:pto="&pto;" 
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
+    xmlns:oplbb="&oplbb;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:tesco="http://www.tesco.com/">
+    xmlns:opltesco="&opltesco;">
 
     <xsl:output method="xml" indent="yes" />
 
@@ -52,28 +57,50 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="ns">http://schemas.datacontract.org/2004/07/tesco_cloudapp_net_WebRole</xsl:variable>
+    <xsl:variable name="ns">http://www.openlinksw.com/schemas/tesco#</xsl:variable>
 
-    <xsl:template match="ProductSearchResponse|products|Product" priority="1">
+    <xsl:template match="results|Products" priority="1">
 		<xsl:apply-templates select="*"/>
     </xsl:template>
 
     <xsl:template match="/">
+		<xsl:if test="results/StatusCode='0'">
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<sioc:container_of rdf:resource="{$resourceURL}"/>
-				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
+					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{$resourceURL}">
-				<rdf:type rdf:resource="&gr;ProductOrService"/>
+				<gr:Offering rdf:about="{$resourceURL}">
+					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+					<rdfs:label><xsl:value-of select="//Name"/></rdfs:label>
+					<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
+                    <gr:eligibleRegions>US</gr:eligibleRegions>
+					<xsl:apply-templates mode="offering"/>
+				</gr:Offering>
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+					<rdf:type rdf:resource="&oplbb;Product" />
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<xsl:apply-templates/>
 			</rdf:Description>
+				<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
+					<rdfs:comment>Tesco PLC</rdfs:comment>
+					<rdfs:label>Tesco PLC</rdfs:label>
+					<gr:legalName>Tesco PLC</gr:legalName>
+					<gr:offers rdf:resource="{$resourceURL}"/>
+					<foaf:homepage rdf:resource="http://www.tesco.com" />
+					<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.tesco.com')}"/>
+                    <foaf:depiction rdf:resource="http://www.tesco.com/shopping/images/logoTesco.gif"/>
+				</gr:BusinessEntity>
 		</rdf:RDF>
+		</xsl:if>
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
@@ -90,29 +117,48 @@
 		<rdfs:label>
 			<xsl:value-of select="."/>
 		</rdfs:label>
-		<dc:title>
+		<gr:name>
 			<xsl:value-of select="."/>
-		</dc:title>
+		</gr:name>
     </xsl:template>
 
     <xsl:template match="manufacturer">
+	<rdf:type rdf:resource="{concat('&pto;', .)}" />
 		<gr:hasManufacturer>
-		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'manufacturer')}">
+		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
 	    <rdfs:label><xsl:value-of select="concat('Manufacturer ', .)"/></rdfs:label>
             <gr:legalName><xsl:value-of select="."/></gr:legalName>
           </gr:BusinessEntity>
 		</gr:hasManufacturer>
     </xsl:template>
 
-    <xsl:template match="Price">
+    <xsl:template match="Price" mode="offering">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-	    <rdfs:label><xsl:value-of select="concat('List Price of ', ., ' GBP')"/></rdfs:label>
+            <rdfs:label><xsl:value-of select="concat('Price of ', ., ' GBP')"/></rdfs:label>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">GBP</gr:hasCurrency>
           </gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
+
+    <!--xsl:template match="Price">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
+            <rdfs:label><xsl:value-of select="concat('Price of ', ., ' GBP')"/></rdfs:label>
+            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
+            <gr:hasCurrency rdf:datatype="&xsd;string">GBP</gr:hasCurrency>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template-->
+    
+    <!--xsl:template match="PriceDescription">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
+            <rdfs:label><xsl:value-of select="."/></rdfs:label>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template-->
 
     <xsl:template match="*[* and ../../*]">
 	<xsl:element namespace="{$ns}" name="{name()}">
@@ -129,4 +175,6 @@
 	</xsl:if>
     </xsl:template>
 
+    <xsl:template match="text()|@*" mode="offering" />
+    
 </xsl:stylesheet>

@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -38,10 +39,11 @@
     xmlns:dcterms= "http://purl.org/dc/terms/"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:sioc="&sioc;"
+    xmlns:rdfs="&rdfs;"
     xmlns:bibo="&bibo;"
     xmlns:gr="&gr;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
-    xmlns:cb="http://www.crunchbase.com/"
+    xmlns:oplcb="http://www.openlinksw.com/schemas/crunchbase#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:foaf="&foaf;">
 
@@ -52,7 +54,7 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="ns">http://www.crunchbase.com/</xsl:variable>
+    <xsl:variable name="ns">http://www.openlinksw.com/schemas/crunchbase#</xsl:variable>
     <xsl:param name="base"/>
     <xsl:param name="suffix"/>
 
@@ -125,7 +127,6 @@
 		<rdf:Description rdf:about="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}">
 		    <foaf:page rdf:resource="{$baseUri}"/>
 		    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
-		    <rdf:type rdf:resource="&sioc;Item"/>
 		    <xsl:variable name="type">
 			<xsl:choose>
 			    <xsl:when test="$space = 'company'">
@@ -175,8 +176,17 @@
 		    <xsl:if test="not starts-with ($sas-iri, '#')">
 			<owl:sameAs rdf:resource="{$sas-iri}"/>
 		    </xsl:if>
+		    <xsl:choose>
+			<xsl:when test="$type != ''">
 		    <rdf:type rdf:resource="&foaf;{$type}"/>
+			</xsl:when>
+			<xsl:otherwise>
+			    <rdf:type rdf:resource="&sioc;Item"/>
+			</xsl:otherwise>
+		    </xsl:choose>
+		    <xsl:if test="$type2 != ''">
 		    <rdf:type rdf:resource="&gr;{$type2}"/>
+		    </xsl:if>
 		    <xsl:apply-templates select="*"/>
 		</rdf:Description>
 	    </xsl:for-each>
@@ -251,6 +261,20 @@
 	</geo:long>
     </xsl:template>
 
+    <xsl:template match="created_at">
+	<xsl:element namespace="{$ns}" name="{name()}">
+	    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+	    <xsl:value-of select="vi:http_string_date (.)"/>
+	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="updated_at">
+	<xsl:element namespace="{$ns}" name="{name()}">
+	    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+	    <xsl:value-of select="vi:http_string_date (.)"/>
+	</xsl:element>
+    </xsl:template>
+
     <xsl:template match="image" priority="10">
 	<xsl:for-each select="available_sizes">
 	    <xsl:if test=". like '%.jpg' or . like '%.gif'">
@@ -320,8 +344,49 @@
 		<xsl:element namespace="{$ns}" name="{name()}">
 		    <xsl:element name="{$nspace}" namespace="{$ns}">
 			<xsl:attribute name="rdf:about">
-			    <xsl:value-of select="vi:proxyIRI($baseUri, '', concat (name(), '-', position()))"/>
+			    <xsl:variable name="cur_suffix" select="name()"/>
+			    <xsl:if test="name() like 'funding_round'">
+				<xsl:variable name="cur_suffix" select="concat(name(), '_', company/permalink, '_', funded_year, '_', funded_month, '_', funded_day)"/>
+		            </xsl:if>
+			    <xsl:value-of select="vi:proxyIRI($baseUri, '', concat ($cur_suffix, '-', position()))"/>
 			</xsl:attribute>
+
+		<xsl:if test="name() like 'funding_round'">
+		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'funding_rounds'">
+		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'offices'">
+		    <rdfs:label><xsl:value-of select="concat(address1, ', ', city, ', ', state_code, ', ', zip_code, ', ', country_code, ' - ', description)"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'video_embeds'">
+		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'acquisitions'">
+		    <rdfs:label><xsl:value-of select="source_description"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'external_links'">
+		    <rdfs:label><xsl:value-of select="title"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'milestones'">
+		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'products'">
+		    <rdfs:label><xsl:value-of select="name"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'providerships'">
+		    <rdfs:label><xsl:value-of select="provider"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'relationships'">
+		    <rdfs:label><xsl:value-of select="title"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'investments'">
+		    <rdfs:label><xsl:value-of select="funding_round/company/name"/></rdfs:label>
+		</xsl:if>
+		<xsl:if test="name() like 'competitions'">
+		    <rdfs:label><xsl:value-of select="competitor/name"/></rdfs:label>
+		</xsl:if>
 		    <xsl:apply-templates select="@*|node()"/>
 		</xsl:element>
 	    </xsl:element>
@@ -334,6 +399,9 @@
 	    <xsl:element namespace="{$ns}" name="{name()}">
 		<xsl:if test="name() like 'date_%'">
 		    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+		</xsl:if>
+		<xsl:if test="name() like 'number_of_employees'">
+		    <xsl:attribute name="rdf:datatype">&xsd;integer</xsl:attribute>
 		</xsl:if>
 		<xsl:apply-templates select="@*|node()"/>
 	    </xsl:element>

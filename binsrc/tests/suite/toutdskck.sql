@@ -37,9 +37,4 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Rows inserted in TXV = " $LAST[1]  " : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-backup_online ('ts_#', 100000);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": backup_online : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: Out of disk server tests\n";

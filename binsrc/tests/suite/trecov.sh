@@ -28,12 +28,10 @@ LOGFILE=trecov.output
 export LOGFILE
 . ./test_fn.sh
 
-sh tcpt.sh
-
 BANNER "STARTED RECOVERY TEST (trecov.sh)"
 
-#rm -f $DBLOGFILE
-#rm -f $DBFILE
+rm -f $DBLOGFILE
+rm -f $DBFILE
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 SHUTDOWN_SERVER
@@ -58,33 +56,33 @@ fi
 
 RUN $ISQL $DSN '"EXEC=status();"' ERRORS=STDOUT
 
-RUN $BLOBS $DSN
-if test $STATUS -eq 0
-then
-    LOG "PASSED: trecov.sh: creating blobs"
-else
-    LOG "***ABORTED: trecov.sh: creating blobs"
-    exit 3
-fi
+#RUN $BLOBS $DSN
+#if test $STATUS -eq 0
+#then
+#    LOG "PASSED: trecov.sh: creating blobs"
+#else
+#    LOG "***ABORTED: trecov.sh: creating blobs"
+#    exit 3
+#fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
-if test $STATUS -eq 0
-then
-    LOG "PASSED: trecov.sh: blobs 1st round"
-else
-    LOG "***ABORTED: trecov.sh: blobs 1st round"
-    exit 3
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+#if test $STATUS -eq 0
+#then
+#    LOG "PASSED: trecov.sh: blobs 1st round"
+#else
+#    LOG "***ABORTED: trecov.sh: blobs 1st round"
+#    exit 3
+#fi
 
-RUN $BLOBS $DSN
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
-if test $STATUS -eq 0
-then
-    LOG "PASSED: trecov.sh: blobs 2nd round"
-else
-    LOG "***ABORTED: trecov.sh: blobs 2nd round"
-    exit 3
-fi
+#RUN $BLOBS $DSN
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+#if test $STATUS -eq 0
+#then
+#    LOG "PASSED: trecov.sh: blobs 2nd round"
+#else
+#    LOG "***ABORTED: trecov.sh: blobs 2nd round"
+#    exit 3
+#fi
 
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema1.sql
@@ -94,10 +92,11 @@ then
     exit 3
 fi
 
+#exit
 STOP_SERVER
 
 
-sleep 5
+#sleep 5
 rm -f $DBFILE.r1 $DBLOGFILE.r1 $SRVMSGLOGFILE.r1
 cp $DBFILE $DBFILE.r1
 cp $DBLOGFILE $DBLOGFILE.r1
@@ -116,7 +115,7 @@ RUN $ISQL $DSN USR3 USR3PASS PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC='"select 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect for USR3 failed after log roll forward"
-    exit 3
+#    exit 3
 fi
 
 if test "x$HOST" != "xlocalhost"
@@ -127,8 +126,10 @@ fi
 
 LOG "Next we do a checkpoint and kill the database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
-RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
-sleep 5
+CHECKPOINT_SERVER
+STOP_SERVER
+#RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
+#sleep 5
 
 # The following might need a change later if the implementation changes:
 if test -r "$DBLOGFILE"
@@ -151,7 +152,7 @@ then
   echo Removing $LOCKFILE >> $LOGFILE
   rm $LOCKFILE
 fi
-RUN $SERVER $FOREGROUND_OPTION $BACKUP_DUMP_OPTION
+START_SERVER $PORT 0 $FOREGROUND_OPTION $BACKUP_DUMP_OPTION
 if test $STATUS -eq 0
 then
     LOG "PASSED: DUMPING the database with -d option"
@@ -165,7 +166,7 @@ cp $DBFILE $DBFILE.r2
 cp $DBLOGFILE $DBLOGFILE.r2
 cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r2
 rm -f $DBFILE
-RUN $SERVER $FOREGROUND_OPTION -R
+START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 if test $STATUS -eq 0
 then
     LOG "PASSED: restoring the database with -R option"
@@ -200,8 +201,9 @@ fi
 
 LOG "Next, we kill database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
-RUN $ISQL $DSN '"EXEC=raw_exit();"' VERBOSE=OFF ERRORS=STDOUT
-sleep 5
+STOP_SERVER
+#RUN $ISQL $DSN '"EXEC=raw_exit();"' VERBOSE=OFF ERRORS=STDOUT
+#sleep 5
 
 rm -f $DBLOGFILE
 mv backup.log $DBLOGFILE
@@ -211,8 +213,15 @@ cp $DBLOGFILE $DBLOGFILE.r3
 cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r3
 rm -f $DBFILE
 
+if [ "x$CLUSTER" != "x" ]
+then
+   rm -f cl?/$DBFILE
+   mv cl2/backup.log cl2/$DBLOGFILE
+   mv cl3/backup.log cl3/$DBLOGFILE
+   mv cl4/backup.log cl4/$DBLOGFILE
+fi
 
-RUN $SERVER $FOREGROUND_OPTION -R
+START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 if test $STATUS -eq 0
 then
     LOG "PASSED: restoring the database with -R option"
@@ -225,7 +234,7 @@ START_SERVER $PORT 3000
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: trecov.sh: Connect failed after backup restore"
+    LOG "***ABORTED: trecov.sh: Connect failed after backup restore 1"
     exit 3
 fi
 RUN $ISQL $DSN USR3 USR3PASS PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC="'select USER'"
@@ -237,8 +246,10 @@ fi
 
 LOG "Again we do a checkpoint and then kill database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
-RUN $ISQL $DSN ERRORS=STDOUT '"EXEC=checkpoint; raw_exit();"'
-sleep 5
+CHECKPOINT_SERVER
+STOP_SERVER
+#RUN $ISQL $DSN ERRORS=STDOUT '"EXEC=checkpoint; raw_exit();"'
+#sleep 5
 
 if test -f "$LOCKFILE"
 then
@@ -247,7 +258,7 @@ then
 fi
 ls -la $DBLOGFILE
 rm -f $DBLOGFILE
-RUN $SERVER $FOREGROUND_OPTION $CRASH_DUMP_OPTION
+START_SERVER $PORT 0 $FOREGROUND_OPTION $CRASH_DUMP_OPTION
 if test $STATUS -eq 0
 then
     LOG "PASSED: DUMPING the database with -D option"
@@ -261,7 +272,7 @@ cp $DBFILE $DBFILE.r4
 cp $DBLOGFILE $DBLOGFILE.r4
 cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r4
 rm -f $DBFILE
-RUN $SERVER $FOREGROUND_OPTION -R
+START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 if test $STATUS -eq 0
 then
     LOG "PASSED: restoring the database with -R option"
@@ -275,7 +286,7 @@ START_SERVER $PORT 3000
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: trecov.sh: Connect failed after backup restore"
+    LOG "***ABORTED: trecov.sh: Connect failed after backup restore 2"
     exit 3
 fi
 RUN $ISQL $DSN USR3 USR3PASS PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC="'select user'"
@@ -294,8 +305,10 @@ fi
 
 LOG "Next we do a checkpoint third time and then kill database server with"
 LOG "raw_exit() after which we should get Lost Connection to Server -error."
-RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
-sleep 5
+CHECKPOINT_SERVER
+STOP_SERVER
+#RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
+#sleep 5
 
 if [ "x$ENABLE_TRECOV_SCH" != "x" ]
 then # GK: disabled for now : fails blobs check
@@ -305,27 +318,27 @@ rm -rf new.*
 ECHO cat $CFGFILE | sed -e 's/virtuoso\./new./g' > new.ini
 cat $CFGFILE | sed -e 's/virtuoso\./new./g' > new.ini
 
-RUN $SERVER $FOREGROUND_OPTION $CRASH_DUMP_OPTION +mode oa +dumpkeys schema
+START_SERVER $PORT 0 $FOREGROUND_OPTION $CRASH_DUMP_OPTION +mode oa +dumpkeys schema
 
 RUN ls -la *.trx
 RUN mv $DBLOGFILE new.trx
 
-RUN $SERVER $FOREGROUND_OPTION -c new -R
-RUN $SERVER $FOREGROUND_OPTION -c new $CRASH_DUMP_OPTION +crash-dump-data-ini $CFGFILE +mode o
+START_SERVER $PORT 0 $FOREGROUND_OPTION -c new -R
+START_SERVER $PORT 0 $FOREGROUND_OPTION -c new $CRASH_DUMP_OPTION +crash-dump-data-ini $CFGFILE +mode o
 
 RUN ls -la *.trx
 RUN mv $DBLOGFILE new.trx
 
-RUN $SERVER $FOREGROUND_OPTION -c new -R
+START_SERVER $PORT 0 $FOREGROUND_OPTION -c new -R
 
-RUN $SERVER $FOREGROUND_OPTION -c new $CRASH_DUMP_OPTION
+START_SERVER $PORT 0 $FOREGROUND_OPTION -c new $CRASH_DUMP_OPTION
 
 RUN rm -f $DELETEMASK
 RUN ls -la *.trx
 RUN mv new.trx $DBLOGFILE
 
 RUN ls -la virtuoso.*
-RUN $SERVER $FOREGROUND_OPTION -R
+START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 
 ### end schema recovery test
 ## now check for results

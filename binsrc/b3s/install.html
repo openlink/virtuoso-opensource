@@ -1,0 +1,26 @@
+<html>
+    <body>
+	<h1>Installation dependency failed</h1>
+	<p>This installation of the Faceted Browser cannot currently be used due to an incompatible layout of RDF_QUAD table.</p>
+	<p>In order to enable this package you need to execute following script:</p>
+	<pre>
+drop index RDF_QUAD_OGPS;
+checkpoint;
+create table R2 (G iri_id_8, S iri_id_8, P iri_id_8, O any, primary key (S, P, O, G))
+alter index R2 on R2 partition (S int (0hexffff00));
+
+log_enable (2);
+insert into R2 (G, S, P, O) select G, S, P, O from rdf_quad;
+
+drop table RDF_QUAD;
+alter table r2 rename RDF_QUAD;
+checkpoint;
+create bitmap index RDF_QUAD_OPGS on RDF_QUAD (O, P, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_GPOS on RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
+
+checkpoint;
+</pre>
+	<p>Once the indexes are created, you must re-install the Faceted Browser VAD package.</p>
+    </body>
+</html>

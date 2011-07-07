@@ -67,7 +67,7 @@ CHECK_HTTP_PORT()
   stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
   while [ "z$stat" = "z" ]
   do
-    sleep 5
+    sleep 1
     stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
   done
   LOG "PASSED: Virtuoso HTTP/WebDAV Server successfully started on port $port"
@@ -85,6 +85,12 @@ mkdir tdav_meta
 cd tdav_meta
 for x in `ls ../tdav_meta_*.zip` ; do unzip "$x" ; done
 cd ..
+
+if [ ! -f tdav_meta/bookmarks.xml ]
+then
+    LOG "***ABORTED: tdav_meta directory does not contain demo data"
+    exit 1
+fi
 
 _dsn=$DSN
 DSN=$DS1

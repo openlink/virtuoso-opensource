@@ -1546,14 +1546,6 @@ ApplicationMain (int argc, char **argv)
   if (!strchr (f_mode, 'b'))
     {
       http_init_part_two ();
-#if REPLICATION_SUPPORT
-      if (f_read_from_rebuilt_database)	/* if booting from crash log, */
-	{				/* go read the account levels from db */
-	  repl_read_db_levels ();
-	}
-
-      /*repl_sync_server (NULL, NULL);*/
-#endif
     }
 #ifdef _RENDEZVOUS
   start_rendezvous ();

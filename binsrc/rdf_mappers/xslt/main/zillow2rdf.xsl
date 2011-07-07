@@ -25,6 +25,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
@@ -40,6 +41,7 @@
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
+    xmlns:pto="&pto;" 
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
@@ -126,9 +128,11 @@
     </xsl:template>
 
     <xsl:template match="result/address">
+		<rdfs:label>
+			<xsl:value-of select="concat(street, ', ', city, ', ', state)"/>
+		</rdfs:label>
 		<oplzllw:street><xsl:value-of select="street"/></oplzllw:street>
 		<oplzllw:postalCode><xsl:value-of select="zipcode"/></oplzllw:postalCode>
-
 		<oplzllw:city><xsl:value-of select="city"/></oplzllw:city>
 		<oplzllw:state><xsl:value-of select="translate (state, $lc, $uc)"/></oplzllw:state>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', city)}"/>
@@ -147,11 +151,30 @@
 		<xsl:variable name="amount" select="." />
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'LastSoldPrice')}">
-				<rdfs:label>Last Sold Price</rdfs:label>
+				<rdfs:label>
+					<xsl:value-of select="concat( vi:formatAmount($amount), ' (', @currency, ')')"/>	
+				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
 				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>
 				<oplzllw:lastSoldDate><xsl:value-of select="../lastSoldDate"/></oplzllw:lastSoldDate>
+			</gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template>
+
+    <xsl:template match="zestimate" mode="offering">
+		<xsl:variable name="amount" select="amount" />
+		<gr:hasPriceSpecification>
+			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'ZestimatePrice')}">
+				<rdfs:label>
+					<xsl:value-of select="concat(vi:formatAmount($amount), ' (', amount/@currency, ')')"/>
+				</rdfs:label>
+				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
+				<gr:hasMinCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="valuationRange/low"/></gr:hasMinCurrencyValue>
+				<gr:hasMaxCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="valuationRange/high"/></gr:hasMaxCurrencyValue>
+				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="amount/@currency"/></gr:hasCurrency>
+				<oplzllw:listingLastUpdated><xsl:value-of select="last-updated"/></oplzllw:listingLastUpdated>
 			</gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
@@ -187,7 +210,9 @@
 		</oplzllw:price>
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'CurrentPrice')}">
-				<rdfs:label>Current Price</rdfs:label>
+				<rdfs:label>
+				<xsl:value-of select="concat( vi:formatAmount($amount), ' (', @currency, ')')"/>	
+				</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
 				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>

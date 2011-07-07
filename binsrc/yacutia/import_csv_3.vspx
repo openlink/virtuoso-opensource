@@ -32,6 +32,7 @@
   <vm:variables>
     <v:variable name="tb" persist="0" type="varchar" default="null"  param-name="tb"/>
     <v:variable name="nrec" persist="0" type="integer" default="0" param-name="nrec"/>
+    <v:variable name="err" persist="0" type="varchar" default="null" param-name="err"/>
   </vm:variables>
   <vm:menu>
   </vm:menu>
@@ -43,10 +44,31 @@
       <v:form name="inx_form" type="simple" method="POST" action="" >
 	  <h3>Status</h3>
 	  <div>
-	      The data is imported in table <?V self.tb ?>. <br/>
+	      The data is imported in table <a href="#" onclick="javascript: window.open ('isql.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;gen_table_sel=<?V self.tb ?>', 'isql', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800')"><?V self.tb ?></a>. <br/>
               Total records imported <?V self.nrec ?>.
 	  </div>
-	 
+	  <div>
+	  <?vsp
+	  if (length (self.err))
+	    {
+	      declare xt, xp, err_text any;
+              err_text := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.err); 
+	      xt := xtree_doc (err_text);
+	      delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.err; 
+	      commit work;
+	      xp := xpath_eval ('/error', xt, 0); 
+	      if (length (xp))
+	        http_value ('Errors', 'div');
+	      foreach (any x in xp) do
+	        {
+                  declare l, m any;
+		  l := cast (xpath_eval ('@line', x) as varchar);
+		  m := cast (xpath_eval ('string(.)', x) as varchar);
+		  http (sprintf ('line: %s, %s <br />', l, m)); 
+		}
+	    }
+	  ?>
+          </div>
 	  <div>
 	      <v:button action="simple" name="cncl" value="Start Over">
 		  <v:on-post><![CDATA[

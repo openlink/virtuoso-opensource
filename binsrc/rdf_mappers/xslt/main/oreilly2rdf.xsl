@@ -28,6 +28,7 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -44,6 +45,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:gr="&gr;"
+    xmlns:pto="&pto;" 
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:owl="&owl;"
@@ -157,7 +159,7 @@
 			</xsl:when>
 		</xsl:choose>
     	<bibo:shortTitle><xsl:value-of select="$title"/></bibo:shortTitle>
-    	<dc:title><xsl:value-of select="concat($title, ' - ', $subtitle)"/></dc:title>
+    	<gr:name><xsl:value-of select="concat($title, ' - ', $subtitle)"/></gr:name>
 		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
 		<xsl:apply-templates select="meta" />
   		<xsl:apply-templates select="//div[@id='short-description']/div" />
@@ -172,7 +174,9 @@
 	    	<gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
 			-->
 	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('UnitPriceSpecification_', position()))}">
-	    		<rdfs:label>sale price</rdfs:label>
+	    		<rdfs:label>
+				<xsl:value-of select="concat(span[@property='gr:hasCurrencyValue'], ' (', span[@property='gr:hasCurrency']/@content, ')' )" />
+			</rdfs:label>
 				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="span[@property='gr:hasCurrencyValue']" /></gr:hasCurrencyValue>
 				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="span[@property='gr:hasCurrency']/@content" /></gr:hasCurrency>
@@ -195,12 +199,14 @@
   </xsl:template>
 
 	<xsl:template match="meta[translate (@name, $uc, $lc)='book.isbn']">
+	<xsl:if test="string-length(@content) &gt; 0">
     	<bibo:isbn13>
 	  		<xsl:value-of select="@content"/>
       	</bibo:isbn13>
       	<dcterms:identifier>
 	  		<xsl:value-of select="@content"/>
       	</dcterms:identifier>
+	</xsl:if>
 	</xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
@@ -230,9 +236,11 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='ean']">
+	<xsl:if test="string-length(@content) &gt; 0">
       <gr:hasEAN_UCC-13>
 		<xsl:value-of select="@content"/>
       </gr:hasEAN_UCC-13>
+       </xsl:if>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic']">
@@ -307,9 +315,9 @@
 	</xsl:template>
 
   	<xsl:template match="//div[@id='fulldesc']/div">
-		<dc:description>
+		<gr:description>
 			<xsl:value-of select="." />
-		</dc:description>
+		</gr:description>
 	</xsl:template>
 
   	<xsl:template match="*[@typeof='foaf:Person']">

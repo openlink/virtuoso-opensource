@@ -21,22 +21,38 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<xsl:stylesheet xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rss="http://purl.org/rss/1.0/"
-    xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:admin="http://webns.net/mvcb/" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:review="http:/www.purl.org/stuff/rev#" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:v="http://www.w3.org/2006/vcard/ns#" xmlns:cv="http://purl.org/captsolo/resume-rdf/0.2/cv#"
-    xmlns:cvbase="http://purl.org/captsolo/resume-rdf/0.2/base#" version="1.0">
+<xsl:stylesheet 
+	xmlns:dc="http://purl.org/dc/elements/1.1/" 
+	xmlns:rss="http://purl.org/rss/1.0/"
+    xmlns:dcterms="http://purl.org/dc/terms/" 
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+	xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+    xmlns:admin="http://webns.net/mvcb/" 
+	xmlns:h="http://www.w3.org/1999/xhtml" 
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:review="http:/www.purl.org/stuff/rev#" 
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:v="http://www.w3.org/2006/vcard/ns#" 
+	xmlns:cv="http://purl.org/captsolo/resume-rdf/0.2/cv#"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+	xmlns:cvbase="http://purl.org/captsolo/resume-rdf/0.2/base#" 
+	version="1.0">
     <xsl:output indent="yes" omit-xml-declaration="yes" method="xml" />
     <xsl:param name="baseUri" />
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	
     <xsl:template match="/">
         <rdf:RDF>
             <xsl:apply-templates />
         </rdf:RDF>
     </xsl:template>
     <xsl:template match="//*[@class='hresume']">
-        <cv:CV rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
+			<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hresume')}" />
+		</rdf:Description>
+        <cv:CV rdf:about="{vi:proxyIRI ($baseUri, '', 'hresume')}">
             <xsl:apply-templates mode="hresume" />
         </cv:CV>
     </xsl:template>
@@ -556,16 +572,19 @@
             <xsl:when test="$token = 'home' or $token = 'personal'">
                 <v:homeAdr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
+		<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
                 </v:homeAdr>
             </xsl:when>
             <xsl:when test="$token = 'work' or $token = 'office'">
                 <v:workAdr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
+		<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
                 </v:workAdr>
             </xsl:when>
             <xsl:otherwise>
                 <v:adr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
+		<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
                 </v:adr>
             </xsl:otherwise>
         </xsl:choose>

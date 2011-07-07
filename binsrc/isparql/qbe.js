@@ -333,7 +333,7 @@ iSPARQL.QBE = function (def_obj) {
 	    self.removeOrderBy(group);
 	}
     };
-    if (!OAT.Browser.isIE) {
+    if (!OAT.Browser.isIE && !OAT.Browser.hasNoSVG) { 
 	this.svgsparql = new OAT.SVGSparql("qbe_parent",options);
 	this.svgsparql.qbe = this;
     }
@@ -427,7 +427,7 @@ iSPARQL.QBE = function (def_obj) {
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.canvas = self.svgsparql.toXML();
 	dataObj.defaultGraph = $v('qbe_graph');
-	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
+	dataObj.metaDataOpts = iSPARQL.mdOpts.getMetaDataObj();
 	dataObj.maxrows = iSPARQL.dataObj.maxrows;
 
 	if(qe.cacheIndex == -1) {
@@ -636,7 +636,7 @@ iSPARQL.QBE = function (def_obj) {
 	    self.Schemas.InsertNode(self.Schemas.Bound,treeNode.uri,treeNode.uritype,treeNode.label,treeNode.comment);
 
 	    var val = self.putPrefix('<' + treeNode.uri + '>');
-	    if (target == iSPARQL.qbe.svgsparql) {
+	    if (target == self.svgsparql) {
 		if (treeNode.uritype == 'class') {
 		    var pos = OAT.Dom.position(target.parent);
 		    var x = x_ - pos[0];
@@ -744,7 +744,7 @@ iSPARQL.QBE = function (def_obj) {
 	    for (var i=0;i<root.children.length;i++) {
 		var child = root.children[i];
 		if (child.schema == parts[0])  { schemaNode = child; }
-	    }
+		}
 	    if (!schemaNode) { return; }
 	    var containerNode = false;
 	    var finalNode = false;
@@ -755,7 +755,7 @@ iSPARQL.QBE = function (def_obj) {
 		    if (child2.uri == url) {
 			containerNode = child1;
 			finalNode = child2;
-		    }
+			}
 		}
 	    }
 	    if (!finalNode) { return; }
@@ -799,21 +799,21 @@ iSPARQL.QBE = function (def_obj) {
 			    break;
 			}
 		    } /* for all elements */
-		    var lmax = min (classes.length, 200);
+		    var lmax = Math.min (classes.length, 200);
 		    for (var i=0;i<lmax;i++) {
 			var c = classes[i];
 			var type = 'class';
 			insert(c,type,schemaParts);
 		    }
 
-		    var lmax = min (attrs.length, 200);
+		    var lmax = Math.min (attrs.length, 200);
 		    for (var i=0;i<lmax;i++) {
 			var a = attrs[i];
 			var type = 'property_attr';
 			insert(a,type,schemaParts);
 		    }
 
-		    var lmax = min (rels.length, 200);
+		    var lmax = Math.min (rels.length, 200);
 		    for (var i=0;i<lmax;i++) {
 			var r = rels[i];
 			var type = 'property_rel';
@@ -1479,7 +1479,8 @@ iSPARQL.QBE = function (def_obj) {
 	    sponge:$v("qbe_sponge"),
 	    endpoint:iSPARQL.endpointOpts.endpointPath,
 	    pragmas:iSPARQL.endpointOpts.pragmas,
-	    maxrows:iSPARQL.dataObj.maxrows
+	    maxrows:iSPARQL.dataObj.maxrows,
+	    view:0
 	}
 	iSPARQL.recentQueryUI.addQuery (p.query);
 	

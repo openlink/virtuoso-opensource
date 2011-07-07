@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+#  test_fn.sh
+#
 #  $Id$
 #
 #  Generic test functions which should be read at the beginning of the
@@ -178,7 +180,7 @@ RUNSERVER()
     elif test -d "$PURIFY"
     then
       xx=`ls /cygdrive/d/O12/bin/suite/pfy | wc -l | sed -e 's/\ //g'`
-      datafile='d:\o12\bin\suite\pfy\'$xx'.pfy'
+      datafile="d:\o12\bin\suite\pfy\'$xx'.pfy"
       echo "Now we have to run purify with [$datafile] $*"
       purify.exe /AllocCallStackLength=50 /ErrorCallStackLength=50 /SaveData=$datafile $* &
     else
@@ -232,7 +234,7 @@ START_SERVER()
     ddate=`date`
     starth=`date | cut -f 2 -d :`
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-    while [ "z$stat" != "z" ]
+    while [ "z$stat" != "z" -a $timeout -gt 0 ]
     do
 	sleep 1
 	stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
@@ -284,7 +286,10 @@ START_SERVER()
 	starth=`date | cut -f 2 -d :`
 	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
 
-	if test -z "$FOREGROUND_OPTION"
+	if [ $timeout -eq 0 ]
+	then
+	    RUNSERVER $SERVER $port $*
+	elif test -z "$FOREGROUND_OPTION"
 	then
 #	    if test x$HOST_OS = x -o x$SERVER != xM2 -o x$SERVER != xM2.EXE
 #	    then
@@ -306,6 +311,10 @@ START_SERVER()
 #	    fi
 	fi
 #    fi
+	if [ $timeout -eq 0 ]
+	then
+	    return
+	fi
 	while true
 	do
 	    stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
@@ -361,8 +370,7 @@ STOP_SERVER()
 {
     if test "$HOST" = "localhost"
     then
-	LOG "If the database engine is already running, we kill it with raw_exit()"
-	LOG "and then we should get a Lost Connection to Server -error."
+	LOG "Stop database with raw_exit"
 	RUN $ISQL $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
     fi
 }
@@ -389,10 +397,9 @@ CHECKPOINT_SERVER()
 
 CHECK_LOG()
 {
-#   I've modified these grep patterns to ignore ':' which may be forgoten easily.
     passed=`grep "^PASSED" $LOGFILE | wc -l`
-    failed=`grep "^\*\*\*.*FAILED" $LOGFILE | wc -l`
-    aborted=`grep "^\*\*\*.*ABORTED" $LOGFILE | wc -l`
+    failed=`grep "^\*\*\*.*FAILED:" $LOGFILE | wc -l`
+    aborted=`grep "^\*\*\*.*ABORTED:" $LOGFILE | wc -l`
 
     ECHO ""
     LINE
@@ -533,3 +540,19 @@ esac
 #  Make sure the logfile is cleared before running the tests
 #===========================================================================
 rm -f $LOGFILE
+rm -f cluster.ini
+
+CLEAN_DBLOGFILE ()
+{
+  rm -f $DBLOGFILE
+}
+
+CLEAN_DBFILE ()
+{
+  rm -f $DBFILE
+}
+
+if [ "x$CLUSTER" != "x" ]
+then
+    . $HOME/binsrc/tests/suite/cl_test_fn.sh
+fi

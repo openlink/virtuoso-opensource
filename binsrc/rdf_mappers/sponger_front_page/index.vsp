@@ -1,0 +1,396 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <?vsp
+    declare skinpfx, banner_txt, strapline varchar;
+    skinpfx := registry_get ('_sponger_fp_SkinPrefix');
+    banner_txt := registry_get ('_sponger_fp_Banner');
+    strapline := registry_get ('_sponger_fp_Strapline');
+    if (skinpfx = 0) skinpfx := 'skin';
+    if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
+    if (strapline = 0) strapline := '';
+  ?>
+  <head>
+    <meta name="generator" content="HTML Tidy, see www.w3.org"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Virtuoso Sponger</title>
+    <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript">
+      jQuery(document).ready(function() {
+        jQuery(".collapsible").hide();
+        jQuery(".collapsible_div_heading").click(function()
+          {
+            jQuery(this).next(".collapsible").slideToggle(500);
+          });
+        });
+
+      function validate_sponge_url()
+      {
+        var el_g, sponge_uri;
+
+        el_g = document.getElementById('g');
+        sponge_uri = el_g.value;
+        if (sponge_uri.length == 0 || !/^http/.test(sponge_uri))
+        {
+          alert ('Please enter a valid URI');
+          return false;
+        }
+        return true;
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="outer">
+      <div id="header">
+        <div id="header_logo">
+        <a href="http://www.openlinksw.com/"><img id="openlink_logo"
+         title="OpenLink Software" alt="[OpenLink Software logo]"
+        src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
+        </div>
+        <div id="header_text">
+          <h1><?=banner_txt?></h1><?=strapline?>
+        </div>
+      </div>
+
+      <div id="navbar">
+        <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp">Architecture</a> | 
+        <a href= "sponger_setup.vsp">Sponger Setup</a> | 
+        <a href="examples.vsp">Live Sponger Examples</a> | 
+        <a href= "http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a> |
+		<a href="http://virtuoso.openlinksw.com/">Virtuoso</a>
+      </div>
+
+      <div id="content">
+        <div class="topic-text">
+          <div id="lmargin">
+            <div id="what_n_why">
+              <div id="what">
+                <img id="linked_data_logo"
+                title="Linked Data" alt="[Linked Data logo]" src="<?=skinpfx?>/i/linkeddata.jpg"/> 
+
+                <h2><a id="What_is_it"></a>What Is It?</h2>
+
+                <p>A data virtualization service that transforms
+                data hosted in a variety of data spaces and formats
+                into standards compliant Linked Data Objects for
+                uniform access, integration and management.</p>
+
+                <p>The underlying technology is Virtuoso's in-built
+                Linked Data Middleware (aka <a href=
+                "http://virtuoso.openlinksw.com/dav/wiki/Main/VirtSponger"
+                 class="absuri">Sponger</a>) that uses URLs as data
+                source names for its powerful data ingestion and transformation
+                services that result in highly navigable Linked Data Object 
+                graphs.</p>
+                <p>Post transformation, each Data Object is endowed
+                with a dereferenceable identifier (Name) that resolves to its
+                actual representation via its URL (Address). The Sponger
+                then re-presents Data Object descriptions via HTML documents
+                (the default behavior) or in a variety of raw data graph forms
+                that include: CSV, N-Triples, Turtle, N3, RDF/XML, JSON, CXML,
+                OData (Atom and JSON) etc.</p>
+              </div>
+
+              <div id="why">
+                <h2><a id="Why_is_it_important"></a>Why Is It
+                Important?</h2>
+
+                <p>It provides an unobtrusive solution for
+                creating, discovering, meshing, and sharing
+                structured Linked Data sources exposed via the
+                Web.</p>
+              </div>
+            </div>
+
+            <h2><a id="How_Do_I_Use_It"></a>How Do I Use It?</h2>
+
+            <h3><a id="Web_Users__User_Agents"></a>Web Users &amp;
+            User Agents</h3>
+
+            <p>Methods of exploiting Sponger's services from your
+            browser include:</p>
+
+            <h4><a id="Bookmarklet"></a>Bookmarklet</h4>
+
+            <p>Simply drag the following bookmarklet links to your
+            browser's bookmarks toolbar:</p>
+
+            <ul>
+              <li><a href=
+              "javascript:window.location='http://linkeddata.uriburner.com/about/html/http/'+window.location.host+window.location.pathname+window.location.search">
+              Page Metadata</a> (default: XHTML with embedded
+              RDFa)</li>
+              <!--
+              <li>
+              <a href="javascript:window.location='http://linkeddata.uriburner.com/about/id/http/'+window.location.host+'/'+window.location.pathname">Page Metadata (RDF)</a> (default format: RDF/XML)
+              </li>
+              -->
+            </ul>
+
+            <h4><a id="Browser_URL_input"></a>Browser URL
+            input</h4>
+            To dereference the description of a Web-addressable
+            resource via your browser simply type in one of the
+            following URL patterns: 
+
+            <ul>
+              <li>HTML -
+              <tt>http://{virtuoso-host}/about/html/{URIscheme}/{authority}/{local-path}</tt></li>
+              <li>RDF -
+              <tt>http://{virtuoso-host}/about/data/{format}/{URIscheme}/{authority}/{local-path}</tt></li>
+            </ul>
+            where <tt>format</tt> is one of <tt>xml</tt>,
+            <tt>n3</tt>, <tt>nt</tt> or <tt>ttl</tt>. 
+
+            <h5><a id="Examples"></a>Examples</h5>
+
+            <ul>
+              <li><a href=
+              "http://linkeddata.uriburner.com/about/html/http://www.bbc.co.uk/music/artists/ed2ac1e9-d51d-4eff-a2c2-85e81abd6360%01artist"
+               class="absuri">About: Bob Marley</a> -- XHTML+RDFa
+              based re-presentation from the BBC Music Data
+              Space</li>
+
+              <li><a href=
+              "http://linkeddata.uriburner.com/about/html/http://www.crunchbase.com/financial-organization/andreessen-horowitz"
+               class="absuri">About: Andreesen Horowitz</a> --
+              XHTML+RDFa based re-presentation</li>
+            </ul>
+
+            <h4><a id=
+            "Data_Explorer_Extension_for_Firefox"></a>OpenLink Data
+            Explorer Extension for Firefox</h4>
+            Simply go to the <a href="http://ode.openlinksw.com/"
+            class="absuri">OpenLink Data Explorer Home Page</a>,
+            download the extension, and then whenever you encounter
+            a page of interest, use the main or context-menu
+            options labeled "Describe Page" or "View Linked Data"
+            to obtain Web addressable resource descriptions in HTML
+            or RDF. 
+
+            <p>Alternatively, use the following bookmarklet:</p>
+
+            <ul>
+              <li><a href=
+              "javascript:window.location='http://linkeddata.uriburner.com/ode/?uri='+window.location">
+              OpenLink Data Explorer (a Linked Data
+              Browser)</a></li>
+            </ul>
+
+            <h3><a id="Web_Publishers"></a>Web Publishers</h3>
+
+            <p>Simply include the following in the &lt;head&gt;
+            section of your (X)HTML page (static or dynamically
+            generated):</p>
+<pre>
+&lt;link rel="describedby"
+title="RDF Model-based Metadata in your desired format 
+(e.g. xhtml, n3, turtle, rdf/xml etc)."
+type="{required mimetype}"
+href="http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}"
+/&gt;
+</pre>
+            <p>You can optionally notify the <a href="http://pingthesemanticweb.com/api.php#6">PingTheSemanticWeb</a> 
+            (PTSW) web service each time you generate a Linked Data graph. PTSW is used by crawlers or 
+            software agents to know where the latest Linked Data documents can be found and when they have been updated.
+            </p>
+
+            <h3><a id="Web_Application_Developers"></a>Web
+            Application Developers</h3>
+
+            <p>Using your host operating system of development
+            language embedded variants of cURL, you can exercise
+            all the dereferenceable proxy/wrapper URIs generated by
+            this service, along the following lines:</p>
+
+            <h4><a id="HTML:"></a>HTML:</h4>
+
+            <ul>
+              <li><tt>curl -I -H "Accept: text/html"</tt><br/>
+              <tt>http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}</tt></li>
+            </ul>
+
+            <h4><a id="JSON:"></a>JSON:</h4>
+
+            <ul>
+              <li><tt>curl -I -H "Accept:
+              application/json"</tt><br/>
+              <tt>http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}</tt></li>
+
+              <li><tt>curl</tt><br/>
+              <tt>http://{virtuoso-host}/about/data/json/{URIscheme}/{authority}/{local-path}</tt></li>
+            </ul>
+
+            <h4><a id="Notation_3_N3:"></a>Notation 3 (N3):</h4>
+
+            <ul>
+              <li><tt>curl -I -H "Accept: text/n3"</tt><br/>
+              <tt>http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}</tt></li>
+
+              <li><tt>curl</tt><br/>
+              <tt>http://{virtuoso-host}/about/data/n3/{URIscheme}/{authority}/{local-path}</tt></li>
+            </ul>
+
+            <ul>
+              <li><tt>curl -I -H "Accept: text/turtle"</tt><br/>
+              <tt>http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}</tt></li>
+
+              <li><tt>curl</tt><br/>
+              <tt>http://{virtuoso-host}/about/data/ttl/{URIscheme}/{authority}/{local-path}</tt></li>
+            </ul>
+
+            <h4><a id="RDFXML:"></a>RDF/XML:</h4>
+
+            <ul>
+              <li><tt>curl -I -H "Accept:
+              application/rdf+xml"</tt><br/>
+              <tt>http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}</tt></li>
+
+              <li><tt>curl</tt><br/>
+              <tt>http://{virtuoso-host}/about/data/xml/{URIscheme}/{authority}/{local-path}</tt></li>
+            </ul>
+          </div>
+
+          <div id="rmargin">
+            <div id="social_web">
+              <h2>Discover the Web's Linked Data Space
+              Dimension</h2>
+
+              <div id="social_network_binding">
+                <p><span class="span_starting_point">Make your
+                profile or other documents of interest your
+                starting point!</span></p>
+
+                <ul>
+                  <li><a href="sponge_uri.vsp?site=WebID"><img alt="WebID icon" src=
+                  "<?=skinpfx?>/i/webid_icon.png" title="Sponge your WebID / FOAF profile" /></a></li>
+
+                  <!--
+                  <li><a href="#"><img alt="Webfinger icon" src=
+                  "<?=skinpfx?>/i/webfinger.png" title="Sponge your Webfinger profile" /></a></li>
+                  -->
+
+                  <li><a href=
+                  "fb_access_token_popup.vsp"><img alt=
+                  "Facebook icon" src="<?=skinpfx?>/i/facebook_icon.jpg" title=
+                  "Sponge your Facebook profile"/></a></li>
+
+                  <li><a href="sponge_social_profile.vsp?site=Twitter"><img alt="Twitter icon" src=
+                  "<?=skinpfx?>/i/twitter.jpg" title="Sponge your Twitter profile" /></a></li>
+
+                  <!--
+                  <li><a href="sponge_uri.vsp?site=LinkedIn"><img alt="LinkedIn icon" src=
+                  "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
+                  -->
+                  <li><a href="linkedin_access_token.vsp"><img alt="LinkedIn icon" src=
+                  "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
+
+                  <!--
+                  <li><a href="#"><img alt="Google icon" src=
+                  "<?=skinpfx?>/i/google.jpg" title="Sponge your Google profile" /></a></li>
+                  -->
+
+                  <li><a href="sponge_social_profile.vsp?site=Delicious"><img alt="delicious icon" src=
+                  "<?=skinpfx?>/i/delicious.png" title="Sponge your Delicious profile" /></a></li>
+
+                  <li><a href="sponge_uri.vsp?site=Flickr"><img alt="flickr icon" src=
+                  "<?=skinpfx?>/i/flickr.jpg" title="Sponge a Flickr image" /></a></li>
+                </ul>
+              </div>
+
+              <div class="collapsible_div_heading"><p>Click on an icon to sponge your social network data 
+                <a href="#">
+                    <img src="<?=skinpfx?>/i/help_button.gif" alt="Help icon" title="Learn more" style="vertical-align: middle;" />
+                </a></p>
+              </div>
+
+              <div class="collapsible">
+                <h4>Facebook</h4>
+
+                <p>The <a href=
+                "http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtCartConfigFacebook"
+                 title=
+                "How to configure the Sponger as a Facebook App">Sponger
+                can be configured as a Facebook App</a>. Sponging of
+                your Facebook profile then follows these steps:</p>
+
+                <ul>
+                  <li>The Sponger will request access to your
+                  Facebook profile. If you authorize access, Facebook
+                  will grant an OAuth access token.</li>
+
+                  <li>On receipt of the access token, the Sponger
+                  notes your Facebook ID</li>
+
+                  <li>In the authorization confirmation dialog, the
+                  Sponger provides URLs for sponging your profile and
+                  viewing the generated Linked Data objects.</li>
+                </ul>
+
+                <p>You can revoke access by the Sponger at any time.</p>
+
+                <h5>Examples</h5>
+
+                <ul>
+                  <li><a href=
+                  "http://linkeddata.uriburner.com/about/id/entity/http/graph.facebook.com/605980750">
+                  Kingsley Idehen's Facebook Data Object</a></li>
+                </ul>
+              </div> <!-- collapsible -->
+
+              <div id="sponge_uri_form">
+                <p><span class="span_starting_point">Transform a document or Web service into Linked Data!</span></p>
+                <p>Enter the URL to sponge:</p>
+                <form id="frm_sponge_uri" action="/rdfdesc/description.vsp" method="get">
+                  <div>
+                    <input type="text" size="40" id="g" name="g" />
+                    <input type="submit" value="Sponge" onclick="return validate_sponge_url();" />
+                  </div>
+                </form>
+              </div>
+
+            </div> <!-- social_web -->
+
+            <h2>Querying Your Linked Data</h2>
+
+            <div id="search_find">
+              <h3>Full Text Search &amp; Precision Find</h3>
+
+              <p>Perform traditional full text pattern search, or
+              Linked Data enhanced precision find, against sponged
+              data via: <a href="/fct" class=
+              "absuri">http://{virtuoso-host}/fct</a></p>
+            </div>
+
+            <div id="query_ld">
+              <h3>Using SPARQL</h3>
+
+              <p>Linked Data may be queried using the SPARQL query
+              language, by simply pointing your browser at:</p>
+
+              <ol>
+                <li>SPARQL Query-By-Example:<br/>
+                 <a href="/isparql" class=
+                "absuri">http://{virtuoso-host}/isparql</a></li>
+
+                <li>Basic SPARQL Endpoint:<br/>
+                 <a href="/sparql" class=
+                "absuri">http://{virtuoso-host}/sparql</a></li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reset">
+        <div id="footer">
+          Copyright (C) OpenLink Software 2011. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

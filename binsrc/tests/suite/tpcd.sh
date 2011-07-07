@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+#  tpcd.sh
+#
 #  $Id$
 #
 #  TPC-D tests
@@ -23,9 +25,9 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #
+
 LOGFILE=`pwd`/tpcd.output
 export LOGFILE
-TEST_SPARQL=${TEST_SPARQL-1}
 . ./test_fn.sh
 
 DS1=$PORT
@@ -35,6 +37,13 @@ DS2=`expr $PORT + 1`
 echo "Server=" $SERVER
 
 BANNER "STARTED SERIES OF TPC-D TESTS (tpcd.sh)"
+
+grep VDB ident.txt
+if test $? -ne 0
+then 
+    echo "The present build is not set up for VDB."
+    exit
+fi
 
 LOG "Starting the server on $DS1"
 LOG
@@ -49,37 +58,6 @@ rm -rf tpcdremote1
 mkdir tpcdremote1
 cd tpcdremote1
 MAKECFG_FILE ../$TESTCFGFILE $DS1 $CFGFILE
-
-case $SERVER in
-*[Mm]2*)
-cat >> $CFGFILE <<END_HTTP
-HTTPLogFile: http.log
-http_port: $HTTPPORT
-http_threads: 3
-http_keep_alive_timeout: 15
-http_max_keep_alives: 6
-http_max_cached_proxy_connections: 10
-http_proxy_connection_cache_timeout: 15
-END_HTTP
-;;
-*virtuoso*)
-cat >> $CFGFILE <<END_HTTP1
-[HTTPServer]
-HTTPLogFile = http.log
-ServerPort = $HTTPPORT
-ServerRoot = .
-ServerThreads = 3
-MaxKeepAlives = 6
-KeepAliveTimeout = 15
-MaxCachedProxyConnections = 10
-ProxyConnectionCacheTimeout = 15
-
-[URIQA]
-DefaultHost = localhost:$HTTPPORT
-END_HTTP1
-;;
-esac
-
 START_SERVER $DS1 1000
 cd ..
 
@@ -88,10 +66,10 @@ LOG "Loading the TPC-D tables into $DS1"
 LOG
 
 cd tpc-d
-sh ./LOAD.sh $DS1 dba dba tables
-sh ./LOAD.sh $DS1 dba dba procedures
-sh ./LOAD.sh $DS1 dba dba load
-sh ./LOAD.sh $DS1 dba dba indexes
+. ./LOAD.sh $DS1 dba dba tables
+. ./LOAD.sh $DS1 dba dba indexes
+. ./LOAD.sh $DS1 dba dba procedures
+. ./LOAD.sh $DS1 dba dba load
 cd ..
 
 LOG
@@ -105,8 +83,6 @@ then
     exit 1
 fi
 
-if [ ! -f ../../../autogen.sh ] # non-VOS
-then
 LOG
 LOG "Starting the server on $DS2"
 LOG
@@ -123,7 +99,7 @@ LOG "Attaching the TPC-D tables from $DS1 into $DS2"
 LOG
 
 cd tpc-d
-sh ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
+. ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
 cd ..
 
 LOG
@@ -136,11 +112,6 @@ then
     LOG "***ABORTED: tpcd.sh: tpc-d/Q.sql"
     exit 1
 fi
-fi # END non-VOS
-
-if test -n "$TEST_SPARQL"
-then
-LOG "SPARQL test of mapped TPCD tables"
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/sql_rdf.sql
 if test $STATUS -ne 0
 then
@@ -165,52 +136,6 @@ then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_translations.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_translations.sql"
-    exit 1
-fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_endpoint.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_endpoint.sql"
-    exit 1
-fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_phy_cmp.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_phy_cmp.sql"
-    exit 1
-fi
-
-lcount=` ( curl --form-string 'query=select * from <http://example.com/tpcd> where { ?subj a ?obj . filter (?subj = <http://example.com/tpcd/customer/1>) } limit 10' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep 'subj.*uri.*customer/1' | wc -l `
-if test $lcount -eq 2
-then
-  echo 'PASSED: constant URI variable is <uri> in XML SPARQL result-set'
-else
-  echo '***FAILED: constant URI variable is <uri> in XML SPARQL result-set'
-fi
-
-lcount=` ( curl --form-string 'format=application/sparql-results+json' --form-string 'query=select * from <http://example.com/tpcd> where { ?subj a ?obj . filter (?subj = <http://example.com/tpcd/customer/1>) } limit 10' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep 'subj.*type.*uri.*customer/1' | wc -l `
-if test 2 -eq $lcount
-then
-  echo 'PASSED: constant URI variable is type:uri in JSON SPARQL result-set'
-else
-  echo '***FAILED: constant URI variable is type:uri in JSON SPARQL result-set'
-fi
-
-lcount=` ( curl --form-string 'format=application/javascript' --form-string 'query=select * from <http://example.com/tpcd> where { ?subj a ?obj filter (?subj = <http://example.com/tpcd/customer/1>) } limit 10' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep 'td.*customer/1' | wc -l `
-if test 2 -eq $lcount
-then
-  echo 'PASSED: constant URI variable is in javascript result-set'
-else
-  echo '***FAILED: constant URI variable is in javascript result-set'
-fi
-
-else
-echo ***SKIPPED: SPARQL tests of RDF Views and materialized quads; can be enabled if TEST_SPARQL is set to nonempty string.
-fi
 
 LOG
 LOG "Shutdown databases"
@@ -222,8 +147,6 @@ RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT
 #  Cleanup
 #
 # rm -rf repl1 repl2
-cat $LOGFILE | grep -v 'ECHO BOTH \*\*\*FAILED;' > tmp.tmp
-mv tmp.tmp $LOGFILE
 
 CHECK_LOG
 BANNER "COMPLETED SERIES OF TPC-D TESTS (tpc-d.sh)"

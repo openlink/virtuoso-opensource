@@ -94,7 +94,7 @@
 	    rollback work;
 	  }
        ]]></v:after-data-bind>
-      <div>
+      <div class="clear">
        <v:form name="srcf2" method="POST" type="simple">
 	   Package path: <span class="emphasize"><v:label name="spath1" value="--case when self.src_folder_type then 'dav://' else 'file://' end || self.src_folder"
 		   xhtml_size="70" /></span>

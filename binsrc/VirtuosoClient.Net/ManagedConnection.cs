@@ -273,32 +273,32 @@ namespace OpenLink.Data.Virtuoso
 		{
 		        Debug.WriteLineIf (CLI.FnTrace.Enabled, String.Format (
 			      "ManagedConnection.EndTransaction ({0})", commit));
-			CLI.CompletionType completion = commit ? 
-			    CLI.CompletionType.SQL_COMMIT : 
-			    CLI.CompletionType.SQL_ROLLBACK;
-			Future future = new Future (
-			    Service.Transaction, (int) completion, null);
-			object result = null;
-			try 
-			{
-				futures.Add (future);
-				future.SendRequest (Session);
-				result = future.GetNextResult (Session, futures);
-				Debug.WriteLineIf (CLI.FnTrace.Enabled, String.Format (
+			  CLI.CompletionType completion = commit ? 
+			      CLI.CompletionType.SQL_COMMIT : 
+			      CLI.CompletionType.SQL_ROLLBACK;
+			  Future future = new Future (
+			      Service.Transaction, (int) completion, null);
+			  object result = null;
+			  try 
+			  {
+			 	  futures.Add (future);
+				  future.SendRequest (Session);
+				  result = future.GetNextResult (Session, futures);
+				  Debug.WriteLineIf (CLI.FnTrace.Enabled, String.Format (
 				      "ManagedConnection.EndTransaction ({0}) success", commit));
-			}
-			finally
-			{
-				futures.Remove (future);
-			}
-			if (result is object[])
-			{
-			  Debug.WriteLineIf (CLI.FnTrace.Enabled, String.Format (
+			  }
+			  finally
+			  {
+				  futures.Remove (future);
+			  }
+			  if (result is object[])
+			  {
+			    Debug.WriteLineIf (CLI.FnTrace.Enabled, String.Format (
 				"ManagedConnection.EndTransaction ({0}) error", commit));
-				object[] results = (object[]) result;
-				errors.AddServerError ((string) results[1], null, (string) results[2]);
-				Diagnostics.HandleErrors (CLI.ReturnCode.SQL_ERROR, this);
-			}
+				  object[] results = (object[]) result;
+				  errors.AddServerError ((string) results[1], null, (string) results[2]);
+				  Diagnostics.HandleErrors (CLI.ReturnCode.SQL_ERROR, this);
+			  }
 
 			autocommit = true;
 			isolation = CLI.IsolationLevel.SQL_TXN_READ_COMMITED;

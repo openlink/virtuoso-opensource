@@ -1,14 +1,19 @@
 if (typeof iSPARQL == 'undefined')
     iSPARQL = {};
 
+iSPARQL.addthis_loaded = false;
+
 iSPARQL.Defaults = {
     endpoints: [ "/sparql",
 		 "http://uriburner.com/sparql",
 		 "http://dbpedia.org/sparql",
+                 "http://loc.openlinksw.com/sparql",
 		 "http://lod.openlinksw.com/sparql",
 		 "http://bbc.openlinksw.com/sparql",
 		 "http://demo.openlinksw.com/sparql",
 		 "http://myopenlink.net:8890/sparql/",
+		 "http://linkedgeodata.org/sparql",
+		 "http://sparql.reegle.info/",
 //		 "http://www.govtrack.us/sparql",
 		 "http://services.data.gov.uk/education/sparql",
 		 "http://services.data.gov.uk/crime/sparql",
@@ -29,19 +34,31 @@ iSPARQL.Defaults = {
 			   ['rdfs:seeAlso',    'http://www.w3.org/2000/01/rdf-schema#',true],
 			   ['owl:sameAs',      'http://www.w3.org/2002/07/owl#',       true]],
 
-    query:        'SELECT * WHERE {?s ?p ?o}',
-    sponge:       'none',
+    query:        "SELECT * WHERE {?s ?p ?o}",
+    sponge:       "none",
     grabLimit:    100,
     grabDepth:    2,
     grabAll:      false,
-    graph:        '',
+    graph:        "",
     queryTimeout: 2000, // ms
-    auth:         {user:'dav',pass:'dav',endpoint:'./auth.vsp'},
+    auth:         {user:'dav',password:'dav'},
     tab:          0,
+    anchorMode:   0, /* 0:describe, 1:get data items,2:Open in new window */
     maxrows:      50,
+    view:         1,
     endpoint:     '/sparql',
+    pivotInstalled: false,
+    addthis_key: false,
+    locOpts: {             /* XXX all except minAcc not implemented yet */
+	cacheLocTO:  2000, /* Milliseconds timeout to improve non-expired cached location accuracy */
+	coarseLocTO: 2000, /* Milliseconds to wait for coarse loc in last cached location validation attempt */
+	minAcc:      500,  /* default min. accuracy requested for location queries, in metres, after which the query fires */
+	autoApply:   true, /* Automatically execute location query when min. accuracy is achieved. */
+	cacheExpiry: 10    /* minutes a cached location is deemed accurate */
+    },
 
  /* See maps.js indexed by OAT.Map.TYPE_* */
+
     mapProviderNames: [
 	"None", 
 	"Google Maps", 
@@ -58,22 +75,27 @@ iSPARQL.Defaults = {
 	var qp = false;
 	var p = OAT.Dom.uriParams();
 	
-	if (p['default-graph-uri']) { iSPARQL.Defaults.graph = p['default-graph-uri']; qp = true; }
-	if (p['defaultGraph'])      { iSPARQL.Defaults.graph = p['defaultGraph']; qp = true; }
-	if (p['query'])             { iSPARQL.Defaults.query = p['query']; qp = true; }
-	if (p['sponge'])            { iSPARQL.Defaults.sponge = p['sponge']; qp = true; }
-	if (p['should_sponge'])     { iSPARQL.Defaults.sponge = p['should_sponge']; qp = true; }
+	if (p['default-graph-uri']) { iSPARQL.Settings.graph  = p['default-graph-uri']; qp = true; }
+	if (p['defaultGraph'])      { iSPARQL.Settings.graph  = p['defaultGraph']; qp = true; }
+	if (p['query']) { 
+	    iSPARQL.Settings.query  = p['query']; 
+	    qp = true; 
+	}
+	if (p['sponge'])            { iSPARQL.Settings.sponge = p['sponge']; qp = true; }
+	if (p['should_sponge'])     { iSPARQL.Settings.sponge = p['should_sponge']; qp = true; }
 	if (p['view']) {
-	    var tabInx = parseInt(page_params['view']);
-	    if (!isNaN(tabInx) && tabinx >= 0 && tabInx < 3)
-		iSPARQL.Defaults.tab = tabInx;
+	    var tabInx = parseInt(p['view']);
+	    if (!isNaN(tabInx) && tabInx >= 0 && tabInx < 3)
+		iSPARQL.Settings.tab = tabInx;
+	    else 
+		iSPARQL.Settings.tab = 1;
 	    qp = true;
 	}
-	if (p['endpoint']) { iSPARQL.Defaults.endpoint = p['endpoint']; qp = true;}
-	if (p['resultview']) { iSPARQL.Defaults.resultView = p['resultview']; qp = true;}
-	if (qp) iSPARQL.Defaults.qp_override = qp;
-	if (p['__DEBUG']) iSPARQL.Preferences.debug = true;
-	if (p['maxrows']) iSPARQL.Defaults.maxrows = parseInt(p['maxrows']);
+	if (p['endpoint']) { iSPARQL.Settings.endpoint = p['endpoint']; qp = true;}
+	if (p['resultview']) { iSPARQL.Settings.resultView = p['resultview']; qp = true;}
+	if (qp) iSPARQL.Settings.qp_override = qp;
+	if (p['__DEBUG']) iSPARQL.Settings.debug = true;
+	if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
     },
 
     //
@@ -84,6 +106,7 @@ iSPARQL.Defaults = {
 	var o = { 
 	    async: false,
 	    onerror: function() { iSPARQL.StatusUI.statMsg("Warning: Could not get server defaults.") },
+	    onstart: function () { return; }
 	};
 
 	OAT.AJAX.GET ('/isparql/defaults/',
@@ -102,6 +125,8 @@ iSPARQL.Defaults = {
 			iSPARQL.Defaults.auth[authParm] = iSPARQL.serverDefaults.auth[authParm];
 		}
 		continue;
+	    } else if (defName == 'namespaces') {
+		OAT.IRIDB.insertIRIArr (iSPARQL.serverDefaults[defName]);
 	    }
 	    iSPARQL.Defaults[defName] = iSPARQL.serverDefaults[defName];
 	}
@@ -134,33 +159,16 @@ iSPARQL.Defaults = {
 	    iSPARQL.Defaults.map_type = OAT.Map.TYPE_OL;
 	    break;
 	}
-	iSPARQL.Defaults.handlePageParams();
     }
-    
 };
 
 // curie, prefix, selected by default
 
 
-iSPARQL.Preferences = {
+iSPARQL.Settings = {
     xslt:'/isparql/xslt/',
     debug:true
-};
+}
 
-// Should be taken care by init.
 
-/* var iSPARQL = {
-    dataObj:{
-	data:false,
-	query:"",
-	endpoint:"",
- 	defaultGraph:"",
-	graphs:[],
-	namedGraphs:[],
-	prefixes:[],			// FIXME: prefixes?
-	pragmas:[],
-	canvas:false,
-	metaData:false
-        maxrows: 0;
-    }
-};*/
+

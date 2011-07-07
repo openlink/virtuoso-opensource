@@ -331,10 +331,110 @@ col197 char (10),
 col198 char (10),
 col199 char (10),
 col200 char (10),
-col201 char (10)
+col201 char (10),
+col202 char (10),
+col203 char (10),
+col204 char (10),
+col205 char (10),
+col206 char (10),
+col207 char (10),
+col208 char (10),
+col209 char (10),
+col210 char (10),
+col211 char (10),
+col212 char (10),
+col213 char (10),
+col214 char (10),
+col215 char (10),
+col216 char (10),
+col217 char (10),
+col218 char (10),
+col219 char (10),
+col220 char (10),
+col221 char (10),
+col222 char (10),
+col223 char (10),
+col224 char (10),
+col225 char (10),
+col226 char (10),
+col227 char (10),
+col228 char (10),
+col229 char (10),
+col230 char (10),
+col231 char (10),
+col232 char (10),
+col233 char (10),
+col234 char (10),
+col235 char (10),
+col236 char (10),
+col237 char (10),
+col238 char (10),
+col239 char (10),
+col240 char (10),
+col241 char (10),
+col242 char (10),
+col243 char (10),
+col244 char (10),
+col245 char (10),
+col246 char (10),
+col247 char (10),
+col248 char (10),
+col249 char (10),
+col250 char (10),
+col251 char (10),
+col252 char (10),
+col253 char (10),
+col254 char (10),
+col255 char (10),
+col256 char (10),
+col257 char (10),
+col258 char (10),
+col259 char (10),
+col260 char (10),
+col261 char (10),
+col262 char (10),
+col263 char (10),
+col264 char (10),
+col265 char (10),
+col266 char (10),
+col267 char (10),
+col268 char (10),
+col269 char (10),
+col270 char (10),
+col271 char (10),
+col272 char (10),
+col273 char (10),
+col274 char (10),
+col275 char (10),
+col276 char (10),
+col277 char (10),
+col278 char (10),
+col279 char (10),
+col280 char (10),
+col281 char (10),
+col282 char (10),
+col283 char (10),
+col284 char (10),
+col285 char (10),
+col286 char (10),
+col287 char (10),
+col288 char (10),
+col289 char (10),
+col290 char (10),
+col291 char (10),
+col292 char (10),
+col293 char (10),
+col294 char (10),
+col295 char (10),
+col296 char (10),
+col297 char (10),
+col298 char (10),
+col299 char (10),
+col300 char (10),
+col301 char (10)
 );
 ECHO BOTH $IF $EQU $STATE 37000  "PASSED" "***FAILED";
-ECHO BOTH ": table with 201 cols in create table " $STATE "\n";
+ECHO BOTH ": table with 301 cols in create table " $STATE "\n";
 
 drop table colcnttest;
 
@@ -538,16 +638,116 @@ col196 char (10),
 col197 char (10),
 col198 char (10),
 col199 char (10),
-col200 char (10)
+col200 char (10),
+col201 char (10),
+col202 char (10),
+col203 char (10),
+col204 char (10),
+col205 char (10),
+col206 char (10),
+col207 char (10),
+col208 char (10),
+col209 char (10),
+col210 char (10),
+col211 char (10),
+col212 char (10),
+col213 char (10),
+col214 char (10),
+col215 char (10),
+col216 char (10),
+col217 char (10),
+col218 char (10),
+col219 char (10),
+col220 char (10),
+col221 char (10),
+col222 char (10),
+col223 char (10),
+col224 char (10),
+col225 char (10),
+col226 char (10),
+col227 char (10),
+col228 char (10),
+col229 char (10),
+col230 char (10),
+col231 char (10),
+col232 char (10),
+col233 char (10),
+col234 char (10),
+col235 char (10),
+col236 char (10),
+col237 char (10),
+col238 char (10),
+col239 char (10),
+col240 char (10),
+col241 char (10),
+col242 char (10),
+col243 char (10),
+col244 char (10),
+col245 char (10),
+col246 char (10),
+col247 char (10),
+col248 char (10),
+col249 char (10),
+col250 char (10),
+col251 char (10),
+col252 char (10),
+col253 char (10),
+col254 char (10),
+col255 char (10),
+col256 char (10),
+col257 char (10),
+col258 char (10),
+col259 char (10),
+col260 char (10),
+col261 char (10),
+col262 char (10),
+col263 char (10),
+col264 char (10),
+col265 char (10),
+col266 char (10),
+col267 char (10),
+col268 char (10),
+col269 char (10),
+col270 char (10),
+col271 char (10),
+col272 char (10),
+col273 char (10),
+col274 char (10),
+col275 char (10),
+col276 char (10),
+col277 char (10),
+col278 char (10),
+col279 char (10),
+col280 char (10),
+col281 char (10),
+col282 char (10),
+col283 char (10),
+col284 char (10),
+col285 char (10),
+col286 char (10),
+col287 char (10),
+col288 char (10),
+col289 char (10),
+col290 char (10),
+col291 char (10),
+col292 char (10),
+col293 char (10),
+col294 char (10),
+col295 char (10),
+col296 char (10),
+col297 char (10),
+col298 char (10),
+col299 char (10),
+col300 char (10)
 );
 
 alter table colcnttest  add errorcol integer;
 ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
-ECHO BOTH ": adding column to table with 200 cols with alter table " $STATE "\n";
+ECHO BOTH ": adding column to table with 300 cols with alter table " $STATE "\n";
 
 create table colinher  (under colcnttest, errorcol integer);
 ECHO BOTH $IF $EQU $STATE 42S22  "PASSED" "***FAILED";
-ECHO BOTH ": inheriting table with 200 cols with UNDER " $STATE "\n";
+ECHO BOTH ": inheriting table with 300 cols with UNDER " $STATE "\n";
 
 
 create table dupcols (id integer, id varchar);
@@ -954,7 +1154,7 @@ create table TTROW1 (
     D1 VARCHAR,
     primary key (I1, I2, I3, I4, V1, V2));
 
-insert into TTROW1 (I2, I3, I4, V1, V2) values (1,2,3, make_string (1024), make_string (852));
+insert into TTROW1 (I2, I3, I4, V1, V2) values (1,2,3, make_string (1024), make_string (850));
 create index xx_tt2 on TTROW1 (V2, V1, I4, I3, I2, I1);
 update TTROW1 set D1 = make_string (1);
 
@@ -972,7 +1172,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": max row length row updated STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 foreach integer between 1 1000 insert into TTROW1 (I2, I3, I4, V1, V2, D1)
-   values (1,2,3, make_string (1024), make_string (852), make_string (2179));
+   values (1,2,3, make_string (1024), make_string (850), make_string (2179));
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": max row length row inserted STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -982,7 +1182,7 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": PK key too long in insert STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 insert into TTROW1 (I2, I3, I4, V1, V2, D1)
-   values (1,2,3, make_string (1024), make_string (852), make_string (2180));
+   values (1,2,3, make_string (1024), make_string (850), make_string (2186));
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": PK key row too long in insert STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -990,7 +1190,7 @@ update TTROW1 set V2 = make_string (2180);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": PK key too long in update STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-update TTROW1 set D1 = make_string (2183);
+update TTROW1 set D1 = make_string (2186);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": PK key row too long in update STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -1082,10 +1282,6 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": search param changed on oppened cursor STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
-select top 10 * from (select row_no, b1 from (select row_no, blob_to_string (b1) || 'qq' as b1 long varchar from blobs) i order by -row_no) f;
-echo both $if $equ $state "22026" "PASSED" "***FAILED";
-echo both ": calculated str too long in oby temp\n";
-
 
 create procedure bf ()
 {
@@ -1107,230 +1303,106 @@ create procedure bf2 ()
   return blob_to_string (_b1);
 }
 echo both "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
-log_message ('Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.');
-bf();
-bf2();
-echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
-echo both ": deleted blob read in blob_to_string\n";
-log_message ('Error messages about bad blobs or reading free pages are not expected after this point.');
+
+--bf();
+--bf2();
+
+--echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
+--echo both ": deleted blob read in blob_to_string\n";
 
 echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
 
--- foreach integer between 0 7001 select deserialize (chr (?));
--- ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
--- ECHO BOTH ": select deserialize (chr (?)) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- foreach integer between 0 7001 select deserialize (chr1 (?));
--- ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
--- ECHO BOTH ": select deserialize (chr1 (?)) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- bad nvarchar processing in ins replacing 
+create table DB.DBA.UZZZER (
+  KOD integer not null primary key,
+  LGN nvarchar not null unique,
+  FNAME nvarchar,
+  MNAME nvarchar,
+  LNAME nvarchar,
+  ISGRP integer not null,
+  ENB integer not null,
+  CMT long nvarchar 
+);
 
-select deserialize ('');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": select deserialize ('') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+insert replacing DB.DBA.UZZZER (
+  KOD, LGN, FNAME, MNAME, LNAME, ISGRP, ENB, CMT )
+  values ( 1, N'?? ??', N'????????', N'????', N'??????????', 0, 1, N'?? ??????? ????????, ??????? ? ???????? ???????? ?? ?????, ????? ?????? ??? ???? ?????? ??????????? ????? ? ????????, ??? ????? ????? ????? ?????' );
 
-select deserialize ('''');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": select deserialize ('''') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
-select deserialize (NULL);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": select deserialize (NULL) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
-create procedure f1()
-{
-  declare x any;
-  x := N' ';
-  x [0] := 1000;
-  return x;
-};
-
-select length (cast (repeat ('x', 6000000) as nvarchar));
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
-
-select length (cast (make_string (6000000) as nvarchar));
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": len of cast to long nvarchar  state " $STATE "\n";
-
-select cast (make_string (6000000) as nvarchar);
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
-
-select cast (make_string (6) as nvarchar);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": cast to nvarchar  state " $STATE "\n";
-
-select subseq ('asasa', -2, 3);
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": wrong subseq params  state " $STATE "\n";
-
-select subseq ('asasa', 2, -3);
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": wrong subseq params  state " $STATE "\n";
-
-select log10 (-1);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": log10 (-1) state " $STATE "\n";
-
-select log (-1);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": log10 (-1) state " $STATE "\n";
-
-select sqrt (-1) ;
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": sqrt (-1) state " $STATE "\n";
-
-lisp_read ('nosense');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": lisp_read (nosense) state " $STATE "\n";
-
-lisp_read ('');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": lisp_read ('') state " $STATE "\n";
-
-select charset_recode ('\xff\xff', 'UTF-8', '_WIDE_');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": charset_recode with bad utf8 state " $STATE "\n";
-
-select mod (1,0);
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": mod (1,0) state " $STATE "\n";
-
-select 1/0;
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": div by zero state " $STATE "\n";
-
-select deserialize ('\xb6\xff\xff\xff\xff\xff');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": deserialize of bad string state " $STATE "\n";
-
-select charset_recode (repeat (charset_recode (f1(), '_WIDE_', 'UTF-8'), 4000000), 'UTF-8', '_WIDE_');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": recode of long wide state " $STATE "\n";
-
-select sqrt (null);
-ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
-ECHO BOTH ": sqrt(null) return " $LAST[1] "\n";
-
-select power (null, 1);
-ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
-ECHO BOTH ": power(null,1) return " $LAST[1] "\n";
-
-select power (1, null);
-ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
-ECHO BOTH ": power(1, null) return " $LAST[1] "\n";
-
-select floor (null);
-ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
-ECHO BOTH ": floor(null) return " $LAST[1] "\n";
+insert replacing DB.DBA.UZZZER (
+  KOD, LGN, FNAME, MNAME, LNAME, ISGRP, ENB, CMT )
+  values ( 1, N'?? ??', N'????????', N'????', N'??????????', 0, 1, N'?? ??????? ????????, ??????? ? ???????? ???????? ?? ?????, ????? ?????? ??? ???? ?????? ??????????? ????? ? ????????, ??? ????? ????? ????? ?????' );
 
 
-create procedure seqov () {declare i int; for (i:= 0; i < 1000000; i:= i+1) sequence_set (sprintf ('%d', i), 1, 0);};
-seqov ();
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": seq overflow state " $STATE "\n";
+-- some non serializable cluster msg 
+cl_exec ('dbg_obj_print (?)', params => vector (dict_new ()));
 
-create procedure regov () {declare i int; for (i:= 0; i < 1000000; i:= i+1) registry_set (sprintf ('%d', i), '1');};
-regov ();
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": registry overflow state " $STATE "\n";
+create table mig (id int primary key, d1 int);
+create table mig2 (under mig, d2 int);
+create table mig3 (under mig, d3 int);
+create table mig4 (under mig3, d3 int);
+
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
+
+
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
 
 
 
-create procedure rov_rev () {declare i int; for (i:= 0; i < 1000000; i:= i+1) registry_remove (sprintf ('%d', i));};
-rov_rev ();
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": reg removal state " $STATE "\n";
-
-create procedure sov_rev () {declare i int; for (i:= 0; i < 1000000; i:= i+1) sequence_remove (sprintf ('%d', i));};
-sov_rev ();
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": seq removal state " $STATE "\n";
-
-select xmlagg (xmlelement ('a', a.key_table), xmlelement ('b', b.key_table), xmlelement ('c', c.key_table)) from sys_keys a, sys_keys b, sys_keys c;
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": xmlagg with too many members state " $STATE "\n";
-
-delete user TEST1;
-delete user TEST2;
-delete user TEST3;
-drop table tidn;
+alter table mig add d4 varchar;
+alter table mig add d5 varchar;
+alter table mig drop d4;
+alter table mig drop d5;
 
 
-create user TEST1;
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": create user test1 " $state "\n";
-
-create user TEST2;
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": create user test2 " $state "\n";
-
-create user TEST3;
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": create user test3 " $state "\n";
 
 
-RECONNECT TEST1;
 
-select user;
-echo both $if $equ $last[1] TEST1 "PASSED" "***FAILED";
-echo both ": connected as " $last[1] "\n";
-
-registry_set ('RDF_RO_ID', 'bad');
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": registry set for dba only sequence " $state "\n";
-
-registry_remove  ('RDF_RO_ID');
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": registry remove for dba only sequence " $state "\n";
-
-sequence_set ('RDF_RO_ID', 0, 1);
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": sequence set for dba only sequence " $state "\n";
-
-sequence_next ('RDF_RO_ID');
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": sequence next for dba only sequence " $state "\n";
-
-sequence_remove ('RDF_RO_ID');
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": sequence remove for dba only sequence " $state "\n";
-
-
-create table tidn (id int identity primary key, dt varchar);
-
-insert into tidn (dt) values ('a');
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": create table&insert as user test1 " $state "\n";
-
-
-RECONNECT dba;
-
-grant insert on tidn to TEST2;
-
-RECONNECT TEST2;
-
-select user;
-echo both $if $equ $last[1] TEST2 "PASSED" "***FAILED";
-echo both ": connected as " $last[1] "\n";
-
-insert into tidn (dt) values ('a');
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": create insert as user test2 " $state "\n";
-
-RECONNECT TEST3;
-
-select user;
-echo both $if $equ $last[1] TEST3 "PASSED" "***FAILED";
-echo both ": connected as " $last[1] "\n";
-
-
-insert into tidn (dt) values ('a');
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": create insert as user test3 " $state "\n";
-
-reconnect dba;
-
-select * from tidn;
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-echo both ": " $rowcnt " rows inserted \n";
+drop table mig;

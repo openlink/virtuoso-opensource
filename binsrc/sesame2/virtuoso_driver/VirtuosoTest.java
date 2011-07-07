@@ -120,7 +120,7 @@ public class VirtuosoTest {
 			// test add data to the repository
 			boolean ok = true;
 			String query = null;
-			String strurl = "http://dbpedia.org/data/Berlin.rdf";
+			String strurl = "http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/foaf.rdf";
 			URL url = new URL(strurl);
 			URI context = repository.getValueFactory().createURI("http://demo.openlinksw.com/demo#this");
 			Value[][] results = null;

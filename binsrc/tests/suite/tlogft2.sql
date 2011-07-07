@@ -38,14 +38,3 @@ select count(*) from XTLOG;
 ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " rows in XTLOG with serialized XML_ENTITY\n";
 ECHO BOTH "COMPLETED: XML_ENTITY  interaction with transaction log, part 1\n";
-
-RECONNECT USR1;
-
-select USER;
-ECHO BOTH $IF $EQU $LAST[1] USR1 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " connected as USR1\n";
-
-select count(*) from UFTTEST where contains (DATA, 'EXPLAIN');
-ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " rows in contains : EXPLAIN in table of USR1 user\n";
-

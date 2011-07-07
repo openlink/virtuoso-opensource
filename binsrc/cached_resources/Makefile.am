@@ -25,20 +25,19 @@ BUILT_SOURCES	= cached_resources.c
 all: cached_resources.c
 
 cached_resources.c: \
-	w3-TR-xhtml1-DTD/xhtml-lat1.ent \
-	w3-TR-xhtml1-DTD/xhtml-special.ent \
-	w3-TR-xhtml1-DTD/xhtml-symbol.ent \
-	w3-TR-xhtml1-DTD/xhtml1-frameset.dtd \
-	w3-TR-xhtml1-DTD/xhtml1-strict.dtd \
-	w3-TR-xhtml1-DTD/xhtml1-transitional.dtd \
-	openlinksw-sparql/virtrdf-data-formats.ttl \
-	res_to_c.awk cache_gen.sh Makefile.am
+	cache_gen.sh res_to_c.awk cache_gen.sh Makefile.am \
+	openlinksw-sparql/*.ttl \
+	w3-1999-xhtml/vocab \
+	w3-2000-01/rdf-schema \
+	w3-TR-xhtml1-DTD/*.ent \
+	w3-TR-xhtml1-DTD/*.dtd \
+	openlinksw-sparql/*.ttl
 	@echo Generating cached_resources.c 
 	@$(SHELL) ./cache_gen.sh > cached_resources.c
 
 .PHONY: clean
 clean:
-	-rm *.tmp
+	-rm -f *.tmp
 
 # ----------------------------------------------------------------------
 #
@@ -47,14 +46,16 @@ clean:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	cached_resources.c \
-	cache_gen.sh res_to_c.awk \
+	cache_gen.sh \
 	openlinksw-sparql/virtrdf-data-formats.ttl \
-	w3-2000-01/rdf-schema \
+	res_to_c.awk \
+	w3-1999-xhtml/vocab \
 	w3-2000-01/README.txt \
+	w3-2000-01/rdf-schema \
 	w3-TR-xhtml1-DTD/README.txt \
-	w3-TR-xhtml1-DTD/xhtml1-frameset.dtd \
-	w3-TR-xhtml1-DTD/xhtml1-strict.dtd \
-	w3-TR-xhtml1-DTD/xhtml1-transitional.dtd \
 	w3-TR-xhtml1-DTD/xhtml-lat1.ent \
 	w3-TR-xhtml1-DTD/xhtml-special.ent \
-	w3-TR-xhtml1-DTD/xhtml-symbol.ent
+	w3-TR-xhtml1-DTD/xhtml-symbol.ent \
+	w3-TR-xhtml1-DTD/xhtml1-frameset.dtd \
+	w3-TR-xhtml1-DTD/xhtml1-strict.dtd \
+	w3-TR-xhtml1-DTD/xhtml1-transitional.dtd

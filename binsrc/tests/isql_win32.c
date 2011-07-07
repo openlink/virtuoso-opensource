@@ -133,13 +133,16 @@ isqlt_fgetws(wchar_t *s, int size, FILE *stream)
   char *buffer = malloc (size);
   wchar_t *wbuffer;
 
-  if (fgets (buffer, size, stream))
+  if (buffer && fgets (buffer, size, stream))
     {
       wbuffer = malloc_narrow_as_wide (buffer);
       wcsncpy (s, wbuffer, size);
       free (wbuffer);
       return s;
     }
-  else
+
+  if (wbuffer)
+    free (wbuffer);
+
     return NULL;
 }

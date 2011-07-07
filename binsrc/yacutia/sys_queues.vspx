@@ -114,7 +114,7 @@
 				      ]]></v:on-post>
 			      </v:button>
 	      </th>
-	      <th>
+	      <th class="new_item">
 		<v:url name="cr_new_ev1" value="Create New Event" url="sys_queues_edit.vspx?mode=create"/>
 	      </th>
             </tr>
@@ -148,7 +148,7 @@
                 <td class="listing_col"><img class="listing_icon" src="images/icons/alarm_16.png" alt="Event" title="Event"/>
                   <v:label format="%s"
                            name="data_set1_browse_label_1"
-                           value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                           value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
 		<td class="listing_col">
 		  <?vsp

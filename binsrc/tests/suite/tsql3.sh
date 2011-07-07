@@ -1,4 +1,5 @@
 #!/bin/sh
+#  tsql3.sh
 #
 #  $Id$
 #
@@ -83,6 +84,8 @@ then
     LOG "***ABORTED: freetext test integer primary key -- testtext.sql"
     exit 1
 fi
+if [ "z$CLUSTER" != "zyes" ] # explicit with key option is required for partitioned table
+then
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST2' 'idtype=integer' 'haspk=no' < testtext.sql
 if test $STATUS -ne 0
 then
@@ -94,6 +97,7 @@ if test $STATUS -ne 0
 then
     LOG "***ABORTED: freetext test varchar primary key -- testtext.sql"
     exit 1
+fi
 fi
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tftt.sql
@@ -185,17 +189,25 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfbox.sql 
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: rdf inference -- trdfbox.sql"
-    exit 1
-fi
-
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinf.sql"
+    exit 1
+fi
+
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference -- trdfinfifp.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference -- ttrans2.sql"
     exit 1
 fi
 
@@ -225,13 +237,6 @@ then
 	LOG "***ABORTED: view qualifier expansion (on part)"
 	exit 1
     fi
-fi
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfhi.sql 
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: rdf using hash trdfhi.sql"
-    exit 1
 fi
 
 SHUTDOWN_SERVER

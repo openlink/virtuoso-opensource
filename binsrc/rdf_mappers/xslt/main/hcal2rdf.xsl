@@ -24,19 +24,39 @@
 <!DOCTYPE xsl:stylesheet [
   <!ENTITY CalNS  "http://www.w3.org/2002/12/cal/icaltzd#">
   <!ENTITY XdtNS  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 ]>
 <xsl:stylesheet
     xmlns:xsl ="http://www.w3.org/1999/XSL/Transform"
-    xmlns:rdf   ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
     xmlns:h   ="http://www.w3.org/1999/xhtml"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:rdf="&rdf;"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
+    xmlns:dc="&dc;"
+    xmlns:sioc="&sioc;"
+    xmlns:dcterms="&dcterms;"
+    xmlns:gr="&gr;"
     xmlns:xml   ="xml"
     version="1.0"
     >
 
     <xsl:output indent="yes" method="xml" />
     <xsl:param name="baseUri" />
+	
+<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+
     <xsl:param name="Source">
 	<xsl:choose>
 	    <xsl:when test='h:html/h:head/h:link[@rel="base"]'>
@@ -46,69 +66,64 @@
 		<xsl:value-of select='h:html/h:head/h:base/@href'/>
 	    </xsl:when>
 	    <xsl:otherwise>
-		<xsl:value-of select="$baseUri"/>
+		<xsl:value-of select="$resourceURL"/>
 	    </xsl:otherwise>
 	</xsl:choose>
     </xsl:param>
 
-    <xsl:param name="Anchor" />
-
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:if test="//*[contains(concat(' ',normalize-space(@class),' '),' vevent ')] or //*[contains(concat(' ', normalize-space(@class), ' '),' vtodo ')]">
-		<c:Vcalendar rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$docproxyIRI}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcalendar')}"/>
+	</rdf:Description>
+		<c:Vcalendar rdf:about="{vi:proxyIRI ($baseUri, '', 'hcalendar')}">
 		    <c:prodid>-//connolly.w3.org//palmagent 0.6 (BETA)//EN</c:prodid>
 		    <c:version>2.0</c:version>
-		    <xsl:apply-templates />
-		</c:Vcalendar>
-	    </xsl:if>
-	</rdf:RDF>
-    </xsl:template>
-
-
-    <xsl:template match="*[contains(concat(' ',normalize-space(@class),' '),' vevent ')]">
-	<xsl:if test="not($Anchor) or @id = $Anchor">
+					<xsl:for-each select=".//*[contains(concat(' ',normalize-space(@class),' '),' vevent ')]">
 	    <c:component>
 		<c:Vevent>
-		    <!--xsl:if test=".//*[ contains(concat(' ', @class, ' '), concat(' url '))]">
-			<xsl:for-each select=".//*[1][ contains(concat(' ', @class, ' '), concat(' url '))]">
-			    <xsl:variable name="ref">
-				<xsl:choose>
-				    <xsl:when test="@href">
-					<xsl:value-of select="@href" />
-				    </xsl:when>
-
-				    <xsl:otherwise>
-					<xsl:value-of select="normalize-space(.)" />
-				    </xsl:otherwise>
-				</xsl:choose>
-			    </xsl:variable>
-			    <xsl:attribute name="about" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><xsl:value-of select="$ref"/></xsl:attribute>
-			</xsl:for-each>
-		    </xsl:if-->
-
 		    <xsl:call-template name="cal-props" />
 		</c:Vevent>
 	    </c:component>
-	</xsl:if>
-    </xsl:template>
+					</xsl:for-each>
 
-    <xsl:template match="*[contains(concat(' ', normalize-space(@class), ' '),' vtodo ')]">
-	<xsl:if test="not($Anchor) or @id = $Anchor">
+					<xsl:for-each select=".//*[contains(concat(' ', normalize-space(@class), ' '),' vtodo ')]">
 	    <c:component>
 		<c:Vtodo>
 		    <xsl:call-template name="cal-props" />
 		</c:Vtodo>
 	    </c:component>
+					</xsl:for-each>
+				</c:Vcalendar>
 	</xsl:if>
+		</rdf:RDF>
     </xsl:template>
 
     <xsl:template name="cal-props">
-	<xsl:if test="@id and $Source">
-	    <xsl:attribute name="rdf:about">
-		<xsl:value-of select='concat($Source, "#", @id)' />
-	    </xsl:attribute>
+		<xsl:variable name="summary">
+			<xsl:if test=".//*[contains(concat(' ', @class, ' '), concat(' summary '))]">
+				<xsl:value-of select="replace(substring(normalize-space(.//*[1][contains(concat(' ', @class, ' '), concat(' summary '))]), 1, 40), ' ' , '')" />
+			</xsl:if>
+		</xsl:variable>
+		<xsl:variable name="dtstart">
+			<xsl:if test=".//*[contains(concat(' ', @class, ' '), concat(' dtstart '))]">
+				<xsl:choose>
+					<xsl:when test=".//*[1][contains(concat(' ', @class, ' '), concat(' dtstart '))]//*[@title]">
+						<xsl:value-of select="normalize-space(.//*[1][contains(concat(' ', @class, ' '), concat(' dtstart '))]//*/@title)" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="replace(normalize-space(.//*[1][contains(concat(' ', @class, ' '), concat(' dtstart '))]), ' ', '')" />
+					</xsl:otherwise>
+				</xsl:choose>
 	</xsl:if>
+		</xsl:variable>
+
+	    <xsl:attribute name="rdf:about">
+			<xsl:value-of select="vi:proxyIRI ($baseUri, '', concat($summary, $dtstart))" />
+	    </xsl:attribute>
+		<rdfs:label><xsl:value-of select="$summary" /></rdfs:label>
 
 	<xsl:call-template name="textProp">
 	    <xsl:with-param name="class">uid</xsl:with-param>
@@ -179,32 +194,28 @@
     <xsl:template name="textProp">
 	<xsl:param name="class" />
 
-	<xsl:for-each select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+		<xsl:if test=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+			<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
 	    <xsl:element name="{$class}" namespace="&CalNS;">
-		<xsl:call-template name="lang" />
-
 		<xsl:choose>
-		    <xsl:when test='local-name(.) = "ol" or local-name(.) = "ul"'>
+					<xsl:when test='local-name($cur) = "ol" or local-name($cur) = "ul"'>
 			<xsl:for-each select="*">
 			    <xsl:if test="not(position()=1)">
 				<xsl:text>,</xsl:text>
 			    </xsl:if>
-
-			    <xsl:value-of select="." />
+							<xsl:value-of select="$cur" />
 			</xsl:for-each>
 		    </xsl:when>
-
-		    <xsl:when test='local-name(.) = "abbr" and @title'>
-			<xsl:value-of select="@title" />
+					<xsl:when test='local-name($cur) = "abbr" and $cur/@title'>
+						<xsl:value-of select="$cur/@title" />
 		    </xsl:when>
-
 		    <xsl:otherwise>
-			<xsl:value-of select="." />
+						<xsl:value-of select="$cur" />
 		    </xsl:otherwise>
 		</xsl:choose>
 
 	    </xsl:element>
-	</xsl:for-each>
+		</xsl:if>
     </xsl:template>
 
 
@@ -236,40 +247,27 @@
     <xsl:template name="refProp">
 	<xsl:param name="class" />
 	<xsl:param name="default" />
-
 	<xsl:choose>
-	    <xsl:when test=".//*[
-		contains(concat(' ', @class, ' '),
-		concat(' ', $class, ' '))]">
-
-		<xsl:for-each select=".//*[
-		    contains(concat(' ', @class, ' '),
-		    concat(' ', $class, ' '))]">
+			<xsl:when test=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+				<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
 		    <xsl:variable name="ref">
 			<xsl:choose>
-			    <xsl:when test="@href">
-				<xsl:value-of select="@href" />
+						<xsl:when test="$cur/@href">
+							<xsl:value-of select="$cur/@href" />
 			    </xsl:when>
-
 			    <xsl:otherwise>
-				<xsl:value-of select="normalize-space(.)" />
+							<xsl:value-of select="normalize-space($cur)" />
 			    </xsl:otherwise>
 			</xsl:choose>
 		    </xsl:variable>
-
-		    <xsl:element name="{$class}"
-			namespace="&CalNS;">
+				<xsl:element name="{$class}" namespace="&CalNS;">
 			<xsl:attribute name="rdf:resource">
 			    <xsl:value-of select="$ref" />
 			</xsl:attribute>
 		    </xsl:element>
-
-		</xsl:for-each>
 	    </xsl:when>
-
 	    <xsl:when test="$default">
-		<xsl:element name="{$class}"
-		    namespace="&CalNS;">
+				<xsl:element name="{$class}" namespace="&CalNS;">
 		    <xsl:attribute name="rdf:resource">
 			<xsl:value-of select="$default" />
 		    </xsl:attribute>
@@ -283,64 +281,55 @@
     <xsl:template name="whoProp">
 	<xsl:param name="class" />
 
-	<xsl:for-each select=".//*[
-	    contains(concat(' ', @class, ' '),
-	    concat(' ', $class, ' '))]">
+		<xsl:if test=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+			<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
 	    <xsl:variable name="mbox">
 		<xsl:choose>
-		    <xsl:when test="@href">
-			<xsl:value-of select="@href" />
+					<xsl:when test="$cur/@href">
+						<xsl:value-of select="$cur/@href" />
 		    </xsl:when>
-
 		    <xsl:otherwise>
-			<xsl:value-of select="normalize-space(.)" />
+						<xsl:value-of select="normalize-space($cur)" />
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:variable>
-
 	    <xsl:variable name="cn">
 		<xsl:choose>
-		    <xsl:when test="@href">
-			<xsl:value-of select="normalize-space(.)" />
+					<xsl:when test="$cur/@href">
+						<xsl:value-of select="normalize-space($cur)" />
 		    </xsl:when>
-
 		    <xsl:otherwise>
 			<xsl:value-of select='""'/>
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:variable>
 
-	    <xsl:element name="{$class}"
-		namespace="&CalNS;">
+			<xsl:element name="{$class}" namespace="&CalNS;">
 		<xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
 		<c:calAddress rdf:resource="{$mbox}" />
 		<xsl:if test="$cn">
 		    <c:cn><xsl:value-of select="$cn"/></c:cn>
 		</xsl:if>
 	    </xsl:element>
-
-	</xsl:for-each>
-
+		</xsl:if>
     </xsl:template>
 
 
     <xsl:template name="dateProp">
 	<xsl:param name="class" />
-
-	<xsl:for-each select=".//*[
-	    contains(concat(' ', @class, ' '),
-	    concat(' ', $class, ' '))]">
-	    <xsl:element name="{$class}"
-		namespace="&CalNS;">
-
+		<xsl:if test=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+			<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
+			<xsl:element name="{$class}" namespace="&CalNS;">
 		<xsl:variable name="when">
 		    <xsl:choose>
-			<xsl:when test="@title and @title != ''">
-			    <xsl:value-of select="@title">
-			    </xsl:value-of>
+						<xsl:when test="$cur/*[@class = 'value-title' and @title]">
+							<xsl:value-of select="$cur/*[@class = 'value-title'][1]/@title"/>
+						</xsl:when>
+						<xsl:when test="$cur/@title and $cur/@title != ''">
+							<xsl:value-of select="$cur/@title"/>
 			</xsl:when>
 			<xsl:otherwise>
-			    <xsl:value-of select="normalize-space(.)" />
+							<xsl:value-of select="normalize-space($cur)" />
 			</xsl:otherwise>
 		    </xsl:choose>
 		</xsl:variable>
@@ -350,32 +339,21 @@
 			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&XdtNS;", "dateTime")' />
 			</xsl:attribute>
-
 			<xsl:value-of select='$when' />
 		    </xsl:when>
-
-		    <xsl:when test='string-length($when) =
-			string-length("yyyy-mm-ddThh:mm:ss+hhmm")'>
+					<xsl:when test='string-length($when) = string-length("yyyy-mm-ddThh:mm:ss+hhmm")'>
 			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&XdtNS;", "dateTime")' />
 			</xsl:attribute>
 			<xsl:call-template name="timeDelta">
-			    <xsl:with-param name="year"
-				select='number(substring($when, 1, 4))'/>
-			    <xsl:with-param name="month"
-				select='number(substring($when, 6, 2))'/>
-			    <xsl:with-param name="day"
-				select='number(substring($when, 9, 2))'/>
-			    <xsl:with-param name="hour"
-				select='number(substring($when, 12, 2))'/>
-			    <xsl:with-param name="minute"
-				select='number(substring($when, 15, 2))'/>
-
-			    <xsl:with-param name="hourDelta"
-				select='number(substring($when, 21, 2))'/>
+							<xsl:with-param name="year" select='number(substring($when, 1, 4))'/>
+							<xsl:with-param name="month" select='number(substring($when, 6, 2))'/>
+							<xsl:with-param name="day" select='number(substring($when, 9, 2))'/>
+							<xsl:with-param name="hour" select='number(substring($when, 12, 2))'/>
+							<xsl:with-param name="minute" select='number(substring($when, 15, 2))'/>
+							<xsl:with-param name="hourDelta" select='number(substring($when, 21, 2))'/>
 			</xsl:call-template>
 		    </xsl:when>
-
 		    <xsl:when test='contains($when, "T")'>
 			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&CalNS;", "dateTime")' />
@@ -391,7 +369,7 @@
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:element>
-	</xsl:for-each>
+		</xsl:if>
     </xsl:template>
 
 
@@ -540,40 +518,34 @@
     <xsl:template name="durProp">
 	<xsl:param name="class" />
 
-	<xsl:for-each select=".//*[
-	    contains(concat(' ', @class, ' '),
-	    concat(' ', $class, ' '))]">
-	    <xsl:element name="{$class}"
-		namespace="&CalNS;">
-
+	<xsl:if test=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+		<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
+	    <xsl:element name="{$class}" namespace="&CalNS;">
 		<xsl:choose>
-		    <xsl:when test='local-name(.) = "abbr" and @title'>
-			<xsl:value-of select="@title" />
+		    <xsl:when test='local-name($cur) = "abbr" and $cur/@title'>
+			<xsl:value-of select="$cur/@title" />
 		    </xsl:when>
-
 		    <xsl:otherwise>
-			<xsl:value-of select='normalize-space(.)' />
+			<xsl:value-of select='normalize-space($cur)' />
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:element>
-	</xsl:for-each>
+	</xsl:if>
     </xsl:template>
 
     <xsl:template name="floatPairProp">
 	<xsl:param name="class" />
 
-	<xsl:for-each select=".//*[
-	    contains(concat(' ', @class, ' '),
-	    concat(' ', $class, ' '))]">
-
+	<xsl:if test=".//*[ contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
+		<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
 	    <xsl:variable name="xy">
 		<xsl:choose>
-		    <xsl:when test='local-name(.) = "abbr" and @title'>
-			<xsl:value-of select="@title" />
+		    <xsl:when test='local-name($cur) = "abbr" and $cur/@title'>
+			<xsl:value-of select="$cur/@title" />
 		    </xsl:when>
 
 		    <xsl:otherwise>
-			<xsl:value-of select="." />
+			<xsl:value-of select="$cur" />
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:variable>
@@ -596,16 +568,15 @@
 		    <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" />
 		</rdf:rest>
 	    </xsl:element>
-	</xsl:for-each>
+	</xsl:if>
     </xsl:template>
 
 
     <xsl:template name="recurProp">
 	<xsl:param name="class" />
 
-	<xsl:for-each select=".//*[
-	    contains(concat(' ', @class, ' '),
-	    concat(' ', $class, ' '))]">
+	<xsl:if test=".//*[contains(concat(' ', @class, ' '),concat(' ', $class, ' '))]">
+		<xsl:variable name="cur" select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))][1]" />
 	    <xsl:element name="{$class}"
 		namespace="&CalNS;">
 		<xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
@@ -630,7 +601,7 @@
 		</xsl:call-template>
 
 	    </xsl:element>
-	</xsl:for-each>
+	</xsl:if>
     </xsl:template>
 
     <xsl:template name="sub-prop">

@@ -3,8 +3,6 @@
  *
  *  $Id$
  *
- *  !Change above line and this line!
- *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
@@ -109,6 +107,7 @@ extern char *vdb_odbc_error_file; /* from sqlrrun.c */
 extern char *vdb_trim_trailing_spaces; /* from sqlrrun.c */
 extern long cfg_disable_vdb_stat_refresh;
 extern char *www_maintenance_page;
+extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
@@ -175,6 +174,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern int32 enable_p_stat;
 extern int aq_max_threads;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
@@ -205,6 +205,8 @@ int32 c_null_unspecified_params;
 int32 c_prefix_resultnames;
 int32 c_disable_mt_write;
 int32 c_bad_parent_links;
+extern int32 dbs_check_extent_free_pages;
+extern int32 dbs_cache_check_enable;
 #if 0/*obsoleted*/
 int32 c_bad_dtp;
 int32 c_atomic_dive;
@@ -251,11 +253,6 @@ dk_set_t c_stripes;
 int32 c_log_segments_num;
 log_segment_t *c_log_segments;
 int32 c_log_audit_trail;
-#if REPLICATION_SUPPORT
-int32 c_repl_queue_max = 50000;
-char *c_db_name;
-char *c_repl_server_enable;
-#endif
 int32 c_use_array_params = 0;
 int32 c_num_array_params = 10;
 int32 c_server_thread_sz = 60000;
@@ -324,9 +321,11 @@ int32 c_http_thread_sz = 280000;
 int32 c_http_keep_hosting = 0;
 extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
+int32 c_lh_xany_normalization_flags = 0;
 int32 c_i18n_wide_file_names = 0;
 char *c_i18n_volume_encoding = NULL;
 char *c_i18n_volume_emergency_encoding = NULL;
+extern int lh_xany_normalization_flags;
 extern int i18n_wide_file_names;
 extern struct encoding_handler_s *i18n_volume_encoding;
 extern struct encoding_handler_s *i18n_volume_emergency_encoding;
@@ -339,6 +338,7 @@ int32 c_lite_mode = 0;
 int32 c_uriqa_dynamic_local = 0;
 int32 c_rdf_obj_ft_rules_size = 0;
 int32 c_it_n_maps = 0;
+extern int32 c_dense_page_allocation;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
@@ -854,7 +854,11 @@ cfg_setup (void)
     sqlo_compiler_exceeds_run_factor = 0;
 
   if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &sqlo_max_mp_size) == -1)
-    sqlo_max_mp_size = 500000000;
+    sqlo_max_mp_size = 200000000;
+
+#ifdef POINTER_64
+  sqlo_max_mp_size *= 2;
+#endif
 
   if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
     sqlo_max_mp_size = 5000000;
@@ -890,6 +894,16 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "SwapGuard", &swap_guard_on) == -1)
     swap_guard_on = 0;
+
+  /*  ExtentReadThreshold, ExtentReadWindow, ExtentReadStartupThreshold, ExtentReadStartupWindow */
+  if (cfg_getlong (pconfig, section, "ExtentReadThreshold", &em_ra_threshold) == -1)
+   em_ra_threshold = 2;
+  if (cfg_getlong (pconfig, section, "ExtentReadWindow", &em_ra_window) == -1)
+    em_ra_window = 1000;
+  if (cfg_getlong (pconfig, section, "ExtentReadStartupThreshold", &em_ra_startup_threshold) == -1)
+    em_ra_startup_threshold = 0;
+  if (cfg_getlong (pconfig, section, "ExtentReadStartupWindow", &em_ra_startup_window) == -1)
+   em_ra_startup_window = 40000;
 
   {
     int nbdirs;
@@ -1038,6 +1052,12 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
+
+  if (cfg_getlong (pconfig, section, "DensePageAllocation", &c_dense_page_allocation) == -1)
+    c_dense_page_allocation = 0;
+
+  if (cfg_getlong (pconfig, section, "PageMapCheck", &dbs_cache_check_enable) == -1)
+    dbs_cache_check_enable = 0;
 
 
   section = "HTTPServer";
@@ -1198,6 +1218,9 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "MaintenancePage", &www_maintenance_page) == -1)
     www_maintenance_page = NULL;
 
+  if (cfg_getstring (pconfig, section, "GatewayIpAddress", &http_proxy_address) == -1)
+    http_proxy_address = NULL;
+
   if (cfg_getlong (pconfig, section, "RDFContentNegotiation", &c_http_check_rdf_accept) == -1)
     c_http_check_rdf_accept = 1;
 
@@ -1224,6 +1247,8 @@ cfg_setup (void)
     c_bad_parent_links = 0;
   if (cfg_getlong (pconfig, section, "DuplicateCheckpointRemaps", &cpt_remap_recovery) == -1)
     cpt_remap_recovery = 0;
+  if (cfg_getlong (pconfig, section, "CheckExtentFreePages", &dbs_check_extent_free_pages) == -1)
+    dbs_check_extent_free_pages = 0;
 
 
 #if 0/*obsoleted*/
@@ -1309,6 +1334,10 @@ cfg_setup (void)
     c_sparql_result_set_max_rows = 0;
   if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
     c_sparql_max_mem_in_use = 0;
+  if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
+    tn_cache_enable = 0;
+  if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
+    enable_p_stat = 1;
 
   /* Now open the HTTP log */
   if (http_log_file)
@@ -1326,18 +1355,6 @@ cfg_setup (void)
     }
 
   srv_client_defaults_init ();
-#if REPLICATION_SUPPORT
-  if (cfg_getstring (pconfig, "Replication", "ServerName", &c_db_name) == -1)
-    c_db_name = NULL;
-  if (cfg_getstring (pconfig, "Replication", "ServerEnable", &c_repl_server_enable) == -1)
-    c_repl_server_enable = NULL;
-  if (c_repl_server_enable &&
-      strcmp (c_repl_server_enable, "1") && stricmp (c_repl_server_enable, "On"))
-    c_repl_server_enable = NULL;
-
-  if (cfg_getlong (pconfig, "Replication", "QueueMax", &c_repl_queue_max) == -1)
-    c_repl_queue_max = 50000;
-#endif
 
   /*
    *  VDB related parameters
@@ -1411,13 +1428,8 @@ cfg_setup (void)
   else if (c_unremap_quota < 500)
     c_unremap_quota = 500;
 
-#if REPLICATION_SUPPORT
-  if (c_server_threads > MAX_THREADS - 5)
-    c_server_threads = MAX_THREADS - 5;
-#else
   if (c_server_threads > MAX_THREADS - 3)
     c_server_threads = MAX_THREADS - 3;
-#endif
 
   /* Initialization of UCMs */
 
@@ -1462,6 +1474,8 @@ cfg_setup (void)
   /* Initialization of national filesystems */
   
   section = "I18N";
+  if (cfg_getlong (pconfig, section, "XAnyNormalization", &c_lh_xany_normalization_flags) == -1)
+    c_lh_xany_normalization_flags = 0;
   if (cfg_getlong (pconfig, section, "WideFileNames", &c_i18n_wide_file_names) == -1)
     c_i18n_wide_file_names = 0;
   if (cfg_getstring (pconfig, section, "VolumeEncoding", &c_i18n_volume_encoding) == -1)
@@ -1673,11 +1687,6 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   sqlo_max_layouts = c_sqlo_max_layouts;
   sql_proc_use_recompile = c_sql_proc_use_recompile;
 
-#if REPLICATION_SUPPORT
-  repl_queue_max = c_repl_queue_max;
-  repl_server_enable = c_repl_server_enable;
-  db_name = box_string (c_db_name);
-#endif
 
   callstack_on_exception = c_callstack_on_exception;
   log_file_line = c_log_file_line;
@@ -1724,6 +1733,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   sparql_max_mem_in_use = c_sparql_max_mem_in_use;
   cli_encryption_on_password = c_cli_encryption_on_password;
 
+  lh_xany_normalization_flags = c_lh_xany_normalization_flags;
   i18n_wide_file_names = c_i18n_wide_file_names;
   if (NULL != c_i18n_volume_encoding)
     {
@@ -2132,7 +2142,8 @@ failed:
   log (L_ERR, "If you are absolutely sure that this is not the case, please try");
   log (L_ERR, "to remove the file %s and start again.", c_lock_file);
 
-  close (lck_fd);
+  if (lck_fd >= 0)
+    close (lck_fd);
   lck_fd = -1;
 
   return -1;

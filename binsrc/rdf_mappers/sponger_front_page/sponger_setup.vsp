@@ -1,0 +1,623 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <?vsp
+    declare skinpfx, banner_txt, strapline varchar;
+    skinpfx := registry_get ('_sponger_fp_SkinPrefix');
+    banner_txt := registry_get ('_sponger_fp_Banner');
+    strapline := registry_get ('_sponger_fp_Strapline');
+    if (skinpfx = 0) skinpfx := 'skin';
+    if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
+    if (strapline = 0) strapline := '';
+  ?>
+  <head>
+    <meta name="generator" content="HTML Tidy, see www.w3.org"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Virtuoso Sponger - Setup</title>
+    <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+  </head>
+
+  <body>
+    <div id="outer">
+      <div id="header">
+        <div id="header_logo">
+        <a href="http://www.openlinksw.com/"><img id="openlink_logo"
+         title="OpenLink Software" alt="[OpenLink Software logo]"
+        src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
+        </div>
+        <div id="header_text">
+          <h1><?=banner_txt?></h1><?=strapline?>
+        </div>
+      </div>
+
+      <div id="navbar">
+        <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp">Architecture</a> | 
+        <a href="sponger_setup.vsp">Sponger Setup</a> | 
+        <a href="examples.vsp">Live Sponger Examples</a> | 
+        <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a> |
+		<a href="http://virtuoso.openlinksw.com/">Virtuoso</a>
+      </div>
+
+      <div id="content">
+        <div class="topic-text">
+          <div id="sponge_arch_toc_container">
+          <div id="sponge_arch_toc">
+            <table>
+              <tr><td><a href="#h_sponger_config">Sponger Configuration</a></td></tr>
+              <tr><td><a href="#h_cartridge_prerequisites">Cartridge Prerequisites</a></td></tr>
+            </table>
+          </div>
+          </div>
+          <div id="lmargin_architect">
+              <div id="sponger_config">
+                <h2><a id="h_sponger_config"></a>Sponger Configuration</h2>
+
+                <p>
+                While many Sponger cartridges generate Linked Data from standard open data formats, such as Atom, CSV and hCard, others extract 
+                the source data from proprietary Web services. Many of these services control access to their Web APIs, typically through an 
+                API key, username and password, OAuth access token and the like. To gain access to one of these Web services, the corresponding 
+                cartridge must be configured with the required authorization credentials. 
+                </p>
+                <p>These and other cartridge settings should be configured by your Virtuoso administrator before the cartridge is used.</p>
+                <p>
+                They are set through the cartridge's configuration panel (shown below) which is displayed on the 'Sponger' tab of Virtuoso's 
+                Conductor UI, under the 'RDF' tab. Clicking on one of the listed cartridges displays the settings for that cartridge.
+                </p>
+                <img src="<?=skinpfx?>/i/cartridge_config.jpg" width="90%" alt="[Sponger UI cartridge configuration panel]" />
+                <p>
+                The 'Options' field takes entries in the form of key-value pairs. The required options and/or API keys will vary from cartridge 
+                to cartridge. These are detailed in the table opposite. Some cartridges may function without authorization credentials, but the 
+                amount of data extracted will be limited as a consequence. Mandatory configuration options are marked with an asterisk.
+                </p>
+            </div>
+
+            <div id="cartridge_prerequisites">
+              <h2><a id="h_cartridge_prerequisites"></a>Cartridge Prerequisites</h2>
+
+              <div id="prerequisites_tbl">
+                <p><span class="span_starting_point">Options which must be configured for each cartridge prior to use are listed below.</span></p>
+                <p>Mandatory options are marked *</p>
+              <table id="cartridge_options">
+                <thead>
+                <tr>
+                  <th>Cartridge</th><th>Required Options</th><th>Sample URI</th><th>Resource Description</th><th>Linked Data Graph</th>
+                </tr>
+                </thead>
+                <tbody>
+       <tr>
+              <td>Amazon </td>
+              <td>API Key</td>
+              <td> <a href="http://www.amazon.com/gp/product/0553383043" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.amazon.com/gp/product/0553383043" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.amazon.com/gp/product/0553383043" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>BestBuy </td>
+
+              <td> API Key </td>
+              <td> <a href="http://www.bestbuy.com/site/KOSS+-+Pro+DJ100+Professional+Over-the-Ear+Headphones+-+Black/9745789.p?skuId=9745789&id=1218165774336" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.bestbuy.com/site/KOSS+-+Pro+DJ100+Professional+Over-the-Ear+Headphones+-+Black/9745789.p?skuId=9745789&id=1218165774336" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.bestbuy.com/site/KOSS+-+Pro+DJ100+Professional+Over-the-Ear+Headphones+-+Black/9745789.p?skuId=9745789&id=1218165774336" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Bing </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.bing.com/community/members/livesearch/default.aspx" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.bing.com/community/members/livesearch/default.aspx" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.bing.com/community/members/livesearch/default.aspx" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Bugzillas </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=251714" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/https://bugzilla.mozilla.org/show_bug.cgi?id=251714" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=https://bugzilla.mozilla.org/show_bug.cgi?id=251714" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>CNET </td>
+
+              <td> API Key </td>
+              <td> <a href="http://shopper.cnet.com/samsung-moment-sprint/4014-6452_9-33775546.html" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/linkeddata.uriburner.com/about/rdf/http://shopper.cnet.com/samsung-moment-sprint/4014-6452_9-33775546.html" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://linkeddata.uriburner.com/about/rdf/http://shopper.cnet.com/samsung-moment-sprint/4014-6452_9-33775546.html" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>CrunchBase </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://linkeddata.uriburner.com/about/rdf/http://www.crunchbase.com/company/radar-music-videos" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/linkeddata.uriburner.com/about/rdf/http://www.crunchbase.com/company/radar-music-videos" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://linkeddata.uriburner.com/about/rdf/http://www.crunchbase.com/company/radar-music-videos" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Delicious </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://delicious.com/popular/blog" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/delicious.com/popular/blog" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://delicious.com/popular/blogI" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Digg </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://digg.com/general_sciences/At_Last-Stem_Cells_without_Side_Effects_" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/digg.com/general_sciences/At_Last-Stem_Cells_without_Side_Effects_" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://digg.com/general_sciences/At_Last-Stem_Cells_without_Side_Effects_" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Discogs </td>
+              <td> php plugin, DBpedia Extractor </td>
+              <td> <a href="http://www.discogs.com/Todd-Barton-and...ic-Poetry-Of-The-Kesh/release/2053074" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://www.amazon.com/o/ASIN/0553383043" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.amazon.com/o/ASIN/0553383043" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Disqus </td>
+              <td> API Key, API Account </td>
+              <td> <a href="http://www.scripting.com/stories/2009/02/01/wheresYourData.html#disqus_thread" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.scripting.com/stories/2009/02/01/wheresYourData.html#disqus_thread" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.scripting.com/stories/2009/02/01/wheresYourData.html#disqus_thread" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>DOI </td>
+
+              <td> hslookup plugin; relevant html-, pdf-, xml-, etc., -mappers enabled </td>
+              <td> <a href="http://doi.ieeecomputersociety.org/10.1109/MIC.2008.16" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/doi.ieeecomputersociety.org/10.1109/MIC.2008.16" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://doi.ieeecomputersociety.org/10.1109/MIC.2008.16" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Dublin Core </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://dublincore.org/documents/2002/07/31/dcmes-xml/dcmes-xml-dtd.shtml" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/dublincore.org/documents/2002/07/31/dcmes-xml/dcmes-xml-dtd.shtml" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://dublincore.org/documents/2002/07/31/dcmes-xml/dcmes-xml-dtd.shtml" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>eBay </td>
+              <td> account, API Key </td>
+              <td> <a href="http://cell-phones.shop.ebay.com/Cell-Phones-Smartphones-/3312/i.html?LH_TopRatedSellers=1&amp;LH_ItemCondition=1&Brand=Apple%2520iPhone&amp;LH_Price=100..%40c&amp;_nkw=%22iphone+4%22&amp;_trkparms=65%253A15%257C66%253A2%257C39%253A1&amp;_dmd=1&amp;_dmpt=Cell_Phones&amp;_mPrRngCbx=1&amp;_sc=1&amp;_sticky=1&amp;_trksid=p3907.m551&amp;_sop=12&amp;_sc=1%26clkid%3D6198561558861688578&amp;_qi=RTM733776" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/cell-phones.shop.ebay.com/Cell-Phones-Smartphones-/3312/i.html?LH_TopRatedSellers=1&amp;LH_ItemCondition=1&Brand=Apple%2520iPhone&amp;LH_Price=100..%40c&amp;_nkw=%22iphone+4%22&amp;_trkparms=65%253A15%257C66%253A2%257C39%253A1&amp;_dmd=1&amp;_dmpt=Cell_Phones&amp;_mPrRngCbx=1&amp;_sc=1&amp;_sticky=1&amp;_trksid=p3907.m551&amp;_sop=12&amp;_sc=1%26clkid%3D6198561558861688578&amp;_qi=RTM733776" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://cell-phones.shop.ebay.com/Cell-Phones-Smartphones-/3312/i.html?LH_TopRatedSellers=1&amp;LH_ItemCondition=1&Brand=Apple%2520iPhone&amp;LH_Price=100..%40c&amp;_nkw=%22iphone+4%22&amp;_trkparms=65%253A15%257C66%253A2%257C39%253A1&amp;_dmd=1&amp;_dmpt=Cell_Phones&amp;_mPrRngCbx=1&amp;_sc=1&amp;_sticky=1&amp;_trksid=p3907.m551&amp;_sop=12&amp;_sc=1%26clkid%3D6198561558861688578&amp;_qi=RTM733776" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Evri </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.evri.com/organization/general-motors-0x4938f" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://www.evri.com/organization/general-motors-0x4938f" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.evri.com/organization/general-motors-0x4938f" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Facebook </td>
+        <td> API Key, secret, persistent-session-id. <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtCartConfigFacebook" class="wikiword">See details</a>
+        </td>
+              <td> <a href="http://www.facebook.com/people/Richard-Max-Koster/1319314117" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.facebook.com/people/Richard-Max-Koster/1319314117" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.facebook.com/people/Richard-Max-Koster/1319314117" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Flickr </td>
+
+              <td> API Key </td>
+              <td> <a href="http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://linkeddata.uriburner.com/about/id/entity/http/www.google.com/" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.amazon.com/o/ASIN/0553383043" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Freebase </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.freebase.com/view/location" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.freebase.com/view/location" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.freebase.com/view/location" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Geonames </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://ws.geonames.org/search?q=london&maxRows=10&type=rdf" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/ws.geonames.org/search?q=london&maxRows=10&type=rdf" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://ws.geonames.org/search?q=london&maxRows=10&type=rdf" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>geoURL </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://geourl.org/near?p=wiki.worldflicks.org/saanen.html" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/geourl.org/near?p=wiki.worldflicks.org/saanen.html" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://geourl.org/near?p=wiki.worldflicks.org/saanen.html" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Get Satisfaction </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://getsatisfaction.com/mozilla/topics/ubiquity_mostly_fails_on_mac_ppc" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Google Base </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.google.com/base/feeds/snippets" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.google.com/base/feeds/snippets/" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.google.com/base/feeds/snippets" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Google Book </td>
+
+              <td> &nbsp;&nbsp;-  </td>
+              <td> <a href="http://books.google.com/books?id=SRadJIuhVjAC&dq=GOOGLE&ie=ISO-8859-1&source=gbs_gdata" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://books.google.com/books?id=SRadJIuhVjAC&dq=GOOGLE&ie=ISO-8859-1&source=gbs_gdata" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://books.google.com/books?id=SRadJIuhVjAC&dq=GOOGLE&ie=ISO-8859-1&source=gbs_gdata" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Google Document </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://docs.google.com/Present?docid=dc7jvc6m_1056g8fs54hp" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/docs.google.com/Present?docid=dc7jvc6m_1056g8fs54hp" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://docs.google.com/Present?docid=dc7jvc6m_1056g8fs54hp" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Google Social Graph </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://socialgraph.apis.google.com/lookup?q=http://example.com/" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/socialgraph.apis.google.com/lookup?q=http://example.com/" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://socialgraph.apis.google.com/lookup?q=http://example.com/" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Google Spreadsheet </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://spreadsheets.google.com/pub?key=p9pdwsai2hDMsLkXsoM05KQ&gid=1" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/spreadsheets.google.com/pub?key=p9pdwsai2hDMsLkXsoM05KQ&gid=1" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://spreadsheets.google.com/pub?key=p9pdwsai2hDMsLkXsoM05KQ&gid=1" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Hoovers </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.hoovers.com/openlink/--ID__104304--/free-co-factsheet.xhtml" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.hoovers.com/openlink/--ID__104304--/free-co-factsheet.xhtml" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.hoovers.com/openlink/--ID__104304--/free-co-factsheet.xhtml" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>ISBN </td>
+              <td> API Key </td>
+              <td> <a href="http://isbndb.com/search-all.html?kw=King+Stephen" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/isbndb.com/search-all.html?kw=King+Stephen" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://isbndb.com/search-all.html?kw=King+Stephen" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>LastFM </td>
+
+              <td> API Key </td>
+              <td> <a href="http://www.last.fm/music/+noredirect/Teddy+Pendegrass" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.last.fm/music/+noredirect/Teddy+Pendegrass" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.last.fm/music/+noredirect/Teddy+Pendegrass" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>LibraryThing </td>
+              <td> API Key </td>
+              <td> <a href="http://www.librarything.com/work/1060" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.librarything.com/work/1060" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.librarything.com/work/1060" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>LSID </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://lsid.tdwg.org/urn:lsid:ubio.org:namebank:11815" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/lsid.tdwg.org/urn:lsid:ubio.org:namebank:11815" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://lsid.tdwg.org/urn:lsid:ubio.org:namebank:11815" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Meetup </td>
+
+              <td> API Key </td>
+              <td> <a href="http://www.meetup.com/Nonpracticing-Lawyers-Social-Support-Group/" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.meetup.com/Nonpracticing-Lawyers-Social-Support-Group/" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.meetup.com/Nonpracticing-Lawyers-Social-Support-Group/" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>MusicBrainz </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Ning Metadata </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.ning.com/search?q=new+york+city&sf=rs&rs=1" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.ning.com/search?q=new+york+city&sf=rs&rs=1" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.ning.com/search?q=new+york+city&sf=rs&rs=1" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>OAI </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://news.cnet.com/IBM%2C-screensaver-to-tackle-smallpox/2100-1008_3-983374.html" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/news.cnet.com/IBM%2C-screensaver-to-tackle-smallpox/2100-1008_3-983374.html" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://news.cnet.com/IBM%2C-screensaver-to-tackle-smallpox/2100-1008_3-983374.html" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Open Social </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://socialgraph.apis.google.com/otherme?pretty=1&q=www.openlinksw.com/blog/~kidehen/" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/socialgraph.apis.google.com/otherme?pretty=1&q=www.openlinksw.com/blog/~kidehen/" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://socialgraph.apis.google.com/otherme?pretty=1&q=www.openlinksw.com/blog/~kidehen/" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>OpenLibrary </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://openlibrary.org/b/OL1230137M" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/openlibrary.org/b/OL1230137M" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://openlibrary.org/b/OL1230137M" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>OpenStreetMap </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://openstreetmap.org/?lat=57.6569&lon=11.8886&zoom=14&layers=B000FTF" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/openstreetmap.org/?lat=57.6569&lon=11.8886&zoom=14&layers=B000FTF" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://openstreetmap.org/?lat=57.6569&lon=11.8886&zoom=14&layers=B000FTF" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>oReilly </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://oreilly.com/catalog/9780596523206/" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/oreilly.com/catalog/9780596523206/" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://oreilly.com/catalog/9780596523206/" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Picasa </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://picasaweb.google.com/lh/explore#utm_medium=embed&amp;utm_source=pwalogin" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://picasaweb.google.com/lh/explore#utm_medium=embed&amp;utm_source=pwalogin" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://picasaweb.google.com/lh/explore#utm_medium=embed&amp;utm_source=pwalogin" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Radio Pop </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.radiopop.co.uk/users/tristanf/friends.xml" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.radiopop.co.uk/users/tristanf/friends.xml" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.radiopop.co.uk/users/tristanf/friends.xml" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>relLicense </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://creativecommons.org/licenses/by-nc/3.0/us/" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/creativecommons.org/licenses/by-nc/3.0/us/" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://creativecommons.org/licenses/by-nc/3.0/us/" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Revyu </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://revyu.com/people/smonroe/about/html" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/revyu.com/people/smonroe/about/html" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://revyu.com/people/smonroe/about/html" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Rhapsody </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://mp3.rhapsody.com/playlistdetail?playlistId=ply.25288413" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/mp3.rhapsody.com/playlistdetail?playlistId=ply.25288413" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://mp3.rhapsody.com/playlistdetail?playlistId=ply.25288413" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>SalesForce.com </td>
+              <td>API Key,user login</td>
+              <td> <a href="http://linkeddata.uriburner.com/about/rdf/https://na6.salesforce.com/0038000000ViF6k#this" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/linkeddata.uriburner.com/about/rdf/https://na6.salesforce.com/0038000000ViF6k#this" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://linkeddata.uriburner.com/about/rdf/https://na6.salesforce.com/0038000000ViF6k#this" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>SlideShare </td>
+              <td> API Key, SharedSecret </td>
+              <td> <a href="http://www.slideshare.net/rumito/rdf-views-of-sql-data-power-point-presentation-1-173180/" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.slideshare.net/rumito/rdf-views-of-sql-data-power-point-presentation-1-173180/" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.slideshare.net/rumito/rdf-views-of-sql-data-power-point-presentation-1-173180/" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>SlideSix </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://slidesix.com/view/ESWC2008SPARQLBIOpenLink" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/slidesix.com/view/ESWC2008SPARQLBIOpenLink" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://slidesix.com/view/ESWC2008SPARQLBIOpenLink" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>SVG </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.schepers.cc/semweb/rdf-diagram.svg" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.schepers.cc/semweb/rdf-diagram.svg" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.schepers.cc/semweb/rdf-diagram.svg" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Tesco </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.tesco.com/superstore/xpi/6/xpi54427686.htm" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://www.tesco.com/superstore/xpi/6/xpi54427686.htm" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.tesco.com/superstore/xpi/6/xpi54427686.htm" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Tumblr </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://cupcakesoftheday.tumblr.com/" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://cupcakesoftheday.tumblr.com/" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://cupcakesoftheday.tumblr.com/" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>TWFY (theyworkforyou) </td>
+              <td>	API Key  </td>
+              <td> <a href="http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.theyworkforyou.com/mp/diane_abbott/hackney_north_and_stoke_newington" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Twitter </td>
+              <td> User Login </td>
+              <td> <a href="http://twitter.com/kidehen" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://twitter.com/kidehen" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://twitter.com/kidehen" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Ustream </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.ustream.tv/recorded/4848859/highlight/55618" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://www.ustream.tv/recorded/4848859/highlight/55618" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.ustream.tv/recorded/4848859/highlight/55618" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Web Resource CC (Licenses)  </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://creativecommons.org/licenses/by-nc-nd/2.5/" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/creativecommons.org/licenses/by-nc-nd/2.5/" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://creativecommons.org/licenses/by-nc-nd/2.5/" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Wikipedia </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://en.wikipedia.org/wiki/House_MD" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://en.wikipedia.org/wiki/House_MD" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://en.wikipedia.org/wiki/House_MD" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>xFolk </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://blogmarks.net/marks/tag/hdd" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/blogmarks.net/marks/tag/hdd" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://blogmarks.net/marks/tag/hdd" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Yahoo! Finance </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://finance.yahoo.com/q?s=AAPL" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/finance.yahoo.com/q?s=AAPL" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://finance.yahoo.com/q?s=AAPL" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Yahoo! SearchMonkey </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://tech.groups.yahoo.com/group/ysearchboss/message/1983" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/tech.groups.yahoo.com/group/ysearchboss/message/1983" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://tech.groups.yahoo.com/group/ysearchboss/message/1983" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Yahoo! Traffic Data </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://local.yahooapis.com/MapsService/rss/trafficData.xml?appid=YdnDemo&street=701+First+Avenue&city=Sunnyvale&state=CA" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/local.yahooapis.com/MapsService/rss/trafficData.xml?appid=YdnDemo&street=701+First+Avenue&city=Sunnyvale&state=CA" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://local.yahooapis.com/MapsService/rss/trafficData.xml?appid=YdnDemo&street=701+First+Avenue&city=Sunnyvale&state=CA" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Yahoo! Weather </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://weather.yahooapis.com/forecastrss?p=94089" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/weather.yahooapis.com/forecastrss?p=94089" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://weather.yahooapis.com/forecastrss?p=94089" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Yelp </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://api.yelp.com/business_review_search?term=yelp&amp;tl_lat=37.9&amp;tl_long=-122.5&amp;br_lat=37.788022&amp;br_long=-122.399797&limit=3&ywsid=XXXXXXXXXXXXXXXXXX" >example</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/api.yelp.com/business_review_search?term=yelp&amp;tl_lat=37.9&amp;tl_long=-122.5&amp;br_lat=37.788022&amp;br_long=-122.399797&limit=3&ywsid=XXXXXXXXXXXXXXXXXX" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://api.yelp.com/business_review_search?term=yelp&amp;tl_lat=37.9&amp;tl_long=-122.5&amp;br_lat=37.788022&amp;br_long=-122.399797&limit=3&ywsid=XXXXXXXXXXXXXXXXXX" >Data Explorer View</a>  </td>
+       </tr>
+       <tr>
+              <td>Youtube </td>
+
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.youtube.com/watch?v=rOsPKjbMvxY" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http/www.youtube.com/watch?v=rOsPKjbMvxY" >HTML Representation</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.youtube.com/watch?v=rOsPKjbMvxY" >Data Explorer View</a>  </td>
+
+       </tr>
+       <tr>
+              <td>Zillow </td>
+              <td> &nbsp;&nbsp;- </td>
+              <td> <a href="http://www.zillow.com/homedetails/26-George-Rd-Maynard-MA-01754/57086765_zpid" >example</a>  </td>
+              <td>  <a href="http://linkeddata.uriburner.com/about/html/http://www.zillow.com/homedetails/26-George-Rd-Maynard-MA-01754/57086765_zpid" >HTML Representation</a>  </td>
+
+              <td>  <a href="http://linkeddata.uriburner.com/ode/?uri=http://www.zillow.com/homedetails/26-George-Rd-Maynard-MA-01754/57086765_zpid" >Data Explorer View</a>  </td>
+       </tr>
+                </tbody>
+              </table>
+              </div> <!-- prerequisites_tbl -->
+            </div> <!-- cartridge_prerequisites -->
+          </div> <!-- lmargin -->
+
+        </div> <!-- topic-text -->
+      </div> <!-- content -->
+
+      <div class="reset">
+        <div id="footer">
+          Copyright (C) OpenLink Software 2011. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

@@ -77,7 +77,7 @@
                                                 <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                                                 <rdfs:label><xsl:value-of select="title"/></rdfs:label>
                                                 <oplustream:id><xsl:value-of select="id"/></oplustream:id>
-                                                <foaf:maker rdf:resource="{vi:proxyIRI(user/url)}"/>
+                                                <dcterms:creator rdf:resource="{vi:proxyIRI(user/url)}"/>
                                                 <dc:title><xsl:value-of select="title"/></dc:title>
                                                 <dc:description><xsl:value-of select="description"/></dc:description>
                                                 <bibo:uri rdf:resource="{url}"/>
@@ -109,7 +109,7 @@
                                                 <rdfs:label><xsl:value-of select="title"/></rdfs:label>
                                                 <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                                                 <oplustream:id><xsl:value-of select="id"/></oplustream:id>
-                                                <foaf:maker rdf:resource="{vi:proxyIRI(user/url)}"/>
+                                                <dcterms:creator rdf:resource="{vi:proxyIRI(user/url)}"/>
                                                 <dc:title><xsl:value-of select="title"/></dc:title>
                                                 <dc:description><xsl:value-of select="description"/></dc:description>
                                                 <bibo:uri rdf:resource="{url}"/>

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html 
+    xmlns="http://www.w3.org/1999/xhtml" 
+    xml:lang="en" 
+    lang="en"
+    xmlns:addthis="http://www.addthis.com/help/api-spec"
+>
+<?vsp
+--
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2009 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+   declare _S, odd_position any;
+   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
+   declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp any;
+   declare orig_refr varchar;
+   declare urilookup integer;
+   declare dbg_enable varchar;
+   declare dbg_out any;
+  declare inf_rule varchar;
+  declare ses_parms varchar;
+
+   white_page := 1;
+
+  b3s_handle_ses (path, lines, params);
+
+  sid := connection_get ('sid');
+
+  --
+  -- Get AddthisKey from registry
+  --
+  --  if 0 then disable addthis support
+  --  if 1 use temp key to get basic social bookmarking
+  --  any other value should be a registered key
+  --
+  declare _addthis_key varchar;
+  _addthis_key := registry_get ('fct_addthis_key');
+  if (not isstring(_addthis_key)) _addthis_key := '0';
+  if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
+
+   -- side-effect sets connection vars 'inf' and 'sas' - val or null
+
+   b3s_parse_inf (sid, params);
+
+   inf := b3s_render_inf_clause ();
+  inf_rule := connection_get ('inf');
+
+  if (inf_rule is null) { inf_rule := 'b3sifp'; }
+
+  ses_parms := b3s_render_ses_params();
+
+   host := http_request_header (http_request_header (), 'Host');  
+   langs := http_request_header_full (lines, 'Accept-Language', 'en');
+   gr := get_keyword ('g', params, '');
+   arr := rfc1808_parse_uri (gr);
+   if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
+     gr := 'http://' || gr;
+
+   page_resource_uri := gr;
+   page_resource_uri := replace (page_resource_uri, '%23', '#');
+
+   _S := page_resource_uri; 
+
+   proxy_iri := page_resource_uri;
+
+   odd_position := 0;
+   set http_charset='utf-8';
+   set isolation = 'uncommitted';
+   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
+   label := ''; _subject := '';
+
+  exec (sprintf ('sparql  define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), 
+                 null, null, vector (), 0, meta, data);
+
+   label := b3s_label_get (data, langs);
+
+   exec (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
+	select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S), null, null, vector (), 0, meta, data);
+   _subject := b3s_label_get (data, langs);
+
+  rdf_link := sprintf ('/sparql?query=%U', sprintf ('%s DESCRIBE <%s>', b3s_render_inf_clause(), _S)); 
+
+  declare __res_desc varchar;
+  __res_desc := b3s_uri_curie(page_resource_uri);
+  if (not length (label))
+    label := page_resource_uri;
+  tp := atoi (get_keyword ('tp', params, '1'));  
+
+   dbg_enable := get_keyword ('dbg', params);
+
+   if (dbg_enable = '1') 
+     {
+        dbg_printf ('Enabling b3s session debug.\n');
+        connection_set ('b3s_dbg', 1);
+        dbg_out := string_output ();
+     }
+   else connection_set ('b3s_dbg',0);
+
+?>
+
+<!-- header -->
+<head>
+    <base href="http://<?V host ?>/fct/rdfdesc/" />
+    <title>Usage Statistics about: <?vsp http (sprintf ('%s', label)); ?></title>
+    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <link rel="stylesheet" type="text/css" href="styles/default.css" charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
+    <script type="text/javascript" >
+      var featureList=["tab"];
+    </script>
+    <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
+    <script type="text/javascript" src="s/description.js"></script>
+</head>
+<body class="usage_page">
+  <div id="HD">
+    <?vsp fct_page_head (); ?>
+    <ul id="main_menu">
+      <?vsp if (sid is not null) { ?>
+        <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
+      <?vsp } ?>      
+      <li id="mnu_descr"><a href="/describe/?uri=<?U page_resource_uri ?><?V ses_parms ?>">Description</a></li>
+      <li id="mnu_usage" class="sel">
+        <a href="#" class="sel">Usage Statistics</a>
+      </li>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
+    </ul>
+
+  </div> <!-- #HD -->
+  <div id="MD">
+    <div class="page_resource_info">
+      <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
+        <?vsp http (sprintf ('%s', label)); ?></a></h2>
+      <p> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a></p>
+    </div>
+    <div class="subj_nav">
+      <?vsp if (_subject <> '') { ?>
+        <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
+      <?vsp } ?>
+    </div> <!-- .subj_nav -->
+
+<!-- proptable -->
+    <div id="TAB_ROW">
+	<div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Graphs</a>
+        </div>
+	<div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Graphs</a>
+        </div>
+	<div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
+          <a title="A list of other identifiers for the current entity."
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Direct coreferences</a>
+        </div>
+	<div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
+          <a title="A list of indirect identifiers for the current entity based on Inverse Functional Property values."
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Indirect coreferences</a>
+        </div>
+      </div> <!-- TAB_ROW -->
+
+      <div id="TAB_CTR">
+      <div class="tab_page">
+        <table class="description">
+	  <?vsp
+	    declare qr varchar;
+	    if (tp = 1) -- refd in data sets
+	      {
+	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { <%S> ?p ?o }} group by ?g order by desc 2 limit 20', _S);
+                http ('<tr><th class="property">Graph IRI</th><th class="value">Count</th></tr>\n');
+	      }
+	    if (tp = 2) -- defd in data sets
+	      {
+	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { ?s ?p <%S>  }} group by ?g order by desc 2 limit 20', _S);
+                http ('<tr><th>Graph IRI</th><th>Count</th></tr>\n');
+	      }
+	    if (tp = 3) -- Expanded sas
+	      {
+	         qr := sprintf ('sparql select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = <%S> ) } order by desc 2 limit 20', _S);
+		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n', 
+		'Identifier (URI)'
+		--fct_s_term ()
+		));
+	      }
+	    if (tp = 4) -- Expanded ifp
+	      {
+	         qr := sprintf ('sparql select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { <%S> ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("%s", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', _S, coalesce (inf_rule, 'b3sifp'));
+		 http (sprintf ('<tr><th>%s</th><th>%s</th><th>%s</th><th>Rank</th></tr>\n', fct_s_term (), fct_p_term (), fct_o_term ()));
+	      }
+
+            b3s_dbg_out(dbg_out, qr);
+
+	    exec (qr, null, null, vector (), 0, null, null, h1); 
+	    while (0 = exec_next (h1, null, null, data))	
+	      {
+	         http ('<tr>');
+                 if (tp = 1 or tp = 2)
+		   { 
+		     --for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
+		     --	{
+		     --	  http_value (data[i], 'td');
+	             -- }	    
+                     if (exists (select 1 from RDF_QUAD where G = iri_to_id ('http://lod.openlinksw.com/void/') and
+					S = iri_to_id (sprintf ('http://lod.openlinksw.com/void/%s/Dataset', rtrim (data[0], '/#')))))
+		     http (sprintf ('<td><a href="http://lod.openlinksw.com/void/%s/Dataset">%V</a></td>', rtrim (data[0], '/#'), data[0]));
+		     else
+		     http (sprintf ('<td>%V</td>', data[0]));
+		     http (sprintf ('<td align="right">%d</td>', data[1]));
+		   }   
+		 else if (tp = 3)
+		  {
+ 		     http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[0], b3s_render_ses_params(), b3s_uri_curie (data[0])));
+		     http (sprintf ('<td align="right">%.6g</td>', data[1]));
+		  } 
+                 else if (tp = 4)
+		  {
+ 		     http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[0], b3s_render_ses_params(), b3s_uri_curie (data[0])));
+		     http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[1], b3s_render_ses_params(), b3s_uri_curie (data[1])));
+		     if (__box_flags (data[2]) = 1)
+		       http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[2], b3s_render_ses_params(), b3s_uri_curie (data[2])));
+		     else
+                       {
+		         declare tmp any;
+			 if (__tag (data[2]) = 246)
+			   tmp := __rdf_sqlval_of_obj (data[2], 1);
+			 else
+			   tmp := data[2];   
+		         if (isstring (tmp))
+			   http ('<td>' || tmp || '</td>');
+			 else  
+                           http_value (tmp, 'td');
+		       }	 
+		     http (sprintf ('<td align="right">%.06g</td>', cast (data[3] as decimal)));
+		     --http (sprintf ('<td align="right">%s</td>', data[3]));
+		  } 
+	         http ('</tr>\n');
+	      }
+	    exec_close (h1);
+	  ?>
+      </table>
+      </div> <!-- .tab_page -->
+      </div> <!-- #TAB_CTR -->
+      <?vsp b3s_render_dbg_out(dbg_out); ?>
+    </div> <!--  #MD -->
+<!-- footer -->
+    <div id="FT">
+<?vsp if (_addthis_key <> '0') { ?>
+  <div id="FT_share">
+    <!-- AddThis Button BEGIN -->
+    <a class="addthis_button" href="http://www.addthis.com/bookmark.php?v=250&amp;pubid=<?=_addthis_key?>"><img src="http://s7.addthis.com/static/btn/sm-share-en.gif" width="83" height="16" alt="Bookmark and Share" style="border:0"/></a>
+    <script type="text/javascript">
+	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
+	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    </script>
+    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <!-- AddThis Button END -->
+  </div><!-- FT_share -->
+<?vsp } ?>
+      <div id="ft_t">
+        Explore using:
+        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
+        <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (proxy_iri); ?>">Zitgist Data Viewer</a> |
+        <a href="http://beckr.org/marbles?uri=<?vsp http_url (proxy_iri); ?>">Marbles</a> |
+        <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (proxy_iri); ?>">DISCO</a> |
+        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (proxy_iri); ?>" >Tabulator</a>
+        &nbsp; &nbsp; Raw Data in:
+        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+        <a href="<?=rdf_link || '&output=xml'?>">RDF/XML</a>
+        &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
+      </div> <!-- #ft_t -->
+      <div id="ft_b">
+        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+      <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" style="border-width:0" /></a> &nbsp;
+      <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0" /></a>
+      <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0" /></a>
+      <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" style="border-width:0" /></a>
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="/fct/images/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. <br/>
+      <?vsp fct_virt_info (); ?><br /> 
+      <span class="copyright">Copyright &copy; 2009-2011 OpenLink Software</span>
+      </div> <!-- #ft_b -->
+    </div> <!-- #FT -->
+ </body>
+</html>

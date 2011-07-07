@@ -72,7 +72,7 @@
 
     function defineOpts (val)
     {
-      if ('ssl' == val.options[val.selectedIndex].value) {
+      if ('SSL' == val.options[val.selectedIndex].value) {
         if (document.frm_edit_path.t_auth_opt.value == '') {
           document.frm_edit_path.t_auth_opt.value = 'https_cert=[file_with_certificate].pem;\nhttps_key=[file_with_private_key].pem;';
         }
@@ -122,6 +122,8 @@
       <v:variable name="auth_opt" persist="0" type="varchar" default="''" />
       <v:variable name="global_opts" persist="0" type="varchar" default="''" />
       <v:variable name="is_dav" persist="0" type="integer" default="0" />
+      <v:variable name="cors" persist="0" type="varchar" default="''" />
+      <v:variable name="cors_rej" persist="0" type="integer" default="0" />
     </vm:variables>
     <vm:header caption="HTTP Virtual Directory"/>
     <vm:pagebody>
@@ -171,16 +173,18 @@
               self.dirbrowsing := _dirbrowsing;
               self.is_dav      := _is_dav;
 	      self.defdir      := _defdir;
+
               if( isarray (self.global_opts) and not mod (length (self.global_opts),2))
+	        {
                 self.xmlexec := get_keyword ('xml_templates', self.global_opts, NULL);
-              if( isarray (self.global_opts) and not mod (length (self.global_opts),2))
                 self.ovrexec := get_keyword ('executable', self.global_opts, NULL);
-              if( isarray (self.global_opts) and not mod (length (self.global_opts),2))
                 self.ssbrow := get_keyword ('browse_sheet', self.global_opts, '');
 	      if (not isstring (self.ssbrow))
 	        self.ssbrow := '';
-              if( isarray (self.global_opts) and not mod (length (self.global_opts),2))
 	        self.noinherit := get_keyword ('noinherit', self.global_opts);
+                  self.cors := get_keyword ('cors', self.global_opts, '');  
+                  self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);  
+	        }
             }
             else if (self.mode = 'add1')
             {
@@ -236,6 +240,8 @@
               }
               self.t_auth_opt.ufl_value := opts;
             }
+	    self.t_cors.ufl_value := self.cors;
+	    self.c_cors_rej.ufl_selected := self.cors_rej;
           ]]>
         </v:script>
       </v:before-render>
@@ -584,7 +590,7 @@
                           http( '<OPTION VALUE="basic"'); if (isstring (self.security) and lower(self.security) = 'basic') http (' selected="true"'); http('>Basic</OPTION>');
                           http( '<OPTION VALUE="digest"'); if (isstring (self.security) and lower(self.security) = 'digest') http (' selected="true"'); http('>Digest</OPTION>');
                         }
-                        http( '<OPTION VALUE="ssl"'); if (isstring (self.security) and lower(self.security) = 'ssl') http (' selected="true"'); http('>SSL</OPTION>');
+                        http( '<OPTION VALUE="SSL"'); if (isstring (self.security) and lower(self.security) = 'ssl') http (' selected="true"'); http('>SSL</OPTION>');
                   ?>
                 </SELECT>
               </td>
@@ -609,6 +615,19 @@
               <td valign="top"><label for="t_auth_opt">Advanced</label></td>
               <td>
                 <v:textarea name="t_auth_opt" xhtml_cols="30" xhtml_rows="5" xhtml_id="t_auth_opt"/>
+              </td>
+            </tr>
+            <tr>
+              <td valign="top"><label for="t_cors">Cross-Origin Resource Sharing</label></td>
+              <td>
+		  <v:text name="t_cors" xhtml_cols="30" xhtml_rows="3" xhtml_size="70" xhtml_id="t_cors"/><br/>
+                <v:check-box name="c_cors_rej" value="on" xhtml_id="c_cors_rej"/>
+                <label for="c_cors_rej">Reject Unintended CORs</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
               </td>
             </tr>
             <tr>
@@ -701,18 +720,29 @@
                       if(self.auth_func = '') self.auth_func := NULL;
                       self.after_func := self.t_after_func.ufl_value;
                       if(self.after_func = '') self.after_func := NULL;
-
+		      if (self.c_cors_rej.ufl_selected)
+		        self.cors_rej := 1;
+	              else		
+		        self.cors_rej := 0;
+	              self.cors := get_keyword ('t_cors', params, NULL); 		
                       self.auth_opt := self.t_auth_opt.ufl_value;
                       if (self.auth_opt = '' or self.auth_opt = 0)
                         self.auth_opt := NULL;
                       else if(isstring (self.auth_opt) ) {
+		          declare tmp, inx any;
                           self.auth_opt := replace (self.auth_opt, '\r', '');
                           self.auth_opt := replace (self.auth_opt, '\n', '');
                           self.auth_opt := trim (self.auth_opt);
                           self.auth_opt := replace (self.auth_opt, ';', '&');
                           if ("RIGHT" (self.auth_opt, 1) = '&')
                             self.auth_opt := "LEFT" (self.auth_opt, length (self.auth_opt) - 1);
-                          self.auth_opt := split_and_decode (self.auth_opt);
+                          tmp := split_and_decode (self.auth_opt);
+			  for (inx := 0; inx < length (tmp); inx := inx + 2)
+			     {
+                                if (tmp[inx] in ('https_verify', 'https_cv_depth'))
+				  tmp[inx+1] := atoi (tmp[inx+1]);
+			     }
+			  self.auth_opt := tmp;    
                       }
 
                       if (self.soap_opt = '' or self.soap_opt = 0)
@@ -759,6 +789,11 @@
 			    }
 			  self.global_opts := new_opts;
 		        }
+	              if (length (self.cors))
+		        {
+			  self.global_opts := vector_concat ( coalesce (self.global_opts, vector()), 
+			    vector('cors', self.cors, 'cors_restricted', self.cors_rej));
+			}
 
 		      if (self.lpath <> self.edit_lpath and exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath))
 		        {

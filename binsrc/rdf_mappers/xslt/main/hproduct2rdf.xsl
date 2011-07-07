@@ -29,15 +29,18 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 ]>
 <xsl:stylesheet version="1.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:rdf="&rdf;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
+    xmlns:dc="&dc;"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;">
@@ -45,6 +48,11 @@
 <xsl:output method="xml" encoding="utf-8" indent="yes"/>
 
 <xsl:preserve-space elements="*"/>
+
+<xsl:param name="baseUri"/>
+<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -60,7 +68,10 @@
   </xsl:variable>
 
   <xsl:if test="$hproduct != 0">
-    <gr:ProductOrService>
+	<rdf:Description rdf:about="{$docproxyIRI}">
+        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hproduct')}" />
+	</rdf:Description>
+    <gr:ProductOrService rdf:about="{vi:proxyIRI ($baseUri, '', 'hproduct')}">
       <xsl:apply-templates mode="extract-hproduct"/>
     </gr:ProductOrService>
   </xsl:if>
@@ -171,9 +182,8 @@
   <xsl:if test="$price != 0">
 	<gr:hasPriceSpecification>
 		<gr:UnitPriceSpecification  rdf:ID="price">
-	    <rdfs:label><xsl:value-of select="concat('List Price of ', ., ' USD')"/></rdfs:label>
+	    <rdfs:label><xsl:value-of select="concat('List Price of ', .)"/></rdfs:label>
         <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
-        <gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
         </gr:UnitPriceSpecification>
 	</gr:hasPriceSpecification>
  </xsl:if>

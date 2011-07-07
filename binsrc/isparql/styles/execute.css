@@ -19,7 +19,10 @@ div.grid table,
 table.grid {
 	border-collapse: collapse;
 	font: menu;
+  width: 100%;
 }
+
+div.grid { width: 100%}
 
 /* ---------------- rows -------------- */
 
@@ -91,6 +94,7 @@ ul.tabres {
   text-align: left;
   border-bottom: 1px solid #000;
   margin: 0px;
+  padding: 0;
 /*  margin-right:20px; */
 }
 
@@ -145,11 +149,49 @@ body {
   margin:0px;
 }
 
+.result_plnk_ctr { width: 20em; float: left; }
+.anchor_pref_ctr { width: 20%; float: right;}
+
 p.copyright {
 font-size: 8pt;
 text-align: right;
 margin-right: 10px}
 
 #mini_rdf_ctr { width: 100% }
-/*div.rdf_mini { width: 100%; height: 70%; }
-div.rdf_tab { width: 100%; height: 100%; }*/
+/*div.rdf_mini { width: 100%; height: 70%; }*/
+div.rdf_tab { width: 100%; height: 100%; }
+
+table.grid {
+  clear: both;
+}
+
+div.rdf_data div.pager {
+  background-color: #ddd;
+  border: 1px solid #355;
+}
+
+div.pager div {
+  margin: 3px;
+}
+
+#foot {
+  font-size: 7pt;
+  text-align: right;
+  float: left;
+  clear: both;
+  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
+  background: -moz-linear-gradient(top,#ccdde0,#577);
+  background-color: #FFFFFF;
+  height: 30px;
+  padding-top: 10px;
+  padding-bottom:30px;
+  width: 100%;
+  border-top: 1px solid #aaa
+}
+
+div.foot_l { text-align: left; float: left; clear: left; width: 45%; margin-left: 10px;}
+div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
+
+#data_links {
+  margin: 10px;
+}

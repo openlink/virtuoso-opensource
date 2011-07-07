@@ -99,7 +99,8 @@ namespace OpenLink.Data.Virtuoso
         private static string SqlReservedWords =
             "ABSOLUTE,ACTION,ADA,ADD,ALL,ALLOCATE,ALTER,AND,ANY,ARE,AS," +
             "ASC,ASSERTION,AT,AUTHORIZATION,AVG,BEGIN,BETWEEN,BIT," +
-            "BIT_LENGTH,BOTH,BY,CASCADE,CASCADED,CASE,CAST,CATALOG,CHAR," +
+            "BIT_LENGTH,BIGINT,BOTH,BY,CASCADE,CASCADED,CASE,CAST,CATALOG," +
+            "CHAR," +
             "CHAR_LENGTH,CHARACTER,CHARACTER_LENGTH,CHECK,CLOSE,COALESCE," +
             "COLLATE,COLLATION,COLUMN,COMMIT,CONNECT,CONNECTION,CONSTRAINT," +
             "CONSTRAINTS,CONTINUE,CONVERT,CORRESPONDING,COUNT,CREATE,CROSS," +
@@ -961,6 +962,9 @@ namespace OpenLink.Data.Virtuoso
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"smallint", -7, 3, null, null, 
                 "System.Int16", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
+                null, null, "", ""}); 
+            dt.Rows.Add(new object[]{"bigint", -5, 20, null, null, 
+                "System.Int64", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null, null, 
                 null, null, "", ""}); 
             dt.Rows.Add(new object[]{"float", 6, 16, null, null, 
                 "System.Double", 0, null, 1, 1, 0, 0, 1, 1, 0, 0, null,null, 

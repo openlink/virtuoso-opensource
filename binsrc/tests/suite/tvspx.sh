@@ -71,7 +71,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 10
+       sleep 1
        clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
@@ -304,7 +304,7 @@ GenURIall
 MakeConfig 
 CHECK_PORT $TPORT
 START_SERVER $DSN 1000
-sleep 4
+sleep 1
 cd ..
 DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"
 

@@ -1,0 +1,843 @@
+<!--
+  Generated from opllinkedin.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+
+  An OpenLink ontology for LinkedIn
+
+  See: 
+    http://developer.linkedin.com/docs/DOC-1258 (LinkedIn API Resource Map)
+    http://developer.linkedin.com/docs/DOC-1061 (Profile Fields)
+-->
+
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/linkedin#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:oplli="http://www.openlinksw.com/schemas/linkedin#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/linkedin">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-06-15</dc:date>
+        <dc:description>OpenLink schema for LinkedIn objects and properties</dc:description>
+        <dc:title>OpenLink schema for LinkedIn</dc:title>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Certification">
+        <rdfs:comment>A certification held by a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Certification</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Company">
+        <rdfs:comment>A brief LinkedIn description of a company</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Company</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Education">
+        <rdfs:comment>An education course undertaken by a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Education</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#InstantMessagingAccount">
+        <rdfs:comment>An instant messaging account belonging to a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Instant messaging account</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Language">
+        <rdfs:comment>A language spoken by a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Language</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#MemberURLResource">
+        <rdfs:comment>A URL a member has chosen to share in their LinkedIn profile</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Member URL resource</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Object">
+        <rdfs:comment>A base class representing all LinkedIn objects</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>LinkedIn object</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Patent">
+        <rdfs:comment>A patent authored by a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Patent</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Person">
+        <rdfs:comment>A LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Person</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#PhoneNumber">
+        <rdfs:comment>A phone number belonging to a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Phone number</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Position">
+        <rdfs:comment>A position held by a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Position</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Publication">
+        <rdfs:comment>A publication authored by a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Publication</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Recommendation">
+        <rdfs:comment>A recommendation of one LinkedIn member by another</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Recommendation</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#Skill">
+        <rdfs:comment>A particular skill of a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Skill</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/linkedin#TwitterAccount">
+        <rdfs:comment>A Twitter account belonging to a LinkedIn member</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Twitter account</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#associations">
+        <rdfs:comment>A list of the associations a member has</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>associations</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#author_id">
+        <rdfs:comment>The LinkedIn ID of an author of a publication</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>author id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#author_name">
+        <rdfs:comment>The name of an author of a publication</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>author id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#author_person">
+        <rdfs:comment>The LinkedIn member name of an author of a publication</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>author LinkedIn name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#certification">
+        <rdfs:comment>A certification held by a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>certification</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Certification"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#certification_authority">
+        <rdfs:comment>The name of a certification's issuing body</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Certification"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>certification authority</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#certification_end_date">
+        <rdfs:comment>The certification end date</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Certification"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>end date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#certification_name">
+        <rdfs:comment>The name of a certification</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Certification"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>certification name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#certification_number">
+        <rdfs:comment>The licence number for a certification</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Certification"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>certification number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#certification_start_date">
+        <rdfs:comment>The certification start date</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Certification"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>start date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#company">
+        <rdfs:comment>The company the member works for</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>company</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Company"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#company_industry">
+        <rdfs:comment>The industry in which the company operates</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Company"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>industry</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#company_name">
+        <rdfs:comment>The name of a company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Company"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>company name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#company_size">
+        <rdfs:comment>Number of employees at the company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Company"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>company size</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#company_type">
+        <rdfs:comment>Indicates if the company is public or private</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Company"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>company type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#connection">
+        <rdfs:comment>A LinkedIn member connected to the current member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>connection</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#country_code">
+        <rdfs:comment>Country code for the LinkedIn member (ISO 3166-1 alpha-2 standard)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>country code</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#date_of_birth">
+        <rdfs:comment>A member's date of birth</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>date of birth</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#distance">
+        <rdfs:comment>The degree of separation of this member from the member who fetched the profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>distance</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#education">
+        <rdfs:comment>A course of education followed by a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>education</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#education_activities">
+        <rdfs:comment>The activities the member was involved in while a student at this institution</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>activities</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#education_degree">
+        <rdfs:comment>The degree received at this institution</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>degree</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#education_end_date">
+        <rdfs:comment>End date at the school</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>end date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#education_notes">
+        <rdfs:comment>Additional details about the member's studies</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>notes</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#education_start_date">
+        <rdfs:comment>Start date at the school</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>start date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#end_date">
+        <rdfs:comment>Date when a member left a position</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>end date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#field_of_study">
+        <rdfs:comment>The field of study at the school</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>field of study</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#first_name">
+        <rdfs:comment>A member's first name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>first name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#has_im_account">
+        <rdfs:comment>An instant messaging account belonging to a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>has IM account</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#InstantMessagingAccount"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#has_phone_number">
+        <rdfs:comment>A member's phone number</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>has phone number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#PhoneNumber"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#has_twitter_account">
+        <rdfs:comment>A Twitter account belonging to a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>has Twitter account</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#TwitterAccount"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#headline">
+        <rdfs:comment>A member's headline (often their job title)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>headline</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#honors">
+        <rdfs:comment>A list of any honors a member may have</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>honors</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#id">
+        <rdfs:comment>A LinkedIn object ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#im_account_name">
+        <rdfs:comment>The name of an instant messaging account</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#InstantMessagingAccount"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>IM account name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#im_account_type">
+        <rdfs:comment>The type of an instant messaging account (msn, yahoo, skype etc)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#InstantMessagingAccount"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>IM account type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#industry">
+        <rdfs:comment>The industry the LinkedIn member has indicated their profile belongs to</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>industry</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#interests">
+        <rdfs:comment>A description of the member's interests</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>interests</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#inventor_id">
+        <rdfs:comment>The ID of an inventor associated with this patent</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>inventor id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#inventor_person">
+        <rdfs:comment>The LinkedIn profile of an inventor associated with this patent</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>inventor</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#is_current">
+        <rdfs:comment>Indicates when a member currently holds this position</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>is current</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#language">
+        <rdfs:comment>A language spoken by a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>language</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Language"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#language_name">
+        <rdfs:comment>The name of a language spoken by a LinkedIn member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Language"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>language name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#language_proficiency">
+        <rdfs:comment>An indication of a LinkedIn member's fluency in a language</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Language"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>proficiency</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#last_name">
+        <rdfs:comment>A member's last name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>last name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#location_name">
+        <rdfs:comment>Generic name of the location of the LinkedIn member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>location name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#main_address">
+        <rdfs:comment>A member's main address (could be home or work etc.)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>main address</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#member_shared_resource_name">
+        <rdfs:comment>Label given to a shared resource URL by the member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#MemberURLResource"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Shared resource name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#member_shared_resource_url">
+        <rdfs:comment>URL of resource being shared by a LinkedIn member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#MemberURLResource"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>Shared resource URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#member_url_resource">
+        <rdfs:comment>A URL a member has chosen to share in their LinkedIn profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>shared URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#MemberURLResource"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#num_connections">
+        <rdfs:comment>Number of connections the member has</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>num_connections</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#num_recommenders">
+        <rdfs:comment>Number of recommendations a member has</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>num_recommenders</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent">
+        <rdfs:comment>A patent authored by a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_date">
+        <rdfs:comment>Date when the patent application was filed or the patent was granted</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_number">
+        <rdfs:comment>Patent or application number</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_office">
+        <rdfs:comment>The patent issuing body</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent office</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_status">
+        <rdfs:comment>A string ('Application' or 'Patent') indicating whether this is a granted patent or a patent application</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent status</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_status_id">
+        <rdfs:comment>An ID indicating whether this is a granted patent(1) or a patent application(0)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent status id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_summary">
+        <rdfs:comment>The short summary of a patent</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>summary</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_title">
+        <rdfs:comment>The patent title</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>title</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#patent_url">
+        <rdfs:comment>URL to the patent</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Patent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>patent URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#phone_number">
+        <rdfs:comment>Phone number</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#PhoneNumber"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>phone number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#phone_number_type">
+        <rdfs:comment>Phone number type (home, work, mobile)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#PhoneNumber"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>phone number type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#picture_url">
+        <rdfs:comment>URL of a member's photograph displayed in their LinkedIn profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>profile picture URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#position">
+        <rdfs:comment>A position the member holds or has had</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>position</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#position_summary">
+        <rdfs:comment>A summary of the member's position</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>position summary</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#proposal_comments">
+        <rdfs:comment>A member's description of how they approach proposals</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>proposal comments</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#provider_account_id">
+        <rdfs:comment>Twitter account provider id</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#TwitterAccount"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>provider account id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#provider_account_name">
+        <rdfs:comment>Twitter account provider name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#TwitterAccount"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>provider account name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#public_profile_url">
+        <rdfs:comment>URL to a member's public profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>public profile URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#publication">
+        <rdfs:comment>A publication authored by a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>publication</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#publication_date">
+        <rdfs:comment>The date when a publication was published</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>publication date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#publication_summary">
+        <rdfs:comment>A summary of a publication</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>summary</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#publication_title">
+        <rdfs:comment>The title of a publication listed in LinkedIn</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>title</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#publication_url">
+        <rdfs:comment>URL of a publication</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>publication URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#publisher_name">
+        <rdfs:comment>The name of the publisher of a publication</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Publication"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>title</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#recommendation_type">
+        <rdfs:comment>The type of a recommendation</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Recommendation"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#recommendations_received">
+        <rdfs:comment>A recommendation of a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>received recommendation</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Recommendation"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#recommender">
+        <rdfs:comment>The person who made the recommendation</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Recommendation"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>recommender</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#school_name">
+        <rdfs:comment>The name of an educational establishment attended by a LinkedIn member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>school name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#skill">
+        <rdfs:comment>A skill possessed by a member</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>skill</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/linkedin#Skill"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#skill_name">
+        <rdfs:comment>The name of the skill</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#skill_proficiency">
+        <rdfs:comment>An indication of a member's skill level in a particular skill</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>proficiency</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#skill_years_of_experience">
+        <rdfs:comment>An indication of the number of years of experience a member has in a particular skill</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>experience</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#specialties">
+        <rdfs:comment>A member's description of their professional specialties</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>specialties</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#start_date">
+        <rdfs:comment>Date when a member started a position</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>start date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#summary">
+        <rdfs:comment>A member's description of their professional profile</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>summary</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#ticker">
+        <rdfs:comment>The stock market name for the company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Company"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>stock market name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#title">
+        <rdfs:comment>Job title of a position held</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Position"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
+        <rdfs:label>title</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>

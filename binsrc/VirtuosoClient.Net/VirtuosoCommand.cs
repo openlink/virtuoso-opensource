@@ -32,6 +32,7 @@ using System.Text;
 using System.ComponentModel;
 using System.Drawing;
 #endif
+using System.Text.RegularExpressions;
 
 #if ODBC_CLIENT
 namespace OpenLink.Data.VirtuosoOdbcClient
@@ -67,6 +68,8 @@ namespace OpenLink.Data.Virtuoso
 		private bool isCanceling = false;
 		private WeakReference dataReaderWeakRef = null;
 		private IInnerCommand innerCommand;
+		internal bool executeSecondaryStmt = false;
+                internal string secondaryStmt = null;
 
 		public VirtuosoCommand ()
 			: this ("")
@@ -342,6 +345,9 @@ namespace OpenLink.Data.Virtuoso
 #endif
 			command.Transaction = this.Transaction;
 			command.UpdatedRowSource = this.UpdatedRowSource;
+                        
+		        command.executeSecondaryStmt = this.executeSecondaryStmt;
+                        command.secondaryStmt = this.secondaryStmt;
 
 			foreach (VirtuosoParameter p in this.Parameters)
 				command.Parameters.Add (((ICloneable) p).Clone());
@@ -457,11 +463,18 @@ namespace OpenLink.Data.Virtuoso
 			{
 				if (!isPrepared)
 				{
+					text = replaceNamedParams (text);
 					innerCommand.Prepare (text);
 				}
 			}
 			else
 			{
+				if (parameters != null && parameters.Count > 0)
+				{
+					VirtuosoParameterCollection _parameters = handleNamedParams (text, parameters);
+					Debug.Assert (_parameters.Count == parameters.Count, "Count mismatch in reordered parameter array");
+					text = replaceNamedParams(text);
+				}
 				innerCommand.SetParameters (parameters);
 				if (!isPrepared)
 				{
@@ -469,6 +482,11 @@ namespace OpenLink.Data.Virtuoso
 					{
 						isExecuting = true;
 						innerCommand.Execute (text);
+                                                if (executeSecondaryStmt)
+                                                  {
+                                                    innerCommand.CloseCursor(false);
+						    innerCommand.Execute (secondaryStmt);
+                                                  }
 					}
 					finally
 					{
@@ -481,6 +499,11 @@ namespace OpenLink.Data.Virtuoso
 					{
 						isExecuting = true;
 						innerCommand.Execute ();
+                                                if (executeSecondaryStmt)
+                                                  {
+                                                    innerCommand.CloseCursor(false);
+						    innerCommand.Execute (secondaryStmt);
+                                                  }
 					}
 					finally
 					{
@@ -687,5 +710,52 @@ innerCommand != null)
                     }
                 }
 #endif
+
+		// Replaces any '@<name>' named parameters in the SQL command 
+		// with '?' placeholders.
+		internal string replaceNamedParams (string sql) 
+		{
+			string paramPattern = @"@\w+";
+			Regex paramRegEx = new Regex(paramPattern);
+			return paramRegEx.Replace(sql, "?");
+		}
+
+		// Reorders the parameter collection so that the order of named
+		// parameters in the collection matches their order in the SQL 
+		// command.
+		internal VirtuosoParameterCollection handleNamedParams (string sql, VirtuosoParameterCollection _parameters)
+		{
+			string paramPattern = @"@\w+";
+			Regex paramRegEx =  new Regex(paramPattern);
+			Match match = paramRegEx.Match(sql);
+
+			// If statement doesn't contain any named parameters
+			if (!match.Success)
+				return _parameters;
+
+			VirtuosoParameterCollection newParameters = new VirtuosoParameterCollection (this);
+
+			while(match.Success)
+			{ 
+				string paramName = String.Copy(match.Value);
+
+				if (_parameters.IndexOf (paramName) >= 0)
+					newParameters.Add (_parameters[_parameters.IndexOf (paramName)]);
+				else
+				{
+					// Seems param name saved in parameter 
+					// collection may or may not have a 
+					// leading @
+					string paramNameWithoutPrefix = String.Copy(paramName.Substring(1));
+					if (_parameters.IndexOf (paramNameWithoutPrefix) >= 0)
+					newParameters.Add (_parameters[_parameters.IndexOf (paramNameWithoutPrefix)]);
+				}
+
+		 		match = match.NextMatch();
+			}
+   
+			return newParameters;
+		}
+
 	}
 }

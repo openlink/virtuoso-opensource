@@ -133,7 +133,7 @@ case $SERVER in
 	fi
 
 	START_SERVER $DSN 1000
-	sleep 4
+	sleep 1
 
 
 	RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < twiki.sql

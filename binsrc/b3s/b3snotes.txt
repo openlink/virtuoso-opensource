@@ -1,0 +1,174 @@
+
+sparql select ?p count (*) where {?s a sioc:Post  . ?s ?p ?o} group by ?p order by desc 2 limit 50;
+p                                                                                 callret-1
+VARCHAR                                                                           INTEGER NOT NULL
+_______________________________________________________________________________
+
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   6304143
+http://purl.org/dc/terms/created                                                  6165593
+http://rdfs.org/sioc/ns#content                                                   6162136
+http://xmlns.com/foaf/0.1/maker                                                   6155896
+http://purl.org/metadata/dublin_core#title                                        72893
+http://purl.org/rss/1.0/modules/content/encoded                                   49586
+http://www.w3.org/2000/01/rdf-schema#seeAlso                                      44193
+http://rdfs.org/sioc/ns#links_to                                                  42298
+http://purl.org/dc/elements/1.1/title                                             41176
+http://rdfs.org/sioc/ns#has_reply                                                 39568
+http://rdfs.org/sioc/ns#link                                                      38892
+http://rdfs.org/sioc/ns#has_creator                                               29532
+http://rdfs.org/sioc/ns#has_container                                             28449
+http://purl.org/metadata/dublin_core#subject                                      21324
+http://purl.org/dc/elements/1.1/subject                                           19709
+http://purl.org/dc/elements/1.1/date                                              19538
+http://purl.org/rss/1.0/title                                                     17936
+http://purl.org/dc/elements/1.1/creator                                           17858
+http://purl.org/rss/1.0/link                                                      17018
+http://purl.org/rss/1.0/description                                               16690
+http://rdfs.org/sioc/ns#topic                                                     16650
+http://purl.org/dc/elements/1.1/format                                            11585
+http://purl.org/dc/elements/1.1/description                                       10482
+http://madskills.com/public/xml/rss/module/trackback/ping                         9667
+http://rdfs.org/sioc/ns#id                                                        9134
+http://rdfs.org/sioc/ns#reply_to                                                  7136
+http://rdfs.org/sioc/ns#Content                                                   3728
+http://webns.net/mvcb/generatorAgent                                              3532
+http://webns.net/mvcb/errorReportsTo                                              3320
+http://rdfs.org/sioc/ns#title                                                     2683
+http://www.w3.org/2000/01/rdf-schema#label                                        2494
+http://purl.org/dc/elements/1.1/uri                                               1587
+http://purl.org/dc/elements/1.1/rights                                            1259
+http://purl.org/rss/1.0/category                                                  1053
+http://purl.org/dc/elements/1.1/source                                            1028
+http://web.resource.org/cc/license                                                1027
+http://purl.org/dc/elements/1.1/type                                              1027
+http://rdfs.org/sioc/ns#created_at                                                990
+http://rdfs.org/sioc/ns#next_by_date                                              791
+http://rdfs.org/sioc/ns#previous_by_date                                          790
+http://purl.org/dc/terms/modified                                                 513
+http://rdfs.org/sioc/ns#reply_of                                                  504
+http://purl.org/dc/elements/1.1/identifier                                        296
+http://atomowl.org/ontologies/atomrdf#source                                      269
+http://purl.org/dc/elements/1.1/modified                                          137
+http://purl.org/dc/elements/1.1/created                                           133
+http://rdfs.org/sioc/ns#contents                                                  79
+http://purl.org/dc/elements/1.1/coverage                                          68
+http://atomowl.org/ontologies/atomrdf#updated                                     66
+http://atomowl.org/ontologies/atomrdf#title                                       65
+
+
+
+
+sparql select ?p count (*) where {?s a foaf:Document . ?s ?p ?o} group by ?p order by desc 2 limit 50;
+p                                                                                 callret-1
+VARCHAR                                                                           INTEGER NOT NULL
+_______________________________________________________________________________
+
+http://purl.org/dc/elements/1.1/title                                             12453012
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   12419274
+http://www.w3.org/2000/01/rdf-schema#seeAlso                                      10550329
+http://purl.org/dc/elements/1.1/description                                       1740004
+http://webns.net/mvcb/generatorAgent                                              745091
+http://rdfs.org/sioc/ns#links_to                                                  718454
+http://purl.org/dc/elements/1.1/lang                                              267665
+http://purl.org/dc/elements/1.1/creator                                           262522
+http://www.w3.org/2000/01/rdf-schema#label                                        145054
+http://www.w3.org/2002/07/owl#sameAs                                              119931
+http://rdf.opiumfield.com/blog/0.1/rss                                            89548
+http://purl.org/dc/elements/1.1/identifier                                        87720
+http://rdf.opiumfield.com/blog/0.1/tool                                           76508
+http://purl.org/dc/terms/partOf                                                   72204
+http://xmlns.com/foaf/0.1/primaryTopic                                            66461
+http://xmlns.com/foaf/0.1/homepage                                                61330
+http://purl.org/dc/elements/1.1/type                                              60271
+http://swrc.ontoware.org/ontology#series                                          60016
+http://purl.org/dc/terms/issued                                                   57017
+http://purl.org/dc/terms/bibliographicCitation                                    56980
+http://xmlns.com/foaf/0.1/maker                                                   53920
+http://swrc.ontoware.org/ontology#pages                                           51910
+http://purl.org/dc/terms/license                                                  45923
+http://purl.org/obo/metadata#time_generated                                       25430
+http://purl.org/dc/elements/1.1/date                                              25303
+http://xmlns.com/foaf/0.1/name                                                    22012
+http://purl.org/obo/metadata#timestamp                                            20870
+http://purl.org/obo/metadata#md5                                                  19667
+http://purl.org/obo/metadata#size                                                 19505
+http://purl.org/rss/1.0/title                                                     18412
+http://purl.org/dc/elements/1.1/source                                            18317
+http://purl.org/rss/1.0/link                                                      18018
+http://purl.org/obo/metadata#time_taken_to_generate                               17267
+http://purl.org/dc/elements/1.1/format                                            16914
+http://purl.org/rss/1.0/description                                               16782
+http://purl.org/obo/metadata#format                                               16349
+http://purl.org/obo/metadata#path                                                 16268
+http://xmlns.com/foaf/0.1/mbox                                                    15489
+http://purl.org/dc/elements/1.1/name                                              15004
+http://purl.org/rss/1.0/items                                                     14942
+http://purl.org/dc/terms/hasPart                                                  14250
+http://purl.org/dc/terms/references                                               11693
+http://purl.org/dc/elements/1.1/language                                          10396
+http://xmlns.com/foaf/0.1/knows                                                   10229
+http://xmlns.com/foaf/0.1/publications                                            10030
+http://purl.org/rss/1.0/modules/syndication/updatePeriod                          8090
+http://purl.org/rss/1.0/modules/syndication/updateFrequency                       8090
+http://purl.org/rss/1.0/modules/syndication/updateBase                            8089
+http://web.resource.org/cc/license                                                7749
+http://purl.org/dc/elements/1.1/rights                                            7189
+
+
+
+sparql select ?p count (*) where {?s a foaf:Person . ?s ?p ?o} group by ?p order by desc 2 limit 50;
+p                                                                                 callret-1
+VARCHAR                                                                           INTEGER NOT NULL
+_______________________________________________________________________________
+
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   41468981
+http://www.w3.org/2000/01/rdf-schema#seeAlso                                      38786279
+http://xmlns.com/foaf/0.1/nick                                                    34628117
+http://xmlns.com/foaf/0.1/knows                                                   29185147
+http://xmlns.com/foaf/0.1/interest                                                25012279
+http://xmlns.com/foaf/0.1/weblog                                                  22991980
+http://xmlns.com/foaf/0.1/name                                                    14812506
+http://xmlns.com/foaf/0.1/mbox_sha1sum                                            14074223
+http://xmlns.com/foaf/0.1/homepage                                                13184730
+http://xmlns.com/foaf/0.1/member_name                                             9609810
+http://xmlns.com/foaf/0.1/tagLine                                                 9609796
+http://xmlns.com/foaf/0.1/image                                                   8898254
+http://www.w3.org/2000/01/rdf-schema#label                                        3248521
+http://xmlns.com/foaf/0.1/mbox                                                    1438992
+http://xmlns.com/foaf/0.1/depiction                                               1365117
+http://xmlns.com/foaf/0.1/img                                                     1174258
+http://xmlns.com/foaf/0.1/page                                                    1032556
+http://xmlns.com/foaf/0.1/publications                                            785599
+http://blogs.yandex.ru/schema/foaf/blogActivity                                   696461
+http://blogs.yandex.ru/schema/foaf/country                                        570000
+http://xmlns.com/foaf/0.1/dateOfBirth                                             546798
+http://blogs.yandex.ru/schema/foaf/bio                                            462807
+http://blogs.yandex.ru/schema/foaf/city                                           445882
+http://xmlns.com/foaf/0.1/gender                                                  395499
+http://xmlns.com/foaf/0.1/openid                                                  389689
+http://xmlns.com/foaf/spec/made                                                   344043
+http://rdf.opiumfield.com/movie/0.1/seen                                          327559
+http://xmlns.com/foaf/0.1/aimChatID                                               318042
+http://blogs.yandex.ru/schema/foaf/school                                         293775
+http://xmlns.com/foaf/0.1/made                                                    279765
+http://xmlns.com/foaf/0.1/based_near                                              266946
+http://www.w3.org/2004/02/skos/core#subject                                       249747
+http://xmlns.com/foaf/0.1/yahooChatID                                             191777
+http://xmlns.com/foaf/0.1/msnChatID                                               183767
+http://xmlns.com/foaf/0.1/currentProject                                          182982
+http://xmlns.com/foaf/0.1/firstName                                               180690
+http://purl.org/net/vocab/2004/07/visit#country                                   170685
+http://www.w3.org/2002/07/owl#sameAs                                              154685
+http://xmlns.com/foaf/0.1/icqChatID                                               152465
+http://purl.org/vocab/bio/0.1/olb                                                 137925
+http://www.w3.org/2001/vcard-rdf/3.0#ADR                                          133162
+http://xmlns.com/foaf/0.1/workplaceHomepage                                       124534
+http://xmlns.com/foaf/0.1/givenName                                               120505
+http://xmlns.com/foaf/0.1/homePage                                                120389
+http://xmlns.com/foaf/0.1/surName                                                 120231
+http://xmlns.com/foaf/0.1/jabberID                                                119598
+http://purl.org/vocab/bio/0.1/keywords                                            101998
+http://xmlns.com/foaf/0.1/holdsAccount                                            100404
+http://xmlns.com/foaf/0.1/surname                                                 96238
+http://xmlns.com/foaf/0.1/topic_interest                                          88601
+

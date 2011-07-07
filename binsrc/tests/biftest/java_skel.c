@@ -127,7 +127,7 @@ bif_do_something_bif (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jmethodID work_method_obj, cleanup_method_obj;
   jint ret;
   jvalue jargs[1];
-  query_instance_t *qi = (query_instance_t *)qi;
+  query_instance_t *qi = (query_instance_t *)qst;
 
   if (NULL != (*err_ret = java_vm_attach (&env)))
     goto finish;

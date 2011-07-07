@@ -370,7 +370,8 @@ ODBC_Execute()
 }
 
 
-void main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   /*   if (ODBC_Connect ("O_Sql2k", "sa", "") != 0) */
   if (ODBC_Connect (argv[1], argv[2], argv[3]) != 0)
@@ -390,6 +391,7 @@ void main(int argc, char *argv[])
    */
   ODBC_Disconnect ();
 
+  exit(0);
 }
 
 

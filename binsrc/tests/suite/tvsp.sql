@@ -27,15 +27,15 @@
 
 ECHO BOTH "STARTED: VSP functions checkup\n";
 
+---select encode_base64('peppihinaahippi-penaa') from sys_users;
+---ECHO BOTH $IF $EQU $LAST[1] "cGVwcGloaW5hYWhpcHBpLXBlbmFhAA=" "PASSED" "***FAILED";
+---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+---ECHO BOTH ": encode_base64('peppihinaahippi-penaa') produced: " $LAST[1] "\n";
+
 select decode_base64(encode_base64('peppihinaahippipenaa')) from sys_users;
 ECHO BOTH $IF $EQU $LAST[1] peppihinaahippipenaa "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": decode_base64(encode_base64('peppihinaahippipenaa')) produced: " $LAST[1] "\n";
-
-select decode_b32_num(encode_b32_num(673248293));
-ECHO BOTH $IF $EQU $LAST[1] 673248293 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": decode_b32_num(encode_b32_num(673248293)) produced: " $LAST[1] "\n";
 
 select smime_sign ('just a test', file_to_string ('cert.pem'), file_to_string ('pk.pem'), '', vector (), 4*16 + 1);
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";

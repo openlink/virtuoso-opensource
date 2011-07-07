@@ -77,10 +77,21 @@ EXTRA_DIST= \
 	intprot/sm_s_6/*.xml \
 	intprot/sm_s_7/*.vsp \
 	intprot/sm_s_7/*.xml \
+	linkeddata/*.xml \
+	linkeddata/sem_s_1/*.xml \
 	make_vad.sh \
+	linkeddata/*.xml \
+	linkeddata/*.xml \
+	linkeddata/sem_s_1/*.xml \
+	linkeddata/sem_s_1/*.xml \
 	rdf/*.xml \
+	rdf/fs_s_1/*.vsp \
+	rdf/fs_s_1/*.xml \
 	rdf/rd_s_1/*.sql \
 	rdf/rd_s_1/*.xml \
+	rdf/rd_s_2/*.sql \
+	rdf/rd_s_2/*.xml \
+	rdf/rd_s_2/*.py \
 	rdf/ri_s_1/*.gif \
 	rdf/ri_s_1/*.js \
 	rdf/ri_s_1/*.sql \

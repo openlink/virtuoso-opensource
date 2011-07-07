@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2008 OpenLink Software
+ *  Copyright (C) 1998-2010 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -52,10 +52,9 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 		
 	  // Populate the prefix map using data from the 
 	  // persistent graph properties
-	  Connection conn = m_graph.getConnection();
 	  String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 	  try {
-	    Statement stmt = conn.createStatement();
+	    Statement stmt = m_graph.createStatement();
 	    ResultSet rs = stmt.executeQuery(query);
 
   	    while (rs.next()) {
@@ -71,12 +70,11 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 
         public PrefixMapping removeNsPrefix( String prefix )
         {
-	  Connection conn = m_graph.getConnection();
 	  String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
           super.removeNsPrefix( prefix );
 
 	  try {
-	    PreparedStatement ps = conn.prepareStatement(query);
+	    PreparedStatement ps = m_graph.prepareStatement(query);
 	    ps.setString(1, prefix);
 	    ps.execute();
 	  } catch (Exception e) {
@@ -95,14 +93,13 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	{
 	  super.setNsPrefix(prefix, uri);
 
-	  Connection conn = m_graph.getConnection();
 	  String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 		
 	  // All went well, so persist the prefix by adding it to the graph properties
 	  // (the addPrefix call will overwrite any existing mapping with the same prefix
 	  // so it matches the behaviour of the prefixMappingImpl).
 	  try {
-	    PreparedStatement ps = conn.prepareStatement(query);
+	    PreparedStatement ps = m_graph.prepareStatement(query);
 	    ps.setString(1, prefix);
 	    ps.setString(2, uri);
 	    ps.execute();

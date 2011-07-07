@@ -21,6 +21,11 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+	<!ENTITY bibo "http://purl.org/ontology/bibo/">
+	<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+	<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -29,15 +34,41 @@
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
+  xmlns:bibo="&bibo;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:ir="http://web-semantics.org/ns/image-regions"
   xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:cc="http://web.resource.org/cc/"
+  xmlns:sioc="&sioc;"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"  
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
-  <xsl:param name="base" />
+  
+  <xsl:param name="baseUri" />
+
+    <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
+    <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
   <xsl:template match="/">
-    <xsl:copy-of select="svg/metadata/rdf:RDF"/>
+	<rdf:Description rdf:about="{$docproxyIRI}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
+	</rdf:Description>
+	<rdf:Description rdf:about="{$resourceURL}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<bibo:uri rdf:resource="{$baseUri}"/>
+		<xsl:if test="svg/metadata/rdf:RDF/cc:Work">
+			<xsl:copy-of select="/svg/metadata/rdf:RDF/cc:Work/*"/>
+		</xsl:if>
+    </rdf:Description>
+    <xsl:if test="not svg/metadata/rdf:RDF/cc:Work">
+		<xsl:copy-of select="/svg/metadata/rdf:RDF/*"/>
+    </xsl:if>
   </xsl:template>
 
 </xsl:stylesheet>

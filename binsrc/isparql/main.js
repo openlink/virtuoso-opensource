@@ -20,6 +20,7 @@ var page_w = 800;
 var page_h = 800;
 
 if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "/isparql/toolkit/images/";
+OAT.Preferences.imagePath = toolkitImagesPath;
 
 /*
     OAT.Keyboard.add ('esc',   function() { dialogs.goptions.cancel(); },null, 'goptions');
@@ -29,6 +30,11 @@ if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "/isparql/
 
 function init() {
     try {
+	OAT.Preferences.imagePath = '/isparql/toolkit/images/';
+	OAT.Preferences.stylePath = '/isparql/toolkit/styles/';
+
+
+	iSPARQL.StatusUI.init();
 	iSPARQL.Defaults.init();
 
 	iSPARQL.Common.initData();
@@ -36,7 +42,9 @@ function init() {
 	// XXX cannot go without these global vars for now - too much refactoring involved
 
 	iSPARQL.Common.initAdv(); // XXX warning defines global adv
-	if (!OAT.Browser.isIE || !OAT.Browser.isScreenOnly)
+	
+
+		if (OAT.Browser.hasSVG)
 	    iSPARQL.Common.initQBE(); // XXX warning defines global qbe
 
     	iSPARQL.Common.initQE();  // XXX warning defines global qe, uses global qbe
@@ -47,9 +55,13 @@ function init() {
 
 	iSPARQL.StatusUI.hide();
 
-	if (!OAT.Browser.isIE || !OAT.Browser.isScreenOnly) {
+		if (OAT.Browser.hasSVG) {
 	    if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
+			tab.go (1); /* is 0-based index... */
 	}
+		else
+			tab.go (iSPARQL.Settings.view);
+
 
     } catch (e) {
 	if (e.prototype == iSPARQL.Exception)
@@ -60,80 +72,10 @@ function init() {
 	OAT.Dom.hide ("splashThrobber");
 	OAT.Dom.show ("splashErrorImg");
 	sessionStorage.clear();
-	if (iSPARQL.Preferences.debug) throw (e);
+		if (iSPARQL.Settings.debug) throw (e);
     }
-
 
     OAT.Dom.show("page_content");
-
-    /*    if (window.__inherited) {
-	if (window.__inherited.username)       goptions.username = window.__inherited.username;
-	if (window.__inherited.password)       goptions.password = window.__inherited.password;
-	if (window.__inherited.login_put_type) goptions.login_put_type = window.__inherited.login_put_type;
-	if (window.__inherited.endpoint)       goptions.service = window.__inherited.endpoint;
-	if (window.__inherited.proxy)          goptions.proxy = window.__inherited.proxy;
-	if (window.__inherited.should_sponge)  goptions.should_sponge = window.__inherited.should_sponge;
-	if (window.__inherited.query)          qbe.loadFromString(window.__inherited.query);
-	if (window.__inherited.graph)          $('qbe_graph').value = window.__inherited.graph;
-
-	if (window.__inherited.callback) {
-    */
-	    /* query returning */
-    /*	    var returnRef = function() {
-		if ($v('default-graph-uri') == '' ||
-		    confirm('WARNING ! ! !\nDefault graph will be lost, construct your query using FROM instead. \nDo you wish to continue?')) {
-		    window.__inherited.callback($v('query'));
-		    window.close();
-		}
-	    }
-	    OAT.Event.attach("return_btn","click",returnRef);
-	} else OAT.Dom.hide("return_btn");
-
-	if (!iSPARQL.Common.checkAuth(goptions.username,goptions.password) == true)
-	    iSPARQL.dialogs.goptions.show();
-	else if (window.__inherited.run) qbe.func_run();
-    } else {
-	OAT.Dom.hide("return_btn");
-
-	var page_params = OAT.Dom.uriParams();
-	for (var p in goptions) {
-	    if (page_params['goptions.' + p] != undefined)
-		goptions[p] = page_params['goptions.'+p];}
-
-	if (fixed_sponge) {
-	    goptions.should_sponge = fixed_sponge;
-	    var inputs = document.getElementsByName('should-sponge');
-	    for(var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
-	    $('qbe_sponge').disabled = true;
-	    $('adv_sponge').disabled = true;
-	}
-
-	var show_initial_screen = true;
-
-	if(get_initial_credentials)	{
-	    OAT.AJAX.GET(get_initial_credentials, '', function(data,headers){
-			     if (data != '') {
-				 var tmp = OAT.Crypto.base64d(data).split(':');
-				 if (tmp.length > 0) {
-				     goptions.username = tmp[0];
-				     goptions.password = tmp[1];
-				 }
-				 show_initial_screen = false;
-			     }
-			 },{async:false,onerror:function(xhr){alert(xhr.getResponseText());}});
-	    if (!iSPARQL.Common.checkAuth(goptions.username,goptions.password) == true)
-		show_initial_screen = true;
-	}
-
-		if (show_initial_screen) iSPARQL.dialogs.goptions.show();
-		else goptions.initial_screen = true;
-
-      } */
-
-
-    if (OAT.Browser.isIE || OAT.Browser.isScreenOnly) {
-	tab.go (1); /* is 0-based index... */
-    }
 }
 
 iSPARQL.SERVER_TYPE = {
@@ -172,6 +114,7 @@ iSPARQL.QueryExec = function(optObj) {
 
     this.go = function(optObj) {
 	var opts = {};
+		
 	for (var p in self.options) { opts[p] = self.options[p]; }
 	for (var p in optObj) { opts[p] = optObj[p]; }
 
@@ -187,9 +130,11 @@ iSPARQL.QueryExec = function(optObj) {
 	if (opts.sponge && self.options.virtuoso) { req["should-sponge"] = opts.sponge; }
 
 	var arr = [];
+		
 	for (var p in req) {
 	    arr.push(p+"="+encodeURIComponent(req[p]));
 	}
+		
 	var query = arr.join("&");
 
 	var callback = function(data) {
@@ -213,6 +158,12 @@ iSPARQL.QueryExec = function(optObj) {
 
     self.go(optObj);
 }
+
+//iSPARQL.LayoutMgr = {
+//	resize_h: function () {
+//		
+//	},
+//}
 
 iSPARQL.Advanced = function () {
     var self = this;
@@ -251,6 +202,10 @@ iSPARQL.Advanced = function () {
 	self.save();
     }
 
+	this.locationCancelH = function () {
+		return false;
+	}
+    
     this.locUI = false;
 
     this.func_run = function() {
@@ -279,7 +234,8 @@ iSPARQL.Advanced = function () {
 	    pragmas:iSPARQL.endpointOpts.pragmas,
 	    namedGraphs:iSPARQL.dataObj.namedGraphs,
 	    callback:iSPARQL.Common.setData,
-	    maxrows:iSPARQL.dataObj.maxrows
+			maxrows:iSPARQL.dataObj.maxrows,
+			view:1
 	}
 	
 	iSPARQL.recentQueryUI.addQuery (o.query);
@@ -287,16 +243,19 @@ iSPARQL.Advanced = function () {
 	var lc = [];
 
 	if (qe.detectLocationMacros(o.query)) {
+	    iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
 	    if (!iSPARQL.locationCache) {
 		if (!!localStorage && !!localStorage.iSPARQL_locationCache)
 		    lc = localStorage.iSPARQL_locationCache;
 		iSPARQL.locationCache = new iSPARQL.LocationCache (10, lc, true);
 	    }
+
 	    var locUI = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
-                cancelCB: false,
+														cancelCB: self.locationCancelH,
 		cbParm: o,
-		cache: iSPARQL.locationCache});
-	    locUI.refresh();
+														cache: iSPARQL.locationCache,
+													    minAcc: iSPARQL.Settings.locOpts.minAcc});
+//			locUI.refresh();
 	} else {
 	qe.execute(o);
     }
@@ -347,7 +306,8 @@ iSPARQL.Advanced = function () {
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.maxrows = iSPARQL.dataObj.maxrows;
 	dataObj.defaultGraph = $v('default-graph-uri');
-	dataObj.metaDataOpts = iSPARQL.mdOpts; // XXX check IO.Save
+		dataObj.metaDataOpts = iSPARQL.mdOpts.getMetaDataObj();
+		
 	return(dataObj);
     }
 
@@ -375,6 +335,7 @@ OAT.Observer = {
     add:function (observers, _obj, fun) {
 	if (!OAT.Observer.find (observers, _obj, fun)) observers.push ({o:_obj, fun:fun});
     },
+	
     del: function (observers, _obj, fun) {
 	for (var i = 0; i < observers.length; i++)
 	    if (observers[i].o == _obj && observers[i].fun == fun) {
@@ -418,20 +379,21 @@ iSPARQL.RecentQueriesUI = function () {
 	    } else {
 		self.qry_ctl.value = val;
 		self.sel_ctl.selectedIndex = 0;
+		iSPARQL.Common.setQuery($v("query"));
 	    }
 	}
     }
 
     this.clear = function () {
 	self.buf.clear();
-	localStorage.iSPARQL_recent_queries = OAT.JSON.stringify([]);
+		localStorage.iSPARQL_recent_queries = OAT.JSON.serialize([]);
 	self.redraw();
     }
 
     this.addQuery = function (qry) {
 	if (self.buf.find(qry) == -1) {
 	    self.buf.append (qry);
-	    localStorage.iSPARQL_recent_queries = OAT.JSON.stringify(self.buf.toList());
+			localStorage.iSPARQL_recent_queries = OAT.JSON.serialize(self.buf.toList());
 	    self.redraw();
 	}
     }
@@ -452,9 +414,10 @@ iSPARQL.RecentQueriesUI = function () {
     this._init = function () {
 	var initList = [];
 
-	if (typeof localStorage != 'undefined' && typeof localStorage.iSPARQL_recent_queries != 'undefined') {
+	if (typeof localStorage != 'undefined' && 
+	    typeof localStorage.iSPARQL_recent_queries != 'undefined') {
 	    try {
-		initList = OAT.JSON.parse(localStorage.iSPARQL_recent_queries);
+				initList = OAT.JSON.deserialize(localStorage.iSPARQL_recent_queries);
 	    }
 	    catch (e) {
 		delete localStorage.iSPARQL_recent_queries;
@@ -471,8 +434,6 @@ iSPARQL.RecentQueriesUI = function () {
     
 //
 // Observes SpongerOpts
-//
-// To avoid unwanted recursion we pass the calling object to the observed object.
 //
 
 iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
@@ -541,7 +502,8 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	/* main display toggling */
 	OAT.Event.attach (self.togglerElm, "click", self.toggle);
 
-	if (typeof sessionStorage.iSPARQLEpOptsUIVisible != 'undefined' && sessionStorage.iSPARQLEpOptsUIVisible == 'true')
+		if (typeof sessionStorage.iSPARQLEpOptsUIVisible != 'undefined' && 
+            sessionStorage.iSPARQLEpOptsUIVisible == 'true')
 	    self.show();
 	else
 	    self.hide();
@@ -740,7 +702,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	var opts = $(select).options;
 	for (var i=0;i<opts.length;i++) {
 	    var opt = opts[i];
-	    if (opt.value == p[1][0].replace (/"/g,'')) { //"
+			if (opt.value == p[1][0].replace (/\"/g,'')) { // 
 		$(select).options.selectedIndex = i;
 		break;
 	    }
@@ -858,8 +820,18 @@ iSPARQL.EndpointOpts = function (optsObj) {
     // XXX add support for:
     // timeout
 
+	var _o = {
+		endpoint: '/sparql',
+		useProxy: true,
+		pragmas: []
+	};
+
+	for (p in optsObj) {
+		self._o[p] = optsObj[p];
+	}
+	
     this.unSerialize = function (s) {
-	var o = OAT.JSON.parse (s);
+		var o = OAT.JSON.deserialize(s);
 	this.loadObj (o);
     }
 
@@ -871,7 +843,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    serverType:  self.serverType
 		};
 
-	return OAT.JSON.stringify (o);
+		return OAT.JSON.serialize(o);
     }
 
     this.loadSes = function () {
@@ -890,12 +862,14 @@ iSPARQL.EndpointOpts = function (optsObj) {
     }
 
     this._init = function (o) {
-	if (o.sponge) {
+		if (!!o) {
+			if (!!o.sponge) {
 	    self.setGetOpt (self,o.sponge);
 	}
-	if (o.endpoint) {
+			if (!!o.endpoint) {
 	    self.setEndpoint(self, o.endpoint);
 	}
+		}
 	// retrieve state from persistent session storage if available
 	self.loadSes();
     }
@@ -904,7 +878,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	self.endpointPath = '/sparql';
 	self.useProxy = true;
 	self.pragmas = [];
-	OAT.Observer.notify (self.observers, callerObj, 'reset');
+		OAT.Observer.notify (self.observers, caller, 'reset');
 	self.saveSes();
     }
 
@@ -920,7 +894,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
     this.detectEndpointType = function () {
 	self.setEndpointTO = false;
 	var o = {
-	    type:OAT.AJAX.TYPE_XML,
+	    type:OAT.AJAX.TYPE_XML
 	};
 
 //	OAT.AJAX.POST (self.endpointPath, "select * where {?s ?p ?o} limit 1", self.endPointDetectCB, o);
@@ -969,7 +943,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 		}
 	    }
 
-	iSPARQL.Common.log(self.pragmas);
+		OAT.Debug.log(0, "Pragmas: " + self.pragmas);
 	self.saveSes();
     }
 
@@ -985,10 +959,10 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    a.push(['define get:soft',[(val)? '"'+val+'"' : val]]);
 	else {
 	    a.push(['define get:soft',[false]]);
-/*	    //	    a.push(['define input:grab-limit',[false]]); XXX will have to test which way is best for user (what happens to existing other
+			//	    a.push(['define input:grab-limit',[false]]); XXX will have to test which way is best for user (what happens to existing other 
 	    //	    a.push(['define input:grab-depth',[false]]); Sponger options if sponger is set to be off.
 	    //	    a.push(['define input:grab-all',[false]]);
-	    //	    a.push(['define input:grab-seealso',[false]]); */
+			//	    a.push(['define input:grab-seealso',[false]]);
 	}
 
 	self.setPragmas(a);
@@ -1097,7 +1071,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	return false;
     }
 
-    this._init(optsObj);
+    this._init(self._o);
 
 }; // EndpointOpts
 
@@ -1163,13 +1137,18 @@ iSPARQL.MetaDataOpts = function () {
 
     var self = this;
 
-    this.metadata = {};
+    this.metadata = {
+		title: '',
+		creator: '',
+		description: ''
+    };
+
     this.observers = {};
 
     this._init = function () {
 	self.reset();
 	if (typeof sessionStorage.iSPARQLMetaDataOpts != 'undefined' && sessionStorage.iSPARQLMetaDataOpts)
-	    self.metadata = OAT.JSON.parse (sessionStorage.iSPARQLMetaDataOpts);
+			self.metadata = OAT.JSON.deserialize(sessionStorage.iSPARQLMetaDataOpts);
     }
 
     this.reset = function (caller) {
@@ -1182,12 +1161,12 @@ iSPARQL.MetaDataOpts = function () {
 
     this.loadOpts = function (o) {
 	if (o.title) self.metadata.title       = o.title;
-	if (o.title) self.metadata.creator     = o.creator;
-	if (o.title) self.metadata.description = o.description;
+		if (o.creator) self.metadata.creator         = o.creator;
+		if (o.description) self.metadata.description = o.description;
     }
 
     this.changed = function (callerObj, reason) {
-	sessionStorage.iSPARQLMetaDataOpts = OAT.JSON.stringify (self.metadata);
+		sessionStorage.iSPARQLMetaDataOpts = OAT.JSON.serialize(self.metadata);
 	OAT.Observer.notify (self.observers, callerObj, 'setCreator');
     }
 
@@ -1228,7 +1207,7 @@ iSPARQL.AuthUI = function (conn) {
     this.errElm  = $("auth_dlg_error");
 
     this.loginIndicatorB = $("login_b");
-
+	
     this.connection = {};
 
     this._init = function (conn) {
@@ -1258,12 +1237,12 @@ iSPARQL.AuthUI = function (conn) {
 
     this.show = function () {
 	self.dlg.show ();
-    }
+		}
 
     this.hide = function () {
 	self.dlg.hide ();
     }
-
+		
     this.loginCB = function (elm) {
 	self.errElm.innerHTML = '';
 	self.connection.connect ($v(self.userElm), $v(self.passElm));
@@ -1278,18 +1257,18 @@ iSPARQL.AuthUI = function (conn) {
 	self.userElm.value="";
 	self.passElm.value="";
 	self.dlg.hide();
-    }
+}
 
     this._init(conn);
 
-} // AuthUI
+} // AuthUI - should probably called session rather than connection...
 
 iSPARQL.ServerConnection = function (uri, authObj) {
     var self = this;
     this.endpointUri = uri;
 
-    this.authObj = OAT.JSON.parse(OAT.JSON.stringify(authObj)); // Deep copy param obj
-
+    this.authObj = OAT.JSON.deserialize(OAT.JSON.stringify(authObj)); // Deep copy param obj
+		
     this.connected = false;
     this.response = false;
     this.error = false;
@@ -1298,33 +1277,41 @@ iSPARQL.ServerConnection = function (uri, authObj) {
     this._init = function () {
 	self.loadAuth ();
 	self.connect (self.authObj.user, self.authObj.pass);
-        return;
-    }
+	    return;
+	}
 
     // Newest IE, FireFox and Safari/WebKit implement HTML 5.0 local storage
-
+		
     this.saveAuth = function() {
-	sessionStorage.iSPARQLAuth = OAT.JSON.stringify (self.authObj);
-    }
-
+		sessionStorage.iSPARQLAuth = OAT.JSON.serialize(self.authObj);
+	}
+		
     this.loadAuth = function() {
 	if (typeof sessionStorage.iSPARQLAuth != 'undefined' && sessionStorage.iSPARQLAuth)
-	self.authObj = OAT.JSON.parse (sessionStorage.iSPARQLAuth);
+			self.authObj = OAT.JSON.deserialize(sessionStorage.iSPARQLAuth);
     }
 
     this.connect = function (_user, _pass, caller) {
 	self.authObj.user = _user;
-	self.authObj.pass = _pass;
+		self.authObj.password = _pass;
 	self.connected = false;
 
-	OAT.AJAX.GET (self.authObj.endpoint, 'username=' + _user + '&pass=' + _pass,
+		if ((!!self.authObj.user) && self.authObj.user != '') 
+		  {
+			  OAT.AJAX.PROPFIND ('/DAV/home/' + _user,'',
 		      function (data, headers) {
-			  if (data == 'OK') self.connected = true;
-			  else self.error = data;
+									 self.connected = true;
 		      },
 		      		  {async:false,
+								  user: self.authObj.user,
+								  password: self.authObj.password,
 		      		   onstart:function() {return},
-		      		   onerror:function (xhr) { self.error = xhr.response; self.connected = false; }});
+								  onerror:function (xhr) { 
+									  var stat = xhr.getStatus();
+									  if (stat == 401)
+										  self.error = 'Invalid Credentials';
+									  else self.error = 'Unknown error';
+									  self.connected = false; }});
 
 	if (self.connected) {
 	    self.saveAuth ();
@@ -1332,13 +1319,14 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 	    					 imagePath:toolkitImagesPath,
 	    					 silentStart:true,
 	    					 user:self.authObj.user,
-	    					 pass:self.authObj.pass,
+	    						   pass:self.authObj.password, 
 	    					 isDav:true});
-	}
 
 	self.detectServerProperties ();
 
 	OAT.MSG.send (self, "iSPARQL_SERVER_CONNECTED", self);
+    }
+		  }
     }
 
     this.detectServerProperties = function() {
@@ -1375,6 +1363,25 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 
 iSPARQL.Common = {
 
+//
+// Replace anchor with c_uri
+//
+	shortenURI_closure:function (a) {
+		return (function (data) {
+			try {
+				var o = OAT.JSON.deserialize(data);
+				if (o.c_uri) a.href = o.c_uri;
+			} catch (e) {}
+		       });
+	},
+
+	shortenURI:function (a) {
+		var req = iSPARQL.Settings.c_uri_ep + "create.vsp?uri="+ encodeURIComponent(a.href) + "&res=json";
+		var cb = iSPARQL.Common.shortenURI_closure (a);
+
+		OAT.AJAX.GET (req, false, cb, {});
+	},
+
     initData:function () {
 	iSPARQL.StatusUI.statMsg ("Initializing data structures and objects&#8230;");
 
@@ -1382,22 +1389,23 @@ iSPARQL.Common = {
 
 	if (typeof sessionStorage == 'undefined') window.sessionStorage = {};
 	if (typeof localStorage == 'undefined') window.localStorage = {};
-
+					
 	// Set program defaults
 
 	iSPARQL.Common.reset();
-	iSPARQL.Common.setQuery (iSPARQL.dataObj.query);
-	iSPARQL.Common.setDefaultGraph (iSPARQL.dataObj.graph);
+
+		iSPARQL.Common.setQuery (iSPARQL.Settings.query);
+		
+		iSPARQL.Common.setDefaultGraph (iSPARQL.Settings.graph);
 
 	iSPARQL.mdOpts       = new iSPARQL.MetaDataOpts ();
 
-	iSPARQL.endpointOpts = new iSPARQL.EndpointOpts ({sponge:iSPARQL.Defaults.sponge, 
-							  endpoint:iSPARQL.Defaults.endpoint});
+		iSPARQL.endpointOpts = new iSPARQL.EndpointOpts ();
 
 	iSPARQL.StatusUI.statMsg ("Initializing server connection data&#8230;");
 
 	iSPARQL.serverConn   = new iSPARQL.ServerConnection (iSPARQL.endpointOpts.endpointPath,
-							     iSPARQL.Defaults.auth);
+															 iSPARQL.Settings.auth);
 
     },
 
@@ -1430,10 +1438,56 @@ iSPARQL.Common = {
 	iSPARQL.dialogs.help = new OAT.Dialog("iSPARQL Help", "help_dlg", {width:400, modal:0, buttons:0});
 	OAT.Event.attach ("help_dlg_b_ok", "click", iSPARQL.dialogs.help.hide);
 
-	iSPARQL.dialogs.prefs = new OAT.Dialog("iSPARQL Preferences", "prefs_dlg", {width:400, modal:1});
+		iSPARQL.dialogs.prefs = new OAT.Dialog("iSPARQL Preferences", "prefs_dlg", {width:600, 
+																					modal:1, 
+																					def_layout: false, 
+																					className: "prefs_dlg"});
 	iSPARQL.dialogs.prefs.ok = iSPARQL.dialogs.prefs.hide;
-	iSPARQL.dialogs.prefs.cancel = iSPARQL.dialogs.prefs.hide;
 
+//		iSPARQL.pref_tabs = new OAT.Tab ("prefs_tabdeck");
+//		iSPARQL.pref_tabs.add ("ptab_services","prefs_tab_services_ct");
+
+//		iSPARQL.pref_tabs.add ("ptab_deref","prefs_tab_deref_ct");
+
+
+		if (!!!iSPARQL.UserPreferences.c_uri_ep && !!iSPARQL.Defaults.curiInstalled) {
+			var l = document.location;
+			// Use a default c_uri loc
+			iSPARQL.Settings.c_uri_ep = 
+				l.protocol + '//' + l.hostname + ((l.port != 80 && l.port != '')?(':'+l.port):'') +'/c/';
+		}
+
+		if (!!iSPARQL.Settings.shorten_uris) {
+			$('shortener_ep').disabled = false;
+			$('shortener_ep_ckb').checked = true;
+		} else {
+			$('shortener_ep').disabled = true;
+		}
+		
+		$('shortener_ep').value = iSPARQL.Settings.c_uri_ep;
+
+		OAT.Event.attach ("shortener_ep", "change", 
+						  function () {
+							  iSPARQL.Settings.c_uri_ep = iSPARQL.UserPreferences.c_uri_ep = $('shortener_ep').value;
+							  localStorage.iSPARQL_UserPreferences = OAT.JSON.serialize(iSPARQL.UserPreferences);
+						  });
+
+		OAT.Event.attach ("shortener_ep_ckb", "click", 
+						  function () {
+							  if ($('shortener_ep_ckb').checked) {
+								  $('shortener_ep').disabled = false;
+								  iSPARQL.Settings.shorten_uris = iSPARQL.UserPreferences.shorten_uris = true;
+							  } else {
+								  $('shortener_ep').disabled = true;
+								  iSPARQL.Settings.shorten_uris = iSPARQL.UserPreferences.shorten_uris = false;
+							  }
+							  // Persist UserPreferences
+							  //
+							  localStorage.iSPARQL_UserPreferences = OAT.JSON.serialize(iSPARQL.UserPreferences);
+							  OAT.MSG.send (self,"iSPARQL_USER_PREF_CHANGE",false);
+						  });
+
+		if (iSPARQL.serverConn.isConnected) {
 	if (iSPARQL.serverConn.isVirtuoso) {
 	    $('about_version').innerHTML = iSPARQL.serverConn.serverVersion;
 	    $('about_date').innerHTML = iSPARQL.serverConn.serverBuildDate;
@@ -1442,14 +1496,31 @@ iSPARQL.Common = {
 	    $('about_version').innerHTML = 'N/A (Not Virtuoso)';
 	    $('about_date').innerHTML =  'N/A (Not Virtuoso)';
 	}
+		}
+		else {
+			$('about_version').innerHTML = 'unknown';
+			$('about_date').innerHTML = 'unknown';
+		}
 
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$('throbber').src = OAT.Preferences.imagePath + "Dav_throbber.gif";
 
+	OAT.MSG.attach ("*", 
+			"OAT_RDF_STORE_LOADED", 
+			function (m,s,l) {	
+			    var iridbstats = OAT.IRIDB.getStats();
+			    $('iridb_stats').innerHTML = iridbstats.iriCount;
+			    $('triple_count').innerHTML = m.getTripleCount();
+							$('item_count').innerHTML = m.getGraphCount();
+			    $('label_count').innerHTML = m.getLabelCount();
+			    $('label_proc_count').innerHTML = m.getLabelProcCount();
+			});
+
 	OAT.Anchor.zIndex = 1001;
 
-	OAT.MSG.attach ("*", "LOCATION_ACQUIRED", function (m,s,l) { $("ft_loc").innerHTML = "lat:" + l.getLat() + " lon:" + l.getLon();});
+		OAT.MSG.attach ("*", "LOCATION_ACQUIRED", 
+						function (m,s,l) { $("ft_loc").innerHTML = "lat:" + l.getLat() + " lon:" + l.getLon();});
 
 	iSPARQL.StatusUI.statMsg ("Initializing menu&#8230;");
 	iSPARQL.Common.initMenu();
@@ -1459,24 +1530,28 @@ iSPARQL.Common = {
 			iSPARQL.dialogs.qbe_unsupp.show();
 			return;
 	    }
+			iSPARQL.Settings.tab = newIndex;
+			iSPARQL.Common.saveSes();
 	    if (newIndex == 0) { // QBE
 			OAT.Dom.show ('qry_type_ctls');
  			OAT.Dom.show('queryopts');
 			OAT.Dom.show('queryMetaData');
 			OAT.Dom.show('controls');
+				OAT.Dom.hide('data_links')
 	    }
 	    else if (newIndex == 1) { // Advanced
 			OAT.Dom.hide ('qry_type_ctls');
  			OAT.Dom.show('queryopts');
 			OAT.Dom.show('queryMetaData');
 			OAT.Dom.show('controls');
+				OAT.Dom.hide('data_links')
 	    }
 	    else {	// Result tab
 			OAT.Dom.hide('qry_type_ctls');
  			OAT.Dom.hide('queryopts');
 			OAT.Dom.hide('queryMetaData');
 			OAT.Dom.hide('controls');
-		
+				OAT.Dom.show('data_links')
 	    }
 	}
 
@@ -1497,19 +1572,23 @@ iSPARQL.Common = {
 	}
 
 	tab = new OAT.Tab ("main_col",
-				{dockMode:true,
-					dockElement:"tabs",
-					goCallback:tab_goCallback,
-					onDock:onDock,
-					onUnDock:onUnDock,
-					dockWindowWidth:1000,
-					dockWindowHeight:600});
+						   {//dockMode:false,
+							//dockElement:"tabs",
+							goCallback:tab_goCallback
+							//onDock:onDock,
+							//onUnDock:onUnDock,
+							//dockWindowWidth:1000,
+							//dockWindowHeight:600
+						   });
 
+		if (OAT.Browser.hasSVG) {
 	tab_qbe =     tab.add ("tab_qbe",    "page_qbe");
+		}
+
 	tab_query =   tab.add ("tab_query",  "page_query");
 	tab_results = tab.add ("tab_results","page_results");
 
-	tab.go (0); /* is 0-based index... */
+		tab.go (iSPARQL.Settings.tab); /* is 0-based index... */
 
 	var tabgraphs = new OAT.Tab ("tabgrph_content");
 	tabgraphs.add ("tabgrph_default","tabgrph_default_content");
@@ -1520,6 +1599,7 @@ iSPARQL.Common = {
 
 	OAT.Event.attach ("browse_btn", "click", iSPARQL.Common.fileRef);
 
+		if (OAT.Browser.hasSVG) {
 	var loadToQBE = OAT.Dom.create("li",{},"nav");
 	loadToQBE.title = 'Load query into QBE';
 	var img = OAT.Dom.create("img");
@@ -1552,20 +1632,23 @@ iSPARQL.Common = {
 		       });
 
 	OAT.Dom.append([qe.dom.ul,loadToAdvanced],[loadToAdvanced,img]);
-
-	/* qbe_unsupp */
-	iSPARQL.dialogs.qbe_unsupp = new OAT.Dialog("SVG Not Available","qbe_unsupported_div",{width:400,modal:1});
-
-	iSPARQL.dialogs.qbe_unsupp.ok = function() {
-	    tab.go(1);
-	    iSPARQL.dialogs.qbe_unsupp.hide();
 	}
 
-	iSPARQL.dialogs.qbe_unsupp.cancel = iSPARQL.dialogs.qbe_unsupp.ok;
+	iSPARQL.StatusUI.statMsg ("Prefixes&#8230;");
+	var sel_elm = $("prefix");
+
+		for (var i=0;i<iSPARQL.Defaults.namespaces.length;i++) {
+			var p_obj = iSPARQL.Defaults.namespaces[i];
+			var opt_val = "PREFIX " + p_obj[1] + ": <" + p_obj[0] + ">";
+			var opt_ct  = p_obj[1].toUpperCase();
+		var opt_elm = OAT.Dom.option (opt_ct, opt_val, sel_elm);
+	}
 
 	iSPARQL.StatusUI.statMsg ("MetaData UI&#8230;");
 	iSPARQL.mdUI = new iSPARQL.MetaDataOptsUI (iSPARQL.mdOpts,
-						   'mdtoggler', 'mdoptstogglerarrow', 'mdopts_ctr');
+						   'mdtoggler', 
+						   'mdoptstogglerarrow', 
+						   'mdopts_ctr');
 
 	iSPARQL.StatusUI.statMsg ("Endpoint Options UI&#8230;");
 	iSPARQL.epUI = new iSPARQL.EndpointOptsUI (iSPARQL.endpointOpts,
@@ -1576,7 +1659,7 @@ iSPARQL.Common = {
 	iSPARQL.StatusUI.statMsg ("Auth UI&#8230;");
 	iSPARQL.authUI = new iSPARQL.AuthUI (iSPARQL.serverConn);
 
-	iSPARQL.StatusUI.statMsg ("Recent query list&#8230;")
+	iSPARQL.StatusUI.statMsg ("Recent query list&#8230;");
 	iSPARQL.recentQueryUI = new iSPARQL.RecentQueriesUI();
 
 	OAT.Resize.create("query_resizer_area", "query_div", OAT.Resize.TYPE_X);
@@ -1621,18 +1704,21 @@ iSPARQL.Common = {
 	/* build info */
 	$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
-	page_w = OAT.Dom.getWH('page')[0] - 20;
 
-	$('default-graph-uri').value = iSPARQL.Defaults.graph;
-	$('query').value = iSPARQL.Defaults.query;
+		$('default-graph-uri').value = iSPARQL.Settings.graph;
+		$('query').value = iSPARQL.Settings.query;
 
-	$('maxrows').value = iSPARQL.dataObj.maxrows;
+		$('maxrows').value = iSPARQL.Settings.maxrows;
 	OAT.Event.attach ('maxrows', 'change',
 					function () {
 						var n = parseInt($v('maxrows'));
-						iSPARQL.dataObj.maxrows = isNaN(n) ? 0 : n;
+							  iSPARQL.Settings.maxrows = isNaN(n) ? 0 : n; 
 						});
 
+		enable_if_ubiq ($('ubiq_gem'));
+		
+		page_w = OAT.Dom.getWH('page')[0] - 20;
+		
         iSPARQL.StatusUI.statMsg ("UI Initialization complete.");
     },
 
@@ -1646,9 +1732,23 @@ iSPARQL.Common = {
 
 	init_qbe(); // Customise svgsparql prototype
 
-	window.qbe = new iSPARQL.QBE(iSPARQL.Defaults);
+		var qbe_def = {
+			query: false,
+			graph: false
+		};
 
-	qbe.loadFromString(iSPARQL.Defaults.query);
+		if (iSPARQL.Settings.view != 0) { 
+			if (iSPARQL.serverDefaults.query) 
+				qbe_def.query = iSPARQL.serverDefaults.query;
+			else 
+				qbe_def.query = "SELECT * WHERE {?s ?p ?o}";
+		}
+		else {
+			qbe_def.query = iSPARQL.Settings.query;
+		}
+		qbe_def.graph = iSPARQL.Settings.graph;
+
+		window.qbe = new iSPARQL.QBE(qbe_def);
     },
 
     initQE: function() {
@@ -1669,15 +1769,18 @@ iSPARQL.Common = {
 
 	window.qe = new QueryExec({div:"page_results", executeCallback:execCB});
     },
+	
     showUI: function() {
 	OAT.Dom.show ("page_content");
     },
+	
     toggleVisibility: function (elem_id) {
 	if ($(elem_id).style.display == 'none')
 	    OAT.Dom.show (elem_id);
 	else
 	    OAT.Dom.hide (elem_id);
     },
+	
     enableFileOps: function () {
 	OAT.Event.attach ("menu_b_load",
 			"click",
@@ -1703,6 +1806,7 @@ iSPARQL.Common = {
 			});
 	OAT.Dom.removeClass ("menu_b_saveas", "disabled")
     },
+	
     disableFileOps: function () {
 	OAT.Event.detach ("menu_b_load",
 			"click",
@@ -1778,7 +1882,7 @@ iSPARQL.Common = {
     },
 
     log:function(msg) {
-	if(!!(window.console) && iSPARQL.Preferences.debug) {
+		if(!!(window.console) && iSPARQL.Settings.debug) {
 	    window.console.log(msg);
 	}
     },
@@ -1786,11 +1890,11 @@ iSPARQL.Common = {
     getFilePath:function() {
 	var path = '/DAV';
 
-	if (iSPARQL.dataObj.user)
-	    path += "/home/" + iSPARQL.dataObj.user;
+		if (iSPARQL.Settings.user) 
+			path += "/home/" + iSPARQL.Settings.user;
 
-	if (iSPARQL.dataObj.lastPath)
-	    path = iSPARQL.dataObj.lastPath.substring(0,iSPARQL.dataObj.lastPath.lastIndexOf("/"));
+		if (iSPARQL.Settings.lastPath) 
+			path = iSPARQL.Settings.lastPath.substring(0,iSPARQL.Settings.lastPath.lastIndexOf("/"));
 
 	return path;
     },
@@ -1798,9 +1902,9 @@ iSPARQL.Common = {
     getFile:function() {
 	var file = '';
 
-	if (iSPARQL.dataObj.lastPath)
-	    file = iSPARQL.dataObj.lastPath.substring(iSPARQL.dataObj.lastPath.lastIndexOf("/") + 1,
-						      iSPARQL.dataObj.lastPath.length);
+		if (iSPARQL.Settings.lastPath) 
+			file = iSPARQL.Settings.lastPath.substring(iSPARQL.Settings.lastPath.lastIndexOf("/") + 1,
+													  iSPARQL.Settings.lastPath.length);
 
 	return file;
     },
@@ -1822,11 +1926,11 @@ iSPARQL.Common = {
     getDefaultPath:function() {
 	var path = '/DAV';
 
-	if (iSPARQL.dataObj.user) path += "/home/" + iSPARQL.dataObj.user;
+		if (iSPARQL.Settings.user) path += "/home/" + iSPARQL.Settings.user;
 
 	var pathDefault = path;
 
-	if (iSPARQL.dataObj.user == 'dav') pathDefault = '/DAV';
+		if (iSPARQL.Settings.user == 'dav') pathDefault = '/DAV';
 
 	return pathDefault;
     },
@@ -1842,9 +1946,9 @@ iSPARQL.Common = {
     addNamedGraph:function(graph) {
 	var index = iSPARQL.dataObj.namedGraphs.find(graph);
 	if (index != -1) { return; }
-	iSPARQL.dataObj.namedGraphs.push(graph);
+		iSPARQL.Settings.dataObj.push(graph);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
+		OAT.Debug.log(0,'addNamedGraph: ' + iSPARQL.dataObj.namedGraphs);
     },
 
     removeNamedGraph:function(graph) {
@@ -1852,7 +1956,7 @@ iSPARQL.Common = {
 	if (index == -1) { return; }
 	iSPARQL.dataObj.namedGraphs.splice(index,1);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
+		OAT.Debug.log(0,'removeNamedGraph: ' + iSPARQL.dataObj.namedGraphs);
     },
 
     addGraph:function(graph) {
@@ -1860,7 +1964,7 @@ iSPARQL.Common = {
 	if (index != -1) { return; }
 	iSPARQL.dataObj.graphs.push(graph);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.graphs);
+		OAT.Debug.log(0,'addGraph: ' + iSPARQL.dataObj.graphs);
     },
 
     addPrefix:function(prefix) {
@@ -1868,7 +1972,7 @@ iSPARQL.Common = {
 	if (index != -1) { return; }
 	iSPARQL.dataObj.prefixes.push(prefix);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.prefixes);
+		OAT.Debug.log(0,'addPrefix: ' + iSPARQL.dataObj.prefixes);
     },
 
     removeGraph:function(graph) {
@@ -1876,60 +1980,107 @@ iSPARQL.Common = {
 	if (index == -1) { return; }
 	iSPARQL.dataObj.graphs.splice(index,1);
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.graphs);
+		OAT.Debug.log(0,'removeGraph:' + iSPARQL.dataObj.graphs);
     },
 
     setQuery:function(query) {
 	iSPARQL.dataObj.query = query;
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.query);
+		OAT.Debug.log(0,'setQuery: ' + iSPARQL.dataObj.query);
     },
 
     setDefaultGraph:function(graph) {
 	iSPARQL.dataObj.defaultGraph = graph;
 	this.saveSes();
-	iSPARQL.Common.log(iSPARQL.dataObj.defaultGraph);
+		OAT.Debug.log(0,'setDefaultGraph:' + iSPARQL.dataObj.defaultGraph);
     },
 
     setData:function(data) {
 	iSPARQL.dataObj.data = data;
-	iSPARQL.Common.log(iSPARQL.dataObj.data);
+		OAT.Debug.log(0,'setData');
     },
 
     // sessionStorage handling
     //
-    // XXX should abstract better for better code reuse - have OAT Component for cross-browser(version) compat
+    // XXX should abstract better for better code reuse 
+    //   - have OAT Component for cross-browser(version) compat
     //
 
-    persistList:["query", "defaultGraph", "graphs", "namedGraphs", "prefixes", "pragmas", "maxrows","sponge","tab"],
+    persistList:["query", "defaultGraph", "graphs", "namedGraphs", 
+				 "prefixes", "pragmas", "maxrows","sponge","tab", "endpoint"],
 
     resetSes:function () {
 	sessionStorage.iSPARQLSes = '';
 	iSPARQL.Common.reset();
     },
 
+//
+// Gets called from event handlers
+// 
+
     saveSes:function () {
 	var storeObj = {};
-	for (mName in self.persistList) {
-	    if (typeof iSPARQL.dataObj[mName] != 'object')
-		storeObj[mName] = iSPARQL.dataObj[mName];
+		for (var i=0;i<iSPARQL.Common.persistList.length;i++) {
+			var mName = iSPARQL.Common.persistList[i];
+
+			storeObj.query = iSPARQL.dataObj.query;
+			if (typeof iSPARQL.Settings[mName] != 'undefined') {
+				if (typeof iSPARQL.Settings[mName] != 'object')
+					storeObj[mName] = iSPARQL.Settings[mName];
 	    else
-		storeObj[mName] = OAT.JSON.parse(OAT.JSON.stringify (iSPARQL.dataObj[mName]));
+					storeObj[mName] = OAT.JSON.deserialize(OAT.JSON.stringify (iSPARQL.Settings[mName]));
+			}
 	}
 
-	if (typeof sessionStorage.iSPARQLSes == 'undefined' || !sessionStorage.iSPARQLSes)
-	    sessionStorage.iSPARQLSes = {dataObj: {}};
+//		if (typeof sessionStorage.iSPARQLSes == 'undefined' || !sessionStorage.iSPARQLSes)
+//			sessionStorage.iSPARQLSes = {Settings: {}};
 
-	sessionStorage.iSPARQLSes.dataObj = storeObj;
+		sessionStorage.iSPARQLSes = OAT.JSON.serialize(storeObj);
     },
 
     loadSes: function () {
-	if (typeof sessionStorage.iSPARQLSes != 'undefined') {
-	    var ss = sessionStorage.iSPARQLSes
-	    if (ss && typeof ss.dataObj != 'undefined')
-		iSPARQL.dataObj = OAT.JSON.parse (OAT.JSON.stringify(ss.dataObj));
+		if (typeof sessionStorage.iSPARQLSes != 'undefined' && 
+			sessionStorage.iSPARQLSes != null && 
+			sessionStorage.iSPARQLSes != '') {
+			var s = OAT.JSON.deserialize(sessionStorage.iSPARQLSes);
+			for (i in s) {
+				if (typeof s[i] != 'object')
+					iSPARQL.Settings[i] = s[i];
+				else
+					iSPARQL.Settings[i] = OAT.JSON.deserialize(OAT.JSON.serialize (s[i]));
+			}
 	}
     },
+
+    handlePageParams:function () {
+	
+		var qp = false;
+		var p = OAT.Dom.uriParams();
+		
+		if (p['default-graph-uri']) { iSPARQL.Settings.graph  = p['default-graph-uri']; qp = true; }
+		if (p['defaultGraph'])      { iSPARQL.Settings.graph  = p['defaultGraph']; qp = true; }
+		if (p['query']) { 
+			iSPARQL.Settings.query  = p['query']; 
+			qp = true; 
+		}
+		if (p['sponge'])            { iSPARQL.Settings.sponge = p['sponge']; qp = true; }
+		if (p['should_sponge'])     { iSPARQL.Settings.sponge = p['should_sponge']; qp = true; }
+		if (p['view']) {
+			var tabInx = parseInt(p['view']);
+			if (!isNaN(tabInx) && tabInx >= 0 && tabInx < 3)
+				iSPARQL.Defaults.tab = tabInx;
+			else 
+				iSPARQL.Settings.tab = 1;
+			qp = true;
+	}
+		if (p['endpoint']) { iSPARQL.Settings.endpoint = p['endpoint']; qp = true;}
+		if (p['resultview']) { iSPARQL.Settings.resultView = p['resultview']; qp = true;}
+		if (qp) iSPARQL.Settings.qp_override = qp;
+		if (p['__DEBUG']) iSPARQL.Settings.debug = true;
+		if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
+    },
+
+
 
     //
     // Set program default options - will be overriden by server defaults if available
@@ -1938,26 +2089,48 @@ iSPARQL.Common = {
 
     reset:function() {
 	if (typeof iSPARQL == 'undefined') iSPARQL = {};
+		if (typeof iSPARQL.Settings == 'undefined') iSPARQL.Settings = {};
 	if (typeof iSPARQL.dataObj == 'undefined') iSPARQL.dataObj = {};
 
+
+		for (i in iSPARQL.Defaults) {
+			if (typeof iSPARQL.Defaults[i] != 'object') 
+			iSPARQL.Settings[i] = iSPARQL.Defaults[i];
+			else 
+				iSPARQL.Settings[i] = OAT.JSON.deserialize(OAT.JSON.serialize(iSPARQL.Defaults[i]));
+		}
+		
+		if (!!localStorage.iSPARQL_UserPreferences) 
+			iSPARQL.UserPreferences = OAT.JSON.deserialize(localStorage.iSPARQL_UserPreferences);
+		else 
+			iSPARQL.UserPreferences = {};
+		
+		for (i in iSPARQL.UserPreferences) {
+			if (typeof iSPARQL.UserPreferences[i] != 'object') 
+			iSPARQL.Settings[i] = iSPARQL.UserPreferences[i];
+			else 
+				iSPARQL.Settings[i] = OAT.JSON.deserialize(OAT.JSON.serialize(iSPARQL.UserPreferences[i]));
+		}
+
+		this.loadSes();
+		this.handlePageParams(); // Page params always override session persistence
+
 	iSPARQL.dataObj.data = false;
-	iSPARQL.dataObj.query = iSPARQL.Defaults.query;
+		iSPARQL.dataObj.query = iSPARQL.Settings.query;
 	iSPARQL.dataObj.defaultGraph = "";
 	iSPARQL.dataObj.graphs = [];
 	iSPARQL.dataObj.namedGraphs = [];
-	iSPARQL.dataObj.prefixes = [];			/* FIXME: prefixes? */
-
+		iSPARQL.dataObj.prefixes = []; // XXX
 	iSPARQL.dataObj.pragmas = [];
-	iSPARQL.dataObj.maxrows = iSPARQL.Defaults.maxrows;
+		iSPARQL.dataObj.maxrows = iSPARQL.Settings.maxrows;
 	iSPARQL.dataObj.canvas = false;
-	iSPARQL.dataObj.sponge = iSPARQL.Defaults.sponge;
-	iSPARQL.dataObj.tab = iSPARQL.Defaults.tab;
+		iSPARQL.dataObj.sponge = iSPARQL.Settings.sponge;
+		iSPARQL.dataObj.tab = iSPARQL.Settings.tab;
 
 	if (typeof iSPARQL.endpointOpts != 'undefined') iSPARQL.endpointOpts.reset();
 	if (typeof iSPARQL.metaDataOpts != 'undefined') iSPARQL.metaDataOpts.reset();
 
-	this.loadSes ();
-	this.log(iSPARQL.dataObj);
+		OAT.Debug.log('reset: '+iSPARQL.dataObj);
 
     },
 
@@ -1972,6 +2145,17 @@ iSPARQL.Common = {
 	for (var i=0;i<iSPARQL.dataObj.namedGraphs.length;i++) {
 	    add_named_graph(iSPARQL.dataObj.namedGraphs[i]);
 	}
+    },
+
+	isMobileBrowser: function () {
+		var ua = navigator.userAgent.toLowerCase();
+		
+		if (ua.search ("iphone") || 
+			ua.search ("ipod") ||
+			ua.search ("android") ||
+			ua.search ("symbian") ||
+			ua.search ("S60"))
+			return true;
     }
 }
 
@@ -1988,7 +2172,6 @@ function get_file_type(file_name) {
 
 function set_dav_props(res){
     var ext = res.substring(res.lastIndexOf('.') + 1).toLowerCase();
-    throw('foo');
     if (iSPARQL.serverConn.isVirtuoso && (ext == 'xml' || ext == 'isparql' || ext == 'rq')) {
 	OAT.AJAX.GET('./set_dav_props.vsp?res=' + encodeURIComponent(res),
 		     '',
@@ -2162,19 +2345,26 @@ var toolswin = null;
 function tools_popup(){
     if (toolswin == null) {
 	var topbox_ctl_xy = OAT.Dom.getLT('topbox_ctl');
-	toolswin = new OAT.Window({close:1,min:0,max:0,x:topbox_ctl_xy[0] + 200,y:topbox_ctl_xy[1] + 50,width:200,height:440,title:"Statement Help"});
-	toolswin.div.style.zIndex = 1013;
-	$("page_query").appendChild(toolswin.div);
-	toolswin.onclose = function() { OAT.Dom.hide(toolswin.div); }
+		toolswin = new OAT.Win({buttons:"cs",
+								x:topbox_ctl_xy[0] + 200,
+								y:topbox_ctl_xy[1] + 50,
+								innerWidth:210,
+//								innerHeight:440,
+								title:"Statement Help"});
+
+		//		$("page_query").appendChild(toolswin.div);
 
 	var tools = $('tool').options;
-	toolswin.content.innerHTML = '';
+		
+		var t_ctr = toolswin.getInnerContainer();
+		t_ctr.innerHTML = '';
+		
 	for (i = 0;i<tools.length;i++) {
 	    if (tools[i].value)
-		toolswin.content.innerHTML += '<button class="tools_but" onclick="' + tools[i].value.replace(/\"/g,'&quot;') + '">' + tools[i].text + '</button>';
+				t_ctr.innerHTML += '<button class="tools_but" onclick="' + tools[i].value.replace(/\"/g,'&quot;') + '">' + tools[i].text + '</button>';
 	}
     }
-    OAT.Dom.show(toolswin.div);
+    toolswin.open();
 }
 
 function add_named_graph(graph) {

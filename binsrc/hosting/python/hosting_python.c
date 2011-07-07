@@ -82,6 +82,7 @@ log_debug (char *format, ...)
 #define VIRT_HANDLER_NAME "__virt_handler"
 
 #include "virt_handler.c"
+#include "import_gate_virtuoso.h"
 
 static void
 define_virtuoso_module (PyInterpreterState *interp)
@@ -108,14 +109,16 @@ start_python_interpreter (char *err, int max_len)
 
   PyEval_AcquireLock();
   tstate = Py_NewInterpreter ();
-  define_virtuoso_module (tstate->interp);
 
   if (!tstate)
     {
-      SET_ERR ("Unable to start the Python interpretter");
+      SET_ERR ("Unable to start the Python interpreter");
     }
-  else
-    interp = tstate->interp;
+
+  interp = tstate->interp;
+
+  define_virtuoso_module (interp);
+
   PyThreadState_Clear (tstate);
   PyEval_ReleaseThread(tstate);
   PyThreadState_Delete (tstate);
@@ -130,7 +133,7 @@ init_python_thread (PyInterpreterState *istate, char *err, int max_len)
 
   if (!tstate)
     {
-      SET_ERR ("Unbale to make a thread state");
+      SET_ERR ("Unable to make a thread state");
       return NULL;
     }
   PyEval_AcquireThread(tstate);
@@ -161,11 +164,119 @@ stop_python_interpreter (PyInterpreterState *interp)
     }
 }
 
+static caddr_t
+bif_python_exec (caddr_t *qst, caddr_t *err, state_slot_t **args)
+{
+  caddr_t in_string = bif_string_arg (qst, args, 0, "python_exec");
+  caddr_t func_name = bif_string_arg (qst, args, 1, "python_exec");
+  char * ret = NULL;
+  caddr_t box = NULL;
+  PyObject *po_module, *func, *stringarg, *po_args, *rslt, *global_dict, *local_dict, *result;
+  PyThreadState * tstate;
+  PyObject *code_obj;
+  PyInterpreterState * istate = NULL;
+
+  sec_check_dba (qst, "python_exec");
+
+  PyEval_AcquireLock ();
+  tstate = Py_NewInterpreter ();
+  istate = tstate->interp;
+  /*
+  PyThreadState_Clear (tstate);
+  PyEval_ReleaseThread(tstate);
+  PyThreadState_Delete (tstate);
+
+  tstate = PyThreadState_New(istate);
+  if (!tstate)
+    {
+      goto err_ret;
+    }
+  PyEval_AcquireThread(tstate);
+  */
+
+#if 0
+  po_module = PyDict_GetItemString(istate->modules, "__builtin__");
+  code_obj = PyObject_CallMethod (po_module, "compile", "sss", in_string, "<string>", "exec");
+  PyImport_ExecCodeModule (func_name, code_obj);
+  Py_DECREF (code_obj);
+  po_module = PyDict_GetItemString (istate->modules, func_name);
+#else
+  po_module = PyDict_GetItemString (istate->modules, "__main__");
+  global_dict = PyModule_GetDict (po_module);
+  result = PyRun_String (in_string, Py_file_input, global_dict, global_dict);
+
+  if (!result)
+    {
+      if (PyErr_Occurred ())
+	{
+	  PyErr_Print ();
+	}
+      goto err_ret_thr;
+    }
+  else
+    {
+      Py_DECREF (result);
+    }
+#endif
+
+  func = PyObject_GetAttrString(po_module, func_name);
+  if (func) 
+    {
+      if (PyCallable_Check(func)) 
+	{
+	  int i, n_pars = BOX_ELEMENTS(args);
+	  po_args = PyTuple_New (n_pars - 2);
+	  for (i = 2; i < n_pars; i ++)
+	    {
+	      caddr_t par = bif_string_arg (qst, args, i, "python_exec");
+	      stringarg = PyString_FromString (par);
+	      PyTuple_SetItem (po_args, i - 2, stringarg);
+	    }
+	  rslt = PyObject_CallObject(func, po_args);
+	  /* 
+	     no need PyTuple_SetItem steal the reference
+	  for (i = 2; i < n_pars; i ++)
+	    {
+	      stringarg = PyTuple_GetItem (po_args, i - 2);
+	      Py_XDECREF(stringarg);
+	    } 
+	   */
+	  if (rslt) 
+	    {
+	      ret = PyString_AsString (rslt);
+	      box = ret ? box_dv_short_string (ret) : NULL;
+	      Py_XDECREF(rslt);
+	    }
+	  Py_XDECREF(po_args);
+	}
+      Py_XDECREF(func);
+    }
+  if (PyErr_Occurred ())
+    {
+      PyErr_Print ();
+    }
+err_ret_thr:  
+  /*
+  PyThreadState_Clear (tstate);
+  PyEval_ReleaseThread(tstate);
+  PyThreadState_Delete (tstate);
+  */
+
+err_ret:  
+  /*
+  tstate = PyThreadState_New(istate);
+  PyEval_AcquireThread(tstate);
+  */
+  Py_EndInterpreter (tstate);
+  PyEval_ReleaseLock ();
+  return box;
+}
 
 static void
 hosting_python_connect (void *x)
 {
   /*log_debug ("hosting_python_connect");*/
+  bif_define ("python_exec", bif_python_exec);
 }
 
 static hosting_version_t
@@ -181,7 +292,7 @@ hosting_python_version = {
       NULL,					/*!< Pointer to disconnection function, or NULL */
       NULL,					/*!< Pointer to activation function, or NULL */
       NULL,					/*!< Pointer to deactivation function, or NULL */
-      NULL
+      &_gate,
     },
     NULL, NULL, NULL, NULL, NULL,
     NULL

@@ -28,10 +28,11 @@
     xmlns:h    ="http://www.w3.org/1999/xhtml"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:xfnv ="http://vocab.sindice.com/xfn#"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     >
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
-
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     <xsl:variable name="xfn-rel">
 	<xfn>
 	    <rel value="contact"/>
@@ -102,10 +103,11 @@
 
     <xsl:template match="html">
 	<rdf:RDF>
+	    <xsl:if test="//a[@rel]">
 	    <xsl:variable name="xfn-doc">
 		<xsl:for-each select="$xfn-rel/xfn/rel">
 		    <xsl:variable name="rel" select="@value"/>
-		    <xsl:for-each select="$doc//a">
+		    <xsl:for-each select="$doc//a[@rel]">
 				<xsl:variable name="rel-attr" select="concat(' ', @rel, ' ')"/>
 				<xsl:if test="contains ($rel-attr, concat(' ', $rel, ' '))">
 					<xsl:element name="{$rel}" namespace="http://gmpg.org/xfn/11#">
@@ -118,7 +120,7 @@
 		</xsl:for-each>
 		<xsl:for-each select="$xfn-rel2/xfn/rel">
 		    <xsl:variable name="rel2" select="@value"/>
-		    <xsl:for-each select="$doc//a">
+		    <xsl:for-each select="$doc//a[@rel]">
 			<xsl:variable name="rel-attr2" select="concat(' ', @rel, ' ')"/>
 			<xsl:if test="contains ($rel-attr2, concat(' ', $rel2, ' '))">
 			    <xsl:element name="{$rel2}" namespace="http://vocab.sindice.com/xfn#">
@@ -131,10 +133,11 @@
 		</xsl:for-each>
 	    </xsl:variable>
 	    <xsl:if test="$xfn-doc/*">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 		    <foaf:homepage rdf:resource="{$baseUri}"/>
 		    <xsl:copy-of select="$xfn-doc"/>
 		</rdf:Description>
+	    </xsl:if>
 	    </xsl:if>
 	</rdf:RDF>
     </xsl:template>

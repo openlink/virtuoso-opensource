@@ -52,6 +52,11 @@
 #define isp_schema(x) isp_schema_1(x)
 #include <jni.h>
 
+#if defined (JNI_VERSION_1_6)
+#define V_JNI_VERSION JNI_VERSION_1_6
+#else
+#define V_JNI_VERSION JNI_VERSION_1_2
+#endif
 /* #define DEBUG */
 
 void VirtuosoServerSetInitHook (void (*hook) (void));
@@ -476,7 +481,7 @@ set_virt_access_granter_to_jvm ()
   memcpy (buf, virt_access_granter, blen);
   len = uudecode_base64(buf, buf + blen);
 
-  access_granter = (*env)->DefineClass(env, "__virt_access_granter", NULL, buf, len);
+  access_granter = (*env)->DefineClass(env, "__virt_access_granter", NULL, buf, len - 1);
 }
 
 
@@ -496,7 +501,7 @@ set_virt_class_loader_r_to_jvm ()
   if (NULL != (err = java_vm_attach (&env, 1, NULL, NULL)))
     exit (1);
 
-  class_loader_r = (*env)->DefineClass(env, "__virt_class_loader_r", NULL, buf, len);
+  class_loader_r = (*env)->DefineClass(env, "__virt_class_loader_r", NULL, buf, len - 1);
 }
 
 /* BEGIN:
@@ -590,7 +595,7 @@ set_bpel_classes_to_jvm ()
   memcpy (buf, bpel_adaptor, blen);
   len = uudecode_base64(buf, buf + blen);
 
-  bpel_vars_adaptor = (*env)->DefineClass(env, "BpelVarsAdaptor", NULL, buf, len);
+  bpel_vars_adaptor = (*env)->DefineClass(env, "BpelVarsAdaptor", NULL, buf, len - 1);
   if (0 != (*env)->RegisterNatives (env,
 			    bpel_vars_adaptor,
 			    bpel_adaptor_methods,
@@ -619,7 +624,7 @@ set_virt_class_loader_ur_to_jvm ()
   if (NULL != (err = java_vm_attach (&env, 1, NULL, NULL)))
     exit (1);
 
-  class_loader_ur = (*env)->DefineClass(env, "__virt_class_loader_ur", NULL, buf, len);
+  class_loader_ur = (*env)->DefineClass(env, "__virt_class_loader_ur", NULL, buf, len - 1);
 }
 
 static void
@@ -666,7 +671,7 @@ set_help_class_to_jvm ()
   GET_METHOD_ID (env, Date_class, getSeconds_id, "getSeconds", "()I", finish, err);
   GET_METHOD_ID (env, Date_class, getTimezoneOffset_id, "getTimezoneOffset", "()I", finish, err);
 
-  virt_helper_class = (*env)->DefineClass(env, "__virt_helper", loaderObj, buf, len);
+  virt_helper_class = (*env)->DefineClass(env, "__virt_helper", loaderObj, buf, len - 1);
   IF_JAVA_ERR_GO(env,finish,err);
 
   GET_METHOD_ID (env, virt_helper_class, virt_helper_init, "<init>", "()V", finish, err);
@@ -805,7 +810,7 @@ java_vm_create (JNIEnv ** java_vm_env, caddr_t classpath, caddr_t *opts)
 	}
     }
 
-  vm_args.version = JNI_VERSION_1_2;
+  vm_args.version = V_JNI_VERSION;
   vm_args.options = options;
   vm_args.ignoreUnrecognized = JNI_FALSE;
 
@@ -895,7 +900,7 @@ java_vm_attach (JNIEnv ** env, int create_if_not, caddr_t classpath, caddr_t *op
 #if 1
 #ifndef AUTO_DETACH
       if (JNI_OK != (*java_vm)->GetEnv (java_vm, (void **) env,
-	      JNI_VERSION_1_2) && create_if_not)
+	      V_JNI_VERSION) && create_if_not)
 #endif
 	{
 #endif
@@ -3266,7 +3271,9 @@ javavm_ddl_hook (client_connection_t *cli)
     sqls_define_xslt (cli);
 }
 
-#if defined (JDK1_5)
+#if defined (JNI_VERSION_1_6)
+#define JAVAVM_VERSION "1.6"
+#elif defined (JDK1_5)
 #define JAVAVM_VERSION "1.5"
 #elif defined (JDK1_4)
 #define JAVAVM_VERSION "1.4"

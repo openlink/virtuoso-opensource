@@ -6,9 +6,9 @@ create table ld_metric
  lm_dt datetime,
  lm_first_id int,
  lm_secs_since_start int,
- lm_n_rows int,
+ lm_n_rows bigint,
  lm_cpu int,
- lm_n_reads int,
+ lm_n_reads bigint,
  lm_read_time int,
  lm_read_pct float,
  lm_rows_per_s float,
@@ -39,7 +39,7 @@ create procedure ld_sample (in is_first int := 0)
   declare id, n_rows, read_time, last_read_time, elapsed int;
  id := sequence_next ('lm');
  now := curdatetime ();
- n_rows := (select touches from sys_d_stat where index_name = 'RDF_QUAD');
+ n_rows := (select cl_sys_stat (key_table, name_part (key_name, 2), 'touches') from sys_keys where key_name = 'DB.DBA.RDF_QUAD');
  ru := getrusage ();
   if (is_first)
     {

@@ -82,6 +82,19 @@
 		<xsl:variable name="id" select="concat('#', @id)" />
 		<sioc:Container rdf:about="{$id}">
 			<sioc:has_container rdf:resource="{$resourceURL}"/>
+			<rdfs:label>
+				<xsl:choose>
+					<xsl:when test="substring-after(entity/segment, ':')">
+						<xsl:value-of select="substring-after(entity/segment, ':')" />
+					</xsl:when>
+					<xsl:when test="string-length(entity/segment) &gt; 0">
+						<xsl:value-of select="entity/segment" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="@id" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</rdfs:label>				
 			<xsl:apply-templates select="entity" />
 			<xsl:apply-templates select="period" />
 		</sioc:Container>
@@ -105,10 +118,10 @@
 				<xsl:value-of select="identifier" />
 			</opl-xbrl:identifier>
 			<xsl:if test="identifier/@scheme = 'http://www.sec.gov/CIK'">
-			    <owl:sameAs rdf:resource="http://www.rdfabout.com/rdf/usgov/sec/id/cik{$identifier_value}"/>
+			    <rdfs:seeAlso rdf:resource="http://www.rdfabout.com/rdf/usgov/sec/id/cik{$identifier_value}"/>
 			    <xsl:variable name="nam" select="virt:getIRIbyCIK ($identifier_value)"/>
 			    <xsl:if test="$nam != ''">
-				<owl:sameAs rdf:resource="{$nam}"/>
+				<rdfs:seeAlso rdf:resource="{$nam}"/>
 			    </xsl:if>
 			</xsl:if>
 		</xsl:if>
@@ -185,9 +198,9 @@
 
 			<rdf:Description rdf:about="{$contextRef}">
 				<sioc:container_of rdf:resource="{concat($resourceURL, '#', @contextRef, '/', $canonical_name)}" />
-				<rdfs:label>
+				<!--rdfs:label>
 					<xsl:value-of select="@contextRef"/>
-				</rdfs:label>
+				</rdfs:label-->
 			</rdf:Description>
 		</xsl:if>
 	</xsl:template>

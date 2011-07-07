@@ -37,3 +37,5 @@ drop procedure DB.DBA.XSLT_REGEXP_MATCH;
 drop procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE;
 drop procedure DB.DBA.RDF_LOAD_FLICKR_IMG;
 drop procedure DB.DBA.RDF_LOAD_HTML_RESPONSE;
+
+DB.DBA.VHOST_REMOVE (lhost=>'*ini*', vhost=>'*ini*', lpath=>'/sponger');

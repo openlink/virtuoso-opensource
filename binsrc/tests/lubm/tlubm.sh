@@ -67,14 +67,14 @@ then
     exit 3
 fi
 
-# NO RUN ON v5
-#BANNER "RDF range conds and full text"
-#RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < trdfrng.sql
-#if test $STATUS -ne 0
-#then
-#    LOG "***ABORTED: lubm-load.sql"
-#    exit 3
-#fi
+
+BANNER "RDF range conds and full text"
+RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < trdfrng.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: trdfrng.sql"
+    exit 3
+fi
 
 
 BANNER "LUBM with materialized data"

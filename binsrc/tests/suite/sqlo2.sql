@@ -312,6 +312,106 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":BUG 5176: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+--- Test for Bug 14167 fix
+
+create table LocutusMetadata.DBA.dcterms_subject_Table
+(
+ SubjectUri VARCHAR(2048),
+ GraphName VARCHAR(32),
+ dcterms_subject VARCHAR(52)
+);
+
+create table LocutusMetadata.DBA.fam_assetUrl_Table
+(
+ SubjectUri VARCHAR(2048),
+ GraphName VARCHAR(32),
+ ParentUri VARCHAR(2048),
+ fam_dateTimeOriginalUtc VARCHAR(30)
+);
+
+delete from locutusmetadata.dba.dcterms_subject_Table;
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj1', 'graph1', 'The Larry Subject 1');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj2', 'graphBAD1', 'The Larry Subject 2');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj3', 'graph1', 'Larry');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj4', 'graphBAD1', 'Larry');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj5', 'graph1', 'The King Subject 5');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj6', 'graphBAD1', 'The King Subject 6');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj7', 'graph1', 'King');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj8', 'graphBAD1', 'King');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj9', 'graph1', 'The Larry Subject 9');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj10', 'graphBAD1', 'The Larry Subject 10');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj11', 'graph1', 'Larry');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj12', 'graphBAD1', 'Larry');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj13', 'User1', 'The Larry Subject 13');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj14', 'User1', 'Larry');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj15', 'User1', 'The King Subject 15');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj16', 'User1', 'King');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj17', 'User1', 'The Larry Subject 17');
+insert into locutusmetadata.dba.dcterms_subject_Table (SubjectUri, GraphName, dcterms_subject) values ('subj18', 'User1', 'Larry');
+
+delete from locutusmetadata.dba.fam_assetUrl_Table;
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj1', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj2', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj3', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj4', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj5', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj6', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj7', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj8', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj13', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj14', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj15', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj16', 'graph1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj1', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj2', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj3', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj4', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj5', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj6', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj7', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj8', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj13', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj14', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj15', 'User1');
+insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj16', 'User1');
+
+SELECT dcterms_subject_Table.SubjectUri,fam_assetUrl_Table.fam_dateTimeOriginalUtc 
+FROM
+  locutusmetadata.dba.dcterms_subject_Table,
+  locutusmetadata.dba.fam_assetUrl_Table
+WHERE ((
+    (dcterms_subject_Table.subjectUri in
+      (select DISTINCT SubjectUri from locutusmetadata.dba.dcterms_subject_Table T 
+        where T.dcterms_subject like '%Larr%' 
+        union select DISTINCT SubjectUri from locutusmetadata.dba.dcterms_subject_Table T 
+        where T.dcterms_subject = 'Larry' )
+    and dcterms_subject_Table.SubjectUri = fam_assetUrl_Table.SubjectUri
+    and dcterms_subject_Table.GraphName = fam_assetUrl_Table.GraphName))
+  and dcterms_subject_Table.GraphName ='User1')
+ORDER BY  fam_dateTimeOriginalUtc ASC;
+
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 14167 : union of DISTINCTs inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DS.SubjectUri, FA.fam_dateTimeOriginalUtc 
+FROM
+  locutusmetadata.dba.dcterms_subject_Table DS,
+  locutusmetadata.dba.fam_assetUrl_Table FA
+WHERE
+    (DS.subjectUri in (select * from
+      (select T1.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T1 
+        where T1.dcterms_subject like '%Larr%' 
+        union select T2.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T2 
+        where T2.dcterms_subject = 'Larry' ) T3))
+and DS.SubjectUri = FA.SubjectUri
+and 'User1' /* DS.GraphName */ = FA.GraphName
+and DS.GraphName ='User1'
+ORDER BY  FA.fam_dateTimeOriginalUtc ASC;
+
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 14167 : union inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select count (*) from SYS_USERS where U_NAME = 'dba' and U_NAME in ('dba', 'admin', 'george');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
@@ -1130,7 +1230,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B7074-3 : workaround for B7074-2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-drop table B9393;
+drop table B9383;
 create table B9383 (ID int primary key, DATA varchar);
 
 insert into B9383 (ID, DATA) values (1, 'cat');
@@ -1261,70 +1361,7 @@ echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
 echo both ": verify above with ibid with loop\n";
 
 
-drop table b13517;
-drop table b13515;
 
-create table b13517 (id int primary key, data varchar (100) not null default '');
-insert into b13517 values (1, '');
-
--- must be error here
-alter table b13517 modify data varchar (255);
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": alter column non-null w/o non-null flags STATE=" $state " MESSAGE=" $message "\n";
-select * from b13517;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": select from b13517 returns rows=" $rowcnt "\n";
-
-create table b13515 (aa integer);
-insert into b13515 values('123');
--- must return 1 row
-select * from b13515 where aa in ('123');
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": select from a table with int column and string literal in IN list equal rows=" $rowcnt "\n";
-
-
--- must be error
-use "";
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": trying to set qualifier to empty string STATE=" $state " MESSAGE=" $message "\n";
-create table test1 (id integer);
-use "DB";
-drop table ""..test1;
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": trying to drop table with empty string as qualifier STATE=" $state " MESSAGE=" $message "\n";
-
--- must not be error
-drop table "schema1"..test1;
-use "schema1";
-create table "schema1"..test1 (id integer);
-tables;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": tables call returns rows=" $rowcnt "\n";
-
-use DB;
--- must be error
-create user "";
-echo both $if $neq $state OK "PASSED" "***FAILED";
-echo both ": trying to create user with an empty string as name STATE=" $state " MESSAGE=" $message "\n";
-
-drop table test;
-CREATE TABLE test (optname VARCHAR(50));
-CREATE INDEX option_idx ON test (optname);
-INSERT INTO test (optname) VALUES ('u_');
-SELECT * FROM test WHERE optname LIKE 'u@_' ESCAPE '@';
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": LIKE with escape on INDEXED search return rows=" $rowcnt "\n";
-
-
-drop table test;
-create table test (id int primary key, data long varchar);
-insert into test values (1, repeat ('abrakadabra', 1000));
-insert into test values (2, 'abrakadabra');
-
---must return 2 rows
-select id from test where data like '%kadabra%';
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-echo both ": LIKE on BLOB column returns rows=" $rowcnt "\n";
 
 
 -- End of test

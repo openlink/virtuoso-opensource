@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -89,7 +89,7 @@ OAT.DSTransport.REST = {
 			xmlDoc = OAT.Xml.createXmlDoc(t);
 			obj = OAT.JSObj.createFromXmlNode(xmlDoc.documentElement);
 		} else { /* json */
-			obj = OAT.JSON.parse(text);
+			obj = OAT.JSON.deserialize(text);
 		}
 
 		var allValues = {};

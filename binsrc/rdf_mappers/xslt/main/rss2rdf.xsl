@@ -32,7 +32,7 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+  xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
@@ -46,6 +46,7 @@
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
 
+    <xsl:param name="baseUri" />
 
 <!-- general element conversions -->
 
@@ -139,7 +140,7 @@
 </xsl:template>
 
 <xsl:template match="lastBuildDate|pubdate|r:lastBuildDate|r:pubdate">
-  <dc:date><xsl:value-of select="vifunc:http_string_date(.)" /></dc:date>
+  <dcterms:issued><xsl:value-of select="vifunc:http_string_date(.)" /></dcterms:issued>
 </xsl:template>
 
 <xsl:template match="managingEditor|r:managingEditor">
@@ -196,7 +197,7 @@
 </xsl:template>
 
 <xsl:template match="pubDate|r:pubDate">
-  <dc:date><xsl:value-of select="vifunc:http_string_date(.)" /></dc:date>
+  <dcterms:issued><xsl:value-of select="vifunc:http_string_date(.)" /></dcterms:issued>
 </xsl:template>
 
 <xsl:template match="source|r:source">
@@ -218,7 +219,14 @@
 <xsl:template match="item|r:item" mode="li">
   <xsl:choose>
     <xsl:when test="link|r:link">
+	<xsl:choose>
+		<xsl:when test="starts-with(link|r:link, '(u')">
+			<rdf:li rdf:resource="{vi:proxyIRI ($baseUri, '', substring-after(link|r:link, ')'))}" />
+                </xsl:when>
+                <xsl:otherwise>
       <rdf:li rdf:resource="{link|r:link}" />
+		</xsl:otherwise>
+        </xsl:choose>
     </xsl:when>
     <xsl:when test="guid|r:guid">
       <rdf:li rdf:resource="{guid|r:guid}" />
@@ -232,9 +240,19 @@
 </xsl:template>
 
 <xsl:template match="item[link]|r:item[r:link]" mode="rdfitem">
+	<xsl:choose>
+		<xsl:when test="starts-with(link|r:link, '(u')">
+                        <item rdf:about="{vi:proxyIRI ($baseUri, '', substring-after(link|r:link, ')'))}">
+                            <xsl:apply-templates/>
+                        </item>
+                </xsl:when>
+                <xsl:otherwise>
   <item rdf:about="{link|r:link}">
     <xsl:apply-templates/>
   </item>
+		</xsl:otherwise>
+        </xsl:choose>
+
 </xsl:template>
 
 <xsl:template match="item[guid][not(link)]|r:item[r:guid][not(r:link)]" mode="rdfitem">

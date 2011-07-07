@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -23,11 +23,14 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	height:0,
 	modal:0,
 	zIndex:1000,
-	buttons:1,
+	buttons:3, // bitmap 0x1=OK 0x2=cancel
 	resize:1,
 	close:1,
 	autoEnter:1,
-	type:false
+	type:false,
+	def_layout:true,
+        cancel_b_txt: "Cancel",
+        ok_b_txt: "OK"
     }
 
     if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
@@ -44,27 +47,29 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	title:title, type:options.type,
 	stackGroupBase:false});
 
-    $(contentDiv).style.margin = "10px";
+    if (options.buttons) {
+	var btn_bar = OAT.Dom.create("div",
+				     options.def_layout ? 
+				     {marginTop:"1em", textAlign:"center", className: "dialog_btnbar"} : 
+				     {className: "dialog_btnbar"});
 
-    var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
-    var tbody = OAT.Dom.create("tbody");
-    var row = OAT.Dom.create("tr");
-    var td = OAT.Dom.create("td",{border:"none"});
-    var ok = OAT.Dom.create("input");
+	if (options.buttons & 1) {
+	    var ok = OAT.Dom.create("input", {className: "dlg_b_ok"});
     ok.type = "button";
-    ok.value = " OK ";
-    td.appendChild(ok);
+	    ok.value = options.ok_b_txt;
+	    btn_bar.appendChild (ok);
+	}
 
-    var cancel = OAT.Dom.create("input",{marginLeft:"2em"});
+	if (options.buttons & 2) {
+	    var cancel = OAT.Dom.create("input", 
+					options.def_layout?{marginLeft:"2em", className: "dlg_b_cancel"}:{className: "dlg_b_cancel"});
     cancel.type = "button";
-    cancel.value = "Cancel";
-    td.appendChild(cancel);
-    row.appendChild(td);
+	    cancel.value = options.cancel_b_txt;
+	    btn_bar.appendChild (cancel);
+	}
 
-    tbody.appendChild(row);
-    nav.appendChild(tbody);
-
-    if (options.buttons) { $(contentDiv).appendChild(nav); }
+	$(contentDiv).appendChild(btn_bar); 
+    }
 
     win.dom.content.appendChild($(contentDiv));
     win.dom.container.style.zIndex = options.zIndex;
@@ -92,7 +97,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
     }
 
     var keyPress = function(event) {
-	if (self.okBtn.disabled) { return; }
+	if ((!!self.okBtn) && self.okBtn.disabled) { return; }
 	if (event.keyCode == 13) { onOk(); }
 	if (event.keyCode == 27) { onCancel(); }
     }

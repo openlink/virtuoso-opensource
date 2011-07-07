@@ -60,7 +60,7 @@
 	      }
 	      }
 	    ]]></v:on-init>
-    <vm:help id="sec_pki" sect=""/>
+    <!--vm:help id="sec_pki" sect=""/-->
     <v:form name="form1" type="simple" method="POST">
 	<!-- top of security layout -->
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
@@ -85,6 +85,7 @@
                     <tr>
 			<td valign="top">
 		   <!-- end of top security layout -->
+		   <div id="pki_form">
 		   <h3>CA Root Certificate Details</h3>
 		   <label>Country:</label> 
 		   	<v:text xhtml_size="100" value="" name="c" default_value="--self.c1"> 
@@ -187,6 +188,7 @@
        ]]></v:on-post>
 		</v:button>
 		   <!-- bottom of security layout -->
+                        </div> <!-- #pki_form -->
                       </td>
                     </tr>
                   </table>

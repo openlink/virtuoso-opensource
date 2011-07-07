@@ -105,6 +105,7 @@
 			<vcard:Country>
 				<xsl:value-of select="hometown/country"/>
 			</vcard:Country>
+			<rdfs:label><xsl:value-of select="concat(hometown/city, ', ', hometown/state, ', ', hometown/country)"/></rdfs:label>
 		</vcard:ADR>
 		<xsl:for-each select="genres/genre">
             <mo:Genre rdf:about="{html-href}">
@@ -120,12 +121,12 @@
 			<rdf:Description rdf:about="{html-href}">
 				<rdf:type rdf:resource="&mo;Record"/>
 				<rdf:type rdf:resource="&audio;Album"/>
-                <dcterms:title>
+                <dc:title>
                     <xsl:value-of select="@name"/>
-                </dcterms:title>
-                <dcterms:published>
+                </dc:title>
+                <dcterms:created>
 					<xsl:value-of select="album-release-date" />
-                </dcterms:published>
+                </dcterms:created>
                 <dcterms:creator rdf:resource="{/artist/html-href}"/>
                 <mo:maker rdf:resource="{/artist/html-href}"/>
                 <rdfs:seeAlso rdf:resource="{play-href}"/>
@@ -141,16 +142,15 @@
 		<rdf:Description rdf:about="{html-href}">
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
-    		<dcterms:title>
+    		<dc:title>
                 <xsl:value-of select="@name"/>
-            </dcterms:title>
+            </dc:title>
             <xsl:for-each select="art/album-art/img">
-				<media:depiction rdf:resource="{@src}"/>
 				<foaf:depiction rdf:resource="{@src}"/>
 			</xsl:for-each>
-            <dcterms:published>
+            <dcterms:created>
 				<xsl:value-of select="album-release-date" />
-            </dcterms:published>
+            </dcterms:created>
             <dcterms:creator rdf:resource="{primary-artist/html-href}"/>
             <mo:maker rdf:resource="{primary-artist/html-href}"/>
             <rdfs:seeAlso rdf:resource="{play-href}"/>
@@ -185,9 +185,9 @@
 			<rdf:Description rdf:about="{concat('http://www.rhapsody.com/goto?rcid=', @rcid)}">
 				<rdf:type rdf:resource="&mo;Track"/>
 				<rdf:type rdf:resource="&audio;Recording"/>
-                <dcterms:title>
+                <dc:title>
                     <xsl:value-of select="@name"/>
-                </dcterms:title>
+                </dc:title>
                 <dcterms:creator rdf:resource="{/album/primary-artist/html-href}"/>
                 <mo:maker rdf:resource="{/album/primary-artist/html-href}"/>
                 <rdfs:seeAlso rdf:resource="{play-href}"/>
@@ -200,9 +200,9 @@
 		<rdf:Description rdf:about="{concat('http://www.rhapsody.com/goto?rcid=', @rcid)}">
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
-			<dcterms:title>
+			<dc:title>
                 <xsl:value-of select="@name"/>
-            </dcterms:title>
+            </dc:title>
             <mo:available_as rdf:resource="{primary-album/html-href}"/>
             <dcterms:creator rdf:resource="{primary-artist/html-href}"/>
             <mo:maker rdf:resource="{primary-artist/html-href}"/>

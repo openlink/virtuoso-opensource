@@ -83,6 +83,7 @@ conductor/db_repl_pub_cr_edit.vspx
 conductor/db_repl_pub_cr.vspx
 conductor/db_repl_pub_edit.vspx
 conductor/db_repl_pub.vspx
+conductor/db_repl_rdf_pub_edit.vspx
 conductor/db_repl_snap_create.vspx
 conductor/db_repl_snap_local_create.vspx
 conductor/db_repl_snap_local_start.vspx
@@ -288,11 +289,15 @@ conductor/msg_news_groups.vspx
 conductor/msg_news_server_details.vspx
 conductor/msg_news_server_info.vspx
 conductor/page.xsl
+conductor/persistent_xmlns.vspx
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
+conductor/rdf_conf.vspx
 conductor/rdf_console.vspx
 conductor/rdf_filters_pp.vspx
 conductor/rdf_filters.vspx
+conductor/rdf_import.vspx
+conductor/rdf_psh_subs.vspx
 conductor/rdf_schemas.vspx
 conductor/rdf_void.vspx
 conductor/robot_control.vspx
@@ -322,6 +327,7 @@ conductor/soap_options_edit.vspx
 conductor/soap_services_edit.vspx
 conductor/soap_services_list.vspx
 conductor/soap_services.vspx
+conductor/sparql_acl.vspx
 conductor/sparql_filters.vspx
 conductor/sparql_graph.vspx
 conductor/sparql_input.vspx
@@ -337,6 +343,7 @@ conductor/sys_queues_edit.vspx
 conductor/sys_queues_error.vspx
 conductor/sys_queues_remove.vspx
 conductor/sys_queues.vspx
+conductor/tbl.js
 conductor/text_triggers.vspx
 conductor/uddi_remove.vspx
 conductor/uddi_serv_browse.vspx
@@ -373,6 +380,7 @@ conductor/vdb_resources.vspx
 conductor/vdb_unlink_obj.vspx
 conductor/vdir_browser.vspx
 conductor/vdir_helper.sql
+conductor/vfs_export.vspx
 conductor/vhost_export.vspx
 conductor/view_dav_res.vsp
 conductor/view_file.vsp

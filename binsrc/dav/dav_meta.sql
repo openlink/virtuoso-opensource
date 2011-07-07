@@ -1618,6 +1618,11 @@ create function IMC_TO_XML (in _src varchar)
   while (line_idx < lines_count)
     {
       line := lines [line_idx];
+      while ((line_idx+1 < lines_count) and (chr (lines [line_idx+1][0]) = ' ' or chr (lines [line_idx+1][0]) = '\t'))
+        {
+          line := line || subseq (lines [line_idx+1], 1);
+          line_idx := line_idx + 1;
+        }
       if (line = '')
         goto next_line;
       if (regexp_match ('^([A-Za-z0-9-]+[.])?((BEGIN)|(begin)):([A-Z]+)\044', line) is not null)
@@ -1649,7 +1654,7 @@ create function IMC_TO_XML (in _src varchar)
       xte_nodebld_init (line_acc);
       delims := regexp_parse (
 --2                3 4             56                                                                                                                                               78   90            1
-'^([A-Za-z0-9-]+[.])?([A-Za-z0-9-]+)(([;][A-Za-z0-9-]+(=(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*"))(,(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*")))*)?)*)([:])([\040-\377]*)\044',
+'^([A-Za-z0-9-]+[.])?([A-Za-z0-9-]+)(([;][A-Za-z0-9-]+(=(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*"))(,(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*")))*)?)*)([:])([\011\040-\377]*)\044',
 --(group        [.])?name           ((param-name      (=(plain-param-value           |quoted_param_value         )(,(plain-param-value           |quoted_param_value         ))*)?)*) [:]  value
             line, 0 );
           if (delims is null)

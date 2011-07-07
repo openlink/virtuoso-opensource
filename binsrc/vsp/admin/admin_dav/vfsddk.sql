@@ -37,8 +37,10 @@ create table WS.WS.VFS_URL (
     VU_ETAG	varchar,
     VU_CPTIME	datetime,
     VU_OTHER	varchar,
+    VU_RES_ID   int,
     primary key (VU_HOST, VU_URL, VU_ROOT))
 create index VU_HOST_ROOT on WS.WS.VFS_URL (VU_HOST, VU_ROOT)
+create index VFS_URL_RES_ID on WS.WS.VFS_URL (VU_RES_ID)    
 ;
 
 
@@ -52,15 +54,18 @@ create table WS.WS.VFS_QUEUE (
     VQ_OTHER	varchar,
     VQ_ERROR	long varchar,
     VQ_LEVEL	int default 0,
+    VQ_VIA_SITEMAP int default 0,
+    VQ_DT	timestamp,
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
-create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS)
+create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS, VQ_URL)
 create index VQ_TS on WS.WS.VFS_QUEUE (VQ_TS)
 ;
 
 
 -- Site setting
 create table WS.WS.VFS_SITE (
+    VS_ID	integer identity,	
     VS_DESCR	varchar,
     VS_HOST 	varchar,
     VS_URL	varchar,
@@ -84,6 +89,16 @@ create table WS.WS.VFS_SITE (
     VS_EXTRACT_FN  varchar,
     VS_STORE_FN  varchar,
     VS_DEPTH	int default null,
+    VS_CONVERT_HTML	int default 1,
+    VS_XPATH    long varchar,
+    VS_BOT	int default 1,
+    VS_IS_SITEMAP int default 0,
+    VS_ACCEPT_RDF int default 0,
+    VS_THREADS  int default 1,
+    VS_ROBOTS long varchar default null,
+    VS_DELAY	float default 0,
+    VS_TIMEOUT	float default null,
+    VS_HEADERS  long varchar default null,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -154,5 +169,71 @@ alter table WS.WS.VFS_SITE add VS_INST_ID  int
 alter table WS.WS.VFS_SITE add VS_DEPTH int default null
 ;
 
+alter table WS.WS.VFS_SITE add VS_CONVERT_HTML int default 1
+;
+
+alter table WS.WS.VFS_SITE add VS_XPATH long varchar
+;
+
+alter table WS.WS.VFS_SITE add VS_BOT int default 1
+;
+
+alter table WS.WS.VFS_SITE add VS_IS_SITEMAP int default 0
+;
+
+alter table WS.WS.VFS_SITE add VS_ACCEPT_RDF int default 0
+;
+
+alter table WS.WS.VFS_SITE add VS_THREADS int default 1
+;
+
+alter table WS.WS.VFS_SITE add VS_ROBOTS long varchar default null
+;
+
+alter table WS.WS.VFS_SITE add VS_DELAY float default 0
+;
+
+alter table WS.WS.VFS_SITE add VS_TIMEOUT  float default null
+;
+
+alter table WS.WS.VFS_SITE add VS_HEADERS  long varchar default null
+;
+
+alter table WS.WS.VFS_SITE add VS_ID integer identity
+;
+
 alter table WS.WS.VFS_QUEUE add VQ_LEVEL int default 0
+;
+
+alter table WS.WS.VFS_QUEUE add VQ_VIA_SITEMAP int default 0
+;
+
+alter table WS.WS.VFS_QUEUE add VQ_DT timestamp
+;
+
+alter table WS.WS.VFS_URL add VU_RES_ID int
+;
+
+create procedure WS.WS.VFS_UPGRADE ()
+{
+  declare inx int;
+  declare arr any;
+  if (not exists (select 1 from WS.WS.VFS_SITE where VS_ID is null))
+    return;
+  inx := 1;
+  arr := (select DB.DBA.VECTOR_AGG (vector (VS_HOST, VS_ROOT)) from WS.WS.VFS_SITE);
+  foreach (any x in arr) do
+    {
+      declare host, root varchar;
+      host := x[0];
+      root := x[1];
+      update WS.WS.VFS_SITE set VS_ID = inx where VS_HOST = host and VS_ROOT = root;
+      inx := inx + 1;
+    }
+  DB.DBA.SET_IDENTITY_COLUMN ('WS.WS.VFS_SITE', 'VS_ID', inx);
+}
+;
+
+--!AFTER
+WS.WS.VFS_UPGRADE ()
 ;

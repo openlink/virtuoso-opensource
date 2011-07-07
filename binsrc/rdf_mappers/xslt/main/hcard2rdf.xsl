@@ -34,6 +34,7 @@
 
 <xsl:preserve-space elements="*"/>
 <xsl:param name="baseUri" />
+<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -49,7 +50,7 @@
   </xsl:variable>
 
   <xsl:if test="$vcard != 0">
-    <rdf:Description rdf:about="{$baseUri}">
+    <rdf:Description rdf:about="{$docproxyIRI}">
       <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcard')}"/>
     </rdf:Description>
     <v:VCard rdf:about="{vi:proxyIRI ($baseUri, '', 'hcard')}">
@@ -559,16 +560,19 @@
     <xsl:when test="$token = 'home' or $token = 'personal'">
       <v:homeAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
+	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
       </v:homeAdr>
     </xsl:when>
     <xsl:when test="$token = 'work' or $token = 'office'">
       <v:workAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
+	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
       </v:workAdr>
     </xsl:when>
     <xsl:otherwise>
       <v:adr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
+	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
       </v:adr>
     </xsl:otherwise>
   </xsl:choose>

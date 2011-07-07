@@ -38,9 +38,8 @@
 <!ENTITY gml "http://www.opengis.net/gml">
 <!ENTITY georss "http://www.georss.org/georss">
 <!ENTITY gphoto "http://schemas.google.com/photos/2007">
-<!ENTITY d "http://schemas.microsoft.com/ado/2007/08/dataservices">
-<!ENTITY m "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
 ]>
+
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -51,7 +50,7 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
@@ -66,8 +65,6 @@
   xmlns:gphoto="http://schemas.google.com/photos/2007"
   xmlns:ff="&ff;"
   xmlns:foaf="&foaf;"
-  xmlns:d="&d;"
-  xmlns:m="&m;"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -87,7 +84,6 @@
 
 <xsl:template match="a:feed">
     <channel rdf:about="{a:link[@rel='self']/@href}">
-      <link><xsl:value-of select="a:link[@rel='self']/@href"/></link>
 		<xsl:apply-templates/>
 		<items>
 			<rdf:Seq>
@@ -95,6 +91,7 @@
 			</rdf:Seq>
 		</items>
     </channel>
+        <xsl:apply-templates select="a:entry" mode="rdfitem" />
 	<rdf:Description rdf:about="{a:link[@rel='self']/@href}">
 		<rdf:type rdf:resource="&sioc;Thread"/>
 		<dc:description>
@@ -105,7 +102,6 @@
 				<sioc:has_reply rdf:resource="{@href}" />
 		</xsl:for-each>
     </rdf:Description>
-    <xsl:apply-templates select="a:entry" mode="rdfitem" />
 </xsl:template>
 
 
@@ -114,13 +110,16 @@
 </xsl:template>
 
 <xsl:template match="a:content">
-  <dc:description><xsl:call-template name="removeTags" /></dc:description>
-  <description><xsl:value-of select="." /></description>
-  <xsl:copy-of select="m:properties" />
+      <dc:description>
+        <xsl:call-template name="removeTags" />
+      </dc:description>
+      <description>
+        <xsl:value-of select="." />
+      </description>
 </xsl:template>
 
 <xsl:template match="a:published">
-    <dc:date><xsl:value-of select="."/></dc:date>
+        <dcterms:created><xsl:value-of select="."/></dcterms:created>
 </xsl:template>
 
 <xsl:template match="a:link[@href]">
@@ -134,10 +133,14 @@
 
 <xsl:template match="a:entry" mode="li">
   <xsl:choose>
+        <xsl:when test="starts-with(a:id, 'http://') or starts-with(a:id, 'https://')">
+		  <xsl:variable name="id2" select="vi:replace1(a:id)" />
+          <rdf:li rdf:resource="{$id2}" />
+        </xsl:when>
     <xsl:when test="a:link[@rel='alternate']">
 	<rdf:li rdf:resource="{a:link[@rel='alternate']/@href}" />
     </xsl:when>
-    <xsl:when test="a:link[@rel='http://schemas.microsoft.com/ado/2007/08/dataservices/related/Title']">
+        <xsl:when test="a:link[@rel='edit']">
 	<rdf:li rdf:resource="{a:link[@rel='edit']/@href}" />
     </xsl:when>
     <xsl:otherwise>
@@ -149,6 +152,26 @@
 </xsl:template>
 
 <xsl:template match="a:entry" mode="rdfitem">
+      <xsl:choose>
+        <xsl:when test="starts-with(a:id, 'http://')">
+		  <xsl:variable name="id2" select="vi:replace1(a:id)" />
+          <item rdf:about="{$id2}">
+            <xsl:apply-templates/>
+            <xsl:if test="a:category[@term]">
+              <xsl:for-each select="a:category[@term]">
+                <sioc:topic>
+                  <skos:Concept rdf:about="{concat (vi:replace1(/a:feed/a:id), '#', @term)}">
+                    <skos:prefLabel>
+                      <xsl:value-of select="@term"/>
+                    </skos:prefLabel>
+                  </skos:Concept>
+                </sioc:topic>
+              </xsl:for-each>
+            </xsl:if>
+            <xsl:apply-templates select="g:*|gd:*|ff:*|media:*|gml:*|georss:*|gphoto:*" mode="rdfitem"/>
+          </item>
+        </xsl:when>
+        <xsl:otherwise>
 	<xsl:if test="a:link[@rel='reply']">
 		<rdf:Description rdf:about="{a:link[@rel='reply']/@href}">
 			<xsl:apply-templates/>
@@ -163,13 +186,17 @@
 			<xsl:for-each select="a:category[@term]">
 			<sioc:topic>
 				<skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
-				<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
+                    <skos:prefLabel>
+                      <xsl:value-of select="@term"/>
+                    </skos:prefLabel>
 				</skos:Concept>
 			</sioc:topic>
 			</xsl:for-each>
 		</xsl:if>
 		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*|gml:*|georss:*|gphoto:*" mode="rdfitem"/>
     </item>
+        </xsl:otherwise>
+      </xsl:choose>
 </xsl:template>
 
 <xsl:template match="g:*|gd:*" mode="rdfitem">
@@ -178,7 +205,7 @@
     </xsl:element>
 </xsl:template>
 
-<xsl:template match="ff:*|media:*|gml:*|georss:*|gphoto:*|m:*|d:*" mode="rdfitem">
+    <xsl:template match="ff:*|media:*|gml:*|georss:*|gphoto:*" mode="rdfitem">
 	<xsl:copy-of select="." />
 </xsl:template>
 

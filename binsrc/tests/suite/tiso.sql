@@ -26,7 +26,8 @@ echo both "Transaction Isolation Tests\n";
 
 drop table rc_test;
 create table rc_test (id int not null primary key, ctr int default 1, d varchar)
-create index v on rc_test (d);
+alter index rc_test on rc_test partition (id int)
+create index v on rc_test (d) partition (d varchar);
 
 create procedure rct_c (in num int, in sp int)
 {

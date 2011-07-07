@@ -98,32 +98,26 @@ create procedure INS1_ERR (in q int, in w int)
 
 taq1err (1);
 
-create procedure TAQ_OVER_SRV (in q int)
+
+create procedure fi (in i int)
 {
-  delay (0.1);
-  if (q) 
-    signal ('AQTST', 'aq test error');
+  if (i < 2) return i;
+  else return fi (i - 1) + fi (i - 2);
 }
 
-create procedure taq_over (in n int, in make_error int)
+
+create procedure FIAQ (in i int)
 {
-  declare i int;
-  declare aq any;
-  aq := async_queue (100);
-  for (i := 0; i < n; i := i + 1)
-	aq_request (aq, 'DB.DBA.TAQ_OVER_SRV', vector (make_error));
-  aq_wait_all (aq);
+  if (i < 20)
+  return fi (i);
+  declare aq, n1, n2 any;
+  aq := async_queue (2, 1);
+  n1 := aq_request (aq, 'DB.DBA.FIAQ', vector (i - 1));
+  n2 := aq_request (aq, 'DB.DBA.FIAQ', vector (i - 2));
+  return aq_wait (aq, n1, 1) + aq_wait (aq, n2, 1);
 }
 
-taq_over (150, 0);
-taq_over (3, 0);
-
-taq_over (3, 1);
-echo both $if $equ $sqlstate AQTST "PASSED" "***FAILED";
-echo both ": aq signalled error via wait all 1\n";
-
-taq_over (150, 1);
-echo both $if $equ $sqlstate AQTST "PASSED" "***FAILED";
-echo both ": aq signalled error via wait all 2\n";
-
+select fiaq (29);
+echo both $if $equ $last[1] 514229 "PASSED" "***FAILED";
+echo both ": aq fi\n";
 

@@ -32,6 +32,7 @@ echo BOTH "STARTED: SQLO Remote test (sqlovdb.sql) PORT=" $U{PORT} " LOCALPORT="
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
+update t1 set fi2 = 1111;
 delete from R1..T1;
 insert into R1..T1 select * from T1;
 
@@ -360,9 +361,9 @@ create procedure test_vdb_pars1(in n integer)
 };
 
 explain ('select * from R1..PUPD_TEST');
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Select from remote pass-through\n";
+--ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": Select from remote pass-through\n";
 
 explain ('update R1..PUPD_TEST set ID = ID + ? where DATA = ?');
 ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
@@ -684,11 +685,19 @@ select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (selec
 echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
 echo both ": vdb hash join with filter with hash filler with hashed exists\n";
 
-
-select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop);
+select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop, loop exists);
 echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
 echo both ": ibid verify with loop\n";
 
+select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop, do not loop exists);
+echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
+echo both ": ibid verify with loop\n";
+
+
+
+select top 101 a.row_no , (select b.row_no from r1..t1 b where  b.row_no between case when 0 = mod (a.row_no, 5) then cast (a.row_no - 1 as varchar) else a.row_no - 1 end  and a.row_no + 1) from t1 a order by 1;
+--echo both $if $equ $last[2] 199 "PASSED" "***FAILED";
+--echo both ": vdb array params with changing types\n";
 
 select fi2, ct from (select fi2, count (*) as ct from r1..t1 group by fi2) xx where ct = (select max (ct2) from (select fi2, count (*) as ct2 from r1..t1 group by fi2) qq);
 echo both $if $equ $last[2] 1000 "PASSED" "***FAILED";

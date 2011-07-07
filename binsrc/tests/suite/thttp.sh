@@ -20,10 +20,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-
-. ./test_fn.sh
-
+# 
 DSN=$PORT
+. ./test_fn.sh
 
 #PARAMETERS FOR HTTP TEST
 USERS=6
@@ -35,6 +34,7 @@ HTTPPORT1=`expr $HTTPPORT + 1`
 HTTPPORT2=`expr $HTTPPORT + 2`
 #SERVER=M2		# OVERRIDE
 BLOG_TEST=1
+SYNCML_TEST=1
 
 
 #PAGES FOR HTTP/1.0
@@ -65,7 +65,6 @@ export PLUGINDIR
 
 SSL=`cat $HOME/Makeconfig | grep BUILD_OPTS | grep ssl`
 
-DSN=$PORT
 #URI files 
 GenURI10 () 
 {
@@ -642,7 +641,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 10
+       sleep 1
        clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
@@ -800,8 +799,8 @@ case $1 in
      BLOG_TEST=0  
      LOG "ODS & Blog2 VAD packages are not built"
    fi
-   START_SERVER $DSN 1000
-   sleep 4
+   START_SERVER $PORT 1000
+   sleep 1
    if [ $BLOG_TEST -eq 1 ]
    then
        DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
@@ -809,7 +808,7 @@ case $1 in
        DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0);" 
        DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0);" 
    fi
-   if [ -f $PLUGINDIR/wbxml2.so ]
+   if [ -f $PLUGINDIR/wbxml2.so -a $SYNCML_TEST -eq 1 ]
    then
        DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0);"
    fi
@@ -893,12 +892,13 @@ then
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapudt.sql
-   if test $STATUS -ne 0
-   then
-      LOG "***ABORTED: tsoapudt.sql"
-      exit 1
-   fi
+# XXX: VJ   
+#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapudt.sql
+#   if test $STATUS -ne 0
+#   then
+#      LOG "***ABORTED: tsoapudt.sql"
+#      exit 1
+#   fi
 
    ECHO "Started: Testing new SOAP client"
 

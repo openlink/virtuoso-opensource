@@ -66,6 +66,7 @@ public class VirtuosoRepository implements Repository {
 	boolean useLazyAdd = false;
 	String defGraph;
 	int prefetchSize = 200;
+	int queryTimeout = 0;
 	String ruleSet;
 	
 	/**
@@ -265,6 +266,23 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
+	 * Set the query timeout(default 0) 
+	 * 
+	 * @param seconds
+	 *        queryTimeout seconds, 0 - unlimited.
+	 */
+	public void setQueryTimeout(int seconds) {
+		this.queryTimeout = seconds;
+	}
+
+	/**
+	 * Get the query timeout seconds
+	 */
+	public int getQueryTimeout() {
+		return this.queryTimeout;
+	}
+
+	/**
 	 * Set the RoundRobin state for connection(default false) 
 	 * 
 	 * @param sz
@@ -371,5 +389,19 @@ public class VirtuosoRepository implements Repository {
 	public void setResultsHandlerType(int handlerType) {
 		this.resultsHandlerType = handlerType;
 	}
+
+        public void createRuleSet(String ruleSetName, String uriGraphRuleSet) throws RepositoryException
+        {
+          java.sql.Connection con = ((VirtuosoRepositoryConnection)getConnection()).getQuadStoreConnection();
+
+          try {
+	    java.sql.Statement st = con.createStatement();
+	    st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"')");
+	    st.close();
+          } catch (Exception e) {
+            throw new RepositoryException(e);
+          }
+        }
+
 
 }

@@ -1,5 +1,5 @@
-sparql clear graph <gr>;
-sparql clear graph <sc>;
+
+sparql clear graph 'inft';
 
 
 ttlp ('
@@ -10,6 +10,26 @@ ttlp ('
 <ic2> <p1> <ic2p1>.
 <ic3> <p1> <ic3p1> .
 <ic1> <cl2> <c2> .
+<subj11-l1> <pd11> <subj11-r1> .
+<subj11-r2> <pi11> <subj11-l2> .
+<subj11-r3> <pi12> <subj11-l3> .
+<subj22-1> <pd22> <subj22-2> .
+<subj-t1-1> <pt1> <subj-t1-11> .
+<subj-t1-1> <pt1> <subj-t1-12> .
+<subj-t1-11> <pt1> <subj-t1-111> .
+<subj-t1-11> <pt1> <subj-t1-112> .
+<subj-t1-12> <pt1> <subj-t1-121> .
+<subj-t1-12> <pt1> <subj-t1-122> .
+<subj-t1-111> <pt1> <subj-t1-1111> .
+<subj-t1-111> <pt1> <subj-t1-1121> .
+<subj-t1-121> <pt1> <subj-t1-1211> .
+<subj-t1-121> <pt1> <subj-t1-1221> .
+<subj-dt1-1> <pdt1> <subj-dt1-11> .
+<subj-dt1-1> <pdt1> <subj-dt1-12> .
+<subj-dt1-11> <pdt1> <subj-dt1-111> .
+<subj-dt1-11> <pdt1> <subj-dt1-112> .
+<subj-dt1-12> <pdt1> <subj-dt1-121> .
+<subj-dt1-12> <pdt1> <subj-dt1-122> .
 ', '', 'inft');
 
 ttlp ('
@@ -21,21 +41,50 @@ ttlp ('
 
 
 ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
 <c2> rdfs:subClassOf <c1> .
   <c3> rdfs:subClassOf <c2> .
   <c5> rdfs:subClassOf <c4> .
 <p1> rdfs:subPropertyOf <p0> .
+<pi11> owl:inverseOf <pd11> .
+<pi12> owl:inverseOf <pd11> .
+<pd11> owl:inverseOf <pi11> .
+<pd22> a owl:SymmetricProperty .
+<pdt1> a owl:SymmetricProperty, owl:TransitiveProperty .
+<pt1> a owl:TransitiveProperty .
 ', '', 'sc');
 
 create procedure f (in q any) {return q;};
 
 rdfs_rule_set ('inft', 'sc');
 
+sparql define input:inference 'inft' select * from <inft> where { ?s <pd11> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": 3 rows with pd11 and 2 inverses, pi11 and pi12\n";
 
+sparql define input:inference 'inft' select * from <inft> where { ?s <pi11> ?o };
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": 2 rows with pi11 and 1 inverse, pd11\n";
+
+sparql define input:inference 'inft' select * from <inft> where { ?s <pi12> ?o };
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": 2 rows with pi12 and 1 inverse, pd11\n";
+
+sparql define input:inference 'inft' select * from <inft> where { ?s <pd22> ?o };
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": 2 rows with symmetric pd22\n";
+
+sparql define input:inference 'inft' select * from <inft> where { ?s  <pt1> ?o . filter (?s = <subj-t1-11>) };
+echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
+echo both ": 4 rows with unidirectional transitive pt1\n";
+
+sparql define input:inference 'inft' select * from <inft> where { ?s  <pdt1> ?o option (T_DISTINCT) . filter (?s = <subj-dt1-11>) };
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows with symmetric transitive pdt1\n";
 
 select id_to_iri (s) from rdf_quad table option (with 'inft') where g = iri_to_id ('inft',0) and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0) and o = iri_to_id ('c1', 0);
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": 3 inst of c1 with const\n";
+echo both ":  3 inst of c1 without f \n";
 
 select id_to_iri (s) from rdf_quad table option (with 'inft') where g = iri_to_id ('inft',0) and p = f (iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)) and o = f (iri_to_id ('c1', 0));
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
@@ -43,8 +92,8 @@ echo both ":  3 inst of c1 with f \n";
 
 
 select id_to_iri (s), id_to_iri (p), id_to_iri (o) from rdf_quad table option (with 'inft') where g = iri_to_id ('inft', 0);
-echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
-echo both ": 13 triples in g inft\n";
+echo both $if $equ $rowcnt 33 "PASSED" "***FAILED";
+echo both ": 33 triples in g inft\n";
 
 
 
@@ -88,7 +137,7 @@ echo both ": inf oj rowcnt\n";
 --- Complete combinations
 --- fs fp fo
 select id_to_iri (s), id_to_iri (p), id_to_iri (o)  from rdf_quad table option (with 'inft') where g = iri_to_id ('inft', 0);
-echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
+echo both $if $equ $rowcnt 33 "PASSED" "***FAILED";
 echo both ": fs fp fp \n";
 
 select id_to_iri (s), id_to_iri (p), id_to_iri (o)  from rdf_quad table option (with 'inft') where g = iri_to_id ('inft', 0) and o = iri_to_id ('c1', 0);
@@ -155,7 +204,7 @@ sparql define input:inference 'inft' select ?p count (?o) from <inft> where {?s 
 
 sparql define input:inference 'inft' select count (?p) count (?o) count (distinct ?o)  from <inft> where {?s ?p ?o};
 
-select count distinct ?s ?p ?o from <g> where {?s ?p ?o}
+sparql select count distinct ?s ?p ?o from <g> where {?s ?p ?o};
 
 
 sparql define input:inference 'inft' select ?s ?p count  (?o) from <inft> from <extra> where {?s ?p ?o};
@@ -215,51 +264,86 @@ echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for super property\n";
 
 sparql define input:inference 'sas-p' define input:same-as "yes"
-select * from <sas-p> where { ?s <p1> ?o };
+select distinct * from <sas-p> where { ?s <p1> ?o };
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for property\n";
 
 sparql define input:inference 'sas-p' define input:same-as "yes"
-select * from <sas-p> where { ?s <sas-p1> ?o };
+select distinct * from <sas-p> where { ?s <sas-p1> ?o };
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for sameAs property\n";
 
-sparql clear graph <gr>;
-sparql clear graph <sc>;
 
-ttlp ('
-<ic1> a <c1> .
-<ic2> a <c2> .
-<ic3> a <c3> .
-<ic1> <p1> <ic1p1> .
-<ic2> <p1> <ic2p1>.
-<ic3> <p1> <ic3p1> .
-<ic1> <cl2> <c2> .
-', '', 'gr');
+create procedure s_list (in ctx varchare, in iri varchar, in axis int)
+{
+  declare inx, a any;
+  a := rdf_super_sub_list (ctx, iri_to_id (iri), axis);
+  result_names 	(iri);
+  for (inx := 0;	 inx < length (a); inx := inx + 1)
+    result (id_to_iri (a[inx]));
+}
 
+sparql clear <g1>;
+sparql clear <g2>;
+sparql clear <g3>;
+sparql insert data in <g1> { <s1> <p> 1; <q> 10 . };                                                           
+sparql insert data in <g2> { <s2> <p> 2; <q> 20 . };
+sparql insert data in <g3> { <s3> <p> 3; <q> 30 . };
 
-ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-<c2> rdfs:subClassOf <c1> .
-<c2> owl:equivalentClass <c5> .
-<c3> rdfs:subClassOf <c2> .
-<c5> rdfs:subClassOf <c4> .
-<p1> rdfs:subPropertyOf <p0> .
-<p0> owl:equivalentProperty <p2> .
-', '', 'sc');
-
-rdfs_rule_set ('inft', 'sc');
-
-sparql define input:inference "inft" select ?s from <gr> where { ?s a <c4> . };
+sparql select * where { graph ?g { ?s ?p ?o . filter (?g = <g3>) }};
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-echo both ": " $rowcnt " subjects belongs to c4 via equivalent class\n";
+echo both ": 2 rows filter (?g = <g3>) \n";
 
-sparql define input:inference "inft" select ?s ?o from <gr> where { ?s a <c2> . ?s <p2> ?o };
+sparql select * where { graph ?g { ?s <p> ?o . filter (?g = <g1>) }};
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both ": 1 row { ?s <p> ?o . filter (?g = <g1>) } \n";
+
+sparql select * where { graph ?g { ?s <p> ?o . filter (?g in (<g1>, <g2>, <g3>)) }};
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": 3 rows ?s <p> ?o . filter (?g in (<g1>, <g2>, <g3>)) \n";
+
+explain('sparql select * where { graph ?g { ?s ?p ?o . filter (?s in (<s1>, <s2>, <s3>)) }}');
+explain('sparql select * where { graph ?g { ?s ?p ?o . filter (?g in (<g1>, <g2>, <g3>)) }}');
+
+sparql select * where { graph ?g { ?s ?p ?o . filter (?s in (<s1>, <s2>, <s3>)) }};
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows ?s in (<s1>, <s2>, <s3>) \n";
+
+sparql select * where { graph ?g { ?s ?p ?o . filter (?g in (<g1>, <g2>, <g3>)) }};
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows ?g in (<g1>, <g2>, <g3>) \n";
+
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where g in ( __i2id ( UNAME'g3' ) , __i2id ( UNAME'g2' ) , __i2id ( UNAME'g1' ));
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows g in (g1, g2, g3) by PK \n";
+
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where s in ( __i2id ( UNAME's3' ) , __i2id ( UNAME's2' ) , __i2id ( UNAME's1' ));
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows s in (s1, s2, s3) by PK\n";
+
+
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME'g3' ) , __i2id ( UNAME'g2' ) , __i2id ( UNAME'g1' ));
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows g in (g1, g2, g3) by GS\n";
+
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_SP) where s in ( __i2id ( UNAME's3' ) , __i2id ( UNAME's2' ) , __i2id ( UNAME's1' ));
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows s in (s1, s2, s3) by SP\n";
+
+explain('sparql select * where { graph ?g { ?s ?p ?o . filter (?o in (10,20,30)) }}');
+sparql select * where { graph ?g { ?s ?p ?o . filter (?o in (10,20,30)) }};
+explain ('select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where o in (10,20,30)');
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_OP) where o in (10,20,30);
+
+explain ('delete from rdf_quad table option (index RDF_QUAD) where g in ( __i2id ( UNAME\'g3\' ) , __i2id ( UNAME\'g2\' ) , __i2id ( UNAME\'g1\' ))');
+explain ('delete from rdf_quad table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME\'g3\' ) , __i2id ( UNAME\'g2\' ) , __i2id ( UNAME\'g1\' ))');
+delete from rdf_quad table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME'g3' ) , __i2id ( UNAME'g2' ) );
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where s in ( __i2id ( UNAME's3' ) , __i2id ( UNAME's2' ) , __i2id ( UNAME's1' ));
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-echo both ": " $rowcnt " triples with equivalent property p2\n";
+echo both ": 2 rows s in (s1, s2, s3) by PK\n";
 
-exec (sprintf ('sparql ask where { graph <http://he.wikipedia.org/wiki/%U> { <http://he.wikipedia.org/wiki/%U> ?p ?o }}',
-      repeat ('G', 4000), repeat ('G', 4000)));
-echo both $if $equ $state OK  "PASSED" "***FAILED";
-echo both " sparql query with long IRI.\n";
+
+select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME'g3' ) , __i2id ( UNAME'g2' ) , __i2id ( UNAME'g1' ));
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": 2 rows g in (g1, g2, g3) by GS\n";
 

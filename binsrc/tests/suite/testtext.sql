@@ -28,7 +28,8 @@ ECHO BOTH "STARTED: freetext tests for table " $U{table} " ID type " $U{idtype} 
 
 drop table $U{table};
 
-create table $U{table} (ID $U{idtype} not null $U{pk}, DATA long varchar);
+create table $U{table} (ID $U{idtype} not null $U{pk}, DATA long varchar)
+alter index $U{table} on $U{table} partition (ID $U{idtype});
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": creating freetext table " $U{table} " with ID type " $U{idtype} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -73,11 +74,11 @@ select DMLTYPE, VT_GZ_WORDUMP from VTLOG_DB_DBA_$U{table};
 ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "*** FAILED";
 ECHO BOTH ": freetext update log VTLOG_DB_DBA_" $U{table} " empty\n";
 
-select VT_WORD from $U{table}_DATA_WORDS;
+select distinct VT_WORD from $U{table}_DATA_WORDS;
 ECHO BOTH $IF $EQU $ROWCNT 171 "PASSED" "*** FAILED";
 ECHO BOTH ": " $ROWCNT " rows in " $U{table} "_DATA_WORDS table\n";
 
-select VT_WORD from $U{table}_DATA_WORDS where length(VT_WORD) > 1;
+select distinct VT_WORD from $U{table}_DATA_WORDS where length(VT_WORD) > 1;
 ECHO BOTH $IF $EQU $ROWCNT 169 "PASSED" "*** FAILED";
 ECHO BOTH ": " $ROWCNT " words that are longer than 1 char in " $U{table} "_DATA_WORDS table\n";
 

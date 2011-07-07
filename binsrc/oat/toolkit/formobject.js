@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -300,7 +300,7 @@ OAT.FormObject = {
 					dsObj.push(o);
 					if (o.name == "tab") for (var j=0;j<o.objects.length;j++) { /* for all tabs */
 						for (var k=0;k<o.objects[j].length;k++) {
-							if (dsObj.find(o.objects[j][k]) == -1) { dsObj.push(o.objects[j][k]); }
+							if (dsObj.indexOf(o.objects[j][k]) == -1) { dsObj.push(o.objects[j][k]); }
 						} /* for all tabs */
 					} /* if is tab */
 				} /* if descendant */
@@ -310,7 +310,7 @@ OAT.FormObject = {
 				for (var j=0;j<o.datasources.length;j++) {
 					if (o.datasources[j].fieldSets[0].realIndexes[0] != -1) {
 						var ds = o.datasources[j].ds;
-						var index = dsArr.find(ds);
+						var index = dsArr.indexOf(ds);
 						if (index == -1) { dsArr.push(ds); }
 					} /* if ds is used */
 				} /* for all datasources */
@@ -331,7 +331,7 @@ OAT.FormObject = {
 			var h = e.offsetHeight;
 			var z = e.style.zIndex;
 			/* element */
-			xml += '\t<object type="'+fo.name+'" parent="'+designer.objects.find(fo.parentContainer)+'" ';
+			xml += '\t<object type="'+fo.name+'" parent="'+designer.objects.indexOf(fo.parentContainer)+'" ';
 			if (fo.hidden == "1") { xml += 'hidden="1" '; }
 			xml += 'empty="'+fo.empty+'" ';
 			xml += 'value="'+fo.getValue()+'">\n';
@@ -353,7 +353,7 @@ OAT.FormObject = {
 					xml += '\t\t<tab_page>\n';
 						for (var j=0;j<fo.objects[i].length;j++) {
 							var to = fo.objects[i][j];
-							xml += '\t\t\t<tab_object>'+designer.objects.find(to)+'</tab_object>\n';
+							xml += '\t\t\t<tab_object>'+designer.objects.indexOf(to)+'</tab_object>\n';
 						}
 					xml += '\t\t</tab_page>\n';
 				}
@@ -366,8 +366,8 @@ OAT.FormObject = {
 				xml += '\t\t\t\t<name>'+p.name+'</name>\n';
 				var val = p.value;
 				// not needed anymore
-				// if (p.type == "datasource") { val = designer.datasources.find(val); }
-				if (p.type == "container") { val = designer.objects.find(val); }
+				// if (p.type == "datasource") { val = designer.datasources.indexOf(val); }
+				if (p.type == "container") { val = designer.objects.indexOf(val); }
 				if (p.variable) { val = val.join(","); }
 				xml += '\t\t\t\t<value>'+val+'</value>\n';
 				xml += '\t\t\t\t<type>'+p.type+'</type>\n';
@@ -378,7 +378,7 @@ OAT.FormObject = {
 			xml += '\t\t<datasources>\n';
 			for (var i=0;i<fo.datasources.length;i++) {
 				var ds = fo.datasources[i];
-				xml += '\t\t\t<datasource index="'+designer.datasources.find(ds.ds)+'">\n';
+				xml += '\t\t\t<datasource index="'+designer.datasources.indexOf(ds.ds)+'">\n';
 				for (var j=0;j<ds.fieldSets.length;j++) {
 					var fs = ds.fieldSets[j];
 					xml += '\t\t\t\t<fieldset name="'+fs.name+'" variable="'+(fs.variable ? 1 : 0)+'">\n';
@@ -637,7 +637,7 @@ OAT.FormObject = {
 		self.remove = function(obj,x,y) {
 			var elm = obj.elm;
 			elm.__originalParent.appendChild(elm);
-			var i = self.objects[self.tab.selectedIndex].find(obj);
+			var i = self.objects[self.tab.selectedIndex].indexOf(obj);
 			self.objects[self.tab.selectedIndex].splice(i,1);
 			elm.style.left = x+"px";
 			elm.style.top = y+"px";
@@ -1389,6 +1389,20 @@ OAT.FormObject = {
 		OAT.FormObject.abstractParent(self,x,y);
 	},
 
+	decodeImage:function(data) {
+		var decoded = OAT.Crypto.base64d(data);
+		var mime = "image/";
+		switch (decoded.charAt(1)) {
+			case "I": mime += "gif"; break;
+			case "P": mime += "png"; break;
+			case "M": mime += "bmp"; break;
+			default: mime += "jpeg"; break;
+			
+		}
+		var src="data:"+mime+";base64,"+data;
+		return src;
+	},
+	
 	image:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -1424,7 +1438,7 @@ OAT.FormObject = {
 				return;
 			}
 			if (OAT.Browser.isIE) { return; } /* IE doesn't support data: URLs */
-			self.elm.src = OAT.Dom.decodeImage(value);
+			self.elm.src = OAT.FormObject.decodeImage(value);
 		}
 		self.bindRecordCallback = function(dataRow,currentIndex) {
 			if (!dataRow) { return; }

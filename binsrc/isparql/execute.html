@@ -26,25 +26,30 @@
 <head>
 
   <script type="text/javascript">
-window.YMAPPID = 'yahoo-id';
-var featureList=["ajax","json","dimmer","grid","anchor","resize","xml","tab","sparql","rdfstore","rdfmini","map","ghostdrag"];
+var featureList=["ajax","json","dimmer","grid","anchor","resize","xml","tab",
+                 "sparql","rdfstore","rdfmini","map","ghostdrag"];
+
+function locCancelH() {
+  
+}
+
 function init() {
-  var startRef = function() {
-    OAT.Dom.show("throbber");
-    OAT.Dom.hide("result");
-  }
 
-  var endRef = function() {
-    OAT.Dom.hide("throbber");
-    OAT.Dom.show("result");
-  }
-
+  OAT.Dom.hide("result");
   OAT.Event.attach("throbber","click",OAT.AJAX.cancelAll);
   OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 
   var qe = new QueryExec({div:"result"});
+  OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result") });
 
   iSPARQL.Defaults.init();
+
+  for (i in iSPARQL.Defaults)
+    iSPARQL.Settings[i] = iSPARQL.Defaults[i];
+
+  iSPARQL.Defaults.handlePageParams();
+
+  iSPARQL.StatusUI.init();
 
   var opts = OAT.Dom.uriParams();
 
@@ -58,17 +63,26 @@ function init() {
     f.appendChild(a);
   }
 
-  OAT.Dom.hide("throbber");
+  var lc = [];
 
-  iSPARQL.locationCache = new iSPARQL.LocationCache (10, [], true);
+  if (qe.detectLocationMacros(iSPARQL.Settings.query)) {
+    iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
 
-  if (qe.detectLocationMacros(iSPARQL.Defaults.query)) {
-    var loc = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
+    if (!iSPARQL.locationCache) {
+      if (!!localStorage && !!localStorage.iSPARQL_locationCache)
+	lc = localStorage.iSPARQL_locationCache;
+	iSPARQL.locationCache = new iSPARQL.LocationCache (10, lc, true);
+      }
+      var locUI = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
                                               cancelCB: false,
-					      cbParm: iSPARQL.Defaults,
+		                                  cbParm: iSPARQL.Settings,
 					      cache: iSPARQL.locationCache});
+      iSPARQL.StatusUI.hide();
+      locUI.refresh();
   } else {
-    qe.execute(iSPARQL.Defaults);
+      iSPARQL.StatusUI.statMsg ("Executing query&#8230;")
+      qe.execute(iSPARQL.Settings);
+      OAT.Dom.show('foot');
   }   
 }
   </script>
@@ -83,6 +97,8 @@ function init() {
   <meta name="viewport" content="width = device-width"/>
 
   <link rel="apple-touch-icon" href="/isparql/images/mob_home_icon.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-status-bar-style" content="black-translucent" />
 
   <link type="text/css" rel="stylesheet" href="/isparql/styles/execute.css"/>
   <link type="text/css" rel="stylesheet" href="/isparql/styles/dialog.css"/>
@@ -95,38 +111,87 @@ function init() {
 </head>
 
 <body>
-  <div id="file"></div><p></p>
-  <div id="throbber" style="text-align: center;">
-    <div id="expln">
-      <img style="margin: auto; cursor:pointer;" src="/isparql/toolkit/images/throbber.gif" />
+  <div id="file"></div>
+  <div id="splash">
+    <div id="splash_inner">
+      <div id="splash_hd">
+        <img src="images/openlinklogo_wstrap_2008_no_motto.png" alt="OpenLink Software"/>
+      </div>
+      <div class="msg" id="statMsgMain">iSPARQL Initialization</div>
+      <div class="msg" id="statMsgElem">Loading</div>
+	
+      <img src="/isparql/toolkit/images/throbber.gif" id="splashThrobber" style="display:none"/>
+
+      <noscript>
+        <img src="/isparql/images/stop_32.png" alt="error"/>
+        <div class="error statMsgError">
+          iSPARQL cannot work without JavaScript<br/>
+	  Either your browser has no JavaScript, or it is currently disabled.
     </div>
-  </div> <!-- throbber -->
+      </noscript>
+
+      <img src="/isparql/images/stop_32.png" alt="error" id="splashErrorImg" style="display:none"/>
+      <div class="error" id="statMsgErr"></div>
+      <div id="splash_ver"></div>
+      <div id="splash_copyr">Copyright &copy; 2006-2011 OpenLink Software</div>
+      <div id="splash_foot" class="opl_motto">Making Technology Work For You &trade;</div>
+    </div> <!-- #splash_inner -->
+  </div> <!-- #splash -->
 
   <div id="locAcquireUI" style="display:none">
     <div id="locAcquireUI_inner">
       <div id="locAcquireMsg">
-        <h3>Acquiring location <img id="locAcquireThrobber" src="/isparql/toolkit/images/throbber.gif"/></h3>
+        <div id="locAcquireTitleC">
+	  <h3 id="locAcquireTitleT">Locating</h3>
+          <img id="locAcquireThrobber" alt="throbber" src="/isparql/toolkit/images/throbber_small.gif"/>
+        </div>
         <table id="locAcquireCurrent">
-          <tr><th>Latitude</th><td id="locAcquireLatCtr">N/A</td></tr>
-          <tr><th>Longitude</th><td id="locAcquireLonCtr">N/A</td></tr>
-          <tr><th>Accuracy</th><td id="locAcquireAccCtr">N/A</td></tr>
+          <tr>
+            <td><label for="locAcquireManualLatInput">Latitude</label></td>
+            <td id="locAcquireLatCtr">
+	      <input type="text" 
+                     class="locAcquireForm" 
+                     id="locAcquireManualLatInput"/>
+            </td>
+          </tr>
+          <tr>
+	    <td><label for="locAcquireManualLonInput">Longitude</label></td>
+	    <td id="locAcquireLonCtr">
+	      <input type="text" 
+                     class="locAcquireForm" 
+                     id="locAcquireManualLonInput"/>
+            </td>
+          </tr>
+          <tr>
+            <td>Accuracy</td>
+            <td id="locAcquireAccCtr">N/A</td></tr>
         </table>
+      </div>
+      <div id="locAcquireGeocodeForm" style="display:none">
+        <label for="locAcquireAddrInput"></label>
+        <input type="text" class="locAcquireForm" id="locAcquireAddrInput"/>
       </div>
       <div id="locAcquireErrMsg"></div>
       <div id="locAcquireBtnCtr">
         <button id="locAcquireUseBtn">Use</button>
+	<button id="locAcquireGeocodeBtn">Enter Address</button>
+	<button id="locAcquireManualBtn">Manual</button>
         <button id="locAcquireRefreshBtn">Refresh</button>
         <button id="locAcquireCancelBtn">Cancel</button>
       </div>
     </div> 
   </div> <!-- locAcquireUI -->
-  <div id="result">
+  <div id="result"></div>
+  <div id="foot" style="display:none">
+    <div id="data_links" style="display:none">Raw Linked Data formats: 
+      <a id="cxml_raw_lnk">CXML</a>|<a id="csv_raw_lnk">CSV</a> |
+      RDF (<a id="nt_raw_lnk">N-Triples</a> <a id="n3_raw_lnk">N3/Turtle</a> <a id="json_raw_lnk">JSON</a> <a id="rdfxml_raw_lnk">XML</a>) |
+      ODATA (<a id="odata_atom_lnk">Atom</a> | <a id="odata_json_lnk">JSON</a>)
+    </div>
+    <div class="foot_r" id="foot_r">
+      Copyright &copy; 2006-2011 OpenLink Software<br/><span id="ft_loc"></span><br/>
   </div>
-  <p class="copyright">
-    Dynamic <a href="http://dbpedia.org/resource/linkeddata">Linked Data Page</a><br/>
-    <a href="http://www.openlinksw.com/virtuoso">
-      <img border="0" src="/isparql/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso Universal Server"/>
-    </a>
-  </p>
+    <div id="stats"></div> <!-- stats -->
+  </div> <!-- #foot -->
 </body>
 </html>

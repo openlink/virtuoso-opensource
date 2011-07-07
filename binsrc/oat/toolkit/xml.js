@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -26,14 +26,24 @@
 */
 
 OAT.Xml = {
+    _getImplementation: function () {
+	if (!!document.implementation) return document.implementation;
+	if (!!document.getImplementation) return document.getImplementation();
+	else 
+	    return false;
+    },
+
 	textValue:function(elem) {
 		/*
 			gecko: textContent
 			ie: text
 			safari: .nodeValue of first child
 		*/
+
 		if (!elem) { return; }
-		if (document.implementation && document.implementation.createDocument) {
+	if (window.ActiveXObject) {
+	    return elem.text;
+	} else if (OAT.Xml._getImplementation()) {
 			var result = elem.textContent;
 			/* safari hack */
 			if (typeof(result) == "undefined") {
@@ -41,8 +51,6 @@ OAT.Xml = {
 				return (result ? result.nodeValue : "");
 			}
 			return result;
-		} else if (window.ActiveXObject) {
-			return elem.text;
 		} else {
 		    alert("OAT.Xml.textValue:\nNo XML parser available");
 		    return false;
@@ -59,8 +67,9 @@ OAT.Xml = {
 	},
 
 	createXmlDoc:function(string) {
-		if (document.implementation && document.implementation.createDocument) {
-			if (!string) { return document.implementation.createDocument("","",null); }
+	var impl = OAT.Xml._getImplementation();
+	if (impl && !OAT.Browser.isIE) {
+	    if (!string) { return impl.createDocument("","",null); }
 			var parser = new DOMParser();
 			try {
 				var xml = parser.parseFromString(string, "text/xml");
@@ -73,7 +82,10 @@ OAT.Xml = {
 			if (!string) { return xml; }
 			xml.loadXML(string);
 			if (xml.parseError.errorCode) {
-			    alert('OAT.Xml.createXmlDoc:\nIE XML ERROR: '+xml.parseError.reason+' ('+xml.parseError.errorCode+')');
+		alert('OAT.Xml.createXmlDoc:\nIE XML ERROR: ' + 
+		      xml.parseError.reason + 
+		      ' (' + 
+		      xml.parseError.errorCode + ')');
 			    return false;
 			}
 			return xml;
@@ -99,7 +111,10 @@ OAT.Xml = {
 	},
 
     serializeXmlDoc:function(xmlDoc) {
-	if (document.implementation && document.implementation.createDocument) {
+	if (window.ActiveXObject) {
+	    var s = xmlDoc.xml;
+	    return s;
+	} else if (document.implementation && document.implementation.createDocument) {
 	    var ser = new XMLSerializer();
 	    try {
 		var s = ser.serializeToString(xmlDoc);
@@ -107,9 +122,6 @@ OAT.Xml = {
 	    } catch (e) {
 		return false;
 	    }
-	} else if (window.ActiveXObject) {
-	    var s = xmlDoc.xml;
-	    return s;
 	} else {
 	    alert("OAT.Xml.serializeXmlDoc:\nNo XML parser available");
 	    return false;
@@ -175,7 +187,9 @@ OAT.Xml = {
 	getLocalAttribute:function(elm,localName) {
 		var all = elm.attributes;
 		for (var i=0;i<elm.attributes.length;i++) {
-			if (elm.attributes[i].localName == localName || elm.attributes[i].baseName == localName) { return elm.attributes[i].nodeValue; }
+	    if (elm.attributes[i].localName == localName || elm.attributes[i].baseName == localName) { 
+		return elm.attributes[i].nodeValue; 
+	    }
 		}
 		return false;
 	},
@@ -192,6 +206,26 @@ OAT.Xml = {
 		return obj;
 	},
 
+    getLocalAttributeNodes:function (elm) {
+	var obj = {};
+	if (!elm) { return obj; }
+	for (var i=0;i<elm.attributes.length;i++) {
+	    var att = elm.attributes[i];
+	    var ln = att.localName;
+	    var key = ln ? ln : att.baseName;
+	    obj[key] = att;
+	}
+	return obj;
+    },
+
+    getNsURI:function (elm) {
+	return elm.namespaceURI;
+    },
+
+    getNsPrefix:function (elm) {
+	return elm.prefix;
+    },
+
 	xpath:function(xmlDoc,xpath,nsObject) {
 		var result = [];
 		function resolver(prefix) {
@@ -200,17 +234,17 @@ OAT.Xml = {
 			if (b in nsObject) { return nsObject[" "]; } /* default ns */
 			return ""; /* fallback; should not happen */
 		}
-		if (document.evaluate) {
+		if (window.ActiveXObject) {
+		    var tmp = xmlDoc.selectNodes(xpath);
+		    for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
+		    return result;
+		} else if (document.evaluate) {
 			var it = xmlDoc.evaluate(xpath,xmlDoc,resolver,XPathResult.ANY_TYPE,null);
 			var node;
 			while ((node = it.iterateNext())) {	result.push(node); }
 			return result;
-		} else if (window.ActiveXObject) {
-			var tmp = xmlDoc.selectNodes(xpath);
-			for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
-			return result;
 		} else {
-		        alert("OAT.Xml.textValue:\nNo XML parser available");
+	    alert("OAT.Xml.xpath:\nNo Xml Parser available");
 			return false;
 		}
 	},

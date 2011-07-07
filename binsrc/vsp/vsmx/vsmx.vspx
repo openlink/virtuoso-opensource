@@ -73,7 +73,7 @@
 	</table>
       </v:form>
       <div class="foot">
-	<span class="foot">Virtuoso Universal Server <?V sys_stat('st_dbms_ver')?> - Copyright&copy; 1998-2010 OpenLink Software.</span>
+	<span class="foot">Virtuoso Universal Server <?V sys_stat('st_dbms_ver')?> - Copyright&copy; 1998-2011 OpenLink Software.</span>
       </div>
     </body>
   </html>

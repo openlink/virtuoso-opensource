@@ -37,6 +37,9 @@ select * from arn where k > '' and k < 'x';
 echo both $if $equ $rowcnt1  "PASSED" "***FAILED";
 echo both ": het any 2\n";
 
+-- STop here, rdf boxes are not stored with content any more so the rest does not apply 
+exit;
+
 
 insert into arn values (rdf_box (1, 257, 257, 1, 0));
 echo both $if $neq $state OK "PASSED" "FAILED";

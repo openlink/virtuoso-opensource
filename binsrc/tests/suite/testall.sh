@@ -211,9 +211,10 @@ rm -f audit.txt core debug.txt
 #
 ./tvsp.sh
 #./tupgrade_recov.sh
-# ./tcpt.sh (inside trecov.sh)
+
 ./trecov.sh
 ./trecov_schema.sh
+
 ./tsql.sh
 ./tsql2.sh
 ./tsql3.sh
@@ -246,9 +247,7 @@ fi
 ./ttutorial.sh
 ./bpel.sh
 ./tdav_meta.sh
-TEST_SPARQL=yes ./tpcd.sh
-./tsparql.sh
-./tsparql_demo.sh
+./tpcd.sh
 
 #XXX: not tested yet on Win32
 if [ "x$HOST_OS" != "x" ]
@@ -256,7 +255,6 @@ then
   touch inprocess.output
   touch tvspxex.output
   touch tsoap12.output
-  touch tlubm.output
   if [ ! -f ../../../autogen.sh ]
   then
   ./treplh.sh
@@ -268,9 +266,8 @@ else
   ./tsoap12.sh
   ./tvspxex.sh
   (cd ../lubm; ./tlubm.sh)
-  cp -f ../lubm/tlubm.output .
 fi  
-./tstriping.sh
+
 #
 #  Start the server again
 #
@@ -481,43 +478,22 @@ sqlo_outputs=tsqlo.output
 	ECHO "***ABORTED: No tsqlo.output"
 	exit 3
     fi
-if test \! -f tpcd.output
-then
-    ECHO "***ABORTED: No tpcd.output"
-    exit 3
-fi
-if test \! -f tlubm.output
-then
-    ECHO "***ABORTED: No tlubm.output"
-    exit 3
-fi
-if test \! -f tcpt.output
-then
-    ECHO "***ABORTED: No tcpt.output"
-    exit 3
-fi
 #fi
-if test \! -f tsparql.output
-then
-    ECHO "***ABORTED: No tsparql.output"
-    exit 3
-fi
-
 #
 #  Check if the tests logged any failures
 #
-RUN egrep '"^(\*\*\*.*FAILED|\*\*\*.*ABORTED)"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output tpcd.output tlubm.output tcpt.output tsparql.output tsparql_demo.sh # tupgrade_recov.output 
+RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
 if test $STATUS -eq 0
 then
     ECHO ""
     LINE
     ECHO "=  WARNING: Some tests failed. See *.output in this directory" `pwd`
-    egrep '^(\*\*\*.*FAILED|\*\*\*.*ABORTED)' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output tpcd.output tlubm.output tcpt.output tsparql.output tsparql_demo.sh # tupgrade_recov.output 
+    egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
     LINE
     rm -f audit.txt
  
     #grail error
-    RUN egrep '"^(\*\*\*.*FAILED|\*\*\*.*ABORTED)"' trecov.output 
+    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' trecov.output 
     if test $STATUS -eq 0
     then
 	rm -rf grail_backup
@@ -526,7 +502,7 @@ then
 	cp trecov.output grail_backup/trecov.out.err
     fi	
     #grail error part2
-    RUN egrep '"^(\*\*\*.*FAILED|\*\*\*.*ABORTED)"' trecov_schema.output 
+    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' trecov_schema.output 
     if test $STATUS -eq 0
     then
 	rm -rf grail_backup2

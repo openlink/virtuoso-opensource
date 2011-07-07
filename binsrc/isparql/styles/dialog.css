@@ -18,10 +18,19 @@ div.btn_row {
   float: left;
 }
 
-#auth_dlg label { float: left; width: 100px; }
-#auth_dlg_error { margin: 10px 10px 10px 100px; }
+#auth_dlg label { 
+  float: left; 
+  width: 100px; 
+}
 
-#splash { width: 100%; text-align: center; }
+#auth_dlg_error { 
+  margin: 10px 10px 10px 100px; 
+}
+
+#splash { 
+  width: 100%; 
+  text-align: center; 
+}
 
 #splash_inner {
   margin: 100px auto 0 auto;
@@ -31,12 +40,26 @@ div.btn_row {
   moz-border-radius: 6px 6px 6px 6px;
 }
 
-#statMsgMain { font-size: 10pt; font-weight: bold; margin-top: 10px; }
+#statMsgMain { 
+  font-size: 10pt; 
+  font-weight: bold; 
+  margin-top: 10px; 
+}
 
-#splash_hd { background-color: #fff; }
-#splash_hd img { height: 35px; vertical-align: middle; margin: 10px 0 10px 0;}
+#splash_hd { 
+  background-color: #fff; 
+}
 
-#splash_copyr { margin-top: 15px; font-size: 8px; }
+#splash_hd img { 
+  height: 35px; 
+  vertical-align: middle; 
+  margin: 10px 0 10px 0;
+}
+
+#splash_copyr { 
+  margin-top: 15px; 
+  font-size: 8px; 
+}
 
 #splash_foot {
   padding: 4px 0 4px 0;
@@ -45,7 +68,11 @@ div.btn_row {
   background-color: #3bafd5;
 }
 
-#locAcquireUI { width: 100%; text-align: center; position: absolute;}
+#locAcquireUI { 
+  width: 100%; 
+  text-align: center; 
+  position: absolute;
+}
 
 #locAcquireUI_inner {
   padding: 6px;
@@ -57,8 +84,90 @@ div.btn_row {
   border-radius: 6px 6px 6px 6px;
 }
 
-#locAcquireMsg { margin: 5px; } 
+#locAcquireMsg { 
+  margin: 5px; } 
 
-#locAcquireCurrent { margin: 5px; }
+#locAcquireCurrent { 
+  margin: 5px; }
 
-#locAcquireBtnCtr { margin-top: 5px;}
+#locAcquireBtnCtr { 
+  margin-top: 5px;
+}
+
+/* preferences dialog */
+
+#prefs_dlg { margin: 5px } 
+
+#prefs_dlg label {
+  font-weight: bold;
+  display: block;
+  float: left;
+  clear: left;
+  width: 150px;
+}
+
+#prefs_dlg label.ckb { 
+  clear: none;
+  width: auto;
+  margin-right: 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+div.prefs_tab_ctr {
+  margin-bottom: 2ex;
+}
+
+#shortener { margin-top: 10px; vertical-align: middle;}
+
+#shortener label span.expln {
+  font-size: smaller;
+  font-weight: normal;
+}
+
+div.dialog_btnbar {
+  width: 100%;
+  margin-top: 1ex;
+  padding-top: 1ex;
+  border-top: 1px solid #666;
+}
+
+#shortener_ep { width: 150px }
+
+#shortener_ep_ckb {
+  float: left;
+  clear: left;
+  margin-left: 150px;
+}
+
+#prefs_tabrow {
+  min-height: 20px;
+  list-style-type: none;
+  padding-bottom: 1px;
+  background: #ddd
+}
+
+#prefs_tabrow li {
+  display: inline;
+  padding: 1px 3px;
+  margin-left: 0.5em;
+  cursor: pointer;
+  border-top: 1px solid #999;
+  border-left: 1px solid #999;
+  border-right: 1px solid #999;
+  background-color: #aaa;
+}
+
+#prefs_tabrow li.tab_selected {
+  background-color: #fff;
+}
+
+#prefs_tabrow li.tab:hover {
+  background-color: #fff;
+}
+
+#prefs_tabrow.tab_signal {
+  background-color: #999;
+}
+
+/* /tabs */

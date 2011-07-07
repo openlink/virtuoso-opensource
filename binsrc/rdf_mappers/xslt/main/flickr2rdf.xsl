@@ -44,8 +44,10 @@
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
     <xsl:output method="xml" indent="yes"/>
+	
     <xsl:param name="baseUri" />
     <xsl:param name="exif" />
+
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
     <xsl:variable name="doc">
@@ -125,16 +127,18 @@
 	<dc:description><xsl:value-of select="."/></dc:description>
     </xsl:template>
     <xsl:template match="dates">
-	<dcterms:created rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
+	<dcterms:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 	    <xsl:value-of select="v:unixTime2ISO (@posted)"/>
-	</dcterms:created>
+	</dcterms:issued>
 	<dcterms:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 	    <xsl:value-of select="v:unixTime2ISO (@lastupdate)"/>
 	</dcterms:modified>
-	<dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime"><xsl:value-of select="translate (@taken, ' ', 'T')"/></dc:date>
+	<dcterms:created rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
+	    <xsl:value-of select="translate (@taken, ' ', 'T')"/>
+	</dcterms:created>
     </xsl:template>
     <xsl:template match="tag[@machine_tag='0']">
-	<dc:subject><xsl:value-of select="."/></dc:subject>
+	<dcterms:subject><xsl:value-of select="."/></dcterms:subject>
     </xsl:template>
     <xsl:template match="tag[@machine_tag='1']">
 		<xsl:variable name="raw" select="@raw" />

@@ -89,7 +89,7 @@ LINE
 STOP_SERVER
 rm -f $DBLOGFILE
 rm -f $DBFILE
-cat $TESTCFGFILE | sed -e "s/PORT/$PORT/g" -e "s/SQLOPTIMIZE/0/g" -e "s/CASE_MODE/$CASE_MODE/g" -e "s/LITEMODE/$LITEMODE/g" > $CFGFILE
+MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $PORT 1000
 
@@ -155,7 +155,7 @@ LINE
 STOP_SERVER
 rm -f $DBLOGFILE
 rm -f $DBFILE
-cat $TESTCFGFILE | sed -e "s/PORT/$PORT/g" -e "s/SQLOPTIMIZE/1/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
+MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $PORT 1000
 
@@ -185,20 +185,23 @@ LINE
 LOG "Remote database access test"
 LINE
 
-RUN $ISQL $DS1 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
-RUN $ISQL $DS2 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
+DSN=$DS1
+STOP_SERVER
+DSN=$DS2
+STOP_SERVER
+DSN=$DS1
 
 rm -rf oremote1
 mkdir oremote1
 cd oremote1
-cat ../$TESTCFGFILE | sed -e "s/PORT/$DS1/g" -e "s/SQLOPTIMIZE/1/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
+MAKECFG_FILE ../$TESTCFGFILE $DS1 $CFGFILE
 START_SERVER $DS1 1000
 cd ..
 
 rm -rf oremote2
 mkdir oremote2
 cd oremote2
-cat ../$TESTCFGFILE | sed -e "s/PORT/$DS2/g" -e "s/SQLOPTIMIZE/1/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
+MAKECFG_FILE ../$TESTCFGFILE $DS2 $CFGFILE
 START_SERVER $DS2 1000
 cd ..
 
@@ -403,8 +406,10 @@ fi
 if [ $skip_remote -eq 0 -o $skip_tpcd -eq 0 ]
 then
 LOG "Shutdown databases"
-RUN $ISQL $DS1 '"EXEC=shutdown;"' ERRORS=STDOUT
-RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT
+DSN=$DS1
+SHUTDOWN_SERVER
+DSN=$DS2
+SHUTDOWN_SERVER
 
 fi
 CHECK_LOG

@@ -33,7 +33,8 @@
 echo BOTH "STARTED: Concurrent inserts with timestamp key\n";
 
 drop table iutest;
-create table iutest(num integer,txt varchar,ts timestamp,primary key(ts));
+create table iutest(num integer,txt varchar,ts timestamp,primary key(ts))
+alter index iutest on iutest partition (ts varchar);
 
 -- Spawn two isql's to background each to insert ten thousand and one items:
 CONNECT; SET AUTOCOMMIT=ON; FOREACH INTEGER BETWEEN 100001 110000 insert into iutest(num,txt) values(?,'Proc1'); insert into iutest(num,txt) values(1,'Proc1 Last') &
@@ -61,5 +62,16 @@ select count(*) from iutest;
 ECHO BOTH $IF $EQU $LAST[1] 30003 "PASSED" "***FAILED";
 SET ARGV[$NEQ $LWE "PASSED"] $+ $ARGV[$NEQ $LWE "PASSED"] 1;
 ECHO BOTH ": Concurrent Inserting with timestamp primary key and insert, table contains " $LAST[1] " lines\n";
+
+
+create table tn (id int primary key);
+foreach integer between 1 4000  insert into tn values (?);
+
+select count (*) from tn;
+ECHO BOTH $IF $EQU $LAST[1] 4000  "PASSED" "***FAILED";
+SET ARGV[$NEQ $LWE "PASSED"] $+ $ARGV[$NEQ $LWE "PASSED"] 1;
+ECHO BOTH ": min row length insert, table contains " $LAST[1] " lines\n";
+
+
 
 ECHO BOTH "COMPLETED WITH " $ARGV[1] " FAILED, " $ARGV[0] " PASSED: Concurrency test #2, Run " $ARGV[$I] "\n";

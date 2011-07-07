@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2008 OpenLink Software
+#  Copyright (C) 1998-2010 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -34,13 +34,16 @@ endif
 
 
 JENA_SRC= \
+	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtBulkUpdateHandler.java \
 	virtuoso_driver/VirtDataSource.java \
 	virtuoso_driver/VirtGraph.java \
+	virtuoso_driver/VirtInfGraph.java \
 	virtuoso_driver/VirtModel.java \
 	virtuoso_driver/VirtPrefixMapping.java \
 	virtuoso_driver/VirtResSetIter.java \
 	virtuoso_driver/VirtTransactionHandler.java \
+	virtuoso_driver/VirtuosoQueryEngine.java \
 	virtuoso_driver/VirtuosoQueryExecutionFactory.java \
 	virtuoso_driver/VirtuosoQueryExecution.java \
 	virtuoso_driver/VirtuosoUpdateFactory.java \
@@ -51,31 +54,32 @@ TESTSUITE_SRC= \
 
 JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/arq-2.8.1.jar:lib/iri-0.7.jar:lib/jena-2.6.2.jar:lib/jena-2.6.2-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
-all-am:	lib virt_jena.jar
+all-am: $(TARGETS)
+
 
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/jena"
 	-cp virt_jena.jar "$(DESTDIR)${libdir}/jena"
 
 lib:
-	@test -d lib || touch virt_jena.jar
 	-mkdir lib
+	-touch -c virt_jena.jar
 	@echo "Please refer to ~/README.jena file for missing .jar files"
 
-virt_jena.jar: $(JENA_SRC)
+virt_jena.jar: $(JENA_SRC) manifest.main
 	-rm -rf out.driver
 	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
-	$(JAR) cvf virt_jena.jar -C out.driver virtuoso
+	$(JAR) cvfm virt_jena.jar manifest.main -C out.driver virtuoso
 
 .PHONY: doc
 doc:
 	$(JAVADOC) -d doc \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
-	
+
 #
 #  Run testsuite if WITH_JDK was found
 #
@@ -90,8 +94,15 @@ run-tests:
 	@echo "***WARNING: Disabled Jena test suite"
 endif
 
+
+.PHONY: version
+version:
+	$(JAVA) -jar ./virt_jena.jar
+
+
 clean-local:
 	-rm -rf out.driver doc
+	-rmdir lib
 
 
 # ----------------------------------------------------------------------
@@ -101,6 +112,7 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	virtuoso_driver/*.java \
+	manifest.main \
 	virt_jena.jar \
 	testsuite/*.java \
 	testsuite/*.class \

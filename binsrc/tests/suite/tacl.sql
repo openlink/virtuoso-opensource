@@ -142,7 +142,16 @@ delete from HTTP_ACL where HA_LIST = 'HTTP';
 -- HTTP acl test; deny all
 insert into HTTP_ACL (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG) values ('HTTP', 1, '*', 1);
 
-select http_get ('http://localhost:$U{HTTPPORT}/');
+create procedure acl_check ()
+{
+  declare h any;
+  http_get ('http://localhost:$U{HTTPPORT}/', h);
+  if (h[0] not like 'HTTP/1._ 200 %')
+    signal ('.....', h[0]);
+}
+;
+
+acl_check ();
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": HTTP ACL denied : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

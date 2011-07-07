@@ -4282,7 +4282,7 @@ adm_page_footer()
   http('<TR><TD CLASS="CopyrightBorder" COLSPAN="2"><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
   http('<TR><TD ALIGN="right" COLSPAN="2"><P CLASS="Copyright">Virtuoso Universal Server ');
   http(sys_stat('st_dbms_ver'));
-  http(' - Copyright&copy; 1998-2010 OpenLink Software.</P></TD></TR>');
+  http(' - Copyright&copy; 1998-2011 OpenLink Software.</P></TD></TR>');
   http('</TABLE>\n</BODY>');
 }
 ;
@@ -4342,6 +4342,9 @@ adm_get_file_dsn ()
   declare ret, _all any;
   declare _err_code, _err_message varchar;
   declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error; };
+
+  if (not sys_dir_is_allowed ('.'))
+    goto error;
 
   _all := sys_dirlist ('.', 1);
   s_root := server_root ();

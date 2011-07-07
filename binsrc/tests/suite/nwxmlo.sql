@@ -402,7 +402,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": xml entity into long XML column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-insert into LXML values (3, xml_persistent ('<c />'));
+insert into LXML values (3, xtree_doc ('<c />'));
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": xper entity into long XML column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

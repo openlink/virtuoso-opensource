@@ -40,6 +40,7 @@
       <v:variable name="bind" type="varchar" default="null" param-name="bind"/>
       <v:variable name="base" type="varchar" default="null" param-name="base"/>
       <v:variable name="pwd"  type="varchar" default="null" param-name="pwd"/>
+      <v:variable name="ssl"  type="int" default="0" param-name="ssl"/>
       <v:variable name="res"  type="any" default="null" />
     </vm:variables>
     <vm:menu>
@@ -91,7 +92,10 @@ function checkRest (form, sel)
 	if (self.vc_is_valid = 0)
 	  return;
         connection_set ('LDAP_VERSION', 2);
+	if (self.host not like 'ldap%://%')
 	host := 'ldap://'|| self.host || ':' || self.port;
+	else  
+	  host := self.host || ':' || self.port;
 	declare exit handler for sqlstate '*'
 	{
 	  rollback work;
@@ -99,7 +103,7 @@ function checkRest (form, sel)
 	  self.map_ldap.vc_error_message := __SQL_MESSAGE;
 	  return;
 	};
-        self.res := ldap_search (host, 0, self.base, self.src, self.bind, self.pwd);
+        self.res := ldap_search (host, self.ssl, self.base, self.src, self.bind, self.pwd);
       </v:before-data-bind>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>

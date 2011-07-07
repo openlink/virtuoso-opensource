@@ -36,26 +36,23 @@ ul, li {
 /*position: absolute;
   top: 23px; */
   width: 100%;
-
   background-color: #ddd;
-  padding-bottom: 10px;}
+  padding-bottom: 10px;
+  background:-moz-linear-gradient(top, #DDDDDD, #CCDDE0);
+  background:-webkit-gradient(linear,left top,left bottom,from(#ddd),to(#ccdde0));
+}
 
 /*fieldset {
   display: inline}*/
 
 div#queryMetaData { margin-bottom: 3px}
 
-fieldset.md_opts {
-  margin-bottom: 10px;
-  border:0;
-}
-
+div.controls fieldset { border: none }
 fieldset.md_opts .expln { margin: 4px}
 
 fieldset.deref_opts {
-  width: 90%;
   margin-top: 10px;
-  border: 1px solid #666}
+}
 
 fieldset.md_opts label { float: left; clear: left; width: 150px}
 
@@ -75,11 +72,18 @@ td.cachingOpts input { float: left;}
 
 div.controls {
   background-color: #eee;
+  background: -moz-linear-gradient (top, #eee, #eff);
+  background: -webkit-gradient (linear,left top,left bottom,from(#eee), to(#eff));
+  border: 2px solid #dff;
+  -moz-border-radius: 10px 10px 0px 0px;
+  -webkit-border-radius: 10px 10px 0px 0px;
   margin: 0px 10px 10px 10px;
+  
 }
 
 div.controls h3:hover { cursor: pointer;}
 div.controls h3 {margin: 0;padding:0}
+div.controls fieldset { }
 
 #pathTravSchemesPredSelCtr { margin-left: 5px; }
 #pathTravSchemesPredSelCtr label { margin-bottom: 3px; }
@@ -88,7 +92,7 @@ div.controls h3 {margin: 0;padding:0}
 
 fieldset.queryopts {
   display: block;
-  margin: 0 0 3px 10px
+  margin: 0 8px 3px 10px
 }
 
 #qry_type_ctls { display: inline; }
@@ -97,8 +101,6 @@ span.maxrows_expln { font-size: smaller;}
 fieldset.endpoint {
   margin-top: 10px;
   display: block;
-  width: 90%;
-  border: 1px solid #666
 }
 
 div#pragmaAddProp h2 {
@@ -121,16 +123,13 @@ h3.ctl_tgl {
   background-image: url(/isparql/images/ctl_toggler_bkg.png);
   background-repeat: repeat-x;
   color: #fff;
-  border-color:#DDDDDD;
-  border-style:none solid;
-  border-width:0 1px;
   text-shadow:0.1em 0.1em #8c95a3;
 }
 
 div.ctl_ctr {
-  border-left: 1px solid #ddd;
+/*  border-left: 1px solid #ddd;
   border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #ddd; */
 }
 
 h3#endpoint_opts_toggler,h3#mdtoggler {
@@ -139,6 +138,9 @@ h3#endpoint_opts_toggler,h3#mdtoggler {
   font-size: 10pt;
   cursor: hand;
   cursor: pointer;
+  border:none;
+  -moz-border-radius: 10px 10px 0px 0px;
+  -webkit-border-radius: 10px 10px 0px 0px;
 }
 
 span.tgl_indicator {
@@ -156,7 +158,10 @@ fieldset.deref_opts button span {
   font-weight: normal;
 }
 
-fieldset.deref_opts h4 { font-size: 10pt; margin-bottom: 5px;}
+fieldset.deref_opts h4 { 
+  font-size: 10pt; 
+  margin-bottom: 5px;
+  margin-top: 0px;}
 
 
 /*
@@ -188,15 +193,24 @@ fieldset.deref_opts h4 { font-size: 10pt; margin-bottom: 5px;}
   text-align: right;
   float: left;
   clear: both;
+  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
+  background: -moz-linear-gradient(top,#ccdde0,#577);
   background-color: #FFFFFF;
   height: 30px;
   padding-top: 10px;
+  padding-bottom:30px;
   width: 100%;
   border-top: 1px solid #aaa
 }
 
-div.foot_l { text-align: left; float: left; clear: left; width: 45%; margin-left: 5px;}
-div.foot_r { text-align: right; float: right; width: 45%; margin-right: 5px;}
+div.foot_l { text-align: left; float: left; clear: left; width: 45%; margin-left: 10px;}
+div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
+
+#data_links {
+  margin: 10px;
+}
+
+span.dyn_page { vertical-align: top;}
 
 div.ubiq_gem { display: inline; border: 1px solid #577; padding: 2px 0px 3px 0; margin-left: 3px;cursor: pointer}
 div.ubiq_gem a { font-family: sans-serif; font-size: 10px; margin: 0; text-decoration: none; color: #577; height: 16px; }
@@ -247,10 +261,13 @@ ul#nav_bar {
 /* tabs */
 
 #tabs {
-	margin-top: 24px;
+	margin-top: 21px;
+	padding-top:10px;
 	list-style-type: none;
 	padding-bottom: 1px;
 	text-align: center;
+	background: -moz-linear-gradient(top,#ddd,#fff);
+	background: -webkit-gradient(linear,left top,left bottom,from(#ddd),to(#fff));
 }
 
 #tabs li {
@@ -275,7 +292,10 @@ ul#nav_bar {
   background-color: #999;
 }
 
-/* /tabs */
+div.rdf_data {
+  float: left;
+  clear: both;
+}
 
 img.corner {
   width: 15px;
@@ -292,9 +312,13 @@ img.corner {
 
 div.pager {
   float: left; clear: both;
-  background-color: #576;
-  width: 99%;
-  text-align: center;
+  background-color: #ddd;
+  width: 100%;
+  border: 1px solid #355;
+}
+
+div.pager div {
+  margin:3px;
 }
 
 div.pager a {
@@ -311,14 +335,14 @@ label {
 #load,
 label.load { font-size: 8pt; font-weight: normal}
 
-
 .toolbar {
-  background-color:#DDDDDD;
-  background-image:url("/isparql/images/toolbar_bkg.png");
+  background:-moz-linear-gradient (top,#3dd,#244);
+  background:-webkit-gradient (linear,left top,left bottom,from(#3dd),to(#244));/*  background-color:#eee; */
   height: 30px;
   margin-left:0;
   padding:3px 0 0;
-  width:100%;}
+  width:100%;
+}
 
 .toolbar_icon {
   text-align: center;
@@ -344,6 +368,12 @@ label.load { font-size: 8pt; font-weight: normal}
   margin-top: 2px;
   margin-left: 6px;
   margin-right: 6px;
+}
+
+#page_content {
+  width: 100%;
+  float:left;
+  clear: both;
 }
 
 #page_results{
@@ -384,7 +414,7 @@ div#virtuoso_options
 }
 
 #service{
-  width: 390px;
+  width: 320px;
 }
 
 #default-graph-uri {

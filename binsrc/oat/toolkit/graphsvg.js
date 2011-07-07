@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -262,16 +262,16 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 					var children = [];
 					for (var j=0;j<parent.inEdges.length;j++) {
 						var child = parent.inEdges[j].vertex1;
-						if (totalPositioned.find(child) == -1 && children.find(child) == -1) { children.push(child); }
+						if (totalPositioned.indexOf(child) == -1 && children.indexOf(child) == -1) { children.push(child); }
 					}
 					for (var j=0;j<parent.outEdges.length;j++) {
 						var child = parent.outEdges[j].vertex2;
-						if (totalPositioned.find(child) == -1 && children.find(child) == -1) { children.push(child); }
+						if (totalPositioned.indexOf(child) == -1 && children.indexOf(child) == -1) { children.push(child); }
 					}
 					parent.children = []; /* need to know child nodes for advanced dragging */
 					for (var j=0;j<parent.outEdges.length;j++) {
 						var child = parent.outEdges[j].vertex2;
-						if (totalPositioned.find(child) == -1 && parent.children.find(child) == -1) { parent.children.push(child); }
+						if (totalPositioned.indexOf(child) == -1 && parent.children.indexOf(child) == -1) { parent.children.push(child); }
 					}
 					for (var j=0;j<children.length;j++) {
 						var child = children[j];
@@ -296,7 +296,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 					/* find non-positioned node and continue */
 					var c = false;
 					for (var i=0;i<self.data.length;i++) {
-						if (totalPositioned.find(self.data[i]) == -1) { c = self.data[i]; }
+						if (totalPositioned.indexOf(self.data[i]) == -1) { c = self.data[i]; }
 					}
 					/* some good position for new component */
 					c.x = Math.random() * (w-2*p) + p;
@@ -396,12 +396,12 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 				for (var j=0;j<obj.outEdges.length;j++) if (obj.outEdges[j].distance == -1) {
 					obj.outEdges[j].distance = depth;
 					var v = obj.outEdges[j].vertex2;
-					if (v.distance == -1 && newToDo.find(v) == -1) { newToDo.push(v); }
+					if (v.distance == -1 && newToDo.indexOf(v) == -1) { newToDo.push(v); }
 				}
 				for (var j=0;j<obj.inEdges.length;j++) if (obj.inEdges[j].distance == -1) {
 					obj.inEdges[j].distance = depth;
 					var v = obj.inEdges[j].vertex1;
-					if (v.distance == -1 && newToDo.find(v) == -1) { newToDo.push(v); }
+					if (v.distance == -1 && newToDo.indexOf(v) == -1) { newToDo.push(v); }
 				}
 			} /* for all pending nodes */
 			depth++;
@@ -544,7 +544,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			self.selects[name] = false;
 		}
 		/* type */
-		if (ds.find("type") == -1) {
+		if (ds.indexOf("type") == -1) {
 			var s = OAT.Dom.create("select");
 			self.selects.type = s;
 			OAT.Dom.option("All nodes at once","0",s);
@@ -555,7 +555,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			s.selectedIndex = self.options.type;
 		}
 		/* placement */
-		if (ds.find("placement") == -1) {
+		if (ds.indexOf("placement") == -1) {
 			var s = OAT.Dom.create("select");
 			self.selects.placement = s;
 			OAT.Dom.option("Random","0",s);
@@ -566,7 +566,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			s.selectedIndex = self.options.placement;
 		}
 		/* distance */
-		if (ds.find("distance") == -1) {
+		if (ds.indexOf("distance") == -1) {
 			var s = OAT.Dom.create("select");
 			self.selects.distance = s;
 			OAT.Dom.option("Close distance","0",s);
@@ -578,7 +578,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			s.selectedIndex = self.options.distance;
 		}
 		/* projection */
-		if (ds.find("projection") == -1) {
+		if (ds.indexOf("projection") == -1) {
 			var s = OAT.Dom.create("select");
 			self.selects.projection = s;
 			OAT.Dom.option("Planar","0",s);
@@ -588,7 +588,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			s.selectedIndex = self.options.projection;
 		}
 		/* labels */
-		if (ds.find("labels") == -1) {
+		if (ds.indexOf("labels") == -1) {
 			var s = OAT.Dom.create("select");
 			self.selects.labels = s;
 			OAT.Dom.option("Labels only on one element","0",s);
@@ -602,7 +602,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			s.selectedIndex = self.options.labels;
 		}
 		/* show */
-		if (ds.find("show") == -1) {
+		if (ds.indexOf("show") == -1) {
 			var s = OAT.Dom.create("select");
 			self.selects.show = s;
 			OAT.Dom.option("Show all nodes","0",s);

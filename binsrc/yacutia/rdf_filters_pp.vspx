@@ -62,7 +62,7 @@
                     </colgroup>
                     <tr>
                       <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url1" value="Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                        <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_selected" align="center" nowrap="1">
                         Meta Cartridges
@@ -74,6 +74,9 @@
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
   		                </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
+		      </td>
                       <?vsp } ?>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
@@ -316,6 +319,7 @@
                                     <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
                                       <v:item name="Content Type" value="MIME"/>
                                       <v:item name="URL" value="URL"/>
+                                      <v:item name="Entity Type" value="CLASS"/>
                                       <v:item name="HTTP protocol" value="HTTP"/>
                                     </v:select-list>
                                     <br />
@@ -334,8 +338,11 @@
                                     <label for="opts1">Options</label>
                                     <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_cols="70" xhtml_id="opts1" error-glyph="*">
                                     </v:textarea>
-                                    <?vsp if (strstr (self.patt1.ufl_value, 'facebook') is not null) { ?>
-                                    <a href="fb_popup.vspx" target="_blank">Get FB session</a>
+                              	    <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
+                              	    <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
+                              	    <?vsp } ?>
+                              	    <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
+                              	    <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
                                     <?vsp } ?>
                                     <br />
                                     <span class="fm_ctl_btn">

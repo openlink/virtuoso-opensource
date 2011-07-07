@@ -65,6 +65,7 @@ echo "Installing default ini file as $INIFILE"
 
 sed	-e "s,[@]VADDIR[@],$VADDIR,g" \
 	-e "s,[@]HOSTINGDIR[@],$HOSTINGDIR,g" \
+	-e "s,[@]DBDIR[@],$DBDIR,g" \
 	-e "s,[@]DBNAME[@],$DBNAME,g" \
 	-e "s,[@]HOST[@],$HOST,g" \
 	-e "s,[@]PORT[@],$PORT,g" \

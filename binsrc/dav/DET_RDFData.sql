@@ -605,6 +605,12 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
       lpath := http_path ();
       if (lpath like '%.rdf')
 	type := 'application/rdf+xml';
+      else if (lpath like '%.nt')
+	type := 'text/n3';
+      else if (lpath like '%.txt')
+	type := 'text/plain';
+      else if (lpath like '%.json')
+	type := 'application/json';
       else
         type := 'text/rdf+n3';
     }

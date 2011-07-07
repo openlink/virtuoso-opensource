@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -185,7 +185,7 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 	o.startFunction = function(a) { /* prepare step */
 		a.opacity = 1;
 		if (OAT.Browser.isGecko) { a.opacity = parseFloat(OAT.Style.get(a.elm,"opacity")); }
-		if (OAT.Browser.isIE) {
+		if (OAT.Browser.isIE6) {
 			var filter = OAT.Style.get(a.elm,"filter");
 			var num = filter.match(/alpha\(opacity=([^\)]+)\)/);
 			if (num) { a.opacity = parseFloat(num[1])/100; }

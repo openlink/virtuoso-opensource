@@ -263,7 +263,7 @@ namespace OpenLink.Data.Virtuoso
     {
         get
         {
-            string key = ConnectionOptions.CONNECTIONTIMEOUT;
+            string key = ConnectionOptions.CONNECTION_TIMEOUT;
             if (ContainsKey(ConnectionOptions.CONNECTTIMEOUT))
                key = ConnectionOptions.CONNECTTIMEOUT;
 
@@ -288,7 +288,7 @@ namespace OpenLink.Data.Virtuoso
         }
         set 
 		{ 
-            string key = ConnectionOptions.CONNECTIONTIMEOUT;
+            string key = ConnectionOptions.CONNECTION_TIMEOUT;
             if (ContainsKey(ConnectionOptions.CONNECTTIMEOUT))
                key = ConnectionOptions.CONNECTTIMEOUT;
 
@@ -300,8 +300,12 @@ namespace OpenLink.Data.Virtuoso
     {
         get
         {
+            string key = ConnectionOptions.CONNECTION_LIFETIME;
+            if (ContainsKey(ConnectionOptions.CONNECTIONLIFETIME))
+               key = ConnectionOptions.CONNECTIONLIFETIME;
+
             object value;
-            if (base.TryGetValue(ConnectionOptions.CONNECTIONLIFETIME, out value))
+            if (base.TryGetValue(key, out value))
             {
                if (value is uint)
                    return (uint)value;
@@ -311,22 +315,32 @@ namespace OpenLink.Data.Virtuoso
                    uintVal = (uint)ConnectionOptions.DEFAULT_CONN_LIFETIME;
 
                // Change the stored value type to uint.
-               this[ConnectionOptions.CONNECTIONLIFETIME] = uintVal;
+               this[key] = uintVal;
                return uintVal;
             }
             else
                return (uint)ConnectionOptions.DEFAULT_CONN_LIFETIME;
 
         }
-        set { this[ConnectionOptions.CONNECTIONLIFETIME] = value; }
+        set 
+        { 
+            string key = ConnectionOptions.CONNECTION_LIFETIME;
+            if (ContainsKey(ConnectionOptions.CONNECTIONLIFETIME))
+               key = ConnectionOptions.CONNECTIONLIFETIME;
+            this[key] = value; 
+        }
     }
 
     public uint MinPoolSize
     {
         get
         {
+            string key = ConnectionOptions.MIN_POOL_SIZE;
+            if (ContainsKey(ConnectionOptions.MINPOOLSIZE))
+               key = ConnectionOptions.MINPOOLSIZE;
+
             object value;
-            if (base.TryGetValue(ConnectionOptions.MINPOOLSIZE, out value))
+            if (base.TryGetValue(key, out value))
             {
                if (value is uint)
                    return (uint)value;
@@ -336,21 +350,31 @@ namespace OpenLink.Data.Virtuoso
                    uintVal = (uint)ConnectionOptions.DEFAULT_MIN_POOL_SIZE;
 
                // Change the stored value type to uint.
-               this[ConnectionOptions.MINPOOLSIZE] = uintVal;
+               this[key] = uintVal;
                return uintVal;
             }
             else
                return (uint)ConnectionOptions.DEFAULT_MIN_POOL_SIZE;
         }
-        set { this[ConnectionOptions.MINPOOLSIZE] = value; }
+        set 
+        { 
+            string key = ConnectionOptions.MIN_POOL_SIZE;
+            if (ContainsKey(ConnectionOptions.MINPOOLSIZE))
+               key = ConnectionOptions.MINPOOLSIZE;
+            this[key] = value; 
+        }
     }
 
     public uint MaxPoolSize
     {
         get
         {
+            string key = ConnectionOptions.MAX_POOL_SIZE;
+            if (ContainsKey(ConnectionOptions.MAXPOOLSIZE))
+               key = ConnectionOptions.MAXPOOLSIZE;
+
             object value;
-            if (base.TryGetValue(ConnectionOptions.MAXPOOLSIZE.ToString(), out value))
+            if (base.TryGetValue(key.ToString(), out value))
             {
                if (value is uint)
                    return (uint)value;
@@ -360,13 +384,19 @@ namespace OpenLink.Data.Virtuoso
                    uintVal = (uint)ConnectionOptions.DEFAULT_MAX_POOL_SIZE;
 
                // Change the stored value type to uint.
-               this[ConnectionOptions.MAXPOOLSIZE] = uintVal;
+               this[key] = uintVal;
                return uintVal;
             }
             else
                return (uint)ConnectionOptions.DEFAULT_MAX_POOL_SIZE;
         }
-        set { this[ConnectionOptions.MAXPOOLSIZE] = value; }
+        set 
+        { 
+            string key = ConnectionOptions.MAX_POOL_SIZE;
+            if (ContainsKey(ConnectionOptions.MAXPOOLSIZE))
+               key = ConnectionOptions.MAXPOOLSIZE;
+            this[key] = value; 
+        }
     }
 
     public bool Pooling
@@ -419,8 +449,12 @@ namespace OpenLink.Data.Virtuoso
     {
         get
         {
+            string key = ConnectionOptions.ROUND_ROBIN;
+            if (ContainsKey(ConnectionOptions.ROUNDROBIN))
+               key = ConnectionOptions.ROUNDROBIN;
+
             object value;
-            if (base.TryGetValue(ConnectionOptions.ROUNDROBIN, out value))
+            if (base.TryGetValue(key, out value))
             {
                 if (value is bool)
                     return (bool)value;
@@ -429,13 +463,19 @@ namespace OpenLink.Data.Virtuoso
 				if (!bool.TryParse(value.ToString(), out bVal))
 				    bVal = ConnectionOptions.DEFAULT_ROUND_ROBIN;
 				// Change the stored value type to bool.
-				this[ConnectionOptions.ROUNDROBIN] = bVal;
+				this[key] = bVal;
 				return bVal;
 			}
            return ConnectionOptions.DEFAULT_ROUND_ROBIN;
 
         }
-        set { this[ConnectionOptions.ROUNDROBIN] = value; }
+        set 
+        { 
+           string key = ConnectionOptions.ROUND_ROBIN;
+           if (ContainsKey(ConnectionOptions.ROUNDROBIN))
+               key = ConnectionOptions.ROUNDROBIN;
+           this[key] = value; 
+        }
     }
 
 #endregion

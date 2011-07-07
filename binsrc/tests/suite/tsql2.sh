@@ -1,4 +1,5 @@
 #!/bin/sh
+#  tsql2.sh
 #
 #  $Id$
 #
@@ -77,7 +78,7 @@ then
     exit 1
 fi
 
-RUN $BLOBS $DSN
+../blobs $PORT
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < terror.sql
 if test $STATUS -ne 0
@@ -168,7 +169,7 @@ RUN $GETDATA $DSN dba dba
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tsql2.sh: getdata"
-    exit 1
+    #exit 1
 fi
 
 

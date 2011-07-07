@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<?vsp
+  declare skinpfx, banner_txt, strapline varchar;
+  skinpfx := registry_get ('_sponger_fp_SkinPrefix');
+  banner_txt := registry_get ('_sponger_fp_Banner');
+  strapline := registry_get ('_sponger_fp_Strapline');
+  if (skinpfx = 0) skinpfx := 'skin';
+  if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
+  if (strapline = 0) strapline := '';
+?>
+<head>
+    <meta name="generator" content="HTML Tidy, see www.w3.org"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Virtuoso Sponger</title>
+    <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+  </head><body>
+    <div id="outer">
+      <div id="header">
+        <div id="header_logo">
+        <a href="http://www.openlinksw.com/"><img id="openlink_logo" title="OpenLink Software" alt="[OpenLink Software logo]" src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
+        </div>
+        <div id="header_text">
+          <h1><?=banner_txt?></h1><?=strapline?>
+        </div>
+      </div>
+
+      <div id="navbar">
+        <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp">Architecture</a> | 
+        <a href="sponger_setup.vsp">Sponger Setup</a> | 
+        <a href="examples.vsp">Live Sponger Examples</a> | 
+        <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a> |
+		<a href="http://virtuoso.openlinksw.com/">Virtuoso</a>
+      </div>
+
+   <div id="content">
+      <div class="topic-text">
+     <div id="examples">
+          <h2>
+            <a id="Live_Examples">
+      </a>Live Examples</h2>
+<h3>
+            <a id="XHTML_containing_RDFa">
+      </a>XHTML containing RDFa</h3>
+<ul>
+            <li>Source: <a href="http://ontologi.es/rail/void.xhtml" class="absuri">Linked Railway Data Project Datasets</a> </li>
+<li>HTML: <a href="http://linkeddata.uriburner.com/about/html/http://ontologi.es/rail/void.xhtml" class="absuri">http://linkeddata.uriburner.com/about/html/http://ontologi.es/rail/void.xhtml</a> </li>
+<li>RDF:  <a href="http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml" class="absuri">http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml</a>
+            </li>
+</ul>
+          <h3>
+            <a id="HTML">
+      </a>HTML</h3>
+<ul>
+            <li>Source: MPs in the UK: <a href="http://www.theyworkforyou.com/mps/" class="absuri">http://www.theyworkforyou.com/mps/</a> </li>
+<li>HTML: <a href="http://linkeddata.uriburner.com/about/html/http://www.theyworkforyou.com/mps/" class="absuri">http://linkeddata.uriburner.com/about/html/http://www.theyworkforyou.com/mps/</a> </li>
+<li>RDF: <a href="http://linkeddata.uriburner.com/about/rdf/http://www.theyworkforyou.com/mps/" class="absuri">http://linkeddata.uriburner.com/about/rdf/http://www.theyworkforyou.com/mps/</a>
+            </li>
+</ul>
+<ul>
+            <li>Source: <a href="http://www.bbc.co.uk/music/genres/classical/" class="absuri">http://www.bbc.co.uk/music/genres/classical/</a> </li>
+            <li>HTML: <a href="http://linkeddata.uriburner.com/about/html/http://www.bbc.co.uk/music/genres/classical" class="absuri">http://linkeddata.uriburner.com/about/html/http://www.bbc.co.uk/music/genres/classical</a> </li>
+<li>RDF: <a href="http://linkeddata.uriburner.com/about/rdf/http://www.bbc.co.uk/music/genres/classical/" class="absuri">http://linkeddata.uriburner.com/about/rdf/http://www.bbc.co.uk/music/genres/classical/</a>
+            </li>
+</ul>
+          <h3>
+            <a id="Using_cURL">
+      </a>Using cURL</h3>
+<ul>
+            <li>RDF (N3 format): <br/> curl -i -H "Accept: text/n3" <a href="http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml" class="absuri">http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml</a> </li>
+<li>RDF (Turtle format): <br/> curl -i -H "Accept: text/turtle" <a href="http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml" class="absuri">http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml</a> </li>
+<li>RDF (RDF/XML format):  <br/>curl -I -H "Accept: application/rdf+xml" <a href="http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml" class="absuri">http://linkeddata.uriburner.com/about/rdf/http://ontologi.es/rail/void.xhtml</a>
+            </li>
+</ul>
+     </div>
+</div>
+   </div>
+      <div class="reset">
+        <div id="footer">
+          Copyright (C) OpenLink Software 2011. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </body></html>

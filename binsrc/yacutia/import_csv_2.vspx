@@ -38,6 +38,8 @@
     <v:variable name="hrow" persist="0" type="int" default="0" param-name="hrow"/>
     <v:variable name="offs" persist="0" type="int" default="1" param-name="offs"/>
     <v:variable name="tname" persist="0" type="varchar" default="''" />
+    <v:variable name="enc" persist="0" type="varchar" default='null' param-name="enc"/>
+    <v:variable name="pmode" persist="0" type="int" default="1" param-name="pmode"/>
   </vm:variables>
   <vm:menu>
   </vm:menu>
@@ -51,7 +53,12 @@
 	    {
               declare ss, cn, tmp any;
 	      if (self.mode = 0)
+	        {
+		  if (self.path like '%.gz')
+	            ss := gz_file_open (self.path);
+		  else
 	        ss := file_open (self.path);
+	        }
               else
                 {  
 		  ss := string_output ();
@@ -63,9 +70,12 @@
 		  select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
 		  http (cn, ss);
 		}
+              if (self.enc = '')
+                self.enc := null;	      
               tmp := split_and_decode (self.path, 0, '\0\0/');  
               self.tname := SYS_ALFANUM_NAME (tmp[length(tmp) - 1]);		
-	      self.head := y_csv_get_cols (ss, self.hrow, self.offs, vector ('csv-delimiter', self.delim, 'csv-quote', self.quot));
+	      self.head := y_csv_get_cols (ss, self.hrow, self.offs, 
+	      	vector ('csv-delimiter', self.delim, 'csv-quote', self.quot, 'encoding', self.enc, 'mode', self.pmode));
 	    }
       </v:on-init>
       <v:form name="inx_form" type="simple" method="POST" action="" >
@@ -134,7 +144,7 @@
               <v:button action="simple" value="Create Table &amp; Import Data" name="upl_btn">
                 <v:on-post>
 		  <![CDATA[
-		  declare ss, s, i, nrec, q, o any;
+		  declare ss, s, i, nrec, q, o, tmp, err any;
 		  declare n, dt any;
 		  declare tb any;
 		  tb := SYS_ALFANUM_NAME (self.tb_name.ufl_value);
@@ -175,7 +185,12 @@
 		  exec (string_output_string (ss));
 		  commit work;
 		  if (self.mode = 0)
+		    {
+		      if (self.path like '%.gz')
+			s := gz_file_open (self.path);
+		      else
 		    s := file_open (self.path);
+		    }
 		  else
 		    {  
 		      declare cn any;
@@ -188,8 +203,25 @@
 		      select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
 		      http (cn, s);
 		    }
-		  nrec := csv_load (s, self.offs, null, tb, 1, vector ('csv-delimiter', self.delim, 'csv-quote', self.quot));		  
-		  self.vc_redirect (sprintf ('import_csv_3.vspx?tb=%U&nrec=%d', tb, nrec));
+		  tmp := csv_load (s, self.offs, null, tb, 1, 
+		     vector ('csv-delimiter', self.delim, 'csv-quote', self.quot, 'encoding', self.enc, 'mode', self.pmode, 'log', 1));  
+		  if (isvector (tmp))
+                    {
+		      nrec := tmp[0];
+                      err := string_output_string (tmp[1]);
+		    }
+		  else
+		    nrec := tmp;
+		  declare msg_path any;
+		  msg_path := sprintf ('/DAV/temp/%s.xml', xenc_rand_bytes (10, 1));    
+		  if (length (err))
+		    {
+		      YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
+		      DB.DBA.YACUTIA_DAV_RES_UPLOAD (msg_path, err, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+		    }   
+		  else
+                    msg_path := '';
+		  self.vc_redirect (sprintf ('import_csv_3.vspx?tb=%U&nrec=%d&err=%U', tb, nrec, msg_path));
                   ]]>
                 </v:on-post>
               </v:button>

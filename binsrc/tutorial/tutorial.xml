@@ -386,8 +386,12 @@
         <group Title="RDF Import">
 					<example id="RI-S-1" fspath="rdf/ri_s_1"></example>
         </group>
-        <group Title="RDF Mappers">
+        <group Title="RDF Cartridges">
 					<example id="RD-S-1" fspath="rdf/rd_s_1"></example>
+                                        <example id="RD-S-2" fspath="rdf/rd_s_2"></example>
+        </group>
+        <group Title="RDF Security">
+                                        <example id="FS-S-1" fspath="rdf/fs_s_1"></example>
         </group>
       </group>
     </subsection>
@@ -451,13 +455,13 @@
         </group>
       </group>
     </subsection>
-    <subsection Title="Semantic Web" fspath="semweb">
-      <group Title="Semantic Web">
+    <subsection Title="Linked Data" fspath="linkeddata">
+      <group Title="Linked Data">
         <group Title="SPARQL Query Language">
 					<example id="RQ-S-1" fspath="xml/rq_s_1"></example>
 	      </group>
         <group Title="Linked Data">
-                                        <example id="SEM-S-1" fspath="semweb/sem_s_1"></example>
+	    <example id="SEM-S-1" fspath="linkeddata/sem_s_1"></example>
               </group>
 
       </group>

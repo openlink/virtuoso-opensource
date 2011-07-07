@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -376,7 +376,7 @@ OAT.GraphSidebar = function(graph) {
 	}
 
 	this.create = function(button) {
-		self.div = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"2px",width:"300px",height:"100%",overflow:"auto"},"rdf_sidebar");
+		self.div = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"2px",width:"300px",height:"100%",overflow:"auto",className:"rdf_sidebar"});
 		self.div.style.backgroundColor = "#fff";
 		OAT.Style.set(self.div,{opacity:0.8});
 		self.button = button;

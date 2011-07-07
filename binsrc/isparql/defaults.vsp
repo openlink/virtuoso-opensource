@@ -29,10 +29,10 @@
   default_dgu := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'DefaultGraph');
   if (default_dgu is null)
   {
-    default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
-    if (default_dgu is not null)
-      default_dgu := 'http://' || default_dgu || '/dataspace';
-    else
+    --default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
+    --if (default_dgu is not null)
+    --  default_dgu := 'http://' || default_dgu || '/dataspace';
+    --else
       default_dgu := '';
   }
 
@@ -69,21 +69,56 @@
   api_key := registry_get ('iSPARQL_API_KEY');
   if (0 = api_key) api_key := '';
   
+  declare pivot_installed varchar;
+  pivot_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
+      pivot_installed := 'true';
+
+  declare curi_installed varchar;
+  curi_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('c_uri') is not NULL)
+	curi_installed := 'true';
+
+  declare addthis_key varchar;
+  addthis_key := registry_get ('iSPARQL_ADDTHIS_KEY');
+
+  if ('1' = addthis_key) addthis_key := 'xa-4ce13e0065cdadc0';
 ?>
-{  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
-   query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
-   sponge:'<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>',
-   auth: {
-       endpoint:'./auth.vsp',
-       user:    '<?vsp http(replace(default_user,'\'','\\\'')); ?>',
-       pass:    '<?vsp http(replace(default_pass,'\'','\\\'')); ?>'
+{  "graph":"<?vsp http(replace(default_dgu,'\'','\\\'')); ?>",
+   "query":"<?vsp http(replace(def_qry,'\'','\\\'')); ?>",
+   "sponge":"<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>",
+   "auth":{
+       "user":"<?vsp http(replace(default_user,'\'','\\\'')); ?>",
+       "pass":"<?vsp http(replace(default_pass,'\'','\\\'')); ?>"
    },<?vsp 
         if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
-          http('        getInitialCredentials:''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''',\n');
+          http('"getInitialCredentials":"' || registry_get('iSPARQL_GET_INITIAL_AUTH') || '"');
         if (isstring(registry_get('iSPARQL_AUTH_ENDPOINT')))
-          http('        authEndpoint:''' || registry_get('iSPARQL_AUTH_ENDPOINT') || ''',\n');
+          http('"authEndpoint":"' || registry_get('iSPARQL_AUTH_ENDPOINT') || '"');
 ?>
-   map_type: '<?= map_type ?>',
-   api_key: '<?=api_key ?>',
-   setup_done: <?= setup_done ?>
+   "map_type":"<?= map_type ?>",
+   "api_key":"<?= api_key ?>",
+<?vsp if (0 = addthis_key) { ?>
+   "addthis_key":false,
+<?vsp } else { ?>
+   "addthis_key":"<?= addthis_key ?>",
+<?vsp } ?>
+   "pivotInstalled":<?= pivot_installed ?>,
+   "curiInstalled":<?= curi_installed ?>,
+   "setup_done":<?= setup_done ?>,
+   "namespaces":[
+<?vsp
+  declare _fst integer;
+  _fst := 0; 
+  set isolation = 'committed';
+  for select ns_prefix, ns_url from DB.DBA.SYS_XML_PERSISTENT_NS_DECL do 
+  {
+?>
+    <?=case when _fst = 1 then ',' else '' end?>["<?=ns_url?>","<?=ns_prefix?>"]
+<?vsp
+    _fst := 1;
 }
+?>
+   ]}

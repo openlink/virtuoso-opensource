@@ -93,7 +93,7 @@
 									<xsl:with-param name="string" select="a:content"/>
 								</xsl:call-template>
 							</sioc:content>
-							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
 						</rdf:Description>
 						<foaf:Person rdf:about="{vi:proxyIRI(a:author/a:uri)}">
 							<foaf:made rdf:resource="{vi:proxyIRI(a:link[@rel='alternate']/@href)}"/>
@@ -127,13 +127,13 @@
 									<xsl:with-param name="string" select="a:title"/>
 								</xsl:call-template>
 							</dc:title>
-							<sioc:content>
+							<bibo:content>
 								<xsl:call-template name="add-href">
 									<xsl:with-param name="string" select="a:content"/>
 								</xsl:call-template>
-							</sioc:content>
+							</bibo:content>
 							<rdfs:seeAlso rdf:resource="{substring-before(a:link[@rel='thread']/@href, '.atom')}"/>
-							<foaf:maker rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(a:author/a:uri)}"/>
 						</rdf:Description>
 
 						<foaf:Person rdf:about="{vi:proxyIRI(a:author/a:uri)}">
@@ -150,12 +150,8 @@
 				</xsl:when>
 				<xsl:when test="$what = 'user'">
 					<foaf:Document rdf:about="{$docproxyIRI}">
-						<dc:subject>
-							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
-						</dc:subject>
-						<foaf:primaryTopic>
-							<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
-						</foaf:primaryTopic>
+						<dcterms:subject rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
+						<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}" />
 					</foaf:Document>
 					<xsl:apply-templates select="user" />
 				</xsl:when>
@@ -231,19 +227,19 @@
 				<xsl:with-param name="string" select="text"/>
 			</xsl:call-template>
 		</dc:title>
-		<sioc:content>
+		<bibo:content>
 			<xsl:call-template name="add-href">
 				<xsl:with-param name="string" select="text"/>
 			</xsl:call-template>
-		</sioc:content>
+		</bibo:content>
 		<dc:source>
-			<xsl:value-of select="source" />
+			<xsl:value-of select="concat($baseUri, '#this')" />
 		</dc:source>
 		<xsl:if test="in_reply_to_status_id != ''">
 			<sioc:reply_of rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}"/>
 		</xsl:if>
 		<rdfs:seeAlso rdf:resource="{concat('http://search.twitter.com/search/thread/', id)}"/>
-		<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
+		<dcterms:creator rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
 	</xsl:template>
 
 	<xsl:template name="status">
@@ -282,22 +278,22 @@
 				<xsl:value-of select="id" />
 			</twitter:id>
 			<xsl:if test="followers_count != ''">
-				<twitter:followers_count>
+				<twitter:followers_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="followers_count" />
 				</twitter:followers_count>
 			</xsl:if>
 			<xsl:if test="friends_count != ''">
-				<twitter:friends_count>
+				<twitter:friends_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="friends_count" />
 				</twitter:friends_count>
 			</xsl:if>
 			<xsl:if test="favourites_count != ''">
-				<twitter:favourites_count>
+				<twitter:favourites_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="favourites_count" />
 				</twitter:favourites_count>
 			</xsl:if>
 			<xsl:if test="statuses_count != ''">
-				<twitter:statuses_count>
+				<twitter:statuses_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="statuses_count" />
 				</twitter:statuses_count>
 			</xsl:if>
@@ -316,6 +312,7 @@
 			<xsl:if test="$what = 'followers'">
 				<sioc:follows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
 			</xsl:if>
+			<owl:sameAs rdf:resource="{concat('http://twitter.com/!#/', screen_name)}"/>
 		</foaf:Person>
 	</xsl:template>
 

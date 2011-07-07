@@ -54,9 +54,11 @@ lib:
 virt_sesame.jar: $(SESAME_SRC)
 	-rm -rf out.driver
 	@mkdir out.driver
+	env PATH="$(JDK)/Commands:$(JDK)/bin:$(PATH)" \
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
+	env PATH="$(JDK)/Commands:$(JDK)/bin:$(PATH)" \
 	$(JAR) cvf virt_sesame.jar -C out.driver virtuoso
 	
 

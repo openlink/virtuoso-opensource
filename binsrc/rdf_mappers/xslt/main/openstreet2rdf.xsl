@@ -91,7 +91,7 @@
 			</xsl:for-each>
 		</geo:Feature>
 
-		<xsl:for-each select="node">
+		<!--xsl:for-each select="node">
 			<geo:Feature rdf:about="{vi:proxyIRI (concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon))}">
 				<wgs84_pos:lat>
 					<xsl:value-of select="@lat"/>
@@ -103,7 +103,7 @@
 				<openstreetmap:id>
 					<xsl:value-of select="@id"/>
 				</openstreetmap:id>
-				<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}"/>
+				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @user))}"/>
 				<dcterms:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 					<xsl:value-of select="@timestamp"/>
 				</dcterms:modified>
@@ -119,7 +119,7 @@
 							</geo:name>
 						</xsl:when>
 						<xsl:when test="@k = 'created_by'">
-							<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @v))}"/>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('http://openstreetmap.org/user/', @v))}"/>
 						</xsl:when>
 						<xsl:otherwise>
 							<xsl:element namespace="http://openstreetmap.org/elements/" name="{@k}">
@@ -139,7 +139,7 @@
 				</foaf:Person>
 			</xsl:if>
 
-		</xsl:for-each>
+		</xsl:for-each-->
     </xsl:template>
 
     <xsl:template match="text()" />

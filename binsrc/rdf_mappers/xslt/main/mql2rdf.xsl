@@ -43,6 +43,8 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri" />
+    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+
     <xsl:param name="wpUri" />
 
     <xsl:variable name="ns">http://www.freebase.com/</xsl:variable>
@@ -50,7 +52,7 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:if test="/results/ROOT/result/*">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$docproxyIRI}">
 		    <rdf:type rdf:resource="&bibo;Document"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>

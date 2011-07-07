@@ -28,6 +28,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -43,9 +44,12 @@
   xmlns:umbel="http://umbel.org/umbel#"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:awol="&awol;"
+  xmlns:dcterms="&dcterms;"
+  xmlns:xhv="http://www.w3.org/1999/xhtml/vocab#"
   version="1.0">
   <xsl:output method="xml" indent="yes" encoding="utf-8"/>
   <xsl:param name="baseUri" />
+  <xsl:param name="source" />
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
   <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
@@ -67,7 +71,7 @@
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
       </rdf:Description>
       <rdf:Description rdf:about="{$resourceURL}">
-		<rdf:type rdf:resource="&bibo;Document"/>
+		<!--rdf:type rdf:resource="&bibo;Document"/-->
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
 		<xsl:apply-templates select="//a[@href]"/>
@@ -83,13 +87,13 @@
       <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
 	  <rdf:Description rdf:about="{$resourceURL}#content">
 	      <rdf:type rdf:resource="&awol;Content"/>
-	      <awol:src rdf:resource="{$baseUri}"/>
+	      <awol:src rdf:resource="{$source}"/>
 	  </rdf:Description>
       </xsl:if>
   </xsl:template>
 
   <xsl:template match="link[@rel='alternate']">
-      <rdfs:seeAlso rdf:resource="{@href}"/>
+      <xhv:alternate rdf:resource="{@href}"/>
   </xsl:template>
 
   <xsl:template match="*" mode="rdf-in-comment">
@@ -121,9 +125,11 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='author']">
+	<xsl:if test="string-length(@content) &gt; 0">      
       <dc:creator>
 		<xsl:value-of select="@content"/>
       </dc:creator>
+	</xsl:if>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='byl']">
@@ -139,23 +145,13 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <dc:subject>
+      <dcterms:subject>
 		<xsl:value-of select="@content"/>
-	  </dc:subject>
-      <!--xsl:variable name="res" select="vi:umbelGet (@content)"/>
-      <xsl:for-each select="$res//object[@type='umbel:SubjectConcept']">
-	  <umbel:isAbout rdf:resource="{@uri}"/>
-      </xsl:for-each>
-      <xsl:variable name="nes" select="vi:umbelGetNE (@content)"/>
-      <xsl:for-each select="$nes//object[@type='owl:Thing']">
-	  <owl:sameAs rdf:resource="{@uri}"/>
-      </xsl:for-each-->
+	  </dcterms:subject>
   </xsl:template>
 
   <xsl:template match="img[@src like 'http://farm%.static.flickr.com/%/%\\_%.%']">
-      <foaf:depiction>
-	  <foaf:Image rdf:about="{@src}"/>
-      </foaf:depiction>
+      <foaf:depiction rdf:resource="{@src}"/>
   </xsl:template>
 
   <xsl:template match="a[@href]">

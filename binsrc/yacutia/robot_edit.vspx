@@ -35,6 +35,7 @@
       <v:variable name="_newd" type="varchar" default="''" persist="0" />
       <v:variable name="_flow" type="varchar" default="''" persist="0" />
       <v:variable name="_dflow" type="varchar" default="''" persist="0" />
+      <v:variable name="_intv" type="int" default="0" persist="0" />
       <v:variable name="_opage" type="varchar" default="''" persist="0" />
       <v:variable name="_img" type="varchar" default="''" persist="0" />
       <v:variable name="_dav" type="varchar" default="''" persist="0" />
@@ -45,7 +46,7 @@
       <v:variable name="_ask_rdf" type="int" default="0" persist="0" />
       <v:variable name="_udata" type="any" default="NULL" persist="0" />
       <v:variable name="_auth" type="varchar" default="''" persist="0" />
-      <v:variable name="mode" type="varchar" default="''" persist="0" />
+      <v:variable name="mode" type="varchar" default="''" persist="0" param-name="mode"/>
       <v:variable name="_old_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_uid" type="varchar" default="''" persist="0" />
@@ -53,6 +54,17 @@
       <v:variable name="_store_fn" type="varchar" default="''" persist="0" />
       <v:variable name="_ext_fn" type="varchar" default="''" persist="0" />
       <v:variable name="_rdf_flw" type="varchar" default="''" persist="0" />
+      <v:variable name="_rdf_graph" type="varchar" default="''" persist="0" />
+      <v:variable name="_html_meta" type="int" default="0" persist="0" />
+      <v:variable name="_other" type="int" default="0" persist="0" />
+      <v:variable name="_convhtml" type="int" default="0" persist="0" />
+      <v:variable name="_xp_exp" type="varchar" default="null" persist="0" />
+      <v:variable name="_depth" type="int" default="null" persist="0" />
+      <v:variable name="_accept_rdf" type="int" default="0" persist="0" />
+      <v:variable name="_bot" type="int" default="1" persist="0" />
+      <v:variable name="_thr" type="int" default="1" persist="0" />
+      <v:variable name="_delay" type="float" default="1" persist="0" />
+      <v:variable name="_head" type="varchar" default="null" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -81,25 +93,35 @@
       <v:before-data-bind>
         <v:script>
           <![CDATA[
-            declare _idx, _oth varchar;
-            declare _n_own integer;
+            declare _idx varchar;
+            declare _n_own, ename integer;
             self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
-            if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit')
+            if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
             {
 	      declare _host, _root, _tmp any;
-              _oth := '';
               _n_own := 0;
 	      _host := get_keyword ('EDIT', self.vc_page.vc_event.ve_params);
 	      _root := get_keyword ('root', self.vc_page.vc_event.ve_params);
               select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
-                VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN
+		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
+		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
+		VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY, VS_HEADERS
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
-                self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store, self._ask_rdf, self._udata, self._store_fn, self._ext_fn
+		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
+		self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
+		self._accept_rdf, self._bot, self._thr, self._delay, self._head
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+
+              if (self._other is null) 
+	        self._other := 0;	      
+              else if (self._other = 'checked')
+	        self._other := 1;
               self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
-              update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
+	      ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
+	      self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
+              --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
               self._root := concat('/DAV/', self._root);
               self._newd := subseq(datestring(self._newd), 0, 19);
               self._old_url := self._url;
@@ -108,6 +130,8 @@
 	        self._udata := vector ();
               _tmp := get_keyword ('follow-property', self._udata);                  		
 	      self._rdf_flw := '';
+	      self._html_meta := get_keyword ('follow-meta', self._udata, 0);
+	      self._rdf_graph := get_keyword ('rdf-graph', self._udata, '');
 	      foreach (any x in _tmp) do
 	        {
 		  self._rdf_flw := self._rdf_flw || x || '\r\n';
@@ -141,11 +165,14 @@
               self._flow := '';
               self._dflow := '';
               self._store := '';
-              self._redir := '';
+              self._redir := '1';
 	      self.target_url := '';
 	      self.target_uid := '';
 	      self.target_pwd := '';
 	      self._udata := vector ();
+              self._depth := 'unlimited';
+	      self._delay := 0;
+	      self._head := '';
             }
           ]]>
         </v:script>
@@ -286,6 +313,57 @@
               </td>
             </tr>
             <tr>
+              <td/>
+              <td>
+                <v:check-box name="bot" value="1" initial-checked="--case when self._bot then 1 else 0 end" xhtml_id="bot"/>
+                <label for="bot">Use robots.txt</label>
+              </td>
+            </tr>
+            <tr>
+		<td>Custom HTTP headers</td>
+              <td>
+                <v:text name="head" value="--coalesce (self._head, '')"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <label for="redir">Number of HTTP redirects to follow</label>
+	    </td>
+              <td>
+                <v:text name="redir" value="--self._redir" xhtml_id="redir" xhtml_size="5"/>
+              </td>
+            </tr>
+            <tr>
+		<td>XPath expression for links extraction</td>
+              <td>
+                <v:text name="xp_exp" value="--coalesce (self._xp_exp, '')"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <td>Crawling depth limit</td>
+              <td>
+                <v:text name="depth" value="--coalesce (self._depth, '')"  />
+              </td>
+            </tr>
+            <tr>
+              <td>Update Interval (minutes)</td>
+              <td>
+                <v:text name="intv" value="--self._intv"  />
+              </td>
+            </tr>
+            <tr>
+              <td>Number of threads</td>
+              <td>
+                <v:text name="thr" value="--self._thr"  />
+              </td>
+            </tr>
+            <tr>
+              <td>Crawl delay (sec)</td>
+              <td>
+                <v:text name="delay" value="--sprintf ('%.2f', self._delay)"  />
+              </td>
+            </tr>
+            <tr>
               <td>Store Function</td>
               <td>
                 <v:text name="store_fn" value="--self._store_fn" xhtml_size="50"/>
@@ -314,6 +392,26 @@
               <td>
                 <v:check-box name="semweb" value="1" initial-checked="--case when self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE' then 1 else 0 end" xhtml_id="semweb"/>
                 <label for="semweb">Semantic Web Crawling</label>
+              </td>
+            </tr>
+            <tr>
+		<td><small>If</small> Graph IRI <small>is unassigned use this Data Source URL:</small></td>
+              <td>
+                <v:text name="rdf_graph" value="--self._rdf_graph"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+		<td/>
+              <td>
+                <v:check-box name="other" value="1" initial-checked="--self._other" xhtml_id="other"/>
+                <label for="other">Follow URLs outside of the target host</label>
+              </td>
+            </tr>
+            <tr>
+		<td/>
+              <td>
+                <v:check-box name="html_meta" xhtml_id="html_meta" value="1" initial-checked="--self._html_meta" />
+		<label for="html_meta">Follow HTML meta link</label>
               </td>
             </tr>
             <tr>
@@ -346,13 +444,6 @@
             <tr>
               <td/>
               <td>
-                <v:check-box name="redir" value="1" initial-checked="--case when self._redir then 1 else 0 end" xhtml_id="redir"/>
-                <label for="redir">Follow HTTP redirects</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
                 <v:check-box name="store" value="1" initial-checked="--case when self._store then 1 else 0 end" xhtml_id="store"/>
                 <label for="store">Store content locally</label>
               </td>
@@ -360,9 +451,25 @@
             <tr>
               <td/>
               <td>
+		<v:check-box name="convhtml" value="1" initial-checked="--case when self._convhtml then 1 else 0 end" xhtml_id="convhtml"
+		  />
+		<label for="convhtml">Convert Links</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
 		<v:check-box name="ask_rdf" value="1" initial-checked="--case when self._ask_rdf then 1 else 0 end" xhtml_id="ask_rdf"
 		  />
-		<label for="ask_rdf">Ask for RDF</label>
+		<label for="ask_rdf">Run Sponger</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+		<v:check-box name="accept_rdf" value="1" initial-checked="--case when self._accept_rdf then 1 else 0 end" xhtml_id="accept_rdf"
+		  />
+		<label for="accept_rdf">Accept RDF</label>
               </td>
             </tr>
             <tr>
@@ -385,8 +492,15 @@
 			  </tr>
 			  <?vsp
 			  declare ix int;
+			  declare _root_col varchar;
 			  ix := 0;
-			   for select RM_DESCRIPTION, RM_PID, VM_ID from WS.WS.VFS_SITE_RDF_MAP right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID) where RM_ENABLED = 1 order by RM_ID do {
+                          if (left(self._root, 5) = '/DAV/')
+			    _root_col := right(self._root, length(self._root) - 5);
+                          else
+			    _root_col := self._root;
+			  for select RM_DESCRIPTION, RM_PID, VM_ID from (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = _root_col) x 
+			  	right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID)  
+			  	order by RM_ID do {
 			   ?>
 			   <tr class="<?V case when mod(ix, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
 			       <td>
@@ -434,10 +548,11 @@
                   <v:on-post>
                     <v:script>
                       <![CDATA[
-                        declare item, idx, len, _idx, _oth, tar_url, sav_host varchar;
+                        declare item, idx, len, _idx, tar_url, sav_host, desc_save varchar;
                         declare ret_arr, opts, tmp any;
                         declare pos integer;
                         tar_url := trim (get_keyword ('tar_url', params, ''));
+			desc_save := self._descr;
                         if (length(tar_url) <= 0)
                         {
                           self.vc_error_message := 'Incorrect target URL';
@@ -488,6 +603,27 @@
                         self._dflow := get_keyword ('dflow', params);
                         self._store_fn := get_keyword ('store_fn', params);
                         self._ext_fn := get_keyword ('ext_fn', params);
+			self._intv := atoi (get_keyword ('intv', params, '0'));
+                        self._other := atoi (get_keyword ('other', params, '0'));
+
+			self._xp_exp := get_keyword ('xp_exp', params, '');
+			self._head := get_keyword ('head', params, '');
+			self._depth := get_keyword ('depth', params, '');
+
+			if (self._depth = '' or self._depth = 'unlimited') self._depth := null;
+			if (self._xp_exp = '') self._xp_exp := null;
+			if (self._head = '') self._head := null;
+
+			if (self._xp_exp is not null)
+			  {
+			    declare exit handler for sqlstate '*' {
+                               self.vc_is_valid := 0;
+			       self.vc_error_message := 'Invalid XPath expression for URL extraction';
+			       return 0;
+			    };
+			    xpath_eval (self._xp_exp, xtree_doc ('<dummy/>'));
+			  }
+
                         self._del := get_keyword ('del', params);
                         if (self.mode = 'edit')
                           self._opage := self._opage;
@@ -501,12 +637,18 @@
 			self._store := get_keyword ('store', params, '0');
 			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
 			self._ask_rdf := atoi (get_keyword ('ask_rdf', params, '0'));
+			self._accept_rdf := atoi (get_keyword ('accept_rdf', params, '0'));
+			self._convhtml := atoi (get_keyword ('convhtml', params, '0'));
+			self._bot := atoi (get_keyword ('bot', params, '0'));
+			self._thr := atoi (get_keyword ('thr', params, '1'));
+			self._delay := atof (get_keyword ('delay', params, '0'));
 
 			if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
 			  {
 			    self._store_fn := 'WS.WS.SITEMAP_RDF_STORE'; 
                             self._ext_fn := 'WS.WS.SITEMAP_XML_PARSE';   
 			    self._ask_rdf := 1;
+			    self._accept_rdf := 1;
 			  }
 			if (get_keyword ('semweb', params) <> '1' and self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE')
                           {
@@ -515,6 +657,8 @@
 			  }
 			declare farr any;  
 		        self._rdf_flw := get_keyword ('rdf_flw', params, '');	  
+		        self._html_meta := atoi (get_keyword ('html_meta', params, '0'));	  
+		        self._rdf_graph := get_keyword ('rdf_graph', params, '');	  
 			tmp := split_and_decode (self._rdf_flw, 0, '\0\0\n');
 			farr := vector ();
 			foreach (any x in tmp) do
@@ -530,6 +674,11 @@
 			-- 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
                         if (length (farr))
 		          opts := vector_concat (opts, vector ('follow-property', farr));	
+			opts := vector_concat (opts, vector ('follow-meta', self._html_meta));	
+			if (length (self._rdf_graph))
+			  opts := vector_concat (opts, vector ('rdf-graph', self._rdf_graph));
+                        if (self._ask_rdf)
+			  opts := vector_concat (opts, vector ('meta_rdf', 1));
 
 			self._udata := opts;
 
@@ -537,7 +686,6 @@
                         if (self._del = '1') self._del := 'checked';
                         if (self._img = '1') self._img := 'checked';
                         if (self._dav = '1') self._dav := 'checked';
-                        _oth := null;
                         if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
                         {
                           self.vc_error_message := 'Host, Target collection and Start path must be specified';
@@ -587,7 +735,6 @@
                               VS_SRC = self._img,
                               VS_OPAGE = self._opage,
                               VS_METHOD = self._dav,
-                              VS_OTHER = _oth,
                               VS_OPTIONS = self._auth,
                               VS_URL = self._url,
                               VS_REDIRECT = self._redir,
@@ -595,12 +742,22 @@
 			      VS_DLOAD_META = self._ask_rdf,
 			      VS_UDATA = serialize (self._udata),
 			      VS_STORE_FN = self._store_fn,
-			      VS_EXTRACT_FN = self._ext_fn
+			      VS_EXTRACT_FN = self._ext_fn,
+			      VS_OTHER = case when self._other = 1 then 'checked' else NULL end,
+			      VS_CONVERT_HTML = self._convhtml,
+			      VS_DEPTH = self._depth,
+			      VS_XPATH = self._xp_exp,
+			      VS_ACCEPT_RDF = self._accept_rdf,
+			      VS_THREADS = self._thr,
+			      VS_BOT = self._bot,
+			      VS_DELAY = self._delay,
+			      VS_HEADERS = self._head
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
                           if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
                             update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
+                          insert soft WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
                         }
                         else
                         {
@@ -608,18 +765,26 @@
                           hinf := WS.WS.PARSE_URI(self._host);
                           if (lower(hinf[0]) = 'http' and hinf[1] <> '')
                             self._host := hinf[1];
-                          insert into WS.WS.VFS_SITE(
-                            VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
+			  insert into WS.WS.VFS_SITE
+			    (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
                             VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
-			    VS_STORE_FN, VS_EXTRACT_FN)
-                            values(self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth,
-			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), self._store_fn, self._ext_fn);
-                          insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
+			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
+			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
+			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
+			    VS_THREADS, VS_BOT, VS_DELAY, VS_HEADERS)
+			    values
+			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
+			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
+			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
+			    self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
+			    self._thr, self._bot, self._delay, self._head);
+
+			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
+			    values (self._host, self._url, now(), 'waiting', self._root);
                         }
 
-			declare _mp, _idx, p_id, _seq any;
+			declare _mp, _idx, p_id, _seq, ename, ename_old any;
 			_seq := _idx := 0;
 			delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
 			if (self._get_rdf)
@@ -632,6 +797,22 @@
 				    values (self._host,self._root,p_id,_seq);
 			       }
 		  	  }
+			ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
+			if (desc_save <> '')
+			  {
+			    ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
+                            if (ename_old <> ename)
+			      delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;   
+			  }  
+                        if (self._intv = 0)
+			  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
+			else 
+			  {
+			    insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL) 
+			       values (ename, now (), self._intv, 
+			          concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)')
+				 ); 
+		          }	  
 			commit work;
 
                         http_request_status ('HTTP/1.1 302 Found');

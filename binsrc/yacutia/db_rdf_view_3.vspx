@@ -39,6 +39,7 @@
       <v:variable persist="0" name="base_url" type="any" default="null" param-name="host"/>
       <v:variable persist="0" name="voidst" type="int" default="0" param-name="st"/>
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
+      <v:variable name="sync_ret" type="any" default="null" persist="temp"/>
       <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
       <v:variable persist="0" name="body_o" type="any" default="null" param-name="cr_owl"/>
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
@@ -76,7 +77,7 @@
 <table>
     <v:method name="exec_all" arglist="inout control vspx_control"><![CDATA[
 	      declare stat, msg varchar;
-	      declare res, arr, data, meta, gr, path any;
+	      declare res, arr, data, meta, gr, path, ret any;
 	      declare inx int;
 
 	      path := concat('/DAV/temp/', self.sid, '.sql');
@@ -98,6 +99,12 @@
                     res[inx] := vector (vector (stat, msg));
 		  inx := inx + 1;
 		}
+             if (self.rdb_sync.ufl_selected)
+	       {
+	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected);
+                 if (0 = length (self.sync_ret))
+		   self.sync_ret := vector (vector ('00000', 'OK'));
+  	       }	       
              if (self.owl)
                {
 	         path := concat('/DAV/temp/', self.sid, '.n3');
@@ -107,7 +114,7 @@
 		 gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 		 stat := '00000';
 		 msg := 'OK';
-		 exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_o, gr), 0, meta, data);
+		 exec ('DB.DBA.TTLP (?, \'\', ?, 255)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 		 res [length(arr)] := vector (vector (stat, msg));
 		 exec (sprintf ('sparql
 		 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -243,6 +250,24 @@
 	      ?>
 	  </table>
 	  <?vsp
+	  if (length (self.sync_ret))
+	    {
+	  ?>
+	  <br/>
+	  <h2>RDB2RDF Triggers Status</h2>
+	  <table class="listing">
+	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
+	      <?vsp
+	      foreach (any _row in self.sync_ret) do
+                {
+	      ?>
+	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
+	      <?vsp
+	        }
+	      ?>
+	  </table>
+	  <?vsp
+	    }  
 	  if (self.view_vd or self.owl_vd)
 	    {
 	  ?>
@@ -251,9 +276,13 @@
 	    }
 	  ?>
 	  <?vsp
-	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr any;
+	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
 	       stat := '00000';
 	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	       if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+	         fct_installed := 1;
+               else 
+	         fct_installed := 0;
 	       if (__proc_exists (fix_identifier_case ('shcompo_clear'), 2) is not null)
 	         shcompo_clear ();
 	       if (self.view_vd)
@@ -272,7 +301,10 @@
 			       exec (qr, stat, msg, vector (), 1, meta2, data2);
 			       if (stat = '00000' and length (data2) and length (data2[0]))
 				 {
-				   http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+                                   if (fct_installed)
+				     http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+				   else
+				   http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
 				 }
 			     }
 			 }
@@ -287,7 +319,10 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Statistics Data (VoiD Graph): <br/>');
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+		   if (fct_installed)
+		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+                   else  
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
 	        }
@@ -299,7 +334,10 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Ontology: <br/>');
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+		   if (fct_installed)
+	             http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+		   else
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
 	        }
@@ -318,6 +356,10 @@
 	  <h2>Ontology</h2>
 	  <v:textarea name="cr_owl" xhtml_cols="120" xhtml_rows="20" value="--self.body_o"/>
 	  <?vsp } ?>
+	  <?vsp } ?>
+	  <?vsp if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC')) { ?>
+	  <br /><v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
+	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
 	  <?vsp } ?>
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
 	  <v:button action="simple" name="cncl" value="Start Over">

@@ -42,6 +42,11 @@
   </vm:menu>
   <vm:header caption="SPARQL Execution"/>
   <vm:pagebody>
+  <v:on-init>
+    <![CDATA[
+    set http_charset='utf-8';
+    ]]>
+  </v:on-init>
   <![CDATA[
   <script type="text/javascript">
 function callSparql (graph_id, qry_id, res_id)
@@ -51,23 +56,20 @@ function callSparql (graph_id, qry_id, res_id)
   var qry = qry_in.value;
   var graph_in = document.getElementById (graph_id);
   var graph = graph_in.value;
-  var endpoint = '/sparql/?';
-  var format = 'text/html';
-  var callback = function(data,xmlhttp)
+  var endpoint = '/sparql/';
+  var callback = function(data)
      {
        div.innerHTML = data;
      }
-  var body = function()
-     {
-       var body = 'query='+encodeURIComponent (qry)+'&format='+ encodeURIComponent('text/html') +
+  var body = 'query='+encodeURIComponent (qry)+
+          '&format='+ encodeURIComponent('text/html') +
           '&default-graph-uri='+encodeURIComponent (graph);
-       return body;
-     }
-  OAT.Ajax.errorRef = function(status,response,xmlhttp)
+  errorfn = function(x)
   {
+    var response = x.getResponseText ()
     div.innerHTML = '<div class="error_msg"><pre>' + response + '</pre></div>';
   }
-  OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
+  OAT.AJAX.POST (endpoint, body, callback, {type:OAT.AJAX.TYPE_TEXT, onerror:errorfn, headers:{Accept:'text/html'}});
 }
   </script>
 
@@ -154,9 +156,8 @@ function callSparql (graph_id, qry_id, res_id)
 			    </tr>
 			    <tr>
 			      <td colspan="2">
-				<v:button action="simple" name="exec1" value="Execute"
-				  xhtml_onclick='javascript: callSparql ("default_graph", "qr", "rdf_result"); return false' >
-				</v:button>
+				<input type="button"  onclick="javascript: callSparql ('default_graph', 'qr', 'rdf_result'); return false"
+				      name="exec1" value="Execute"/>
 				<v:button action="simple" name="sav1" value="Save">
 				  <v:on-post>
 

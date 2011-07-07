@@ -1,0 +1,329 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="auth_serv"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso Access Control Lists</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="0" name="acl_name" type="varchar" default="'HTTP'" param-name="acl"/>
+
+      <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
+      <v:variable name="edit_oauth" type="varchar" default="null" param-name="edit" />
+      <v:variable name="del_oauth" type="varchar" default="null" param-name="del" />
+      <v:variable name="u_id" type="int" default="null" />
+      <v:variable name="apps" type="any" default="null" persist="temp"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="HTTP" value="Access Control Lists"/>
+    </vm:menu>
+    <vm:header caption="Access Control Lists">
+    </vm:header>
+    <vm:pagebody>
+  <v:method name="astyle" arglist="in cmp varchar">
+    <![CDATA[
+      return 'page_tab';
+    ]]>
+  </v:method>
+    <vm:help id="sec_auth_serv" sect=""/>
+    <v:form name="page_form" type="simple" method="POST">
+	<!-- top of security layout -->
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+		      <td class="page_tab" align="center">
+			  	
+			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
+		      </td>
+		      <td class="page_tab_selected" align="center">
+			Access Control
+		      </td>
+			<td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+			<td valign="top">
+		   <!-- end of top security layout -->
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+		      <td class="<?V self.astyle ('HTTP') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=HTTP" value="HTTP" render-only="1"/>
+		      </td>
+		      <td class="<?V self.astyle ('NEWS') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=NEWS" value="NEWS" render-only="1"/>
+		      </td>
+		      <td class="<?V self.astyle ('PROXY') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PROXY" value="PROXY" render-only="1"/>
+		      </td>
+                      <?vsp
+                        declare i, fnd integer;
+                        i := 0; fnd := 0;
+			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY') do
+                        {
+			  if (self.acl_name not in ('HTTP','NEWS','PROXY') and HA_LIST = self.acl_name)
+			    fnd := 1;
+			  ?>
+			  <td class="<?V self.astyle (HA_LIST) ?>" align="center">
+			    <v:url xhtml_style="page_tab" url="--sprintf ('sec_auth_serv.vspx?acl=%V', HA_LIST)"
+			      value="--HA_LIST" render-only="1"/>
+			  </td>
+			  <?vsp
+                          i := i + 1;
+                        }
+
+			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY'))
+			  {
+			  ?>
+			  <td class="<?V self.astyle (self.acl_name) ?>" align="center">
+			    <v:url xhtml_style="page_tab" url="--sprintf ('sec_auth_serv.vspx?acl=%V', self.acl_name)"
+			      value="--self.acl_name" render-only="1"/>
+			  </td>
+			  <?vsp
+			  }
+                      ?>
+		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?>
+		      <td class="page_tab_selected" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
+		      </td>
+		      <?vsp } ?>
+                        <!--td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+			      <td width="100%" align="right">
+                              </td>
+                            </tr>
+                          </table>
+                        </td-->
+			<td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN -->
+<?vsp
+  if (not self.vc_is_valid)
+    {
+?>
+<div class="error_msg" id="page_error_msg"><?vsp self.vc_error_summary (0); ?></div>
+<?vsp
+} ?>
+	  <div class="message"><v:label name="pwd_msg" value="--self.msg_msg" /></div>
+		      <v:form type="simple" method="POST">
+			<table class="listing">
+			  <colgroup>
+			    <col/>
+			    <col/>
+			    <col/>
+			  </colgroup>
+			  <tr class="listing_header_row">
+			    <th>Web ID</th>
+			    <th>Role</th>
+			    <th>Action</th>
+			  </tr>
+			  <v:data-set name="oauth" sql="select g.U_NAME, FS_URI from FOAF_SSL_ACL left outer join  SYS_USERS u on (u.U_NAME = FS_UID)
+			      	join SYS_USER_GROUP on (u.U_ID = UG_UID) join SYS_USERS g on (g.U_ID = UG_GID)" scrollable="1" editable="1" nrows="1000">
+			    <v:before-data-bind>
+                        if (not e.ve_is_post and self.del_oauth is not null)
+                        {
+			  declare uid varchar;
+                          uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.del_oauth);
+			  delete from FOAF_SSL_ACL where FS_URI = self.del_oauth;
+			  if (uid like 'SPUID%')
+			    USER_DROP (uid);
+			  self.vc_redirect ('sparql_acl.vspx');
+                        }
+                		  </v:before-data-bind>
+
+				  <v:template name="maps_rep" type="repeat">
+				    <v:template name="template7" type="if-not-exists">
+				      <tr><td colspan="4">No applications registered</td></tr>
+				    </v:template>
+                		    <v:template name="maps_brows" type="browse">
+            <v:after-data-bind>
+              if (not e.ve_is_post and control.te_rowset[1] = self.edit_oauth)
+              {
+                self.webid.ufl_value := control.te_rowset[1];
+                self.rol.ufl_value := control.te_rowset[0];
+              }
+            </v:after-data-bind>
+					<tr class="<?V case when self.edit_oauth = control.te_rowset[1] then 'listing_row_selected'
+					    when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                			    <td>
+                				    <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                				      format="%s" render-only="1"/>
+
+                			    </td>
+                			    <td>
+                				    <v:label name="ur1"
+                				      format="%s"
+                				      value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                				    />
+                			    </td>
+                			    <td>
+						<v:url name="ur3" value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
+                				      format="%s"
+                				      url="--sprintf ('sparql_acl.vspx?edit=%U', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                				      xhtml_title="Edit"
+                				      xhtml_alt="Edit"
+                				      />
+						  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                				      format="%s"
+                				      url="--sprintf ('sparql_acl.vspx?del=%U', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                				      xhtml_title="Delete"
+                				      xhtml_alt="Delete"
+                				      />
+                			    </td>
+                			  </tr>
+                		    </v:template>
+                		  </v:template>
+
+                		  <v:template name="maps_footer" type="simple">
+                		  <tr>
+                			  <td colspan="4" class="listing_col_action">
+                			    <vm:ds-navigation data-set="oauth" type="set" />
+                			  </td>
+                		  </tr>
+                		  </v:template>
+                	  </v:data-set>
+                	  </table>
+                  	  <div class="fm">
+			      <fieldset>
+		              Web ID: <v:text name="webid" value="" xhtml_size="100"/>
+			      <!--v:button action="browse" name="sel_id" value="Browse" selector="sel_user.vspx"
+				  child-window-options="scrollbars=yes, menubar=no, height=630, width=600"
+				  enabled="-#-coalesce ((select top 1 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.WA_USER_INFO'), 0)">
+				  <v:field name="webid"/>
+ 			      </v:button-->
+				  <br/>
+			      SPARQL Role: <v:select-list name="rol">
+				  <v:item name="SELECT" value="SPARQL_SELECT"/>
+				  <v:item name="SPONGE" value="SPARQL_SPONGE"/>
+				  <v:item name="UPDATE" value="SPARQL_UPDATE"/>
+			      </v:select-list>
+			      <!-- SQL Account: <v:text name="acc" value="" xhtml_size="100"/--><br/>
+				  <span class="fm_ctl_btn">
+				      <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_oauth),0)">
+					  <v:on-post>
+
+					      self.webid.ufl_value := null;
+					      self.rol.ufl_value := null;
+
+					      self.edit_oauth := null;
+					      self.save1.vc_data_bind (e);
+					      control.vc_enabled := 0;
+					  </v:on-post>
+				      </v:button>
+				  </span>
+                 	      <span class="fm_ctl_btn">
+                  		  <v:button name="save1" value="--case when self.edit_oauth is not null then 'Update' else 'Register' end" action="simple">
+				      <v:on-post><![CDATA[
+					  declare uid, orole varchar;
+					  self.webid.ufl_value := trim (self.webid.ufl_value);
+					  if (0 = length (self.webid.ufl_value))
+					    {
+  					      self.vc_is_valid := 0;
+					      self.vc_error_message := 'Web ID could not be empty';
+					      return;
+					    }
+					  if (0 = FOAF_CHECK_WEBID (self.webid.ufl_value))
+                                            {
+					      self.vc_is_valid := 0;
+                                              self.vc_error_message := 'The WebID is inaccessible or does not contain certificate properties';
+					      return;
+					    }
+					  if (self.edit_oauth is null)
+                                            {
+					      if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value))
+						{
+						  self.vc_is_valid := 0;
+						  self.vc_error_message := 'This Web ID is alredy registered';
+						  return;
+						}
+					      uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
+					      USER_CREATE (uid, uuid());
+					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
+					      USER_SET_OPTION (uid, 'DISABLED', 1);
+					      insert into FOAF_SSL_ACL (FS_URI, FS_UID) values (self.webid.ufl_value, uid);
+					    }
+                                          else
+					    {
+					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_oauth);
+					      orole := (select  g.U_NAME from SYS_USERS u join SYS_USER_GROUP on (u.U_ID = UG_UID)
+					      		join SYS_USERS g on (g.U_ID = UG_GID) where u.U_NAME = uid);
+					      USER_REVOKE_ROLE (uid, orole);
+					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
+					    }
+
+					  self.vc_redirect ('sparql_acl.vspx');
+                          ]]></v:on-post>
+                  		  </v:button>
+                	      </span>
+                  	  </fieldset>
+		      </div>
+		    </v:form>
+			<!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+		   <!-- bottom of security layout -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+	<!-- end of bottom security layout -->
+    </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+

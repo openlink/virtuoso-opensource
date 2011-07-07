@@ -430,7 +430,7 @@
                       else
                         _pub := aref(_pubs, _ix);
                   ?>
-                  <option value="<?V _pub ?>"><?V _pub ?></option>
+                  <option value="<?V _pub ?>"><?V case when _pub = '__rdf_repl' then 'RDF Publication' else _pub end ?></option>
                   <?vsp
                       _ix := _ix + 1;
                     }
@@ -530,12 +530,17 @@
             self.acct := get_keyword('pub', control.vc_page.vc_event.ve_params, '');
             if (self.acct = '')
               self.acct := get_keyword('acct', control.vc_page.vc_event.ve_params, '');
-            if (self.acct <> '')
-            {
               _stat := '00000';
               _msg := '';
+	    if (self.acct = '__rdf_repl')  
+	    {
+	      rexecute (self.dsn, 'select __id2i (RGGM_MEMBER_IID), \'RDF Graph\' from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = __i2id (?)', _stat, _msg, vector ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group'), null, null, _item);
+	    }
+            else if (self.acct <> '')
+            {
               rexecute(self.dsn, 'select TI_ITEM, TI_TYPE from DB.DBA.SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ACCT = ?', _stat, _msg, vector(self.acct), null, null, _item);
-              if (_stat = '00000')
+            }
+	    if (_stat = '00000' and self.acct <> '')
               {
                 _stat := '00000';
                 _msg := '';
@@ -543,7 +548,6 @@
                 if (_stat = '00000')
                   self.srv := aref(aref(_srv, 0), 0);
               }
-            }
           ?>
           <h3>Confirm subscription</h3>
           <p>Click on <b>Subscribe</b> to create local schema and sync with source server</p>
@@ -576,6 +580,8 @@
                   _itype := 'Table';
                 else if (_itp = 3)
                   _itype := 'PL/SQL Procedure';
+		else
+                  _itype := _itp;
                 _idx := _idx + 1;
 
                 http (sprintf ('<tr class="%s">', case when mod (_idx, 2) then 'listing_row_odd' else 'listing_row_even' end));

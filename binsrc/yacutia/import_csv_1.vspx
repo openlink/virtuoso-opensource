@@ -50,16 +50,27 @@
 	  if (pos)
 	    {
 	      declare i, ret integer;
-	      declare tmp_name, path varchar;
+	      declare tmp_name, attr, path varchar;
 
 	      ses := aref_set_0 (params, pos);
-	      tmp_name := '';
+	      attr := get_keyword ('attr-package_path1', params, vector ());
+	      tmp_name := get_keyword ('filename', attr, '');
+	      if (tmp_name = '')
+	        {
 	      while (i < 20)
                 {
                   tmp_name := sprintf('%s%d', tmp_name, rnd(10));
                   i := i + 1;
                 }
-	      path := concat('/DAV/temp/', tmp_name, '.vad');
+		  tmp_name := tmp_name || '.csv';   
+		}
+              if (tmp_name like '%.gz' and isstring (ses))
+                {
+		  tmp_name := regexp_replace (tmp_name, '\.gz\x24', '');
+		  ses := gzip_uncompress (ses); 
+		}
+                 	      
+	      path := concat('/DAV/temp/', tmp_name);
 	      if (ses is not null and length (ses))
 	        {
 		  set isolation='repeatable';
@@ -80,6 +91,62 @@
 	        }
 	    }
 	}
+	if (mode = 3 and e.ve_is_post and e.ve_button is not null and e.ve_button.vc_name = 'upl_btn')
+	  {
+	    declare i, ret integer;
+	    declare tmp, arr, url any; 
+	    declare tmp_name, path varchar;
+	    declare exit handler for sqlstate '*' {
+	      self.vc_is_valid := 0;
+	      self.vc_error_message := __SQL_MESSAGE;
+	      return;
+	    }; 
+            url := get_keyword ('url_path', params, '');
+	    arr := WS.WS.PARSE_URI (url);
+	    tmp := arr[2];
+	    tmp := split_and_decode (tmp, 0, '\0\0/');
+	    if (length (tmp))
+	      {
+	        tmp_name := tmp[length (tmp) - 1];
+	        path := concat('/DAV/temp/', tmp_name);
+              }		
+            else
+	      {
+	        tmp_name := '';
+	        while (i < 20)
+                  {
+                    tmp_name := sprintf('%s%d', tmp_name, rnd(10));
+                    i := i + 1;
+                  }
+		path := concat('/DAV/temp/', tmp_name, '.csv');
+	      }
+	    ses := http_client (url);
+	    if (tmp_name like '%.gz' and isstring (ses))
+	      {
+		tmp_name := regexp_replace (tmp_name, '\.gz\x24', '');
+		ses := gzip_uncompress (ses); 
+	      }
+	    if (ses is not null and length (ses))
+	    {
+	      set isolation='repeatable';
+	      connection_set ('vspx_user', 'dav');
+	      YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
+	      ret := DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, ses, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+	      connection_set ('vspx_user', null);
+	      if (ret < 0)
+		{
+		  rollback work;
+		  self.vc_is_valid := 0;
+		  self.vc_error_message := DAV_PERROR (ret);
+		}
+	      else
+		{
+		  self.upl_file := path;
+		}
+	    }
+
+	  }
+	   
       ]]></v:on-init>
       <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
         <table class="ctl_grp">
@@ -96,7 +163,7 @@
 	    <td>
 	      <?vsp if (self.rb_fs.ufl_selected) { ?>
               <v:text name="fs_package_path" xhtml_size="70"/>
-	      <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv" path="DAV" 
+	      <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv;*.csv.gz" path="DAV" 
 		  browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
 	      <?vsp } ?>
             </td>
@@ -127,6 +194,19 @@
             <td>
 	      <?vsp if (self.rb_upload.ufl_selected) { ?>
 	      <input type="file" name="package_path1" size="70"></input>
+	      <?vsp } ?>
+            </td>
+          </tr>
+          <tr>
+            <td>
+	      <v:radio-button name="rb_url" xhtml_id="rb_url" value="3" group-name="choice_source"
+		auto-submit="1"
+		/>
+              <label for="rb_url">URL</label>
+            </td>
+            <td>
+	      <?vsp if (self.rb_url.ufl_selected) { ?>
+              <v:text name="url_path" xhtml_size="70"/>
 	      <?vsp } ?>
             </td>
           </tr>
@@ -166,6 +246,21 @@
                     else if (mode = 2)
                     {
                       path := get_keyword('fs_package_path', control.vc_page.vc_event.ve_params);
+                    }
+                    else if (mode = 3)
+                    {
+		      if (self.upl_file is not null)
+		        {
+		          path := self.upl_file;
+			  commit work;
+			}
+		      else
+		        {
+			  rollback work;
+		          self.vc_is_valid := 0;
+			  self.vc_error_message := 'The file does not exists or it is empty.';
+			  return;
+	                }
                     }
                     if (path = '' or path is null)
                     {

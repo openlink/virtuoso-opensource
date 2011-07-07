@@ -66,7 +66,7 @@
 		if (ds is not null)
 		  ds.vc_data_bind (e);
 	      ]]></v:method>
-    <table align="left">
+    <table class="listing_ctr">
       <tr>
         <td>
           <v:form name="sf" type="simple" action="" method="POST">
@@ -183,7 +183,7 @@
 				      ]]></v:on-post>
 			      </v:button>
 		   </th>
-                   <th>
+                   <th class="new_item">
                      <v:url name="account_create_ref"
                             format="%s"
                             value="--'Create New Account'"

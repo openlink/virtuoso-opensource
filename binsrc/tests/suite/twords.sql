@@ -37,9 +37,11 @@ set timeout 1200;
 load revstr.sql;
 load succ.sql;
 drop table words;
-create table words(word varchar, revword varchar, len integer, primary key(word));
-create index revword on words(revword);
-create index len on words(len);
+create table words(word varchar, revword varchar, len integer, primary key(word))
+alter index words on words partition (word varchar);
+
+create index revword on words(revword) partition (revword varchar);
+create index len on words(len) partition (len int);
 foreach line in words.esp
  insert into words(word,revword,len) values(?,revstr(?1),length(?1));
 
@@ -309,6 +311,16 @@ ECHO BOTH $IF $EQU $LAST[2] "viravira" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Last word doubled='" $LAST[2] "'\n";
 
+-- ibid with dt and sort, test placing of funcs in place of lowest card 
+select v1.word, v2.word from words v1, (select distinct word from words where length (word) > 2) v2
+where length(v1.word) >= 3 and v2.word = concat(v1.word,lcase(v1.word)) order by ucase (v1.word);
+
+ECHO BOTH $IF $EQU $LAST[2] "viravira" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Last word doubled='" $LAST[2] "' with dt and sort\n";
+
+
+
 --
 -- Nothing new in the following two examples, commented out:
 --
@@ -337,7 +349,7 @@ v2.word < succ(subseq(v1.word,0,length(v1.word)-1)) and
 v2.word like '*s' and
 v3.word = subseq(v2.word,length(v1.word)-1,length(v2.word)-1)
 and length(v3.word) > 2
-order by v1.word;
+order by v1.word, v3.word;
 ECHO BOTH $IF $EQU $ROWCNT 248 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $ROWCNT " compound words of at least seven letters\n";

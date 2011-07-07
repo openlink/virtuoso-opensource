@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -24,36 +24,77 @@
 	rb.getTitle(item);
 	rb.getURI(item);
 
+        // predicate handlers get called in rebuild - used internally to detect labels, type, namespace prefixes
+
+        rb.addPredHandler ()
+        rb.removePredHandler ()
+
 	#rdf_side #rdf_cache #rdf_filter #rdf_tabs #rdf_content
 
 	data.triples
 	data.structured
 
+        Messages: 
+
+          OAT_RDF_STORE_LOADING
+          OAT_RDF_STORE_LOADED
+          OAT_RDF_STORE_LOAD_FAILED
+          OAT_RDF_STORE_CLEARED
+          OAT_RDF_STORE_ENABLED
+          OAT_RDF_STORE_DISABLED
+          OAT_RDF_STORE_URI_REMOVED
 */
 
 OAT.RDFStoreData = {
     FILTER_ALL:-1,
     FILTER_PROPERTY:0,
-    FILTER_URI:1
+    FILTER_URI:1,
+    TAG_IRI_ID: 0,
+    TAG_LITERAL: 1
 };
+
+
 
 OAT.RDFStore = function(tripleChangeCallback, optObj) {
     var self = this;
 
-    // properties used as labels
+    this.preferredClasses = {
+	'http://xmlns.com/foaf/0.1/Person': 0,
+	'http://': 1
+    };
+    
+    // properties used as labels - in order of preference
 
-    this.labelProps = {"http://xmlns.com/foaf/0.1/name": 0,
-		       "http://xmlns.com/foaf/0.1/nick": 1,
-		       "http://www.w3.org/2000/01/rdf-schema#label": 2,
-		       "http://purl.org/dc/elements/1.1/title": 3,
-		       "http://www.w3.org/2004/02/skos/core#prefLabel": 4};
+    this.labelProps = {
+	"http://www.w3.org/2000/01/rdf-schema#label": 0,
+	"http://www.w3.org/2004/02/skos/core#prefLabel": 1,
+	"http://xmlns.com/foaf/0.1/name": 2,
+	"http://xmlns.com/foaf/0.1/nick": 3,
+	"http://purl.org/dc/elements/1.1/title": 4,
+	"http://dbpedia.org/property/name":5,
+	"http://www.w3.org/2002/12/cal/ical#summary": 6
+    };
 
+    self.labelPropLookup = []; // label predicates by iid
+
+//
+// iid: {label: "", pref: ""}
+
+    this.labels = {}; // labels by iid
+    this.label_cnt = 0;
+    this.label_proc_cnt = 0;
+
+    this.store_changed = false;
+	
+    this._pred_handlers = {};
 
     this.options = {
 	onstart:false,
 	onend:false,
 	onerror:false
-    }
+    };
+
+    this.load_q = [];
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -62,20 +103,13 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.data = {
 	all:[],
 	triples:[],
-	structured:[],
-	prefixes:{
-	    "http://rdfs.org/sioc/ns#": "sioc",
-	    "http://www.w3.org/2000/01/rdf-schema#": "rdfs",
-	    "http://xmlns.com/foaf/0.1/": "foaf",
-	    "http://umbel.org/umbel#": "umbel",
-	    "http://purl.org/dc/elements/1.1/": "dc"
-	},
-        uris: [] // URIs by ID - each elem a 2-elem array with [uri, curie]
+	structured:[]
 	/*
 	  structured: [
 	  {
-	  uri:"uri",
+	  uri:"uri", - URI ID
 	  type:"type uri", // shortcut only!
+	  title:"" // shortcut
 	  ouri:"originating uri",
 	  preds:{a:[0,1],...},
 	  back:[] - list of backreferences
@@ -88,7 +122,23 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.filtersURI = [];
     this.filtersProperty = [];
 
-    this.items = [];
+    this.graphs = [];
+
+    this.getTripleCount = function () {
+	return self.data.triples.length;
+    }
+
+    this.getGraphCount = function () {
+	return self.graphs.length;
+    }
+
+    this.getLabelCount = function () {
+	return self.label_cnt;
+    }
+
+    this.getLabelProcCount = function () {
+	return self.label_proc_cnt;
+    }
 
     this.setOpts = function (optObj) {
 	for (var p in optObj)
@@ -97,11 +147,109 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    }
     };
 
+
+    //
+    // Standard predicate handers for label and type shortcuts, nsPrefixes
+    //
+
+    // XXX check that this works
+
+    this.labelPredHandler = function (item, t, opt) {
+	self.label_proc_cnt++;
+	if (t[0] in self.labels) {
+	    if (opt < self.labels[t[0]].pref) {
+		self.labels[t[0]].label = t[2].getValue();
+	    }
+	}
+	else {
+	    self.labels[t[0]] = { label:t[2].getValue(), pref:opt};
+	    self.label_cnt++;
+	}
+	if (opt < item.label_pref) {
+	    item.label = t[2].getValue();
+	    item.label_pref = opt;
+	}
+    }
+
+    this.typePredHandler = function (item, t, opt) {
+	if (item.type == false) item.type = [t[2]];
+	else 
+	    if (item.type.indexOf(t[2]) == -1) item.type.push(t[2]);
+    }
+
+
+    this.nsPrefixPredHandler = function (item, t, opt) {
+	OAT.IRIDB.addNs (t[0], t[2].getValue());
+    }
+
+    this.dequeueURL = function (url, success)
+    {
+	delete self.load_q[url];
+	
+	if (success) self.store_changed = true;
+	if (self.load_q.length) return;
+
+	if (self.store_changed) OAT.MSG.send(self,"OAT_RDF_STORE_LOADED",{url:url});
+    }
+
+    this.queueURL = function (url, xhr) {
+	self.load_q[url] = xhr;
+    }
+
+    // add handler for predicate
+    // these handlers are called whenever a predicate IRI is inserted in the rdf store
+    //
+
+    this.addPredHandler = function (p_uri, handler_fun, opts) {
+	var uri_id = OAT.IRIDB.insertIRI (p_uri);
+	var handler_a = self._pred_handlers[uri_id];
+	if (!!handler_a) handler_a.push([handler_fun, opts]);
+	else self._pred_handlers[uri_id]=[[handler_fun,opts]];
+    }
+
+    this.removePredHandler = function (p_uri, handler_fun) {
+        var uri_id = OAT.IRIDB.getIRIID (p_uri);
+
+	for (h in self._pred_handlers [uri_id]) {
+	    if (h == handled_fun()) {
+		h = null;
+	    }
+	}
+    }
+
+    //
+    // Add predicate handlers for label properties
+    //
+
+    for (i in self.labelProps)
+	self.addPredHandler (i, self.labelPredHandler, self.labelProps[i]);
+
+    //
+    // Add predicate handler for type
+    //
+
+    self.addPredHandler ("http://www.w3.org/1999/02/22-rdf-syntax-ns#type", 
+			 self.typePredHandler, 
+			 false);
+
+    //
+    // Add predicate handler for namespaces
+    //
+
+    self.addPredHandler ("http://www.openlinksw.com/schema/attribution#hasNamespacePrefix", 
+			 self.nsPrefixPredHandler, 
+			 false);
+
+
+    // dereference URL, get triples
+//
+
     this.addURL = function(url, optObj) {
 
-	/* first, deep copy in defaults */
+	var opt = {};
 
-        var opt = OAT.JSON.parse(OAT.JSON.stringify(self.options,-1));
+	for (p in self.options)
+	    opt[p] = self.options[p];
 
 	for (var p in optObj) { opt[p] = optObj[p]; }
 
@@ -114,15 +262,22 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    }
 	}
 
+	var url_id = OAT.IRIDB.insertIRI (url); // url shoudl now be an ID
+
 	var title = opt.title; delete(opt.title);
 
 	var rdfstore_addurl_cb = function(str) {
-	    if (url.match(/\.n3$/) || url.match(/\.ttl$/)) {
-		var triples = OAT.N3.toTriples(str);
+
+
+	    if (url.match(/\.n3$/) || url.match(/\.ttl$/)) { // XXX Content-Type ??
+		var triples = OAT.N3.parse(str);
 	    } else {
 		var xmlDoc = OAT.Xml.createXmlDoc(str);
-		var triples = OAT.RDF.toTriples(xmlDoc, url);
+		var triples = OAT.RDF.parse(xmlDoc, url);
 	    }
+
+	    
+	    if (!!window.console) window.console.log("addURL: Got " + triples.length + " triples.");
 
 	    var decode = function(str) {
 		str = str.replace(/&amp;/gi,'&');
@@ -137,60 +292,70 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		return str;
 	    }
 
-	    var title_pref = 666;
+	    var title_pref = 42666;
 	    var title_ndx = 0;
 
-	    for (var i = 0;i < triples.length; i++) {
-		var t = triples[i];
-		/* remove all scripts to prevent their execution */
-		t[2] = sanitize(t[2]);
-
-		/* replace some special characters in objects */
-		t[2] = decode(t[2]);
-
-		if (t[0] == url || t[0] == url+'/')
-		    {
-			title_ndx = self.labelProps[t[1]];
-			if (title_ndx != -1 && title_ndx < title_pref) {
-			    title_pref = title_ndx;
-			    title = t[2];
-			}
-		    }
-	    }
 	    self.addTriples(triples, url, title);
-	    OAT.MSG.send(self,"STORE_LOADED",{url:url});
+	    self.dequeueURL(url, true);
 	}
 
 	var onerror = opt.ajaxOpts.onerror || false;
 
 	opt.ajaxOpts.onerror = function(xhr) {
 	    if (onerror) { onerror(xhr); }
-	    OAT.MSG.send(self,"STORE_LOAD_FAILED",{url:url, xhr:xhr});
+	    self.dequeueURL(url, false);
+	    OAT.MSG.send(self,"OAT_RDF_STORE_LOAD_FAILED",{url:url, xhr:xhr});
 	}
 
 	opt.ajaxOpts.type = OAT.AJAX.TYPE_TEXT;
 
-	OAT.MSG.send(this,"STORE_LOADING",{url:url});
+	OAT.MSG.send(this,"OAT_RDF_STORE_LOADING",{url:url});
+
 	var xhr = OAT.Dereference.go(url,rdfstore_addurl_cb,opt);
+	self.queueURL (url, xhr);
 	return xhr;
     }
 
     this.addXmlDoc = function(xmlDoc,href) {
-	OAT.MSG.send(this,"STORE_LOADING",{url:xmlDoc.baseURI});
-	var triples = OAT.RDF.toTriples (xmlDoc);
+	OAT.MSG.send(self,"OAT_RDF_STORE_LOADING",{url:href});
+	var triples = OAT.RDF.parse (xmlDoc, href);
+	var ncount = 0;
+
+	if (!!window.console && !!window.__isparql_debug) window.console.log("addXmlDoc: Got " + triples.length + " triples.");
+
 	/* sanitize triples */
-	for (var i=0;i<triples.length;i++) {
+/*	for (var i=0;i<triples.length;i++) {
 	    var t = triples[i];
+	    t[0] = OAT.IRIDB.insertIRI(t[0]);
+	    t[1] = OAT.IRIDB.insertIRI(t[1]);
+
+	    OAT.IRIDB.resolveCIRI(t[0]);
+	    OAT.IRIDB.resolveCIRI(t[1]);
+
+	    if (t[3] == 1) {
+		t[2] = OAT.IRIDB.insertIRI(t[2]);  // Object is an URI
+		OAT.IRIDB.resolveCIRI(t[0]);
+	    }
+	    else {
+	    	if (typeof (t[2]) == "number") {
+		    t[2] = t[2].toString;
+		    ncount++;
+		}
+		else
 	    t[2] = t[2].replace(/<script[^>]*>/gi,'');
 	}
+	}
+
+	if (!!window.console) window.console.log("numbers in o: " + ncount);
+*/
 	self.addTriples(triples,href);
-	OAT.MSG.send(this,"STORE_LOADED",{url:xmlDoc.baseURI});
+	OAT.MSG.send(self,"OAT_RDF_STORE_LOADED",{url:href});
     }
 
     this.addTripleList = function(triples,href,title) {
-	OAT.MSG.send(this, "STORE_LOADING",{url:href});
+	OAT.MSG.send(self, "OAT_RDF_STORE_LOADING",{url:href});
 	self.addTriples(triples,href,title);
-	OAT.MSG.send(this, "STORE_LOADED",{url:href});
+	OAT.MSG.send(self, "OAT_RDF_STORE_LOADED",{url:href});
     }
 
     this.addTriples = function(triples, href, title) {
@@ -200,74 +365,84 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    enabled:true,
 	    title:title
 	}
-	self.items.push(o);
+	
+	self.graphs.push(o);
 	self.rebuild(false);
     }
 
     this.findIndex = function(url) {
-	for (var i=0;i<self.items.length;i++) {
-	    var item = self.items[i];
+	for (var i=0;i<self.graphs.length;i++) {
+	    var item = self.graphs[i];
 	    if (item.href == url) { return i; }
 	}
 	return -1;
     }
 
     this.clear = function() {
-	self.items = [];
+	self.graphs = [];
 	self.rebuild(true);
-	OAT.MSG.send(self, "STORE_CLEARED",{});
+	OAT.MSG.send(self, "OAT_RDF_STORE_CLEARED",{});
     }
 
-    this.remove = function(url) {
-	var index = self.findIndex(url);
+    this.remove = function(uri) {
+	var index = self.findIndex(uri);
 	if (index == -1) { return; }
-	self.items.splice(index,1);
+	self.graphs.splice(index,1);
 	self.rebuild(true);
-	OAT.MSG.send(self,"STORE_REMOVED",{url:url});
+	OAT.MSG.send(self,"OAT_RDF_STORE_URI_REMOVED",{uri:uri});
     }
 
-    this.enable = function(url) {
-	var index = self.findIndex(url);
+    this.enable = function(uri) {
+	var index = self.findIndex(uri);
 	if (index == -1) { return; }
-	self.items[index].enabled = true;
+	self.graphs[index].enabled = true;
 	self.rebuild(true);
-	OAT.MSG.send(self,"STORE_ENABLED",{url:url});
+	OAT.MSG.send(self,"OAT_RDF_STORE_ENABLED",{uri:uri});
     }
 
     this.enableAll = function() {
-	for (var i=0;i<self.items.length;i++)
-	    self.enable(self.items[i].href);
+	for (var i=0;i<self.graphs.length;i++)
+	    self.enable(self.graphs[i].href);
     }
 
     this.disable = function(url) {
 	var index = self.findIndex(url);
 	if (index == -1) { return; }
-	self.items[index].enabled = false;
+	self.graphs[index].enabled = false;
 	self.rebuild(true);
-	OAT.MSG.send(self,"STORE_DISABLED",{url:url});
+	OAT.MSG.send(self,"OAT_RDF_STORE_DISABLED",{uri:uri});
     }
 
     this.disableAll = function() {
-	for (var i=0;i<self.items.length;i++)
-	    self.disable(self.items[i].href);
+	for (var i=0;i<self.graphs.length;i++)
+	    self.disable(self.graphs[i].href);
     }
 
     this.invertSel = function() {
-	for (var i=0;i<self.items.length;i++)
-	    if (self.items[i].enabled) {
-		self.disable(self.items[i].href);
+	for (var i=0;i<self.graphs.length;i++)
+	    if (self.graphs[i].enabled) {
+		self.disable(self.graphs[i].href);
 	    } else {
-		self.enable(self.items[i].href);
+		self.enable(self.graphs[i].href);
 	    }
     }
+
     this.setLabel = function (item, p, o) {
-	var label_ndx = self.labelProps[p];
+	var label_ndx = self.labelPropLookup[p];
 	if (label_ndx != -1 && label_ndx < item.label_pref)
 	    {
 		item.label_pref = label_ndx;
 		item.label = o;
 	    }
     }
+
+    this.invokePredHandlers = function (item, t) {
+	var h_a = self._pred_handlers[t[1]];
+	if (!!h_a)
+	    for (var i=0;i<h_a.length;i++)
+		h_a[i][0](item,t,h_a[i][1]);
+    }
+
     this.rebuild = function(complete) {
 	var conversionTable = {};
 
@@ -278,46 +453,55 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    var p = triple[1];
 	    var o = triple[2];
 
-	    var type = (p == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" ? o : false);
+	    //	    if (!!window.console) window.console.log ("<"+OAT.IRIDB.getIRI(s)+">"+"<"+OAT.IRIDB.getIRI(p)+">"+o.toString());
+
 	    var cnt = self.data.all.length;
 
-	    if (s in conversionTable)
-              { /* we already have this; add new property */
+	    if (s in conversionTable) { /* we already have this; add new property */
 		var obj = conversionTable[s];
-
-		self.setLabel(obj, p, o);
-
 		var preds = obj.preds;
-		if (p in preds)
-                  {
+
+		if (p in preds) { 
 		    var values = preds[p];
-		    if (values.find(o) == -1) { values.push(o); }
+		    var fnd = false;
+		    for (var i=0;i<values.length;i++) {
+			if (values[i].constructor != OAT.RDFAtom) {
+			    if (values[i].iid == o.getIID()) {
+				fnd = true;
+				break;
+			    }
+			}
+			else {
+			    if (values[i].equals(o)) {
+				fnd = true;
+				break;
+			    }
+			}
+		    }
+		    if (!fnd) values.push(o);
 		  }
 		else
-		  {
 		    preds[p] = [o];
-                  }
 	      }
 	    else
 	      { /* new resource */
 		var obj = {
 		    preds:{},
 		    ouri:originatingURI,
-		    type:"",
-		    uri:s,
-		    //		    curie:getCurie(s),
+		    type:false,
+		    uri:triple[0], // left for debug purposes for now
 		    back:[],
 		    label_pref: 666,
-		    label: ""
+		    label: "",
+		    iid: s
 		}
-
-		self.setLabel(obj, p, o);
 
 		obj.preds[p] = [o];
 		conversionTable[s] = obj;
 		self.data.all.push(obj);
 	      }
-	    if (type) { obj.type = type; }
+	    
+	    self.invokePredHandlers (obj, triple);
 	} /* add one triple to the structure */
 
 	/* 1. add all needed triples into structure */
@@ -325,8 +509,8 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 
 	if (complete) { /* complete = all */
 	    self.data.all = [];
-	    for (var i=0;i<self.items.length;i++) {
-		var item = self.items[i];
+	    for (var i=0;i<self.graphs.length;i++) { // Item is sort-of synonymous to graph
+		var item = self.graphs[i];
 		if (item.enabled) { todo.push([item.triples,item.href,item.title]); }
 	    }
 	} else { /* not complete - only last item */
@@ -334,7 +518,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		var item = self.data.all[i];
 		conversionTable[item.uri] = item;
 	    }
-	    var item = self.items[self.items.length-1];
+	    var item = self.graphs[self.graphs.length-1];
 	    todo.push([item.triples,item.href,item.title]);
 	}
 	for (var i=0;i<todo.length;i++) {
@@ -350,19 +534,21 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    for (var j in preds) {
 		var pred = preds[j];
 		for (var k=0;k<pred.length;k++) {
-		    var value = pred[k];
-		    if (value in conversionTable) {
-			var target = conversionTable[value];
+		    var iid = ((pred[k].constructor == OAT.RDFAtom) ? pred[k].getIID() : pred[k].iid);
+		    if (iid in conversionTable) { 
+			var target = conversionTable[iid];
 			pred[k] = target;
-			if (target.back.find(item) == -1) { target.back.push(item); }
+			if (target.back.indexOf(item) == -1) { target.back.push(item); }
 		    }
 		}
 	    } /* predicates */
-	} /* items */
+	} /* graphs */
 
 	/* 3. apply filters: create self.data.structured + 4. convert filtered data back to triples */
+
 	conversionTable = {}; /* clean up */
 	self.applyFilters(OAT.RDFStoreData.FILTER_ALL,true); /* all filters, hard reset */
+	OAT.MSG.send(self,"OAT_RDF_STORE_MODIFIED",null);
     }
 
     this.applyFilters = function(type,hardReset) {
@@ -437,20 +623,23 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	}
 
 	self.data.triples = [];
+	
+// XXX
+	
 	for (var i=0;i<self.data.structured.length;i++) {
 	    var item = self.data.structured[i];
 	    for (var p in item.preds) {
 		var pred = item.preds[p];
 		for (var j=0;j<pred.length;j++) {
 		    var v = pred[j];
-		    var triple = [item.uri,p,(typeof(v) == "object" ? v.uri : v)];
+		    var triple = [item.uri, parseInt(p), v];
 		    self.data.triples.push(triple);
 		}
 	    }
 	}
 
 	self.reset(hardReset);
-    }
+    };
 
     this.addFilter = function(type, predicate, object) {
 	switch (type) {
@@ -497,45 +686,52 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	self.applyFilters(OAT.RDFStoreData.FILTER_ALL,false); /* soft reset */
     }
 
-    this.getContentType = function(str) {
+    //
+    // XXX The purpose and existence of the function below is just wrong in so many ways! 
+    //
+    
+    this.getContentType = function(iri) {
+	if (!iri) return 0;
 	/* 0 - generic, 1 - link, 2 - mail, 3 - image */
-	if (str.match(/^http.*(jpe?g|png|gif)(#[^#]*)?$/i)) { return 3; }
-	if (str.match(/^(http|urn|doi)/i)) { return 1; }
-	if (str.match(/^[^@]+@[^@]+$/i)) { return 2; }
+	if (iri.match(/^http.*(jpe?g|png|gif)(#[^#]*)?$/i)) { return 3; }
+	if (iri.match(/^(http|urn|doi)/i)) { return 1; }
+	if (iri.match(/^[^@]+@[^@]+$/i)) { return 2; }
 	return 0;
     }
 
-    this.getTitle = function(item) {
-	/*
-	var result = self.simplify(item.uri);
-	var preds = item.preds;
-	for (var p in preds) {
-	    var simple = self.simplify(p);
-	    if (self.labelProps.find(simple) != -1) {
-		var x = preds[p][0];
-		if (typeof(x) != "object") { return x; }
-	    }
-	    }
-	return result; */
+    this.getCIRIorSplit = function (iid) {
+	var _iid;
 
-	return (item.label ? item.label.truncate(40) : self.simplify (item.uri));
+	_iid = (iid.constructor == OAT.RDFAtom) ? iid._value : iid;
+
+	return OAT.IRIDB.resolveCIRI (_iid);
+	    }
+
+    this.getTitle = function(item) {
+
+	if (!!item.label)
+	    return item.label;
+	else
+	    return self.getCIRIorSplit (item.iid)
     }
 
+// XXX
+
     this.getURI = function(item) {
-	if (item.uri.match(/^http/i)) { return item.uri; }
+
+	var iri = (item.constructor == OAT.RDFAtom) ? item.getIRI(): OAT.IRIDB.getIRI(item.iid);
+    	if (iri.match(/^http/i)) { return iri; }
 	var props = ["uri","url"];
 	var preds = item.preds;
 	for (var p in preds) {
-	    if (props.find(p) != -1) { return preds[p][0]; }
+	    if (props.indexOf(p) != -1) { return preds[p][0]; }
 	}
 	return false;
     }
 
+    this.getIRI = this.getURI;
+
     this.simplify = function(str) {
-	var r = str.match(/([^\/#]+)[\/#]?$/);
-	if (r && r[1] == "this") {
-	    r = str.match(/([^\/#]+)#[^#]*$/);
-	}
-	return (r ? r[1] : str);
+	return (self.getCIRIorSplit (OAT.IRIDB.insertIRI(str)));
     }
 }

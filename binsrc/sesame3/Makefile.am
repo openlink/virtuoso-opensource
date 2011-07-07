@@ -33,12 +33,16 @@ endif
 
 
 SESAME_SRC= \
+	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
 	virtuoso_driver/VirtuosoQuery.java \
+	virtuoso_driver/VirtuosoRepositoryConfig.java \
 	virtuoso_driver/VirtuosoRepositoryConnection.java \
+	virtuoso_driver/VirtuosoRepositoryFactory.java \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoRepositoryMetaData.java \
+	virtuoso_driver/VirtuosoRepositorySchema.java \
 	virtuoso_driver/VirtuosoTupleQuery.java
 
 SAMPLES_SOURCE= \
@@ -53,18 +57,27 @@ install-data-local:
 	-cp virt_sesame3.jar "$(DESTDIR)${libdir}/sesame"
 
 lib:
-	@test -d lib || touch virt_sesame3.jar
 	-mkdir lib
+	-touch -c virt_sesame3.jar
 	@echo "Please refer to ~/README.sesame3 file for missing .jar files"
 
 
-virt_sesame3.jar: $(SESAME_SRC)
+virt_sesame3.jar: $(SESAME_SRC) manifest.main
 	-rm -rf out.driver
 	-mkdir out.driver
+	-mkdir out.driver/META-INF
+	-mkdir out.driver/META-INF/schemas
+	-mkdir out.driver/META-INF/services
+	-mkdir out.driver/META-INF/templates
+	-cp META-INF/schemas/virtuoso-schema.ttl out.driver/META-INF/schemas
+	-cp META-INF/services/org.openrdf.repository.config.RepositoryFactory out.driver/META-INF/services
+	-cp META-INF/templates/virtuoso.ttl out.driver/META-INF/templates
+	-cp META-INF/org.openrdf.repository.templates out.driver/META-INF
+	-cp META-INF/org.openrdf.store.schemas out.driver/META-INF
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
-	$(JAR) cvf virt_sesame3.jar -C out.driver virtuoso
+	$(JAR) cvfm virt_sesame3.jar manifest.main -C out.driver .
 
 
 doc:
@@ -90,8 +103,15 @@ run-tests:
 endif
 
 
+.PHONY: version
+version: virt_sesame3.jar
+	$(JAVA) -jar virt_sesame3.jar
+
+
 clean-local:
 	-rm -rf out.driver out.examples doc
+	-rmdir lib
+
 
 # ----------------------------------------------------------------------
 #
@@ -99,6 +119,12 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	virtuoso_driver/*.java \
+	manifest.main \
+	META-INF/org.openrdf.repository.templates \
+	META-INF/org.openrdf.store.schemas \
+	META-INF/schemas/virtuoso-schema.ttl \
+	META-INF/services/org.openrdf.repository.config.RepositoryFactory \
+	META-INF/templates/virtuoso.ttl \
+	virt_sesame3.jar \
 	virtuoso_driver/data.nt \
-	virt_sesame3.jar
+	virtuoso_driver/*.java

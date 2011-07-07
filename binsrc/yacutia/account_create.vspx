@@ -161,6 +161,8 @@
         where U_NAME = self.user_name;
       self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
       self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
+      if (self._webid is null)
+        self._webid := '';
       ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
       if (isarray (ldapo) and length (ldapo) > 1)
         {
@@ -564,8 +566,33 @@
         </tr>
               <tr>
                 <td colspan="2">
-		      <label for="webid">WebID</label>
-		      <v:text name="webid" value="--self._webid" xhtml_size="80" />
+		      <label for="webid">WebID for ODBC/SQL authentication</label>
+		      <!--v:text name="webid" value="-#-self._webid" xhtml_size="80" /-->
+		  <div id="cmb1">
+		      <![CDATA[
+		      <script type="text/javascript">
+		       function init () {
+		          var sel1 = new OAT.Combolist([],"<?V self._webid ?>");
+
+			  sel1.input.name = "webid";
+			  sel1.input.id = "webid";
+			  sel1.input.size = 80;
+			  $("cmb1").appendChild(sel1.div);
+
+			  <?vsp
+			    declare arr any;
+			    arr := y_list_webids (self.user_name);
+			    foreach (any elm in arr) do
+			      {
+				http (sprintf ('sel1.addOption("%s");', elm));
+			      }
+			    if (not position (self._webid, arr))  
+			      http (sprintf ('sel1.addOption("%s");', self._webid));
+			  ?>
+			}
+		      </script>
+		      ]]>
+		  </div>
                 </td>
               </tr> 
               <tr>
@@ -709,23 +736,32 @@
 	<?vsp if (self.mode = 'edit') { ?>
         <tr>
 	    <td>
-                  <table class="complex_selector">
-                    <caption style="text-align:left;">Keys</caption>
+                  <table class="complex_selector" width="90%">
+                    <caption style="text-align:left;">Cryptographic Keys</caption>
 		<?vsp
-		for select xenc_key from yac_list_keys (username) (xenc_key varchar) x where username = self.user_name do
+		declare i int;
+
+		i := 0;
+		for select xenc_key, xenc_type from yac_list_keys (username) (xenc_key varchar, xenc_type varchar) x where username = self.user_name do
 		   {
 		?>
 		<tr>
 		    <td>
 			<input type="checkbox" name="cb_key" value="<?V xenc_key ?>" />
-			<?V xenc_key ?>
+			<?V xenc_key ?> (<?V xenc_type ?>)
 		    </td>
 		</tr>
 		<?vsp
+		      i := i + 1;
+		   }
+		if (i = 0)
+	  	  {
+		     http ('<tr><td>~no keys available~</td></tr>');
 		   }
 		?>
 	    </table>
 	    <br/>
+	    <?vsp if (i > 0) { ?>
             <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
 		<v:on-post><![CDATA[
 		    if (self.vc_is_valid = 0)
@@ -739,6 +775,7 @@
 		       }
 		    ]]></v:on-post>
 	    </v:button>
+	    <?vsp } ?>
 	    </td>
 	    <td>
 	    <label>Key Name</label>
@@ -792,6 +829,7 @@
   declare tmp, val, user_name, user_pwd, e_mail, os_name, os_password, user_perm, user_home varchar;
   declare attr any;
   declare st, msg varchar;
+  declare webid varchar;
 
   st := '00000';
   msg := '';
@@ -821,7 +859,9 @@
       return;
     }
 
-  if (exists (select 1 from SYS_USER_WEBID where UW_U_NAME <> user_name and UW_WEBID = self.webid.ufl_value))  
+  webid := get_keyword ('webid', params, null);  
+
+  if (exists (select 1 from SYS_USER_WEBID where UW_U_NAME <> user_name and UW_WEBID = webid))  
     {
       control.vc_parent.vc_error_message := 'This WebID is already registered for another account.';
       self.vc_is_valid := 0;
@@ -935,8 +975,8 @@
 	      {
                 USER_SET_OPTION (user_name, 'DISABLED', case when self.cb_user_enable.ufl_selected=0 then 1 else 0 end );
 	        USER_SET_OPTION (user_name, 'SQL_ENABLE', case when self.sel_user_type.ufl_value = '0' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
+                USER_SET_OPTION (user_name, 'DAV_ENABLE',  case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
 	      }
-            USER_SET_OPTION (user_name, 'DAV_ENABLE',  case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
 	    USER_SET_OPTION (user_name, 'HOME', user_home);
 	    if (lower (self.u_dav_quota.ufl_value) = 'unlimited' or atoi (self.u_dav_quota.ufl_value) < 0)
 	      USER_SET_OPTION (user_name, 'DAVQuota', -1);
@@ -1000,8 +1040,8 @@
           }
 
 	delete from SYS_USER_WEBID where UW_U_NAME = user_name;
-        if (length (self.webid.ufl_value) and length (user_name))
-	  insert into SYS_USER_WEBID (UW_U_NAME, UW_WEBID) values (user_name, self.webid.ufl_value);
+        if (length (webid) and length (user_name))
+	  insert into SYS_USER_WEBID (UW_U_NAME, UW_WEBID) values (user_name, webid);
 
         commit work;
 

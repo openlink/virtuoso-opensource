@@ -269,7 +269,7 @@ sticker_init() {
     echo "  <name package=\"SPARQL Demo\">" >> $STICKER
     echo "    <prop name=\"Title\" value=\"SPARQL Demo\"/>" >> $STICKER
     echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-    echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+    echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
     echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
     echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
     echo "  </name>" >> $STICKER
