@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition],
-	[5.0.14],
+	[7.0.0-alpha1],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -71,14 +71,14 @@ AC_SUBST(host_os)
 echo creating config.nice
 rm -f config.nice
 cat >config.nice<<CONFIG_NICE_EOF
-#! /bin/sh
+#!${SHELL-/bin/sh}
 #
 # Created by configure for $PACKAGE_STRING
 #
 
 # Environment
 CONFIG_NICE_EOF
-for var in CFLAGS CXXFLAGS CPPFLAGS LDFLAGS INCLUDES LIBS CC CXX
+for var in SHELL CFLAGS CXXFLAGS CPPFLAGS LDFLAGS INCLUDES LIBS CC CXX
 do
     eval val=\$$var
     if test -n "$val"
@@ -528,7 +528,7 @@ AC_CHECK_FUNCS(putenv setenv)
 AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(getrusage)
-AC_CHECK_FUNCS(memmove memmem)
+AC_CHECK_FUNCS(memmove memmem memcpy)
 
 AC_MSG_CHECKING(for sys_errlist)
 AC_TRY_LINK([
@@ -608,23 +608,32 @@ AC_SYS_RESTARTABLE_SYSCALLS
 ##									##
 ##########################################################################
 
+CCOPT=""
+CCDEFS=""
+CCWARN=""
+CCDEBUG=""
+CCLIBS=""
+
+AC_CHECKING([default compiler values])
+if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs binsrc/config/ccdefs.c" ; then
+    eval `binsrc/config/ccdefs`
+fi
+
 AC_ARG_WITH(debug, [dnl
 AC_HELP_STRING([--with-debug], [debugging code])dnl
 ], [ with_debug="$withval" ],
    [ with_debug="no" ])
 if test "x$with_debug" = "xyes"; then
+    changequote({,})
+    CFLAGS=`echo "$CFLAGS" | $SED -e 's/-O[0-9s]*//g'`
+    CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-O[0-9s]*//g'`
+    changequote([,])
+
     CCOPT="-g"
     AM_LDFLAGS="-g"
+    CCDEBUG=""
 else
-    CCOPT=""
     AM_LDFLAGS="-s"
-fi
-
-AC_CHECKING([default compiler values])
-if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs binsrc/config/ccdefs.c" ; then
-    eval `binsrc/config/ccdefs`
-else
-    CCOPT=-O
 fi
 
 
@@ -1591,8 +1600,22 @@ AC_HELP_STRING([--with-malloc-debug], [extra malloc debugging code])],
 if test "x$with_malloc_debug" = "xyes"; then
     BUILD_OPTS="$BUILD_OPTS malloc_debug"
     CCDEBUG="$CCDEBUG -DMALLOC_DEBUG"
-    CCOPT="$CCOPT -g"
-    AM_LDFLAGS="$AM_LDFLAGS -g"
+    CCOPT="-g"
+    AM_LDFLAGS="-g"
+fi
+
+
+AC_ARG_WITH(mtx-debug, [dnl
+AC_HELP_STRING([--with-mtx-debug], [extra mutex debugging code])],
+    [ with_mtx_debug="$withval" ],
+    [ with_mtx_debug="no" ]
+)
+
+if test "x$with_mtx_debug" = "xyes"; then
+    BUILD_OPTS="$BUILD_OPTS mtx_debug"
+    CCDEBUG="$CCDEBUG -DMTX_DEBUG"
+    CCOPT="-g"
+    AM_LDFLAGS="-g"
 fi
 
 
@@ -1680,7 +1703,7 @@ fi
 AC_SUBST(LIBTHR)
 save_LIBS="$LIBS"
 LIBS="$LIBTHR $LIBS"
-AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize)
+AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize pthread_sigmask)
 LIBS="$save_LIBS"
 srvrlibs="$srvrlibs $LIBTHR"
 AM_CONDITIONAL(WITH_PTHREADS, test "x$WITH_PTHREADS" = "xyes" )
@@ -1733,9 +1756,57 @@ AC_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs])dnl
 
 ##########################################################################
 ##									##
-##  Check out readline 							##
+##  Check out editline / readline					##
 ##									##
 ##########################################################################
+
+LIBRDL=""
+_save_LIBS=$LIBS
+
+AC_MSG_CHECKING(for --with-editline)
+AC_ARG_WITH(editline, [dnl
+AC_HELP_STRING([--with-editline(=DIR)], [use editline library])dnl
+], [
+  AC_MSG_RESULT($withval)
+  AC_DEFINE(WITH_EDITLINE, 1, [editline])
+  if test -d "$withval"
+  then
+      LDFLAGS="$LDFLAGS -L$withval"
+  fi
+  # first check if we can compile without lib termcap
+  AC_MSG_CHECKING(for -ledit without -ltermcap)
+  # check if libedit exists
+  LIBS="$LIBS -ledit"
+  AC_TRY_LINK(extern char *readline();,char *line=readline();,
+  [
+	BUILD_OPTS="$BUILD_OPTS editline"
+	LIBRDL="-ledit"
+	AC_MSG_RESULT(yes)
+  ], [
+	AC_MSG_RESULT(no)
+	AC_CHECKING(for -ledit that needs -ltermcap)
+	termcap=
+	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
+	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
+	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-editline)])])])])
+	LIBS="$LIBS -l$termcap"
+	AC_MSG_CHECKING(for -ledit)
+	AC_TRY_LINK(extern char *readline();, char *line=readline();,
+	[
+	   BUILD_OPTS="$BUILD_OPTS editline"
+	   LIBRDL="-ledit -l$termcap"
+	   AC_MSG_RESULT(yes)
+	], [
+	   AC_ERROR(no working editline library found -- do not use --with-editline)
+	])
+  ])
+  ], [
+    AC_MSG_RESULT(no)
+  ]
+)
+
 
 AC_MSG_CHECKING(for --with-readline)
 AC_ARG_WITH(readline, [dnl
@@ -1750,36 +1821,34 @@ AC_HELP_STRING([--with-readline(=DIR)], [use GNU readline library])dnl
   # first check if we can compile without lib termcap
   AC_MSG_CHECKING(for -lreadline without -ltermcap)
   # check if a libreadline exists
-  _save_LIBS=$LIBS
   LIBS="$LIBS -lreadline"
-  AC_TRY_LINK(extern char *readline();,char *line=readline();,[
+  AC_TRY_LINK(extern char *readline();,char *line=readline();,
+  [
 	BUILD_OPTS="$BUILD_OPTS readline"
 	LIBRDL="-lreadline"
-	AC_MSG_RESULT(yes)], [
+	AC_MSG_RESULT(yes)
+  ], [
 	AC_MSG_RESULT(no)
 	AC_CHECKING(for -lreadline that needs -ltermcap)
 	termcap=
 	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
 	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
-	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-readline)])])
-	# Avoid possible conflict between shared libraries termcap and gl
-	# on IRIX 5: both contain a routine called clear.
-	#if test -f /usr/lib/lib$termcap.a
-	#then LIBS="$LIBS /usr/lib/lib$termcap.a"
-	#else LIBS="$LIBS -l$termcap"
-	#fi
+	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses], [
+	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-readline)])])])])
 	LIBS="$LIBS -l$termcap"
 	AC_MSG_CHECKING(for -lreadline)
 	AC_TRY_LINK(extern char *readline();, char *line=readline();,[
 	   BUILD_OPTS="$BUILD_OPTS readline"
 	   LIBRDL="-lreadline -lhistory -l$termcap"
 	   AC_MSG_RESULT(yes)], [
-	   LIBRDL=""
 	   AC_ERROR(no working GNU readline library found -- do not use --with-readline)])
-	])
-],
-LIBRDL=""
-AC_MSG_RESULT(no))
+  ])
+  ],[
+    AC_MSG_RESULT(no)
+  ]
+)
+
 LIBS=$_save_LIBS
 AC_SUBST(LIBRDL)
 
@@ -2040,13 +2109,13 @@ if test "x$ac_integ_jdk" != "x" ; then
     ac_save_CPPFLAGS="$CPPFLAGS"
     #supported jvm hosting platforms : add more here
     case $host in
-	x64_64-*-linux*)
+	x86_64-*-linux*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux"
         	AC_CHECK_HEADERS(jni.h,
 			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux" ],
 			[ ac_integ_jdk="" ])
 		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
-			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/amd64/server -ljvm" ],
+			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/amd64/server -R$ac_integ_jdk/jre/lib/amd64/server -ljvm" ],
 			[ ac_integ_jdk="" ],
 			[ "-L$ac_integ_jdk/jre/lib/amd64/server"])
 		;;
@@ -2175,6 +2244,19 @@ AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package])dnl
   [ with_demo_vad="yes" ]
 )
 
+AC_ARG_ENABLE(fct-vad,
+AC_HELP_STRING([--enable-fct-vad], [enable Demo vad package (default)])
+AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_fct_vad="yes";;
+       no)	with_fct_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-fct-vad) ;;
+     esac
+  ],
+  [ with_fct_vad="yes" ]
+)
+
 AC_ARG_ENABLE(isparql-vad,
 AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package (default)])
 AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package])dnl
@@ -2271,6 +2353,7 @@ then
     with_bpel_vad="no"
     with_conductor_vad="no"
     with_demo_vad="no"
+    with_fct_vad="no"
     with_isparql_vad="no"
     with_ods_vad="no"
     with_rdfmappers_vad="no"
@@ -2282,6 +2365,7 @@ fi
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
 AM_CONDITIONAL(WITH_CONDUCTOR_VAD, test "x$with_conductor_vad" = "xyes")
 AM_CONDITIONAL(WITH_DEMO_VAD, test "x$with_demo_vad" = "xyes")
+AM_CONDITIONAL(WITH_FCT_VAD, test "x$with_fct_vad" = "xyes")
 AM_CONDITIONAL(WITH_ISPARQL_VAD, test "x$with_isparql_vad" = "xyes")
 AM_CONDITIONAL(WITH_ODS_VAD, test "x$with_ods_vad" = "xyes")
 AM_CONDITIONAL(WITH_RDFMAPPERS_VAD, test "x$with_rdfmappers_vad" = "xyes")
@@ -2424,6 +2508,10 @@ case $host in
 	  CCOPT="$CCOPT -DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT -D_GNU_SOURCE"
 	  VLIBS="-ldl -lrt $VLIBS"
         fi
+	case $host in
+	    sparc*)
+ 	        CCPLATFORMDEFS="$CCPLATFORMDEFS -DNEW_HASH_NEED_ALIGN" ;;
+	esac
 	;;
 
 *-hpux10*)
@@ -2498,6 +2586,7 @@ AC_CONFIG_FILES([
 	docsrc/Makefile
 	libsrc/Makefile
 	binsrc/bpel/Makefile
+	binsrc/b3s/Makefile
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
 	binsrc/driver/Makefile
