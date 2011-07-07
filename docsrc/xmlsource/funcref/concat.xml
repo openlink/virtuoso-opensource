@@ -41,15 +41,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_concat"><title>Parameters</title>
-    <para>Concat takes a variable number of <type>string</type>
-    arguments.</para>
-  </refsect1>
-  <refsect1 id="ret_concat"><title>Return types</title>
-    <para>The <function>concat</function> returns a single
-    <type>string</type>. If there are <type>wide strings</type> amongst
-    the arguments, the string returned will also be
-    <type>wide</type>.</para></refsect1>
   <refsect1 id="desc_concat"><title>Description</title>
     <para><function>concat</function> returns a new <type>string</type>,
     concatenated from a variable number of strings given as
@@ -59,6 +50,15 @@
     <para><programlisting>concat ()</programlisting> returns an empty
     <type>string</type>.</para>
   </refsect1>
+  <refsect1 id="params_concat"><title>Parameters</title>
+    <para>Concat takes a variable number of <type>string</type>
+    arguments.</para>
+  </refsect1>
+  <refsect1 id="ret_concat"><title>Return types</title>
+    <para>The <function>concat</function> returns a single
+    <type>string</type>. If there are <type>wide strings</type> amongst
+    the arguments, the string returned will also be
+    <type>wide</type>.</para></refsect1>
   <refsect1 id="err_concat"><title>Errors</title>
     <table><title>Errors signalled by concat()</title>
       <tgroup cols="3">

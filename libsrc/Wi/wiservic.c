@@ -279,7 +279,7 @@ wisvc_Handle_I_and_J_options (int argc, char **argv,
 				   working directory, for the same user-friendly reason as
 				   checking the validity of -W option's argument. */
     int fd = open (CFG_FILE, O_RDWR);
-    if (-1 == fd)
+    if (fd < 0)
       {
 	err_printf ((
 		      "There must be a %s file in the server's working directory. Exiting.\n",

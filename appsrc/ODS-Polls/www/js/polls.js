@@ -19,6 +19,30 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
+function setFooter() {
+  if ($('pane_main')) {
+    var wDims = OAT.Dom.getViewport()
+    var hDims = OAT.Dom.getWH('FT')
+    var cPos = OAT.Dom.position('pane_main')
+    $('pane_main').style.height = (wDims[1] - hDims[1] - cPos[1] - 20) + 'px';
+  }
+}
+
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function myPost(frm_name, fld_name, fld_value) {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
@@ -333,15 +357,18 @@ function showTab(tabs, tabsCount, tabNo) {
   }
 }
 
-function windowShow(sPage, width, height) {
+function windowShow(sPage, sPageName, width, height) {
   if (width == null)
-    width = 500;
+		width = 700;
   if (height == null)
-    height = 420;
-	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value
-			+ '&realm=' + document.forms[0].elements['realm'].value;
-	win = window.open(sPage, null, "width=" + width + ",height=" + height
-			+ ", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+		height = 500;
+  if (sPage.indexOf('form=') == -1)
+    sPage += '&form=F1';
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
 
@@ -730,17 +757,13 @@ POLLS.aboutDialog = function() {
 	if (aboutDiv) {
 		OAT.Dom.unlink(aboutDiv);
 	}
-	aboutDiv = OAT.Dom.create('div', {
-		width : '430px',
-		height : '150px'
-	});
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
-	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {
-		width : 430,
-		buttons : 0,
-		resize : 0,
-		modal : 1
-	});
+	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {
@@ -752,11 +775,5 @@ POLLS.aboutDialog = function() {
       }
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
-		type : OAT.AJAX.TYPE_TEXT,
-		onstart : function() {
-		},
-		onerror : function() {
-		}
-	});
+	OAT.AJAX.POST("ajax.vsp", "a=about", x, {type : OAT.AJAX.TYPE_TEXT, onstart : function() {}, onerror : function() {}});
 }

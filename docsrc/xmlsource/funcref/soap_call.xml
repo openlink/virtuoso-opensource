@@ -46,6 +46,26 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_soap_call"><title>Description</title>
+    <para>
+This calls a function from a SOAP server and returns the result as a return value.
+Params is an array of (Parameter name, Value) pairs representing the parameters
+passed in the SOAP call. Each of these pairs become an XML sub-entity
+of the procedure entity. The return value of the function is the entity
+inside the SOAP body of the response. In debug mode the return value is an
+array of 3 elements; the non-debug return value (if any) as element 0, the XML
+text of the request as element 1 and the XML text of the server response
+as element 2. This function does not use any XML types when creating the
+XML. It represents types as a cast to varchar would, with one
+exception - dates and times according to ISO8061.
+</para>
+<para>The Virtuoso SOAP client can work with complex datatypes, in which case
+the parameters array must conform to the following convention:</para>
+<programlisting>
+vector ( vector ([name1], [type1]), value1, vector ([name2], [type2]), value2 ...)
+</programlisting>
+<para>This will cause type checking and validation of the values to be
+encoded for SOAP request.</para></refsect1>
   <refsect1 id="params_soap_call"><title>Parameters</title>
     <refsect2><title>host</title>
       <para>DNS name or IP address of the SOAP server</para></refsect2>
@@ -79,26 +99,6 @@ If the value is negated : i.e. -1 or -11 then the soap_call procedure enters "de
       value explicit.  Normally this is taken from the namespace URI and SOAP
       method name.</para></refsect2>
   </refsect1>
-  <refsect1 id="desc_soap_call"><title>Description</title>
-    <para>
-This calls a function from a SOAP server and returns the result as a return value.
-Params is an array of (Parameter name, Value) pairs representing the parameters
-passed in the SOAP call.  Each of these pairs become an XML sub-entity
-of the procedure entity.  The return value of the function is the entity
-inside the SOAP body of the response.  In debug mode the return value is an
-array of 3 elements; the non-debug return value (if any) as element 0, the XML
-text of the request as element 1 and the XML text of the server response
-as element 2.  This function does not use any XML types when creating the
-XML.  It represents types as a cast to varchar would, with one
-exception - dates and times according to ISO8061.
-</para>
-<para>The Virtuoso SOAP client can work with complex datatypes, in which case
-the parameters array must conform to the following convention:</para>
-<programlisting>
-vector ( vector ([name1], [type1]), value1, vector ([name2], [type2]), value2 ...)
-</programlisting>
-<para>This will cause type checking and validation of the values to be
-encoded for SOAP request.</para></refsect1>
   <refsect1 id="examples_soap_call"><title>Examples</title>
     <example ID="VDOCS-SOAPCLIENT-01"><title>Calling a SQL procedure fishselect (in str varchar)</title>
     <programlisting>

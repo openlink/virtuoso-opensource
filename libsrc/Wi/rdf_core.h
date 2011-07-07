@@ -1,4 +1,5 @@
 /*
+ *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -23,20 +24,29 @@
 #ifndef __RDF_CORE_H
 #define __RDF_CORE_H
 #include "langfunc.h"
+#include "uname_const_decl.h"
 #include "sqlnode.h"
 #include "rdf_mapping_jso.h"
 #include "xmlparser.h" /* for xml_read_func_t and xml_read_abend_func_t */
 
+#define RO_START_LEN 10 /*!< Maximum length of string prefixes in prefix table */
+
 #define IRI_TO_ID_IF_KNOWN	0 /*!< Return IRI_ID if known, integer zero (NULL) if not known or error is not NULL */
 #define IRI_TO_ID_WITH_CREATE	1 /*!< Return IRI_ID if known or created on the fly, integer zero (NULL) if error is not NULL */
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
+
+/*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
+extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
 extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
+extern caddr_t key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
-extern caddr_t rdf_type_twobyte_to_iri (short twobyte);
-extern caddr_t rdf_lang_twobyte_to_string (short twobyte);
+#define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
+#define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
 extern ccaddr_t xsd_type_of_box (caddr_t arg);
+/*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
+extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
 #define BNODE_IID_TO_LABEL_BUFFER(buf,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
   sprintf (buf, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
   sprintf (buf, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
@@ -63,12 +73,14 @@ extern ccaddr_t xsd_type_of_box (caddr_t arg);
 #define TRIPLE_FEED_TRIPLE_L	4
 #define TRIPLE_FEED_COMMIT	5
 #define TRIPLE_FEED_MESSAGE	6
-#define COUNTOF__TRIPLE_FEED	7
+#define COUNTOF__TRIPLE_FEED__REQUIRED	7
+#define TRIPLE_FEED_NEW_BASE	7
+#define COUNTOF__TRIPLE_FEED__ALL	8
 
 typedef struct triple_feed_s {
   query_instance_t *tf_qi;
   id_hash_t *tf_blank_node_ids;
-  caddr_t tf_app_env;		/*!< Environment for use by callbacks, owned by caller */
+  caddr_t *tf_app_env;		/*!< Environment for use by callbacks, owned by caller. It's "caddr_t *" instead of plain "caddr_t" because it's vector in most cases. */
   const char *tf_input_name;	/*!< URI or file name or other name of source, can be NULL, owned by caller */
   caddr_t tf_default_graph_uri;	/*!< Default graph uri, owned by caller */
   caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, owned by caller if equal to tf_default_graph_uri, local otherwise */
@@ -76,8 +88,8 @@ typedef struct triple_feed_s {
   caddr_t tf_default_graph_iid;	/*!< Default graph iri ID, local */
   caddr_t tf_current_graph_iid;	/*!< Current graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
-  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED];	/*!< Callback names, owned by caller */
-  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
+  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED__ALL];	/*!< Callback names, owned by caller */
+  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED__ALL];	/*!< Compiled callback queries, they can be NULLs for empty string names or names that starts with '!' */
   ptrlong tf_triple_count;	/*!< Number of triples that are sent to callbacks already, must be boxed before sending to SQL callbacks! */
   ptrlong tf_message_count;	/*!< Number of messages that are reported already, must be boxed before sending to SQL callbacks! */
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
@@ -85,13 +97,15 @@ typedef struct triple_feed_s {
 
 extern triple_feed_t *tf_alloc (void);
 extern void tf_free (triple_feed_t *tf);
-extern void tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names);
+extern void tf_set_cbk_names (triple_feed_t *tf, ccaddr_t *cbk_names);
 extern void tf_new_graph (triple_feed_t *tf, caddr_t uri);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *sqlmore, const char *descr);
+extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
+
 
 #define TF_ONE_GRAPH_AT_TIME(tf) (NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_GRAPH])
 
@@ -122,6 +136,13 @@ extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, c
             (tf)->tf_default_graph_iid = tf_get_iid ((tf), (tf)->tf_default_graph_uri); } \
         (tf)->tf_current_graph_iid = box_copy ((tf)->tf_default_graph_iid); \
         tf_new_graph ((tf), (tf)->tf_current_graph_uri); } \
+  } while (0)
+
+#define TF_CHANGE_BASE_AND_DEFAULT_GRAPH(tf,new_uri) do { \
+    if (NULL != (tf)->tf_cbk_names[TRIPLE_FEED_NEW_BASE]) \
+      tf_new_base ((tf),(new_uri)); \
+    else { \
+        dk_free_box ((tf)->tf_base_uri); (tf)->tf_base_uri = (new_uri); } \
   } while (0)
 
 #define TF_GRAPH_ARG(tf) ((TF_ONE_GRAPH_AT_TIME((tf))) ? &((tf)->tf_current_graph_iid) : &(tf->tf_current_graph_uri))
@@ -163,9 +184,10 @@ typedef struct ttlp_s
   const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawler" */
   caddr_t ttlp_catched_error;	/*!< The error that stopped the processing, as a three-element vector made by srv_make_new_error () */
   caddr_t ttlp_default_ns_uri;	/*!< IRI associated with ':' prefix */
-  dk_set_t ttlp_namespaces;	/*!< get_keyword style list of namespace prefixes (keys) and IRIs (values) */
+  id_hash_t *ttlp_namespaces_prefix2iri;	/*!< A hashtable of namespace prefixes (keys) and IRIs (values) */
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
   dk_set_t ttlp_unused_seq_bnodes;	/*!< A list of bnodes that were allocated for use in lists but not used because lists are terminated before use */
+  caddr_t ttlp_base_uri;		/*!< Base URI used to resolve relative URIs of the document and optionally to resolve the relative URI of the graph in "graph CRUD" endpoint */
   caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
@@ -184,7 +206,7 @@ extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (
   caddr_t text_or_filename, int arg1_is_filename, caddr_t base_uri, caddr_t graph_uri, long flags,
-  ccaddr_t *cbk_names, caddr_t app_env,
+  ccaddr_t *cbk_names, caddr_t *app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -208,14 +230,14 @@ extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, cad
 #endif
 extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 
-/* Numeric values of these constants are important, do not alter them. Theyh're used in tricky way. */
+/* Numeric values of these constants are important, do not alter them. They are used in tricky way. */
 #define TTLP_STRLITERAL_LTGT 		0x10
 #define TTLP_STRLITERAL_QUOT 		0x11
 #define TTLP_STRLITERAL_QUOT_AT		0x21
 #define TTLP_STRLITERAL_3QUOT 		0x31
 #define TTLP_STRLITERAL_3QUOT_AT	0x41
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
-extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
+extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset);
 
 extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
 extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
@@ -227,16 +249,17 @@ extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   int mode_bits, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
-  ccaddr_t *stmt_texts, caddr_t app_env,
+  ccaddr_t *stmt_texts, caddr_t *app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ );
 
-/* Metadata about free-text index on DB.DBA.RDF_OBJ */
-extern id_hash_t *rdf_obj_ft_rules;
+/* Metadata about free-text index on DB.DBA.RDF_OBJ. We're keeping two similar hashtables but one has IRI_IDs as keys and other has strings. */
+extern id_hash_t *rdf_obj_ft_rules_by_iids;
+extern id_hash_t *rdf_obj_ft_rules_by_iris;
 
 extern int uriqa_dynamic_local;
-extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https);
+extern caddr_t uriqa_get_host_for_dynamic_local (client_connection_t *qi, int * is_https);
 extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname);
 /*!< checks whether the given \c iri starts with the http://default-host , returns zero if not or number of leading chars to cut the local part. */
 extern int uriqa_iri_is_local (query_instance_t *qi, const char *iri);
@@ -247,6 +270,10 @@ extern int uriqa_iri_is_local (query_instance_t *qi, const char *iri);
 #define RDF_GRAPH_PERM_LIST 0x08
 #define RDF_GRAPH_PERM_DEFAULT (RDF_GRAPH_PERM_READ | RDF_GRAPH_PERM_WRITE | RDF_GRAPH_PERM_SPONGE | RDF_GRAPH_PERM_LIST)
 
+extern id_hash_t *rdf_graph_iri2id_dict_htable;		/*!< Dictionary of IRI_IDs of IRIs of graphs mentioned in graph-level security config, IRI UNAMEs are keys, boxed IRI_IDs are values */
+extern id_hash_iterator_t *rdf_graph_iri2id_dict_hit;	/*!< Hash iterator for \c rdf_graph_iri2id_dict_hit */
+extern id_hash_t *rdf_graph_id2iri_dict_htable;		/*!< Dictionary of IRIs of IRI_IDs of graphs mentioned in graph-level security config, boxed IRI_IDs are keys, IRI UNAMEs are values */
+extern id_hash_iterator_t *rdf_graph_id2iri_dict_hit;	/*!< Hash iterator for \c rdf_graph_id2irid_dict_hit */
 extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
@@ -261,6 +288,17 @@ extern id_hash_t *rdf_graph_default_private_perms_of_user_dict_htable;		/*!< Dic
 extern id_hash_iterator_t *rdf_graph_default_private_perms_of_user_dict_hit;	/*!< Hash iterator for \c rdf_graph_default_private_perms_of_user_dict_htable */
 
 extern caddr_t boxed_zero_iid;
-extern caddr_t boxed_8k_iid;
+extern caddr_t boxed_one_iid;
 extern caddr_t boxed_nobody_uid;
+
+caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
+void rdf_graph_keyword (iri_id_t id, char *ret);
+extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli);
+#define uriqa_dynamic_local_replace(name, cli) \
+  (strncmp ((name), "local:", 6) ? (name) : uriqa_dynamic_local_replace_nocheck ((name), (cli)))
+
+/* if rb content longer than this, use md5 in rdf_obj table key */
+#define RB_BOX_HASH_MIN_LEN 50
+
+
 #endif

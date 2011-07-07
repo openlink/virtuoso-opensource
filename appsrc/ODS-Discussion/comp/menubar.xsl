@@ -33,16 +33,16 @@
     <table class="menubar">
       <tr>
         <td class="menuitem">
-          <v:url value="Home" format="%s" url="nntpf_main.vspx" />
+          <v:url value="Home" format="%s" url="/dataspace/discussion/nntpf_main.vspx" />
         </td>
         <v:template type="simple" condition="nntpf_posts_enabled()">
           <td class="menuitem">
-            <v:url value="Post" url="nntpf_post.vspx" />
+            <v:url value="Post" url="/dataspace/discussion/nntpf_post.vspx" />
           </td>
         </v:template>
         <v:template type="simple" condition="self.vc_authenticated">
           <td class="menuitem">
-            <v:url value="My RSS" format="%s" url="nntpf_edit_rss.vspx" />
+            <v:url value="My RSS" format="%s" url="/dataspace/discussion/nntpf_edit_rss.vspx" />
           </td>
           <td class="menuitem">
             <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
@@ -50,7 +50,7 @@
           <td><!-- necessary to stretch the table --> </td>
             <td>
               <v:url value="Settings" format="%s"
-                     url="nntpf_odsnewsgroups_admin.vspx"
+                     url="/dataspace/discussion/nntpf_odsnewsgroups_admin.vspx"
                      enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
             </td>
           </v:template>
@@ -67,24 +67,24 @@
     <table class="menubar" style="border: 1px solid">
       <tr>
         <td class="menuitem">
-          <v:url value="--'Home'" format="%s" url="--'nntpf_main.vspx'" />
+          <v:url value="--'Home'" format="%s" url="/dataspace/discussion/nntpf_main.vspx" />
         </td>
         <v:template type="simple" condition="nntpf_posts_enabled()">
           <td class="menuitem">
-            <v:url value="Post" url="--'nntpf_post.vspx'" />
+            <v:url value="Post" url="/dataspace/discussion/nntpf_post.vspx" />
           </td>
         </v:template>
         <v:template type="simple" condition="self.vc_authenticated">
           <td class="menuitem">
-            <v:url value="--'My RSS'" format="%s" url="--'nntpf_edit_rss.vspx'" />
+            <v:url value="--'My RSS'" format="%s" url="/dataspace/discussion/nntpf_edit_rss.vspx" />
           </td>
           <td class="menuitem">
-            <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
+            <v:url value="Subscriptions" format="%s" url="/dataspace/discussion/nntpf_subs.vspx" />
           </td>
           <td><!-- necessary to stretch the table --></td>
           <td>
               <v:url value="Settings" format="%s"
-                     url="nntpf_odsnewsgroups_admin.vspx"
+                     url="/dataspace/discussion/nntpf_odsnewsgroups_admin.vspx"
                      enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
           </td>
 

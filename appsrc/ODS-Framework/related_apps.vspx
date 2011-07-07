@@ -34,8 +34,9 @@
     </vm:header>
     <vm:pagewrapper>
       <v:variable name="wai_id" type="int" default="null" param-name="wai_id"/>
-      <v:variable name="edit_id" type="int" default="null" param-name="edit" />
-      <v:variable name="del_id" type="int" default="null" param-name="del" />
+
+      <v:variable name="rel_mode" type="varchar" default="'REL/browse'"/>
+    	<v:variable name="rel_id" type="any" default="null" />
 
       <vm:navigation on="settings"/>
       <vm:navigation1 on="services"/>
@@ -43,135 +44,185 @@
       <vm:body>
 	<vm:login redirect="index.vspx"/>
         <div class="box">
-	    <h3>
-		Applications related to "<?V (select WAI_NAME from WA_INSTANCE where WAI_ID = self.wai_id) ?>"
-	    </h3>
-          <div>
-	    <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data">
-	      <v:template type="simple" name="tm1">
+          <h3>Applications related to "<?V (select WAI_NAME from WA_INSTANCE where WAI_ID = self.wai_id) ?>"</h3>
+          <vm:if test="self.rel_mode = 'REL/browse'">
+            <?vsp
+              if (0)
+              {
+            ?>
+              <v:button name="rel_dButton" action="simple" value="Delete">
+                <v:on-post>
+                  <![CDATA[
+                    delete from DB.DBA.WA_RELATED_APPS where RA_ID = get_keyword ('rel_id', self.vc_page.vc_event.ve_params) and RA_WAI_ID = self.wai_id;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            <?vsp
+              }
+            ?>
+            <input type="hidden" name="rel_id" id="rel_id" value="" />
+            <div style="padding: 0 0 0.5em 0;">
+        		  <v:button name="rel_Back" value="''" action="simple" style="url" xhtml_class="img_button">
+                <v:before-render>
+                  <![CDATA[
+                    control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Back to Applications';
+                  ]]>
+                </v:before-render>
+       		      <v:on-post>
+           			  self.vc_redirect ('services.vspx');
+       		      </v:on-post>
+        		  </v:button>
+              <v:button name="rel_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                <v:before-render>
+                  <![CDATA[
+                    control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+                  ]]>
+                </v:before-render>
+                <v:on-post>
+                  <![CDATA[
+                    self.rel_mode := 'REL/add';
+                    self.rel_uri.ufl_value := null;
+                    self.rel_label.ufl_value := null;
+
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+
+      	    <v:data-set name="rel_ds"
+      	                sql="select RA_ID, RA_URI, RA_LABEL from DB.DBA.WA_RELATED_APPS where RA_WAI_ID = :self.wai_id"
+      		              scrollable="1"
+      		              editable="1"
+      		              nrows="0">
+
+              <v:template name="rel_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
 	  <table class="listing" rules="groups">
-	      <colgroup>
-		  <col/>
-		  <col/>
-		  <col/>
-	      </colgroup>
 	      <tr class="listing_header_row">
 		  <th>Description</th>
 		  <th>URI</th>
-		  <th>Action</th>
+            		    <th width="50px">Action</th>
 	      </tr>
-	      <v:data-set name="dset"
-		  sql="select RA_ID, RA_URI, RA_LABEL from WA_RELATED_APPS where RA_WAI_ID = :self.wai_id"
-		  scrollable="1" editable="1" nrows="1000">
-		  <v:before-data-bind>
-if (not e.ve_is_post and self.del_id is not null)
-{
-  delete from WA_RELATED_APPS where RA_WAI_ID = self.wai_id and RA_ID = self.del_id;
-}
-		  </v:before-data-bind>
+                </table>
+              </v:template>
 
-		  <v:template name="dst_rep" type="repeat">
-		      <v:template name="dset_brows" type="browse">
-			  <v:after-data-bind>
-if (not e.ve_is_post and control.te_rowset[0] = self.edit_id)
-{
-  self.a_pat.ufl_value := control.te_rowset[2];
-  self.a_url.ufl_value := control.te_rowset[1];
-}
-	                  </v:after-data-bind>
-			  <tr class="<?V case when self.edit_id = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-			      <td>
-				  <v:url name="dset_ur1"
-				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
-				      format="%s"
-				      url="--sprintf ('related_apps.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
-				      xhtml_title="Edit"
-				      xhtml_alt="Edit"
-				      />
+              <v:template name="rel_ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                <v:template name="rel_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                  <table>
+                    <tr align="center">
+                      <td colspan="3">No Related Applications</td>
+                    </tr>
+                  </table>
+                </v:template>
+
+                <v:template name="rel_ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                  <table>
+        			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                      <td nowrap="nowrap" width="50%">
+                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RA_LABEL')" format="%s" name="rel_ds_browse_l1"/>
 			      </td>
-			      <td>
-				  <v:label name="lr1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
+                      <td nowrap="nowrap" width="50%">
+                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RA_URI')" format="%s" name="rel_ds_browse_l2"/>
 			      </td>
-			      <td>
-				  <v:url name="dset_ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
-				      format="%s"
-				      url="--sprintf ('related_apps.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
-				      xhtml_title="Delete"
-				      xhtml_alt="Delete"
-				      />
+                      <td nowrap="nowrap">
+                        <v:button name="rel_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_value := '<img src="images/icons/edit_16.png" border="0" alt="Edit Seek" title="Edit Seek"/> Edit';
+                            ]]>
+                          </v:before-render>
+                          <v:on-post>
+                            <![CDATA[
+                              self.rel_mode := 'REL/edit';
+                              self.rel_id := (control.vc_parent as vspx_row_template).te_column_value('RA_ID');
+                              select RA_URI,
+                                     RA_LABEL
+                                into self.rel_uri.ufl_value,
+                                     self.rel_label.ufl_value
+                                from DB.DBA.WA_RELATED_APPS
+                               where RA_ID = self.rel_id;
+
+                              self.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                        <span class="button pointer" onclick="javascript: if (confirm('Are you sure you want to delete this record?')) {$('rel_id').value = <?V (control as vspx_row_template).te_column_value('RA_ID') ?>; doPost('page_form', 'rel_dButton');}">
+                          <img class="button" src="/ods/images/icons/trash_16.png"/> Delete
+                        </span>
 			      </td>
 			  </tr>
+                  </table>
 		      </v:template>
+
 		  </v:template>
 
-		  <v:template name="dset_footer" type="simple">
-		      <tr>
-			  <td colspan="3" class="listing_col_action">
-			      <vm:ds-navigation data-set="dset" type="set" />
-			  </td>
-		      </tr>
+      		    <v:template name="rel_ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                <table>
+                </table>
 		  </v:template>
 	      </v:data-set>
-	  </table>
+
+          </vm:if>
+
+          <vm:if test="self.rel_mode <> 'REL/browse'">
 	  <div class="fm">
-	      <fieldset>
-	      <v:form name="addf" type="simple" method="POST">
-		  <label for="a_pat">Description</label><br/>
-		  <v:text name="a_pat" value="" xhtml_id="a_pat" xhtml_size="50" error-glyph="*">
-		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Description can not be empty"/>
-		  </v:text>
-		  <br/>
-		  <label for="a_url">URI</label><br/>
-		  <v:text name="a_url" value="" xhtml_id="a_url" xhtml_size="100"/>
+      				<table>
+      				  <tr>
+      				    <th width="100px">
+      		          Description
+      		        </th>
+      		        <td>
+                    <v:text name="rel_label" value="" xhtml_id="rel_label" xhtml_size="100" xhtml_class="_validate_" />
+                  </td>
+                </tr>
+      				  <tr>
+      				    <th>
+      		          URI
+      		        </th>
+      		        <td>
+                    <v:text name="rel_uri" value="" xhtml_id="rel_uri" xhtml_size="100" xhtml_class="_validate_" />
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>
 		  <br />
-	      <span class="fm_ctl_btn">
-		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_id),0)">
+          		      <v:button name="rel_Cancel" value="Cancel" action="simple">
 		      <v:on-post>
-self.a_pat.ufl_value := null;
-self.a_url.ufl_value := null;
-self.edit_id := null;
-self.save1.vc_data_bind (e);
-control.vc_enabled := 0;
+                        self.rel_mode := 'REL/browse';
+                        self.vc_data_bind (e);
 		      </v:on-post>
 		  </v:button>
-		  <v:button name="save1" value="--case when self.edit_id is null then 'Add' else 'Update' end" action="simple">
+          		      <v:button name="rel_Save" value="--case when self.rel_mode = 'REL/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		      <v:on-post><![CDATA[
-declare url, pat varchar;
-if (not self.vc_is_valid)
+                        if (self.vc_is_valid = 0)
   return;
 
-url := self.a_url.ufl_value;
-pat := self.a_pat.ufl_value;
-if (not length (url))
+                        if (self.rel_mode = 'REL/add')
   {
-    self.vc_is_valid := 0;
-    self.vc_error_message := 'The URI cannot be empty';
-    return;
+                          insert into DB.DBA.WA_RELATED_APPS (RA_URI, RA_LABEL, RA_WAI_ID)
+                            values (self.rel_uri.ufl_value, self.rel_label.ufl_value, self.wai_id);
   }
-if (self.edit_id is not null)
-  update WA_RELATED_APPS set RA_URI = url, RA_LABEL = pat where RA_WAI_ID = self.wai_id and RA_ID = self.edit_id;
 else
-  insert into WA_RELATED_APPS (RA_URI, RA_LABEL, RA_WAI_ID) values (url, pat, self.wai_id);
-self.edit_id := null;
-self.a_pat.ufl_value := null;
-self.a_url.ufl_value := null;
-control.vc_data_bind (e);
-self.cancel1.vc_data_bind (e);
-self.dset.vc_data_bind (e);
+                        {
+                          update DB.DBA.WA_RELATED_APPS
+                             set RA_URI = self.rel_uri.ufl_value,
+                                 RA_LABEL = self.rel_label.ufl_value
+                           where RA_WAI_ID = self.wai_id
+                             and RA_ID = self.rel_id;
+                        }
+
+                        self.rel_mode := 'REL/browse';
+                        self.vc_data_bind (e);
 ]]></v:on-post>
 		  </v:button>
-		  <v:button name="back1" value="Back to Applications" action="simple">
-		      <v:on-post>
-			  self.vc_redirect ('services.vspx');
-		      </v:on-post>
-		  </v:button>
-	      </span>
-	    </v:form>
-	  </fieldset>
-      </div>
-    </v:template>
-	</v:form>
+                  </td>
+                </tr>
+              </table>
           </div>
+          </vm:if>
         </div>
       </vm:body>
     </vm:pagewrapper>

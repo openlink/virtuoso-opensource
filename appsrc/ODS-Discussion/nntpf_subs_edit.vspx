@@ -39,6 +39,7 @@
 	<v:variable name="sub_e_mail" type="varchar" default="null" persist="temp" />
   <html>
     <head>
+      <base href="<?V WA_GET_PROTOCOL() || WA_GET_HOST () || http_path () ?>" />
       <v:include url="virtuoso_app_links.xhtml"/>
       <link rel="stylesheet" type="text/css" href="nntpf.css"/>
       <title>ODS Discussion</title>

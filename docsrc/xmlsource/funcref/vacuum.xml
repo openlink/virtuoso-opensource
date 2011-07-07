@@ -40,18 +40,32 @@
     </funcsynopsis>
 </refsynopsisdiv>
   <refsect1 id="desc_vacuum"><title>Description</title>
-    <para>This function reads through the specified tables and indices and finds groups of adjacent pages holding data that will fit on fewer pages than it currently occupies. If such a compression can be made, the pages are thus compacted.</para>
-    <para>The pages become part of the committed state and will be written to the checkpoint space on the next checkpoint.</para>
-    <para>The vacuum operation is non-locking and can be run on a busy database. It will simply skip pages with ongoing activity such as pending cursors or locks. The vacuum procedure returns only after it has read through the indices it affects but it will not prevent other activity on the indices. The vacuum operation may run out of disk space even if it makes net gains because the modified pages will not be final until the next checkpoint and the originals will not be free until this same checkpoint. Thus manually running a checkpoint after vacuum runs out of space will free the space and vacuum may be rerun.</para>
+    <para>This function reads through the specified tables and indices and finds groups of adjacent pages
+holding data that will fit on fewer pages than it currently occupies. If such a compression can be made,
+the pages are thus compacted.</para>
+    <para>The pages become part of the committed state and will be written to the checkpoint space on
+the next checkpoint.</para>
+    <para>The vacuum operation is non-locking and can be run on a busy database. It will simply skip pages
+with ongoing activity such as pending cursors or locks. The vacuum procedure returns only after it has read
+through the indices it affects but it will not prevent other activity on the indices. The vacuum operation
+may run out of disk space even if it makes net gains because the modified pages will not be final until
+the next checkpoint and the originals will not be free until this same checkpoint. Thus manually running
+a checkpoint after vacuum runs out of space will free the space and vacuum may be rerun.</para>
   </refsect1>
   <refsect1 id="params_vacuum">
     <title>Parameters</title>
     <refsect2>
       <title>table_name</title>
-      <para>This is a LIKE pattern for tables to vacuum.The default is all tables. The name is case sensitive and must have all the three parts given, e.g. APP.USER.DATA</para></refsect2>
+      <para>This is a LIKE pattern for tables to vacuum. The default is all tables. The name is case
+sensitive and must have all the three parts given, e.g. APP.USER.DATA</para>
+    </refsect2>
     <refsect2>
       <title>index_name</title>
-      <para>This allows specifying an individual index to compress. The specified table(s) must have this index. The index name is a LIKE pattern and if given should match the case and spelling of index names as returned by the ODBC call SQLStatistics or equivalent, which is also the KEY_NAME column of SYS_KEYS.</para></refsect2>
+      <para>This allows specifying an individual index to compress. The specified table(s) must have
+this index. The index name is a LIKE pattern and if given should match the case and spelling of index
+names as returned by the ODBC call SQLStatistics or equivalent, which is also the KEY_NAME column of
+SYS_KEYS.</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="ret_vacuum">
     <title>Return Types</title>

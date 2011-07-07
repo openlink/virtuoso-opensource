@@ -55,6 +55,8 @@ AB.WA.exec_no_error('
     C_DOMAIN_ID integer not null,
     C_NAME varchar,
     C_COUNT integer,
+    C_CREATED datetime,
+    C_UPDATED datetime,
 
     primary key (C_ID)
   )
@@ -63,6 +65,14 @@ AB.WA.exec_no_error('
 AB.WA.exec_no_error('
   create unique index SK_CATEGORIES_01 on AB.WA.CATEGORIES (C_DOMAIN_ID, C_NAME)
 ');
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.CATEGORIES add C_CREATED datetime', 'C', 'AB.WA.CATEGORIES', 'C_CREATED'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.CATEGORIES add C_UPDATED datetime', 'C', 'AB.WA.CATEGORIES', 'C_UPDATED'
+);
 
 -------------------------------------------------------------------------------
 --
@@ -127,6 +137,7 @@ AB.WA.exec_no_error('
     P_B_WEB varchar,
     P_TAGS varchar,
     P_ACL long varchar,
+    P_CERTIFICATE long varchar,
     P_CREATED datetime,
     P_UPDATED datetime,
 
@@ -180,6 +191,10 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_ACL long varchar', 'C', 'AB.WA.PERSONS', 'P_ACL'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_CERTIFICATE long varchar', 'C', 'AB.WA.PERSONS', 'P_CERTIFICATE'
 );
 
 AB.WA.exec_no_error (
@@ -606,6 +621,77 @@ AB.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.grants_procedure (
+  in id integer)
+{
+  declare c0 integer;
+  declare c1 varchar;
+
+  result_names (c0, c1);
+  for (select distinct b.U_ID, b.U_NAME
+         from AB.WA.GRANTS a,
+              DB.DBA.SYS_USERS b
+        where a.G_GRANTEE_ID = id
+          and a.G_GRANTER_ID = b.U_ID
+        order by 2) do
+  {
+    result (U_ID, U_NAME);
+  }
+  for (select distinct b.U_ID, b.U_NAME
+         from AB.WA.GRANTS a,
+              DB.DBA.SYS_USERS b,
+              DB.DBA.SYS_ROLE_GRANTS c
+        where a.G_GRANTER_ID = b.U_ID
+          and c.GI_SUPER     = id
+          and c.GI_GRANT     = a.G_GRANTEE_ID
+          and c.GI_DIRECT    = '1'
+        order by 2) do
+  {
+    result (U_ID, U_NAME);
+  }
+}
+;
+
+AB.WA.exec_no_error ('
+  create procedure view AB..GRANTS_VIEW as AB.WA.grants_procedure (id) (U_ID integer, U_NAME varchar)
+')
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.grants_person_procedure (
+  in to_id integer,
+  in from_id integer := null)
+{
+  declare c0 integer;
+
+  result_names (c0);
+  for (select distinct G_PERSON_ID from AB.WA.GRANTS where G_GRANTEE_ID = to_id and (G_GRANTER_ID = from_id or from_id is null) order by 1) do
+  {
+    result (G_PERSON_ID);
+  }
+  for (select distinct G_PERSON_ID
+         from AB.WA.GRANTS a,
+              DB.DBA.SYS_ROLE_GRANTS c
+        where (a.G_GRANTER_ID = from_id or from_id is null)
+          and c.GI_SUPER     = to_id
+          and c.GI_GRANT     = a.G_GRANTEE_ID
+          and c.GI_DIRECT    = '1'
+        order by 1) do
+  {
+    result (G_PERSON_ID);
+  }
+}
+;
+
+AB.WA.exec_no_error ('
+  create procedure view AB..GRANTS_PERSON_VIEW as AB.WA.grants_person_procedure (to_id, from_id) (G_PERSON_ID integer)
+')
+;
+
+
+-------------------------------------------------------------------------------
+--
 --  PUBLISH & SUBSCRIBE
 --
 -------------------------------------------------------------------------------
@@ -776,7 +862,7 @@ AB.WA.exec_no_error ('
         _syncmlPath := get_keyword (\'name\', _options);
         if (_path = _syncmlPath)
         {
-          AB.WA.contact_delete (P_ID);
+          AB.WA.contact_delete (P_ID, P_DOMAIN_ID);
         }
       }
     }

@@ -38,16 +38,16 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>Returns the login name of the user of the connection.
+    Selecting <computeroutput>>user</computeroutput> is equivalent.</para>
+  </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <para>None</para>
   </refsect1>
   <refsect1 id="ret"><title>Return Values</title>
     <para>A <type>string</type> containing the login name of 
     current user</para>
-  </refsect1>
-  <refsect1 id="desc"><title>Description</title>
-    <para>Returns the login name of the user of the connection. 
-    Selecting <computeroutput>>user</computeroutput> is equivalent.</para>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_username_1"><title>Get current DB user</title>

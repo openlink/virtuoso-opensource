@@ -697,6 +697,10 @@ create procedure ODS.ODS_API."wiki.options.set" (
   {
     WV.WIKI.SETCLUSTERPARAM (clusterName, 'new-topic-template', "value");
   }
+  else if (name = 'skinSource')
+  {
+    WV.WIKI.SETCLUSTERPARAM (clusterName, 'skin-source', "value");
+  }
   else if (name = 'primarySkin')
   {
     WV.WIKI.SETCLUSTERPARAM (clusterName, 'skin', "value");
@@ -792,6 +796,10 @@ create procedure ODS.ODS_API."wiki.options.get" (
   if (name = 'indexPage')
   {
     "value" := WV.WIKI.CLUSTERPARAM (clusterName, 'index-page', 'WelcomeVisitors');
+  }
+  else if (name = 'skinSource')
+  {
+    "value" := WV.WIKI.CLUSTERPARAM (clusterName, 'skin-source', 'Local');
   }
   else if (name = 'primarySkin')
   {

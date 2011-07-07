@@ -108,9 +108,13 @@ echo " 100% done."
 echo -n "Search for 'logical space' characters...	"
 grep ";0;WS;" < unicode3.dat > tmp/tmp3.c
 echo " 100% done."
+echo -n "Search for modified/compatible characters...	"
+grep -E "^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[0-9A-F][0-9A-F][0-9A-F][0-9A-F](( [0-9A-F][0-9A-F][0-9A-F][0-9A-F])?);" < unicode3.dat > tmp/tmp4.c
+echo " 100% done."
 tabtoheader tmp/tmp1.c unicode3_lowers.h
 tabtoheader tmp/tmp2.c unicode3_uppers.h
 tabtoheader tmp/tmp3.c unicode3_spaces.h
+tabtoheader tmp/tmp4.c unicode3_basechars.h
 tabtoheader unicode3.dat unicode3_all_chars.h
 
 rm -rf tmp

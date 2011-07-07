@@ -1941,6 +1941,8 @@ bif_xml_persistent (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lang_handler_t *lh = ((argc > 2) ? lh_get_handler (bif_string_arg (qst, args, 2, "xml_persistent")) : server_default_lh);
   caddr_t dtd_config = ((argc > 3) ? bif_array_or_null_arg (qst, args, 3, "xml_persistent") : NULL);
   int index_attrs = ((argc > 4) ? (int) bif_long_arg (qst, args, 4, "xml_persistent") : 1);
+  if (!cl_run_local_only)
+    sqlr_new_error ("42000", "CLXML", "xml_persistent is deprecated in cluster.  Use xtree_doc instead.");
   res =
       (caddr_t) xper_entity ((query_instance_t *) QST_INSTANCE (qst), source,
       NULL, 0, box_copy (path), NULL, lh, dtd_config, index_attrs);
@@ -2143,7 +2145,7 @@ bdfi_read (void *read_cd, char *tgtbuf, size_t bsize)
   {
     dp_addr_t nth_page;
     if (!iter->bdfi_bh->bh_page_dir_complete)
-      blob_read_dir (tmp_itc, &iter->bdfi_bh->bh_pages, &iter->bdfi_bh->bh_page_dir_complete, iter->bdfi_bh->bh_dir_page);
+      blob_read_dir (tmp_itc, &iter->bdfi_bh->bh_pages, &iter->bdfi_bh->bh_page_dir_complete, iter->bdfi_bh->bh_dir_page, NULL);
 
 get_more:
     nth_page = iter->bdfi_bh->bh_pages[iter->bdfi_page_idx];
@@ -2352,7 +2354,7 @@ static void xper_get_blob_page_dir (xper_doc_t *xpd)
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
       itc_from (tmp_itc, xper_key);
     }
-  blob_read_dir (tmp_itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page);
+  blob_read_dir (tmp_itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page, NULL);
   itc_free (tmp_itc);
 }
 
@@ -2668,6 +2670,8 @@ parse_source:
 	config.dtd_config = dtd_config;
 	config.uri = ((NULL == uri) ? uname___empty : uri);
 	config.root_lang_handler = lh;
+        if (file_read == iter)
+          config.feed_buf_size = 0x10000;
 	context.xpc_parser = VXmlParserCreate (&config);
 	VXmlSetUserData (context.xpc_parser, &context);
 	VXmlSetElementHandler (context.xpc_parser, cb_element_start, cb_element_end);
@@ -4327,7 +4331,7 @@ DBG_NAME(xp_string_value) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_t dt
 		    if (XI_RESULT == xp_down ((xml_entity_t *) ref_xpe, (XT *) XP_NODE))
 		      {
 		        caddr_t ref_val = NULL;
-/* There's no transit allowed in the following line, thus it clibms up to the root of the referenced doc */
+/* There's no transit allowed in the following line, thus it climbs up to the root of the referenced doc */
 			ref_xpe->_->xe_up ((xml_entity_t *) ref_xpe, (XT *) XP_NODE, 0);
 		        ref_xpe->_->xe_string_value ((xml_entity_t *) ref_xpe, &ref_val, DV_STRING);
 		        session_buffered_write (ses, ref_val, box_length (ref_val) - 1);
@@ -4391,6 +4395,156 @@ done:
     }
   XP_SET (ret, box);
 }
+
+int
+xp_string_value_is_nonempty (xml_entity_t * xe)
+{
+#ifdef XPER_DEBUG
+  wcharset_t *charset = QST_CHARSET (xe->xe_doc.xd->xd_qi);
+#endif
+  xper_entity_t *xpe = (xper_entity_t *) xe;
+  caddr_t box = NULL;
+  long pos;
+  long epos;
+  unsigned char *ptr;
+  int type;
+  int namelen;
+  long num_word, atts_fill, addons, alen;
+  switch (xpe->xper_type)
+    {
+    case XML_MKUP_COMMENT:
+      return (1 < box_length (xpe->xper_name));
+    case XML_MKUP_PI:
+      {
+	long len, num_word, atts_fill, addons;
+	box = get_tag_data (xpe, xpe->xper_pos);
+	len = box_length (box);
+	ptr = (unsigned char *) (box + 1);
+	ptr += full_dv_string_length (ptr);
+	ptr += STR_ATTR_NO_OFF;
+	num_word = LONG_REF_NA (ptr);
+	ptr += 4;
+	atts_fill = num_word & 0xFFFF;
+	addons = ((unsigned long) (num_word)) >> 16;
+	ptr += addons;
+	for (; atts_fill > 1; atts_fill -= 2)
+	  {
+	    namelen = (int) skip_string_length (&ptr);
+	    ptr += namelen;
+	    alen = (long) skip_string_length (&ptr);
+	    if (alen);
+	      return 1;
+	    ptr += alen;
+	  }
+	return 0;
+      }
+    }
+  box = get_tag_data (xpe, xpe->xper_pos);
+  xper_dbg_print ("xp_string_value\n");
+
+  if (DV_XML_MARKUP == box_tag (box))
+    {
+      epos = xpe->xper_end;
+      for (pos = xpe->xper_pos + box_length (box) + 5; pos < epos; /* no step */)
+	{
+#if 0
+	  long box_pos = pos;
+#endif
+	  dk_free_box (box);
+	  box = get_tag_data (xpe, pos);
+	  pos += box_length (box) + ((DV_SHORT_STRING_SERIAL == box_tag (box)) ? 2 : 5);
+	  if ((DV_STRING == box_tag (box)) || (DV_SHORT_STRING_SERIAL == box_tag (box)))
+	    {
+	      if (box_length (box))
+	        return 1;
+	    }
+	  else
+	    {
+	      ptr = (unsigned char *) box;
+	      type = *ptr++;
+	      namelen = (int) skip_string_length (&ptr);
+	      switch (type)
+		{
+		case XML_MKUP_PI:
+		  ptr += namelen + STR_ATTR_NO_OFF;
+		  num_word = LONG_REF_NA (ptr);
+		  ptr += 4;
+		  atts_fill = num_word & 0xFFFF;
+		  addons = ((unsigned long) (num_word)) >> 16;
+		  ptr += addons;
+		  for (; atts_fill > 1; atts_fill -= 2)
+		    {
+		      namelen = (int) skip_string_length (&ptr);
+		      ptr += namelen;
+		      alen = (long) skip_string_length (&ptr);
+		      if (alen);
+			return 1;
+		      ptr += alen;
+		    }
+		  break;
+#if 0
+/* TBD: references should be extended and converted to string, but probably with disabled signaling of errors. */
+		case XML_MKUP_REF:
+		  {
+		    xper_entity_t *ref_xpe = (xper_entity_t *)xe->_->xe_copy (xe);
+		    fill_xper_entity (ref_xpe, box_pos);
+		    if (XI_RESULT == xp_down ((xml_entity_t *) ref_xpe, (XT *) XP_NODE))
+		      {
+		        caddr_t ref_val = NULL;
+/* There's no transit allowed in the following line, thus it climbs up to the root of the referenced doc */
+			ref_xpe->_->xe_up ((xml_entity_t *) ref_xpe, (XT *) XP_NODE, 0);
+		        ref_xpe->_->xe_string_value ((xml_entity_t *) ref_xpe, &ref_val, DV_STRING);
+		        session_buffered_write (ses, ref_val, box_length (ref_val) - 1);
+		      }
+		    dk_free_box (ref_xpe);
+		    break;
+		  }
+#endif
+		case XML_MKUP_COMMENT:
+		  if (namelen)
+		    return 1;
+		  break;
+	      }
+	    }
+	}
+      return 0;
+    }
+  if ((DV_STRING == box_tag (box)) || (DV_SHORT_STRING_SERIAL == box_tag (box)))
+    {
+      long box_pos = pos = xpe->xper_pos;
+      for (;;)
+	{
+	  if (box_length (box))
+	    return 1;
+	  box_pos = pos;
+	  pos += box_length (box) + ((DV_SHORT_STRING_SERIAL == box_tag (box)) ? 2 : 5);
+	  dk_free_box (box);
+	  box = get_tag_data (xpe, pos);
+	  if ((DV_STRING == box_tag (box)) || (DV_SHORT_STRING_SERIAL == box_tag (box)))
+	    continue;
+#if 0
+/* TBD: support for strings that starts in one subdocument and continues in a nested reference */
+	  if (box[0] == XML_MKUP_REF)
+	    {
+	      xper_entity_t *ref_xpe = (xper_entity_t *)xe->_->xe_copy (xe);
+	      fill_xper_entity (ref_xpe, box_pos);
+	      if (XI_RESULT == xp_down ((xml_entity_t *) ref_xpe, (XT *) XP_NODE))
+		{
+		  caddr_t ref_val = NULL;
+		  ref_xpe->_.xe_string_value ((xml_entity_t *) ref_xpe, &ref_val, DV_STRING);
+		  session_buffered_write (ses, ref_val, box_length (ref_val) - 1);
+		}
+	      dk_free_box (ref_xpe);
+	      continue;
+	    }
+#endif
+	  break;
+	}
+      return 0;
+    }
+  return 0;
+}
+
 
 struct ns_def_s
 {
@@ -4834,7 +4988,7 @@ struct xper_vtbf_env_s
   long xve_closing_pos;		/*!< Position of closing tag where this environment will end */
   caddr_t xve_vtb_name;		/*!< Tag name to be indexed, in form '<'[ns_uri]':'localname */
   lang_handler_t *xve_outer_lh;	/*!< Language outside the environment */
-  struct xper_vtbf_env_s *xve_outer;	/*!< Poitner to outer (ascendant) environment, or NULL */
+  struct xper_vtbf_env_s *xve_outer;	/*!< Pointer to outer (ascendant) environment, or NULL */
 };
 
 typedef struct xper_vtbf_env_s xper_vtbf_env_t;
@@ -6802,6 +6956,7 @@ bif_xper_init (void)
   xec_xper_xe.xe_attribute = xp_attribute;
   xec_xper_xe.xe_string_value = xp_string_value;
 #endif
+  xec_xper_xe.xe_string_value_is_nonempty = xp_string_value_is_nonempty;
   xec_xper_xe.xe_first_child = xp_first_child;
   xec_xper_xe.xe_last_child = NULL;	/* Not implemented and no need */
   xec_xper_xe.xe_get_child_count_any = xp_get_child_count_any;

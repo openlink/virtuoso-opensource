@@ -57,6 +57,12 @@
 #define WSS_WSU_URI 	"http://schemas.xmlsoap.org/ws/2002/07/utility"
 #endif
 
+#ifdef SOAP_USES_TYPES
+#error "soaptypes build option is no longer needed in $HOME/Makeconfig"
+#endif
+
+#define SOAP_USES_TYPES ((soap_version) >= 11 && (!ctx || !ctx->def_enc))
+
 #define WSP_URI		"http://schemas.xmlsoap.org/ws/2002/12/policy"
 #define WSRM_URI 	"http://schemas.xmlsoap.org/ws/2003/03/rm"
 #define WSA_URI 	"http://schemas.xmlsoap.org/ws/2003/03/addressing"
@@ -1304,7 +1310,6 @@ soap_box_xml_entity (caddr_t *entity, caddr_t *err_ret, dtp_t proposed_type, int
     }
 }
 
-#define SOAP_USES_TYPES ((soap_version) >= 11 && (!ctx || !ctx->def_enc))
 static caddr_t
 soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_version,
     		const char * h_namespace, dtp_t obj_type, soap_ctx_t * ctx)
@@ -3890,26 +3895,16 @@ ws_soap (ws_connection_t * ws, int soap_version, caddr_t method_fld)
 /*  if (!err && (!type_fld || stricmp (type_fld, "text/xml")))
     err = ws_soap_error (ws, "300", "37000", "Incorrect type for a SOAP request", soap_version, uddi_action);
 */
-  req_xml = dk_alloc_box (req_len + 1, DV_SHORT_STRING);
-  req_xml[req_len] = '\0';
-  CATCH_READ_FAIL (ws->ws_session)
+  if (ws->ws_req_body)
     {
-      session_buffered_read (ws->ws_session, req_xml, req_len);
+      req_xml = strses_string (ws->ws_req_body);
+      ws->ws_req_body = NULL;
     }
-  FAILED
+  else if (!ws->ws_params)
     {
       err = ws_soap_error (ws->ws_strses, "300", "SOAPS", "Can\'t read the SOAP request",
 	  soap_version, uddi_action, &http_resp_code, NULL);
-    }
-  END_READ_FAIL (ws->ws_session);
-  ws->ws_req_len = 0;
-  if (err)
-    {
       goto end;
-    }
-  else
-    {
-      req_xml[req_len] = 0;
     }
 
   if (type_fld)
@@ -3951,6 +3946,12 @@ ws_soap (ws_connection_t * ws, int soap_version, caddr_t method_fld)
 
   if (!err)
     {
+      if (NULL == req_xml)
+	{
+	  err = ws_soap_error (ws->ws_strses, "300", "SOAPS", "Can\'t read the SOAP request",
+	      soap_version, uddi_action, &http_resp_code, NULL);
+	  goto end;
+	}
       /* In the following call of xml_make_tree() query_instance_t * is not needed: req_xml is non-BLOB. */
       if (DO_LOG(LOG_SOAP))
 	{
@@ -6246,8 +6247,12 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
 	  char szPort[10];
 	  if (!getsockname (tcpses_get_fd (ws->ws_session->dks_session), (struct sockaddr *)&sa, &len))
 	    {
-	      snprintf (szPort, sizeof (szPort), ":%u", ntohs (sa.sin_port));
-	      SES_PRINT (out, szPort);
+	      uint16 port = ntohs (sa.sin_port);
+	      if ((is_https && port != 443) || (!is_https && port != 80))
+		{
+		  snprintf (szPort, sizeof (szPort), ":%u", port);
+	          SES_PRINT (out, szPort);
+	        }
 	    }
 	}
       if (szHost != szHostBuffer)
@@ -9651,7 +9656,7 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
 	  char in_buf[3*4096], out_buf[(6*4096)+1];
 	  int readed, to_read, to_read_len;
 	  dk_session_t * bh_ses;
-	  size_t limit = (size_t) unbox(con_soap_get (ctx->cli, con_soap_blob_limit_name));
+	  boxint limit = unbox(con_soap_get (ctx->cli, con_soap_blob_limit_name));
 
 	  if (bh->bh_length > MIME_POST_LIMIT && !limit)
 	    SOAP_VALIDATE_ERROR (("22023", "SV089", "Blob longer than maximum string length not allowed"));
@@ -11334,26 +11339,25 @@ ws_soap_http (ws_connection_t * ws)
   char *szMethod = BOX_ELEMENTS (path) > 2 ? path[2] : NULL;
   char szFullProcName[2048], *usr_qual, mime_type[1024];
   const char *usr_own;
-  client_connection_t * cli = ws->ws_cli;
+  client_connection_t *cli = ws->ws_cli;
   query_t *qr = NULL;
   caddr_t err = NULL, *pars, text;
-  dk_session_t * ses = ws->ws_strses;
-  wcharset_t * volatile charset = ws->ws_charset;
+  dk_session_t *ses = ws->ws_strses;
+  wcharset_t *volatile charset = ws->ws_charset;
   int is_http = 0;
 
   soap_ctx_t ctx;
   int http_resp_code = 200;
-  caddr_t * opts = SOAP_OPTIONS(ws);
-  char * soap_escapes = SOAP_USE_ESCAPES(opts);
-  char * schema_ns = SOAP_TYPES_SCH (opts);
+  caddr_t *opts = SOAP_OPTIONS (ws);
+  char *soap_escapes = SOAP_USE_ESCAPES (opts);
+  char *schema_ns = SOAP_TYPES_SCH (opts);
   dk_set_t qrs = NULL;
 
   /* Set context for SOAP serialization */
   memset (&ctx, 0, sizeof (soap_ctx_t));
   ctx.soap_version = atoi (ws_soap_get_opt (opts, "HttpSOAPVersion", "11"));
-  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ?
-      DKS_ESC_COMPAT_SOAP: 0);
-  ctx.def_enc = SOAP_DEF_ENC(opts);
+  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ? DKS_ESC_COMPAT_SOAP : 0);
+  ctx.def_enc = SOAP_DEF_ENC (opts);
   ctx.opts = opts;
   ctx.role_url = ws_soap_get_opt (opts, SOAP_ROLE, NULL);
   ctx.is_router = soap_get_opt_flag (opts, SOAP_ROUTER);
@@ -11394,20 +11398,28 @@ ws_soap_http (ws_connection_t * ws)
 
   is_http = (qr->qr_proc_place & SOAP_MSG_HTTP);
 
-  if (is_http) /* we should do this only when no error */
+#ifndef SOAP_HTTP
+  if (!is_http)
     {
-      snprintf (mime_type, sizeof (mime_type), "Content-Type: %s; charset=\"%s\"\r\n",
-	  qr->qr_proc_alt_ret_type, CHARSET_NAME (charset, "ISO-8859-1"));
-      ws->ws_header = box_dv_short_string (mime_type);
-    }
-  else
-    {
-#ifdef SOAP_HTTP
-      snprintf (mime_type, sizeof (mime_type), "Content-Type: text/xml; charset=\"%s\"\r\n", CHARSET_NAME (charset, "ISO-8859-1"));
-      ws->ws_header = box_dv_short_string (mime_type);
-#else
       err = srv_make_new_error ("37000", "SOH04", "There is no such procedure");
       goto end;
+    }
+#endif
+
+  if (!ws->ws_header)
+    {
+      if (is_http)		/* we should do this only when no error */
+	{
+	  snprintf (mime_type, sizeof (mime_type), "Content-Type: %s; charset=\"%s\"\r\n",
+	      qr->qr_proc_alt_ret_type, CHARSET_NAME (charset, "ISO-8859-1"));
+	  ws->ws_header = box_dv_short_string (mime_type);
+	}
+#ifdef SOAP_HTTP
+      else
+	{
+	  snprintf (mime_type, sizeof (mime_type), "Content-Type: text/xml; charset=\"%s\"\r\n", CHARSET_NAME (charset, "ISO-8859-1"));
+	  ws->ws_header = box_dv_short_string (mime_type);
+	}
 #endif
     }
   ctx.literal = (SOAP_MSG_LITERAL & qr->qr_proc_place);
@@ -11415,13 +11427,12 @@ ws_soap_http (ws_connection_t * ws)
   if (err)
     {
       dk_free_tree ((box_t) pars);
-      dk_free_box(text);
+      dk_free_box (text);
 #ifdef SOAP_HTTP
       if (!is_http)
 	{
 	  caddr_t err1;
-	  err1 = ws_soap_error (ses, "320", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0,
-	      &http_resp_code, &ctx);
+	  err1 = ws_soap_error (ses, "320", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0, &http_resp_code, &ctx);
 	  dk_free_tree (err);
 	  err = err1;
 	}
@@ -11429,77 +11440,75 @@ ws_soap_http (ws_connection_t * ws)
       goto end;
     }
 
-    {
-      query_t * volatile call_qry = NULL;
-      local_cursor_t * lc = NULL;
+  {
+    query_t *volatile call_qry = NULL;
+    local_cursor_t *lc = NULL;
 
-      call_qry = sql_compile (text, cli, &err, SQLC_DEFAULT);
-      dk_free_box (text);
-      if (err)
-	{
-	  dk_free_tree ((box_t) pars);
-	  goto end;
-	}
-      err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL,
-	  &lc, pars, NULL, 1);
-      dk_free_box ((box_t) pars);
-      while (lc_next (lc));
-      if (err)
-	{
-	  if (lc)
-	    lc_free (lc);
-	  qr_free (call_qry);
+    call_qry = sql_compile (text, cli, &err, SQLC_DEFAULT);
+    dk_free_box (text);
+    if (err)
+      {
+	dk_free_tree ((box_t) pars);
+	goto end;
+      }
+    err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL, &lc, pars, NULL, 1);
+    dk_free_box ((box_t) pars);
+    while (lc_next (lc));
+    if (err)
+      {
+	if (lc)
+	  lc_free (lc);
+	qr_free (call_qry);
 #ifdef SOAP_HTTP
-	  if (!is_http)
-	    {
-	      caddr_t err1;
-	      err1 = ws_soap_error (ses, "400", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0,
-		  &http_resp_code, &ctx);
-	      dk_free_tree (err);
-	      err = err1;
-	    }
+	if (!is_http)
+	  {
+	    caddr_t err1;
+	    err1 = ws_soap_error (ses, "400", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0, &http_resp_code, &ctx);
+	    dk_free_tree (err);
+	    err = err1;
+	  }
 #endif
-	  goto end;
-	}
-      if (lc)
-	{
-	  if (IS_BOX_POINTER (lc->lc_proc_ret))
-	    {
+	goto end;
+      }
+    if (lc)
+      {
+	if (IS_BOX_POINTER (lc->lc_proc_ret))
+	  {
 #ifdef SOAP_HTTP
-	      if (!is_http)
-		err = soap_serialize (ses, cli, qr, lc, &ctx,
-		    schema_ns, 0, &http_resp_code, szMethod, SOAP_OPT (RESP_NS, qr, -1, NULL));
-	      else
+	    if (!is_http)
+	      err = soap_serialize (ses, cli, qr, lc, &ctx,
+		  schema_ns, 0, &http_resp_code, szMethod, SOAP_OPT (RESP_NS, qr, -1, NULL));
+	    else
 #endif
-		{
-		  caddr_t *proc_ret = (caddr_t *)lc->lc_proc_ret;
-		  int nProcRet = BOX_ELEMENTS (lc->lc_proc_ret);
+	      {
+		caddr_t *proc_ret = (caddr_t *) lc->lc_proc_ret;
+		int nProcRet = BOX_ELEMENTS (lc->lc_proc_ret);
 
-		  if (nProcRet > 1)
-		    {
-		      caddr_t ret_val = proc_ret[1];
-		      dtp_t dtp = DV_TYPE_OF (ret_val);
-		      if (soap_print_xml_entity (ret_val, ses, cli))
-			;
-		      else
-			{
-			  caddr_t strval = box_cast_to (NULL, ret_val, dtp, DV_SHORT_STRING,
-			      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
-			  if (!err && strval)
-			    {
-			      if (DV_STRINGP (strval))
-				SES_PRINT (ses, strval);
-			      dk_free_box (strval);
-			    }
-			}
-		    }
-		}
-	    }
-	}
-      if (lc)
-	lc_free (lc);
-      qr_free (call_qry);
-    }
+		if (nProcRet > 1)
+		  {
+		    caddr_t ret_val = proc_ret[1];
+		    dtp_t dtp = DV_TYPE_OF (ret_val);
+		    if (soap_print_xml_entity (ret_val, ses, cli))
+		      ;
+		    else
+		      {
+			caddr_t strval = box_cast_to (NULL, ret_val, dtp, DV_SHORT_STRING,
+			    NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+			if (!err && strval)
+			  {
+			    if (DV_STRINGP (strval))
+			      SES_PRINT (ses, strval);
+			    dk_free_box (strval);
+			  }
+		      }
+		  }
+	      }
+	  }
+      }
+    if (lc)
+      lc_free (lc);
+    qr_free (call_qry);
+  }
 
 end:
   if (err && http_resp_code != 200)

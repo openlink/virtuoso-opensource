@@ -32,7 +32,7 @@ if WITH_KERBEROS
 endif
 
 if WITH_IMSG
-    IMSG_BIF= bif_pop3.c bif_nntp.c
+    IMSG_BIF= bif_pop3.c bif_imap.c bif_nntp.c
 endif
 
 if WITH_PLDEBUG
@@ -61,19 +61,19 @@ noinst_HEADERS = \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
-	json_p.h bif_audio_tags.h shcompo.h nquad_p.h
+	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h
 
 
 generated_code = \
 	json_l.c \
 	json_p.c \
 	json_p.h \
-	nquad_p.c \
-	nquad_p.h \
 	rdf_mapping_jso.c \
 	rdf_mapping_jso.h \
 	rdf_mapping_jso.ttl \
 	rdf_mapping_jso.ttl-sample \
+	nquad_p.c \
+	nquad_p.h \
 	scn3.c \
 	scn3split.c \
 	sparql_l.c \
@@ -118,6 +118,8 @@ C_FILES_SPARQL	= \
 	rdfinf.c \
 	rdf_mapping_jso.c \
 	rdfxml_parser.c \
+	nquad_p.c \
+	nquad_p.h \
 	sparql2sql.c \
 	sparql2sqltext.c \
 	sparqld.c \
@@ -127,6 +129,7 @@ C_FILES_SPARQL	= \
 	sparql_qm.c \
 	sparql_sff.c \
 	sparql_tree.c \
+	sparql_rdb2rdf.c \
 	sparul2sql.c \
 	sql_code_sparql.c \
 	turtle_l.c \
@@ -147,10 +150,12 @@ libwi_la_SOURCES = \
 	bitmap.c \
 	blob.c \
 	blobio.c \
+	cl_stubs.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
+	extent.c \
 	eqlcomp.c \
 	gate.c \
 	hash.c \
@@ -160,7 +165,6 @@ libwi_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
-	nquad_p.c \
 	lisprdr.c \
 	lock.c \
 	log.c \
@@ -171,6 +175,7 @@ libwi_la_SOURCES = \
 	neodisk.c \
 	numeric.c \
 	obackup.c \
+	page.c \
 	plugin_loader.c \
 	recovery.c \
 	regist.c \
@@ -216,6 +221,7 @@ libwi_la_SOURCES = \
 	sqlgen.c \
 	sqlhash.c \
 	sqlintrp.c \
+	sqlinx.c \
 	sqloby.c \
 	sqlo.c \
 	sqlocr.c \
@@ -238,6 +244,7 @@ libwi_la_SOURCES = \
 	srvmultibyte.c \
 	srvstat.c \
 	string.c \
+	trans.c \
 	update.c \
 	uuencode.c \
 	wirpc.c \
@@ -260,10 +267,12 @@ libwi_odbc_la_SOURCES = \
 	bitmap.c \
 	blob.c \
 	blobio.c \
+	cl_stubs.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
+	extent.c \
 	eqlcomp.c \
 	gate.c \
 	hash.c \
@@ -273,7 +282,6 @@ libwi_odbc_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
-	nquad_p.c \
 	lisprdr.c \
 	lock.c \
 	log.c \
@@ -284,6 +292,7 @@ libwi_odbc_la_SOURCES = \
 	neodisk.c \
 	numeric.c \
 	obackup.c \
+	page.c \
 	plugin_loader.c \
 	recovery.c \
 	regist.c \
@@ -329,6 +338,7 @@ libwi_odbc_la_SOURCES = \
 	sqlgen.c \
 	sqlhash.c \
 	sqlintrp.c \
+	sqlinx.c \
 	sqloby.c \
 	sqlo.c \
 	sqlocr.c \
@@ -351,6 +361,7 @@ libwi_odbc_la_SOURCES = \
 	srvmultibyte.c \
 	srvstat.c \
 	string.c \
+	trans.c \
 	update.c \
 	uuencode.c \
 	wirpc.c \
@@ -358,19 +369,6 @@ libwi_odbc_la_SOURCES = \
 	xpathp.c \
 	xpscn.c \
 	$(C_FILES_SPARQL)
-
-#KUBL_REPL_FILES
-libwi_la_SOURCES += \
-	repldb.c \
-	replsri.c \
-	replsub.c \
-	replpush.c
-
-libwi_odbc_la_SOURCES += \
-	repldb.c \
-	replsri.c \
-	replsub.c \
-	replpush.c
 
 libwi_la_SOURCES += \
 	$(PLDEBUG_FILES)
@@ -393,6 +391,7 @@ libwi_la_SOURCES += \
 	shuric.c \
 	subseq.c \
 	text.c \
+	uname_const_decl.c \
 	xmlenc_algos.c \
 	xmlenc.c \
 	xmlenc-dec.c \
@@ -425,6 +424,7 @@ libwi_odbc_la_SOURCES += \
 	shuric.c \
 	subseq.c \
 	text.c \
+	uname_const_decl.c \
 	xmlenc_algos.c \
 	xmlenc.c \
 	xmlenc-dec.c \
@@ -570,6 +570,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_RDFData.sql \
 	$(top_srcdir)/binsrc/dav/DET_S3.sql \
+	$(top_srcdir)/binsrc/dav/DET_DynaRes.sql \
 	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
 	$(srcdir)/xml_view.sql
 
@@ -613,7 +614,8 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/sparql_io.sql \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
-	$(srcdir)/rdf_void.sql
+	$(srcdir)/rdf_void.sql \
+	$(srcdir)/rdflddir2.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql
@@ -657,6 +659,7 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcall.xsl \
 	$(srcdir)/rdf_net.sql \
 	$(srcdir)/simile.sql \
+	$(srcdir)/xrd2json.xsl \
 	$(srcdir)/http_auth.sql \
 	$(srcdir)/xmla.sql \
 	$(srcdir)/openxml.sql \
@@ -669,14 +672,13 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl
 
+
 json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
 json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
-nquad_p.c nquad_p.h: $(srcdir)/nquad_p.y Makefile.am
-	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
 sqlwords.h: $(srcdir)/sqlwords.gperf
 	@${GEN} --stdout ${GPERF} \
@@ -685,15 +687,8 @@ sqlwords.h: $(srcdir)/sqlwords.gperf
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
-sql3.c: sql3.y
+sql3.c sql3.h: sql3.y
 	@$(GEN) $(YACC) -o sql3.c -vd $(srcdir)/sql3.y
-
-sql3.h: sql3.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f sql3.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) sql3.c; \
-	fi
 
 scn3.c: scn3.l sql3.c sqlwords.h
 	@$(GEN) $(LEX) -o scn3.c $(srcdir)/scn3.l
@@ -710,15 +705,8 @@ sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_c
 	@echo "#include \"sql_code_cache_impl.c\"" >> $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
-xpathp.c: xpathp.y
+xpathp.c xpathp.h : xpathp.y
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
-
-xpathp.h: xpathp.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f xpathp.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) xpathp.c; \
-	fi
 
 xpathp_lex_props.c: list_lex_props.sh xpathp.y
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
@@ -726,15 +714,8 @@ xpathp_lex_props.c: list_lex_props.sh xpathp.y
 xpscn.c: xpscn.l xpathp.h
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
 
-sparql_p.c: sparql_p.y
+sparql_p.c sparql_p.h: sparql_p.y
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
-
-sparql_p.h: sparql_p.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f sparql_p.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) sparql_p.c; \
-	fi
 
 sparql_lex_props.c: list_lex_props.sh sparql_p.y
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
@@ -742,15 +723,11 @@ sparql_lex_props.c: list_lex_props.sh sparql_p.y
 sparql_l.c: sparql_l.l sparql_p.h
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
 
-turtle_p.c: turtle_p.y
-	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
+nquad_p.c nquad_p.h: nquad_p.y
+	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
-turtle_p.h: turtle_p.c
-	## Recover from the removal of $@
-	@if test -f $@; then :; else \
-	  rm -f turtle_p.c; \
-	  $(MAKE) $(AM_MAKEFLAGS) turtle_p.c; \
-	fi
+turtle_p.c turtle_p.h: turtle_p.y
+	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
 turtle_lex_props.c: list_lex_props.sh turtle_p.y
 	list_lex_props.sh turtle_p.y turtle_lex_props.c

@@ -98,7 +98,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	      // Create a future
 	      future = connection.getFuture(VirtuosoFuture.prepare,args, this.rpc_timeout);
 	      // Process result to get information about results meta data
-	      vresultSet = new VirtuosoResultSet(this,metaData);
+	      vresultSet = new VirtuosoResultSet(this,metaData, true);
               clearParameters();
 	    }
 	  catch(IOException e)
@@ -160,7 +160,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-	     vresultSet.getMoreResults();
+	     vresultSet.getMoreResults(false);
 	   }
 	 catch(IOException e)
 	   {
@@ -261,7 +261,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     for (inx = 0; inx < size; inx++)
 	     {
 		 vresultSet.setUpdateCount (0);
-		 vresultSet.getMoreResults ();
+		 vresultSet.getMoreResults (false);
 		 res[inx] = vresultSet.getUpdateCount();
 	     }
 	   }
@@ -968,55 +968,40 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     * @exception virtuoso.jdbc2.VirtuosoException if a database access error occurs
     * @see java.sql.PreparedStatement#setString
     */
-   public void setString(int parameterIndex, String x1) throws VirtuosoException
+   public void setString(int parameterIndex, String x) throws VirtuosoException
    {
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " +
 	     parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      if(x1 == null)
+      if(x == null)
 	this.setNull(parameterIndex, Types.VARCHAR);
       else
 	{
-	  String x;
-//	  int zero_inx = x1.indexOf (0);
-	  /*
-	     if (zero_inx == -1)
-	     {
-	     char zeroc [] = { 0 };
-	     x = x1 + (new String (zeroc));
-	     }
-	     else */
-//	     if (zero_inx > 0 && zero_inx < x1.length())
-//	    {
-//	      //System.out.println ("truncate @ " + zero_inx);
-//	      x = x1.substring (0, zero_inx);
-//	    }
-//	  else
-	    x = x1;
 	  if (parameters != null && parameters.elementAt(parameterIndex - 1) instanceof openlink.util.Vector)
 	    {
 	      openlink.util.Vector pd = (openlink.util.Vector)parameters.elementAt(parameterIndex - 1);
 	      int dtp = ((Number)pd.elementAt (0)).intValue();
 	      VirtuosoExplicitString ret;
-	      ret = new
-		  VirtuosoExplicitString (x, dtp, connection);
+	      ret = new VirtuosoExplicitString (x, dtp, connection);
 	      objparams.setElementAt (ret, parameterIndex - 1);
 	    }
 	  else
+	    {
 	    objparams.setElementAt(x,parameterIndex - 1);
 	}
    }
+   }
 
-   protected void setString(int parameterIndex, VirtuosoExplicitString x1) throws VirtuosoException
+   protected void setString(int parameterIndex, VirtuosoExplicitString x) throws VirtuosoException
    {
      if(parameterIndex < 1 || parameterIndex > parameters.capacity())
        throw new VirtuosoException("Index " +
 	   parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-     if(x1 == null)
+     if(x == null)
        this.setNull(parameterIndex, Types.VARCHAR);
      else
-        objparams.setElementAt(x1, parameterIndex - 1);
+        objparams.setElementAt(x, parameterIndex - 1);
    }
    /**
     * Sets the designated parameter to a java.sql.Time value.  The driver converts this

@@ -24,7 +24,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
-  declare sid,realm,server_root,server_dataspace,oldui_url,uname,utype varchar;
+  declare sid,realm,server_root,server_dataspace,oldui_url,uname,utype,https varchar;
 
   utype:=get_keyword('utype',params,'');
   uname:=get_keyword('uname',params,'');
@@ -49,7 +49,7 @@
   declare resMeta any;
   resMeta:= string_output ();
 
-  server_root:=sprintf('%s%s',http_s (),DB.DBA.WA_CNAME());
+  server_root := sprintf('%s%s', http_s (), DB.DBA.WA_GET_HOST ());
   server_dataspace:=server_root||'/dataspace/';
 
   if (length (uname))
@@ -90,12 +90,18 @@
     else
       _country_code:=null;
 
+    https := ODS..getDefaultHttps ();
+    if (exists (select 1 from WA_SETTINGS where WS_HTTPS = 1) and https is not null)
+      _openid_server := 'https://' || https;
+    else
     _openid_server := server_root;
 --META openID start
     if (length (_oid_url) and length (_oid_server))
     {
       http('  <link rel="openid.server" title="OpenID Server" href="'|| _oid_server ||'" />\r\n',resMeta);
       http('   <link rel="openid.delegate" title="OpenID URL" href="'|| _oid_url ||'" />\r\n',resMeta);
+      http('  <link rel="openid2.provider" title="OpenID v2 Server" href="'|| _oid_server ||'" />\r\n',resMeta);
+      http('   <link rel="openid2.local_id" title="OpenID v2 URL" href="'|| _oid_url ||'" />\r\n',resMeta);
     }
     else
     {
@@ -111,6 +117,10 @@
 
     http('  <link rel="meta" type="application/rdf+xml" title="SIOC" href="'||server_dataspace||uname||'/sioc.rdf" />\r\n',resMeta);
     http('  <link rel="meta" type="application/rdf+xml" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.rdf" />\r\n',resMeta);
+    http('  <link rel="meta" type="text/rdf+n3" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.n3" />\r\n',resMeta);
+    http('  <link rel="meta" type="application/json" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.json" />\r\n',resMeta);
+    http('  <link rel="http://xmlns.com/foaf/0.1/primaryTopic"  title="About" href="'||server_dataspace||utype||uname||'#this" />\r\n',resMeta);
+    http('  <link rev="describedby"  title="About" href="'||server_dataspace||utype||uname||'#this" />\r\n',resMeta);
 
     http('  <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />\r\n',resMeta);
     http('  <meta name="dc.language" content="en" scheme="rfc1766" />\r\n',resMeta);
@@ -145,7 +155,16 @@
 
 skip_meta:
 
-  declare html_content varchar;
+  declare html_content, links varchar;
+  declare exts any;
+
+  exts := 
+  vector (
+      	vector ('rdf',  'RDF/XML', 'application/rdf+xml'), 
+      	vector ('nt',   'N3/Turtle', 'text/n3'), 
+      	vector ('n3',   'N3/Turtle', 'text/rdf+n3'), 
+	vector ('json', 'RDF/JSON', 'application/json')
+	);
 
   html_content := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...')
                      from WS.WS.SYS_DAV_RES
@@ -159,8 +178,24 @@ skip_meta:
     html_content:=replace (html_content,'#THIS', '#this');
   html_content:=replace(html_content,'<!-- #META# -->',string_output_string (resMeta));
 
+  links := 'Link:';
+  links := links || sprintf (' <%s%s%s#this>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', server_dataspace, utype, uname);
+  links := links || sprintf (' <%s%s%s#this>; rev="describedby",', server_dataspace, utype, uname);
+  links := links || sprintf (' <%s/activities/feeds/activities/user/%U>; rel="http://schemas.google.com/g/2010#updates-from"; type="application/atom+xml",', server_root, uname);
+  links := links || sprintf (' <%s/sparql?default-graph-uri=%s/dataspace>; title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint", ', server_root, server_root);
+  foreach (any ss in exts) do
+    {
+       links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', 
+       server_dataspace, utype, uname, ss[0], ss[2], ss[1]);
+    }
+  for select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME = uname do
+    {
+      links := links || sprintf (' <%s/ods/describe?uri=%U>; rel="webfinger",', server_root, 'acct:' || U_E_MAIL);
+    }
+  links := rtrim (links, ',\r\n');
+
   http_rewrite();
-  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+  http_header (http_header_get () || links || '\r\nContent-Type: text/html; charset=UTF-8\r\n');
   http (html_content);
 
 ?>

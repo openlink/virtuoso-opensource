@@ -67,6 +67,7 @@ int last_errno;
 
 #include "http_client.h"
 #include "http.h"
+#include "xmlenc.h"
 
 #define XML_VERSION		"1.0"
 
@@ -82,6 +83,7 @@ if (box) \
 #define STANDARD_HANDLER(name, errcode, errmsg) \
 int name (http_cli_ctx * ctx, caddr_t parm, caddr_t ret, caddr_t err) \
 { \
+  dk_free_tree (ctx->hcctx_err); \
   ctx->hcctx_err = srv_make_new_error (errcode, "HC001", errmsg);\
   ctx->hcctx_state = HC_STATE_ERR_CLEANUP;\
   return HC_RET_ERR_ABORT;\
@@ -294,6 +296,8 @@ http_cli_ctx_free (http_cli_ctx * ctx)
   dk_free_box (ctx->hcctx_opaque);
   dk_free_box (ctx->hcctx_stale);
   dk_free_box (ctx->hcctx_qop);
+
+  dk_free_tree (ctx->hcctx_err);
 
   dk_free (ctx, sizeof (http_cli_ctx));
   return 0;
@@ -666,6 +670,16 @@ http_cli_ssl_cert_pass (http_cli_ctx * ctx, caddr_t val)
   ctx->hcctx_cert_pass = val;
   return (HC_RET_OK);
 }
+
+HC_RET
+http_cli_ssl_ca_certs (http_cli_ctx * ctx, caddr_t val)
+{
+  if (!ctx)
+    return (HC_RET_ERR_ABORT);
+
+  ctx->hcctx_ca_certs = val;
+  return (HC_RET_OK);
+}
 #endif
 
 HC_RET
@@ -737,6 +751,8 @@ http_cli_set_target_host (http_cli_ctx * ctx, caddr_t target)
     {
       RELEASE (ctx->hcctx_host);
       ctx->hcctx_host = box_string (target);
+      if (http_cli_target_is_proxy_exception (ctx->hcctx_host))
+	RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   return (HC_RET_OK);
 }
@@ -817,12 +833,54 @@ http_cli_set_ua_id (http_cli_ctx * ctx, caddr_t ua_id)
 caddr_t
 http_cli_get_err (http_cli_ctx * ctx)
 {
-  return (ctx->hcctx_err);
+  caddr_t ret = ctx->hcctx_err;
+  ctx->hcctx_err = NULL;
+  return ret;
 }
+
 
 /* XXX: TODO: proxies, proxy auth, http redirect */
 #ifdef _SSL
 int ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char * ca);
+int ssl_client_use_db_key (SSL * ssl, char *key, caddr_t * err_ret)
+{
+  char err_buf [1024];
+  if (strstr (key, "db:") == key)
+    {
+      xenc_key_t * k;
+      client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+      user_t * saved_user;
+      if (!cli)
+	{
+	  *err_ret = srv_make_new_error ("22023", "HTS03", "The certificate & key stored in database cannot be accessed.");
+	  return -1;
+	}
+      saved_user = cli->cli_user;
+      if (!cli->cli_user)
+	cli->cli_user = sec_name_to_user ("dba");
+      k = xenc_get_key_by_name (key + 3, 1);
+      cli->cli_user = saved_user;
+      if (!k || !k->xek_x509 || !k->xek_evp_private_key)
+	{
+	  *err_ret = srv_make_new_error ("22023", "HTS03", "Invalid stored key %s", key);
+	  return -1;
+	}
+      if (SSL_use_certificate (ssl, k->xek_x509) <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  *err_ret = srv_make_new_error ("22023", "HTS03", "Invalid X509 certificate %s : %s", key, err_buf);
+	  return -1;
+	}
+      if (SSL_use_PrivateKey (ssl, k->xek_evp_private_key) <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  *err_ret = srv_make_new_error ("22023", "HTS03", "Invalid X509 private key file %s : %s", key, err_buf);
+	  return -1;
+	}
+      return 1;
+    }
+  return 0;
+}
 #endif
 
 HC_RET
@@ -865,14 +923,21 @@ http_cli_connect (http_cli_ctx * ctx)
 	  if (pkcs12_file && 0 == atoi(pkcs12_file))
 	    {
 	      int session_id_context = 12;
-	      if (!ssl_client_use_pkcs12 (ctx->hcctx_ssl, pkcs12_file, pass, NULL))
+	      if (0 != ssl_client_use_db_key (ctx->hcctx_ssl, pkcs12_file, &(ctx->hcctx_err)))
+		{
+		  if (ctx->hcctx_err != NULL)
+		    goto error_in_ssl;
+		}
+	      else if (!ssl_client_use_pkcs12 (ctx->hcctx_ssl, pkcs12_file, pass, ctx->hcctx_ca_certs))
 		{
 		  ctx->hcctx_err = srv_make_new_error ("22023", "HTS02", "Invalid certificate file");
 		  goto error_in_ssl;
 		}
 
-	      SSL_set_verify (ctx->hcctx_ssl,
-		  SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, NULL);
+	      if (ctx->hcctx_ssl_insecure)
+		SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_NONE, NULL);
+	      else
+		SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 	      SSL_set_verify_depth (ctx->hcctx_ssl, -1);
 	      SSL_CTX_set_session_id_context(ctx->hcctx_ssl_ctx,
 		  (const unsigned char *)&session_id_context, sizeof session_id_context);
@@ -1207,6 +1272,7 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
   dk_session_t * volatile content = NULL;
   int volatile signal_error = 1;
 
+  if (F_ISSET (ctx, HC_F_BODY_READ)) return (HC_RET_OK);
   ctx->hcctx_state = HC_STATE_READ_RESP_BODY;
 
   if (!ctx->hcctx_resp_content_length && !ctx->hcctx_is_chunked && !ctx->hcctx_close)
@@ -1221,15 +1287,15 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
 	{
 	  dk_free_tree (ctx->hcctx_resp_body);
 	  ctx->hcctx_resp_body =
-	    http_read_chunked_content (ctx->hcctx_http_out,
-				       &ctx->hcctx_err,
-				       ctx->hcctx_url, (int)ctx->hcctx_resp_content_is_strses);
+	    http_read_chunked_content (ctx->hcctx_http_out, &ctx->hcctx_err, ctx->hcctx_url, 1 /* allow string session to be returned */);
 	  if (!ctx->hcctx_resp_body)
 	    {
 	      ret = http_cli_hook_dispatch (ctx, HC_HTTP_READ_ERR);
 	      if (ret == HC_RET_ERR_ABORT)
 		return (ret);
 	    }
+	  if (DV_STRING_SESSION == DV_TYPE_OF (ctx->hcctx_resp_body))
+	    ctx->hcctx_resp_content_is_strses = (char) 1;
 	}
       else if (!ctx->hcctx_resp_content_length && ctx->hcctx_close)
 	{
@@ -1832,6 +1898,76 @@ http_cli_parse_authorize_headers (http_cli_ctx * ctx)
 }
 
 HC_RET
+http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, caddr_t err_ret)
+{
+  int ret;
+  char *s = NULL, *last;
+  caddr_t url, loc, err = NULL;
+  CATCH_ABORT (http_cli_read_resp_hdrs, ctx, ret);
+  CATCH_ABORT (http_cli_read_resp_body, ctx, ret);
+
+  if (!ctx->hcctx_redirects)
+    {
+      ctx->hcctx_err = srv_make_new_error ("42000", "HC013", "Max redirects reached");
+      return (HC_RET_ERR_ABORT);
+    }
+
+  DO_SET (caddr_t, hdr, &ctx->hcctx_resp_hdrs)
+    {
+      if (!strnicmp ("Location:", hdr, 9))
+	{
+	  last = hdr + box_length (hdr) - 2;
+	  s = hdr + 10;
+	  s = skip_lwsp (s, last);
+	  while (last[0] == 0xd || last[0] == 0xa || last[0] == ' ')
+	    {
+	      last[0] = 0;
+	      last--;
+	    }
+	  break;
+	}
+    }
+  END_DO_SET ();
+
+  if (!s)
+    {
+      ctx->hcctx_err = srv_make_new_error ("42000", "HC013", "Cannot parse location header");
+      return (HC_RET_ERR_ABORT);
+    }
+  loc = box_string (s);
+  url = rfc1808_expand_uri (ctx->hcctx_url, loc, "UTF-8", 1, "UTF-8", "UTF-8", &err);
+  if (err)
+    {
+      ctx->hcctx_err = err;
+      return (HC_RET_ERR_ABORT);
+    }
+  if (url == ctx->hcctx_url)
+    url = box_copy (ctx->hcctx_url);
+  if (url != loc)
+    dk_free_box (loc);
+  RELEASE (ctx->hcctx_host);
+  RELEASE (ctx->hcctx_uri);
+  RELEASE (ctx->hcctx_url);
+  ctx->hcctx_url = url;
+  ctx->hcctx_host = http_cli_get_host_from_url (url);
+  ctx->hcctx_uri = http_cli_get_uri_from_url (url);
+  if (!strnicmp (url, "https://", 8) && !ctx->hcctx_pkcs12_file)
+    {
+      http_cli_ssl_cert (ctx, (caddr_t)"1");
+      ctx->hcctx_ssl_insecure = '\1';
+      RELEASE (ctx->hcctx_proxy.hcp_proxy);
+    }
+  else
+    {
+      ctx->hcctx_pkcs12_file = NULL;
+    }
+  ctx->hcctx_redirects --;
+  ctx->hcctx_retry_count = 0;
+  F_SET (ctx, HC_F_RETRY);
+  return (HC_RET_RETRY);
+}
+
+HC_RET
 http_cli_std_handle_auth (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, caddr_t err)
 {
   int ret;
@@ -2148,6 +2284,16 @@ http_cli_init_std_auth (http_cli_ctx* ctx, caddr_t user, caddr_t pass)
   return (HC_RET_OK);
 }
 
+HC_RET
+http_cli_init_std_redir (http_cli_ctx* ctx, int r)
+{
+  http_cli_push_resp_evt (ctx, 301, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  http_cli_push_resp_evt (ctx, 302, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  http_cli_push_resp_evt (ctx, 303, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  ctx->hcctx_redirects = r;
+  return (HC_RET_OK);
+}
+
 /*
    http_client
    parameters:
@@ -2163,12 +2309,18 @@ http_cli_init_std_auth (http_cli_ctx* ctx, caddr_t user, caddr_t pass)
    9. response HTTP headers
    10. timeout
    11. proxy
+   12. ca bundle
+   13. insecure option
+   14. ret argument index in args ssls
+   15. how many redirects to follow
 */
 
 caddr_t
 bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * me,
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
-    caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, int ret_arg_index)
+    caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
+    int ret_arg_index,
+    int follow_redirects)
 {
   http_cli_ctx * ctx;
   char* ua_id = http_client_id_string;
@@ -2187,6 +2339,8 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
 
   if (uid && pwd)
     http_cli_init_std_auth (ctx, uid, pwd);
+  if (follow_redirects)
+    http_cli_init_std_redir (ctx, follow_redirects);
 
   if (method)
     {
@@ -2227,11 +2381,14 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
     {
       http_cli_ssl_cert (ctx, cert);
       http_cli_ssl_cert_pass (ctx, pk_pass);
+      http_cli_ssl_ca_certs (ctx, ca_certs);
+      ctx->hcctx_ssl_insecure = (char) insecure;
       RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   else if (!strnicmp (url, "https://", 8))
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
+      ctx->hcctx_ssl_insecure = (char) insecure;
       RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
 #endif
@@ -2274,7 +2431,6 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
     {
       dk_free_tree (ret);
       ret = NULL;
-      _err_ret = box_copy_tree (_err_ret);
       http_cli_ctx_free (ctx);
       sqlr_resignal (_err_ret);
     }
@@ -2330,9 +2486,9 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t uid = NULL, pwd = NULL;
   caddr_t http_hdr = NULL, body = NULL, method = NULL;
   uint32 time_out = 0;
-  int time_out_is_null = 1;
+  int time_out_is_null = 1, insecure = 0, follow_redirects = 0;
   caddr_t cert = NULL, pk_pass = NULL;
-  caddr_t proxy = NULL;
+  caddr_t proxy = NULL, ca_certs = NULL;
 
   if (BOX_ELEMENTS (args) > 1)
     {
@@ -2370,7 +2526,21 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       proxy = bif_string_or_null_arg (qst, args, 10, me);
     }
-  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, 8);
+  if (BOX_ELEMENTS (args) > 11) /* ca certs */
+    {
+      ca_certs = bif_string_or_null_arg (qst, args, 11, me);
+    }
+  if (BOX_ELEMENTS (args) > 12) /* ca certs */
+    {
+      int insecure_is_null = 0;
+      insecure = (int) bif_long_or_null_arg (qst, args, 12, me, &insecure_is_null);
+    }
+  if (BOX_ELEMENTS (args) > 13) /* follow redirects */
+    {
+      int dummy = 0;
+      follow_redirects = (int) bif_long_or_null_arg (qst, args, 13, me, &dummy);
+    }
+  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, ca_certs, insecure, 8, follow_redirects);
 }
 
 caddr_t
@@ -2473,7 +2643,6 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       _err_ret = http_cli_get_err (ctx);
       if (_err_ret)
 	{
-	  _err_ret = box_copy_tree (_err_ret);
 	  sqlr_resignal (_err_ret);
 	}
     }
@@ -2497,7 +2666,6 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  dk_free_tree (list_to_array (dk_set_nreverse (ress)));
 	  ress = NULL;
-	  _err_ret = box_copy_tree (_err_ret);
 	  sqlr_resignal (_err_ret);
 	}
     }
@@ -2557,16 +2725,30 @@ init_acl_set (char *acl_string1, dk_set_t * acl_set_ptr)
     }
 }
 
+/*
+   HTTP client
+   http_get
+   1 - URL
+   2 - variable to return response headers
+   3 - HTTP method string
+   4 - request header line(s)
+   5 - request body
+   6 - proxy address
+   7 - number of HTTP redirects to follow
+   8 - time-out (seconds)
+*/
+
 caddr_t
 bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char * me = "http_get";
   caddr_t uri = bif_string_or_uname_arg (qst, args, 0, me);
-  int n_args = BOX_ELEMENTS (args);
+  int n_args = BOX_ELEMENTS (args), follow_redirects = 0, to_is_null = 1;
   caddr_t method = NULL;
   caddr_t header = NULL;
   caddr_t body = NULL;
   caddr_t volatile proxy = NULL;
+  uint32 to = 0;
 
   if (n_args > 2)
     method = bif_string_or_uname_arg (qst, args, 2, me);
@@ -2585,7 +2767,14 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (n_args > 5)
     proxy = bif_string_or_null_arg (qst, args, 5, me);
-  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, 0, 1 /*no timeout*/, proxy, 1);
+  if (n_args > 6) /* follow redirects */
+    {
+      int dummy = 0;
+      follow_redirects = (int) bif_long_or_null_arg (qst, args, 6, me, &dummy);
+    }
+  if (n_args > 7) /* time-out */
+    to = (uint32) bif_long_or_null_arg (qst, args, 7, me, &to_is_null);
+  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects);
 }
 
 void

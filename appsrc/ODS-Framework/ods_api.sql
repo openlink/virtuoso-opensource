@@ -18,7 +18,7 @@
 --  in inst_name varchar,         -- desired name for the instance
 --  in owner varchar,             -- username of the owner of the instance
 --  in model int := 0,            -- refers to Membership model (Open,Closed,Invitation only,Approval based
---  in pub int := 1,              -- refers to Visible to public property
+--  in pub int := 0,              -- refers to Visible to public property
 --  in inst_descr varchar := null -- description for the instance
 --
 -- result is INTEGER (instance id)if successful, otherwise varchar - ERROR MESSAGE
@@ -313,7 +313,7 @@ create procedure ODS_CREATE_USER (
                  'SQL_ENABLE', 0));
    update SYS_USERS set U_ACCOUNT_DISABLED = _mail_verify_on where U_ID = uid;
    DAV_MAKE_DIR ('/DAV/home/', http_dav_uid (), http_admin_gid (), '110100100R');
-   DAV_MAKE_DIR ('/DAV/home/' || _username || '/', uid, http_nogroup_gid (), '110100100R');
+  DAV_MAKE_DIR ('/DAV/home/' || _username || '/', uid, http_nogroup_gid (), '110100000R');
 
   declare _det_col_id integer;
   _det_col_id := DB.DBA.DAV_MAKE_DIR ('/DAV/home/'||_username||'/RDFData/', uid, http_nogroup_gid (), '110100100N');
@@ -437,8 +437,8 @@ create procedure ODS_CREATE_NEW_APP_INST (
   in app_type varchar,
   in inst_name varchar,
   in owner varchar,
-  in model int := null,
-  in pub int := null,
+  in model integer := 1,
+  in pub integer := 0,
   in inst_descr varchar := null)
 {
   declare inst web_app;
@@ -485,10 +485,6 @@ create procedure ODS_CREATE_NEW_APP_INST (
           };
    select WAT_TYPE into ty from WA_TYPES where WAT_NAME = app_type;
   }
-  if (isnull (model))
-    model := case when app_type in ('oDrive', 'oMail', 'IM') then 1 else 0 end;
-  if (isnull (pub))
-    pub := case when app_type in ('oDrive', 'oMail', 'IM') then 0 else 1 end;
   visible := case when app_type in ('oDrive', 'oMail', 'IM') then 0 else 1 end;
 
   inst := __udt_instantiate_class (fix_identifier_case (ty), 0);
@@ -552,10 +548,23 @@ create procedure ODS_CREATE_NEW_APP_INST (
        goto relaxing;
      };
     if (app_type <> 'oWiki')
+    {
    lpath := DB.DBA.wa_set_url_t (inst);
-    if (app_type = 'oWiki')
+      if ((lpath like '%.vspx') or (lpath like '%.vsp'))
+      {
+        declare pos integer;
+
+        pos := strrchr (lpath, '/');
+        if (not isnull (pos))
+          lpath := subseq (lpath, 0, pos);
+      }
+    }
+    else if (app_type = 'oWiki')
+    {
       DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default Domain}', null, null, null, 1);
+    }
    DB.DBA.WA_SET_APP_URL (id, lpath, null, DB.DBA.wa_default_domain (), null, null, null, 1);
+    if (app_type <> 'oMail')
    DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default HTTPS}', null, null, null, 1);
  }
 relaxing:
@@ -811,10 +820,10 @@ report_err:;
 ;
 
 create procedure ODS..openid_url_set (
-  in uid int,
+  in uid integer,
   in url varchar)
 {
-  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate any;
+  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate, profile_page, xrds, xrds_url any;
 
   declare exit handler for sqlstate '*'
     {
@@ -828,6 +837,15 @@ create procedure ODS..openid_url_set (
       goto clear_auth;
     }
 
+  profile_page := ODS.DBA.WF_PROFILE_GET (url);
+  if (profile_page is not null)
+    url := profile_page;
+  else  
+    {
+      profile_page := ODS..FINGERPOINT_WEBID_GET (null, url);
+      if (profile_page is not null)
+	url := profile_page;
+    }
   oi_ident := url;
 again:
   hdr := null;
@@ -844,9 +862,17 @@ again:
   oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
   oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
   oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
+  xrds_url := http_request_header (hdr, 'X-XRDS-Location');
 
   if (oi2_srv is not null)
     oi_srv := oi2_srv;
+
+  if (oi_srv is null and xrds_url is not null)
+    {
+       xrds := http_client (xrds_url, n_redirects=>15);
+       xrds := xtree_doc (xrds);
+       oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://specs.openid.net/auth/2.0/signon"]/URI/text()', xrds) as varchar);
+    }
 
   if (oi_srv is null)
     return 'Cannot locate OpenID server.';
@@ -854,11 +880,21 @@ again:
   if (oi_delegate is not null)
     oi_ident := oi_delegate;
 
+  -- if we want to change OpenID URI to local we would get same as it is will find delegate
+  if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID = uid))
+    {
+      oi_ident := url;
+    }
+
   if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID <> uid))
     return 'This OpenID identity is already registered.';
+
 clear_auth:
-  update DB.DBA.WA_USER_INFO set WAUI_OPENID_URL = oi_ident, WAUI_OPENID_SERVER = oi_srv
+  update DB.DBA.WA_USER_INFO
+     set WAUI_OPENID_URL = oi_ident,
+         WAUI_OPENID_SERVER = oi_srv
    where WAUI_U_ID = uid;
+
   -- success
   return null;
 }

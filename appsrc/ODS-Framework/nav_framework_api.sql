@@ -112,7 +112,7 @@ wa_exec_no_error('drop procedure DB.DBA.usersinfo_sql');
 wa_exec_no_error('drop procedure DB.DBA.VSPX_EXPIRE_ANONYMOUS_SESSIONS');
 wa_exec_no_error('drop procedure DB.DBA.xml_nodename');
 
-USE "ODS";
+USE ODS;
 
 create procedure sessionStart (in realm varchar :='wa') __SOAP_HTTP 'text/xml'
 {
@@ -189,22 +189,27 @@ create procedure sessionValidateX509 (
 
   set_user_id ('dba');
   fingerPrint := get_certificate_info (6);
-  for (select cast (WAUI_CERT as varchar) cert,
-              U_NAME uname
-         from DB.DBA.WA_USER_INFO,
+  for (select cast (UC_CERT as varchar) cert,
+              U_NAME uName
+         from DB.DBA.WA_USER_CERTS,
               DB.DBA.SYS_USERS
-        where WAUI_U_ID = U_ID
-          and WAUI_CERT_FINGERPRINT = fingerPrint
-          and (((WAUI_CERT_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
+        where UC_U_ID = U_ID
+          and UC_FINGERPRINT = fingerPrint
+          and (((UC_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
   {
     info := get_certificate_info (9, cert);
     if (not isarray (info))
-      return 0;
-    agent := get_certificate_info (7, null, null, null, '2.5.29.17');
-    if (agent is null or agent not like 'URI:%')
-      return 0;
-    agent := subseq (agent, 4);
-
+      return NULL;
+    agent := ODS.ODS_API.SSL_WEBID_GET ();
+    if (agent is null)
+      {
+	agent := DB.DBA.FOAF_SSL_WEBFINGER ();
+	if (agent is not null)
+	  goto authenticated;
+	agent := ODS..FINGERPOINT_WEBID_GET ();
+	if (agent is null)
+	  return NULL;
+      }
     declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -235,6 +240,7 @@ create procedure sessionValidateX509 (
     if (graph is not null)
       exec (sprintf ('SPARQL clear graph <%s>', graph), st, msg);
     commit work;
+    authenticated:
     retValue := vector (uName);
   }
 _exit:;
@@ -263,7 +269,7 @@ create procedure sessionValidate (
 
   if (facebookUID <> 0)
   {
-    userName := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
+    userName := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
     if (isnull (userName))
       goto _authbad;
 
@@ -303,7 +309,7 @@ create procedure sessionValidate (
     if(userName='')
        goto _authbad;
 
-      pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = userName and U_ACCOUNT_DISABLED = 0);
+      pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = userName and U_DAV_ENABLE = 1 and U_ACCOUNT_DISABLED = 0);
       if (_hex_sha1_digest (sid || userName || pwd) <> authStr)
         goto _authbad;
 
@@ -389,12 +395,9 @@ create procedure usersGetInfo (
 
         http('<user>',resXml);
 
-          cursor_uname := '';
           cursor_uname := cast (userid2name (rset[i][0]) as varchar);
-
         for(k:=0;k<length(metas[0]);k:=k+1)
         {
-
           declare visibility_arr any;
           declare is_friend,visibility_pos,is_visible integer;
 
@@ -406,8 +409,7 @@ create procedure usersGetInfo (
               if (isSessionValid (sid, 'wa', _uname))
           {
 
-                  is_friend := DB.DBA.WA_USER_IS_FRIEND (username2id (_uname), 
-		                                         username2id (cursor_uname));
+                  is_friend := DB.DBA.WA_USER_IS_FRIEND (username2id (_uname), username2id (cursor_uname));
 
             --3 private;2 friends;1 public
 
@@ -910,8 +912,9 @@ create procedure checkApplication (
     http ('<name>' || wainstance_name || '</name>', resXml);
     http ('<url>' || application_url || '</url>',resXml);
     http ('</application>', resXml);
+
+    httpResXml (resXml, 'checkApplication');
   }
-  httpResXml (resXml, 'createApplication');
   return '';
 }
 ;
@@ -1643,20 +1646,20 @@ _err:
 ;
 grant execute on userMessageStatusSet to GDATA_ODS;
 
-create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
+create procedure openIdServer (
+  in openIdUrl varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
   declare resXml any;
+  declare profilePage varchar;
 
   resXml  := string_output ();
   errCode := 0;
   errMsg  := '';
 
-  declare hdr,xt  any;
-  declare url, cnt, oi_ident, oi_srv, oi_delegate varchar;
-
-
+  declare hdr, xt, loc any;
+  declare url, xrds_url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate, oi_params, oi_priority, webid varchar;
   declare exit handler for sqlstate '*'
   {
     errCode:=501;
@@ -1664,31 +1667,96 @@ create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
     goto _end;
   };
 
-  url := openIdUrl;
-  oi_ident := url;
+  oi_version := '1.0';
+  oi_srv := null;
+  oi2_srv := null;
+  oi_delegate := null;
+  oi_params := 'sreg';
+  profilePage := ODS.DBA.WF_PROFILE_GET (openIdUrl);
+  if (profilePage is not null)
+    openIdUrl := profilePage;
+  if (openIdUrl like '%@%' and profilePage is null)
+    {
+      webid := ODS..FINGERPOINT_WEBID_GET (null, openIdUrl);
+      if (webid is not null)
+	  openIdUrl := normalize_url_like_browser (webid);
+	}
 
+    url := openIdUrl;
 again:
-
   hdr := null;
   cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
   if (hdr [0] like 'HTTP/1._ 30_ %')
   {
-      declare loc any;
       loc := http_request_header (hdr, 'Location', null, null);
       url := WS.WS.EXPAND_URL (url, loc);
-      oi_ident := url;
       goto again;
   }
+    if (http_request_header (hdr, 'Content-Type') <> 'application/xrds+xml')
+    {
+  	xrds_url := http_request_header (hdr, 'X-XRDS-Location');
+  	if (xrds_url is not null)
+	  {
+	    cnt := http_client (xrds_url, n_redirects=>15);
+	    goto _xrds;
+	  }
 
   xt := xtree_doc (cnt, 2);
   oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
+      oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
   oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
+      if (oi2_srv is not null)
+      {
+        oi_version := '2.0';
+        oi_srv := oi2_srv;
+      }
+  }
+  else
+  {
+  _xrds:;
+      xt := xtree_doc (cnt);
 
+    -- version 2.0
+    oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://specs.openid.net/auth/2.0/signon"]/URI/text()', xt) as varchar);
+    if (not isnull (oi_srv))
+    {
+      oi_priority := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://specs.openid.net/auth/2.0/signon"]/@priority', xt) as varchar);
+      oi_version := '2.0';
+      goto _params;
+    }
+
+    -- version 1.1
+    oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.1"]/URI/text()', xt) as varchar);
+    if (not isnull (oi_srv))
+    {
+      oi_priority := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.1"]/@priority', xt) as varchar);
+      oi_version := '1.1';
+      goto _params;
+  }
+
+    -- version 1.0
+    oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.0"]/URI/text()', xt) as varchar);
+    if (not isnull (oi_srv))
+  {
+      oi_priority := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.0"]/@priority', xt) as varchar);
+      oi_version := '1.1';
+    }
+  _params:;
+    if (isnull (oi_srv))
+      signal ('501', 'Invalid OpenID URL');
+
+    if (not isnull (xpath_eval (sprintf ('/XRDS/XRD/Service[@priority = "%s"]/Type[text() = "http://openid.net/srv/ax/1.0"]/text()', oi_priority), xt)))
+      oi_params := 'ax';
+  }
+
+_exit:;
+  http('<version>'||oi_version||'</version>',resXml);
   http('<server>'||oi_srv||'</server>',resXml);
   http('<delegate>'||oi_delegate||'</delegate>',resXml);
+  http('<identity>'||openIdUrl||'</identity>',resXml);
+  http('<params>'||oi_params||'</params>',resXml);
 
 _end:
-
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'openIdServer');
   else
@@ -1699,7 +1767,10 @@ _end:
 ;
 grant execute on openIdServer to GDATA_ODS;
 
-create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUrl varchar,in openIdIdentity varchar) __SOAP_HTTP 'text/xml'
+create procedure openIdCheckAuthentication (
+  in realm varchar :='wa',
+  in openIdUrl varchar,
+  in openIdIdentity varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -1735,7 +1806,7 @@ create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUr
     goto _auth_failed;
   };
 
-  select U_NAME into user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity;
+  select U_NAME into user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/');
 
   declare sid varchar;
   sid := DB.DBA.vspx_sid_generate ();
@@ -2174,7 +2245,7 @@ nf:
    declare errCode integer;
    declare errMsg  varchar;
    errCode := 1;
-   errMsg  := 'Authentication incorrect.';
+   errMsg  := 'Invalid or expired session.';
 
    httpErrXml(errCode,errMsg,'isSessionValid');
 
@@ -2368,6 +2439,7 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='U_MUSIC')        return 'music';
  if(dbfield_name='U_BOOKS')        return 'books';
  if(dbfield_name='U_MOVIES')       return 'movies';
+ if(dbfield_name='U_INTEREST_TOPICS') return 'interestTopics';
  if(dbfield_name='U_INTERESTS')    return 'interests';
  if(dbfield_name='U_DATASPACE')    return 'dataspace';
  if(dbfield_name='H_COUNTRY')      return 'home_country';
@@ -2417,7 +2489,8 @@ create procedure visibility_posinarr(in dbfield_name varchar)
  if(dbfield_name='U_MUSIC')        return 24;
  if(dbfield_name='U_BOOKS')        return 44;
  if(dbfield_name='U_MOVIES')       return 46;
- if(dbfield_name='U_INTERESTS')    return 48;
+ if(dbfield_name='U_INTEREST_TOPICS') return 48;
+ if(dbfield_name='U_INTERESTS')       return 49;
  if(dbfield_name='U_DATASPACE')    return -1;
  if(dbfield_name='H_COUNTRY')      return 16;
  if(dbfield_name='H_STATE')        return 16;
@@ -2456,7 +2529,7 @@ create procedure constructFieldsNameStr (
   in fieldsname_str varchar)
 {
   declare correctfields_name_str varchar;
-  correctfields_name_str := 'userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interests,dataspace,foaf_ds,sioc_ds';
+  correctfields_name_str := 'userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interestTopics,interests,dataspace,foaf_ds,sioc_ds';
 
   declare res_str varchar;
   declare fields_name any;
@@ -2479,7 +2552,6 @@ create procedure constructFieldsNameStr (
               res_str:=res_str||'U.U_NAME as U_NAME';
 
            if(fields_name[i]='fullName')
---              res_str:=res_str||'coalesce(U.U_FULL_NAME,trim(concat(I.WAUI_FIRST_NAME,\' \',I.WAUI_LAST_NAME)),U.U_NAME) as U_FULL_NAME';
                 res_str:=res_str || '(case when length (trim (U.U_FULL_NAME)) > 0 ' ||
                                     '      then U_FULL_NAME '||
                                     '      when (length (trim (I.WAUI_FIRST_NAME)) > 0 or length (trim (I.WAUI_LAST_NAME))) '||
@@ -2552,6 +2624,9 @@ create procedure constructFieldsNameStr (
 
            if(fields_name[i]='interests')
               res_str:=res_str||'I.WAUI_INTERESTS as U_INTERESTS';
+
+              if (fields_name[i] = 'interestTopics')
+                res_str := res_str || 'I.WAUI_INTEREST_TOPICS as U_INTEREST_TOPICS';
 
            if(fields_name[i]='dataspace')
               res_str:=res_str||'DB.DBA.WA_USER_DATASPACE(U.U_NAME) as U_DATASPACE';
@@ -2637,20 +2712,11 @@ create procedure usersinfo_sql(in usersStr varchar,in fieldsStr varchar)
   declare qry varchar;
 
   declare fields_name_str varchar;
-  fields_name_str:='';
-  fields_name_str:=constructFieldsNameStr(fieldsStr);
-
   declare users_id_str varchar;
-  users_id_str:='';
-  users_id_str:=constructUsersIdStr(usersStr);
 
-
---  qry:=sprintf('select U.U_NAME as U_NAME,%s from DB.DBA.WA_USER_INFO I, DB.DBA.SYS_USERS U '||
---               ' where I.WAUI_U_ID=U.U_ID and U.U_ID in (%s)',
---               fields_name_str,users_id_str);
---
-  qry:=sprintf('select U.U_ID,%s  from DB.DBA.SYS_USERS U left join DB.DBA.WA_USER_INFO I on (U.U_ID=I.WAUI_U_ID)'||
-               ' where U.U_ID in (%s)',
+  fields_name_str := constructFieldsNameStr (fieldsStr);
+  users_id_str := constructUsersIdStr (usersStr);
+  qry := sprintf ('select U.U_ID,%s  from DB.DBA.SYS_USERS U left join DB.DBA.WA_USER_INFO I on (U.U_ID=I.WAUI_U_ID) where U.U_ID in (%s)',
                fields_name_str,users_id_str);
 
   return qry;

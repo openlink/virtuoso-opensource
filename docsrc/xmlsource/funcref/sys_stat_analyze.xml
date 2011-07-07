@@ -42,7 +42,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
 <para>
-This function collects (or updates) column statistics for the table columns.  
+Collects (or updates) column statistics for the table columns.
 It collects minimum, maximum average and distinct values for a column and a 
 row count for the table and inserts the data into the DB.DBA.SYS_COL_STAT table.  
 It does not make histograms for the columns.</para>

@@ -65,6 +65,8 @@ cc_new_instance_slot (comp_context_t * cc)
 void
 ssl_free (state_slot_t * ssl)
 {
+  if (ssl->ssl_not_freeable)
+    return;
   dk_free_box (ssl->ssl_name);
   if (SSL_CONSTANT == ssl->ssl_type)
     {
@@ -261,11 +263,20 @@ dsr_free (data_source_t * x)
   cv_free (x->src_pre_code);
   cv_free (x->src_after_test);
   cv_free (x->src_after_code);
-
+  dk_free_box (x->src_local_save);
   dk_set_free (x->src_continuations);
   dk_free ((caddr_t) x, -1);
 }
 
+void
+qn_free (data_source_t * qn)
+{
+  if (!qn)
+    return;
+  if (qn->src_free)
+    qn->src_free (qn);
+  dsr_free (qn);
+}
 
 
 void
@@ -274,6 +285,24 @@ qr_garbage (query_t * qr, caddr_t garbage)
   mutex_enter (time_mtx);
   dk_set_pushnew (&qr->qr_unrefd_data, (void*) garbage);
   mutex_leave (time_mtx);
+}
+
+
+
+
+void
+kpd_free (key_partition_def_t * kpd)
+{
+  int inx;
+  if (!kpd)
+    return;
+  DO_BOX (col_partition_t *, cp, inx, kpd->kpd_cols)
+    {
+      dk_free ((caddr_t)cp, sizeof (col_partition_t));
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)kpd->kpd_cols);
+  dk_free ((caddr_t)kpd, sizeof (key_partition_def_t));
 }
 
 
@@ -297,6 +326,12 @@ qr_free (query_t * qr)
   }
   END_DO_SET ();
   dk_set_free (qr->qr_nodes);
+  DO_SET (query_t *, sub_qr, &qr->qr_subq_queries)
+  {
+    qr_free (sub_qr);
+  }
+  END_DO_SET ();
+  dk_set_free (qr->qr_subq_queries);
   dk_set_free (qr->qr_bunion_reset_nodes);
 
   DO_SET (state_slot_t *, ssl, &qr->qr_state_map)
@@ -337,15 +372,10 @@ qr_free (query_t * qr)
     dk_free_tree ((caddr_t) list_to_array (qr->qr_unrefd_data));
   if (qr->qr_proc_result_cols)
     dk_free_tree ((caddr_t) list_to_array (qr->qr_proc_result_cols));
-  DO_SET (query_t *, sub_qr, &qr->qr_subq_queries)
-  {
-    qr_free (sub_qr);
-  }
-  END_DO_SET ();
-  dk_set_free (qr->qr_subq_queries);
   dk_free_box ((caddr_t) qr->qr_freeable_slots);
   DO_SET (dbe_key_t *, tkey, &qr->qr_temp_keys)
     {
+      kpd_free (tkey->key_partition);
       dbe_key_free (tkey);
     }
   END_DO_SET();
@@ -366,6 +396,9 @@ qr_free (query_t * qr)
       proc_name_free (qr->qr_pn);
     }
   dk_free_box ((caddr_t) qr->qr_proc_cost);
+  dk_free_box ((caddr_t)qr->qr_qf_params);
+  dk_free_box ((caddr_t)qr->qr_qf_agg_res);
+  dk_free_box ((caddr_t)qr->qr_qf_agg_defaults);
 #ifdef PLDBG
   dk_free_box (qr->qr_source);
   if (qr->qr_line_counts)
@@ -383,6 +416,8 @@ qr_free (query_t * qr)
 	}
       id_hash_free (qr->qr_call_counts);
     }
+  if (qr->qr_stats_mtx)
+    mutex_free (qr->qr_stats_mtx);
 #endif
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
@@ -538,7 +573,7 @@ ssl_new_tree (comp_context_t * cc, const char *name)
 
   sl->ssl_index = cc_new_instance_slot (cc);
   sl->ssl_name = box_dv_uname_string (name);
-  sl->ssl_type = SSL_VARIABLE;
+  sl->ssl_type = SSL_TREE;
   sl->ssl_dtp = DV_CUSTOM;
 
   dk_set_push (&cc->cc_super_cc->cc_query->qr_temp_spaces, (void *) sl);
@@ -956,6 +991,8 @@ inx_op_set_search_params (comp_context_t * cc, comp_table_t * ct, inx_op_t * iop
     }
   if (cc && inx >= MAX_SEARCH_PARAMS)
     sqlc_error (cc, "42000", "The number of predicates is too high");
+  ksp_cmp_func (&iop->iop_ks_start_spec, &iop->iop_ks_start_spec_nth);
+  ksp_cmp_func (&iop->iop_ks_full_spec, &iop->iop_ks_full_spec_nth);
   il_init (cc, &iop->iop_il);
 }
 
@@ -1116,6 +1153,28 @@ key_free_trail_specs (search_spec_t * sp)
 
 
 void
+clb_free (cl_buffer_t * clb)
+{
+  dk_free_box (clb->clb_save);
+}
+
+
+void
+cl_order_free (clo_comp_t ** ords)
+{
+  int inx;
+  if (!ords)
+    return;
+  DO_BOX (caddr_t, ord, inx, ords)
+    {
+      dk_free (ord, sizeof (clo_comp_t));
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)ords);
+}
+
+
+void
 ks_free (key_source_t * ks)
 {
   if (!ks)
@@ -1127,8 +1186,11 @@ ks_free (key_source_t * ks)
   cv_free (ks->ks_local_test);
   cv_free (ks->ks_local_code);
   if (ks->ks_out_map)
-    dk_free ((caddr_t) ks->ks_out_map, -1);
+    dk_free_box ((caddr_t) ks->ks_out_map);
   dk_set_free (ks->ks_always_null);
+  dk_free_box ((caddr_t)ks->ks_qf_output);
+  if (ks->ks_cl_order)
+    cl_order_free (ks->ks_cl_order);
   dk_free ((caddr_t) ks, sizeof (key_source_t));
 }
 
@@ -1259,6 +1321,17 @@ inx_op_free (inx_op_t * iop)
 void
 ts_free (table_source_t * ts)
 {
+  if (TS_ALT_POST == ts->ts_is_alternate)
+    {
+      /* an alternate ts refers to the after tests and code of the primary ts.  Set the refs to null */
+      ts->src_gen.src_after_test = NULL;
+      ts->src_gen.src_after_code = NULL;
+      if (ts->ts_order_ks)
+	{
+	  ts->ts_order_ks->ks_local_test = NULL;
+	  ts->ts_order_ks->ks_local_code = NULL;
+	}
+    }
   if (!ts)
     return;
   if (ts->ts_inx_op)
@@ -1269,6 +1342,7 @@ ts_free (table_source_t * ts)
   else
     ks_free (ts->ts_order_ks);
   ts->ts_order_ks = NULL;
+  clb_free (&ts->clb);
   cv_free (ts->ts_after_join_test);
   ts->ts_after_join_test = NULL;
   if (ts->ts_main_ks)
@@ -1459,6 +1533,7 @@ ins_free (insert_node_t * ins)
   dk_free_box ((caddr_t) ins->ins_col_ids);
   dk_set_free (ins->ins_values);
   dk_free_box ((caddr_t) ins->ins_trigger_args);
+  clb_free (&ins->clb);
   DO_BOX (ins_key_t *, ik, inx, ins->ins_keys)
     {
       dk_free_box ((caddr_t) ik->ik_slots);
@@ -1466,6 +1541,7 @@ ins_free (insert_node_t * ins)
     }
   END_DO_BOX;
   dk_free_box ((caddr_t) ins->ins_keys);
+  dk_free_box (ins->ins_key_only);
 }
 
 
@@ -1494,14 +1570,17 @@ ins_key (comp_context_t * cc, insert_node_t * ins, dbe_key_t * key)
   dk_set_t slots = NULL;
   NEW_VARZ (ins_key_t, ik);
   ik->ik_key = key;
-  DO_SET (dbe_column_t *, col, &key->key_parts)
+  DO_CL (cl, key->key_key_fixed)
     {
-      state_slot_t * ssl = ins_col_slot (cc, ins, col->col_id);
-      dk_set_push (&slots, (void*) ssl);
-      if (++inx >= key->key_n_significant)
-	break;
+      dk_set_push (&slots, (void*) ins_col_slot (cc, ins, cl->cl_col_id));
     }
-  END_DO_SET ();
+  END_DO_CL;
+  DO_CL (cl, key->key_key_var)
+    {
+      dk_set_push (&slots, (void*) ins_col_slot (cc, ins, cl->cl_col_id));
+    }
+  END_DO_CL;
+
   if (key->key_row_fixed)
     {
       for (inx = 0; key->key_row_fixed[inx].cl_col_id; inx++)
@@ -1524,6 +1603,25 @@ void
 sqlc_ins_keys (comp_context_t * cc, insert_node_t * ins)
 {
   dk_set_t keys = NULL;
+  if (!ins->ins_key_only && dk_set_length (ins->ins_table->tb_primary_key->key_parts) == ins->ins_table->tb_primary_key->key_n_significant)
+    {
+      ins->ins_no_deps = 1;
+      if (INS_REPLACING == ins->ins_mode)
+	ins->ins_mode = INS_SOFT; /* if it's pk parts only, no difference between replace and soft */
+    }
+  if (ins->ins_key_only)
+    {
+      DO_SET (dbe_key_t *, key, &ins->ins_table->tb_keys)
+	{
+	  if (0 == stricmp (key->key_name, ins->ins_key_only))
+	    {
+	      ins->ins_keys = (ins_key_t **) list (1, ins_key (cc, ins, key));
+	      return;
+	    }
+	}
+      END_DO_SET();
+      sqlc_new_error (cc, "22000", "INS..", "explicit index in insert does not exist");
+    }
   dk_set_push (&keys, (void*) ins_key (cc, ins, ins->ins_table->tb_primary_key));
   DO_SET (dbe_key_t *, key, &ins->ins_table->tb_keys)
     {
@@ -1566,6 +1664,7 @@ insert_node_create (comp_context_t * cc, char *tb_name,
 	  dk_set_cons ((caddr_t) slot, NULL));
     }
   sqlc_ins_keys (cc, ins);
+  sqlg_cl_insert (NULL, cc, ins, NULL, NULL);
   return ins;
 }
 
@@ -1610,7 +1709,7 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
   out_map_t * om;
   if (!n_out)
     return;
-  om = (out_map_t *) dk_alloc (sizeof (out_map_t) * n_out);
+  om = (out_map_t *) dk_alloc_box (sizeof (out_map_t) * n_out, DV_BIN);
   memset (om, 0, n_out * sizeof (out_map_t));
   DO_SET (dbe_column_t *, col, &ks->ks_out_cols)
     {
@@ -1619,7 +1718,13 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
       else if (CI_ROW == (ptrlong) col)
 	om[inx++].om_is_null = OM_ROW;
       else
-	om[inx++].om_cl = *key_find_cl (ks->ks_key, col->col_id);
+	{
+	  dbe_col_loc_t * cl = key_find_cl (ks->ks_key, col->col_id);
+	  if (cl)
+	    om[inx++].om_cl = *cl;
+	  else
+	    SQL_GPF_T1 (cc, "cannot find column in index");
+	}
     }
   END_DO_SET();
   ks->ks_out_map = om;
@@ -1817,6 +1922,8 @@ upd_free (update_node_t * upd)
 {
   dk_free_box ((caddr_t) upd->upd_col_ids);
   dk_free_box ((caddr_t) upd->upd_values);
+  dk_free_box ((caddr_t) upd->upd_quick_values);
+  dk_free_box ((caddr_t) upd->upd_var_cl);
   dk_free_box ((caddr_t) upd->upd_trigger_args);
   dk_free_box ((caddr_t) upd->upd_fixed_cl);
 }
@@ -2405,6 +2512,7 @@ eql_compile_eql (const char *string, client_connection_t * cli, caddr_t * err)
     eql_stmt_comp (&cc, (caddr_t) text, &head, &tail);
 
     qr->qr_head_node = head;
+    qr->qr_text = box_string (string);
 
     qr_add_current_of_output (qr);
     QR_POST_COMPILE (qr, (&cc));

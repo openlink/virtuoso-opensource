@@ -23,7 +23,8 @@
  -
 -->
 
-<v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <v:method name="check_url" arglist="in url varchar, in url2 varchar, in type integer, in msg any">
     <![CDATA[
       declare exit handler for sqlstate '*' { goto _error; };
@@ -58,7 +59,8 @@
     _error:
 
       if (retValue = '')
-      if (is_empty_or_null(self.v_data)) {
+        if (is_empty_or_null(self.v_data))
+        {
         retValue := sprintf('Unknown %s.', msg);
       } else if (length(self.v_data) <= 1) {
         retValue := 'Feed(s) source is bad or empty.';
@@ -106,7 +108,8 @@
       declare retValue any;
 
       retValue := vector();
-      while (not is_empty_or_null(id)) {
+      while (not is_empty_or_null(id))
+      {
         name := (select ED_NAME from ENEWS.WA.DIRECTORY where ED_ID = id);
         retValue := vector_concat(vector(vector(concat(name, ' /'), id)), retValue);
         id := (select ED_PARENT_ID from ENEWS.WA.DIRECTORY where ED_ID = id);
@@ -115,6 +118,13 @@
       return retValue;
     ]]>
   </v:method>
+
+  <v:method name="pshCheck" arglist="">
+    <![CDATA[
+      return case when ENEWS.WA.pshCheck () and not isnull (self.v_psh) then 1 else 0 end;
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Feed add</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
@@ -123,6 +133,8 @@
       <v:variable name="v_title" type="varchar" default="''"/>
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_folder_name" type="varchar" default="''"/>
+      <v:variable name="v_psh" type="varchar" default="null"/>
+      <v:variable name="v_psh_enabled" type="integer" default="1"/>
       <v:variable name="v_source" type="integer" default="-1" persist="0"/>
       <v:variable name="v_retrieve" type="integer" default="1" persist="0"/>
       <v:variable name="v_mfolder_id" type="varchar" default="null"/>
@@ -133,32 +145,43 @@
       <v:variable name="v_directory_id" type="integer" default="0" persist="0"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx'));
+        ]]>
+      </v:before-render>
       <v:before-data-bind>
         <![CDATA[
+          declare params any;
+
+          params := self.vc_page.vc_event.ve_params;
           if ((self.v_source = -1) and (self.v_url <> ''))
             self.v_source := 0;
-          self.v_title := trim(get_keyword('f_title', self.vc_page.vc_event.ve_params));
           if (isnull(self.v_data))
             self.v_data := vector('');
+          self.v_title := trim(get_keyword ('f_title', params));
           if (isnull(self.v_title) and length(self.v_data) > 1)
             self.v_title := get_keyword('title', self.v_data[1], '');
-          self.v_folder_id := trim(get_keyword('f_folder_id', self.vc_page.vc_event.ve_params, '0'));
-          self.v_folder_name := trim(get_keyword('f_folder_name', self.vc_page.vc_event.ve_params, ''));
+          self.v_psh := null;
+          if (length(self.v_data) > 1)
+            self.v_psh := get_keyword ('psh', self.v_data[1]);
+          self.v_psh_enabled := atoi (get_keyword ('f_psh_enabled', params, '1'));
+          if (not self.pshCheck())
+            self.v_psh_enabled := 0;
+          self.v_folder_id := trim(get_keyword ('f_folder_id', params, '0'));
+          self.v_folder_name := trim(get_keyword ('f_folder_name', params, ''));
           if (self.v_source = 3)
           {
             declare N integer;
-            N := cast(get_keyword('directory', self.vc_page.vc_event.ve_params, '-1') as integer);
+            N := cast (get_keyword ('directory', params, '-1') as integer);
             if (N <> -1)
               self.v_directory_id := N;
           }
         ]]>
       </v:before-data-bind>
 
-      <script language="JavaScript" type="text/javascript">
-        var URL = '<?V replace(http_path(), 'channels_create.vspx', 'channels_load.vsp') ?>';
-      </script>
       <v:template type="simple" enabled="-- case when (self.v_step = '0') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Select feed source
         </div>
         <div class="new-form-body">
@@ -183,7 +206,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" name="Next0" value="Next" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -206,7 +229,7 @@
           <v:button action="simple" name="Cancel0" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
               ]]>
             </v:on-post>
           </v:button>
@@ -214,7 +237,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source <> 3)) then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           <v:label format="%s" value="--'Subscribe feed(s)'" />
         </div>
         <div class="new-form-body">
@@ -232,13 +255,12 @@
                 </v:template>
                 <v:template type="simple" enabled="-- case when (self.v_source = 2) then 1 else 0 end">
                   <v:text name="source_2" xhtml_id="source_2" value="" xhtml_size="70" />
-                  <v:button action="browse" value="Browse...">
-                 	  <v:after-data-bind>
+                  <input type="button" id="source_2_button" value="Browse..." onclick="davBrowse ('source_2');" />
                  		  <![CDATA[
-                        control.vc_add_attribute ('onclick', 'javascript: davBrowse (''source_2'');');
+                	  <script type="text/javascript">
+                      OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                	  </script>
             			    ]]>
-            			  </v:after-data-bind>
-            		  </v:button>
                 </v:template>
                 <v:button action="simple" value="Subscribe" xhtml_alt="Subscribe feed" enabled="-- case when (self.v_source = 0) then 1 else 0 end">
                   <v:on-post>
@@ -409,11 +431,11 @@
             </v:template>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" name="Back1" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect(sprintf('channels_create.vspx?rb=%d',self.v_source));
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, sprintf ('channels_create.vspx?rb=%d', self.v_source))));
               ]]>
             </v:on-post>
           </v:button>
@@ -494,14 +516,14 @@
           </v:button>
           <v:button action="simple" name="Cancel1" value="Cancel" xhtml_class="form-button">
             <v:on-post><![CDATA[
-              self.vc_redirect('channels.vspx');
+              self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
              ]]></v:on-post>
           </v:button>
         </div>
       </v:template>
 
       <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source = 3)) then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Directory of known (popular) feeds
         </div>
         <input type="hidden" name="directory" value="-1"/>
@@ -607,11 +629,11 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" name="Back2" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels_create.vspx?rb=4');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx?rb=4')));
               ]]>
             </v:on-post>
           </v:button>
@@ -662,14 +684,14 @@
                   _next:;
                   }
                 }
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
               ]]>
             </v:on-post>
           </v:button>
           <v:button action="simple" name="Cancel2" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
               ]]>
             </v:on-post>
           </v:button>
@@ -677,7 +699,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step = '2') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Autodiscovered Feeds
         </div>
         <div class="new-form-body">
@@ -733,7 +755,7 @@
               http('</div>');
           ?>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button"/>
           <v:button action="simple" value="Check" xhtml_class="form-button">
             <v:on-post>
@@ -774,7 +796,7 @@
           <v:button action="simple" name="Cancel3" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
               ]]>
             </v:on-post>
           </v:button>
@@ -782,7 +804,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step = '3') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Feed
         </div>
         <div class="new-form-body">
@@ -791,9 +813,12 @@
 
             l := length(self.v_data);
             for (i := 1; i < l; i := i + 1)
-              for (j := 0; j < length(self.v_data[i]); j := j + 2)
+            {
+              n := length(self.v_data[i]);
+              for (j := 0; j < n; j := j + 2)
                 if (isstring(self.v_data[i][j+1]))
                   http(sprintf('<input type="hidden" name="$_%s_%d" value="%s"/>', self.v_data[i][j], i, coalesce(self.v_data[i][j+1], '')));
+            }
           ?>
           <table cellspacing="0">
             <tr>
@@ -813,9 +838,34 @@
                 <v:data-list name="f_folder_id" value="--self.v_folder_id" sql="select 0 as EFO_ID, 'Select folder ...' as EFO_PATH2, '' as EFO_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select EFO_ID, ENEWS.WA.folder_path2(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH2, ENEWS.WA.folder_path(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = self.domain_id order by EFO_PATH" key-column="EFO_ID" value-column="EFO_PATH2" xhtml_class="select"/>
               </td>
             </tr>
+            <v:template type="simple" enabled="--self.pshCheck()">
+              <tr>
+                <th>
+                  PubSubHub Server
+                </th>
+                <td>
+                  <v:label value="--self.v_psh"/>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <v:label for="f_psh_enabled" value="PubSubHub Enable"/>
+                </th>
+                <td>
+                  <v:check-box name="f_psh_enabled" is-boolean="1" true-value="1" false-value="0" value="--self.v_psh_enabled">
+                 	  <v:after-data-bind>
+                 		  <![CDATA[
+                 		    if (not ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id))
+                          control.vc_add_attribute ('disabled', 'disabled');
+            			    ]]>
+            			  </v:after-data-bind>
+                  </v:check-box>
+                </td>
+              </tr>
+            </v:template>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Subscribe" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -840,6 +890,8 @@
                     data := vector_concat(data, vector(S, params[i+1]));
                   }
 
+                self.v_psh_enabled := atoi (get_keyword ('f_psh_enabled', params, '0'));
+                data := vector_concat (data, vector ('psh_enabled', self.v_psh_enabled));
                 feed_id := ENEWS.WA.channel_create(data);
 
                 self.f_folder_name.ufl_value := trim(self.f_folder_name.ufl_value);
@@ -860,20 +912,20 @@
                   ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
                 }
               _next:
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
                ]]>
              </v:on-post>
           </v:button>
           <v:button action="simple" name="Cancel4" value="Cancel" xhtml_class="form-button">
             <v:on-post><![CDATA[
-              self.vc_redirect('channels.vspx');
+              self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
              ]]></v:on-post>
           </v:button>
         </div>
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step like '3.%') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           <?vsp http(self.v_data[0]); ?> Feeds
         </div>
         <div class="new-form-body">
@@ -952,7 +1004,7 @@
               http('</div>');
           ?>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" xhtml_id="btn_Back" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -964,14 +1016,14 @@
           <v:button action="simple" name="btn_Background" xhtml_id="btn_Background" value="Background" xhtml_class="form-button" xhtml_style="display: none;">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
                ]]>
              </v:on-post>
           </v:button>
           <v:button action="simple" xhtml_id="btn_Stop" name="Cancel5" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
                ]]>
              </v:on-post>
           </v:button>
@@ -1001,7 +1053,7 @@
           }
         ?>
         </div>
-        <div class="new-form-header">
+        <div class="form-header">
           <?vsp http(self.v_data[0]); ?> Feeds
         </div>
         <div class="new-form-body">
@@ -1019,11 +1071,11 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" xhtml_id="btn_Background" value="Background" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx')));
                ]]>
              </v:on-post>
           </v:button>
@@ -1031,7 +1083,7 @@
         </div>
         <script type="text/javascript">
           <![CDATA[
-            initState();
+            OAT.MSG.attach(OAT, "PAGE_LOADED", initState);
           ]]>
         </script>
       </v:template>

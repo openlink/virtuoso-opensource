@@ -456,7 +456,7 @@ static tag_descriptor_t id3v2_descriptors[] = {
   { tag_TKEY, tag_TKE,	decode_TEXT, "InitialKey" },
   { tag_TLAN, tag_TLA,	decode_TEXT, "Languages" },
   { tag_TLEN, tag_TLE,	decode_TEXT, "LengthMilliseconds" },
-  { tag_TMCL, 0,	decode_TEXT, "MucisianCreditsList" },	/* v2.4.0 */
+  { tag_TMCL, 0,	decode_TEXT, "MusicianCreditsList" },	/* v2.4.0 */
   { tag_TMED, tag_TMT,	decode_TEXT, "MediaType" },
   { tag_TMOO, 0,	decode_TEXT, "Mood" },			/* v2.4.0 */
   { tag_TOAL, tag_TOT,	decode_TEXT, "OriginalSourceTitle" },

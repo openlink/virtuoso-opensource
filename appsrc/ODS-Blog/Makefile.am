@@ -69,8 +69,17 @@ EXTRA_DIST = \
 	templates/columns_clean/*.vspx \
 	templates/default/*.css \
 	templates/default/*.vspx \
+	templates/digital_bazaar/*.css \
+	templates/digital_bazaar/*.vspx \
+	templates/digital_bazaar/images/*.jpg \
+	templates/digital_bazaar/images/*.png \
+	templates/micro/*.css \
+	templates/micro/*.vspx \
 	templates/modern/*.css \
 	templates/modern/*.vspx \
+	templates/newspaper_view/*.css \
+	templates/newspaper_view/*.vspx \
+	templates/newspaper_view/images/*.png \
 	templates/openlink/*.css \
 	templates/openlink/*.vspx \
 	templates/openlink_classic/*.css \

@@ -294,7 +294,11 @@
     <xsl:if test="@vm_onunload">
       <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
     </xsl:if>
-    <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
+    <![CDATA[
+      <script type="text/javascript" src="oat/loader.js"></script>
+      <script type="text/javascript" src="common.js"></script>
+      <script type="text/javascript" src="validate.js"></script>
+    ]]>
     <v:form name="page_form"
             type="simple"
             method="POST"
@@ -391,7 +395,10 @@
   <xsl:if test="@vm_onunload">
    <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
   </xsl:if>
-  <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
+  <![CDATA[
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="validate.js"></script>
+  ]]>
   <v:form name="page_form" type="simple" method="POST" xhtml_enctype="multipart/form-data" xhtml_onsubmit="sflag=true;">
   <!-- user-defined area -->
   <xsl:apply-templates />
@@ -1299,157 +1306,64 @@
 
 <xsl:template match="vm:ds-navigation">
   &lt;?vsp
+    declare n_start, n_end, n_total integer;
+    declare ds vspx_data_set;
+
+    ds := case when (udt_instance_of (control, fix_identifier_case ('vspx_data_set'))) then control else control.vc_find_parent (control, 'vspx_data_set') end;
+    if (isnull (ds.ds_data_source))
    {
-    declare _prev, _next, _last, _first vspx_button;
-    declare d_prev, d_next, d_last, d_first, index_arr int;
-    d_prev := d_next := d_last := d_first := index_arr := 0;
-    _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-    _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
+      n_total := ds.ds_rows_total;
+      n_start := ds.ds_rows_offs + 1;
+      n_end   := n_start + ds.ds_nrows - 1;
+    } else {
+      n_total := ds.ds_data_source.ds_total_rows;
+      n_start := ds.ds_data_source.ds_rows_offs + 1;
+      n_end   := n_start + ds.ds_data_source.ds_rows_fetched - 1;
+    }
+    if (n_end > n_total)
+      n_end := n_total;
+
+    if (n_total)
+      http (sprintf ('Showing %d - %d of %d', n_start, n_end, n_total));
+
+    declare _prev, _next vspx_button;
+
     _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
     _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-    if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-      goto skipit;
-    index_arr := 1;
-    if (_first is not null and not _first.vc_enabled)
-    {
-      d_first := 1;
-    }
-    if (_next is not null and not _next.vc_enabled)
-    {
-      d_next := 1;
-    }
-    if (_prev is not null and not _prev.vc_enabled)
-    {
-      d_prev := 1;
-    }
-    if (_last is not null and not _last.vc_enabled)
-    {
-      d_last := 1;
-    }
-    skipit:;
+    if ((_next is not null and _next.vc_enabled) or (_prev is not null and _prev.vc_enabled))
+      http (' | ');
   ?&gt;
-  <!--
-  <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      if (d_first)
-      {
-  http ('<a href="#">first</a>');
-      }
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="url" value="first"
-        xhtml_alt="First" xhtml_title="First" text="First">
-    </v:button>
-  </xsl:if>
-  -->
-  <?vsp
-    http('&#160;');
-    if (d_prev)
-    {
-      http ('<a href="#">&lt;&lt;</a>');
-    }
-  ?>
-  <v:button name="{@data-set}_prev" action="simple" style="url" value="&lt;&lt;"
-    xhtml_alt="Previous" xhtml_title="Previous" text="Previous">
+  <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+      ]]>
+    </v:before-render>
   </v:button>
-    <![CDATA[&nbsp;]]>
-    <![CDATA[&nbsp;]]>
-  <!-- an version of page numbering -->
-  <xsl:if test="not(@type) or @type = 'set'">
-    <v:text name="{@data-set}_offs" type="hidden" value="0" />
-    <?vsp
-    if (index_arr)
-    {
-      declare dsname, idx_offs, frm_name any;
-      declare frm vspx_control;
-frm := control.vc_find_parent_form (control);
-frm_name := '';
-if (frm is not null)
-  frm_name := frm.vc_name;
-      -- this button is just to trigger the post, no render at all
-      if (0)
-  {
-    ?>
-          <v:button name="{@data-set}_idx" action="simple" style="url" value="Submit">
-  <v:on-post><![CDATA[
-      declare ds vspx_data_set;
-      declare dss vspx_data_source;
-      declare offs int;
-      offs := atoi (get_keyword (replace (control.vc_name, '_idx', '_offs'), e.ve_params, '0'));
-      ds := control.vc_find_parent (control, 'vspx_data_set');
-      if (ds.ds_data_source is not null or isarray (ds.ds_row_data))
-        {
-	  ds.ds_rows_offs := ds.ds_nrows * offs;
-	  ds.vc_data_bind (e);
-        }
-      ]]></v:on-post>
+  &nbsp;
+  <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+      ]]>
+    </v:before-render>
     </v:button>
-    <?vsp
-        }
-    ?>
-    <xsl:processing-instruction name="vsp">
-  dsname := '<xsl:value-of select="@data-set"/>';
-    </xsl:processing-instruction>
-    <?vsp
-    declare i, n, t, c integer;
-    declare _class varchar;
-    declare dss vspx_data_source;
-    declare ds vspx_data_set;
-    ds := control.vc_parent;
-    dss := null;
-    if (ds.ds_data_source is not null)
-      dss := ds.ds_data_source;
-    i := 0;
-    n := ds.ds_nrows;
-    t := 0;
-    if (dss is not null)
-     t := dss.ds_total_rows;
-    else if (isarray (ds.ds_row_data))
-      t := length (ds.ds_row_data);
-    if (ds.ds_rows_total > t)
-      t := ds.ds_rows_total;
-    c := ds.ds_rows_offs/ds.ds_nrows;
-    if ((t/n) > 20)
-      i := (t/n) - 20;
-    while (t and i < (t/n)+1)
-       {
-    ?>
-    | <a href="#" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
-    <?vsp
-        i := i + 1;
-}
-if (i > 0)
-  http (' | ');
-    }
-    ?>
-  </xsl:if>
-    <![CDATA[&nbsp;]]>
-    <![CDATA[&nbsp;]]>
-  <?vsp
-    if (d_next)
-    {
-    http ('<a href="#">&gt;&gt;</a>');
-    }
-  ?>
-  <v:button name="{@data-set}_next" action="simple" style="url" value="&gt;&gt;"
-    xhtml_alt="Next" xhtml_title="Next" text="Next">
+  &nbsp;
+  <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+      ]]>
+    </v:before-render>
   </v:button>
-  <!--
-  <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      http('&#160;');
-      if (d_last)
-      {
-  http ('<a href="#">last</a>');
-      }
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="url" value="last"
-      xhtml_alt="Last" xhtml_title="Last" text="Last">
+  &nbsp;
+  <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/ods/images/skin/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+      ]]>
+    </v:before-render>
     </v:button>
-  </xsl:if>
-  -->
-  <?vsp
-    }
-  ?>
 </xsl:template>
 
 <xsl:template match="vm:site-member">
@@ -1461,9 +1375,45 @@ if (i > 0)
       </td>
     </tr>
     <tr>
+      <th>Allow OpenID Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc2" value="1" initial-checked="--(select top 1 WS_REGISTER_OPENID from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow Facebook Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_REGISTER_FACEBOOK from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow WebID (FOAF+SSL) Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc4" value="1" initial-checked="--(select top 1 WS_REGISTER_SSL from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow Automatic WebID (FOAF+SSL) Registration</th>
+      <td>
+        <v:check-box name="ssetc5" value="1" initial-checked="--(select top 1 WS_REGISTER_AUTOMATIC_SSL from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow Twitter Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc6" value="1" initial-checked="--(select top 1 WS_REGISTER_TWITTER from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow LinkedIn Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc7" value="1" initial-checked="--(select top 1 WS_REGISTER_LINKEDIN from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
       <th>Verify registration by email</th>
       <td>
-        <v:check-box name="ssetc2" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
+        <v:check-box name="ssetc8" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
@@ -1475,10 +1425,9 @@ if (i > 0)
         <v:check-box name="unique_mail" value="1" initial-checked="--(select top 1 WS_UNIQUE_MAIL from WA_SETTINGS)" xhtml_id="unique_mail"/>
         </td>
         <td valign="top">
-        <v:template name="nonunique_warr" type="simple"
-		                enabled="--(select 1 from(select count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount>1)
-                                "
-			  >
+              <v:template name="nonunique_warr"
+                          type="simple"
+      		                enabled="--(select 1 from(select count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount>1)">
 			  <div style="padding: 0px 0px 0px 10px;display:none;color:red;" id="dublicate_warrning">
 			  There are e-mail addresses that are registered to more than on one account.<br/>
 			  If you set this option :<br/>
@@ -1497,7 +1446,7 @@ if (i > 0)
     <tr>
       <th>Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
       <td>
-        <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
+        <v:check-box name="ssetc9" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
@@ -1521,18 +1470,16 @@ if (i > 0)
       <span class="fm_ctl_btn">
         <v:button name="ssetb1" action="simple" value="Set">
           <v:on-post>
-            <v:script>
               <![CDATA[
-                if (wa_user_is_dba (self.u_name, self.u_group))
-                  goto admin_user;
-                else
+                if (not wa_user_is_dba (self.u_name, self.u_group))
                 {
                   self.vc_is_valid := 0;
                   control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                   return;
                 }
-                admin_user:;
+
                 declare _reg, _join integer;
+
                 _reg := atoi(self.t_reg_expiry.ufl_value);
                 _join := atoi(self.t_join_expiry.ufl_value);
                 if (_reg = 0)
@@ -1547,12 +1494,9 @@ if (i > 0)
                   control.vc_parent.vc_error_message := 'Membership (Join) expiry time should be positive integer and greater then 0';
                   return;
                 }
-
                 if(self.unique_mail.ufl_selected and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 0))
                 {
-                  for select U_E_MAIL as _email from (select U_E_MAIL,count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp
-                                      where mailcount>1
-                  do
+                  for (select U_E_MAIL as _email from (select U_E_MAIL,count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount > 1) do
                   {
                    declare i integer;
                    declare account_notchanged,accounts_reset varchar;
@@ -1573,9 +1517,7 @@ if (i > 0)
                      if(i=0)
                      {
                       account_notchanged:=U_NAME;
-                     }else
-                     {
---                        dbg_obj_print('');
+                      } else {
                        WA_USER_EDIT (U_NAME, 'E_MAIL', '');
                      }
                      i:=i+1;
@@ -1593,26 +1535,27 @@ if (i > 0)
                   WA_SEND_MAIL (admin_email_address, _email ,_subject, _msg);
 
                   _skip_mail:;
-
                   }
                 }
-
-                update WA_SETTINGS set
-                  WS_REGISTER = self.ssetc1.ufl_selected,
-                  WS_MAIL_VERIFY = self.ssetc2.ufl_selected,
+                update WA_SETTINGS
+                   set WS_REGISTER = self.ssetc1.ufl_selected,
+                       WS_REGISTER_OPENID = self.ssetc2.ufl_selected,
+                       WS_REGISTER_FACEBOOK = self.ssetc3.ufl_selected,
+                       WS_REGISTER_SSL = self.ssetc4.ufl_selected,
+                       WS_REGISTER_AUTOMATIC_SSL = self.ssetc5.ufl_selected,
+                       WS_REGISTER_TWITTER = self.ssetc6.ufl_selected,
+                       WS_REGISTER_LINKEDIN = self.ssetc7.ufl_selected,
+                       WS_MAIL_VERIFY = self.ssetc8.ufl_selected,
                   WS_UNIQUE_MAIL = self.unique_mail.ufl_selected,
-                  WS_VERIFY_TIP = self.ssetc3.ufl_selected,
+                       WS_VERIFY_TIP = self.ssetc9.ufl_selected,
                   WS_REGISTRATION_EMAIL_EXPIRY = _reg,
                   WS_JOIN_EXPIRY = _join;
                 if (row_count() = 0)
                 {
-                  insert into WA_SETTINGS
-                    (WS_REGISTER, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
-		    values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected,
-		    self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc3.ufl_selected);
+                  insert into WA_SETTINGS (WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL, WS_REGISTER_TWITTER, WS_REGISTER_LINKEDIN, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
+  	                values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected, self.ssetc3.ufl_selected, self.ssetc4.ufl_selected, self.ssetc5.ufl_selected, self.ssetc6.ufl_selected, self.ssetc7.ufl_selected, self.ssetc8.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc9.ufl_selected);
                 }
               ]]>
-            </v:script>
           </v:on-post>
 	 </v:button>
 	</span>
@@ -2123,6 +2066,38 @@ if (i > 0)
           </v:button>
     </fieldset>
   </v:form>
+  <v:form type="simple" name="fkg" method="POST">
+    <fieldset>
+			<legend><b>X.509 Certificate Service</b></legend>
+      <label>
+        Service URL
+      </label>
+      <br />
+              <v:text name="s_kg" xhtml_class="textbox" xhtml_size="100" value="">
+                <v:before-data-bind>
+                  control.ufl_value := cast (coalesce ((select top 1 WS_CERT_GEN_URL from WA_SETTINGS), '') as varchar);
+                </v:before-data-bind>
+              </v:text>
+      <br />
+      <v:button name="bt_kg" action="simple" value="Set">
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+              if (not wa_user_is_dba (self.u_name, self.u_group))
+              {
+                self.vc_is_valid := 0;
+                control.vc_parent.vc_error_message := 'Only admin user can change global settings';
+                return;
+              }
+              update WA_SETTINGS set WS_CERT_GEN_URL = self.s_kg.ufl_value;
+              if (row_count() = 0)
+                insert into WA_SETTINGS (WS_CERT_GEN_URL) values (self.s_kg.ufl_value);
+            ]]>
+          </v:script>
+        </v:on-post>
+      </v:button>
+    </fieldset>
+  </v:form>
   <v:template type="simple" enabled="--case when isnull (VAD_CHECK_VERSION ('Feed Manager')) then 0 else 1 end">
   <v:form type="simple" name="form2" method="POST">
       <fieldset>
@@ -2168,6 +2143,29 @@ if (i > 0)
               </v:text>
             </td>
           </tr>
+          <!--tr>
+            <td>
+              PubSubHub
+            </td>
+            <td>
+              <v:text name="s_psh" xhtml_class="textbox" xhtml_size="70">
+                <v:before-data-bind>
+                  control.ufl_value := cast (coalesce ((select top 1 WS_FEEDS_HUB from WA_SETTINGS), '') as varchar);
+                </v:before-data-bind>
+              </v:text>
+            </td>
+          </tr-->
+          <v:template type="simple" enabled="--case when isnull (DB.DBA.VAD_CHECK_VERSION ('pubsubhub')) then 0 else 1 end">
+            <tr>
+              <td>
+                Use PubSubHub Callback
+              </td>
+              <td>
+                <v:check-box name="s_psh_callback" value="1" initial-checked="--(select top 1 coalesce (WS_FEEDS_HUB_CALLBACK, 1) from WA_SETTINGS)" />
+                (<b><v:label format="%s" value="-- ODS..PSH_CALLBACK_LINK ()" /></b>)
+              </td>
+            </tr>
+          </v:template>
         </table>
         <br />
           <v:button name="set2" action="simple" value="Set">
@@ -2227,6 +2225,12 @@ if (i > 0)
                 {
                   insert into WA_SETTINGS (WS_STORE_DAYS) values (d);
                   }
+		            --update WA_SETTINGS set WS_FEEDS_HUB = self.s_psh.ufl_value;
+                update WA_SETTINGS set WS_FEEDS_HUB_CALLBACK = self.s_psh_callback.ufl_selected;
+                if (row_count() = 0)
+                {
+                  insert into WA_SETTINGS (WS_FEEDS_HUB_CALLBACK) values (self.s_psh_callback.ufl_selected);
+                }
                 ]]>
               </v:script>
             </v:on-post>
@@ -2992,7 +2996,7 @@ if (i > 0)
 <xsl:template match="vm:u-prop-select">
   <v:select-list name="{@name}">
     <v:item name="public"  value="1" />
-    <v:item name="friends" value="2" />
+    <v:item name="acl" value="2" />
     <v:item name="private" value="3" />
     <v:before-data-bind>
       control.ufl_value := <xsl:value-of select="@value"/>;
@@ -3078,72 +3082,5 @@ if (i > 0)
     <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text>
 </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:ds-members-navigation">
-    &lt;?vsp
-      {
-        declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first int;
-
-        d_prev := d_next := d_last := d_first := 0;
-        _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-        _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
-        _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
-        _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-
-        if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-          goto _skip;
-
-        if (_first is not null and not _first.vc_enabled)
-          d_first := 1;
-
-        if (_next is not null and not _next.vc_enabled)
-          d_next := 1;
-
-        if (_prev is not null and not _prev.vc_enabled)
-          d_prev := 1;
-
-        if (_last is not null and not _last.vc_enabled)
-          d_last := 1;
-
-      _skip:;
-    ?&gt;
-    <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      if (d_first)
-        http ('<img src="images/icons/first_16.png" alt="First" title="First" border="0" /> First');
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="images/icons/first_16.png" xhtml_alt="First" text="First"/>
-    </xsl:if>
-    <?vsp
-      if (d_first or _first.vc_enabled)
-        http ('&nbsp;');
-      if (d_prev)
-        http ('<img src="images/icons/previous_16.png" alt="Previous" title="Previous" border="0" /> Previous');
-    ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="images/icons/previous_16.png" xhtml_alt="Previous" text="Previous"/>
-    <?vsp
-      if (d_prev or _prev.vc_enabled)
-        http ('&nbsp;');
-      if (d_next)
-        http ('<img src="images/icons/next_16.png" alt="Next" title="Next" border="0" /> Next');
-    ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="images/icons/next_16.png" xhtml_alt="Next" text="Next"/>
-    <xsl:if test="not(@type) or @type = 'set'">
-    <?vsp
-      if (d_next or _next.vc_enabled)
-        http ('&nbsp;');
-      if (d_last)
-        http ('<img src="images/icons/last_16.png" alt="Last" title="Last" border="0" /> Last');
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="images/icons/last_16.png" xhtml_alt="Last" text="Last"/>
-    </xsl:if>
-    <?vsp
-      }
-    ?>
-  </xsl:template>
-
-
 
 </xsl:stylesheet>

@@ -47,12 +47,12 @@
   </refsynopsisdiv>
   <refsect1 id="desc_rdf_load_rdfxml">
     <title>Description</title>
-    <para></para>
+    <para>Parses the content of RDF/XML text as a sequence of separate RDF triples.</para>
   </refsect1>
   <refsect1 id="params_rdf_load_rdfxml">
     <title>Parameters</title>
     <refsect2><title>rdfxml_text</title>
-      <para>text of and XML document</para>
+      <para>text of XML document</para>
     </refsect2>
     <refsect2><title>omt_top_rdf</title>
       <para>base IRI to resolve relative IRIs</para>
@@ -73,12 +73,34 @@
   <refsect1 id="examples_rdf_load_rdfxml">
     <title>Examples</title>
     <example id="ex_rdf_load_rdfxml"><title></title>
-      <para></para>
+      <para>Load from local file:</para>
       <screen><![CDATA[
-sparql drop graph <http://www.biopax.org/prototype#sample-closure>;
-DB.DBA.RDF_LOAD_RDFXML (file_to_string ('MatInf-for-Alan/Reactome_109581.owl'), '', 'http://www.biopax.org/prototype#sample');
+SQL>sparql drop graph <http://www.biopax.org/prototype#sample-closure>;
+Done. -- 2 msec.
+SQL>DB.DBA.RDF_LOAD_RDFXML (file_to_string ('MatInf-for-Alan/Reactome_109581.owl'), '', 'http://www.biopax.org/prototype#sample');
+Done. -- 106 msec.
 ]]>
 </screen>
+    <para>Load from URI:</para> 
+<screen><![CDATA[
+SQL> DB.DBA.RDF_LOAD_RDFXML (http_get('http://lod.taxonconcept.org/ontology/txn.owl'), '', 'http://lod.taxonconcept.org/ontology/txn.owl#');
+Done. -- 109 msec.
+
+-- Check total triples retrieved: 
+SQL>SPARQL 
+SELECT COUNT(*)  
+from <http://lod.taxonconcept.org/ontology/txn.owl#>
+WHERE {?s ?p ?o};
+callret-0
+INTEGER
+_______________________________________________________________________________
+
+495
+
+1 Rows. -- 16 msec.
+]]>
+</screen>          	
+
     </example>
   </refsect1>
   <refsect1 id="seealso_rdf_load_rdfxml">

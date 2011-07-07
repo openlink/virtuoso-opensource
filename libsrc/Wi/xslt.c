@@ -43,6 +43,7 @@
 #include "srvmultibyte.h"
 #include "bif_text.h"
 #include "xpf.h"
+#include "xmlparser.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -659,6 +660,71 @@ xp_dyn_attr (xparse_ctx_t * xp, char * name, caddr_t val)
 }
 
 caddr_t
+xslt_try_to_eval_var_fast (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
+	    int mode, dtp_t dtp )
+{
+  XT * tree = xqr->xqr_tree;
+  caddr_t name = tree->_.var.name;
+  xqi_binding_t *xb;
+  caddr_t val = NULL;
+  dtp_t val_dtp;
+  for (xb = xp->xp_locals; (NULL != xb) && (NULL != xb->xb_name); xb = xb->xb_next)
+    {
+      if (!strcmp (name, xb->xb_name))
+        {
+          val = xb->xb_value;
+          goto xb_found; /* see below */
+        }
+    }
+  for (xb = xp->xp_globals; NULL != xb; xb = xb->xb_next)
+    {
+      if (!strcmp (name, xb->xb_name))
+        {
+          val = xb->xb_value;
+          goto xb_found; /* see below */
+        }
+    }
+  switch (mode)
+    {
+    case XQ_TRUTH_VALUE:
+      return NULL;
+    case XQ_VALUE:
+      return box_dv_short_string ("");
+      break;
+    case XQ_NODE_SET:
+      return list_to_array_of_xqval (0);
+    }
+xb_found:
+  switch (mode)
+    {
+    case XQ_TRUTH_VALUE:
+      return (caddr_t) (ptrlong) xqi_truth_value_of_box (val);
+    case XQ_VALUE:
+      val_dtp = DV_TYPE_OF (val);
+      if (DV_ARRAY_OF_XQVAL == val_dtp)
+        {
+          if (0 == BOX_ELEMENTS (val))
+            return box_dv_short_string ("");
+          val = ((caddr_t *)val)[0];
+        }
+      if (NULL == val)
+        return box_dv_short_string ("");
+      if ((DV_UNKNOWN == dtp) || (val_dtp == dtp))
+        return box_copy_tree (val);
+      return BADBEEF_BOX;
+    case XQ_NODE_SET:
+      if (DV_ARRAY_OF_XQVAL != DV_TYPE_OF (val))
+        {
+          caddr_t res = list (1, box_copy_tree (val));
+          box_tag_modify (res, DV_ARRAY_OF_XQVAL);
+          return res;
+        }
+      return box_copy_tree (val);
+    }
+  return BADBEEF_BOX;
+}
+
+caddr_t
 xslt_eval_1 (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
 	    int mode, dtp_t dtp)
 {
@@ -666,7 +732,22 @@ xslt_eval_1 (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
   int first;
   XT * tree = xqr->xqr_tree;
   caddr_t volatile val;
-  xp_instance_t * volatile xqi = xqr_instance (xqr, xp->xp_qi);
+#ifndef NDEBUG
+  caddr_t volatile var_val = BADBEEF_BOX;
+#endif
+  xp_instance_t * volatile xqi;
+  if (XP_VARIABLE == tree->type)
+    { /* Fast code for popular case of an expression that is just a variable and no complicated cast of the value */
+#ifdef NDEBUG
+      caddr_t var_val;
+#endif
+      var_val = xslt_try_to_eval_var_fast (xp, xqr, xe, mode, dtp);
+#ifdef NDEBUG
+      if (BADBEEF_BOX != var_val)
+        return var_val;
+#endif
+    }
+  xqi = xqr_instance (xqr, xp->xp_qi);
   xqi->xqi_doc_cache = xp->xp_doc_cache;
   xqi->xqi_xp_locals = xp->xp_locals;
   xqi->xqi_xp_globals = xp->xp_globals;
@@ -722,6 +803,18 @@ xslt_eval_1 (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
     }
   END_QR_RESET;
   xqi_free (xqi);
+#ifndef NDEBUG
+  if (BADBEEF_BOX != var_val)
+    {
+      if (DV_TYPE_OF (var_val) != DV_TYPE_OF (val))
+        GPF_T1 ("xslt_eval_1(): failed fast branch for var: wrong type");
+      if (box_hash (var_val) != box_hash (val))
+        {
+          GPF_T1 ("xslt_eval_1(): failed fast branch for var: diff hash");
+        }
+      dk_free_tree (var_val);
+    }
+#endif
   return val;
 }
 
@@ -1546,7 +1639,25 @@ xslt_for_each_row (xparse_ctx_t * xp, caddr_t * xstree)
     }
   if (query_is_sparql)
     {
-      query_final_text = box_dv_short_strconcat ("sparql define sql:globals-mode \"XSLT\" ", query_text);
+      caddr_t preamble = xp->xp_sheet->xsh_sparql_preamble;
+      if (NULL == preamble)
+        {
+          dk_session_t *tmp_ses = strses_allocate ();
+          xml_ns_2dict_t *ns2d = &(xp->xp_sheet->xsh_ns_2dict);
+          int ns_ctr = ns2d->xn2_size;
+          SES_PRINT (tmp_ses, "sparql define output:valmode \"AUTO\" define sql:globals-mode \"XSLT\" ");
+          while (ns_ctr--)
+            {
+              SES_PRINT (tmp_ses, "prefix ");
+              SES_PRINT (tmp_ses, ns2d->xn2_prefix2uri[ns_ctr].xna_key);
+              SES_PRINT (tmp_ses, ": <");
+              SES_PRINT (tmp_ses, ns2d->xn2_prefix2uri[ns_ctr].xna_value);
+              SES_PRINT (tmp_ses, "> ");
+            }
+          preamble = xp->xp_sheet->xsh_sparql_preamble = strses_string (tmp_ses);
+          dk_free_box (tmp_ses);
+        }
+      query_final_text = box_dv_short_strconcat (preamble, query_text);
       if (query_text != query_texts_set[0])
         dk_free_box (query_text);
     }
@@ -1595,7 +1706,7 @@ xslt_for_each_row (xparse_ctx_t * xp, caddr_t * xstree)
       goto err_generated; /* see below */
 xb_found:
       params[param_ofs++] = box_copy (name);
-      params[param_ofs++] = box_copy_tree (xb->xb_value);
+      params[param_ofs++] = ((NULL == xb->xb_value) ? NEW_DB_NULL : box_copy_tree (xb->xb_value));
     }
   END_DO_SET ()
   err = qr_exec (cli, qr, qi, NULL, NULL, &lc,
@@ -1640,8 +1751,8 @@ xb_found:
       xqi_binding_t *xb = saved_locals;
       for (col_ctr = 0; col_ctr < cols_count; col_ctr++)
         {
-          dk_free_tree (xb->xb_value);
-          xb->xb_value = box_copy_tree (lc_nth_col (lc, col_ctr));
+          caddr_t new_val = lc_nth_col (lc, col_ctr);
+          rb_cast_to_xpath_safe (qi, new_val, &(xb->xb_value));
           xb = xb->xb_next;
 	}
       xslt_instantiate_children (xp, xstree);
@@ -2930,6 +3041,8 @@ void shuric_destroy_data__xslt (struct shuric_s *shuric)
       id_hash_free (xsh->xout_cdata_section_elements);
     }
   xml_ns_2dict_clean (&(xsh->xsh_ns_2dict));
+  dk_free_tree (xsh->xsh_top_excl_res_prefx);
+  dk_free_tree (xsh->xsh_sparql_preamble);
   dk_free (xsh, sizeof (xslt_sheet_t));
 }
 
@@ -3280,7 +3393,7 @@ box_find_mt_unsafe_subtree (caddr_t box)
     {
     case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
     case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC:
-    case DV_IRI_ID: case DV_ASYNC_QUEUE:
+    case DV_IRI_ID: case DV_ASYNC_QUEUE: case DV_WIDE:
       return NULL;
     case DV_DICT_ITERATOR:
       {
@@ -3324,7 +3437,7 @@ box_make_tree_mt_safe (caddr_t box)
     {
     case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
     case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC:
-    case DV_IRI_ID: case DV_ASYNC_QUEUE:
+    case DV_IRI_ID: case DV_ASYNC_QUEUE: case DV_WIDE:
       return;
     case DV_DICT_ITERATOR:
       {
@@ -3449,7 +3562,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_t *ht = hit->hit_hash;
   caddr_t key = bif_arg (qst, args, 1, "dict_put");
   caddr_t val = bif_arg (qst, args, 2, "dict_put");
-  caddr_t *old_val;
+  caddr_t *old_val_ptr;
   long res;
   if (ht->ht_mutex)
     {
@@ -3470,16 +3583,16 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((0 < ht->ht_dict_max_mem_in_use) &&
       (ht->ht_dict_mem_in_use > ht->ht_dict_max_mem_in_use) )
     goto skip_insertion; /* see below */
-  old_val = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
-  if (NULL != old_val)
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (NULL != old_val_ptr)
     {
       if (0 < ht->ht_dict_max_mem_in_use)
-        ht->ht_dict_mem_in_use += raw_length (val) - raw_length (old_val[0]);
-      dk_free_tree (old_val[0]);
+        ht->ht_dict_mem_in_use += raw_length (val) - raw_length (old_val_ptr[0]);
+      dk_free_tree (old_val_ptr[0]);
       val = box_copy_tree (val);
       if (ht->ht_mutex)
         box_make_tree_mt_safe (val);
-      old_val[0] = val;
+      old_val_ptr[0] = val;
     }
   else
     {
@@ -3509,7 +3622,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
-  hit->hit_dict_version = ht->ht_dict_version;
+  hit->hit_dict_version++ /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */;
 skip_insertion:
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
@@ -3545,6 +3658,22 @@ bif_dict_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_dict_contains_key (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_contains_key", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_contains_key");
+  caddr_t *valptr;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  valptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return (caddr_t)((ptrlong)((NULL != valptr) ? 1 : 0));
+}
+
+
+caddr_t
 bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_remove", 0);
@@ -3570,8 +3699,114 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (old_val);
       id_hash_iterator (hit, ht);
       ht->ht_dict_version++;
-      hit->hit_dict_version = ht->ht_dict_version;
+      if (hit->hit_chilum != (char *)old_key_ptr)
+        hit->hit_dict_version++;
       res = 1;
+    }
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return box_num (res);
+}
+
+caddr_t
+bif_dict_inc_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_inc_or_put", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_inc_or_put");
+  boxint inc_val = bif_long_range_arg (qst, args, 2, "dict_inc_or_put", 0, 0xffff);
+  boxint res;
+  caddr_t *old_val_ptr;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  if ((0 < ht->ht_dict_max_entries) &&
+      ((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries) )
+    goto skip_insertion; /* see below */
+  if ((0 < ht->ht_dict_max_mem_in_use) &&
+      (ht->ht_dict_mem_in_use > ht->ht_dict_max_mem_in_use) )
+    goto skip_insertion; /* see below */
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (NULL != old_val_ptr)
+    {
+      boxint old_int;
+      if (DV_LONG_INT != DV_TYPE_OF (old_val_ptr[0]))
+              sqlr_new_error ("42000", "SR627",
+                "dict_inc_or_put() can not increment a noninteger value" );
+      old_int = unbox (old_val_ptr[0]);
+      if (0 >= old_int)
+        sqlr_new_error ("42000", "SR628",
+          "dict_inc_or_put() can not increment a value if it is less than or equal to zero" );
+      dk_free_tree (old_val_ptr[0]);
+      res = old_int + inc_val;
+      old_val_ptr[0] = box_num (res);
+    }
+  else
+    {
+      caddr_t val = box_num (inc_val);
+      key = box_copy_tree (key);
+      res = inc_val;
+      if (ht->ht_mutex)
+        box_make_tree_mt_safe (key);
+      id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
+      if (0 < ht->ht_dict_max_mem_in_use)
+        ht->ht_dict_mem_in_use += raw_length (val) + raw_length (key) + 3 * sizeof (caddr_t);
+    }
+  id_hash_iterator (hit, ht);
+  ht->ht_dict_version++;
+  hit->hit_dict_version++ /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */;
+skip_insertion:
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  res = ht->ht_inserts - ht->ht_deletes;
+  return box_num (res);
+}
+
+caddr_t
+bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_dec_or_remove", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_dec_or_remove");
+  boxint dec_val = bif_long_range_arg (qst, args, 2, "dict_dec_or_remove", 0, 0xffff);
+  caddr_t *old_key_ptr, *old_val_ptr;
+  boxint res = 0;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (NULL == old_val_ptr)
+    res = 0;
+  else if (DV_LONG_INT != DV_TYPE_OF (old_val_ptr[0]))
+    sqlr_new_error ("42000", "SR629",
+      "dict_dec_or_remove() can not decrement a noninteger value" );
+  else if (unbox (old_val_ptr[0]) > dec_val)
+    {
+      boxint old_int;
+      old_int = unbox (old_val_ptr[0]);
+      if (0 >= old_int)
+        sqlr_new_error ("42000", "SR631",
+          "dict_dec_or_remove() can not decrement a value if it is less than or equal to zero" );
+      dk_free_tree (old_val_ptr[0]);
+      res = old_int - dec_val;
+      old_val_ptr[0] = box_num (res);
+      ht->ht_dict_version++;
+      hit->hit_dict_version++;
+    }
+  else
+    {
+      caddr_t old_key, old_val;
+      old_key_ptr = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val_ptr);
+      old_key = old_key_ptr[0];
+      old_val = old_val_ptr[0];
+      id_hash_remove (ht, (caddr_t)(&key));
+      if (ht->ht_dict_max_mem_in_use > 0)
+        ht->ht_dict_mem_in_use -= (raw_length (old_key) + raw_length (old_val) + 3 * sizeof (caddr_t));
+      dk_free_tree (old_key);
+      dk_free_tree (old_val);
+      id_hash_iterator (hit, ht);
+      ht->ht_dict_version++;
+      if (hit->hit_chilum != (char *)old_key_ptr)
+        hit->hit_dict_version++;
+      res = 0;
     }
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
@@ -3597,7 +3832,7 @@ bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (ht->ht_mutex)
         mutex_leave (ht->ht_mutex);
-      sqlr_new_error ("22023", "SR...", "dict_zap() can not zap a dictionary that is used in amy places, if second parameter is 0 or 1");
+      sqlr_new_error ("22023", "SR632", "dict_zap() can not zap a dictionary that is used in many places, if second parameter is 0 or 1");
     }
   while (hit_next (&hit, (char **)&keyp, (char **)&valp))
     {
@@ -3690,7 +3925,7 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
     len = batch_size;
   if (0 == len)
     {
-      res = list (0);
+      res = (caddr_t *)list (0);
       goto res_done; /* see below */
     }
   res = (caddr_t *)dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -3711,6 +3946,7 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
   GPF_T1 ("bif_" "dict_destructive_list_rnd_keys(): corrupted hashtable");
   return NULL; /* never reached */
 res_done:
+  ht->ht_dict_version++;
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
   return (caddr_t)res;
@@ -3723,12 +3959,20 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   boxint destructive = bif_long_arg (qst, args, 1, "dict_to_vector");
   id_hash_t *ht;
   caddr_t *res, *tail, *keyp, *valp;
+  size_t box_len;
   if (NULL == hit1)
     return list (0);
   ht = hit1->hit_hash;
   if (ht->ht_mutex)
     mutex_enter (ht->ht_mutex);
-  res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  box_len = (ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t);
+  if (box_len >= MAX_BOX_LENGTH)
+    {
+      if (ht->ht_mutex)
+	mutex_leave (ht->ht_mutex);
+      sqlr_new_error ("22023", ".....", "The result array too large");
+    }
+  res = (caddr_t *)dk_alloc_box (box_len, DV_ARRAY_OF_POINTER);
   tail = res;
   id_hash_iterator (&hit, ht);
   if (1 != ht->ht_dict_refctr)
@@ -3757,24 +4001,75 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t)res;
 }
 
-/*#define GVECTOR_SORT_DEBUG*/
-#define MAX_VECTOR_BSORT_BLOCK 8
-
-typedef struct vector_sort_s
+caddr_t
+bif_dict_iter_rewind (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int vs_block_elts;
-  int vs_block_size;
-  int vs_key_ofs;
-  int vs_sort_asc;
-  int vs_whole_vector_elts;
-  caddr_t *vs_whole_vector;
-  caddr_t *vs_whole_tmp;
+  id_hash_iterator_t *hit = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_iter_rewind", 0);
+  id_hash_t *ht;
+  if (NULL == hit)
+    return box_num (0);
+  ht = hit->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  hit->hit_bucket = 0;
+  hit->hit_chilum = NULL;
+  hit->hit_dict_version = ht->ht_dict_version;
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return box_num (ht->ht_inserts - ht->ht_deletes);
 }
-vector_sort_t;
 
+caddr_t
+bif_dict_iter_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_iter_next", 0);
+  id_hash_t *ht;
+  int res = 0;
+  if (3 > BOX_ELEMENTS(args))
+    sqlr_new_error ("22003", "SR345", "Too few arguments for dict_iter_next ()");
+  if (NULL == hit)
+    return box_num (0);
+  ht = hit->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  if (hit->hit_dict_version == ht->ht_dict_version)
+    {
+      caddr_t *key, *data;
+      res = hit_next (hit, (char **)(&key), (char **)(&data));
+      if (res)
+        {
+          if ((SSL_VARIABLE == args[1]->ssl_type) || (IS_SSL_REF_PARAMETER (args[1]->ssl_type)))
+            qst_set (qst, args[1], box_copy_tree (key[0]));
+          if ((SSL_VARIABLE == args[2]->ssl_type) || (IS_SSL_REF_PARAMETER (args[2]->ssl_type)))
+            qst_set (qst, args[2], box_copy_tree (data[0]));
+        }
+    }
+  else
+    {
+      if (ht->ht_mutex)
+        mutex_leave (ht->ht_mutex);
+      sqlr_new_error ("22023", "SR630", "Function dict_iter_next() tries to iterate a volatile dictionary changed after last dict_iter_rewind()");
+    }
+  return box_num (res);
+}
+
+caddr_t
+bif_dict_key_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key = bif_arg (qst, args, 0, "dict_key_hash");
+  return box_num (treehash ((char *)&key));
+}
+
+caddr_t
+bif_dict_key_eq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key1 = bif_arg (qst, args, 0, "dict_key_eq");
+  caddr_t key2 = bif_arg (qst, args, 1, "dict_key_eq");
+  return box_num (treehashcmp ((char *)(&key1), (char *)(&key2)));
+}
 
 int
-vector_sort_cmp (caddr_t * e1, caddr_t * e2, vector_sort_t * specs)
+gvector_sort_cmp (caddr_t * e1, caddr_t * e2, vector_sort_t * specs)
 {
   caddr_t key1 = e1 [specs->vs_key_ofs];
   caddr_t key2 = e2 [specs->vs_key_ofs];
@@ -3817,21 +4112,21 @@ cmp_done:
 }
 
 
-#ifdef GVECTOR_SORT_DEBUG
-#define GVECTOR_CHECK_BLOCK(blk,specs) do { \
+#ifdef VECTOR_SORT_DEBUG
+#define VECTOR_CHECK_BLOCK(blk,specs) do { \
     int ctr = specs->vs_block_elts; \
     while (ctr--) dk_check_tree ((blk)[ctr]); \
   } while (0)
 #else
-#define GVECTOR_CHECK_BLOCK(blk,specs)
+#define VECTOR_CHECK_BLOCK(blk,specs)
 #endif
 
 
-#define GVECTOR_SORT_SWAP(a,b,specs) do { \
+#define VECTOR_SORT_SWAP(a,b,specs) do { \
     caddr_t tmp[MAX_VECTOR_BSORT_BLOCK]; \
     int bsize = specs->vs_block_size; \
-    GVECTOR_CHECK_BLOCK(a,specs); \
-    GVECTOR_CHECK_BLOCK(b,specs); \
+    VECTOR_CHECK_BLOCK(a,specs); \
+    VECTOR_CHECK_BLOCK(b,specs); \
     memcpy (tmp, (a), bsize); \
     memcpy ((a), (b), bsize); \
     memcpy ((b), tmp, bsize); \
@@ -3839,7 +4134,7 @@ cmp_done:
 
 
 void
-gvector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs)
+vector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs)
 {
   /* Bubble sort n_bufs first buffers in the array. */
   int bels = specs->vs_block_elts;
@@ -3850,36 +4145,36 @@ gvector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs)
 	{
           caddr_t *a = bs + (n * bels);
           caddr_t *b = a + bels;
-	  if (DVC_GREATER == vector_sort_cmp (a, b, specs))
-	    GVECTOR_SORT_SWAP (a, b, specs);
+	  if (DVC_GREATER == specs->vs_cmp_fn (a, b, specs))
+	    VECTOR_SORT_SWAP (a, b, specs);
 	}
     }
-#ifdef GVECTOR_SORT_DEBUG
+#ifdef VECTOR_SORT_DEBUG
   dk_check_domain_of_connectivity (specs->vs_whole_vector);
 #endif
 }
 
 
 static void
-gvector_sort_reverse_buffer (caddr_t *in, int n_in, vector_sort_t *specs)
+vector_sort_reverse_buffer (caddr_t *in, int n_in, vector_sort_t *specs)
 {
   int bels = specs->vs_block_elts;
   caddr_t *a = in;
   caddr_t *b = in + (n_in - 1) * bels;
   while (a < b)
     {
-      GVECTOR_SORT_SWAP (a, b, specs);
+      VECTOR_SORT_SWAP (a, b, specs);
       a += bels;
       b -= bels;
     }
-#ifdef GVECTOR_SORT_DEBUG
+#ifdef VECTOR_SORT_DEBUG
   dk_check_domain_of_connectivity (specs->vs_whole_vector);
 #endif
 }
 
 
 void
-gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t * specs)
+vector_qsort_int (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t * specs)
 {
   if (n_in < 3)
     {
@@ -3887,9 +4182,9 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
       if (n_in < 2)
         return;
       bels = specs->vs_block_elts;
-      if (DVC_GREATER == vector_sort_cmp (in, in + bels, specs))
+      if (DVC_GREATER == specs->vs_cmp_fn (in, in + bels, specs))
 	{
-          GVECTOR_SORT_SWAP (in, in + bels, specs);
+          VECTOR_SORT_SWAP (in, in + bels, specs);
 	}
     }
   else
@@ -3903,7 +4198,7 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
       int inx, above_is_all_splits = 1;
       if (depth > 30)
 	{
-	  gvector_bsort (in, n_in, specs);
+	  vector_bsort (in, n_in, specs);
 	  return;
 	}
 
@@ -3912,7 +4207,7 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
       for (inx = 0; inx < n_in; inx++)
 	{
 	  caddr_t * this_pg = in + inx * bels;
-	  int rc = vector_sort_cmp (this_pg, split, specs);
+	  int rc = specs->vs_cmp_fn (this_pg, split, specs);
 	  if (!mid_filled && DVC_MATCH == rc)
 	    {
               memcpy (mid, this_pg, bsize);
@@ -3928,24 +4223,43 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
 	      memcpy (left + (n_right--) * bels, this_pg, bsize);
 	    }
 	}
-      gvector_qsort (left, in, n_left, depth + 1, specs);
-      gvector_sort_reverse_buffer (left + (n_right + 1) * bels, (n_in - n_right) - 1, specs);
+      vector_qsort_int (left, in, n_left, depth + 1, specs);
+      vector_sort_reverse_buffer (left + (n_right + 1) * bels, (n_in - n_right) - 1, specs);
       if (!above_is_all_splits)
-	gvector_qsort (left + (n_right + 1) * bels, in + (n_right + 1) * bels,
+	vector_qsort_int (left + (n_right + 1) * bels, in + (n_right + 1) * bels,
 	    (n_in - n_right) - 1, depth + 1, specs);
       memcpy (in, left, n_left * bsize);
 #ifdef DEBUG
       if (!mid_filled)
-        GPF_T1("gvector_qsort can not find split value in range");
+        GPF_T1("gvector_qsort_int can not find split value in range");
 #endif
       memcpy (in + n_left * bels, mid, bsize);
       memcpy (in + (n_right + 1) * bels, left + (n_right + 1) * bels,
 	  ((n_in - n_right) - 1) * bsize);
-#ifdef GVECTOR_SORT_DEBUG
+#ifdef VECTOR_SORT_DEBUG
   dk_check_domain_of_connectivity (specs->vs_whole_vector);
   dk_check_domain_of_connectivity (specs->vs_whole_tmp);
 #endif
     }
+}
+
+void
+vector_qsort (caddr_t *vect, int group_count, vector_sort_t *specs)
+{
+  caddr_t *temp;
+  specs->vs_block_size = specs->vs_block_elts * sizeof (caddr_t);
+#ifdef VECTOR_SORT_DEBUG
+  temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
+  specs->vs_whole_vector = vect;
+  specs->vs_whole_tmp = temp;
+#else
+  temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
+#endif
+  vector_qsort_int (vect, temp, group_count, 0, specs);
+#ifdef VECTOR_SORT_DEBUG
+  dk_check_tree (vect);
+#endif
+  dk_free_box (temp);
 }
 
 typedef struct dsort_itm_s {
@@ -3976,25 +4290,11 @@ bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     return box_num (group_count); /* No need to sort empty or single-element vector */
   if ('Q' == algo)
     {
-      caddr_t *temp;
-#ifdef GVECTOR_SORT_DEBUG
-      temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
-#else
-      temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
-#endif
       specs.vs_block_elts = block_elts;
-      specs.vs_block_size = block_elts * sizeof (caddr_t);
       specs.vs_key_ofs = key_ofs;
       specs.vs_sort_asc = sort_asc;
-#ifdef GVECTOR_SORT_DEBUG
-      specs.vs_whole_vector = vect;
-      specs.vs_whole_tmp = temp;
-#endif
-      gvector_qsort (vect, temp, group_count, 0, &specs);
-#ifdef GVECTOR_SORT_DEBUG
-      dk_check_tree (vect);
-#endif
-      dk_free_box (temp);
+      specs.vs_cmp_fn = gvector_sort_cmp;
+      vector_qsort (vect, group_count, &specs);
     }
   else /* if ('D' == algo) */
     {
@@ -4123,26 +4423,11 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
     return box_num (vect_elems); /* No need to sort empty or single-element vector */
   if ('Q' == algo)
     {
-      caddr_t *temp;
-#ifdef GVECTOR_SORT_DEBUG
-      temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
-#else
-      temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
-#endif
       specs.vs_block_elts = 1;
-      specs.vs_block_size = sizeof (caddr_t);
       specs.vs_key_ofs = key_ofs;
       specs.vs_sort_asc = sort_asc;
-#ifdef GVECTOR_SORT_DEBUG
-      specs.vs_whole_vector = vect;
-      specs.vs_whole_tmp = temp;
-#endif
-      GPF_T1("rowvector_qsort is not yet implemented");
-      /*rowvector_qsort (vect, temp, vect_elems, 0, &specs); */
-#ifdef GVECTOR_SORT_DEBUG
-      dk_check_tree (vect);
-#endif
-      dk_free_box (temp);
+      GPF_T1("rowvector_qsort_int is not yet implemented");
+      /*rowvector_qsort_int (vect, temp, vect_elems, 0, &specs); */
     }
   else /* if (('D' == algo) || ('S' == algo)) */
     {
@@ -4298,7 +4583,7 @@ bif_rowvector_subj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 box_dict_iterator_serialize (xml_entity_t * xe, dk_session_t * ses)
 {
-  session_buffered_write_char (DV_SHORT_STRING, ses);
+  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
   session_buffered_write_char ((char) 24, ses);
 /*                              0         1         2     */
 /*                              0123456789012345678901234 */
@@ -4395,12 +4680,10 @@ xslt_init (void)
   xslt_define ("for-each"		, XSLT_EL_FOR_EACH		, xslt_for_each			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS | XSLT_ELGRP_SORT	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "select"		, XSLT_ATTR_FOREACH_SELECT		),
 	xslt_arg_eol);
-#if 1
   xslt_define ("for-each-row"		, XSLT_EL_FOR_EACH_ROW		, xslt_for_each_row		, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS	,
 	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sparql"		, XSLT_ATTR_FOREACHROW_SPARQL		),
 	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sql"		, XSLT_ATTR_FOREACHROW_SQL		),
 	xslt_arg_eol);
-#endif
   xslt_define ("if"			, XSLT_EL_IF			, xslt_if			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_TMPL	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "test"		, XSLT_ATTR_IFORWHEN_TEST		),
 	xslt_arg_eol);
@@ -4536,12 +4819,19 @@ xslt_init (void)
   bif_define ("dict_duplicate", bif_dict_duplicate);
   bif_define ("dict_put", bif_dict_put);
   bif_define ("dict_get", bif_dict_get);
+  bif_define_typed ("dict_contains_key", bif_dict_contains_key, &bt_integer);
   bif_define ("dict_remove", bif_dict_remove);
+  bif_define ("dict_inc_or_put", bif_dict_inc_or_put);
+  bif_define ("dict_dec_or_remove", bif_dict_dec_or_remove);
   bif_define ("dict_size", bif_dict_size);
   bif_define ("dict_list_keys", bif_dict_list_keys);
   bif_define ("dict_destructive_list_rnd_keys", bif_dict_destructive_list_rnd_keys);
   bif_define ("dict_to_vector", bif_dict_to_vector);
   bif_define ("dict_zap", bif_dict_zap);
+  bif_define ("dict_iter_rewind", bif_dict_iter_rewind);
+  bif_define ("dict_iter_next", bif_dict_iter_next);
+  bif_define ("dict_key_hash", bif_dict_key_hash);
+  bif_define ("dict_key_eq", bif_dict_key_eq);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);

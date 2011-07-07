@@ -36,6 +36,7 @@
         <funcdef><function>REPL_INIT_COPY</function></funcdef>
         <paramdef>in <parameter>server_name</parameter> varchar</paramdef>
         <paramdef>in <parameter>publication</parameter> varchar</paramdef>
+        <paramdef>in <parameter>errors_mode</parameter> integer</paramdef>        
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -58,6 +59,11 @@ completed on the publisher.
     <refsect2><title>account</title>
       <para>publication account name.</para>
     </refsect2>
+    <refsect2><title>errors_mode</title>
+      <para>Important: this parameter is valid only for SQL replication data (tables and WebDAV). When set to 1, in case of errors 
+      	as result of the replication copy, these errors are return in vector; When set to 0, in case of error, 
+      this error is return and the replication copying is stopped.</para>
+    </refsect2>    
   </refsect1>
 	<!-- 3019
         This function doesn't return value
@@ -71,7 +77,7 @@ completed on the publisher.
     <example id="ex_repl_pub_copy_1"><title>Loading of the initial data on subscriber</title>
      <para>This shows setting on-line of the initial state of the subscription to 'demo_publication' from server 'demo-srv'. The data for items will be transferred thru the VDB connection. Note that on large publications this can take a lot of time.</para>
       <screen>
-SQL> DB.DBA.REPL_INIT_COPY ('demo-srv', 'demo_publication');
+SQL> DB.DBA.REPL_INIT_COPY ('demo-srv', 'demo_publication', 1);
       </screen>
 
     </example>

@@ -36,6 +36,11 @@
       <v:variable persist="session" name="dt_bookmark" type="varchar" default="null" />
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'directories.vspx'));
+        ]]>
+      </v:before-render>
     	<v:on-post>
         <![CDATA[
       	  if (e.ve_button is not null)  {
@@ -179,7 +184,7 @@
             self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
           ]]>
         </v:before-data-bind>
-        <div class="new-form-header">
+        <div class="form-header">
           <v:label format="%s" value="--concat(initcap(self.v_mode), ' directory')"/>
         </div>
         <div class="new-form-body">
@@ -202,7 +207,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Save" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -274,7 +279,7 @@
 
               <div style="padding: 0.5em 0 0.5em 0;">
                 <v:text name="channel_id" type="hidden" value="--''" format="%s"/>
-                <?vsp http(sprintf('<input type="button" value="Add feed(s)" onClick="javascript:windowShow(\'channels_select.vspx?sid=%s&realm=%s&dst=m&src=s&params=channel_id:s1;&ex=%d\', 800)" class="button"/>', self.sid, self.realm, self.v_id)); ?>
+                <?vsp http(sprintf('<input type="button" value="Add feed(s)" onClick="javascript:windowShow(\'channels_select.vspx?dst=m&src=s&params=channel_id:s1;&ex=%d\')" class="button"/>', self.v_id)); ?>
               </div>
 
               <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">

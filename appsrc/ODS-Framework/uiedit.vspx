@@ -26,8 +26,10 @@
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
+	fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <v:method name="addProperty" arglist="in obj any, in objProperty varchar, in paramsProperty varchar, in params any">
     <![CDATA[
       declare tmp ay;
@@ -64,6 +66,7 @@
     <vm:pagewrapper vm_onunload="checkPageLeave (document.forms['page_form'])">
       <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
       <v:variable name="tabNo" type="integer" param-name="tabNo" default="0"/>
+      <v:variable name="tabSubNo" type="integer" param-name="tabSubNo" default="0"/>
       <v:variable name="pg" type="integer" param-name="page" default="1"/>
       <v:variable name="is_org" type="integer" default="0" />
       <vm:rawheader caption="Edit your personal data"/>
@@ -109,10 +112,7 @@ function swPersShow ()
 }
 function swOrg (cb)
 {
-  if (cb.checked == true)
-    swPersHide ();
-  else
-    swPersShow ();
+              (cb.checked)? swPersHide(): swPersShow();
 }
 function checkRest (form, sel)
 {
@@ -130,10 +130,7 @@ function checkRest (form, sel)
     }
 }
             ODSInitArray.push ( function () {
-              OAT.Loader.load(["json", "ws", "calendar", "combolist"], function(){OAT.MSG.send(OAT, 'PAGE_LOADED');});
-            });
-            ODSInitArray.push ( function () {
-              (<?V self.is_org ?>)? swPersHide(): swPersShow();
+              OAT.Loader.load(["json", "ws", "calendar", "combolist", "anchor", "dialog"], function(){OAT.Preferences.imagePath = '/ods/images/oat/'; OAT.Preferences.stylePath = '/ods/oat/styles/'; OAT.Preferences.showAjax = false; OAT.MSG.attach(OAT, "PAGE_LOADED", function(){(<?V self.is_org ?>)? swPersHide(): swPersShow();}); OAT.MSG.send(OAT, 'PAGE_LOADED');});
             });
           ]]>
         </script>
@@ -143,6 +140,7 @@ function checkRest (form, sel)
           <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')); ?>"/>
           <input type="hidden" name="page" value="<?V self.pg ?>"/>
           <input type="hidden" name="tabNo" id="tabNo" value="<?V self.tabNo ?>"/>
+          <input type="hidden" name="tabSubNo" id="tabSubNo" value="<?V self.tabSubNo ?>"/>
         </div>
     <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
     <tr valign='top'>
@@ -150,117 +148,13 @@ function checkRest (form, sel)
         <table cellpadding='10' cellspacing='0' border='0' width='100%'>
           <tr>
             <td class="tab_deck">
-              <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
-        		    <tr class="navtab_row">
-        		      <?vsp
-        		         declare btn varchar;
-
-                          btn := case self.pg
-                                   when 1 then 'user_s_personal_' || cast (self.tabNo as varchar)
-                                   when 2 then 'user_s_business_' || cast (self.tabNo as varchar)
-                                   else ''
-                                 end;
-        		      ?>
-        		      <script type="text/javascript">
-        			      def_btn = '<?V btn ?>';
-        		      </script>
-                        <td class="<?V case when self.pg = 1 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url01"
-                                 value="Personal"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=1')"
-                                 xhtml_class="tab"/>
-                  </td>
-                        <td class="<?V case when self.pg = 2 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url02"
-                                 value="Business"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=2')"
-                                 xhtml_class="tab"/>
-                        </td>
-                        <td class="<?V case when self.pg = 3 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url03"
-                                 value="Security"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=3')"
-                                 xhtml_class="tab"/>
-                        </td>
-                        <td class="<?V case when self.pg = 4 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url04"
-                                 value="Associations &amp; Web Services"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=4')"
-                                 xhtml_class="tab"/>
-                        </td>
-                        <td class="<?V case when self.pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url08"
-                                 value="Annotations"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=8')"
-                                 xhtml_class="tab"/>
-                        </td>
-                        <td class="<?V case when self.pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url09"
-                                 value="Validation"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=9')"
-                                 xhtml_class="tab"/>
-                        </td>
-                        <td class="<?V case when self.pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url11"
-                                 value="LDAP Servers"
-                                 format="%s"
-                                 url="--sprintf('uiedit.vspx?page=10')"
-                                 xhtml_class="tab"/>
-                        </td>
-                  <td class="page_tab_empty" align="center" width="100%">
-                     <table cellpadding="0" cellspacing="0">
-                        <tr>
-                          <td width="100%" >
-                          </td>
-                        </tr>
-                     </table>
-                  </td>
-                    </tr>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
+                        <v:include url="uiedit_nav.vspx"/>
                   </table>
                  <table class="tab_page">
                     <tr>
                       <td valign="top" class="tab_page">
-                        <v:template name="template1"
-                                    type="simple"
-                                    enabled="-- equ (get_keyword('page', self.vc_event.ve_params, '1'), '1')">
                           <v:include url="uiedit_personal.vspx"/>
-                        </v:template>
-                        <v:template name="template2"
-                                    type="simple"
-                                    enabled="-- equ (get_keyword('page', self.vc_event.ve_params),'2')">
-                            <v:include url="uiedit_buss.vspx"/>
-                        </v:template>
-                        <v:template name="template3"
-                                    type="simple"
-                                    enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '3')">
-                            <v:include url="uiedit_pwd.vspx"/>
-                        </v:template>
-                        <v:template name="template4"
-                                     type="simple"
-                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '4')">
-                            <v:include url="uiedit_svc.vspx"/>
-                        </v:template>
-                        <v:template name="template8"
-                                     type="simple"
-                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '8')">
-                            <v:include url="uiedit_related.vspx"/>
-                        </v:template>
-                          <v:template name="template9"
-                                     type="simple"
-                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '9')">
-                            <v:include url="uiedit_validation.vspx"/>
-                          </v:template>
-                          <v:template name="template10"
-                                      type="simple"
-                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '10')">
-                          <v:include url="uiedit_ldap.vspx"/>
-                        </v:template>
                       </td>
                     </tr>
                   </table>

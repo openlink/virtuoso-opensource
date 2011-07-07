@@ -40,23 +40,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params"><title>Parameters</title>
-    <refsect2><title>path</title>
-      <para><type>varchar</type> relative path.</para>
-    </refsect2>
-    <refsect2><title>string</title>
-      <para><type>varchar</type> or <type>string session</type> to write to
-      the file.</para>
-    </refsect2>
-    <refsect2><title>mode</title>
-      <para><type>integer</type> mode.</para>
-        <simplelist>
-          <member>0 - overwrite from start offset 0</member>
-          <member>-1 - append to end of file</member>
-          <member>-2 - overwrite and truncate.</member>
-	</simplelist>
-    </refsect2>
-  </refsect1>
   <refsect1 id="desc"><title>Description</title>
     <para>This function requires dba privileges.</para>
     <para><function>string_to_file</function> writes a <type>varchar</type>
@@ -76,6 +59,23 @@
     disk access. An error 42000/FA024 is signalled if an attempt is made to
     write to a file in a directory to which disk access is not explicitly
     allowed.</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>path</title>
+      <para><type>varchar</type> relative path.</para>
+    </refsect2>
+    <refsect2><title>string</title>
+      <para><type>varchar</type> or <type>string session</type> to write to
+      the file.</para>
+    </refsect2>
+    <refsect2><title>mode</title>
+      <para><type>integer</type> mode.</para>
+        <simplelist>
+          <member>0 - overwrite from start offset 0</member>
+          <member>-1 - append to end of file</member>
+          <member>-2 - overwrite and truncate.</member>
+	</simplelist>
+    </refsect2>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_string_to_file"><title>Simple example</title>

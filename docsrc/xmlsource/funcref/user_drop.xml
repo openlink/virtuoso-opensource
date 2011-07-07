@@ -43,8 +43,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_USER_DROP">
     <title>Description</title>
-    <para>This is used to remove an existing user account from local security 
-    schema.</para>
+    <para>This is used to remove an existing user account from local security schema.</para>
   </refsect1>
   <refsect1 id="params_USER_DROP">
     <title>Parameters</title>
@@ -53,14 +52,12 @@
     </refsect2>
     <refsect2><title>cascade</title>
 	<para>This  flag (0/1) specifies whether  to delete the stored procedures/functions, PL modules, 
-	    tables and user defined types owned by  the user.
-	    It cannot drop  assembly definitions (created  with  CREATE ASSEMBLY), because CREATE
-	    ASSEMBLY is a database wide operation (done by the DBA group) so the assembly
-	    has no owner (since you can not drop DBA).
-	    The default value is zero. 
-	    Sometimes it is  not possible to drop the resources,  for  example if a table owned by the user  is
-	    referenced by    foreign key in a table that would not be dropped. The drop user will detect that
-	    and will print the appropriate error message (giving up the operation).
+tables and user defined types owned by  the user. It cannot drop  assembly definitions (created with
+CREATE ASSEMBLY), because CREATE ASSEMBLY is a database wide operation (done by the DBA group) so the
+assembly has no owner (since you can not drop DBA). The default value is zero. Sometimes it is not
+possible to drop the resources, for example if a table owned by the user is referenced by foreign key
+in a table that would not be dropped. The drop user will detect that and will print the appropriate
+error message (giving up the operation).
 	</para>
     </refsect2>
   </refsect1>

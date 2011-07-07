@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
  -
-  -  $Id$
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -24,29 +24,9 @@
 -->
 <v:page name="search" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="update_params" arglist="">
-    <![CDATA[
-      declare tmp, params any;
-
-      self.v_keywords := trim (self.v_keywords);
-      self.v_expression := trim (self.v_expression);
-      self.v_tags := trim (self.v_tags);
-
-      tmp := AB.WA.tags2vector (self.v_tags);
-      tmp := AB.WA.vector_unique (tmp);
-      self.v_tags := AB.WA.vector2tags (tmp);
-
-      params := self.vc_page.vc_event.ve_params;
-      if (not (self.account_role in ('public', 'guest')) and not isnull (get_keyword ('f_tags', params)))
-        self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
-      self.v_shared := self.f_shared.ufl_selected;
-    ]]>
-  </v:method>
-
   <v:method name="do_search" arglist="inout e vspx_event">
     <![CDATA[
-      declare tmp any;
-
+      declare tmp, params any;
       declare exit handler for SQLSTATE '*' 
       {
         if (__SQL_STATE = 'TEST') {
@@ -57,7 +37,13 @@
         resignal;
       };
 
-      self.update_params();
+      self.v_keywords := trim (self.v_keywords);
+      self.v_expression := trim (self.v_expression);
+      self.v_tags := trim (self.v_tags);
+
+      tmp := AB.WA.tags2vector (self.v_tags);
+      tmp := AB.WA.vector_unique (tmp);
+      self.v_tags := AB.WA.vector2tags (tmp);
 
       AB.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
       if (self.v_mode not in ('simple', 'opensearch'))
@@ -90,8 +76,9 @@
         }
         return;
       }
-      if (self.v_mode not in ('simple', 'opensearch'))
+      if (self.v_mode in ('simple', 'opensearch'))
       {
+        self.v_own := 1;
         AB.WA.xml_set('MyContacts', data, 1);
       } else {
         if (self.v_own = 1)
@@ -104,7 +91,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := AB.WA.search_sql (self.domain_id, self.account_id, data, self.v_max);
+      sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
       sql := concat (sql, ' order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
@@ -191,6 +178,11 @@
         self.do_search (e);
     ]]>
   </v:after-data-bind>
+  <v:before-render>
+    <![CDATA[
+      self.F1.uf_action := AB.WA.utf2wide (AB.WA.page_url (self.domain_id, 'search.vspx'));
+    ]]>
+  </v:before-render>
   <vm:pagetitle>Search results</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -249,9 +241,8 @@
           self.v_category := cast (get_keyword ('f_category', params, get_keyword ('category', params, self.v_category)) as integer);
 
           -- options
-          if (not (self.account_role in ('public', 'guest')) and not isnull (get_keyword ('f_tags', params)))
-            self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
-          self.v_shared := self.f_shared.ufl_selected;
+          self.v_own := cast (get_keyword ('f_own', params, self.v_own) as integer);
+          self.v_shared := cast (get_keyword ('f_shared', params, self.v_shared) as integer);
 
           self.v_max := trim (get_keyword ('f_max', params, self.v_max));
           self.v_order := trim (get_keyword ('f_order', params, self.v_order));
@@ -280,11 +271,6 @@
       ?>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
-      <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
-        <div class="new-form-header" style="margin-top: 6px;">
-          <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> person(s) in last search</i>
-        </div>
-      </v:template>
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
@@ -322,12 +308,10 @@
                 </v:before-data-bind>
 
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="search" class="AB_grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
-                    <thead class="sortHeader">
+                  <table id="search" class="ODS_grid" style="border: 0px;">
+                    <thead>
                       <tr>
-                        <th>
-                          Name
-                        </th>
+                        <th>Name</th>
                       </tr>
                     </thead>
                   </table>
@@ -380,16 +364,19 @@
 
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
+                    <tfoot>
+                      <tr>
+                        <td align="right">
+                          <vm:ds-navigation data-set="ds" />
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </v:template>
 
-                <span id="ds_navigation">
-                  <vm:ds-navigation data-set="ds" />
-                </span>
               </v:data-set>
               <script type="text/javascript">
                 <![CDATA[
-                  coloriseTable('search');
                   exchangeHTML();
                 ]]>
               </script>
@@ -455,14 +442,15 @@
                     <v:text name="f_tags" value="--self.v_tags" fmt-function="AB.WA.utf2wide" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
-                <vm:if test="not (self.account_role in ('public', 'shared'))">
                   <tr>
                     <th/>
                     <td>
+                    <label>
                       <?vsp
                         http(sprintf('<input type="checkbox" name="f_own" id="f_own" value="1" %s onclick="javascript: changeState(this, \'f_category\');" />', case when (self.v_own = 1) then 'checked="checked"' else '' end));
                       ?>
-                      <b><vm:label for="f_own" value="Search in my contacts"/></b>
+                      <b>Search in my contacts</b>
+                    </label>
                     </td>
                   </tr>
                   <tr>
@@ -473,12 +461,15 @@
                       <v:data-list name="f_category" xhtml_id="f_category" value="--self.v_category" sql="select -1 as C_ID, ' Select category ... ' as C_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select C_ID, C_NAME from AB.WA.CATEGORIES where C_DOMAIN_ID = self.domain_id order by C_NAME" key-column="C_ID" value-column="C_NAME" xhtml_class="select"/>
                     </td>
                   </tr>
-                </vm:if>
                 <tr>
                   <th/>
                   <td>
-                    <v:check-box name="f_shared" initial-checked="self.v_shared" xhtml_id="f_shared" value="1" />
-                    <b><vm:label for="f_shared" value="Search in my shared contacts"/></b>
+                    <label>
+                      <?vsp
+                        http (sprintf ('<input type="checkbox" name="f_shared" id="f_shared" value="1" %s />', case when (self.v_shared = 1) then 'checked="checked"' else '' end));
+                      ?>
+                      <b>Search in my shared contacts</b>
+                    </label>
                   </td>
                 </tr>
               </table>
@@ -537,7 +528,7 @@
           <v:button action="simple" name="s_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('home.vspx');
+                self.vc_redirect (AB.WA.utf2wide (AB.WA.page_url (self.domain_id)));
               ]]>
             </v:on-post>
           </v:button>
@@ -559,14 +550,7 @@
                 <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_is_valid := 1;
-                      self.v_step := 0;
-                      self.v_mode := 'advanced';
-                      self.v_own   := 1;
-                      self.ds_data := vector();
-                      self.ds_meta := vector();
-                      self.ds_tags := vector();
-                      self.vc_data_bind(e);
+                    self.vc_redirect (AB.WA.utf2wide (AB.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=advanced&s_keywords=%s', self.s_keywords.ufl_value))));
                     ]]>
                   </v:on-post>
                 </v:button>
@@ -574,7 +558,7 @@
                 <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_redirect('home.vspx');
+                      self.vc_redirect (AB.WA.utf2wide (AB.WA.page_url (self.domain_id)));
                     ]]>
                   </v:on-post>
                 </v:button>

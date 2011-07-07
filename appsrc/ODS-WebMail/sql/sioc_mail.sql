@@ -19,8 +19,11 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
 use sioc;
 
+-------------------------------------------------------------------------------
+--
 create procedure mail_post_iri (in user_id int, in msg_id int)
 {
   declare _member, _instance varchar;
@@ -44,17 +47,24 @@ create procedure mail_post_iri (in user_id int, in msg_id int)
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, c_iri varchar;
   declare do_post int;
+
+  -- init services
+  SIOC..fill_ods_mail_services ();
 
   for (select DOMAIN_ID, USER_ID, MSG_ID, SUBJECT, SND_DATE, UNIQ_MSG_ID from OMAIL..MESSAGES) do
     {
       do_post := 1;
     for (select WAM_INST
            from DB.DBA.WA_MEMBER
-          where WAM_USER = USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail'
+         where WAM_USER = USER_ID
+           and WAM_MEMBER_TYPE = 1
+           and WAM_APP_TYPE = 'oMail'
  	   and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAM_INST = _wai_name)) do
 	  {
           if (do_post = 1)
@@ -73,6 +83,28 @@ create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, 
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure fill_ods_mail_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('mail.message.new', 'mail.options.set',  'mail.options.get');
+  ods_object_services (graph_iri, 'mail', 'ODS mail instance services', svc_functions);
+
+  -- item
+  svc_functions := vector ('mail.message.get', 'mail.message.delete', 'mail.message.move');
+  ods_object_services (graph_iri, 'mail/item', 'ODS Mail item services', svc_functions);
+
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure message_insert (
   inout domain_id integer,
   inout user_id integer,
@@ -100,16 +132,21 @@ create procedure message_insert (
       for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = user_id) do
         foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
       ods_sioc_post (graph_iri, iri, null, creator_iri, subject, send_date, null);
+
+      -- item services
+      SIOC..ods_object_services_attach (graph_iri, iri, 'mail/item');
+
           do_post := 0;
         }
       c_iri := mail_iri (WAM_INST);
     DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
     DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
     }
-  return;
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure message_delete (
   in domain_id integer,
   in user_id integer,
@@ -125,16 +162,22 @@ create procedure message_delete (
   graph_iri := get_graph ();
   iri := mail_post_iri (user_id, message_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
+
+  -- event services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'mail/item');
 }
 ;
 
--- OMAIL..MESSAGES
+-------------------------------------------------------------------------------
+--
 create trigger MESSAGES_SIOC_I after insert on OMAIL..MESSAGES referencing new as N
 {
   message_insert (N.DOMAIN_ID, N.USER_ID, N.MSG_ID, N.SUBJECT, N.SND_DATE);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger MESSAGES_SIOC_U after update on OMAIL..MESSAGES referencing old as O, new as N
     {
   message_delete (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
@@ -142,12 +185,16 @@ create trigger MESSAGES_SIOC_U after update on OMAIL..MESSAGES referencing old a
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger MESSAGES_SIOC_D before delete on OMAIL..MESSAGES referencing old as O
         {
   message_delete (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure ods_mail_sioc_init ()
 {
   declare sioc_version any;
@@ -164,5 +211,19 @@ create procedure ods_mail_sioc_init ()
 ;
 
 --OMAIL.WA.exec_no_error ('ods_mail_sioc_init ()');
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.tmp_update ()
+{
+  if (registry_get ('omail_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_mail_services();
+  registry_set ('omail_services_update', '1');
+}
+;
+
+OMAIL.WA.tmp_update ();
 
 use DB;

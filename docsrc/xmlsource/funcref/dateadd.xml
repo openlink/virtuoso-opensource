@@ -40,6 +40,14 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_dateadd">
+    <title>Description</title>
+    <para>dateadd adds a positive or negative quantity of units to a date
+    (in the internal date time format), and returns a new date so formed.
+    The unit is specified as a string and can be one of the following:
+    'second', 'minute', 'hour', 'day', 'month', or 'year'.
+    Use datestring to convert the result to a human-readable string.</para>
+  </refsect1>
   <refsect1 id="params_dateadd"><title>Parameters</title>
     <refsect2><title>unit</title>
       <para>String value denoting the unit to use in the addition.</para></refsect2>
@@ -50,14 +58,6 @@
       <para>Datetime value to which the <parameter>number</parameter>
       of <parameter>unit</parameter>s is to be added</para>
     </refsect2>
-  </refsect1>
-  <refsect1 id="desc_dateadd">
-    <title>Description</title>
-    <para>dateadd adds a positive or negative quantity of units to a date
-    (in the internal date time format), and returns a new date so formed.
-    The unit is specified as a string and can be one of the following:
-    'second', 'minute', 'hour', 'day', 'month', or 'year'.
-    Use datestring to convert the result to a human-readable string.</para>
   </refsect1>
 <!--  <refsect1 id="errors_dateadd"><title>Errors</title>
     <table><title>Errors signalled by <function>dateadd</function></title>

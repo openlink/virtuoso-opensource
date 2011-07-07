@@ -105,57 +105,24 @@ create procedure ODRIVE.WA.session_restore (
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, 'wa');
-
   domain_id := ODRIVE.WA.session_domain (params);
   user_id := -1;
-  if (domain_id <> -1)
-    for (select U_ID,
-                U_NAME,
-                U_FULL_NAME
-           from DB.DBA.VSPX_SESSION,
-                WS.WS.SYS_DAV_USER
-          where VS_REALM = realm
-            and VS_SID   = sid
-            and VS_UID   = U_NAME) do
-    {
-      user_id   := U_ID;
-      user_name := ODRIVE.WA.user_name (U_NAME, U_FULL_NAME);
-      user_role := ODRIVE.WA.access_role (domain_id, U_ID);
-    }
-
-  if ((user_id = -1) and (domain_id >= 0) and (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'oDrive' and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
-  {
-    if (domain_id = -1)
-    {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    } else {
-      user_id := coalesce((select A.U_ID
-                             from SYS_USERS A,
-                                  WA_MEMBER B,
-                                  WA_INSTANCE C
-                            where B.WAM_USER = A.U_ID
-                              and B.WAM_MEMBER_TYPE = 1
-                              and B.WAM_INST = C.WAI_NAME
-                              and C.WAI_ID = domain_id), -1);
-      if (user_id = -1)
-      {
         user_role := 'expire';
         user_name := 'Expire session';
-      } else {
-        user_role := 'public';
-        user_name := 'Public User';
-      }
-    }
-  }
-  else if (domain_id <> -1)
+
+  for (select U.U_ID,
+              U.U_NAME,
+              U.U_FULL_NAME
+         from DB.DBA.VSPX_SESSION S,
+              WS.WS.SYS_DAV_USER U
+        where S.VS_REALM = realm
+          and S.VS_SID   = sid
+          and S.VS_UID   = U.U_NAME) do
   {
-    if (ODRIVE.WA.domain_owner_id (domain_id) <> user_id)
-      user_role := 'public';
+    user_id   := U_ID;
+    user_name := ODRIVE.WA.user_name (U_NAME, U_FULL_NAME);
   }
+  user_role := ODRIVE.WA.access_role (domain_id, user_id);
 
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
@@ -203,22 +170,18 @@ create procedure ODRIVE.WA.frozen_page (
 create procedure ODRIVE.WA.check_admin(
   in usr any) returns integer
 {
+  declare grp integer;
+
   if (isstring(usr))
     usr := (select U_ID from SYS_USERS where U_NAME = usr);
 
-  declare grp integer;
-  grp := (select U_GROUP from SYS_USERS where U_ID = usr);
+  if ((usr = 0) or (usr = http_dav_uid ()))
+    return 1;
 
-  if (usr = 0)
+  grp := (select U_GROUP from SYS_USERS where U_ID = usr);
+  if ((grp = 0) or (grp = http_dav_uid ()) or (grp = http_dav_uid()+1))
     return 1;
-  if (usr = http_dav_uid ())
-    return 1;
-  if (grp = 0)
-    return 1;
-  if (grp = http_dav_uid ())
-    return 1;
-  if(grp = http_dav_uid()+1)
-    return 1;
+
   return 0;
 }
 ;
@@ -262,7 +225,8 @@ create procedure ODRIVE.WA.check_grants2 (in role_name varchar, in page_name var
 --
 create procedure ODRIVE.WA.access_role (in domain_id integer, in user_id integer)
 {
-  whenever not found goto _end;
+  if (domain_id <= 0)
+    return 'expire';
 
   if (ODRIVE.WA.check_admin (user_id))
     return 'admin';
@@ -295,13 +259,15 @@ create procedure ODRIVE.WA.access_role (in domain_id integer, in user_id integer
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
     return 'reader';
-  if (exists(select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
-    return 'guest';
 
-_end:
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+  {
   return 'public';
+}
+  return 'expire';
 }
 ;
 
@@ -348,16 +314,9 @@ create procedure ODRIVE.WA.menu_tree ()
   <node     name="Browse"         url="home.vspx"          id="1"   tip="DAV Browser"               allowed="public guest reader author owner admin">
     <node   name="Settings"       url="settings.vspx"      id="11"  place="link"                    allowed="admin owner"/>
   </node>
-  <node     name="Groups"         url="groups.vspx"        id="2"   tip="Groups"                    allowed="admin owner">
-    <node   name="21"             url="groups_update.vspx" id="21"  place="link"                    allowed="admin owner"/>
-  </node>
   <node     name="Metadata"       url="vmds.vspx"          id="3"   tip="Metadata Administration"  allowed="admin owner">
-    <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Administration"    allowed="admin owner">
-      <node name="Schemas Update" url="vmds_update.vspx"   id="311" place="link"                    allowed="admin owner"/>
-    </node>
-    <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Administration" allowed="admin owner">
-      <node name="Mimes Update"   url="mimes_update.vspx"  id="321" place="link"                    allowed="admin owner"/>
-    </node>
+    <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Administration"    allowed="admin owner"/>
+    <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Administration" allowed="admin owner"/>
   </node>
   <node     name="Subscriptions"  url="subscriptions.vspx" id="4"   tip="Subscriptions"            allowed="admin owner"/>
 </menu_tree>';
@@ -414,35 +373,106 @@ create procedure ODRIVE.WA.show_excerpt(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.dashboard_rs(
+  in p0 integer)
+{
+  declare account_id, vspxUser any;
+  declare wai_name, link varchar;
+
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 varchar;
+  declare c3 datetime;
+  declare c4 integer;
+
+  result_names(c0, c1, c2, c3, c4);
+  account_id := ODRIVE.WA.domain_owner_id (p0);
+  vspxUser := connection_get ('vspx_user');
+  if (isnull (vspxUser))
+  {
+    for (select top 10 RES_ID,
+                RES_FULL_PATH,
+                RES_MOD_TIME,
+                RES_NAME,
+                RES_OWNER
+           from WS.WS.SYS_DAV_RES
+          where RES_FULL_PATH like '/DAV/home/%'
+            and RES_OWNER = account_id
+            and substring (RES_PERMS, 7, 1) = '1'
+          order by RES_MOD_TIME desc) do
+    {
+      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      link := case when isnull (wai_name) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID) end;
+      result (RES_ID, RES_NAME, link, RES_MOD_TIME, RES_OWNER);
+    }
+  }
+  else
+  {
+    for (select top 10 *
+           from (select *
+                   from (select top 10 RES_ID,
+                                RES_FULL_PATH,
+                                RES_MOD_TIME,
+                                RES_NAME,
+                                RES_OWNER
+                           from WS.WS.SYS_DAV_RES
+                                  join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
+                                    join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
+                          where RES_FULL_PATH like '/DAV/home/%'
+                            and AI_PARENT_TYPE = 'R'
+                            and GI_SUPER = account_id
+                            and AI_FLAG = 'G'
+                          order by RES_MOD_TIME desc
+                        ) acl
+                 union
+                 select *
+                   from (select top 10 RES_ID,
+                                RES_FULL_PATH,
+                                RES_MOD_TIME,
+                                RES_NAME,
+                                RES_OWNER
+                           from WS.WS.SYS_DAV_RES
+                          where RES_FULL_PATH like '/DAV/home/' || vspxUser || '%'
+                            and RES_OWNER = account_id
+                            and RES_PERMS like '1%'
+                          order by RES_MOD_TIME desc
+                        ) own
+                ) sub
+          order by RES_MOD_TIME desc) do
+    {
+      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      link := case when isnull (wai_name) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID) end;
+      result (RES_ID, RES_NAME, link, RES_MOD_TIME, RES_OWNER);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.show_column_header (
   in columnLabel varchar,
   in columnName varchar,
   in sortOrder varchar,
   in sortDirection varchar := 'asc',
-  in isSortable integer := 1)
+  in columnProperties varchar := '')
 {
-  declare strClass, strOnclick any;
+  declare class, image, onclick any;
 
-  strClass := '';
-  strOnclick := '';
-  if (isSortable)
-  {
-    strClass := 'sortcol';
-    strOnclick := sprintf ('onclick="javascript: myPost(\'F1\', \'sortColumn\', \'%s\');"', columnName);
+  image := '';
+  onclick := sprintf ('onclick="javascript: odsPost(this, [\'sortColumn\', \'%s\']);"', columnName);
     if (sortOrder = columnName)
     {
       if (sortDirection = 'desc')
       {
-        strClass := strClass || ' sortcol_active sortcol_desc';
+      image := '&nbsp;<img src="/ods/images/icons/orderdown_16.png" border="0" alt="Down"/>';
       }
       else if (sortDirection = 'asc')
       {
-        strClass := strClass || ' sortcol_active sortcol_asc';
-      }
+      image := '&nbsp;<img src="/ods/images/icons/orderup_16.png" border="0" alt="Up"/>';
     }
-    strClass := 'class="' || strClass || '"';
   }
-  return sprintf ('<th %s %s>%s</th>', strClass, strOnclick, columnLabel);
+  return sprintf ('<th %s %s>%s%s</th>', columnProperties, onclick, columnLabel, image);
 }
 ;
 
@@ -479,7 +509,7 @@ create procedure ODRIVE.WA.iri_fix (
   {
     declare V any;
 
-    V := rfc1808_parse_uri (S);
+    V := rfc1808_parse_uri (cast (S as varchar));
     V [0] := 'https';
     V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
     S := DB.DBA.vspx_uri_compose (V);
@@ -497,16 +527,18 @@ create procedure ODRIVE.WA.url_fix (
 {
   declare T varchar;
 
+  T := '&';
+  if (isnull (strchr (S, '?')))
   T := '?';
+
   if (not is_empty_or_null (sid))
   {
     S := S || T || 'sid=' || sid;
     T := '&';
   }
   if (not is_empty_or_null (realm))
-  {
     S := S || T || 'realm=' || realm;
-  }
+
   return S;
 }
 ;
@@ -601,69 +633,73 @@ create procedure ODRIVE.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare N integer;
+  declare ch, S varchar;
+
+  declare exit handler for sqlstate '*' {
+    return '';
+  };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat)) {
-    ch := chr(pFormat[N]);
-    if (ch = 'M') {
+  for (N := 1; N <= length(pFormat); N := N + 1)
+  {
+    ch := substring(pFormat, N, 1);
+    if (ch = 'M')
+    {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm') {
-        S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else {
-        if (ch = 'Y') {
-          S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else {
-          if (ch = 'y') {
-            S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd') {
-              S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else {
-              if (ch = 'D') {
-                S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else {
-                if (ch = 'H') {
-                  S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else {
-                  if (ch = 'h') {
-                    S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else {
-                    if (ch = 'N') {
-                      S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else {
-                      if (ch = 'n') {
-                        S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else {
-                        if (ch = 'S') {
-                          S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else {
-                          if (ch = 's') {
-                            S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else {
-                            S := concat(S, ch);
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
     }
-    N := N + 1;
+    else if (ch = 'm')
+    {
+        S := concat(S, xslt_format_number(month(pDate), '##'));
+                          }
+    else if (ch = 'Y')
+    {
+      S := concat(S, xslt_format_number(year(pDate), '0000'));
+                        }
+    else if (ch = 'y')
+    {
+      S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
+                      }
+    else if (ch = 'd')
+    {
+      S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
+                    }
+    else if (ch = 'D')
+    {
+      S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
+                  }
+    else if (ch = 'H')
+    {
+      S := concat(S, xslt_format_number(hour(pDate), '00'));
+                }
+    else if (ch = 'h')
+    {
+      S := concat(S, xslt_format_number(hour(pDate), '##'));
+              }
+    else if (ch = 'N')
+    {
+      S := concat(S, xslt_format_number(minute(pDate), '00'));
+            }
+    else if (ch = 'n')
+    {
+      S := concat(S, xslt_format_number(minute(pDate), '##'));
+          }
+    else if (ch = 'S')
+    {
+      S := concat(S, xslt_format_number(second(pDate), '00'));
+        }
+    else if (ch = 's')
+    {
+      S := concat(S, xslt_format_number(second(pDate), '##'));
+      }
+    else
+    {
+      S := concat(S, ch);
+    }
   }
   return S;
-};
+}
+;
 
 -------------------------------------------------------------------------------
 --
@@ -1263,7 +1299,6 @@ create procedure ODRIVE.WA.odrive_proc(
   }
   if (isarray(dirList))
   {
-    -- dbg_obj_print ('dirList', dirList);
     dirHiddens := ODRIVE.WA.hiddens_prepare (dir_hiddens);
     user_id := -1;
     group_id := -1;
@@ -1271,7 +1306,7 @@ create procedure ODRIVE.WA.odrive_proc(
     group_name := '';
     foreach (any item in dirList) do
     {
-      if (isarray(item))
+      if (isarray(item) and not isnull (item[0]))
       {
         if (((item[1] = 'C') or (item[10] like dirFilter)) and (ODRIVE.WA.hiddens_check (dirHiddens, item[10]) = 0))
         {
@@ -1300,7 +1335,22 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   inout path varchar,
   in permission varchar := '1__')
 {
-  declare item any;
+  declare N, I, nPermission integer;
+  declare rc, id, type, item any;
+  declare lines, name, pwd, uid, gid, permissions any;
+
+  if (isstring(permission))
+    permission := vector(permission);
+
+  name := null;
+  uid := null;
+  gid := null;
+  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
+  for (N := 0; N < length (permission); N := N + 1)
+  {
+    if (DB.DBA.DAV_AUTHENTICATE (id, type, permission[N], name, uid, gid))
+      return 1;
+  }
   
   item := ODRIVE.WA.DAV_INIT(path);
   if (isinteger(item))
@@ -1328,10 +1378,6 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
     if (auth_name = 'dba')
       return 1;
   }
-
-  declare N, I, nPermission integer;
-  if (isstring(permission))
-    permission := vector(permission);
 
   for (N := 0; N < length (permission); N := N + 1)
   {
@@ -1464,6 +1510,15 @@ create procedure ODRIVE.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.forum_iri (
+  in domain_id integer)
+{
+  return SIOC..briefcase_iri (ODRIVE.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -1471,7 +1526,24 @@ create procedure ODRIVE.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := ODRIVE.WA.iri_fix (SIOC..briefcase_iri (ODRIVE.WA.domain_name (domain_id)));
+  S := ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id));
+  return ODRIVE.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1536,6 +1608,34 @@ create procedure ODRIVE.WA.account_mail(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.account_iri (
+  in account_id integer)
+{
+  declare exit handler for sqlstate '*'
+  {
+    return ODRIVE.WA.account_name (account_id);
+  };
+  return SIOC..person_iri (SIOC..user_iri (account_id, null));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_inverse_iri (
+  in account_iri integer)
+{
+  declare params any;
+
+  params := sprintf_inverse (account_iri, 'http://%s/dataspace/person/%s#this', 1);
+  if (length (params) <> 2)
+    return -1;
+
+  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = params[1]), -1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.account_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -1543,7 +1643,7 @@ create procedure ODRIVE.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := ODRIVE.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id), null)));
+  S := ODRIVE.WA.iri_fix (ODRIVE.WA.account_iri (ODRIVE.WA.domain_owner_id (domain_id)));
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1597,7 +1697,7 @@ create procedure ODRIVE.WA.odrive_group_own(
     return 1;
   if (isnull(user_name))
     user_name := ODRIVE.WA.account();
-  if (exists(select 1 from DB.DBA.SYS_USERS u1, ODRIVE.WA.GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=group_name and u1.U_ID=g.GROUP_ID and u1.U_IS_ROLE=1 and g.USER_ID=u2.U_ID and u2.U_NAME=user_name))
+  if (exists(select 1 from DB.DBA.SYS_USERS u1, DB.DBA.WA_GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=group_name and u1.U_ID=g.WAG_GROUP_ID and u1.U_IS_ROLE=1 and g.WAG_USER_ID=u2.U_ID and u2.U_NAME=user_name))
     return 1;
   return 0;
 }
@@ -1749,11 +1849,11 @@ create procedure ODRIVE.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Briefcase';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  ODRIVE.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  ODRIVE.WA.domain_sioc_url (domain_id),
                   ODRIVE.WA.domain_name (domain_id),
                   ODRIVE.WA.domain_name (domain_id),
-                  ODRIVE.WA.account_sioc_url (domain_id, sid, realm),
+                  ODRIVE.WA.account_sioc_url (domain_id),
                   ODRIVE.WA.account_fullName (ODRIVE.WA.domain_owner_id (domain_id)),
                   ODRIVE.WA.account_fullName (ODRIVE.WA.domain_owner_id (domain_id))
                  );
@@ -1945,7 +2045,7 @@ create procedure ODRIVE.WA.odrive_name_home() returns varchar
 --
 create procedure ODRIVE.WA.shared_name() returns varchar
 {
-  return 'Shared Folders';
+  return 'Shared Resources';
 }
 ;
 
@@ -2159,6 +2259,8 @@ create procedure ODRIVE.WA.acl_params (
       acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
       for (N := 0; N < length (acl_users); N := N + 1)
       {
+        acl_user := ODRIVE.WA.account_inverse_iri (trim (acl_users[N]));
+        if (acl_user = -1)
         acl_user := ODRIVE.WA.odrive_user_id (trim (acl_users[N]));
         if (acl_user <> -1)
         {
@@ -2332,6 +2434,103 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
     aResult := vector_concat(aResult, vector(vector (RES_FULL_PATH, 'R', len, RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, ODRIVE.WA.odrive_name_compose(RES_NAME, RES_ID, either(equ(RES_NAME, name),1,0)))));
     name := RES_NAME;
   }
+
+  if (is_https_ctx () and SIOC..foaf_check_ssl (null))
+  {
+    declare N integer;
+    declare graph, baseGraph, foafIRI any;
+    declare S, V, st, msg, data, meta any;
+
+    foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
+	  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
+	  V := split_and_decode (V, 0, '\0\0,:');
+	  if (V is null)
+	    V := vector ();
+	  foafIRI := get_keyword ('URI', V);
+    if (not isnull (foafIRI) and SIOC..foaf_check_ssl (null))
+      {
+      graph := 'http://' || SIOC.DBA.get_cname ();
+      baseGraph := SIOC.DBA.get_graph ();
+        S := sprintf (' sparql \n' ||
+                      ' define input:storage "" \n' ||
+                      ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                      ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+                      ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+                    ' select distinct ?r \n' ||
+                      '  where { \n' ||
+                      '          { \n' ||
+                    '            graph ?g0 \n' ||
+                    '            { \n' ||
+                      '              ?rule a acl:Authorization ; \n' ||
+                      '                    acl:accessTo ?r ; \n' ||
+                      '                    acl:agent <%s>. \n' ||
+                    '              filter (?g0 like <%s/DAV/home/%%>). \n' ||
+                    '            } \n' ||
+                      '          } \n' ||
+                      '          union \n' ||
+                      '          { \n' ||
+                    '            graph ?g0 \n' ||
+                    '            { \n' ||
+                      '              ?rule a acl:Authorization ; \n' ||
+                      '                    acl:accessTo ?r ; \n' ||
+                      '                    acl:agentClass foaf:Agent. \n' ||
+                    '              filter (?g0 like <%s/DAV/home/%%>). \n' ||
+                    '            } \n' ||
+                      '          } \n' ||
+                      '          union \n' ||
+                      '          { \n' ||
+                    '            graph ?g0 \n' ||
+                    '            { \n' ||
+                      '              ?rule a acl:Authorization ; \n' ||
+                      '                    acl:accessTo ?r ; \n' ||
+                      '                    acl:agentClass ?group. \n' ||
+                    '              filter (?g0 like <%s/DAV/home/%%>). \n' ||
+                    '            } \n' ||
+                    '            graph ?g1 \n' ||
+                    '            { \n' ||
+                      '                    ?group rdf:type foaf:Group ; \n' ||
+                      '                    foaf:member <%s>. \n' ||
+                    '              filter (?g1 like <%s/private/%%>). \n' ||
+                    '            } \n' ||
+                      '          } \n' ||
+                      '        }\n',
+                      foafIRI,
+                    graph,
+                    graph,
+                    graph,
+                    foafIRI,
+                    baseGraph);
+        commit work;
+        st := '00000';
+        exec (S, st, msg, vector (), vector ('use_cache', 1), meta, data);
+        if (st = '00000' and length (data))
+        {
+          declare V any;
+
+          for (N := 0; N < length (data); N := N + 1)
+          {
+            name := '';
+            V := rfc1808_parse_uri (data[N][0]);
+            for (select RES_ID,
+                        RES_FULL_PATH,
+                        length (RES_CONTENT) as len,
+                        RES_MOD_TIME,
+                        RES_PERMS,
+                        RES_GROUP,
+                        RES_OWNER,
+                        RES_CR_TIME,
+                        RES_TYPE,
+                        RES_NAME
+                   from WS.WS.SYS_DAV_RES
+                  where RES_FULL_PATH = V[2]
+                ) do
+            {
+              aResult := vector_concat(aResult, vector(vector (RES_FULL_PATH, 'R', len, RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, ODRIVE.WA.odrive_name_compose(RES_NAME, RES_ID, either (equ (RES_NAME, name),1,0)))));
+            }
+          }
+        }
+      }
+    }
 
   name := '';
   for (select distinct COL_ID,
@@ -3033,13 +3232,18 @@ create procedure ODRIVE.WA.DAV_INIT_COLLECTION (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.DAV_SEARCH_ID(
-  in path varchar)
+  in path varchar,
+  out type varchar)
 {
   declare id any;
 
-  id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  type := 'C';
+  id := DB.DBA.DAV_SEARCH_ID (path, type);
   if (ODRIVE.WA.DAV_ERROR(id))
-    return DB.DBA.DAV_SEARCH_ID (path, 'R');
+  {
+    type := 'R';
+    return DB.DBA.DAV_SEARCH_ID (path, type);
+  }
   return id;
 }
 ;
@@ -3193,13 +3397,13 @@ create procedure ODRIVE.WA.DAV_SET (
   declare tmp varchar;
 
   if (property = 'permissions')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtpermissions', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtpermissions', value, auth_name, auth_pwd, 0);
   if (property = 'groupID')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtownergid', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtownergid', value, auth_name, auth_pwd, 0);
   if (property = 'ownerID')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtowneruid', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtowneruid', value, auth_name, auth_pwd, 0);
   if (property = 'mimeType')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':getcontenttype', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':getcontenttype', value, auth_name, auth_pwd, 0);
   if (property = 'name')
   {
     tmp := concat(left(path, strrchr(rtrim(path, '/'), '/')), '/', value, either(equ(right(path, 1), '/'), '/', ''));
@@ -3208,11 +3412,11 @@ create procedure ODRIVE.WA.DAV_SET (
   if (property = 'detType')
     return DAV_PROP_SET_INT (path, ':virtdet', value, null, null, 0, 0, 0, http_dav_uid ());
   if (property = 'acl')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtacl', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtacl', value, auth_name, auth_pwd, 0);
   if (property = 'privatetags')
-    return ODRIVE.WA.DAV_PROP_TAGS_SET(path, ':virtprivatetags', value);
+    return ODRIVE.WA.DAV_PROP_TAGS_SET (path, ':virtprivatetags', value, auth_name, auth_pwd);
   if (property = 'publictags')
-    return ODRIVE.WA.DAV_PROP_TAGS_SET(path, ':virtpublictags', value);
+    return ODRIVE.WA.DAV_PROP_TAGS_SET (path, ':virtpublictags', value, auth_name, auth_pwd);
   if (property = 'autoversion')
     return ODRIVE.WA.DAV_SET_AUTOVERSION (path, value);
   if (property = 'permissions-inheritance')
@@ -3289,7 +3493,11 @@ create procedure ODRIVE.WA.DAV_API_PARAMS (
     gname := (select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = gid);
 
   if (isnull(auth_name))
+  {
     auth_name := ODRIVE.WA.account();
+    if (auth_name = 'dba')
+      auth_name := 'dav';
+  }
   if (isnull(auth_pwd)) {
     auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_name), '');
     if (auth_pwd[0] = 0)
@@ -3319,7 +3527,7 @@ create procedure ODRIVE.WA.DAV_DIR_LIST (
 create procedure ODRIVE.WA.DAV_DIR_FILTER (
   in path varchar := '/DAV/',
   in recursive integer := 0,
-  inout filter any,
+  in filter any,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
@@ -3585,12 +3793,14 @@ create procedure ODRIVE.WA.DAV_PROP_SET (
   in propName varchar,
   in propValue any,
   in auth_name varchar := null,
-  in auth_pwd varchar := null)
+  in auth_pwd varchar := null,
+  in removeBefore integer := 1)
 {
-  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_GET (', path, propName, ')');
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_SET (', path, propName, ')');
   declare uname, gname varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
+  if (removeBefore)
   DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
   return DB.DBA.DAV_PROP_SET(path, propname, propvalue, auth_name, auth_pwd);
 }
@@ -3657,6 +3867,7 @@ create procedure ODRIVE.WA.DAV_PROP_REMOVE (
 {
   declare uname, gname varchar;
 
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_REMOVE (', path, propName, ')');
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   return DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
 }
@@ -4275,6 +4486,26 @@ create procedure ODRIVE.WA.acl_send_mail (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.aci_parents (
+  in path varchar)
+{
+  declare N integer;
+  declare tmp, V, aPath any;
+
+  tmp := '/';
+  V := vector ();
+  aPath := split_and_decode (trim (path, '/'), 0, '\0\0/');
+  for (N := 0; N < length (aPath)-1; N := N + 1)
+  {
+    tmp := tmp || aPath[N] || '/';
+    V := vector_concat (V, vector (tmp));
+  }
+  return V;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.aci_load (
   in path varchar)
 {
@@ -4283,7 +4514,7 @@ create procedure ODRIVE.WA.aci_load (
 
   retValue := vector ();
 
-  graph := SIOC..dav_res_iri (path);
+  graph := WS.WS.DAV_IRI (path);
   S := sprintf (' sparql \n' ||
                 ' define input:storage "" \n' ||
                 ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
@@ -4332,7 +4563,7 @@ create procedure ODRIVE.WA.aci_load (
       }
       if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
         V[2] := 'public';
-      if (data[N][1] like SIOC..waGraph() || '%')
+      if (data[N][1] like SIOC.DBA.get_graph () || '/%/group/%')
         V[2] := 'group';
       aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
       if (aclMode = 'acl:Read')

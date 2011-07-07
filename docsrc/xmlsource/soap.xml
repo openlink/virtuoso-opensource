@@ -2083,7 +2083,7 @@ In that case clients are instructed to look at annotation/appinfo of a simple ty
 ]]></programlisting>
 <para>
 This is a little-bit tricky, but this is how  to indicate the type of the content and how to resolve the
-references to the attachments as per the ’WSDL Extension for SOAP in DIME' proposal.
+references to the attachments as per the WSDL Extension for SOAP in DIME' proposal.
 </para>
 
 </example>

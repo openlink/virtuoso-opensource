@@ -20,7 +20,13 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-// ---------------------------------------------------------------------------
+function myPost(frmName, fldName, fldValue)
+{
+  var frm = document.forms[frmName];
+  hiddenCreate(fldName, frm, fldValue);
+  frm.submit();
+}
+
 function selectAllCheckboxes (form, btn)
 {
   for (var i = 0; i < form.elements.length; i = i + 1) {
@@ -40,7 +46,6 @@ function selectAllCheckboxes (form, btn)
   btn.focus();
 }
 
-// ---------------------------------------------------------------------------
 function countSelected (form, txt)
 {
   var count = 1;
@@ -56,20 +61,6 @@ function countSelected (form, txt)
   return count;
 }
 
-// ---------------------------------------------------------------------------
-function getSelected (form, txt)
-{
-  if ((form != null) && (txt != null)) {
-    for (var i = 0; i < form.elements.length; i++) {
-      var obj = form.elements[i];
-      if ((obj != null) && (obj.type == "checkbox") && (obj.name.indexOf (txt) != -1) && obj.checked)
-        return (obj.name).substr(txt.length);
-    }
-  }
-  return '';
-}
-
-// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq, mode)
 {
   if ((form != null) && (txt != null)) {
@@ -88,34 +79,15 @@ function anySelected (form, txt, selectionMsq, mode)
   return true;
 }
 
-// ---------------------------------------------------------------------------
-function singleSelected (form, txt, zeroMsq, moreMsg, mode)
-{
-  var count = countSelected(form, txt);
-  if (count == 0) {
-    if (zeroMsq != null)
-      alert(zeroMsq);
-    return false;
-  }
-  if (count > 1) {
-    if (moreMsg != null)
-      alert(moreMsg);
-    return false;
-  }
-  return true;
-}
-
-// ---------------------------------------------------------------------------
 function confirmAction(confirmMsq, form, txt, selectionMsq) {
   if (anySelected (form, txt, selectionMsq))
     return confirm(confirmMsq);
   return false;
 }
 
-// ---------------------------------------------------------------------------
 function trim(sString, ch)
 {
-  if (ch == null)
+  if (!ch)
     ch = ' ';
   while (sString.substring(0,1) == ch)
     sString = sString.substring(1, sString.length);
@@ -126,101 +98,135 @@ function trim(sString, ch)
   return sString;
 }
 
-
-// ---------------------------------------------------------------------------
-//
-function rowSelect(obj)
+function rowSelected(tr)
 {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
+  var cbInput;
+  var s1Input;
+  var s2Input;
+  var inputs = tr.getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++) {
+    if (inputs[i].name == 'cb_item')
+      cbInput = inputs[i];
+    if (inputs[i].name == 's1_item')
+      s1Input = inputs[i];
+    if (inputs[i].name == 's2_item')
+      s2Input = inputs[i];
+  }
+  if (cbInput) {
+    cbInput.checked = !cbInput.checked;
+    updateChecked(cbInput, cbInput.name);
+  }
+  else if (s1Input)
+  {
+    commitChecked(s1Input.form, s1Input.value);
+  }
+}
 
-  var s2 = (obj.name).replace('b1', 's2');
-  var s1 = (obj.name).replace('b1', 's1');
+function commitChecked(srcForm, s1Value, s2Value)
+{
+  var dstForm = eval('window.opener.document.'+$v('form'));
+  if (!dstForm)
+    return false;
+
+  var submitMode = false;
+  if (srcForm.elements['src'] && (srcForm.elements['src'].value.indexOf('s') != -1)) {
+      submitMode = true;
+    if (dstForm && dstForm.elements['submitting'])
+        return false;
+  }
+  var closeMode = true;
+  var singleMode = true;
+  if (srcForm.elements['dst']) {
+    if (srcForm.elements['dst'].value.indexOf('c') == -1)
+      closeMode = false;
+    if (srcForm.elements['dst'].value.indexOf('s') == -1)
+      singleMode = false;
+  }
 
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = srcForm.elements['params'].value;
   var myArray;
+  if (dstForm) {
   while(true) {
     myArray = myRe.exec(params);
-    if (myArray == undefined)
+      if (!myArray)
       break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+
+      if (myArray.length > 2) {
+        var dstField = dstForm.elements[myArray[1]];
+        if (dstField) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
-          if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+            setSelected(dstField, s1Value, singleMode);
+          else if (myArray[2] == 's2')
+            setSelected(dstField, s2Value, singleMode);
         }
+        }
+
     if (myArray.length < 4)
       break;
+
     params = '' + myArray[3];
   }
+  }
   if (submitMode) {
-    window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
+    // dstForm.hiddenCreate('submitting', dstForm, 'yes');
+    dstForm.submit();
   }
   if (closeMode)
     window.close();
 }
 
-// ---------------------------------------------------------------------------
-function rowSelectValue(dstField, srcField, singleMode, submitMode)
+function addChecked (srcForm, checkboxName, selectionMsq)
 {
-  if (singleMode) {
-    dstField.value = trim(srcField.value, ',');
-  } else {
-    if (dstField.value == '') {
-      dstField.value = srcField.value;
-    } else {
-      srcField.value = trim(srcField.value , ',');
-      var aSrc = srcField.value.split(',');
+  if (!anySelected (srcForm, checkboxName, selectionMsq, 'confirm'))
+    return false;
 
-      dstField.value = dstField.value + ',';
-      for (var i = 0; i < aSrc.length; i = i + 1) {
-        if (aSrc[i] != '')
-          if (dstField.value.indexOf(aSrc[i]+',') == -1)
-            dstField.value = dstField.value + trim(aSrc[i], ',') + ',';
+  return commitChecked(srcForm, srcForm.s1.value, srcForm.s2.value);
+}
+
+function setSelected(dstField, srcValue, singleMode) {
+  if (singleMode) {
+		dstField.value = srcValue;
+  } else {
+		dstField.value = trim(dstField.value);
+		dstField.value = trim(dstField.value, ',');
+		dstField.value = trim(dstField.value);
+		if (dstField.value.indexOf(srcValue) == -1) {
+    if (dstField.value == '') {
+				dstField.value = srcValue;
+    } else {
+				dstField.value = dstField.value + ',' + srcValue;
       }
     }
-    dstField.value = trim(dstField.value, ',');
   }
 }
 
-// ---------------------------------------------------------------------------
-function updateChecked(form, objName)
+function updateChecked(obj, objName, event)
 {
-  for (var i = 0; i < form.elements.length; i = i + 1) {
-    var obj = form.elements[i];
+  if (event)
+	  event.cancelBubble = true;
+  var objForm = obj.form;
+
+  var s1Value = objForm.s1.value;
+  s1Value = trim(s1Value);
+  s1Value = trim(s1Value, ',');
+  s1Value = trim(s1Value);
+  s1Value = s1Value + ',';
+  for (var i = 0; i < objForm.elements.length; i = i + 1) {
+    var obj = objForm.elements[i];
     if (obj != null && obj.type == "checkbox" && obj.name == objName) {
       if (obj.checked) {
-        if (form.s1.value.indexOf(obj.value+',') == -1)
-          form.s1.value = form.s1.value + obj.value+',';
+        if (s1Value.indexOf(obj.value+',') == -1)
+          s1Value = s1Value + obj.value + ',';
       } else {
-        form.s1.value = (form.s1.value).replace(obj.value+',', '');
+        s1Value = (s1Value).replace(obj.value+',', '');
       }
     }
   }
+  objForm.s1.value = trim(s1Value, ',');
 }
 
-// ---------------------------------------------------------------------------
-function addChecked (form, txt, selectionMsq)
+function addChecked2 (form, txt, selectionMsq)
 {
   var openerForm = eval('window.opener.document.'+$v('form'));
   if (!openerForm)
@@ -251,10 +257,10 @@ function addChecked (form, txt, selectionMsq)
       if (openerForm.elements[myArray[1]]) {
           if (myArray[2] == 's1')
           if (openerForm.elements[myArray[1]])
-            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
+            setSelected(openerForm.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
           if (openerForm.elements[myArray[1]])
-            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
+            setSelected(openerForm.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;

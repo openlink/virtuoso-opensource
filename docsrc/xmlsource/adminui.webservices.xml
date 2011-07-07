@@ -23,11 +23,10 @@
 -->
 
 <sect2 id="admui.webservices"><title>Web Services</title>
-  <sect3 id="importtargets">
-			<title>Import Targets</title>
-    <para>Virtuoso can be set up to retrieve content from external web sites and host it in its own
+  <sect3 id="contentcrawler"><title>Content Crawler</title>
+  <itemizedlist mark="bullet">Supported features:
+     <listitem>Import Targets: Virtuoso can be set up to retrieve content from external web sites and host it in its own
 WebDAV repository via this page.
-    </para>
         <figure float="1"><title>Web Robot - Target</title>
       <graphic fileref="ui/dav_rbt_trgt_01.png"/>
     </figure>
@@ -82,35 +81,26 @@ metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is 
 When all details have been completed press the <emphasis>Add</emphasis> (or
 Update if updating) button to submit the web robot task to the queue.
     </para>
-  </sect3>
-  <sect3 id="importqueues">
-			<title>Import Queues</title>
-    <para>The "Imported Queues" page shows you a list of web copy targets that have been enlisted with the
+</listitem>
+     <listitem>Import Queues: this page shows you a list of web copy targets that have been enlisted with the
 Virtuoso Server, and a list of web robot update schedules. Several options are available for
 each item listed: Start, Update, Schedule, Reset, and Stop. You can configure the scheduled update
 interval by pressing the Schedule link and entering a value in minutes. Once that is done you can
 start the schedule by pressing the Start link. You make a manual update of the content by pressing
 the Update link. You can stop the scheduled updates taking place by pressing the Stop link. To reset
 the details of the web copy item press the Reset link.
-    </para>
         <figure float="1"><title>Web Robot - Queues</title>
       <graphic fileref="ui/dav_rbt_que_01.png"/>
     </figure>
-  </sect3>
-  <sect3 id="retrievedsites">
-			<title>Retrieved Sites</title>
-    <para>You can view a list of the links retrieved from the web copy from this page. You are also
+</listitem>
+     <listitem>Retrieved Sites: You can view a list of the links retrieved from the web copy from this page. You are also
 able to remove some of the content from this page by following the Edit link.
-    </para>
         <figure float="1"><title>Web Robot - Retrieved Links</title>
       <graphic fileref="ui/dav_rbt_rtrd_01.png"/>
     </figure>
-  </sect3>
-  <sect3 id="exportlocalcontent">
-			<title>Export</title>
-    <para>You can export content from the WebDAV repository. Note that you can only export content
+</listitem>
+     <listitem>Export: You can export content from the WebDAV repository. Note that you can only export content
 that has been retrieved using Virtuoso's Web Robot.
-    </para>
     <para>When you click the "Export" link for a retrieved collection, you will be presented
 with a form for selecting the export target location. Choose the export method: either File
 System or DAV by clicking the "External WebDAV Server URL" check-box. This lets you indicate to
@@ -128,6 +118,427 @@ filesystem method, then you are restricted to Virtuoso targets. However WebDAV m
 to any WebDAV server. WebDAV methods assume that the target is publicly available for writing.
       </para>
     </note>
+</listitem>
+     <listitem>Populate the RDF Quad Store: Virtuoso's built-in Content Crawler to can be used to populate its RDF Quad Store, as a one-time run or on a scheduled basis.
+<para>Transforming data sources into RDF "on the fly" is sufficient for many use cases, but there are times when the volume or sheer nature of a data source makes batch-loading necessary.</para>
+<para>For example, Freebase offers RDF representations of its data, but it doesn't publish RDF dumps; even if it did, such dumps would usually be outdated by the time they were loaded.</para>
+<para>One practical solution takes the form of a scheduled crawl of specific resources of interest.</para>
+</listitem>
+  </itemizedlist>
+  <sect4 id="contentcrawlerrdf"><title>Set Up the Content Crawler to Gather RDF</title>
+  <para>The Virtuoso Conductor can be used to set up various Content Crawler Jobs:</para>
+  <sect5 id="contentcrawlerrdfquad"><title>Setting up a Content Crawler Job to Add RDF Data to the Quad Store</title>
+<para>See <link linkend="rdfinsertmethodvirtuosocrawler">details</link> how to use Virtuoso Crawler for including the Sponger options so you crawl non-RDF but get RDF and this to the Quad Store.</para>  
+  </sect5>
+  <sect5 id="contentcrawlerrdfsm"><title>Setting up a Content Crawler Job to Retrieve Sitemaps (when the source includes RDFa)</title>
+  <para>The following section describes how to set up a crawler job for getting content of a basic Sitemap where the source includes RDFa.</para>
+<orderedlist>
+	<listitem>From the Virtuoso Conductor User Interface i.e. http://cname:port/conductor, login as the "dba" user.</listitem>
+  <listitem>Go to the "Web Application Server" tab.
+    <figure id="cr1" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr1.png"/>
+    </figure>
+  </listitem>
+  <listitem>Go to the "Content Imports" tab.
+    <figure id="cr2" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr2.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click on the "New Target" button.
+    <figure id="cr3" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr3.png"/>
+    </figure>
+  </listitem>
+  <listitem>In the form displayed:
+<itemizedlist mark="bullet">
+  <listitem>Enter a name of choice in the "Target description" text box:
+<programlisting><![CDATA[
+Basic Sitemap Crawling Example 	
+]]></programlisting>  	
+</listitem>
+  <listitem>Enter the URL of the site to be crawled in the "Target URL" text box: 
+<programlisting><![CDATA[
+http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp	
+]]></programlisting>  	
+</listitem>
+  <listitem>Enter the location in the Virtuoso WebDAV repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
+<programlisting><![CDATA[
+/DAV/home/demo/basic_sitemap/	
+]]></programlisting>  	
+</listitem>
+  <listitem>Choose the  "Local resources owner" for the collection from the list box available, for ex: user demo.</listitem>
+  <listitem>Select the "Ask for RDF" check box.</listitem>      
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Click the "Create" button to create the import.</listitem>        
+</itemizedlist>
+    <figure id="cr11" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr11.png"/>
+    </figure>
+    <figure id="cr11a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr11a.png"/>
+    </figure>    
+  </listitem>
+  <listitem>Click the "Import Queues" button.
+    <figure id="cr12" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr12.png"/>
+    </figure>
+  </listitem>
+  <listitem>For the "Robot targets" with label "Basic Sitemap Crawling Example " click the "Run" button.
+  </listitem>
+  <listitem>This will result in the Target site being crawled and the retrieved pages stored locally in DAV and any sponged triples in the RDF Quad store.
+    <figure id="cr13" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr13.png"/>
+    </figure>
+  </listitem>
+  <listitem>Go to the "Web Application Server" -&gt; "Content Management" tab.
+    <figure id="cr14" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr14.png"/>
+    </figure>
+  </listitem>
+  <listitem>Navigate to the location of newly created DAV collection:
+<programlisting><![CDATA[
+/DAV/home/demo/basic_sitemap/	
+]]></programlisting>
+  </listitem>
+  <listitem>The retrieved content will be available in this location.
+    <figure id="cr15" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr15.png"/>
+    </figure>
+  </listitem>
+</orderedlist>  
+  </sect5>  
+  <sect5 id="contentcrawlerrdfssm"><title>Setting up a Content Crawler Job to Retrieve Semantic Sitemaps (a variation of the standard sitemap)</title>
+  <para>The following section describes how to set up crawler job for getting Semantic Sitemap's content -- a variation of standard sitemap:</para>  
+<orderedlist>
+  <listitem>From the Virtuoso Conductor User Interface i.e. http://cname:port/conductor, login as the "dba" user.</listitem>
+  <listitem>Go to "Web Application Server".
+    <figure id="cr1" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr1.png"/>
+    </figure>
+  </listitem>
+  <listitem>Go to "Content Imports".
+    <figure id="cr2" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr2.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click "New Target".
+    <figure id="cr3" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr3.png"/>
+    </figure>
+  </listitem>
+  <listitem>In the shown form:
+<itemizedlist mark="bullet">
+  <listitem>Enter for "Target description":
+<programlisting><![CDATA[
+Semantic Web Sitemap Example 	
+]]></programlisting>  	
+</listitem>
+  <listitem>Enter for "Target URL":
+<programlisting><![CDATA[
+http://www.connexfilter.com/sitemap_en.xml	
+]]></programlisting>  	
+</listitem>
+  <listitem>Enter the location in the Virtuoso WebDAV  repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
+<programlisting><![CDATA[
+/DAV/home/demo/semantic_sitemap/	
+]]></programlisting>  	
+</listitem>
+  <listitem>Choose the "Local resources owner" for the collection from the list box available, for ex: user demo.</listitem> 
+  <listitem>Hatch "Semantic Web Crawling"
+<itemizedlist mark="bullet">
+  <listitem>Note: when you select this option, you can either:
+<orderedlist>
+  <listitem>Leave the Store Function and Extract Function empty - in this case the system Store and Extract functions will be used for the Semantic Web Crawling Process, or:</listitem>
+  <listitem>You can select your own Store and Extract Functions, for ex:
+<programlisting><![CDATA[
+-- Example of Extract Function
+use WS;
+
+create procedure WS.WS.SITEMAP_BB_PARSE (
+  in _host varchar, 
+  in _url varchar, 
+  in _root varchar, 
+  inout _content varchar,  
+  in _c_type varchar := null, 
+  in lev int := 0))
+{
+  --pl_debug+
+  declare xt, xp, graph any;
+  declare inx int;
+
+--  dbg_obj_print ('WS.WS.GET_URLS_SITEMAP', _url);
+
+  declare exit handler for sqlstate '*'
+    {
+--      dbg_obj_print (__SQL_MESSAGE);
+      return;
+    };
+
+  if (_url like '%.xml.gz')
+    {
+      _content := gzip_uncompress (_content); 
+    }
+
+  if (_url like '%.xml' or _url like '%.xml.gz' or _url like '%.rdf')
+    {
+      xt := xtree_doc (_content);
+      if (xpath_eval ('/urlset/dataset', xt) is not null)
+	{
+	  xp := xpath_eval ('/urlset/dataset/dataDumpLocation/text()', xt, 0);
+	  graph := cast (xpath_eval ('/urlset/dataset/datasetURI/text()', xt) as varchar);
+	  if (length (graph))
+	    update VFS_SITE set VS_UDATA = serialize (vector ('graph', graph)) where VS_HOST = _host and VS_ROOT = _root;
+	  inx := 0;
+	  foreach (any u in xp) do
+	    {
+	      declare hf, host, url varchar;
+
+	      u := cast (u as varchar);
+	      hf := WS.WS.PARSE_URI (u);
+	      host := hf[1];
+	      --dbg_obj_print ('WS.WS.GET_URLS_SITEMAP PARSE', u);
+	      url := hf[2];
+	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER) 
+		  values (host, now (), url, 'waiting', _root, NULL); 
+	      if (row_count () = 0)
+		update VFS_QUEUE set VQ_STAT = 'waiting', VQ_TS = now () where VQ_HOST = host and VQ_ROOT = _root and VQ_URL = url;
+	      inx := inx + 1;
+	    }
+	}
+      if (xpath_eval ('/sitemapindex/sitemap/loc', xt) is not null)
+	{
+	  xp := xpath_eval ('/sitemapindex/sitemap/loc/text()', xt, 0);
+	  inx := 0;
+	  foreach (any u in xp) do
+	    {
+	      declare hf, host, url varchar;
+
+	      u := trim (cast (u as varchar));
+	      hf := WS.WS.PARSE_URI (u);
+	      host := hf[1];
+--	      dbg_obj_print ('WS.WS.GET_URLS_SITEMAP', host, _host);
+	      url := hf[2];
+	      if (url <> '')
+		{
+		  insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER) 
+		      values (host, now (), url, 'waiting', _root, NULL); 
+		  if (row_count () = 0)
+		    update VFS_QUEUE set VQ_STAT = 'waiting', VQ_TS = now () where VQ_HOST = host and VQ_ROOT = _root and VQ_URL = url;
+		  inx := inx + 1;
+		}
+	    }
+	}
+    }
+  commit work;
+}
+;
+
+
+-- Example of Store Function
+use WS;
+
+create procedure WS.WS.SITEMAP_BB_STORE (
+  in _host varchar, 
+  in _url varchar, 
+  in _root varchar,
+  inout _content varchar, 
+  in _s_etag varchar, 
+  in _c_type varchar,
+  in store_flag int := 1, 
+  in udata any := null,
+  in lev int := 0)
+{
+  --pl_debug+
+  declare graph varchar;
+
+--  dbg_obj_print ('WS.WS.SITEMAP_BB_STORE', _url, udata);
+  if (isarray (udata))
+    graph := get_keyword ('graph', udata);
+  else  
+    graph := null;
+
+  if (graph is not null and _url like '%.rdf')
+    {
+      DB.DBA.RDF_LOAD_RDFXML (_content, graph, graph);
+      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+    }
+  insert soft VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
+      values (_host, _url, md5 (_content), now (), _s_etag, _root);
+  if (row_count () = 0)
+    update VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
+	VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
+  commit work;
+}
+;
+]]></programlisting>
+  </listitem>
+</orderedlist>  	
+  </listitem>
+</itemizedlist>
+  </listitem>    
+</itemizedlist>  	
+  </listitem>
+  <listitem>Hatch "Ask for RDF"
+    <figure id="cr16" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr16.png"/>
+    </figure>
+    <figure id="cr17" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr17.png"/>
+    </figure>    
+  </listitem>
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Click the button "Create". 
+    <figure id="cr18" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr18.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click "Import Queues".
+    <figure id="cr19" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr19.png"/>
+    </figure>
+  </listitem>
+  <listitem>For "Robot target" with label "Semantic Web Sitemap Example" click "Run".
+  </listitem>
+  <listitem>As result should be shown the number of the pages retrieved.
+    <figure id="cr20" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr20.png"/>
+    </figure>
+  </listitem>
+  <listitem>Check the retrieved RDF data from your Virtuoso instance sparql endpoint http://cname:port/sparql with the following query selecting all the retrieved graphs for ex:
+<programlisting><![CDATA[
+SELECT ?g 
+FROM <http://host:port/>
+WHERE 
+  { 
+    graph ?g { ?s ?p ?o } . 
+    FILTER ( ?g LIKE <http://www.connexfilter.com/%> ) 
+  }	
+]]></programlisting>
+    <figure id="cr21" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr21.png"/>
+    </figure>
+  </listitem>
+</orderedlist>  
+  </sect5> 
+  <sect5 id="contentcrawlerrdfsd"><title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+  <para>The following section describes how to set up crawler job for getting directories using Conductor.</para>  
+<orderedlist>
+	  <listitem>From the Virtuoso Conductor User Interface i.e. http://cname:port/conductor, login as the "dba" user.</listitem>
+  <listitem>Go to "Web Application Server".
+    <figure id="cr1" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/cr1.png"/>
+    </figure>
+  </listitem>
+  <listitem>Go to "Content Imports".
+    <figure id="cr2" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/cr2.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click "New Target".
+    <figure id="cr3" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/cr3.png"/>
+    </figure>
+  </listitem>
+  <listitem>In the shown form:
+<itemizedlist mark="bullet">
+  <listitem>Enter for "Target description":
+<programlisting><![CDATA[
+Gov.UK data	
+]]></programlisting>  	
+</listitem>
+  <listitem>Enter for "Target URL":
+<programlisting><![CDATA[
+http://source.data.gov.uk/data/	
+]]></programlisting>  	
+</listitem>
+  <listitem>Enter for "Copy to local DAV collection" for available user, for ex. demo:
+<programlisting><![CDATA[
+/DAV/home/demo/gov.uk/	
+]]></programlisting>  	
+</listitem>
+  <listitem>Choose from the available list "Local resources owner" an user, for ex. demo.	
+    <figure id="d1" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d1.png"/>
+    </figure>  	
+</listitem>
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Click the button "Create".</listitem>
+</itemizedlist>
+  </listitem>
+  <listitem>As result the Robot target will be created:
+    <figure id="d2" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d2.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click "Import Queues".
+    <figure id="d3" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d3.png"/>
+    </figure>
+  </listitem>
+  <listitem>For "Robot target" with label "Gov.UK data" click "Run".
+  </listitem>
+  <listitem>As result will be shown the status of the pages: retrieved, pending or respectively waiting.
+    <figure id="d4" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d4.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click "Retrieved Sites".</listitem>
+  <listitem>As result should be shown the number of the total pages retrieved.
+    <figure id="d5" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d5.png"/>
+    </figure>
+  </listitem>
+  <listitem>Go to "Web Application Server" -> "Content Management".
+  </listitem>    
+  <listitem>Enter path:
+<programlisting><![CDATA[
+DAV/home/demo/gov.uk	
+]]></programlisting> 
+    <figure id="d6" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d6.png"/>
+    </figure> 	
+  </listitem> 
+  <listitem>Go to path
+<programlisting><![CDATA[
+DAV/home/demo/gov.uk/data	
+]]></programlisting>
+  </listitem> 
+  <listitem>As result the retrieved content will be shown.
+    <figure id="d7" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d7.png"/>
+    </figure>
+  </listitem>       
+</orderedlist>  
+  </sect5>   
+  </sect4>
   </sect3>
   <sect3 id="admiui.accesscontrol"><title>Access Control</title>
     <para>From "System Admin"/"Access Controls" you can manage Rules and ACL respectively for HTTP, News and Proxy.

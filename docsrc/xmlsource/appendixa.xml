@@ -34,10 +34,164 @@
 
  &yacgrammar;
  &errors;
+ 
+<sect1 id="signalsandexitcodes"><title>Signals and Exit codes</title>
+<para>This section presents the most important exit codes and signals for Virtuoso on Unix/Linux.</para>
+  <sect2 id="signalsandexitcodesc"><title>Exit codes</title>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Exit codes</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Exit Code</entry>
+        <entry>Category</entry>
+        <entry>Comment</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>-1</entry>
+        <entry>FATAL</entry>
+        <entry>Unrecoverable condition detected like disk or memory full</entry>        
+      </row>
+      <row>
+        <entry>0</entry>
+        <entry>NORMAL</entry>
+        <entry>Normal exit with success</entry>        
+      </row>
+      <row>
+        <entry>1</entry>
+        <entry>WARNING</entry>
+        <entry>Some kind of failure at startup/shutdown, typically shown with a reason for this error</entry>        
+      </row>
+      <row>
+        <entry>&gt;1</entry>
+        <entry>UNKNOWN</entry>
+        <entry>Not used under normal operations</entry>        
+      </row>
+      <row>
+        <entry>&gt;128</entry>
+        <entry>SIGNAL</entry>
+        <entry>Virtuoso was killed by a signal it could not process. (error code = signal + 128)</entry>        
+      </row>      
+    </tbody>
+  </tgroup>
+</table>  
+  </sect2>
+  <sect2 id="signalsandexitcodess"><title>Signals</title>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Signals</title>
+    <tgroup align="char" charoff="50" char="." cols="4">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Signal</entry>
+        <entry>Name</entry>
+        <entry>Category</entry>
+        <entry>Comment</entry>        
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>1</entry>
+        <entry>SIGHUP</entry>
+        <entry>NORMAL</entry>        
+        <entry>Initiate quick shutdown when shell exits while running virtuoso in foreground mode</entry>           
+      </row>
+      <row>
+        <entry>2</entry>
+        <entry>SIGINT</entry>
+        <entry>NORMAL</entry>        
+        <entry>User pressed CTRL-C on Virtuoso running in foreground mode to initiate normal shutdown</entry>           
+      </row>
+      <row>
+        <entry>3</entry>
+        <entry>SIGQUIT</entry>
+        <entry>NORMAL</entry>   
+        <entry>User pressed CTRL-\ on Virtuoso running in foreground mode to initiate quick shutdown</entry>                
+      </row>
+      <row>
+        <entry>4</entry>
+        <entry>SIGILL</entry>
+        <entry>FAULT</entry> 
+        <entry>Illegal instruction resulting in a program crash</entry>                  
+      </row>
+      <row>
+        <entry>7</entry>
+        <entry>SIGBUS</entry>
+        <entry>FAULT</entry>      
+        <entry>Misaligned mem read/write resulting in a program crash</entry>             
+      </row>
+      <row>
+        <entry>8</entry>
+        <entry>SIGFPE</entry>
+        <entry>FAULT</entry>   
+        <entry>Divide by 0 or other arithmetical error</entry>                
+      </row>
+      <row>
+        <entry>9</entry>
+        <entry>SIGKILL</entry>
+        <entry>SPECIAL</entry>   
+        <entry>Terminate Virtuoso without flushing dirty pages etc. This signal should NOT be used under normal operations.</entry>                
+      </row>
+      <row>
+        <entry>11</entry>
+        <entry>SIGSEGV</entry>
+        <entry>FAULT</entry>     
+        <entry>Buffer/stack overrun resulting in a program crash</entry>              
+      </row>
+      <row>
+        <entry>13</entry>
+        <entry>SIGPIPE</entry>
+        <entry>IGNORED</entry>   
+        <entry>Other side of a pipe was killed while this side tried to write data to it</entry>                
+      </row>
+      <row>
+        <entry>15</entry>
+        <entry>SIGTERM</entry>
+        <entry>NORMAL</entry>   
+        <entry>Initiate quick shutdown</entry>                
+      </row>                                                      
+    </tbody>
+  </tgroup>
+</table>  
+<para>Signals that are marked as <emphasis>NORMAL</emphasis> indicate that these signals can be 
+sent by root or the owner of the virtuoso process to shutdown Virtuoso. The <emphasis>SIGINT</emphasis> and 
+<emphasis>SIGQUIT</emphasis> signals also work when Virtuoso is running in background mode and can be used 
+in shell scripts.</para>
+<para>Signals that are marked as <emphasis>FAULT</emphasis> indicate an abnormal condition which should be 
+checked. If enabled (e.g. with ulimit -c unlimited), the operating system can write a core dump allowing 
+post-mortem debugging if the Virtuoso executable was compiled with debugging symbols.</para>
+<para>Signals that are marked as <emphasis>IGNORED</emphasis> are handled inside Virtuoso.</para>
+<para>The <emphasis>SIGTERM</emphasis> signal is mostly used by rc.d type shell scripts on Unix/Linux which 
+are called during shutdown, but can also be used inside shell scripts.</para>
+<para>The <emphasis>SIGKILL</emphasis> signal should only be used as a last resort when all other efforts 
+to stop Virtuoso have failed.</para>
+    <sect3 id="signalsandexitcodessquicksh"><title>Quick shutdown</title>
+    <para>In quick shutdown mode, Virtuoso will only flush dirty disk buffers, close transaction log and 
+    	database files and exit to the operating system. Since Virtuoso does not perform a checkpoint, the 
+    	next startup will take extra time as Virtuoso first needs to perform a rollback and a checkpoint 
+    	before it can resume operation. The <emphasis>SIGTERM</emphasis> signal mostly used by rc.d type 
+    	scripts on Unix/Linux which are called during shutdown as such instances it is better to quickly 
+    	finish operations and delay the checkpoint until the next boot.</para>
+    </sect3>    
+    <sect3 id="signalsandexitcodessquicknsh"><title>Normal shutdown</title>
+    <para>In normal shutdown mode, Virtuoso will do first do a full checkpoint, then flush dirty disk 
+    	buffers, close transaction log and database files before exiting to the operating system. Depending 
+    	on the size of the transaction log this can take some time. The <emphasis>SIGINT</emphasis> signal 
+    	can be used in stop scripts to cleanly shutdown the database by the dba or by root.</para>
+    <para>Note that in all cases signals can only be sent by the kernel, the root user or the uid of 
+    	the person who started Virtuoso. Anyone else that wants to shutdown the Virtuoso instance 
+    	should use the isql program to connect to Virtuoso and run the 'shutdown' command.</para>    
+    </sect3>    
+  </sect2>
+</sect1>
+ 
  &relnotes;
  &support;
  &systemtables;
-&migrate27to30;
+ <!--&migrate27to30;-->
 
 <sect1 id="apndxregexp"><title>Basic Syntax of Regular Expressions</title>
 

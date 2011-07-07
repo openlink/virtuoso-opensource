@@ -51,6 +51,9 @@ EXE_EXPORT (void, bif_define, (const char * name, bif_t bif));
 EXE_EXPORT (void, bif_define_typed, (const char * name, bif_t bif, bif_type_t *bt));
 EXE_EXPORT (void, bif_set_uses_index, (bif_t bif));
 EXE_EXPORT (bif_t, bif_find, (const char *name));
+int bif_is_aggregate (bif_t bif);
+void bif_set_is_aggregate (bif_t  bif);
+
 
 bif_type_t * bif_type (const char * name);
 void bif_type_set (bif_type_t *bt, state_slot_t *ret, state_slot_t **params);
@@ -90,6 +93,8 @@ EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_arg, (caddr_t * qst, 
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
 EXE_EXPORT (caddr_t, bif_date_arg, (caddr_t * qst, state_slot_t ** args, int nth, char *func));
 
+dbe_key_t * bif_key_arg (caddr_t * qst, state_slot_t ** args, int n, char * fn);
+
 EXE_EXPORT (caddr_t, box_find_mt_unsafe_subtree, (caddr_t box));
 EXE_EXPORT (void, box_make_tree_mt_safe, (caddr_t box));
 
@@ -109,6 +114,7 @@ caddr_t bif_date_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 int bif_is_relocatable (bif_t bif);
 double bif_double_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int * isnull);
+EXE_EXPORT (caddr_t *, bif_array_of_pointer_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 
 
 extern bif_type_t bt_varchar;
@@ -165,6 +171,7 @@ caddr_t bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 long get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
     char *szBoundry, char *szType, size_t max_szType,
     caddr_t ** _result, long to_add);
+caddr_t mime_parse_header (int *rfc822, caddr_t szMessage, long message_size, long offset);
 
 #define MIME_POST_LIMIT 10000000
 #define MIME_SESSION_LIMIT 5000000
@@ -206,6 +213,7 @@ void pldbg_init (void);
 
 /* sqlbif2 */
 void sqlbif2_init (void);
+void sqlbif_sequence_init (void);
 int dks_is_localhost (dk_session_t *ses);
 extern int lockdown_mode;
 
@@ -241,6 +249,7 @@ char * rel_to_abs_path (char *p, const char *path, long len);
 caddr_t bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_sequence_set_no_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_sequence_next_no_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 long raw_length (caddr_t arg);
@@ -255,6 +264,9 @@ long raw_length (caddr_t arg);
   qi->qi_g_id = old_g;\
 }
 
+int bif_is_no_cluster (bif_t bif); /* cannot be execd except where invoked */
+void bif_set_no_cluster (char * n);
+
 typedef struct
 {
   void * sc_buff;
@@ -264,5 +276,6 @@ typedef struct
 
 void strses_write_out_gz (dk_session_t *ses, dk_session_t *out, strses_chunked_out_t * outd);
 int gz_stream_free (void *s);
+extern int32 cl_non_logged_write_mode;
 
 #endif /* _SQLBIF_H */

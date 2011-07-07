@@ -82,6 +82,6 @@ _______________________________________________________________________________
   </refsect1>
   <refsect1 id="seealso_serialize_to_UTF8_xml">
     <title>See Also</title>
-    <para><link linkend="charset_recode"><function>charset_recode</function></link></para>
+    <para><link linkend="fn_charset_recode"><function>charset_recode</function></link></para>
   </refsect1>
 </refentry>

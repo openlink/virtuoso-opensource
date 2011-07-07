@@ -31,20 +31,6 @@
 #include "Wi/widv.h"
 #include "Wi/wi_xid.h"
 
-#if 0
-#define LONG_SET_NA(place, l) \
-  (((unsigned char *) (place))[0] = (unsigned char) ((l) >> 24), \
-   ((unsigned char *) (place))[1] = (unsigned char) ((l) >> 16), \
-   ((unsigned char *) (place))[2] = (unsigned char) ((l) >> 8), \
-   ((unsigned char *) (place))[3] = (unsigned char) ((l) ))
-
-#define LONG_REF_NA(p) \
-  ((((int32) (((unsigned char *) (p))[0])) << 24) | \
-   (((int32) (((unsigned char *) (p))[1])) << 16) | \
-   (((int32) (((unsigned char *) (p))[2])) << 8) | \
-   (((int32) (((unsigned char *) (p))[3]))) )
-#endif
-
 
 #define XID_DEBUG
 

@@ -63,8 +63,6 @@ create procedure AB.WA.exec_no_error(in expr varchar, in execType varchar := '',
 
 ------------------------------------------------------------------------------
 --
-------------------------------------------------------------------------------
---
 create procedure AB.WA.vhost()
 {
   declare
@@ -95,6 +93,9 @@ create procedure AB.WA.vhost()
   );
   DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rulelist_addressbook', 1, vector ('ods_rule_addressbook'));
 
+  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
+  USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
+
   VHOST_REMOVE(lpath    => '/addressbook');
   VHOST_DEFINE(lpath    => '/addressbook',
                ppath    => '/DAV/VAD/wa/',
@@ -103,16 +104,6 @@ create procedure AB.WA.vhost()
                vsp_user => 'dba',
                opts     => vector ('url_rewrite', 'ods_rulelist_addressbook')
              );
-  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
-  USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
-
-  VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
-  VHOST_DEFINE (lpath => '/dataspace/services/addressbook',
-                ppath => '/SOAP/',
-                soap_user => 'SOAP_ADDRESSBOOK',
-                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )
-               );
-
   VHOST_REMOVE (lpath     => '/ods/portablecontacts');
   VHOST_DEFINE (lpath     => '/ods/portablecontacts',
                 ppath     => '/SOAP/Http/portablecontacts',
@@ -126,6 +117,27 @@ create procedure AB.WA.vhost()
                 soap_user => 'SOAP_ADDRESSBOOK',
                 opts      => vector ('atom-pub', 1)
                );
+
+  VHOST_REMOVE (lpath     => '/ods/yahoocontacts');
+  VHOST_DEFINE (lpath     => '/ods/yahoocontacts',
+                ppath     => '/SOAP/Http/yahoocontacts',
+                soap_user => 'SOAP_ADDRESSBOOK',
+                opts      => vector ('atom-pub', 1)
+               );
+
+  VHOST_REMOVE (lpath     => '/ods/google');
+  VHOST_DEFINE (lpath     => '/ods/google',
+                ppath     => '/SOAP/Http/googlecontacts',
+                soap_user => 'SOAP_ADDRESSBOOK',
+                opts      => vector ('atom-pub', 1)
+               );
+
+  -- old SOAP
+  -- api url
+  VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
+  -- procs
+  AB.WA.exec_no_error ('DROP procedure DBA.DB.addressbook_import');
+  AB.WA.exec_no_error ('DROP procedure DBA.DB.addressbook_export');
 }
 ;
 
@@ -181,6 +193,11 @@ AB.WA.exec_no_error (
 )
 ;
 
+AB.WA.exec_no_error (
+  'alter type wa_AddressBook add overriding method wa_dashboard () returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_AddressBook methods
@@ -205,7 +222,18 @@ create method wa_id () for wa_AddressBook
 --
 create method wa_drop_instance () for wa_AddressBook
 {
-  AB.WA.domain_delete (self.wa_id ());
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/addressbook/' || cast (iWaiID as varchar)) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
+  AB.WA.domain_delete (iWaiID);
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -258,14 +286,6 @@ create method wa_new_inst (in login varchar) for wa_AddressBook
   AB.WA.domain_update (iWaiID, iUserID);
   retValue := (self as web_app).wa_new_inst(login);
 
-  --  SIOC service
-  declare  graph_iri, iri, ab_iri varchar;
-
-  graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s%s/services/addressbook', SIOC..get_cname(), SIOC..get_base_path ());
-  ab_iri := SIOC..addressbook_iri (self.wa_name);
-  SIOC..ods_sioc_service (graph_iri, iri, ab_iri, null, null, null, iri, 'SOAP');
-
   return retValue;
 }
 ;
@@ -307,7 +327,7 @@ create method wa_state_edit_form (inout stream any) for wa_AddressBook
   {
     sid := (select VS_SID from VSPX_SESSION where VS_REALM = 'wa' and VS_UID = connection_get('vspx_user'));
     http_request_status ('HTTP/1.1 302 Found');
-    http_header(sprintf('Location: %s?sid=%s&realm=%s\r\n', WS.WS.EXPAND_URL (self.wa_home_url(), 'settings.vspx'), sid, 'wa'));
+    http_header(sprintf('Location: %s?action=settings&sid=%s&realm=%s\r\n', WS.WS.EXPAND_URL (self.wa_home_url(), 'home.vspx'), sid, 'wa'));
   } else {
     signal('42001', 'Not a owner');
   }
@@ -380,13 +400,34 @@ create method get_param (in param varchar) for wa_AddressBook
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_AddressBook
+{
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  return (select XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       AB.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..addressbook_contact_iri (iWaiID, _id) as nvarchar), N'">', AB.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from AB.WA.dashboard_rs(p0)(_id integer, _title varchar, _time datetime) x
+           where p0 = iWaiID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_AddressBook
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
-  return AB.WA.dashboard_get (domainID, userID);
+  return AB.WA.dashboard_get (self.wa_id ());
 }
 ;
 
@@ -396,9 +437,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_AddressBook
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
+  domainID := self.wa_id ();
+  userID := AB.WA.domain_owner_id (domainID);
   return concat(AB.WA.dav_url2(domainID, userID), 'AddressBook.rdf');
 }
 ;
@@ -430,3 +470,40 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_Add
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('ab_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'AddressBook') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/addressbook/' || cast (WAI_ID as varchar) || '/home.vspx') do
+    {
+      _new_lpath := '/addressbook/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('ab_path_upgrade2', '1');
+}
+;
+AB.WA.path_upgrade ();

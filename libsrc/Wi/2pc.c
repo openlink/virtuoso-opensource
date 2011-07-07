@@ -132,6 +132,7 @@ def_commit_done (void *res, int trx_status)
   semaphore_leave (future->ft_sem);
   return 0;
 }
+
 static unsigned long
 def_abort_done (void *res, int trx_status)
 {
@@ -520,6 +521,7 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
       LEAVE_TXN;
       return LTE_DEADLOCK;
     }
+  lt_wait_checkpoint ();
   lt->lt_2pc._2pc_prepared = 0;
   if (operation == SQL_ROLLBACK)
     lt->lt_status = LT_BLOWN_OFF;
@@ -536,10 +538,10 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
 
   if (lt->lt_error != LTE_OK)
     {
-    lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
+      lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
 	    (int) lt->lt_error, lt, lt->lt_client));
     }
-  lt->lt_2pc._2pc_wait_commit = 0;
+  lt->lt_2pc._2pc_wait_commit = 0; /* commit happened */
   LEAVE_TXN;
   return lt->lt_error;
 }
@@ -554,11 +556,6 @@ lt_2pc_prepare (lock_trx_t * lt)
   _2pc_printf (("lt_2pc_prepare\n"));
   lt->lt_status = LT_PREPARE_PENDING;
 
-  if (LTE_OK != lt_log_replication (lt))
-    {
-      rc = LTE_LOG_FAILED;
-      goto failed;
-    }
 
   LEAVE_TXN;
   mutex_enter (log_write_mtx);
@@ -578,7 +575,7 @@ lt_2pc_prepare (lock_trx_t * lt)
     {
       *((unsigned long *) lt->lt_2pc._2pc_prepared) = LT_PREPARED;
       lt->lt_2pc._2pc_prepared = 0;
-    };
+    }
 
 failed:
   if (rc != LTE_OK)
@@ -610,7 +607,6 @@ lt_2pc_commit (lock_trx_t * lt)
   lt->lt_status = LT_COMMITTED;
 
   log_final_transact (lt, 1);
-  lt_send_repl_cast (lt);
   if (lt->lt_mode == TM_SNAPSHOT)
     {
       lt_close_snapshot (lt);
@@ -1388,7 +1384,7 @@ virt_xa_set_client (void *xid, struct client_connection_s *cli)
 	  return rc;
 #else
 	  mutex_leave (global_xa_map->xm_mtx);
-	  return VXA_AGAIN;
+	  return VXA_ERROR;
 #endif
 	}
     }
@@ -1888,7 +1884,7 @@ txa_open (char *file_name)
   int fd;
   file_set_rw (file_name);
   fd = fd_open (file_name, OPEN_FLAGS);
-  if (fd > 0)
+  if (fd >= 0)
     {
       txi.txi_trx_file = box_string (file_name);
       txi.txi_fd = fd;
@@ -1907,7 +1903,7 @@ txa_write ()
   dk_free_tree ((box_t) txi.txi_info);
   txi.txi_info = txa_serialize (txi.txi_parsed_info);
   fd = fd_open (txi.txi_trx_file, OPEN_FLAGS);
-  if (fd > 0)
+  if (fd >= 0)
     {
       FTRUNCATE (fd, 0);
       txa_write_info (fd, txi.txi_info);

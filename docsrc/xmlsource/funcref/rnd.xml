@@ -42,7 +42,7 @@
     <para>
 The rnd function returns a random number between zero and n - 1, inclusive.
     </para>
-    <para>randomize initializes the random number generator.</para>
+    <para>Randomize initializes the random number generator.</para>
     <para>
 The random number generator is initialized after the clock at first usage, so the
 produced sequences will be different each time unless

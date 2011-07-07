@@ -27,7 +27,7 @@
   declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID, S varchar;
   declare hParams, hLines, vOptions, geoParams, settings, app any;
 
-  declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message); return;};
+  declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message, waID); return;};
   declare exit handler for sqlstate '90005' { return; }; --download
   declare exit handler for sqlstate '42001' { http('404'); return;}; --not found
   declare exit handler for sqlstate 'TEST'
@@ -152,7 +152,7 @@ exec_start:;
     _page_mode := concat(' mode="popup"');
 
   _xml := call (procName)(path, lines, params);
-  _xml := sprintf('<page id="%s"%s><ods><name>%s</name><link>%s</link><bar><![CDATA[%s]]></bar></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, ODS.BAR._EXEC('oMail', params, lines), _xml);
+  _xml := sprintf('<page id="%s"%s><ods><name>%V</name><link>%s</link><bar><![CDATA[%s]]></bar></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, ODS.BAR._EXEC('oMail', params, lines), _xml);
 
   -- XSL Transformation--------------------------------------------------------------
   OMAIL.WA.utl_myhttp (_xml, null, get_keyword ('vv', params), hParams, hLines, path);

@@ -39,32 +39,50 @@
       http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, POLLS.WA.gems_url (self.domain_id)||'Polls.rss'));
       http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, POLLS.WA.gems_url (self.domain_id)||'Polls.atom'));
       http (POLLS.WA.geo_url (self.domain_id, self.account_id));
+
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/common.css" type="text/css" />
+    <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
     <meta name="dc.description" content="<?V POLLS.WA.utf2wide (POLLS.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V POLLS.WA.utf2wide (POLLS.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
       <![CDATA[
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var imagePath="/ods/images/oat/";
-        
-        var featureList=["ajax", "xml", "anchor", "barchart", "piechart", "dialog", "calendar"];
-    </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
+        OAT.Preferences.showAjax = false;
+        
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+          pathHome: '/home/',
+          path: '<?V POLLS.WA.dav_logical_home (self.account_id) ?>',
+          user: '<?V POLLS.WA.account_name (self.account_id) ?>',
+          connectionHeaders: {Authorization: '<?V POLLS.WA.account_basicAuthorization (self.account_id) ?>'}
+        };
+
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "barchart", "piechart", "calendar"];
+        OAT.Loader.load(featureList);
+    </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
+      <script type="text/javascript" src="/ods/typeahead.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="js/polls.js"></script>
       <script type="text/javascript">
         function myInit() {
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-          OAT.Preferences.showAjax = false;
-
-        	OAT.Style.include("winms.css");
-
-          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-          OAT.Anchor.zIndex = 1001;
+          if (!OAT._loaded) {
+            setTimeout(myInit, 100);
+            return;
+          }
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
@@ -72,9 +90,14 @@
       		// init tabs
           showTab('p', 2, 0);
           showTab('s', 2, 0);
+
+          setFooter();
+          window.onresize = function() {setFooter();}
+
+          OAT.MSG.send(OAT, 'PAGE_LOADED');
         }
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+        OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
       </script>
     ]]>
     <title></title>
@@ -83,11 +106,10 @@
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />
-        <v:variable persist="0" name="account_role" type="varchar" default="'public'" />
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'" />
+      <v:variable persist="0" name="account_rights" type="varchar" default="''" />
       <v:variable persist="0" name="owner_id" type="integer" default="null" />
-      <v:variable persist="0" name="ownerName" type="varchar" default="null" />
         <v:variable persist="0" name="settings" type="any" />
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';
@@ -98,11 +120,9 @@
 
           aSessInfo := POLLS.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
-          self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
+          self.account_rights := get_keyword ('account_rights', aSessInfo);
           self.owner_id := POLLS.WA.domain_owner_id (self.domain_id);
-          self.ownerName := POLLS.WA.domain_owner_name (self.domain_id);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), POLLS.WA.settings (self.domain_id));
         ]]>
       </v:on-init>

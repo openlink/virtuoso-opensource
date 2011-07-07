@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2010 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="owns-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:variable name="ow_mode" type="varchar" default="'OW/browse'"/>
+
+	<v:variable name="ow_id" type="any" default="null" />
+	<v:variable name="ow_type" type="varchar" default="'3'" />
+	<v:variable name="ow_properties" type="any" default="null" />
+	<v:variable name="ow_newProperties" type="any" default="null" />
+
+	<v:form name="usr_personal_051" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <h3>Owns (GoodRelations Ontologies)</h3>
+    <vm:if test="self.ow_mode = 'OW/browse'">
+      <?vsp
+        if (0)
+        {
+      ?>
+        <v:button name="ow_dButton" action="simple" value="Delete">
+          <v:on-post>
+            <![CDATA[
+              delete from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = get_keyword ('ow_id', self.vc_page.vc_event.ve_params) and WUOL_U_ID = self.u_id;
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      <?vsp
+        }
+      ?>
+      <input type="hidden" name="ow_id" id="ow_id" value="" />
+      <div style="padding: 0 0 0.5em 0;">
+        <v:button name="ow_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+            ]]>
+          </v:before-render>
+          <v:on-post>
+            <![CDATA[
+              self.ow_mode := 'OW/add';
+              self.ow_flag.ufl_value := null;
+              self.ow_offer.ufl_value := null;
+              self.ow_comment.ufl_value := null;
+              self.ow_properties := ODS..jsonObject ();
+              self.ow_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ow_properties, vector ()))));
+
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+
+	    <v:data-set name="ow_ds"
+	                sql="select WUOL_ID, WUOL_OFFER, WUOL_COMMENT from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = :self.u_id and WUOL_TYPE = :self.ow_type"
+		              scrollable="1"
+		              editable="1"
+		              nrows="10">
+
+        <v:template name="ow_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+      	  <table class="listing" rules="groups">
+      	    <tr class="listing_header_row">
+      		    <th>Name</th>
+      		    <th width="50px">Action</th>
+      	    </tr>
+          </table>
+        </v:template>
+
+        <v:template name="ow_ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="ow_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr align="center">
+                <td colspan="2">No Owns</td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="ow_ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <table>
+  			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                <td nowrap="nowrap" width="100%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUOL_OFFER')" format="%s" name="ow_ds_browse_1_label"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button name="ow_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_value := '<img src="images/icons/edit_16.png" border="0" alt="Edit Owns" title="Edit Owns"/> Edit';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        self.ow_mode := 'OW/edit';
+                        self.ow_id := (control.vc_parent as vspx_row_template).te_column_value('WUOL_ID');
+                        select WUOL_FLAG,
+                               WUOL_OFFER,
+                               WUOL_COMMENT,
+                               deserialize (WUOL_PROPERTIES)
+                          into self.ow_flag.ufl_value,
+                               self.ow_offer.ufl_value,
+                               self.ow_comment.ufl_value,
+                               self.ow_properties
+                          from DB.DBA.WA_USER_OFFERLIST
+                         where WUOL_ID = self.ow_id;
+
+                        self.ow_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ow_properties, vector ()))));
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <span class="button pointer" onclick="javascript: if (confirm('Are you sure you want to delete this record?')) {$('ow_id').value = <?V (control as vspx_row_template).te_column_value('WUOL_ID') ?>; doPost('page_form', 'ow_dButton');}">
+                    <img class="button" src="/ods/images/icons/trash_16.png"/> Delete
+                  </span>
+  			        </td>
+  			      </tr>
+            </table>
+		      </v:template>
+		    </v:template>
+
+		    <v:template name="ow_ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
+          </table>
+		    </v:template>
+	    </v:data-set>
+
+    </vm:if>
+
+    <vm:if test="self.ow_mode <> 'OW/browse'">
+  	  <div class="fm">
+				<table>
+				  <tr>
+				    <th width="100px">
+		          Access
+		        </th>
+		        <td>
+              <v:select-list name="ow_flag" xhtml_id="ow_flag">
+                <v:item name="public" value="1" />
+                <v:item name="acl" value="2" />
+                <v:item name="private" value="3" />
+              </v:select-list>
+            </td>
+          </tr>
+				  <tr>
+				    <th>
+		          Name
+		        </th>
+		        <td>
+              <v:text name="ow_offer" value="" xhtml_id="ow_offer" xhtml_size="50" xhtml_class="_validate_" />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Comment
+		        </th>
+		        <td>
+              <v:textarea name="ow_comment" value="" xhtml_id="ow_comment" xhtml_rows="5" xhtml_cols="50"/>
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Products
+		        </th>
+		        <td width="800px">
+              <table id="ow_tbl" class="listing">
+                <tbody id="ow_tbody">
+                  <tr id="ow_throbber">
+                    <td>
+                      <img src="/ods/images/oat/Ajax_throbber.gif" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <input type="hidden" id="ow_no" name="ow_no" value="1" />
+              <script type="text/javascript">
+                <![CDATA[
+                  ODSInitArray.push (function (){
+                    OAT.Loader.load(["ajax", "json", "combolist"], function(){
+                      RDF.tablePrefix = 'ow';
+                      RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+                      RDF.itemTypes = <?vsp http (replace (ODS..obj2json (self.ow_newProperties, 10), 'class:', 'className:')); ?>;
+                      RDF.showItemTypes();
+                    });
+                  });
+                ]]>
+              </script>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <br />
+    		      <v:button name="user_c_personal_051" value="Cancel" action="simple">
+    		        <v:on-post>
+                  self.ow_mode := 'OW/browse';
+                  self.vc_data_bind (e);
+    		        </v:on-post>
+    		      </v:button>
+    		      <v:button name="user_s_personal_051" value="--case when self.ow_mode = 'OW/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
+    		        <v:on-post><![CDATA[
+                  if (self.vc_is_valid = 0)
+                    return;
+
+                  declare ontologies, IDs any;
+                  declare products any;
+
+                  IDs := vector ();
+                  ontologies := vector ();
+                  self.getItems ('ow', 'gr', ontologies, IDs);
+                  products := vector ();
+                  if (length (ontologies))
+                    products := get_keyword ('items', ontologies[0], vector());
+
+                  self.ow_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+                  if (self.ow_mode = 'OW/add')
+                  {
+                    if (exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = self.u_id and WUOL_TYPE = self.ow_type and WUOL_OFFER = self.ow_offer.ufl_value))
+                    {
+                      self.vc_error_message := 'An offer with same name already exists, please specify unique name.';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
+                      values (self.u_id, self.ow_type, self.ow_flag.ufl_value, self.ow_offer.ufl_value, self.ow_comment.ufl_value, serialize (self.ow_properties));
+                  }
+                  else
+                  {
+                    update DB.DBA.WA_USER_OFFERLIST
+                       set WUOL_FLAG = self.ow_flag.ufl_value,
+                           WUOL_OFFER = self.ow_offer.ufl_value,
+                           WUOL_COMMENT = self.ow_comment.ufl_value,
+                           WUOL_PROPERTIES = serialize (self.ow_properties)
+                     where WUOL_ID = self.ow_id;
+                  }
+
+                  self.ow_mode := 'OW/browse';
+                  self.vc_data_bind (e);
+                ]]></v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </vm:if>
+	</v:form>
+</v:page>

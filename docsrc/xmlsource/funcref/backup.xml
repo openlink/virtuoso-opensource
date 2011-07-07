@@ -66,20 +66,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_backup"><title>Parameters</title>
-    <refsect2><title><parameter>file</parameter></title>
-      <para><type>varchar</type> <parameter>file</parameter> filename for
-      the generated log.</para>
-    </refsect2>
-    <refsect2><title><function>backup_row</function></title>
-      <para><type>any</type> <parameter>row</parameter> a value of the pseudo
-      column <varname>_ROW</varname>.</para>
-    </refsect2>
-  </refsect1>
-  <refsect1 id="ret_backup"><title>Return Types</title>
-    <refsect2><title></title>
-      <para></para></refsect2>
-  </refsect1>
   <refsect1 id="desc_backup">
     <title>Description</title>
     <important>
@@ -157,6 +143,20 @@ Also, when replaying a backup file  onto an empty database, the +replay-crash-du
         <function>backup_close</function>.</para>
       </formalpara>
     </refsect2>
+  </refsect1>
+  <refsect1 id="params_backup"><title>Parameters</title>
+    <refsect2><title><parameter>file</parameter></title>
+      <para><type>varchar</type> <parameter>file</parameter> filename for
+      the generated log.</para>
+    </refsect2>
+    <refsect2><title><function>backup_row</function></title>
+      <para><type>any</type> <parameter>row</parameter> a value of the pseudo
+      column <varname>_ROW</varname>.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_backup"><title>Return Types</title>
+    <refsect2><title></title>
+      <para></para></refsect2>
   </refsect1>
 <!--
   <refsect1 id="examples_backup"><title>Examples</title>

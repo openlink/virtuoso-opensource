@@ -331,6 +331,21 @@ rendezvous_thread (void *arg)
   int result;
   int wakeup;
 
+#if defined (HAVE_PTHREAD_SIGMASK)
+  sigset_t newset, oldset;
+
+  /*
+   *  This thread should not handle these signals
+   */
+  sigemptyset (&newset);
+  sigaddset (&newset, SIGINT);
+  sigaddset (&newset, SIGCHLD);
+  sigaddset (&newset, SIGQUIT);
+  sigaddset (&newset, SIGALRM);
+  sigaddset (&newset, SIGTERM);
+  pthread_sigmask (SIG_BLOCK, &newset, &oldset);
+#endif
+
 #ifdef RVDEBUG
   log (L_DEBUG, N_("ZeroConfig thread started"));
 #endif

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
-  -  $Id$
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -110,8 +110,7 @@
     <div style="padding: 0.5em;">
       <xsl:if test="not @close or @close = 'yes'">
       <div style="padding: 0 0 0.5em 0;">
-          &amp;nbsp;<a href="javascript: void (0);" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-        <hr />
+          <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
       </div>
       </xsl:if>
       <v:form name="F1" type="simple" method="POST">
@@ -152,7 +151,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--CAL.WA.iri_fix (CAL.WA.utf2wide (CAL.WA.forum_iri(self.domain_id)))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Calendar'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
@@ -164,7 +163,7 @@
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" fmt-function="CAL.WA.utf2wide" xhtml_onkeypress="return submitEnter(event, \'F1\', \'command\', \'select\', \'search\', \'mode\', \'simple\');" />
-            <xsl:call-template name="nbsp"/>
+              &amp;nbsp;
               <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'simple');" title="Simple Search" about="Simple Search" class="link">Search</span>
             |
               <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'advanced');" title="Advanced Search" about="Advanced Search" class="link">Advanced</span>
@@ -176,17 +175,21 @@
             <?vsp http (CAL.WA.utf2wide (CAL.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template type="simple" enabled="--case when (self.access_role in ('public', 'guest')) then 0 else 1 end">
+            <vm:if test="self.account_rights = 'W'">
               <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Preferences" about="Preferences" class="link">Preferences</span>
               |
-        </v:template>
+            </vm:if>
             <span onclick="javascript: CAL.aboutDialog(); return false;" title="About" class="link">About</span>
       </div>
           <p style="clear: both; line-height: 0.1em">&nbsp;</p>
         </div>
       <v:include url="calendar_login.vspx"/>
               <xsl:apply-templates select="vm:pagebody" />
-      <div id="FT">
+        <?vsp
+          declare C any;
+          C := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+        ?>
+        <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
             <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
@@ -248,12 +251,13 @@
             eventDays := vector ();
             for (select rs.e_start,
                         rs.e_end
-                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3, rs4)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
+                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3, rs4, rs5)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
                     and rs2 = self.nCalcDate (length (self.cnDays)-1)
                     and rs3 = self.cPrivacy
-                    and rs4 = self.cShowTasks) do
+                    and rs4 = self.cShowTasks
+                    and rs5 = self.account_rights) do
             {
               L := datediff ('day', e_start, e_end);
               for (N := 0; N <= L; N := N + 1)
@@ -346,11 +350,11 @@
         <?vsp
           for (select * from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id) do
           {
-            if (self.access_role not in ('public', 'guest'))
+            if (self.account_rights = 'W')
             {
-              http (sprintf ('<span onclick="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</span>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
-            } else {
               http (sprintf ('<div class="gems" style="background-color: %s;">%s</div>', S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
+            } else {
+              http (sprintf ('<span onclick="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</span>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
             }
           }
         ?>
@@ -360,7 +364,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:exchange">
-    <vm:if test="self.access_role not in ('public', 'guest')">
+    <vm:if test="self.account_rights = 'W'">
     <div class="lc lc_head" onclick="shCell('exchange')">
         <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&amp;nbsp;Import/Export
     </div>
@@ -402,7 +406,7 @@
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         }
 
-        S := CAL.WA.gems_url (self.domain_id);
+        S := CAL.WA.utf2wide (CAL.WA.gems_url (self.domain_id));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF'));
@@ -426,73 +430,64 @@
   <!--=========================================================================-->
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
-      {
         declare n_start, n_end, n_total integer;
+      declare ds vspx_data_set;
 
-        if (isnull (control.ds_data_source))
+      ds := case when (udt_instance_of (control, fix_identifier_case ('vspx_data_set'))) then control else control.vc_find_parent (control, 'vspx_data_set') end;
+      if (isnull (ds.ds_data_source))
         {
-          n_total := control.ds_rows_total;
-          n_start := control.ds_rows_offs + 1;
-          n_end   := n_start + control.ds_nrows - 1;
+        n_total := ds.ds_rows_total;
+        n_start := ds.ds_rows_offs + 1;
+        n_end   := n_start + ds.ds_nrows - 1;
         } else {
-        n_total := control.ds_data_source.ds_total_rows;
-        n_start := control.ds_data_source.ds_rows_offs + 1;
-        n_end   := n_start + control.ds_data_source.ds_rows_fetched - 1;
+        n_total := ds.ds_data_source.ds_total_rows;
+        n_start := ds.ds_data_source.ds_rows_offs + 1;
+        n_end   := n_start + ds.ds_data_source.ds_rows_fetched - 1;
         }
         if (n_end > n_total)
           n_end := n_total;
 
         if (n_total)
-          http (sprintf ('%d - %d of %d', n_start, n_end, n_total));
+        http (sprintf ('Showing %d - %d of %d', n_start, n_end, n_total));
 
-        declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first integer;
+      declare _prev, _next vspx_button;
 
-        d_prev := d_next := d_last := d_first := 0;
-        _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-        _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
         _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
         _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-
-        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
-        {
+      if ((_next is not null and _next.vc_enabled) or (_prev is not null and _prev.vc_enabled))
           http (' | ');
-        if (_first is not null and not _first.vc_enabled)
-          d_first := 1;
-
-        if (_next is not null and not _next.vc_enabled)
-          d_next := 1;
-
-        if (_prev is not null and not _prev.vc_enabled)
-          d_prev := 1;
-
-        if (_last is not null and not _last.vc_enabled)
-          d_last := 1;
-        }
     ?&gt;
-    <?vsp
-      if (d_first)
-        http ('<img src="/ods/images/skin/pager/p_first_gr.png" alt="First Page" title="First Page" border="0" />first&nbsp;');
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="/ods/images/skin/pager/p_first.png" xhtml_alt="First" text="first&amp;nbsp;" />
-    <?vsp
-      if (d_prev)
-        http ('<img src="/ods/images/skin/pager/p_prev_gr.png" alt="Previous Page" title="Previous Page" border="0" />prev&nbsp;');
-    ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="/ods/images/skin/pager/p_prev.png" xhtml_alt="Previous" text="prev&amp;nbsp;" />
-    <?vsp
-      if (d_next)
-        http ('<img src="/ods/images/skin/pager/p_next_gr.png" alt="Next Page" title="Next Page" border="0" />next&nbsp;');
-    ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="/ods/images/skin/pager/p_next.png" xhtml_alt="Next" text="next&amp;nbsp;" />
-    <?vsp
-      if (d_last)
-        http ('<img src="/ods/images/skin/pager/p_last_gr.png" alt="Last Page" title="Last Page" border="0" />last');
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="/ods/images/skin/pager/p_last.png" xhtml_alt="Last" text="last" />
-    <?vsp
-      }
-    ?>
+    <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+        ]]>
+      </v:before-render>
+    </v:button>
   </xsl:template>
 
   <!--=========================================================================-->
@@ -589,17 +584,5 @@
       <xsl:value-of select="@caption"/>
     </div>
   </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="nbsp">
-    <xsl:param name="count" select="1"/>
-    <xsl:if test="$count != 0">
-      <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-      <xsl:call-template name="nbsp">
-        <xsl:with-param name="count" select="$count - 1"/>
-      </xsl:call-template>
-    </xsl:if>
-  </xsl:template>
-  <!--=========================================================================-->
 
 </xsl:stylesheet>

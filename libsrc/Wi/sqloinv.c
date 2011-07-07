@@ -37,7 +37,7 @@
 #include "sqloinv.h"
 #include "sqlbif.h"
 #include "security.h"
-
+#include "xmlnode.h"
 static id_hash_t *sinv_func_hash = NULL;
 
 #define REPORT_ERR(err) \
@@ -55,9 +55,6 @@ static id_hash_t *sinv_func_hash = NULL;
  	  err = NULL; \
 	  call_exit (-1); \
 	}
-
-#define SINV_DV_STRINGP(x) \
-	(DV_STRINGP (x) || DV_TYPE_OF (x) == DV_SYMBOL)
 
 
 static void
@@ -350,7 +347,7 @@ sinv_call_has_col (ST * tree)
       DO_BOX (ST *, arg, inx, tree->_.call.params)
       {
 	SKIP_AS (arg);
-	if (ST_P (arg, COL_DOTTED))
+	if (ST_COLUMN (arg, COL_DOTTED))
 	  {
 	    have_col = 1;
 	    break;
@@ -512,7 +509,7 @@ sinv_check_exp (sqlo_t * so, ST * tree)
     }
   else if (map_col)
     {
-      if (!ST_P (right, COL_DOTTED))
+      if (!ST_COLUMN (right, COL_DOTTED))
 	do_it = 1;
       else
 	{
@@ -605,6 +602,17 @@ sinv_sqlo_check_col_val (ST **pcol, ST **pval, dk_set_t *acol, dk_set_t *aval)
       *pcol = res->_.bin_exp.left;
       *pval = res->_.bin_exp.right;
     }
+}
+
+
+
+
+int
+sqlo_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * cond_ret, dk_set_t * after_preds)
+{
+  /* put one or more conds into cond ret such that they are equivalent to cond and each has dependent of ot on the left and no dependent of ot on the right.  */
+  /* more cases here */
+  return 0;
 }
 
 

@@ -191,13 +191,15 @@ typedef struct sparp_equiv_s
 #define SPARP_EQUIV_ADD_OPTIONAL_READ	0x80	/*!< \c sparp_equiv_get() will increment \c e_optional_reads if variable is added */
 /* There's no SPARP_EQUIV_ADD_OPTIONAL_READ because subquery vars are not added to the equiv */
 
+/*! This allocates a new quivalence class. Don't use it in vain, use sparp_equiv_get with SPARP_EQUIV_INS_CLASS instead. */
+extern sparp_equiv_t *sparp_equiv_alloc (sparp_t *sparp);
+
 /*! Finds or create an equiv class for a \c needle_var in \c haystack_gp.
 The core behaviour is specified by (flags & (SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE)):
    when 0 then only existing equiv with existing occurrence is returned;
    when SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE then new equiv with 1 new variable can be added;
    when SPARP_EQUIV_INS_CLASS then new equiv with no variables can be added, for passing from alias to alias.
-If (flags & SPARP_EQUIV_GET_NAMESAKES) then \c needle_var can be a boxed string with name of variable.
-*/
+If (flags & SPARP_EQUIV_GET_NAMESAKES) then \c needle_var can be a boxed string with name of variable. */
 extern sparp_equiv_t *sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flags);
 /*! Similar to sparp_equiv_get(), but gets a vector of pointers to equivs instead of \c sparp */
 extern sparp_equiv_t *sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack_gp, SPART *needle_var, int flags);
@@ -404,8 +406,13 @@ otherwise a triple should contain a field whose selid, tabid, name and tr_idx ma
 The \c var may b blank node or retval as well, but retval has no meaning if \c need_strong_match is set */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int need_strong_match);
 
-/*! This finds a variable that is a source of value of a given external variable or an appropriate retval. */
-extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var);
+/*! This finds a variable that is a source of value of a given VARR_EXTERNAL variable \c var or an appropriate retval.
+If \c find_exact_specimen then the function will try return a variable from origin eq or its subequivs
+that will provide as many restrictions and valmode preferences as possible, but may be unusable for direct use in the codegen
+because it can be nested too deep in subqueries and its alias will not be visible at the location of \c var.
+If not \c find_exact_specimen then an upper-level retval can be returned instead of deeply buried origin var.
+ */
+extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_specimen);
 
 /*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the expression or, if \c return_alias, the whole SPAR_ALIAS */
 extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals, int return_alias);
@@ -479,12 +486,15 @@ extern void sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp);
 /*! This replaces selids of all variables in a filter */
 extern void sparp_set_filter_selid (sparp_t *sparp, SPART *filter, caddr_t new_selid);
 
+extern SPART **sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp);
+extern SPART *sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp);
+
 /*! This creates a full clone of \c gp subtree with cloned equivs.
 The function will substitute all selids and tabids of all graph patterns and triples in the tree and
 substitute equiv indexes with indexes of cloned equivs (except SPART_BAD_EQUIV_IDX index that persists). */
 extern SPART *sparp_gp_full_clone (sparp_t *sparp, SPART *gp);
 
-/*! This makes a full clone of \c origs. As a result, triples and variables outside any GPs are copied, inside GPs thay're changed like in case of sparp_gp_full_clone. */
+/*! This makes a full clone of \c origs. As a result, triples and variables outside any GPs are copied, inside GPs they're changed like in case of sparp_gp_full_clone. */
 extern SPART **sparp_treelist_full_clone (sparp_t *sparp, SPART **origs);
 
 /*! This creates a full copy of \c orig subtree without cloning equivs.
@@ -554,8 +564,10 @@ Restrictions on variables of \c new_filters should be propagated across the tree
 This is faster than attach \c new_filters by a sequence of sparp_gp_attach_member() calls. */
 extern void sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filters, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr);
 
+extern void sparp_gp_tighten_by_eq_replaced_filters (sparp_t *sparp, SPART *dest, SPART *orig, int remove_origin);
+
 /*! This makes the gp and all its sub-gps unusable and marks 'deprecated' all equivs that belong to these gps. */
-extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
+extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp, int suppress_eq_check);
 
 /*! This calls sparp_gp_deprecate() for all gps ofa subquery. */
 extern void sparp_req_top_deprecate (sparp_t *sparp, SPART *top);
@@ -605,6 +617,12 @@ extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcli
 /*! This turns \c gp into a union of zero cases and adjust VARR flags of variables to make them always-NULL */
 extern void sparp_gp_produce_nothing (sparp_t *sparp, SPART *gp);
 
+/*! This fills in "all atables" member of the given quad map */
+extern void sparp_collect_all_atable_uses (sparp_t *sparp_or_null, quad_map_t *qm);
+
+/*! This fills in "all conds" member of the given quad map */
+extern void sparp_collect_all_conds (sparp_t *sparp_or_null, quad_map_t *qm);
+
 /*! Perform all rewritings according to the type of the tree, grab logc etc. */
 extern void sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals);
 
@@ -616,6 +634,9 @@ extern void sparp_make_aliases (sparp_t *sparp);
 /*! Label variables as EXTERNAL. */
 extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
 
+/*! Visits all subtres and subqueries of \c tree and places all distinct names of global and external variables to \c set_set[0] */
+extern void sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret);
+
 /*! Removes equivalence classes that are no longer in any sort of use (neither pure connections nor equivs of actual variables */
 extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
 
@@ -626,9 +647,9 @@ extern void sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags);
 /*! Given an OPTIONAL_L right side of loj (specified by combination of \c parent and \c pos_of_curr_memb) and an equiv \c eq,
 this finds the most restrictive variable or retval at left side, and fills in \c ret_parent_eq[0] and \c ret_tree_in_parent[0].
 If \c eq->e_replaces_filter and eq is not assigned locally then a condition with ret_tree_in_parent[0] instead of \c eq will act as a filter.
-The repated expression can be placed in ON (...) clause of the generated LEFT OUTER JOIN and thus preserved from being lost due to lack of
+The repeated expression can be placed in ON (...) clause of the generated LEFT OUTER JOIN and thus preserved from being lost due to lack of
 appropriated variables in scope of WHERE clause of SELECT at the right size of loj. */
-extern void sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent);
+extern void sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent, SPART **ret_source_in_parent);
 
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
 extern void sparp_rewrite_grab (sparp_t *sparp);
@@ -672,14 +693,15 @@ struct rdf_ds_field_s;
 struct rdf_ds_s;
 
 /* Special 'macro' names of ssg_valmode_t modes. The order of numeric values is important ssg_shortest_valmode() */
-#define SSG_VALMODE_SHORT_OR_LONG	((ssg_valmode_t)((ptrlong)(0x300)))
-#define SSG_VALMODE_LONG		((ssg_valmode_t)((ptrlong)(0x310)))
-#define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x320)))
-#define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x330)))
-#define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x340)))
-#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x350)))
-#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x360)))
-#define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x370)))
+#define SSG_VALMODE_SHORT_OR_LONG	((ssg_valmode_t)((ptrlong)(0x300)))	/*!< Any representation, whatever is "shorter" */
+#define SSG_VALMODE_NUM			((ssg_valmode_t)((ptrlong)(0x310)))	/*!< Something that is number for numbers, date for date, NULL or something else for everything else; a shortest reasonable input for arithmetics */
+#define SSG_VALMODE_LONG		((ssg_valmode_t)((ptrlong)(0x320)))	/*!< Completed RDF objects */
+#define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x330)))	/*!< SQL value to bereturned to the SQL caller */
+#define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x340)))	/*!< Datatype is needed, not a value */
+#define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x350)))	/*!< Language is needed, not a value */
+#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x360)))	/*!< Something simplest */
+#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x370)))	/*!< No more than a boolean is needed */
+#define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x380)))
 /* typedef struct rdf_ds_field_s *ssg_valmode_t; -- moved to sparql.h */
 
 extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
@@ -713,8 +735,10 @@ typedef struct rdf_ds_usage_s
 #define NULL_ASNAME ((const char *)NULL)
 #define COL_IDX_ASNAME (((const char *)NULL) + 0x100)
 
+/*! Prints a subalias (and dot after alias, if flagged by the last argument), returns whether everything is printed */
+extern int ssg_prin_subalias (struct spar_sqlgen_s *ssg, const char *alias, const char *colalias, int dot_after_alias);
 /*! Prints the SQL expression based on \c tmpl template of \c qm_fmt valmode. \c asname is name used for AS xxx clauses, other arguments form context */
-extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, caddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname);
+extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, ccaddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname);
 extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_aliases);
 extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements);
 
@@ -743,7 +767,9 @@ typedef struct spar_sqlgen_s
   sparp_equiv_t		**ssg_equivs;		/*!< Shorthand for ssg_sparp->sparp_sg->sg_equivs */
   ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_sg->sg_equiv_count */
   struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
-  SPART			*ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L that contains the current subquery */
+  struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
+  SPART *		ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
+  SPART *		ssg_wrapping_sinv;	/*!< service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* SQL Codegen temporary values */
@@ -752,6 +778,8 @@ typedef struct spar_sqlgen_s
   const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
   int			ssg_line_count;		/*!< Number of lines of generated SQL code */
+  dk_set_t		ssg_valid_ret_selids;	/*!< stack of selids of GPs that can be safely used to generate SQL code for retvals (i.e. their selids are in current scope) */
+  dk_set_t		ssg_valid_ret_tabids;	/*!< stack like ssg_valid_ret_selids, but for tabids */
   int			ssg_seealso_enabled;	/*!< Flags if \c ssg_print_fld_var_restrictions_ex() (or the like) should generate calls of RDF_GRAB_SEEALSO; they should for "init" and "iter" of a pview, but not for "final" */
 /* SPARQL-D Codegen temporary values */
   const char *		ssg_sd_service_name;	/*!< Name of the destination endpoint that will receive the fragment that is printed ATM (for error reporting) */
@@ -765,11 +793,22 @@ typedef struct spar_sqlgen_s
   SPART *		ssg_sd_prev_pred;	/*!< Predicate of the previous triple in a group, to make a decision about using ',' shorthand */
   caddr_t		ssg_sd_single_from;	/*!< The IRI in FROM clause, if there's only one FROM clause, NULL otherwise */
   int			ssg_sd_graph_gp_nesting;	/*!< Count of GRAPH {...} gps that are opened but not yet closed */
+  dk_set_t		ssg_param_pos_set;	/*!< revlist of byte offsets of params in text and numbers of params in question, for sinv templates with unsupported named params */
+/* RDB2RDF Codegen temporary values */
+  const char *		ssg_alias_to_search;	/*!< Alias to select for search-and-replace (say, to replace "main alias" with prefixes for old or new columns) */
+  const char *		ssg_alias_to_replace;	/*!< Replacing alias for search-and-replace */
 } spar_sqlgen_t;
 
+/*!< Releases non-mempooled internals of \c ssg (currently the ssg_out) but does not free \c ssg itself (it's supposed to be on stack (if top-level) or in mem pool (if top-level or nested) */
+void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
+#ifdef NDEBUG
+#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
+#else
+#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg " /* " cmt " */", strlen (strg " /* " cmt " */"))
+#endif
 #define ssg_putbuf(buf,bytes) session_buffered_write (ssg->ssg_out, (buf), (bytes))
 
 #ifdef DEBUG
@@ -783,7 +822,7 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
 #endif
 
 
-#define SSG_INDENT_FACTOR 4
+#define SSG_INDENT_FACTOR 2
 #define SSG_MAX_ALLOWED_LINE_COUNT 10000
 #define ssg_newline(back) \
   do { \
@@ -801,6 +840,7 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
 extern void ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name);
 extern void ssg_qr_uses_table (spar_sqlgen_t *ssg, const char *tbl);
 
+extern ssg_valmode_t sparp_lit_native_valmode (SPART *tree);
 extern ssg_valmode_t sparp_expn_native_valmode (sparp_t *sparp, SPART *tree);
 extern ptrlong sparp_restr_bits_of_dtp (dtp_t dtp);
 extern ptrlong sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree);
@@ -827,7 +867,8 @@ extern ssg_valmode_t sparp_rettype_of_function (sparp_t *sparp, caddr_t name);
 extern ssg_valmode_t sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx);
 extern void ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name);
 
-extern void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed);
+extern void ssg_print_global_param (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed);
+extern void ssg_print_global_param_name (spar_sqlgen_t *ssg, caddr_t vname);
 extern void ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, ssg_valmode_t native, const char *asname);
 extern void ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname);
 extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
@@ -856,9 +897,13 @@ extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *
 extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr);
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
 extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
-extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);
 
+#define	SSG_TABLE_SELECT_PASS		1
+#define	SSG_TABLE_WHERE_PASS		2
+#define	SSG_TABLE_PVIEW_PARAM_PASS	3
+extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);
 extern void ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp);
+extern void ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass);
 extern void ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wrapping_gp, ssg_valmode_t needed);
 
 #define SSG_PRINT_UNION_NOFIRSTHEAD	0x01	/*!< Flag to suppress printing of 'SELECT retvallist' of the first member of the union */
@@ -866,6 +911,7 @@ extern void ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_to
 extern void ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags, int retval_flags, ssg_valmode_t needed);
 
 extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm);
+extern void ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location);
 
 /*! Returns nonzero if \c rv may produce value that may screw up result of SELECT DISTINCT if not wrapped in RDF_DIST_SER_LONG/RDF_DIST_DESER_LONG */
 extern int sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv);
@@ -895,14 +941,18 @@ An occurrence of a non-blocking feature provides some hint to the optimizer of t
 #define SSG_SD_RVR		0x0010	/*!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION */
 #define SSG_SD_IN		0x0020	/*!< Allows the use of IN operator, non-blocking because can be replaced with '=' */
 #define SSG_SD_LIKE		0x0040	/*!< Allows the use of LIKE operator, blocking */
-#define SSG_SD_BI		0x0080	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
-#define SSG_SD_VIRTSPECIFIC	0x0100	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
-#define SSG_SD_VOS_509		0x01FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
-#define SSG_SD_SERVICE		0x0200	/*!< Allows the use of SERVICE extension, blocking */
-#define SSG_SD_VOS_5_LATEST	0x03FF	/*!< Allows everything that is supported by CVS had of Virtuoso Open Source 5.x.x */
-#define SSG_SD_TRANSIT		0x0400	/*!< Allows the use of transitivity extension, blocking */
-#define SSG_SD_VOS_6		0x07FF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
-#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_6	/*!< Allows everything that is supported by current version of Virtuoso */
+#define SSG_SD_GLOBALS		0x0080	/*!< Allows the use of global variables (with colon at the front of the name), blocking in most of cases */
+#define SSG_SD_BI		0x0100	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
+#define SSG_SD_VIRTSPECIFIC	0x0200	/*!< Allows the use of Virtuoso-specific features not listed above, say DEFINE, blocking in most of cases */
+#define SSG_SD_VOS_509		0x03FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
+#define SSG_SD_SERVICE		0x0400	/*!< Allows the use of SERVICE extension, blocking */
+#define SSG_SD_VOS_5_LATEST	0x0FFF	/*!< Allows everything that is supported by CVS had of Virtuoso Open Source 5.x.x */
+#define SSG_SD_TRANSIT		0x1000	/*!< Allows the use of transitivity extension, blocking */
+#define SSG_SD_VOS_6		0x1FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
+#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_6	/*!< Allows everything that is supported by current version of Virtuoso Open Source */
+#define SSG_SD_SPARQL11		0x2000	/*!< Allows the use of SPARQL 1.1 extensions, blocking in most of cases */
+#define SSG_SD_DEPRECATED_MASK	0x0	/*!< All bits of deprecated flags (none so far) */
+#define SSG_SD_MAXVALUE		(SSG_SD_VOS_CURRENT | SSG_SD_DEPRECATED_MASK)
 
 extern void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree);

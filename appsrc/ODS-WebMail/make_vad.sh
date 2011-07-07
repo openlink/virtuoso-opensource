@@ -30,7 +30,7 @@ export LANG LC_ALL
 
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.4.111"
+VERSION="1.5.121"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -45,7 +45,7 @@ VAD_DAV="$VAD_NAME"_dav.vad
 VAD_FS="$VAD_NAME"_filesystem.vad
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
-NEED_VERSION=04.50.2905
+NEED_VERSION=06.01.3127	 	# VOS
 
 if [ "x$HOST_OS" != "x" ]
 then
@@ -225,7 +225,7 @@ sticker_init() {
   echo "  <name package=\"Mail\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Mail\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -237,8 +237,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.67.12\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2010-03-29 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.82.09\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2011-05-20 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER

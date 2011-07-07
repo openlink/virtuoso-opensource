@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>sinv_create_inverse</refname>
-    <refpurpose>Creates inverse mapping for the mentioned functions (as described in the doc section <link linkend="sqlinverse">SQL Inverse Functions</link>).</refpurpose>
+    <refpurpose>Creates inverse mapping for the mentioned functions.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_sinv_create_inverse">
@@ -40,6 +40,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_sinv_create_inverse"><title>Description</title>
+    <para>Creates inverse mapping for the mentioned functions (as described in the doc section
+<link linkend="sqlinverse">SQL Inverse Functions</link>)</para>
+  </refsect1>
   <refsect1 id="params_sinv_create_inverse">
     <title>Parameters</title>
     <refsect2><title>_SINVM_NAME_IN</title>

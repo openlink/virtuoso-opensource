@@ -114,6 +114,7 @@
       <v:variable name="v_mode" type="varchar" default="null" />
 
       <v:variable name="v_uid" param-name="uid" type="varchar" default="null" />
+      <v:variable name="v_action" param-name="a" type="varchar" default="null" />
       <v:variable name="v_id" param-name="id" type="integer" default="null" />
 
       <v:variable name="v_subject" type="varchar" default="''" />
@@ -142,26 +143,17 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
-          declare tmp any;
-
-          self.v_mode := '';
           if (not isnull (self.v_uid))
           {
             self.v_id := (select AT_EVENT_ID from CAL.WA.ATTENDEES where AT_UID = self.v_uid);
           }
-          else if (not CAL.WA.access_is_write (self.access_role))
+          else if (not CAL.WA.access_is_write (self.account_rights))
           {
             return;
           }
-          tmp := (select E_KIND from CAL.WA.EVENTS where E_ID = self.v_id);
-          if (tmp = 0)
-          {
-            self.v_mode := 'event';
-          }
-          if (tmp = 1)
-          {
-            self.v_mode := 'task';
-          }
+          self.v_mode := case when (select E_KIND from CAL.WA.EVENTS where E_ID = self.v_id) = 0 then 'event' else 'task' end;
+          if (self.v_action in ('A', 'D', 'T'))
+            CAL.WA.attendees_update_status (self.v_uid, self.v_action);
         ]]>
       </v:before-data-bind>
 
@@ -170,7 +162,7 @@
           <img src="image/calendarbanner_sml.jpg" border="0" alt="Calendar Home" />
         </div>
       </div>
-      <div class="new-form-header">
+      <div class="form-header">
         Attendees
       </div>
 
@@ -250,7 +242,7 @@
                         from CAL.WA.EVENTS
                        where E_ID = self.v_id;
                     }
-                    if (self.v_mode = 'task')
+                    else if (self.v_mode = 'task')
                     {
                       select E_SUBJECT,
                              E_DESCRIPTION,
@@ -472,7 +464,7 @@
                   for (M := 0; M < length (X); M := M + 2)
                   {
                     V := CAL.WA.attendees_select (self.v_id, X[M]);
-                    http (sprintf ('<div class="new-form-header">%s (%d)</div>', X[M+1], length (V)));
+                    http (sprintf ('<div class="form-header">%s (%d)</div>', X[M+1], length (V)));
                     for (N := 0; N < length (V); N := N + 1)
                     {
                       http (sprintf ('<div style="padding-left: 12px;"><a href="mailto: %s">%V</a> (%s)</div>', V[N][2], CAL.WA.mail2string (V[N][1], V[N][2]), CAL.WA.dt_datetimestring (V[N][4], self.cDateFormat, self.cTimeFormat)));

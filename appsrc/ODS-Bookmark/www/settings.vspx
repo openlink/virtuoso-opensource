@@ -77,7 +77,7 @@
                 }
                 else if (action = 'back')
                 {
-                  self.vc_redirect('bookmarks.vspx');
+                  self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id)));
                 }
                 self.vc_data_bind(e);
                ]]>
@@ -90,16 +90,20 @@
         <tr>
           <td id="LC">
             <div class="lc lc_close">
+              <vm:if test="self.account_rights = 'W'">
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', '');" title="Settings" class="gems2">Settings</span>
+              </vm:if>
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems2">Bookmarklet</span>
+              <vm:if test="self.account_rights = 'W'">
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems2">Publications</span>
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems2">Subscriptions</span>
+              </vm:if>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
               <span onclick="javascript: vspxPost('command', 'action', 'back');" title="Back" class="gems2">Back</span>
             </div>
           </td>
           <td id="RC">
-      <div class="new-form-header" style="margin-top: 6px;">
+            <div class="form-header" style="margin-top: 6px;">
               <?vsp
                 declare S, T varchar;
 
@@ -360,7 +364,7 @@
           </div>
         </div>
       </div>
-      <div class="new-form-footer">
+              <div class="form-footer">
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
@@ -533,31 +537,49 @@
 
               <v:data-set name="ds_exchanges" data-source="self.dsrc_exchanges" scrollable="1">
                 <v:template name="ds_exchanges_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                    <thead class="sortHeader">
+                  <table id="preferences" class="ODS_grid">
+                    <thead>
                       <tr>
-                        <th class="checkbox" width="1%">
+                        <th class="checkbox">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
                         <th style="text-align: left;">Name</th>
                         <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
                         <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
-                        <th style="text-align: left;" width="5%" nowrap="nowrap">Action</th>
+                        <th class="action">Action</th>
                       </tr>
                     </thead>
                   </table>
                 </v:template>
                 <v:template name="ds_exchanges_repeat" type="repeat">
 
-                  <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                  <v:template name="ds_exchanges_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                     <table>
+                      <tr align="center">
+                        <td colspan="5">
+                          <?vsp
+                            if (self.bSubAction = 'publishBrowse')
+                            {
+                              http ('No publications');
+                            }
+                            else if (self.bSubAction = 'subscribeBrowse')
+                            {
+                              http ('No subscriptions');
+                            }
+                            else
+                            {
+                              http ('No SyncMLs');
+                            }
+                          ?>
+                        </td>
+                      </tr>
                     </table>
                   </v:template>
 
                   <v:template name="ds_exchanges_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td align="center" valign="top">
+                        <td class="checkbox">
                           <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('EX_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                         </td>
                         <td nowrap="nowrap">
@@ -570,7 +592,7 @@
                           <?vsp
                             if ((control as vspx_row_template).te_column_value('EX_EXEC_LOG') is not null)
                             {
-                              http (sprintf ('<a href="#" onclick="javascript: window.open (\'message.vspx?msg=%U\', \'BM_message\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
+                              http (sprintf ('<a href="#" onclick="javascript: windowShow(\'message.vspx?msg=%U\', \'BM_message\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
                             }
                             else
                             {
@@ -578,7 +600,7 @@
                             }
                           ?>
                         </td>
-                        <td nowrap="nowrap">
+                        <td class="action">
                           <v:button value="Edit" action="simple" xhtml_class="button">
                             <v:on-post>
                               <![CDATA[
@@ -744,12 +766,12 @@
                     </td>
                   </tr>
                   <tr>
-                    <th rowspan="2" valign="top">
+                    <th rowspan="3" valign="top">
                       <?V case when (self.bSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
                     </th>
                     <td nowrap="nowarap">
                       <label>
-                        <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                        <v:radio-button name="exc_options_type_1" xhtml_id="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'tr_exc_options_name\', \'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                           <v:before-render>
                             <![CDATA[
                               control.ufl_selected := either (lte (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 1), 1, 0);
@@ -763,7 +785,7 @@
                   <tr>
                     <td nowrap="nowarap">
                       <label>
-                        <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                        <v:radio-button name="exc_options_type_2" xhtml_id="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'tr_exc_options_name\'], hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                           <v:before-render>
                             <![CDATA[
                               control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 2), 1, 0);
@@ -775,22 +797,39 @@
                     </td>
                   </tr>
                   <tr>
+                    <td nowrap="nowarap">
+                      <label>
+                        <v:radio-button name="exc_options_type_3" xhtml_id="exc_options_type_3" group-name="exc_options_type" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'tr_exc_options_name\'], clear: [\'exc_options_name\']});">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 3), 1, 0);
+                            ]]>
+                          </v:before-render>
+                        </v:radio-button>
+                        <b>Delicious</b>
+                      </label>
+                    </td>
+                  </tr>
+                  <tr id="tr_exc_options_name">
                     <th>
                       <v:label for="sr_chars" value="WebDAV Path / URL" />
                     </th>
                     <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
-                      <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
-                        <v:after-data-bind>
+                      <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name');" />
                           <![CDATA[
-                            control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
-                            if (get_keyword ('type', self.ve_options, 1) <> 1)
-                              control.vc_add_attribute ('style', 'display: none');
+                		    <script type="text/javascript">
+                          OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                		    </script>
                           ]]>
-                        </v:after-data-bind>
-                      </v:button>
                     </td>
                   </tr>
+                  <script type="text/javascript">
+                    <![CDATA[
+                      var _elm = $('exc_options_type_'+<?V get_keyword ('type', self.ve_options, 1) ?>);
+                      if (_elm) {_elm.onchange();}
+                    ]]>
+                  </script>
                   <tr>
                     <th>
                       User
@@ -856,7 +895,7 @@
                   </vm:if>
                 </table>
               </div>
-              <div class="new-form-footer">
+              <div class="form-footer">
                 <v:button action="simple" value="--case when self.bSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
@@ -900,6 +939,10 @@
                       else if (self.exc_options_type_2.ufl_selected)
                       {
                         _type := 2;
+                      }
+                      else if (self.exc_options_type_3.ufl_selected)
+                      {
+                        _type := 3;
                       }
                       _name := trim (self.exc_options_name.ufl_value);
                       _user := trim (self.exc_options_user.ufl_value);
@@ -961,7 +1004,8 @@
                       BMK.WA.test (self.ve_name, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
                       if (self.ve_update_type = 2)
                         BMK.WA.test (self.ve_update_freq, vector ('name', 'Frequency', 'class', 'integer', 'minValue', 1, 'maxValue', 30));
-                      BMK.WA.test (_name, vector('name', 'Resource Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                      if (_type <> 3)
+                        BMK.WA.test (_name, vector('name', 'Source Name/Path', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
 
                       self.ve_update_freq := cast (self.ve_update_freq as integer);
                       if (self.bSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate'))

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_suo_diff_ttl">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_SUO_DIFF_TTL</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_SUO_DIFF_TTL</refname>
+    <refpurpose>performs the core operation of preparing graph diff.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_suo_diff_ttl">
+      <funcprototype id="fproto_rdf_suo_diff_ttl">
+        <funcdef><function>DB.DBA.RDF_SUO_DIFF_TTL</function></funcdef>
+	        <paramdef>in <parameter>gfrom</parameter> any</paramdef>
+	        <paramdef>in <parameter>gto</parameter> any</paramdef>
+	        <paramdef>in <parameter>target_graph</parameter> any</paramdef>
+	        <paramdef>in <parameter>accuracy </parameter> integer</paramdef>
+	        <paramdef>inout <parameter>fp_list</parameter> any</paramdef>
+	        <paramdef>inout <parameter>invfp_list</parameter> any</paramdef>
+          <paramdef><optional>in <parameter>equiv_map</parameter> any := null</optional></paramdef>
+          <paramdef><optional>in <parameter>equiv_rev</parameter> any := null</optional></paramdef>       
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_suo_diff_ttl">
+    <title>Description</title>
+    <para>Performs the core operation of preparing graph diff - matching between nodes of two graphs.</para>
+    <para>Typically is called from wrapper that returns the diff in an extended GUO ontology 
+(http://webr3.org/owl/guo#) as a string output in TURTLE syntax.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_suo_diff_ttl">
+    <title>Parameters</title>
+    <refsect2><title>gfrom</title>
+      <para>varchar or UNAME or IRI_ID of the from graph</para>
+    </refsect2>
+    <refsect2><title>gto</title>
+      <para>varchar or UNAME or IRI_ID of the destination graph</para>
+    </refsect2>
+    <refsect2><title>accuracy</title>
+      <para>Tells the procedure what should be done if one or both graphs contain blank nodes. If zero then 
+      	different bnodes are treated as distinct. Bnodes are allocated individually for each data load, so 
+      	even if one and the same resource is loaded in two different graphs then these graphs will contain 
+      	no blank nodes in common, accuracy=0 would result in the diff containing all triples from both 
+      	graphs that have bnode subject o object. If nonzero then the procedure will try to match blank 
+      	nodes, zipper style. In this case rest of arguments comes to play.</para>
+    </refsect2>
+    <refsect2><title>target_graph</title>
+      <para>It is used in to the output TURTLE as value of <code>guo:target_graph</code> property of 
+      every <code>guo:UpdateInstruction</code> node, NULL value means no this property at all. 
+      If the patch procedure will not get the IRI of the graph to patch as an argument then the value of 
+      this property will be used.</para>
+    </refsect2>
+    <refsect2><title>fp_list</title>
+      <para>Vector of IRI_IDs of predicates that are supposed to be functional properties, i.e. any 
+      	given subject has no more than one value of a given predicate.</para>
+    </refsect2>
+    <refsect2><title>invfp_list</title>
+      <para>Vector of IRI_IDs of (supposedly) inverse functional properties, i.e., any given object 
+      	could be the value of a given predicate for no more than one subject. The best source of such 
+      	vectors is a good ontology suitable for both graphs. Types owl:functionalProperty and 
+      	owl:inverseFunctionalProperty will provide truly "meaningful" lists of predicates that 
+      	will provide really "meaningful" patch. Meaningful patches have three important advantages:</para>
+<itemizedlist mark="bullet">
+  <listitem>they''re as compact as possible; </listitem>
+  <listitem>human readers undestand them better;</listitem>
+  <listitem>when a diff is applied to a graph that differs from gfrom then either the result is 
+  	accurate and satisfies the ontology or the patch procedure reports meaningful conflicts. If 
+  	the ontology is not specified then 
+  	<link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link>
+  	can be used to build these list on some representative collection of similar graphs. That''s 
+  	"better than nothing", but the quality of the resulting diffs may be worse if some predicates 
+  	only occasionally have one object per subject or one subject per object in sample graphs or if 
+  	some functional/inverse functional predicates are not used in sample graphs but appear in 
+  	graphs to diff. Remember, diff on graphs with blank nodes is based on heuristics, it''s better 
+  	to run it on sound data, not on results of other heuristics.</listitem>  
+</itemizedlist>      
+    </refsect2>
+    <refsect2><title>fp_list</title>
+      <para>If NULL but accuracy is not zero then the function will call 
+      	<link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link> internally, using graphs gfrom and gto as specimens.</para>
+    </refsect2>
+    <refsect2><title>invfp_list</title>
+      <para>If NULL but accuracy is not zero then the function will call 
+      	<link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link> internally, using graphs gfrom and gto as specimens.</para>
+    </refsect2>
+    <refsect2><title>gfrom_rules</title>
+      <para>Describes how bnodes of graphs were matched, i.e., how sliders were moved along 
+      	chains of predicates.</para>
+    </refsect2>
+    <refsect2><title>gto_rules</title>
+      <para>Describes how bnodes of graphs were matched, i.e., how sliders were moved along chains of predicates.</para>
+      <para>Every event during matching of bnodes produces a rule that should be followed when the patch will scan its input graph for bnodes to edit.</para>      
+    </refsect2>
+    <refsect2><title>equiv_map</title>
+      <para>Dictionary that describe the match between bnodes in gfrom and gto. In equiv_map, bnodes from gfrom are keys and matching bnodes from gto are values.</para>
+    </refsect2>
+    <refsect2><title>equiv_rev</title>
+      <para>Dictionary that describes the match between bnodes in gfrom and gto. In equiv_rev, same 
+      	pairs are in different roles, bnodes from gfrom are values for mathing bnodes from gto that 
+      	are now keys. These data can be incomplete or NULL at all, but if provided then 
+      	the function will trust them blindly.</para>
+    </refsect2>
+  </refsect1>
+  <!--refsect1 id="examples_rdf_suo_diff_ttl">
+    <title>Examples</title>
+    <example id="ex_rdf_suo_diff_ttl"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+]]></programlisting>
+    </example>
+  </refsect1-->
+  <refsect1 id="seealso_rdf_suo_diff_ttl">
+    <title>See Also</title>
+    <para><link linkend="fastapproxdiffandpatch">Fast Approximate RDF Graph Diff and Patch</link></para>             
+    <para><link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link></para>
+    <para><link linkend="fn_rdf_suo_apply_patch">DB.DBA.RDF_SUO_APPLY_PATCH</link></para>
+    <para><link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link></para>            
+  </refsect1>
+</refentry>

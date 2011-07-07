@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_graph_collect_fp_list">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</refname>
+    <refpurpose>Gets inverse / functional properties for given graphs.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_graph_collect_fp_list">
+      <funcprototype id="fproto_rdf_graph_collect_fp_list">
+        <funcdef><function>DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</function></funcdef>
+	        <paramdef>in <parameter>g_iid_list</parameter> any</paramdef>
+	        <paramdef>in <parameter>direct_fp</parameter> integer</paramdef>
+	        <paramdef>inout <parameter>fp_list</parameter> any</paramdef>	        
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_graph_collect_fp_list">
+    <title>Description</title>
+    <para>Gets inverse / functional properties for given graphs. The procedure will fetch all 
+    	triples of all specified graphs during the run, so it will take some time if graphs are 
+    	big and/or numerous.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_graph_collect_fp_list">
+    <title>Parameters</title>
+    <refsect2><title>g_iid_list</title>
+      <para>Vector of IRI_IDs of sample graphs</para>
+    </refsect2>
+    <refsect2><title>direct_fp</title>
+      <para>When zero gets list of inverse functional properties; non-zero gets functional properties.</para>
+    </refsect2>
+    <refsect2><title>fp_list</title>
+      <para>Variable that will be set to the vector of properties.</para>
+    </refsect2>    
+  </refsect1>
+  <refsect1 id="ret_rdf_graph_collect_fp_list"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+
+  <!--refsect1 id="examples_rdf_graph_collect_fp_list">
+    <title>Examples</title>
+    <example id="ex_rdf_graph_collect_fp_list"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+]]></programlisting>
+    </example>
+  </refsect1-->
+  <refsect1 id="seealso_rdf_graph_collect_fp_list">
+    <title>See Also</title>
+    <para><link linkend="fastapproxdiffandpatch">Fast Approximate RDF Graph Diff and Patch</link></para>             
+    <para><link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link></para>
+    <para><link linkend="fn_rdf_suo_diff_ttl">DB.DBA.RDF_SUO_DIFF_TTL</link></para>
+    <para><link linkend="fn_rdf_suo_apply_patch">DB.DBA.RDF_SUO_APPLY_PATCH</link></para>
+  </refsect1>
+</refentry>

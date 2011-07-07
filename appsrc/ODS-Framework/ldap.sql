@@ -133,6 +133,7 @@ create procedure LDAP..contact_fields ()
         'P_FULL_NAME',      'Full Name',
         'P_GENDER',         'Gender',
         'P_BIRTHDAY',       'Birthday',
+        'P_IRI',            'WebID',
         'P_MAIL',           'Contact - Mail',
         'P_WEB',            'Contact - Web address',
         'P_ICQ',            'Contact - Icq',

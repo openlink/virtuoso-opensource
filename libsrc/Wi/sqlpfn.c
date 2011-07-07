@@ -819,7 +819,7 @@ sqlp_infoschema_redirect_tbs (ST **tree, ST **where_cond)
     return;
   if (DV_TYPE_OF (*tree) != DV_ARRAY_OF_POINTER)
     return;
-  if (ST_P ((*tree), COL_DOTTED) && (*tree)->_.col_ref.prefix)
+  if (ST_COLUMN ((*tree), COL_DOTTED) && (*tree)->_.col_ref.prefix)
     {
       (*tree)->_.col_ref.prefix = sqlp_infoschema_redirect_tb (
  	(*tree)->_.col_ref.prefix, NULL, 0, NULL);
@@ -1076,7 +1076,7 @@ sqlp_view_def (ST ** names, ST * exp, int generate_col_names)
       names = (ST **) t_box_copy ((caddr_t) exp2->_.select_stmt.selection);
       DO_BOX (ST *, col, inx, exp2->_.select_stmt.selection)
       {
-	if (ST_P (col, COL_DOTTED))
+	if (ST_COLUMN (col, COL_DOTTED))
 	  names[inx] = (ST *) t_box_copy (col->_.col_ref.name);
 	else if (ST_P (col, BOP_AS))
 	  names[inx] = (ST *) t_box_copy (col->_.as_exp.name);
@@ -1291,7 +1291,7 @@ sqlp_stars (ST ** selection, ST ** from)
   int inx, star = 0;
   DO_BOX (ST *, col, inx, selection)
   {
-    if (ST_P (col, COL_DOTTED))
+    if (ST_COLUMN (col, COL_DOTTED))
       if (col->_.col_ref.name == STAR)
 	{
 	  star = 1;
@@ -1303,7 +1303,7 @@ sqlp_stars (ST ** selection, ST ** from)
     return selection;
   DO_BOX (ST *, col, inx, selection)
   {
-    if (ST_P (col, COL_DOTTED) && col->_.col_ref.name == STAR)
+    if (ST_COLUMN (col, COL_DOTTED) && col->_.col_ref.name == STAR)
       {
 	dk_set_t prev_last = dk_set_last (exp_list);
 	sqlp_expand_1_star (col, from, &exp_list);
@@ -1469,7 +1469,7 @@ sqlp_complete_fun_ref (ST * tree)
 {
   if (tree->_.fn_ref.fn_code == AMMSC_COUNT
       && !tree->_.fn_ref.all_distinct
-      && tree->_.fn_ref.fn_arg)
+      && tree->_.fn_ref.fn_arg && DV_LONG_INT != DV_TYPE_OF (tree->_.fn_ref.fn_arg))
     {
       /* count of non-* */
       ST * arg = tree->_.fn_ref.fn_arg; /* not AMMSC_USER so it's argument, not a vector of them */
@@ -1584,7 +1584,7 @@ sqlp_cr_vars (ST * sel)
   ST ** res = (ST **) t_box_copy ((caddr_t) sel->_.select_stmt.selection);
   DO_BOX (ST *, exp, inx, res)
     {
-      if (ST_P (exp, COL_DOTTED))
+      if (ST_COLUMN (exp, COL_DOTTED))
 	res[inx] = (ST*) t_list (4, LOCAL_VAR,IN_MODE,
 	    t_list (3, COL_DOTTED, NULL, t_box_copy (exp->_.col_ref.name)),
 	    t_list (3, (ptrlong)DV_ANY, (ptrlong)0, (ptrlong)0));
@@ -1606,7 +1606,7 @@ sqlp_cr_fetch_vars (ST * sel)
   ST ** res = (ST **) t_box_copy ((caddr_t) sel->_.select_stmt.selection);
   DO_BOX (ST *, exp, inx, res)
     {
-      if (ST_P (exp, COL_DOTTED))
+      if (ST_COLUMN (exp, COL_DOTTED))
 	res[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_copy (exp->_.col_ref.name));
       else if (ST_P (exp, BOP_AS))
 	res[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_copy (exp->_.as_exp.name));
@@ -1772,6 +1772,30 @@ sqlp_xml_select_flags (char * mode, char * elt)
   return v;
 }
 
+#if 0
+void
+sqlp_tweak_selection_names (ST * tree)
+{
+  ST ** sel;
+  int inx;
+  if (!ST_P (tree, SELECT_STMT))
+    return;
+  sel = (ST **)(tree->_.select_stmt.selection);
+  DO_BOX (ST *, exp, inx, sel)
+    {
+      int inx2;
+      if (!ST_P (exp, BOP_AS))
+        goto tweak; /* see below */
+      for (inx2 = inx; inx2--; /* no step */)
+        if (!strcmp (sel[inx2]->_.as_exp.name, exp->_.as_exp.name))
+          goto tweak; /* see below */
+    }
+  END_DO_BOX;
+  return;
+tweak:
+  sqlc_selection_names (tree, 1);
+}
+#endif
 
 ptrlong
 sqlp_bunion_flag (ST * l, ST * r, long f)
@@ -1781,6 +1805,23 @@ sqlp_bunion_flag (ST * l, ST * r, long f)
   return ((ptrlong) (f ||  lf || rf));
 }
 
+ST *
+sqlp_wpar_nonselect (ST *subq)
+{
+  ST *tbl_ref, *from_clause, *tbl_exp, **selection, *wrapped_subq;
+  char tname[100];
+  if (ST_P (subq, SELECT_STMT))
+    return subq;
+  snprintf (tname, sizeof (tname), "_subq_%ld", (long)((ptrlong)(subq)));
+  tbl_ref = t_listst (3, DERIVED_TABLE, sqlp_view_def (NULL, subq, 0), t_box_string (tname));
+  from_clause = t_listst (1, tbl_ref);
+  tbl_exp = sqlp_infoschema_redirect (t_listst (9, TABLE_EXP, from_clause, NULL, NULL, NULL, NULL, (ptrlong) 0, NULL, NULL));
+  selection = (ST **)t_list (1, t_listst (3, COL_DOTTED, (long) 0, STAR));
+  wrapped_subq = t_listst (5, SELECT_STMT, NULL,
+    sqlp_stars (sqlp_wrapper_sqlxml (selection), tbl_exp->_.table_exp.from) , NULL, tbl_exp);
+  sqlp_breakup (wrapped_subq);
+  return wrapped_subq;
+}
 
 ST *
 sqlp_inline_order_by (ST *tree, ST **oby)
@@ -1841,7 +1882,7 @@ sqlp_contains_opts (ST * tree)
 	{
 	  if (inx < 2)
 	    continue;
-	  if (ST_P (arg, COL_DOTTED))
+	  if (ST_COLUMN (arg, COL_DOTTED))
 	    {
 	      caddr_t name = arg->_.col_ref.name;
 	      if (0 == stricmp (name, "offband")
@@ -1875,7 +1916,7 @@ sqlp_check_arg (ST * tree)
 	{
 	  if ( /* This is Bug 7585 workaround */
 	    !stricmp (tree->_.call.name, "XMLELEMENT") &&
-	    ST_P (arg->_.as_exp.left, COL_DOTTED) &&
+	    ST_COLUMN (arg->_.as_exp.left, COL_DOTTED) &&
 	    (NULL == arg->_.as_exp.left->_.col_ref.prefix) &&
 	    !stricmp (arg->_.as_exp.left->_.col_ref.name, "NAME") )
 	    {
@@ -1913,7 +1954,7 @@ sqlp_sqlxml (ST * tree)
       if (0 == BOX_ELEMENTS (tree->_.call.params))
 	yyerror ("Function XMLELEMENT should have at least one argument that is element name");
       arg = tree->_.call.params[0];
-      if (ST_P (arg, COL_DOTTED))
+      if (ST_COLUMN (arg, COL_DOTTED))
 	tree->_.call.params[0] = (ST *) t_box_string (arg->_.col_ref.name);
       return;
     }
@@ -1931,7 +1972,7 @@ sqlp_sqlxml (ST * tree)
 	      new_params[inx*2+1] = (ST *) t_box_copy_tree ((caddr_t)arg->_.as_exp.left);
 	      continue;
 	    }
-	  if (ST_P (arg, COL_DOTTED))
+	  if (ST_COLUMN (arg, COL_DOTTED))
 	    {
 	      new_params[inx*2] = (ST *) t_box_string((caddr_t) arg->_.col_ref.name);
 	      new_params[inx*2+1] = (ST *) t_box_copy_tree((box_t) arg);
@@ -2079,12 +2120,16 @@ sqlp_patch_call_if_special (ST * funcall_tree)
       goto generic_check;
     }
 #endif
-  if (0 == strnicmp (call_name, "__I2ID", 6)
+  if ((0 == strnicmp (call_name, "__I2ID", 6) || strstr (call_name, "IID_OF_QNAME"))
       && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
     {
       caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
       if (arg)
-	funcall_tree->_.call.params[0] = (ST *) arg;
+	{
+	  if (strstr (call_name, "OF_QNAME_"))
+	    funcall_tree->_.call.name = t_box_string ("__I2IDN");
+	  funcall_tree->_.call.params[0] = (ST *) arg;
+	}
     }
 
 generic_check:
@@ -2324,12 +2369,13 @@ sqlp_add_top_1 (ST *select_stmt)
 {
   if (0 && !SEL_TOP (select_stmt))
     {
-      select_stmt->_.select_stmt.top = t_listst (6, SELECT_TOP,
+      select_stmt->_.select_stmt.top = t_listst (7, SELECT_TOP,
 	  t_box_num (SEL_IS_DISTINCT (select_stmt) ? 1 : 0), /* preserve distinct */
 	  box_num (1), /* TOP 1 */
 	  t_box_num (0),
 	  0,
-      box_num (0));
+	  box_num (0),
+	  NULL);
     }
   return select_stmt;
 }
@@ -2399,3 +2445,47 @@ sel_n_breakup (ST* sel)
   return v > 1 ? v : 0;
 }
 
+caddr_t
+sqlp_col_num (caddr_t n)
+{
+  /* check that the arg is between 1 and 1000 and return the unboxed 0 based index of the col */
+  boxint n1 = unbox (n);
+  if (n1 < 1 || n1 > 1000)
+    yyerror ("Column index out of range in transitive dt");
+  return (caddr_t)((ptrlong)(n1 - 1));
+}
+
+
+caddr_t
+sqlp_minus (caddr_t x)
+{
+  switch (DV_TYPE_OF (x))
+    {
+    case DV_LONG_INT: return t_box_num (- unbox (x));
+    case DV_NUMERIC: {
+      NUMERIC_VAR (zero);
+      numeric_from_int32 ((numeric_t) zero, 0);
+      numeric_subtract ((numeric_t)x, (numeric_t) zero, (numeric_t)x);
+      return x;
+    }
+    case DV_SINGLE_FLOAT: return t_box_float (- unbox_float (x));
+    case DV_DOUBLE_FLOAT: return t_box_double (- unbox_double (x));
+    default: yyerror ("unary minus of non-number");
+    }
+  return NULL;
+}
+
+
+int
+sqlp_is_num_lit (caddr_t x)
+{
+  switch (DV_TYPE_OF (x))
+    {
+    case DV_LONG_INT:
+    case DV_NUMERIC:
+    case DV_SINGLE_FLOAT:
+    case DV_DOUBLE_FLOAT:
+      return 1;
+    default: return 0;
+    }
+}

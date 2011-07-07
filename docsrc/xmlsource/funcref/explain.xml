@@ -39,16 +39,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_explain"><title>Parameters</title>
-    <refsect2><title>text</title>
-      <para><type>varchar</type> SQL statement</para>
-    </refsect2>
-    <refsect2><title>cursor_type</title>
-      <para><type>integer</type> cursor type</para>
-    </refsect2>
-  </refsect1>
   <refsect1 id="desc_explain"><title>Description</title>
-
 <para>
 The explain function compiles a SQL statement and returns a description
 of that compilation as a result set, return value or parse tree. The result set consists of one
@@ -91,7 +82,14 @@ shown.
 </tbody>
 </tgroup>
 </table>
-
+  </refsect1>
+  <refsect1 id="params_explain"><title>Parameters</title>
+    <refsect2><title>text</title>
+      <para><type>varchar</type> SQL statement</para>
+    </refsect2>
+    <refsect2><title>cursor_type</title>
+      <para><type>integer</type> cursor type</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="ret_explain"><title>Return Types</title>
 

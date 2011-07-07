@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -56,6 +56,7 @@
 		directly without any hint of replacement.
 		</para>
   </sect1>
+  
   <sect1 id="virtwhydoi">
     <title>Why Do I Need Virtuoso?</title>
     <para>You need Virtuoso because Knowledge is power or competitive advantage (depending on how
@@ -157,7 +158,8 @@
 		engines concurrently.</para>
 		</sect2>
 		<sect2 id="omaildelresrv"><title>Mail Delivery &amp; Retrieval Services</title>
-		<para>Virtuoso can act as an <emphasis>SMTP</emphasis>, <emphasis>POP3</emphasis>, and <emphasis>IMAP4</emphasis> proxy to any email
+		<para>Virtuoso can act as an <emphasis>SMTP</emphasis>, <emphasis>POP3</emphasis>, and
+                <emphasis>IMAP4</emphasis> proxy to any email
 		client. This enables the development and deployment of sophisticated
 		database driven email solutions.</para>
 		</sect2>
@@ -173,4 +175,1838 @@
 		global knowledgebase into eBusiness Intelligence.</para>
 		</sect2>
 	</sect1>
+        <sect1 id="virtuosofaq">
+          <title>Virtuoso 6 FAQ</title>
+<para>We have received various inquiries on high-end metadata stores. We will here go through some salient
+questions. The requested features include:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Scaling to trillions of triples</listitem>
+  <listitem>Running on clusters of commodity servers</listitem>
+  <listitem>Running in federated environments, possibly over wide-area networks</listitem>
+  <listitem>Built-in inference</listitem>
+  <listitem>Transactions</listitem>
+  <listitem>Security</listitem>
+  <listitem>Support for extra triple level metadata, such as security attributes</listitem>
+</itemizedlist>
+    <para><emphasis>Questions:</emphasis></para>
+           <sect2 id="virtuosofaq1"><title>What is the storage cost per triple?</title>
+<para>This depends on the index scheme. If indexed 2 ways, assuming that the graph will
+always be stated in queries, this is 31 bytes.</para>
+<para>With 4 indices, supporting queries where the graph can be left unspecified (i.e., triples from
+any graph will be considered in query evaluation), this is 39 bytes. The numbers are measured with
+the LUBM validation data set of 121K triples, with no full-text index on literals.</para>
+<para>With 4 indices and a full text index on all literals, the Billion Triples Challenge data set,
+1115M triples, is about 120 GB of database pages. The database file size is larger due to space in
+reserve and other factors. 120 GB is the number to use when assessing RAM-to-disk ratio, i.e., how
+much RAM the system ought to have in order to provide good response. This data set is a heterogeneous
+collection including social network data, conversations harvested from the Web, DBpedia, Freebase,
+etc., with relatively numerous and long text literals.</para>
+<para>The numbers do not involve any database page stream compression such as gzip. Using such
+compression does not save in terms of RAM because cached pages must be kept uncompressed but
+will cut the disk usage to about half.</para>
+	   </sect2>
+           <sect2 id="virtuosofaq2"><title>What is the cost to insert a triple (for the insertion
+itself, as well as for updating any indices)?</title>
+<para>The more triples are inserted at a time, the faster this goes. Also, the more concurrent
+triple insertions are going on, the better the throughput. When loading data such as the US Census,
+a cluster of 2 commodity servers can insert up to 100,000 triples per second.</para>
+<para>A single 4-core machine can load 1 billion triples of LUBM data at an average rate
+of 36K triples per second. This is limited by disk.</para>
+	   </sect2>
+           <sect2 id="virtuosofaq3"><title>What is the cost to delete a triple (for the deletion
+itself, as well as for updating any indices)?</title>
+<para>
+The delete cost is similar to insert cost.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq4"><title>What is the cost to search on a given property?</title>
+<para>If we are looking for equality matches, a single 2GHz core can do about 250,000 single triple
+random lookups per second as long as disk reads are not involved. If each triple requires a disk
+seek the number is naturally lower.
+</para>
+<para>Parallelism depends on the query. With a query like counting all x and y such that x knows
+y and y knows x, we get up to 3.4 million single-triple lookups-per-second on a cluster of 2 8-core
+Xeon servers. With complex nested sub-queries the parallelism may be less.
+</para>
+<para>Lookups involving ranges of values, such as ranges of geographical coordinates or dates use
+an index, since quads are indexed in a manner that collates in the natural order of the data type.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq5"><title>What data types are supported?</title>
+<para>Virtuoso supports all RDF data types, including language-tagged and XML schema typed strings
+as native data types. Thus there is no overhead converting between RDF data types and types
+supported by the underlying DBMS.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq6"><title>What inferencing is supported?</title>
+<para>Subclass, subproperty, identity by inverse-functional properties, and owl:sameAs are
+processed at run time if an inference context option is specified in the query.
+</para>
+<para>There is a general-purpose transitivity feature that can be used for a
+wide variety of graph algorithms. For example:
+</para>
+<programlisting><![CDATA[
+SELECT ?friend
+WHERE
+  {
+    <alice> foaf:knows ?friend option (transitive)
+  }
+]]></programlisting>
+<para>would return all the people directly or indirectly known by &lt;alice&gt;.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq7"><title>Is the inferencing dynamic, or is an extra
+step required before inferencing can be used?</title>
+<para>The mentioned types of inferencing are enabled by a switch in the query and are done at
+run-time, with no step for materialization of entailed triples needed. The pattern:
+</para>
+<programlisting><![CDATA[
+{?s a <type>}
+]]></programlisting>
+<para>would iterate over all the RDFS subclasses of &lt;type&gt; and look for subjects with this type.
+</para>
+<para>The pattern:
+</para>
+<programlisting><![CDATA[
+{<thing> a ?class}
+]]></programlisting>
+<para>will, if the match of ?class has superclasses, also return the superclasses even though the
+superclass membership is not physically stored for each superclass.
+</para>
+<para>Of course, one can always materialize entailed triples by running SPARQL/SPARUL statements
+to explicitly add any implied information.
+</para>
+<para>If two subjects have the same inverse functional property with the same value, they will be
+considered the same. For example, if two people have the same email address, they will be
+considered the same.
+</para>
+<para>If two subjects are declared to be owl:sameAs, either directly or through a chain of x owl:sameAs
+y, y owl:sameAs z, and so on, they will be considered the same.
+</para>
+<para>These features can be individually enabled and disabled. They all have some run time cost, hence
+they are optional. The advantage is that no preprocessing of the data itself is needed before querying,
+and the data does not get bigger. This is important, especially if the database is very large and
+queries touch only small parts of it. In such cases, materializing implied triples can be very costly.
+See discussion at <ulink url="http://www.openlinksw.com/weblog/oerling/?id=1498">E Pluribus Unum</ulink>
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq8"><title>Do you support full-text search?</title>
+<para>Virtuoso has an optional full-text index on RDF literals. Searching for text matches using
+the SPARQL regex feature is very inefficient in the best of cases. This is why Virtuoso offers a special
+<emphasis>bif:contains</emphasis> predicate similar to the SQL <emphasis>contains</emphasis> predicate
+of many relational databases. This supports a full-text query language with proximity, and/or/and-not,
+wildcards, etc.
+</para>
+<para>While the full-text index is a general-purpose SQL feature in Virtuoso, there is extra RDF-specific
+intelligence built into it. One can, for example, specify which properties are indexed, and within which
+graphs this applies.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq9"><title>What programming interfaces are supported? Do you
+support standard SPARQL protocol?</title>
+<para>Virtuoso supports the standard SPARQL protocol.
+</para>
+<para>Virtuoso offers drivers for the Jena, Sesame, and Redland frameworks. These allow using
+Virtuoso's store and SPARQL implementation as the back end of Jena, Sesame, or Redland applications.
+Virtuoso will then do the query optimization and execution. Jena and Sesame drivers come standard;
+contact us about Redland.
+</para>
+<para>Virtuoso SPARQL can be used through any SQL call level interface (CLI) supported by Virtuoso
+(i.e., ODBC, JDBC, OLE-DB, ADO.NET, XMLA). All have suitable extensions for RDF specific data types
+such as IRIs and typed literals. In this way, one can write, for example, PHP web pages with SPARQL
+queries embedded, just using the SQL tools. Prefixing a SQL query with the keyword "sparql" will
+invoke SPARQL instead of SQL, through any SQL client API.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq10"><title>How can data be partitioned across multiple servers?</title>
+<para>
+Virtuoso Cluster partitions each index of all tables containing RDF data separately. The partitioning is by
+hash. The result is that the data is evenly distributed over the selected number of servers. Immediately
+consecutive triples are generally in the same partition, since the low bits of IDs do not enter in into
+the partition hash. This means that key compression works well.
+</para>
+<para>
+Since RDF tables are in the end just SQL tables, SQL can be used for specifying a non-standard
+partitioning scheme. For example, one could dedicate one set of servers for one index, and
+another set for another index. Special cases might justify doing this.
+</para>
+<para>
+With very large deployments, using a degree of application-specific data structures may be advisable.
+See "Does Virtuoso support property tables".
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq11"><title>How many triples can a single server handle?</title>
+<para>
+With free-form data and text indexing enabled, 500M triples per 16G RAM can be a ballpark guideline.
+If the triples are very short and repetitive, like the LUBM test data, then 16G per one billion
+triples is a possibility. Much depends on the expected query load. If queries are simple lookups,
+then less memory per billion triples is needed. If queries will be complex (analytics, join sequences,
+and aggregations all over the data set), then relatively more RAM is necessary for good performance.
+</para>
+<para>
+The count of quads has little impact on performance as long as the working set fits in memory. If
+the working set is in memory, there may be 15-20% difference between a million and a billion triples.
+If the database must frequently go to disk, this degrades performance since one can easily do 2000
+random accesses in memory in the time it takes to do one random access from disk. But working-set
+characteristics depend entirely on the application.
+</para>
+<para>
+Whether the quads in a store all belong to one graph or any number of graphs makes no difference.
+There are Virtuoso instances in regular online use with hundreds of millions of triples, such as
+DBpedia and the <ulink url="http://neurocommons.org/page/Main_Page">Neurocommons</ulink> databases.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq12"><title>What is the performance impact of going from the
+billion to the trillion triples?</title>
+<para>
+Performance dynamics change when going from a single server to a cluster. If each partition is around a
+billion triples in size, then the single triple lookup takes the same time, but there is cluster
+interconnect latency added to the mix.
+</para>
+<para>
+On the other hand, queries that touch multiple partitions or multiple triples in a partition will do
+this in parallel and usually with a single message per partition. Thus throughput is higher.
+</para>
+<para>
+In general terms, operations on a single triple at a time from a single thread are penalized and
+operations on hundreds or more triples at a time win. Multiuser throughput is generally better
+due to more cores and more memory, and latency is absorbed by having large numbers of concurrent requests.
+</para>
+<para>
+See <ulink url="http://www.openlinksw.com/weblog/oerling/?id=1487">a sample of SPARQL scalability</ulink>.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq13"><title>Do you support additional metadata for triples,
+such as time-stamps, security tags etc?</title>
+<para>
+Since quads (triple plus graph) are stored in a regular SQL table with special data types, changing the
+table layout to add a column is possible. This column would not however be visible to SPARQL without
+some extra tuning. For coarse grain provenance and security information, we recommend doing this at
+the graph level, where triples that belong together are tagged with the same provenance or security
+are in the same graph. The graph can then have the relevant metadata as its properties.
+</para>
+<para>
+If tagging at the single triple level is needed, this will most often not be needed for all triples.
+Hence altering the table for all triples may not be the best choice. Making a special table that
+has the graph, subject, predicate and object of the tagged triple as a key and the tag data as a
+dependent part may be more efficient. Also, this table could be more easily accessed from SPARQL.
+</para>
+<para>
+Using the RDF reification vocabulary is not recommended as a first choice but is possible without
+any alterations.
+</para>
+<para>
+Alterations of this nature are possible but we recommend contacting us for specifics. We can
+provide consultancy on the best way to do this for each application. Altering the storage layout
+without some extra support from us is not recommended.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq14"><title>Should we use RDF for our large metadata store?
+What are the alternatives?</title>
+<para>
+If the application has high heterogeneity of schema and frequent need for adaptation, then RDF is
+recommended. The alternative is making a relational database.
+</para>
+<para>
+Making a custom non-RDF object-attribute-value representation on Virtuoso or some other RDBMS is
+possible but not recommended.
+</para>
+<para>
+The reason for this is that this would miss many of the optimizations made specifically for RDF,
+use of the SPARQL language, inference, compatibility with diverse browsers and front end tools,
+etc. Not to mention interoperability and joinability with the body of linked data. Even if the
+application is strictly private, using entity names and ontologies from the open world can still
+have advantages.
+</para>
+<para>
+If some customization to the quad (triple plus graph layout) is needed, we can provide consultancy
+on how to do this while staying within the general RDF framework and retaining all the interoperability
+benefits.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq15"><title>How multithreaded is Virtuoso?</title>
+<para>
+All server and client components are multithreaded, using pthreads on Unix/Linux, Windows native on
+Windows. Multithread/multicore scalability is good; see
+<ulink url="http://www.openlinksw.com/weblog/oerling/?id=1409">BSBM</ulink>
+</para>
+<para>
+In the case of Virtuoso Cluster, in order to have the maximum number of threads on a single query,
+we recommend that each server on the cluster be running one Virtuoso process per 1.2 cores.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq16"><title>Can multiple servers run off a single shared disk
+database?</title>
+<para>This might be possible with some customization but this is not our preferred way. Instead, we can
+store selected indices in duplicate or more copies inside a clustered database. In this way, all
+servers can have their own disk. Each key of each index will belong to one partition but each
+partition will have more than one physical copy, each on a different server. The cluster query
+logic will perform the load balancing. On the update side, the cluster will automatically do a
+distributed transaction with two phase commit to keep the duplicates in sync.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq17"><title>Can Virtuoso run on a SAN?</title>
+<para>
+Yes. Unlike Oracle RAC, for example, Virtuoso Cluster does not require a SAN. Each server has its
+own database files and is solely responsible for these. In this way, having shared disk among all
+servers is not required. Running on a SAN may still be desirable for administration reasons. If
+using a SAN, the connection to the SAN should be high performance, such as Infiniband.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq18"><title>How does Virtuoso join across partitions?</title>
+<para>
+Partitioning is entirely transparent to the application. Virtuoso has a highly optimized
+message-flow between cluster nodes that combines operations into large batches and evaluates
+conditions close to the data. See a sample of RDF scaling.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq19"><title>Does Virtuoso support federated triple stores? If
+there are multiple SPARQL end points, can Virtuoso be used to do queries joining between these?</title>
+<para>
+This is a planned extension. The logic for optimizing message flow between multiple end-points on
+a wide-area network is similar to the logic for message-optimization on a cluster. This will
+allow submitting a query with a list of end-points. The query will then consider triples from
+each of the end points, as if the content of all the end points were in a single store.
+</para>
+<para>
+End-point meta information, such as voiD descriptions of the graphs in the end-points, may be
+used to avoid sending queries to end points that are known not to have a certain type of data.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq20"><title>How many servers can a cluster contain?</title>
+<para>
+There is no fixed limit. If you have a large cluster installed, you can try Virtuoso there.
+Having an even point-to-point latency is desirable.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq21"><title>How do I reconfigure a cluster, adding and
+removing machines, etc?</title>
+<para>
+We are working on a system whereby servers can be added and removed from a cluster during
+operation and no repartitioning of the data is needed.
+</para>
+<para>
+In the first release, the number of server processes that make up the cluster is set when
+creating the database. These processes with their database files can then be moved between
+machines but this requires stopping the cluster and updating configuration files.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq22"><title>How will Virtuoso handle regional clusters?</title>
+<para>
+Performance of a cluster depends on the latency and bandwidth of the interconnect. At least dual
+1Gbit ethernet is recommended for each node. Thus a cluster should be on a single local or system
+area network.
+</para>
+<para>
+If regional copies are needed, we would replicate between clusters by asynchronous log shipping.
+This requires some custom engineering.
+</para>
+<para>
+When a transaction is committed at one site, it is logged and sent to the subscribing sites if
+they are online. If there is no connection, the subscribing sites will get the data from the log.
+This scheme now works between single Virtuoso servers, and needs some custom development to be
+adapted to clusters.
+</para>
+<para>
+If replicating all the data of one site to another site is not possible, then application logic
+should be involved. Also, if consolidated queries should be made against large,
+geographically-separated clusters, then it is best to query them separately and merge the
+results in the application. All depends on the application level rules on where data resides.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq23"><title>Is there a mechanism for terminating long running queries?</title>
+<para>
+Virtuoso SPARQL and SQL offer an "anytime" option that will return partial results after a configurable
+timeout.
+</para>
+<para>
+In this way, queries will return in a predictable time and indicate whether the results are complete
+or not, as well as give a summary of resource utilization.
+</para>
+<para>
+This is especially useful for publishing a SPARQL endpoint where a single long running query could
+impact the performance of the whole system. This timeout significantly reduces the risk of denial
+of service.
+</para>
+<para>
+This is also more user-friendly than simply timing-out a query after a set period and returning
+an error. With the anytime option, the user gets a feel for what data may exist, including whether
+any data exists at all. This feature works with arbitrarily complex queries, including aggregation,
+GROUP BY, ORDER BY, transitivity, etc.
+</para>
+<para>
+Since the Virtuoso SPARQL endpoint supports open authentication (OAuth), the authentication can be
+used for setting timeouts, so as to give different service to different users.
+</para>
+<para>
+It is also possible to set a timeout that will simply abort a query or an update transaction if it
+fails to terminate in a set time.
+</para>
+<para>
+Disconnecting the client from the server will also terminate any processing on behalf of that client,
+regardless of timeout settings.
+</para>
+<para>
+The SQL client call-level interfaces (ODBC, JDBC, OLE-DB, ADO.NET, XMLA) each support a cancel call
+that can terminate a long running query from the application, without needing to disconnect.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq24"><title>Can the user be asynchronously notified when a
+long running query terminates?</title>
+<para>
+There is no off-the-shelf API for this but making an adaptation of the SPARQL endpoint that
+could proceed after the client disconnected and, for example, could send results by email is
+trivial. Since SOAP and REST Web services can be programmed directly in Virtuoso's stored
+procedure language, implementing and exposing this type of application logic is easy.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq25"><title>How many concurrent queries can Virtuoso handle?</title>
+<para>
+There is no set limit. As with any DBMS, response times get longer if there is severe congestion.
+</para>
+<para>
+For example, having 2 or 3 concurrent queries per core is a good performance point which will keep
+all parts of the system busy. Having more than this is possible but will not increase overall throughput.
+</para>
+<para>
+With a cluster, each server has both HTTP and SQL listeners, so clients can be evenly spread across
+all nodes. In a heavy traffic Web application, it is best to have a load balancer in front of the
+HTTP endpoints to divide the connections among the servers and to keep some cap on the number of
+concurrently running requests, enforcing a maximum request-rate per client IP address, etc.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq26"><title>What is the relative performance of SPARQL queries
+vs native relational queries?</title>
+<para>
+This is application dependent. In Virtuoso, SPARQL and SQL share the same query execution engine,
+query optimizer, and cost model. If data is highly regular (i.e., a good fit for relational
+representation), and if queries typically access most of the row, then SQL will be more efficient.
+If queries are unpredictable, data is ragged, schema changes frequent, or inference is needed,
+then RDF will do relatively better.
+</para>
+<para>
+The recent Berlin SPARQL Benchmark shows some figures comparing Virtuoso SQL and SPARQL and SPARQL
+in front of relational representation. However, the test workload is heavily biased in favor of
+relational. See also BSBM: MySQL vs Virtuoso.
+</para>
+<para>
+With the TPC-H workload, relationally stored data, and SPARQL mapped to SQL, we find that with about
+half the queries there is no significant cost to SPARQL. With some queries there is additional
+overhead because the mapping does not produce a SQL query identical to that specified in the benchmark.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq27"><title>Does Virtuoso Support Property Tables?</title>
+<para>
+For large applications, we would recommend RDF whenever there is significant variability of schema, but
+would still use an application-specific, relational style representation for those parts of the data
+that are regular in format. This is possible without loss of flexibility for the variable-schema part.
+However, this will introduce relational-style restrictions on the regular data; for example, a person
+could only have a single date-of-birth by design. In many cases, such restrictions are quite acceptable.
+Querying will still take place in SPARQL, and the representation will be transparent.
+</para>
+<para>
+A relational table where the primary key is the RDF subject and where columns represent single-valued
+properties is usually called a property table. These can be defined in a manner similar to defining RDF
+mappings of relational tables.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq28"><title>What performance metrics does Virtuoso offer?</title>
+<para>There is an extensive array of performance metrics. This includes:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Cluster status summary with thread counts, CPU utilization, interconnect traffic, clean and
+dirty cache pages, virtual memory swapping warning, etc. This is either a cluster total or a total with
+breakdown per cluster node.</listitem>
+  <listitem>Disk access, lock contention, general concurrency, and access count per index </listitem>
+  <listitem>Statistics on memory usage for disk caching index-by-index, cache replacement statistics, disk
+random and sequential read times</listitem>
+  <listitem>Count of random, sequential index access, disk access, lock contention, cluster interconnect
+traffic per query/client </listitem>
+  <listitem>Detailed query-execution plans are available through the
+<link linkend=""><function>explain</function></link> function</listitem>
+</itemizedlist>
+	   </sect2>
+           <sect2 id="virtuosofaq29"><title>What support do you provide for concurrent/multithreaded
+operation? Is your interface thread-safe?</title>
+<para>
+All client interfaces and server-side processes are multithreaded. As usual, each thread of an application
+should use a different connection to the database.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq30"><title>What level of ACID properties is supported?</title>
+<para>
+Virtuoso supports all 4 isolation levels from dirty read to serializable, for both relational and RDF data.
+</para>
+<para>
+The recommended default isolation is read-committed, which offers a clean historical read of data that has
+uncommitted updates. This mode is similar to the Oracle default isolation and guarantees that no uncommitted
+data is seen, and that no read will block waiting for a lock held by another client.
+</para>
+<para>
+There is transaction logging and roll forward recovery, with two phase commit used in Virtuoso Cluster
+if an update transaction modifies more than one server.
+</para>
+<para>
+For RDF workloads which typically are not transactional and have large bulk loads, we recommend running
+in a "row autocommit" mode without transaction logging. This virtually eliminates log contention but
+still guarantees consistent results of multithreaded bulk loads.
+</para>
+<para>
+Setting this up requires some consultancy and custom development but is well worthwhile for large projects.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq31"><title>Do you provide the ability to atomically add a set of
+triples, where either all are added or none are added?</title>
+<para>
+Yes. Doing this with millions of triples per transaction may run out of rollback space. Also,
+there is risk of deadlock if multiple such inserts run at the same time. For good concurrency,
+the inserts should be of moderate size. As usual, deadlocks are resolved by aborting one of the
+conflicting transactions.
+</para>
+	   </sect2>
+          <sect2 id="virtuosofaq32"><title>Do you provide the ability to add a set of triples,
+respecting the isolation property (so concurrent accessors either see none of the triple values,
+or all of them)?</title>
+<para>Yes. The reading client should specify serializable isolation and the inserting client should
+perform the insert as a transaction, no row autocommit mode.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq33"><title>What is the time to start a database, create/open a graph?</title>
+<para>
+Starting a Virtuoso server process takes a few seconds. Making a new graph takes no time beyond the
+time to insert the triples into it. Once the server process(es) are running, all the data is online.
+</para>
+<para>
+With high-traffic applications, reaching cruising speed may sometimes take a long time, specially if
+the load is random-access intensive. Filling gigabytes of RAM with cached disk pages takes a long
+time if done a page at a time. To alleviate this, Virtuoso pre-reads 2MB-sized extents instead of
+single pages if there is repeated access to the same extent within a short time. Thus cache warm-up
+times are shortened.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq33"><title>What sort of security features are built into Virtuoso?</title>
+<para>
+For SQL, we have the standard role-based security and an Oracle-style row-level security (policy) feature.
+</para>
+<para>
+For SPARQL, users may have read or update roles at the level of the quad store.
+</para>
+<para>
+With RDF, a graph may be owned by a user. The user may specify read and write privileges on the graph.
+These are then enforced for SPARUL (the SPARQL update language) and SPARQL.
+</para>
+<para>
+When an RDF graph is based on relationally stored data in Virtuoso or another RDBMS through Virtuoso's
+SQL federation feature (i.e., if the graph is an RDF View of underlying SQL data), then all relational
+security controls apply.
+</para>
+<para>
+Further, due to the dual-nature of Virtuoso, sophisticated ontology-based security models are feasible.
+Such models are not currently used by default, but they are achievable with our consultancy.
+</para>
+	   </sect2>
+	</sect1>
+	
+	<sect1 id="virtuosotipsandtricks">
+          <title>Tips and Tricks</title>
+    <sect2 id="virtuosotipsandtricksspchar">
+          <title>How Can I execute SPARQL queries containing '$' character using ISQL?</title>                
+      <para>Assuming a SPARQL query should filter on the length of labels:</para>
+<programlisting><![CDATA[
+SELECT ?label
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?s ?p ?label
+    FILTER(regex(str(?label), "^.{1,256}$") )
+  } 
+]]></programlisting>      
+      <para>ISQL uses '<emphasis>$</emphasis>' character as a prefix for macro names of its preprocessor. 
+      When '<emphasis>$</emphasis>' character is used in SPARQL query to be executed in ISQL, the character 
+      should be replaced with '<emphasis>$$</emphasis>' notation or an escape char + numeric code:</para>
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT ?label
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?s ?p ?label
+    FILTER(REGEX(str(?label), "^.{1,256}$$") )
+  } 	
+]]></programlisting>      
+      <para>Note also that the FILTER written in this way, finds <emphasis>?label-s</emphasis> with length 
+      less than 256.</para>
+      <para>To achieve fast results, <emphasis>REGEX</emphasis> should be replaced with the 
+      <emphasis>bif:length</emphasis> function:</para>      
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT ?label
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?s ?p ?label
+    FILTER (bif:length(str(?label))<= 256)
+  } 	
+]]></programlisting>      
+      <para>In this way the SPARQL query execution can work much faster if the interoperability is 
+      	not required and <emphasis>?label-s</emphasis> are numerous.</para>
+    </sect2>          
+    <sect2 id="virtuosotipsandtricksfinddeadlockstables">
+      <title>How can I find on which table deadlocks occur?</title>
+      <para>One possible way to find on which table deadlocks occur is to execute the following statement:</para>    
+<programlisting><![CDATA[
+SELECT TOP 10 * 
+FROM SYS_L_STAT 
+ORDER BY deadlocks DESC	
+]]></programlisting>      
+    </sect2>       
+    <sect2 id="virtuosotipsandtricksoutotmemoryerror">
+      <title>How Can I configure parameters to avoid out of memory error?</title>
+      <para>In order to avoid out of memory error, you should make sure the values for the paramaters 
+      	<emphasis>NumberOfBuffers</emphasis> and <emphasis>MaxCheckpointRemap</emphasis> are not set with the same values.</para>    
+      <para>For example, the following configuration will cause an error out of memory:</para>	
+<programlisting><![CDATA[
+# virtuoso.ini
+
+...
+[Parameters]
+NumberOfBuffers = 246837
+MaxDirtyBuffers = 18517
+MaxCheckpointRemap = 246837
+...
+]]></programlisting>      
+       <para>Changing the value of the parameter <emphasis>MaxCheckpointRemap</emphasis> with let's 
+       say 1/4 of the DB size will resolve the issue.</para>
+    </sect2>                  
+    <sect2 id="virtuosotipsandtricksrdftriggersoptions">
+      <title>What are "Generate RDB2RDF triggers" and "Enable Data Syncs with Physical Quad Store" RDF Views options?</title>
+      <para>These RDF Views options basically persist the triples in the transient View Graph in the Native Quad Store. The Data Sync is how you keep the transient views in sync with the persisted triples.</para>	      
+      <para>Without this capability you cannot exploit faceted browsing without severe performance overhead when using Linked Data based conceptual views over ODBC or JDBC accessible data sources.</para>	
+      <para>Note: Using these options when the RFViews have already been created is not currently possible via the Conductor UI. Instead you should be able to add them manually from isql:</para>	            
+<orderedlist>
+  <listitem>Drop the RDF View graph and Quad Map.</listitem>
+  <listitem>Create it again with the RDB2RDF Triggers options enabled.</listitem>
+</orderedlist>  
+     <tip><title>See Also:</title>
+       <para><link linkend="rdb2rdftriggers">RDB2RDF Triggers</link></para>
+     </tip>    
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksmanagedaterangequery">
+      <title>How to Manage Date Range SPARQL queries?</title>
+      <para>The following examples demonstrate how to manage date range in a SPARQL query:</para>	
+      <para><emphasis>Example with date range</emphasis></para> 
+<programlisting><![CDATA[
+SELECT ?s ?date 
+FROM <http://dbpedia.org> 
+WHERE 
+  { 
+    ?s ?p ?date . FILTER ( ?date >= "19450101"^^xsd:date && ?date <= "19451231"^^xsd:date )  
+  } 
+LIMIT 100
+]]></programlisting>      
+      <para><emphasis>Example with bif:contains</emphasis></para> 
+      <para>Suppose there is the following query using bif:contains for date:</para>
+      <para>If ?date is of type xsd:date or xsd:dateTime and of valid syntax then 
+      	bif:contains(?date, '"1945*"' ) will not found it, because it will be parsed at load/create and 
+      	stored as SQL DATE value.
+      </para>	
+      <para>So if data are all accurate and typed properly then the filter is:</para>
+<programlisting><![CDATA[
+(?date >= xsd:date("1945-01-01") && ?date < xsd:date("1946-01-01"))	
+]]></programlisting>      
+      <para>i.e. the query should be:</para>
+<programlisting><![CDATA[
+SELECT DISTINCT ?s ?date
+FROM <http://dbpedia.org>
+WHERE
+  {
+    ?s ?p ?date . FILTER( ?date >= xsd:date("1945-01-01") && ?date < xsd:date("1946-01-01")  && (str(?p) != str(rdfs:label)) )
+  }
+LIMIT 10	
+]]></programlisting>      
+      <para>If data falls, then the free-text will be OK for tiny examples but not for "big" cases because 
+      	<emphasis>bif:contains(?date, '"1945*"')</emphasis> would require that less than 200 words in the 
+      	table begins with 1945. Still, some data can be of accurate type and syntax so range comparison 
+      	should be used for them and results aggregated via UNION.</para>
+      <para>If dates mention timezones then the application can chose the beginning and the end of the 
+      	year in some timezones other than the default.</para>	
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksquadstorageinternally">
+      <title>How can I see which quad storages exist and in which quad storage a graph resides?</title>
+      <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created RDF view from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
+      </para>	
+<programlisting><![CDATA[
+http://localhost:8890/rdfv_demo/quad_storage/default	
+]]></programlisting>      
+      <para>Also the RDF is accessible over the SPARQL endpoint with the following query:
+      </para>	
+<programlisting><![CDATA[
+define input:storage <http://localhost:8890/rdfv_demo/quad_storage/default>
+SELECT * 
+WHERE 
+  { 
+    ?s ?p ?o 
+  }	
+]]></programlisting>      
+      <para>Now one could ask is there a way to define internally (once) that the quad storage should be 
+      	included in queries to the SPARQL endpoint? So that the user does not have to define the 
+      	<emphasis>input:storage</emphasis> explicitly in each query, like this:</para>	
+<programlisting><![CDATA[
+http://localhost:8890/sparql?query=select * where { ?s ?p ?o }&default-graph-uri=NULL&named-graph-uri=NULL	
+]]></programlisting>      
+      <para>All metadata about all RDF storages are kept in "system" graph 
+      	&lt;http://www.openlinksw.com/schemas/virtrdf#&gt; ( namespace prefix <emphasis>virtrdf:</emphasis> ). 
+      	Subjects of type <emphasis>virtrdf:QuadStorage</emphasis> are RDF storages. There are three of them by default:
+      </para>	
+<programlisting><![CDATA[
+SQL> SPARQL SELECT * FROM virtrdf: WHERE { ?s a virtrdf:QuadStorage };
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage
+http://www.openlinksw.com/schemas/virtrdf#DefaultServiceStorage
+http://www.openlinksw.com/schemas/virtrdf#SyncToQuads
+
+3 Rows. -- 3 msec.	
+]]></programlisting>
+      <itemizedlist mark="bullet">
+        <listitem><emphasis>virtrdf:DefaultQuadStorage</emphasis> is what's in use if no input:storage specified.</listitem>
+        <listitem><emphasis>virtrdf:DefaultServiceStorage</emphasis> will be used for SPARQL federation.</listitem>
+        <listitem><emphasis>virtrdf:SyncToQuads</emphasis> is to keep the list of RDF Views that are translated into RDB2RDF triggers.</listitem>        
+      </itemizedlist>      
+      <para>There are two ways of using the RDF View from above in SPARQL endpoint without 
+      	<emphasis>define input:storage</emphasis>:</para>	
+      <orderedlist>
+        <listitem>Create RDF View right in <emphasis>virtrdf:DefaultQuadStorage</emphasis> or add the 
+        view in other storage and then copy it from there to <emphasis>virtrdf:DefaultQuadStorage</emphasis>.
+          <itemizedlist mark="bullet">
+            <listitem>In any of these two variants, use: 
+<programlisting><![CDATA[
+SPARQL ALTER QUAD STORAGE virtrdf:DefaultQuadStorage . . .	
+]]></programlisting>                  	
+            </listitem>
+          </itemizedlist>        	
+        </listitem>
+        <listitem>Use <emphasis>SYS_SPARQL_HOST</emphasis> table as described 
+        <link linkend="rdfdefaultgraph">here</link> and set <emphasis>SH_DEFINES</emphasis> so it 
+        contains your favorite <emphasis>define input:storage</emphasis>.</listitem>
+      </orderedlist>      	
+    </sect2>      
+    <sect2 id="virtuosotipsandtricksdroprecrdefstrg">
+      <title>Can I drop and re-create the DefaultQuadStorage?</title>                    
+      <para>Currently system metadata consist of three "levels":</para>
+      <orderedlist>
+        <listitem><emphasis>QuadMapFormats</emphasis> are used to describe transformations of individual 
+        SQL values (or types of SQL values),</listitem>
+        <listitem><emphasis>QuadMaps</emphasis> refers to <emphasis>QuadMapFormats</emphasis> (via 
+        <emphasis>QuadMapValues</emphasis>) and describe some "minimal" independent RDB2RDF 
+        transformations,</listitem>
+        <listitem><emphasis>QuadStorages</emphasis> organizes <emphasis>QuadMaps</emphasis>.</listitem>
+      </orderedlist>      
+      <para><emphasis>QuadStorages</emphasis> contains only "symlinks" to maps, if you drop a storage 
+      you don't drop all mappings inside. If you drop the <emphasis>DefaultQuadStorage</emphasis> or 
+      some other built-in thing, it can be safely recovered by 
+      <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>, 
+      with first parameter set to 1. This will keep your own data intact. However we recommend to write 
+      a script that declares all your formats, RDF Views and storages, to be able to reproduce the 
+      configuration after any failures.</para>
+    </sect2>    
+    <sect2 id="virtuosotipsandtricksgraphsecurity">
+      <title>How to display only some information from RDF graph?</title>                    
+      <para>Virtuoso supports graph-level security, as described <link linkend="rdfgraphsecurity">here</link> 
+      but not subject-level or predicate-level. When exposing data that needs protected access, triples 
+      should be confined to private  name graphs which are protected by ACLs using WebID.</para>
+      <para>Note, how you can use <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthPolicyFOAFSSL">WebID to protect Virtuoso SPARQL endpoints</ulink>.</para>  
+      <tip><title>See Also:</title>
+        <para><link linkend="rdfgraphsecurity">RDF Graphs Security</link></para>
+      </tip>
+    </sect2>   
+    <sect2 id="virtuosotipsandtrickssparqlcondport">
+      <title>Is it possible to have the SPARQL endpoint on a different port than the Conductor?</title>                    
+      <para>Virtuoso Web Server has the capability to create extra listeners using the <link linkend="admui.internetdomains">Conductor interface</link>.</para>
+      <orderedlist>
+        <listitem>At install time you have your HTTP Server port in your virtuoso.ini set to 8890, which 
+        	you want to keep in your local network as this contains ALL the endpoints that you have 
+        	registered in Virtuoso. So as long as you do not open this port in your firewall, you can 
+        	only get at it from the local machine.</listitem>
+        <listitem>Next you should create a new vhost entry using the EXTERNAL name of your machine and 
+        	use port 80 (or a higher port if you do not want to run as root) for ex.:
+<programlisting><![CDATA[
+Interface: 0.0.0.0
+Port: 8080
+Http Host:  my.example.com	
+]]></programlisting>        	
+        </listitem>
+        <listitem>Next you add a "New directory to this line", click on "Type" radio button and choose 
+        	"Sparql access point" from the drop-down list and press Next button. Set "Path" to /sparql 
+        	and press the "Save Changes" button to store.</listitem>
+        <listitem>At this point you have created: http://my.example.com:8080/sparql which functions 
+        	exactly the same as your internal http://localhost:8890/sparql. You can now open your firewall 
+        	and allow outside machines to connect to port 8080 so people can use your SPARQL endpoint 
+        	without access to any other endpoint on your Virtuoso installation.</listitem>
+        <listitem>You should probably also change your virtuoso.ini so:
+<programlisting><![CDATA[
+[URIQA]
+DefaultHost = my.example.com:8080	
+]]></programlisting>        	
+        </listitem>
+        <listitem>If you use port 80, you do not have to add :80 at the end of this setting, although 
+        	it should not make any difference.</listitem>
+        <listitem>You can now add other directories / endpoints to the new <emphasis>my.example.com</emphasis> 
+          interface you just created e.g. a nice / directory that points to a index.html which describes 
+          your site etc.</listitem>
+      </orderedlist>
+      <tip><title>See Also:</title>
+        <para><link linkend="admui.internetdomains">Internet Domains</link></para>
+      </tip>
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksenableadonetvs2010">
+      <title>How to enable the Virtuoso Entity Framework 3.5 ADO.Net Provider in Visual Studio 2010?</title>                    
+      <para>The Virtuoso Entity Framework 3.5 ADO.Net Provider is current only list as a Visible control 
+      	in the Visual Studio 2008 IDE as the current installers only create the necessary registry 
+      	entries for Visual Studio 2008. To make it visible in the Visual Studio 2010's IDE the 
+      	following registry settings need to be manually updated and manual addtions to some of 
+      	the VS 2010 XML configuration files:</para>
+      <orderedlist>
+        <listitem>Export following registry keys to .reg files and using a text editor, such as Wordpad, edit the Visual Studio version numbers from 8.0 or 9.0 to 10.0:
+<programlisting><![CDATA[
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\8.0\DataProviders\{EE00F82B-C5A4-4073-8FF1-33F815C9801D}
+- and -
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\8.0\DataSources\{90FBCAF2-8F42-47CD-BF1A-88FF41173060}
+]]></programlisting>        	
+        </listitem>
+        <listitem>Once edited, save and double click them to create the new registry entries under:
+<programlisting><![CDATA[
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\10.0....	
+]]></programlisting>        	
+        </listitem>
+        <listitem>In addition, locate the file C:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\CONFIG\machine.config, 
+        locate the node, then locate the <emphasis>&lt;add name="VirtuosoClient3? Data Provider" ...</emphasis> 
+        node within it: 
+<programlisting><![CDATA[
+<add name="VirtuosoClient3 Data Provider" invariant="OpenLink.Data.Virtuoso"
+    description=".NET Framework Data Provider for Virtuoso" type="OpenLink.Data.Virtuoso.VirtuosoClientFactory, virtado3, Version=6.2.3128.2, Culture=neutral, PublicKeyToken=391bf132017ae989" />	
+]]></programlisting>        	
+        </listitem>
+      </orderedlist>
+      <para>and copy is to the equivalent C:\WINDOWS\Microsoft.NET\Frameworks\v4.0.30128\CONFIG\machine.config location.</para>
+      <para>Visual Studio 2010 will then have the necessary information to locate and load the Virtuoso ADO.Net provider in its IDE.</para>
+      <para>The registry should typically contain the following entries for Visual Studio 2010 as a result:</para>
+<programlisting><![CDATA[
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}]
+@=".NET Framework Data Provider for Virtuoso"
+"AssociatedSource"="{4D90D7C5-69A6-43EE-83ED-59A0E442D260}"
+"CodeBase"="C:\\Windows\\assembly\\GAC_MSIL\\virtado3\\6.2.3128.1__391bf132017ae989\\virtado3.dll"
+"Description"="Provider_Description, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+"DisplayName"="Provider_DisplayName, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+"InvariantName"="OpenLink.Data.Virtuoso"
+"PlatformVersion"="2.0"
+"ShortDisplayName"="Provider_ShortDisplayName, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+"Technology"="{77AB9A9D-78B9-4ba7-91AC-873F5338F1D2}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IDSRefBuilder]
+@="Microsoft.VisualStudio.Data.Framework.DSRefBuilder"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataAsyncCommand]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataCommand]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionProperties]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataConnectionProperties"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionSupport]
+@="Microsoft.VisualStudio.Data.Framework.AdoDotNet.AdoDotNetConnectionSupport"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionUIControl]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataConnectionUIControl"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataConnectionUIProperties]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataConnectionProperties"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataMappedObjectConverter]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataObjectIdentifierResolver]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataObjectIdentifierResolver"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataObjectSupport]
+@="Microsoft.VisualStudio.Data.Framework.DataObjectSupport"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+"XmlResource"="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoObjectSupport"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataSourceInformation]
+@="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoDataSourceInformation"
+"Assembly"="virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataTransaction]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}\SupportedObjects\IVsDataViewSupport]
+@="Microsoft.VisualStudio.Data.Framework.DataViewSupport"
+"Assembly"="Microsoft.VisualStudio.Data.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+"XmlResource"="OpenLink.Data.Virtuoso.DDEX.Net3.VirtuosoViewSupport"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataSources\{4D90D7C5-69A6-43EE-83ED-59A0E442D260}]
+@="OpenLink Virtuoso Data Source"
+"DefaultProvider"="{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataSources\{4D90D7C5-69A6-43EE-83ED-59A0E442D260}\SupportingProviders]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\DataSources\{4D90D7C5-69A6-43EE-83ED-59A0E442D260}\SupportingProviders\{0886A2BB-03D0-4E00-8A3D-F235A5DC0F6D}]
+"Description"="DataSource_Description, OpenLink.Data.Virtuoso.DDEX.Net3.DDEXResources, virtado3, Version=6.2.3128.1, Culture=neutral, PublicKeyToken=391bf132017ae989" 	
+]]></programlisting>      
+      <para>The next Virtuoso releases, 6.3+ will support this new Visual Studio 2010 release out of the box.</para>                  
+    </sect2> 
+    <sect2 id="virtuosotipsandtrickscontrolunicode3">
+      <title>How Can I Control the normalization of UNICODE3 accented chars in free-text index?</title>                    
+<para>
+The normalization of UNICODE3 accented chars in free-text index can be controlled by setting up the 
+configuration parameter <emphasis>XAnyNormalization</emphasis> in the
+virtuoso.ini config file, section [I18N]. This parameter controls whether accented
+UNICODE characters should be converted to their non-accented base
+variants at the very beginning of free-text indexing or parsing a
+free-text query string. The parameter's value is an integer that is bitmask with
+only 2 bits in use atm:
+</para>
+<orderedlist>
+  <listitem>0: the default behavior, do not normalize anything, so "Jose" and
+"José" are two distinct words.
+</listitem>
+  <listitem>2: Any combined char is converted to its (smallest known) base. So
+"é" will lose its accent and become plain old ASCII "e".</listitem>
+  <listitem>3: This is equl to 1|2 and when set then performs both conversions. 
+As a result, pair of base char and combinig char loses its second char and chars with accents will lose
+accents.</listitem>
+</orderedlist>
+     <para>If the parameter is required at all, the needed value is probably 3. So
+the fragment of virtuoso.ini is:</para>
+<programlisting><![CDATA[
+[I18N]
+XAnyNormalization=3
+]]></programlisting>
+     <para>In some seldom case the value of 1 can be appropriate. The parameter
+should be set once before creating the database. If changed on the
+existing database, all free-text indexes that may contain non-ASCII data
+should be re-created. On a typical system, the parameter affects all
+text columns, XML columns, RDF literals and queries.</para>
+<para>Strictly speaking, it affects not all of them but only items that use
+default "x-any" language or language derived from x-any such as "en" and
+"en-US" but if you haven't tried writing new C plugins for custom
+languages you should not look so deep.</para>
+     <para>As an example, with <emphasis>XAnyNormalization=3</emphasis> once can get the following:</para>
+<programlisting><![CDATA[
+SQL>SPARQL 
+
+INSERT IN <http://InternationalNSMs/>
+   { <s> <sp> "Índio João Macapá Júnior Tôrres Luís Araújo José" ; 
+     <ru> "Он добавил картошки, посолил и поставил аквариум на огонь" . }
+
+INSERT INTO <http://InternationalNSMs/>, 2 (or less) triples -- done
+
+
+SQL> DB.DBA.RDF_OBJ_FT_RULE_ADD (null, null, 'InternationalNSMs.wb');
+
+Done. -- 0 msec.
+
+SQL>vt_inc_index_db_dba_rdf_obj();
+
+Done. -- 26 msec.
+
+SQL>SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE 
+  {
+    ?s ?p ?o 
+  }
+ORDER BY ASC (str(?o))
+
+s  sp  Índio João Macapá Júnior Tôrres Luís Araújo José
+s  ru  Он добавил картошки, посолил и поставил аквариум на огонь
+
+2 Rows. -- 2 msec.
+
+SQL> SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE 
+  { 
+    ?s ?p ?o . ?o bif:contains "'Índio João Macapá Júnior Tôrres Luís Araújo José'" . 
+  }
+
+s  sp  Índio João Macapá Júnior Tôrres Luís Araújo José
+
+1 Rows. -- 2 msec.
+
+SQL>SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE
+  { 
+    ?s ?p ?o . ?o bif:contains "'Indio Joao Macapa Junior Torres Luis Araujo Jose'" . }
+
+s  sp  Índio João Macapá Júnior Tôrres Luís Araújo José
+
+1 Rows. -- 1 msec.
+
+SQL> SPARQL 
+SELECT * 
+FROM <http://InternationalNSMs/> 
+WHERE 
+  { 
+    ?s ?p ?o . ?o bif:contains "'поставил аквариум на огонь'" . }
+
+s  ru  Он добавил картошки, посолил и поставил аквариум на огонь
+
+]]></programlisting>
+     <para>There was also request for function that normalizes characters in
+strings as free-text engine will do with XAnyNormalization=3 , the function will be provided as a separate patch and depends on this
+specific patch.
+    </para>
+    <tip><title>See Also:</title>
+       <para><link linkend="VIRTINI">Virtuoso Configuration File</link></para>
+    </tip>
+    </sect2>               
+    <sect2 id="virtuosotipsandtricksdefinegraphwithspongeroption">
+      <title>How Can I define graph with virt:rdf_sponger option set to "on"?</title>                    
+      <para>Suppose we have the following scenario:</para>
+      <orderedlist>
+        <listitem>Create Virtuoso user using Conductor.</listitem>
+        <listitem>Create for the user a RDF Sink folder.</listitem>        
+        <listitem>In the properties of the RDF sink folder add the following 
+          <emphasis>virt:rdf_graph</emphasis> option: 
+<programlisting><![CDATA[
+http://localhost:8080/DAV/home/dba/rdf_sink/	
+]]></programlisting>
+        </listitem>
+        <listitem>Set <emphasis>virt:rdf_sponger</emphasis> to "on".</listitem>
+        <listitem>Upload RDF files to the RDF Sink folder.</listitem>        
+        <listitem>As result the RDF data should be stored in graph 
+        	for ex. (depending on your folder name etc.): 
+<programlisting><![CDATA[
+http://local.virt/DAV/home/wa_sink/rdf_sink/wa_address_agents.rdf	
+]]></programlisting>
+        </listitem>
+        <listitem>In order to define any graph you want with the option from above, you should execute:
+<programlisting><![CDATA[
+SQL>DAV_PROP_SET (davLocation,  'virt:rdf_graph', iri, _uid, _pwd);	
+]]></programlisting>
+          <itemizedlist mark="bullet">
+            <listitem>Calling this function uses the given IRI as the graph IRI when sponging stuff 
+            	put in the rdf_sink/ collection davLocation.</listitem>
+          </itemizedlist>            
+        </listitem>
+        <listitem>Finally you should execute the following command to get the RDF data from the new graph:
+<programlisting><![CDATA[
+SQL>SELECT DAV_PPROP_GET ('/DAV/home/dba/rdf_sink/', 'virt:rdf_graph','dba', 'dba');	
+]]></programlisting>
+        </listitem>
+        </orderedlist>
+    </sect2>                     
+    <sect2 id="virtuosotipsandtricksconvprstr">
+      <title>How do I use SPARUL to change a selection of property values from URI References to Literals?</title>                    
+      <para>Assume a given graph where triples are comprised of property values that are mixed across URI References and Typed Literals as exemplified by the results of the query below:</para>
+<programlisting><![CDATA[
+SELECT DISTINCT ?sa ?oa 
+FROM <http://ucb.com/nbeabase>
+WHERE 
+  { 
+    ?sa a <http://ucb.com/nbeabase/resource/Batch> .
+    ?sa <http://ucb.com/nbeabase/resource/chemAbsNo> ?oa . FILTER regex(?oa, '-','i')
+  }
+
+]]></programlisting>
+      <para>You can use the following SPARUL pattern to harmonize the property values across relevant triples in a specific graph, as shown below:</para>
+<programlisting><![CDATA[
+SQL> SPARQL 
+INSERT INTO GRAPH <http://ucb.com/nbeabase> 
+  { 
+    ?sa <http://ucb.com/nbeabase/resource/sampleId> `str (?oa)` 
+  }  
+WHERE 
+  { 
+    ?sa <http://ucb.com/nbeabase/resource/chemAbsNo> ?oa . FILTER regex(?oa, '-','i')   
+  }	
+]]></programlisting>      
+    </sect2>   
+    <sect2 id="virtuosotipsandtricksbulkloadcl">
+      <title>How is a Checkpoint performed against a Virtuoso Clustered Server?</title>                    
+      <para>The cluster <link linkend="clusteroperationadmclexec"><function>cl_exec()</function></link> function is 
+      used to perform a checkpoint across all node of a Virtuoso cluster as follows:</para>
+<programlisting><![CDATA[
+SQL>cl_exec ('checkpoint'); 	
+]]></programlisting>      
+      <para>This typically needs to be run after loading RDF datasets into a Virtuoso cluster to prevent lose of data when the cluster is restarted.</para>
+
+    </sect2>   
+    <sect2 id="virtuosotipsandtrickconstrprst">
+      <title>How can I use CONSTRUCT with PreparedStatements?</title>                           
+      <para>Assume a given query which uses pragma <emphasis>output:format '_JAVA_'</emphasis> with CONSTRUCT:</para>
+<programlisting><![CDATA[
+SPARQL DEFINE output:format '_JAVA_'
+   CONSTRUCT { ?s ?p ?o }
+WHERE
+  { 
+    ?s ?p ?o . 
+    FILTER (?s = iri(?::0)) 
+  }
+LIMIT 1
+]]></programlisting>      
+      <para>In order to work correctly, the query should be modified to:</para>
+<programlisting><![CDATA[
+SPARQL DEFINE output:format '_JAVA_'
+   CONSTRUCT { `iri(?::0)` ?p ?o }
+WHERE
+  { 
+    `iri(?::0)` ?p ?o 
+  }
+LIMIT 1	
+]]></programlisting>      
+      <para>Equivalent variant of the query is also:</para>
+<programlisting><![CDATA[
+SPARQL DEFINE output:format '_JAVA_'
+  CONSTRUCT { ?s ?p ?o }
+WHERE
+  { 
+    ?s ?p ?o . 
+    FILTER (?s = iri(?::0)) 
+  }
+LIMIT 1	
+]]></programlisting>      
+    </sect2>       
+    <sect2 id="virtuosotipsandtrickssparulupdatestrl">
+      <title>How can perform SPARQL Updates without transactional log size getting exceed?</title>             
+      <para>Since SPARUL updates are generally not meant to be transactional, it is best to run these in:</para>
+<programlisting><![CDATA[
+SQL> log_enable (2);	
+]]></programlisting>      
+      <para>mode, which commits every operation as it is done. This prevents one from running out of 
+      	rollback space. Also for bulk updates, transaction logging can be turned off. If so, one 
+      	should do a manual checkpoint after the operation to ensure persistence across server restart 
+      	since there is no roll forward log.</para>
+      <para>Alternatively, the "<emphasis>TransactionAfterImageLimit</emphasis>" parameter can be set 
+      in the virtuoso.ini config file to a higher value than its 50MB default:</para>
+<programlisting><![CDATA[
+#virtuoso.ini
+...
+[Parameters]
+...
+TransactionAfterImageLimit = N bytes default 50000000
+...	
+]]></programlisting>      
+    <tip><title>See Also:</title>
+       <para><link linkend="rdfperfsparul">Using SPARUL</link></para>
+       <para><link linkend="ini_Parameters">Virtuoso INI Parameters</link></para>       
+    </tip>
+    </sect2>         
+    <sect2 id="virtuosotipsandtrickscrawlercustompl">
+      <title>How can I write custom crawler using PL?</title>
+      <para>The following code is an example of loading data via crawler with special function to generate link for downloading:</para>
+<programlisting><![CDATA[
+create procedure EUROPEANA_STORE ( 
+  in _host varchar, 
+  in _url varchar, 
+  in _root varchar, 
+  inout _content varchar, 
+  in _s_etag varchar, 
+  in _c_type varchar, 
+  in store_flag int := 1, 
+  in udata any := null, 
+  in lev int := 0)
+{
+   declare url varchar;
+   declare xt, xp any;
+   declare old_mode int;
+   xt := xtree_doc (_content, 2);
+   xp := xpath_eval ('//table//tr/td/a[@href]/text()', xt, 0);
+   commit work;
+   old_mode := log_enable (3,1);
+   foreach (any u in xp) do
+     {
+       u := cast (u as varchar);
+       url := sprintf ('http://semanticweb.cs.vu.nl/europeana/api/export_graph?graph=%U&mimetype=default&format=turtle', u);
+       dbg_printf ('%s', u);
+	 {
+	   declare continue handler for sqlstate '*' { 
+	     dbg_printf ('ERROR: %s', __SQL_MESSAGE);
+	   };
+	   SPARQL LOAD ?:url into GRAPH ?:u;
+	 }
+     }
+   log_enable (old_mode, 1);
+   return WS.WS.LOCAL_STORE (_host, _url, _root, _content, _s_etag, _c_type, store_flag, 0);
+}	
+]]></programlisting>      
+    <tip><title>See Also:</title>
+       <para><link linkend="contentcrawlerrdf">Set Up the Content Crawler to Gather RDF</link></para>
+    </tip>
+    </sect2>  
+    <sect2 id="virtuosotipsandtrickscrawlercustomde">
+      <title>How Can I Get an exact mapping for a date?</title> 
+      <para>Assume a given attempts to get an exact mapping for the literal "1950" using 
+      	<emphasis>bif:contains</emphasis>:</para>
+<programlisting><![CDATA[
+SPARQL
+SELECT DISTINCT ?s ?o 
+FROM <http://dbpedia.org> 
+WHERE 
+  {
+    ?s ?p ?o . 
+   FILTER( bif:contains (?o, '"1950"') 
+           && isLiteral(?o) 
+           && ( str(?p) ! = rdfs:label  || str(?p) !=  foaf:name 
+           && ( ?o='1950')
+         )
+  }	
+]]></programlisting>      
+      <para>As an integer 1950 or date 1950-01-01 are not texts, they are not in free-text index 
+      	and thus invisible for CONTAINS free-text predicate.</para>
+      <para>A possible way to make them visible that way is to introduce an additional RDF predicate 
+      	that will contain objects of the triples in question, converted to strings via str() function.</para>
+      <para>Thus better results will be approached: if searches about dates are frequent then a new 
+      	predicate can have date/datetime values extracted from texts, eliminating the need for bif:contains.</para>
+      <para>Therefor, the query from above should be changed to:</para>
+<programlisting><![CDATA[
+SPARQL
+SELECT DISTINCT ?s ?o 
+FROM <http://dbpedia.org> 
+WHERE 
+  {
+    ?s ?p ?o . 
+    FILTER (  isLiteral(?o) 
+              && (  str(?p) != str(rdfs:label) || str(?p) !=  foaf:name ) 
+              && str(?o) in ("1950", "1950-01-01"))
+  }
+]]></programlisting>                                       
+    </sect2>        	            	
+    <sect2 id="virtuosotipsandtricksgetcertattr">
+      <title>How Can I Get certificate attributes using SPARQL?</title>     
+      <para>The SPARQL query should use the <emphasis>cert:hex</emphasis> and 
+      <emphasis>cert:decimal</emphasis> in order to get to the values, so for ex:</para>
+<programlisting><![CDATA[
+PREFIX cert: <http://www.w3.org/ns/auth/cert#> 
+PREFIX rsa: <http://www.w3.org/ns/auth/rsa#> 
+
+SELECT ?webid 
+FROM <http://webid.myxwiki.org/xwiki/bin/view/XWiki/homepw4>
+WHERE 
+  {
+    [] cert:identity ?webid ;
+             rsa:modulus ?m ;
+     rsa:public_exponent ?e .
+     ?m cert:hex "b520f38479f5803a7ab33233155eeef8ad4e1f575b603f7780f3f60ceab1\n34618fbe117539109c015c5f959b497e67c1a3b2c96e5f098bb0bf2a6597\n779d26f55fe8d320de7af0562fd2cd067dbc9d775b22fc06e63422717d00\na6801dedafd7b54a93c3f4e59538475673972e524f4ec2a3667d0e1ac856\nd532e32bf30cef8c1adc41718920568fbe9f793daeeaeeaa7e8367b7228a\n895a6cf94545a6f6286693277a1bc7750425ce6c35d570e89453117b88ce\n24206afd216a705ad08b7c59\n"^^xsd:string .
+     ?e cert:decimal "65537"^^xsd:string
+  }	
+]]></programlisting>      
+    </sect2>  
+    <sect2 id="virtuosotipsandtricksmultithreadjdbc">
+      <title>How can I make Multi Thread Virtuoso connection using JDBC??</title>     
+      <para>See details <link linkend="JDBCDriverhibernatesetupandtestingexmp4">here</link>.</para> 
+    </sect2>            
+    <sect2 id="virtuosotipsandtricksgetcertattr">
+      <title>How Do I Perform Bulk Loading of RDF Source Files into one or more Graph IRIs?</title>     
+      <para>See details <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtBulkRDFLoader">here</ulink>.</para>       
+    </sect2>      
+    <sect2 id="virtuosotipsandtricksrdfschowlinfrl">
+      <title>How to exploit RDF Schema and OWL Inference Rules with minimal effort?</title>     
+      <para>When you install Virtuoso, it's reasoner and highly scalable inference capabilities may not 
+      	be obvious. Typical cases involve using <emphasis>rdfs:subClassOf</emphasis> predicates in queries 
+      	and wondering why reasoning hasn't occurred in line with the semantics defined in RDF Schema.</para>
+      <para>The experience applies when using more sophisticated predicates from OWL such as 
+      	<emphasis>owl:equivalentProperty</emphasis>, <emphasis>owl:equivalentClass</emphasis>, 
+      	<emphasis>owl:sameAs</emphasis>, <emphasis>owl:SymmetricalProperty</emphasis>, 
+      	<emphasis>owl:inverseOf</emphasis> etc ...</para>
+      <para>Virtuoso implemented inference rules processing in a loosely coupled manner that allow 
+      	users to conditionally apply inference context (via rules) to SPARQL queries. Typically, you 
+      	have to create these rules following steps outlined <link linkend="rdfsparqlrule">here</link>.</para>
+      <para>This tips and tricks note provides a shortcut for setting up and exploring RDF Schema and 
+      	OWL reasoning once you've installed the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/fct_dav.vad">Virtuoso Faceted Browser VAD package</ulink>.</para>
+      <tip><title>See Also:</title>
+       <para><link linkend="rdfsparqlrule">Inference Rules and Reasoning</link></para>
+       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtFacetBrowserInstallConfig">Virtuoso Faceted Browser Installation and configuration</ulink></para>
+       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Facets Web Service</ulink></para>       
+     </tip>          
+    </sect2>   
+    <sect2 id="virtuosotipsandtricksdumparbqntr">
+      <title>How can I dump arbitrary query result as N-Triples?</title>     
+      <para>Assume the following arbitrary query:</para>
+<programlisting><![CDATA[
+SPARQL define output:format "NT" 
+CONSTRUCT { ?s a ?t } 
+FROM virtrdf:
+WHERE { ?s a ?t };	
+]]></programlisting>      
+      <para>For iteration over result-set of an arbitrary query, use 
+      	<link linkend="fn_exec_next"><function>exec_next()</function></link> in a loop that begins with 
+      	<link linkend="fn_exec"><function>exec()</function></link> with cursor output variable as 
+      	an argument and ends with <link linkend="fn_exec_close"><function>exec_close()</function></link> 
+      	after it is out of data.</para>
+    </sect2>               	            	      
+   <sect2 id="virtuosotipsandtrickbindnmgrprst">         	            	      
+     <title>How do I bind named graph parameter in prepared statement?</title>        	
+     <para>Assume the following SPARQL query:</para>
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  } 
+FROM ?context 
+WHERE 
+  { 
+    ?s ?p ?o 
+  }	
+]]></programlisting>     
+     <para>To bind the named graph context of the query from above, the best solution due 
+     	to performance implications, is to change the syntax of the query as:</para>
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  } 
+WHERE 
+  { 
+    graph `iri(??)` { ?s ?p ?o } 
+  }	
+]]></programlisting>     
+     <para>Note: In case of using "FROM clause", it needs a constant in order to check at the 
+     	compile time whether the IRI refers to a graph or a graph group:</para>
+     <itemizedlist mark="bullet">
+       <listitem>Assume "FROM clause" is used as for ex:
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  } 
+FROM `iri(??)` 
+WHERE
+  { 
+    ?s ?p ?o
+  }	
+]]></programlisting>  
+         <itemizedlist mark="bullet">
+           <listitem>In this case can be made security checks at 
+           	the compile time (i.e., once) and not waste time at the run time.</listitem>
+         </itemizedlist>      	
+       </listitem>
+       <listitem>Assume "FROM clause" is used as for ex:
+<programlisting><![CDATA[
+CONSTRUCT 
+  { 
+    ?s ?p ?o
+  }
+FROM iri(??) 
+WHERE 
+  { 
+    ?s ?p ?o 
+  }	
+]]></programlisting>        	
+         <itemizedlist mark="bullet">
+           <listitem>In this case a compile-time check, a run-time check or 50/50 mix of them can 
+           	be performed, depending on the security policies.</listitem>
+         </itemizedlist>      	
+       </listitem>
+       <listitem>FROM without constant would mean that security rules, if they present in the storage, 
+       	are used at the run time, for every triple that matches every triple pattern in the default graph. 
+       	This issue can be reproduced if FROM is not specified at all: if security differs from default 
+       	then the effect is noticeably bad.</listitem>
+     </itemizedlist>
+   </sect2>          	
+    <sect2 id="virtuosotipsandtricksadonetinsb">
+      <title>How can I insert binary data to Virtuoso RDF storage in plain queries and with parameter binding via ADO.NET calls?</title>     
+      <para>The following example shows different methods for insert binary data to Virtuoso RDF storage in plain queries and with parameter binding via ADO.NET calls:</para>
+<programlisting><![CDATA[
+# Test_Bin.cs
+
+
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Data;
+using OpenLink.Data.Virtuoso;
+
+#if ODBC_CLIENT
+namespace OpenLink.Data.VirtuosoOdbcClient
+#elif CLIENT
+namespace OpenLink.Data.VirtuosoClient
+#else
+namespace OpenLink.Data.VirtuosoTest
+#endif
+{
+    class Test_Bin
+    {
+        [STAThread]
+        static void Main(string[] args)
+        {
+            IDataReader myread = null;
+            IDbConnection c;
+
+            c = new VirtuosoConnection("HOST=localhost:1111;UID=dba;PWD=dba;");
+
+            IDbCommand cmd = c.CreateCommand();
+            int ros;
+
+            try
+            {
+                c.Open();
+
+                cmd.CommandText = "sparql clear graph <ado.bin>";
+                cmd.ExecuteNonQuery();
+
+//insert binary as base64Binary
+                cmd.CommandText = "sparql insert into graph <ado.bin> { <res1> <attr> \"GpM7\"^^<http://www.w3.org/2001/XMLSchema#base64Binary> }";
+                cmd.ExecuteNonQuery();
+
+//insert binary as hexBinary
+                cmd.CommandText = "sparql insert into graph <ado.bin> { <res2> <attr> \"0FB7\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> }";
+                cmd.ExecuteNonQuery();
+
+
+//prepare for insert with parameter binding
+                cmd.CommandText = "sparql define output:format '_JAVA_' insert into graph <ado.bin> { `iri($?)` <attr> `bif:__rdf_long_from_batch_params($?,$?,$?)` }";
+
+//bind parameters for insert binary as base64Binary
+                IDbDataParameter param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = "res3";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = 4;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                param.DbType = DbType.AnsiString;
+                param.Value = "GpM7";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = "http://www.w3.org/2001/XMLSchema#base64Binary";
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Parameters.Clear();
+
+//bind parameters for insert binary as hexBinary
+                param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = "res4";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = 4;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                param.DbType = DbType.AnsiString;
+                param.Value = "0FB7";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = "http://www.w3.org/2001/XMLSchema#hexBinary";
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Parameters.Clear();
+
+//bind parameters for insert binary as byte[]
+                param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = "res5";
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = 3;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                param.DbType = DbType.Binary;
+                byte[] bin_val = {0x01, 0x02, 0x03, 0x04, 0x05};
+                param.Value = bin_val;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = System.DBNull.Value; 
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+
+                cmd.Parameters.Clear();
+
+//execute select and check the results
+                cmd.CommandText = "sparql SELECT ?s ?o FROM <ado.bin> WHERE {?s ?p ?o}"; ;
+                myread = cmd.ExecuteReader();
+                int r = 0;
+
+                while (myread.Read())
+                {
+                    Console.WriteLine("=== ROW === "+r);
+                    for (int i = 0; i < myread.FieldCount; i++)
+                    {
+                        string s;
+                        if (myread.IsDBNull(i))
+                            Console.Write("N/A|\n");
+                        else
+                        {
+                            object o = myread.GetValue(i);
+                            Type t = myread.GetFieldType(i);
+
+                            s = myread.GetString(i);
+                            Console.Write(s + "[");
+                            if (o is SqlExtendedString)
+                            {
+                                SqlExtendedString se = (SqlExtendedString)o;
+                                Console.Write("IriType=" + se.IriType + ";StrType=" + se.StrType + ";Value=" + se.ToString());
+                                Console.Write(";ObjectType=" + o.GetType() + "]|\n");
+                            }
+                            else if (o is SqlRdfBox)
+                            {
+                                SqlRdfBox se = (SqlRdfBox)o;
+                                Console.Write("Lang=" + se.StrLang + ";Type=" + se.StrType + ";Value=" + se.Value);
+                                Console.Write(";ObjectType=" + o.GetType() + "]|\n");
+                                object v = se.Value;
+                                if (v is System.Byte[])
+                                {
+                                    byte[] vb = (byte[])v;
+                                    for (int z = 0; z < vb.Length; z++)
+                                    {
+                                        Console.WriteLine(""+z+"="+vb[z]);
+                                    }
+                                }
+                            }
+                            else
+                                Console.Write(o.GetType() + "]|\n");
+                        }
+                    }
+                    r++;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} Exception caught.", e);
+            }
+            finally
+            {
+                //		  if (myread != null)
+                //		    myread.Close();
+
+                if (c.State == ConnectionState.Open)
+                    c.Close();
+
+            }
+
+        }
+    }
+}
+]]></programlisting>      
+      <para>Output log for example is in the log.txt:</para>
+<programlisting><![CDATA[
+# log.txt
+=== ROW === 0
+res1[IriType=IRI;StrType=IRI;Value=res1;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+GpM7[Lang=;Type=http://www.w3.org/2001/XMLSchema#base64Binary;Value=GpM7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 1
+res2[IriType=IRI;StrType=IRI;Value=res2;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+0FB7[Lang=;Type=http://www.w3.org/2001/XMLSchema#hexBinary;Value=0FB7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 2
+res3[IriType=IRI;StrType=IRI;Value=res3;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+GpM7[Lang=;Type=http://www.w3.org/2001/XMLSchema#base64Binary;Value=GpM7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 3
+res4[IriType=IRI;StrType=IRI;Value=res4;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+0FB7[Lang=;Type=http://www.w3.org/2001/XMLSchema#hexBinary;Value=0FB7;ObjectType=OpenLink.Data.Virtuoso.SqlRdfBox]|
+=== ROW === 4
+res5[IriType=IRI;StrType=IRI;Value=res5;ObjectType=OpenLink.Data.Virtuoso.SqlExtendedString]|
+0102030405[System.Byte[]]|	
+]]></programlisting>      
+    </sect2>     
+    <sect2 id="instrdfvs">
+      <title>How can I insert RDF data from Visual Studio to Virtuoso?</title>     
+      <para>The following example shows how to insert RDF Data from Visual Studio to Virtuoso:</para>
+<programlisting><![CDATA[    
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Data;
+using OpenLink.Data.Virtuoso;
+
+#if ODBC_CLIENT
+namespace OpenLink.Data.VirtuosoOdbcClient
+#elif CLIENT
+namespace OpenLink.Data.VirtuosoClient
+#else
+namespace OpenLink.Data.VirtuosoTest
+#endif
+{
+    class Test_Insert
+    {
+        [STAThread]
+        static void Main(string[] args)
+        {
+            IDataReader myread = null;
+            IDbConnection c;
+
+            c = new VirtuosoConnection("HOST=localhost:1111;UID=dba;PWD=dba;Charset=UTF-8");
+
+            IDbCommand cmd = c.CreateCommand();
+            int ros;
+
+            try
+            {
+                c.Open();
+
+                cmd.CommandText = "sparql clear graph <ado.net>";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P01> \"131\"^^<http://www.w3.org/2001/XMLSchema#short> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P02> \"1234\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P03> \"12345.12\"^^<http://www.w3.org/2001/XMLSchema#float> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P04> \"123456.12\"^^<http://www.w3.org/2001/XMLSchema#double> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P05> \"123456.12\"^^<http://www.w3.org/2001/XMLSchema#decimal> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P06> \"01020304\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P07> \"01.20.1980T04:51:13\"^^<http://www.w3.org/2001/XMLSchema#dateTime> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P08> \"01.20.1980\"^^<http://www.w3.org/2001/XMLSchema#date> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P09> \"01:20:19\"^^<http://www.w3.org/2001/XMLSchema#time> }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql insert into graph <ado.net> { <a> <P10> \"test\" }";
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText = "sparql define output:format '_JAVA_' insert into graph <ado.net> { <b> `iri($?)` `bif:__rdf_long_from_batch_params($?,$?,$?)` }";
+
+//add Object URI
+                add_triple(cmd, "S01", 1, "test1", null);
+
+//add Object BNode
+                add_triple(cmd, "S02", 1, "_:test2", null);
+
+
+//add Literal
+                add_triple(cmd, "S03", 3, "test3", null);
+
+//add Literal with Datatype
+                add_triple(cmd, "S04", 4, "1234", "http://www.w3.org/2001/XMLSchema#integer");
+
+//add Literal with Lang
+                add_triple(cmd, "S05", 5, "test5", "en");
+
+
+                add_triple(cmd, "S06", 3, (short)123, null);
+                add_triple(cmd, "S07", 3, 1234, null);
+                add_triple(cmd, "S08", 3, (float)12345.12, null);
+                add_triple(cmd, "S09", 3, 123456.12, null);
+                add_triple(cmd, "S10", 3, new DateTime(2001, 02, 23, 13, 44, 51, 234), null);
+                add_triple(cmd, "S11", 3, new DateTime(2001, 02, 24), null);
+                add_triple(cmd, "S12", 3, new TimeSpan(19, 41, 23), null);
+ 
+
+                add_triple(cmd, "S13", 4, "GpM7", "http://www.w3.org/2001/XMLSchema#base64Binary");
+                add_triple(cmd, "S14", 4, "0FB7", "http://www.w3.org/2001/XMLSchema#hexBinary");
+                byte[] bin_val = { 0x01, 0x02, 0x03, 0x04, 0x05 };
+                add_triple(cmd, "S15", 3, bin_val, null);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} Exception caught.", e);
+            }
+            finally
+            {
+
+                if (c.State == ConnectionState.Open)
+                    c.Close();
+
+            }
+
+        }
+
+
+        static void add_triple(IDbCommand cmd, string sub, int ptype, object val, string val_add)
+        {
+                cmd.Parameters.Clear();
+
+                IDbDataParameter param = cmd.CreateParameter();
+                param.ParameterName = "p1";
+                param.DbType = DbType.AnsiString;
+                param.Value = sub;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p2";
+                param.DbType = DbType.Int32;
+                param.Value = ptype;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p3";
+                if (val != null && val.GetType() == typeof (System.String))
+                    param.DbType = DbType.AnsiString;
+                param.Value = val;
+                cmd.Parameters.Add(param);
+
+                param = cmd.CreateParameter();
+                param.ParameterName = "p4";
+                param.DbType = DbType.AnsiString;
+                param.Value = val_add;
+                cmd.Parameters.Add(param);
+
+                cmd.ExecuteNonQuery();
+        }
+
+
+
+    }
+}	
+]]></programlisting>      
+     <tip><title>See Also:</title>
+       <para><link linkend="rdfinsertmethods">RDF Insert Methods in Virtuoso</link></para>
+     </tip> 
+    </sect2>     	
+    <sect2 id="descrmd">
+      <title>How does default describe mode work?</title>     
+      <para>The default describe mode works only if subject has a type/class. To get any anonymous subject described CBD mode should be used:</para>
+<programlisting><![CDATA[ 
+$ curl -i -L -H "Accept: application/rdf+xml" http://lod.openlinksw.com/describe/?url=http%3A%2F%2Fwww.mpii.de%2Fyago%2Fresource%2FEddie%255FMurphy
+HTTP/1.1 303 See Other
+Date: Mon, 21 Mar 2011 14:24:36 GMT
+Server: Virtuoso/06.02.3129 (Linux) x86_64-generic-linux-glibc25-64  VDB
+Content-Type: text/html; charset=UTF-8
+Accept-Ranges: bytes
+TCN: choice
+Vary: negotiate,accept,Accept-Encoding
+Location: http://lod.openlinksw.com/sparql?query=%20DESCRIBE%20%3Chttp%3A%2F%2Fwww.mpii.de%2Fyago%2Fresource%2FEddie%255FMurphy%3E&format=application%
+2Frdf%2Bxml
+Content-Length: 0
+
+HTTP/1.1 200 OK
+Date: Mon, 21 Mar 2011 14:24:37 GMT
+Server: Virtuoso/06.02.3129 (Linux) x86_64-generic-linux-glibc25-64  VDB
+Accept-Ranges: bytes
+Content-Type: application/rdf+xml; charset=UTF-8
+Content-Length: 467967
+
+<?xml version="1.0" encoding="utf-8" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description rdf:about="http://www.mpii.de/yago/resource/MTV%5FMovie%5FAward%5Ffor%5FBest%5FComedic%5FPerformance"><n0pred:hasInternalWikipediaLinkTo xmlns:n0pred="http://www.mpii.de/yago/resource/" rdf:resource="http://www.mpii.de/yago/resource/Eddie%5FMurphy"/></rdf:Description>
+<rdf:Description rdf:about="http://www.mpii.de/yago/resource/#fact_23536547421"><rdf:subject rdf:resource="http://www.mpii.de/yago/resource/Eddie%5FMurphy"/></rdf:Description>
+<rdf:Description rdf:about="http://www.mpii.de/yago/resource/#fact_23536896725"><rdf:object rdf:resource="http://www.mpii.de/yago/resource/Eddie%5FMurphy"/></rdf:Description>
+...
+]]></programlisting>            
+    </sect2>    
+    <sect2 id="notresphttp">
+      <title>What should I do if the Virtuoso Server is not responding to HTTP requests?</title>     
+      <para>Assume the Virtuoso server is not responding to HTTP requests although SQL connection is working. In order to determine what activity is being performed that might account for this:</para>
+<orderedlist>
+  <listitem>Check the status: 
+<programlisting><![CDATA[ 
+SQL> status('');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+
+OpenLink Virtuoso VDB Server
+Version 06.02.3129-pthreads for Linux as of Mar 16 2011 
+Registered to Uriburner (Personal Edition, unlimited connections)
+Started on: 2011/03/17 10:49 GMT+60
+ 
+Database Status:
+  File size 0, 37598208 pages, 7313125 free.
+  1000000 buffers, 993399 used, 76771 dirty 0 wired down, repl age 25548714 0 w. io 0 w/crsr.
+  Disk Usage: 2642884 reads avg 4 msec, 30% r 0% w last  1389 s, 1557572 writes,
+    15331 read ahead, batch = 79.  Autocompact 308508 in 219226 out, 28% saved.
+Gate:  71130 2nd in reads, 0 gate write waits, 0 in while read 0 busy scrap. 
+Log = virtuoso.trx, 14922248 bytes
+VDB: 0 exec 0 fetch 0 transact 0 error
+1757362 pages have been changed since last backup (in checkpoint state)
+Current backup timestamp: 0x0000-0x00-0x00
+Last backup date: unknown
+Clients: 5 connects, max 2 concurrent
+RPC: 116 calls, -1 pending, 1 max until now, 0 queued, 2 burst reads (1%), 0 second brk=9521074176
+Checkpoint Remap 331113 pages, 0 mapped back. 1180 s atomic time.
+    DB master 37598208 total 7313125 free 331113 remap 40593 mapped back
+   temp  569856 total 569851 free
+ 
+Lock Status: 52 deadlocks of which 0 2r1w, 86078 waits,
+   Currently 1 threads running 0 threads waiting 0 threads in vdb.
+Pending:
+
+
+25 Rows. -- 1274 msec.
+SQL> 
+	
+]]></programlisting>   	
+  </listitem>
+  <listitem>Connect with the PL debugger and see what is running currently using the info threads call: 
+<programlisting><![CDATA[ 
+$ isql 1111 dba <password> -D
+DEBUG> info threads	
+]]></programlisting>   	
+  </listitem>
+  <listitem>This should return the current code being executed by the Sever.</listitem>
+  <listitem>Run <link linkend="fn_txn_killall"><function>txn_killall()</function></link> to kill any pending transactions which may enable the server to start responding to HTTP requests again: 
+<programlisting><![CDATA[ 
+
+SQL> txn_killall();
+
+Done. -- 866 msec.	
+]]></programlisting>   	
+  </listitem>
+</orderedlist>
+    </sect2> 
+    <sect2 id="replallgr">
+      <title>How can I replicate all graphs?</title>     
+      <para>To replicate all graphs ( except the system graph http://www.openlinksw.com/schemas/virtrdf# ), 
+      	one should use http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all as graph IRI:</para>
+<programlisting><![CDATA[ 
+SQL> DB.DBA.RDF_RDF_REPL_GRAPH_INS ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all');
+]]></programlisting>   	
+    </sect2>        	
+  </sect1>    
 </chapter>
+
+

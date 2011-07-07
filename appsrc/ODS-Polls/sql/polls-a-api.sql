@@ -67,6 +67,10 @@ create procedure ODS.ODS_API."poll.get" (
   inst_id := (select P_DOMAIN_ID from POLLS.WA.POLL where P_ID = poll_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Polls'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   ods_describe_iri (SIOC..poll_post_iri (inst_id, poll_id));
   return '';
 }
@@ -302,9 +306,9 @@ create procedure ODS.ODS_API."poll.activate" (
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
-  if (POLLS.WA.poll_is_activated (poll_id))
+  if (POLLS.WA.poll_is_activated (inst_id, poll_id))
     signal ('POLLS', 'The Poll is already activated');
-  if (not POLLS.WA.poll_enable_activate (poll_id))
+  if (not POLLS.WA.poll_enable_activate (inst_id, poll_id))
     signal ('POLLS', 'The activation is not allowed');
 
   POLLS.WA.poll_active (poll_id);
@@ -333,9 +337,9 @@ create procedure ODS.ODS_API."poll.close" (
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (POLLS.WA.poll_is_closed (poll_id))
+  if (POLLS.WA.poll_is_closed (inst_id, poll_id))
     signal ('POLLS', 'The poll is already closed');
-  if (not POLLS.WA.poll_enable_close (poll_id))
+  if (not POLLS.WA.poll_enable_close (inst_id, poll_id))
     signal ('POLLS', 'The close is not allowed');
   POLLS.WA.poll_close (poll_id);
   return ods_serialize_int_res (1);
@@ -364,7 +368,7 @@ create procedure ODS.ODS_API."poll.clear" (
   rc := 0;
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (not POLLS.WA.poll_enable_clear (poll_id))
+  if (not POLLS.WA.poll_enable_clear (inst_id, poll_id))
     signal ('POLLS', 'The clear is not allowed');
   POLLS.WA.poll_clear (poll_id);
   return ods_serialize_int_res (1);
@@ -387,7 +391,7 @@ create procedure ODS.ODS_API."poll.vote" (
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
-  if (not POLLS.WA.poll_enable_vote (poll_id))
+  if (not POLLS.WA.poll_enable_vote (inst_id, poll_id))
     signal ('POLLS', 'The vote is not allowed');
 
   rc := POLLS.WA.vote_insert (poll_id, client_attr ('client_ip'));
@@ -445,7 +449,7 @@ create procedure ODS.ODS_API."poll.result" (
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (not POLLS.WA.poll_enable_result (poll_id))
+  if (not POLLS.WA.poll_enable_result (inst_id, poll_id))
   {
     signal ('POLLS', 'The result is not allowed');
   }

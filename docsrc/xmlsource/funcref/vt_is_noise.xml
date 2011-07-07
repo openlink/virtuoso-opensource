@@ -40,6 +40,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_vt_is_noise"><title>Description</title>
+    <para>Determines whether input is a noise word.</para>
+  </refsect1>
   <refsect1 id="params_vt_is_noise"><title>Parameters</title>
     <refsect2><title>word</title>
       <para>Narrow string of the word to be checked</para>

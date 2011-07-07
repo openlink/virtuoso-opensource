@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+  
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+  
+  Copyright (C) 1998-2009 OpenLink Software
+  
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+  
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+  : template.sh,v 1.6 2009/04/14 11:39:26 source Exp $
+-->
+<refentry id="fn_dict_zap">
+  <refmeta>
+    <refentrytitle>dict_zap</refentrytitle>
+    <refmiscinfo>dict</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>dict_zap</refname>
+    <refpurpose>Removes all data from the given dictionary</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_dict_zap">
+      <funcprototype id="fproto_dict_zap">
+        <funcdef><function>dict_zap</function></funcdef>
+	<paramdef>inout <parameter>dict</parameter> dictionary</paramdef>
+	<paramdef>in <parameter>destructive</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_dict_zap">
+    <title>Description</title>
+    <para>The function removes all items from the given dictionary.</para>
+<para>
+If the <parameter>destructive</parameter> parameter is 0 or 1 then an error 22023 is signalled if the dictionary is used as a value of more than one variable.
+The parameter equal to 2 forces the function to ignore the presence of multiple variables; in this case the operation may cause unexpected results in other fragments of code that share the dictionary.
+</para>
+<para>In most of cases, this function is used specifically for its side effect on other variables.
+With only one variable in use, one may simply set that variable to the value returned by <link linkend="fn_dict_new"><function>dict_new</function></link>()
+(or to NULL if the dictionary is no longer needed).
+If the dictionary is no longer referenced by any variable, it is destroyed and the occupied memory is freed.
+However one may wish to zap the dictionary in order to not worry about number of variables that refers to the dictionary, e.g., when dictionary is used only in some part of a long procedure.
+</para>
+  </refsect1>
+  <refsect1 id="params_dict_zap">
+    <title>Parameters</title>
+    <refsect2><title>dict</title>
+      <para>The dictionary to zap. If it is NULL then the function call has no effect and returned value is zero.</para>
+    </refsect2>
+    <refsect2><title>destructive</title>
+      <para>Flag that indicates whether the dictionary can be cleaned if multiple references exist (0 and 1 = zap only if there is no other variables and signal an error otherwise, 2 = clean unconditionally).</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_dict_zap"><title>Return Types</title>
+    <para>The function returns the number of intems in the dictionary before the operation.</para>
+  </refsect1>
+<!-- 
+  <refsect1 id="errors_dict_zap">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_dict_zap">
+    <title>Examples</title>
+    <example id="ex_dict_zap"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1> -->
+  <refsect1 id="seealso_dict_zap">
+    <title>See Also</title>
+    <para><link linkend="fn_dict_new"><function>dict_new</function></link></para>
+    <para><link linkend="fn_dict_put"><function>dict_put</function></link></para>
+    <para><link linkend="fn_dict_get"><function>dict_get</function></link></para>
+    <para><link linkend="fn_dict_remove"><function>dict_remove</function></link></para>
+    <para><link linkend="fn_dict_inc_or_put"><function>dict_inc_or_put</function></link></para>
+    <para><link linkend="fn_dict_dec_or_remove"><function>dict_dec_or_remove</function></link></para>
+    <para><link linkend="fn_dict_size"><function>dict_size</function></link></para>
+    <para><link linkend="fn_dict_duplicate"><function>dict_duplicate</function></link></para>
+    <para><link linkend="fn_dict_to_vector"><function>dict_to_vector</function></link></para>
+    <para><link linkend="fn_dict_list_keys"><function>dict_list_keys</function></link></para>
+    <para><link linkend="fn_dict_destructive_list_rnd_keys"><function>dict_destructive_list_rnd_keys</function></link></para>
+    <para><link linkend="fn_dict_iter_rewind"><function>dict_iter_rewind</function></link></para>
+    <para><link linkend="fn_dict_iter_next"><function>dict_iter_next</function></link></para>
+  </refsect1>
+</refentry>

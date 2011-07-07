@@ -390,6 +390,9 @@ xp_element_end (void *userdata, const char * name)
   children = CONS (current->xn_attrs, children);
   l = (caddr_t *) list_to_array (children);
   dk_set_push (&parent->xn_children, (void*) l);
+  parent->xn_n_children++;
+  if (parent->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (current, "The number of children elements is over the limits");
   xp->xp_current = parent;
   current->xn_parent = xp->xp_free_list;
   xp->xp_free_list = current;
@@ -403,12 +406,12 @@ xp_xslt_element (void *userdata,  char * name, vxml_parser_attrdata_t *attrdata)
 /* copy from xp_element - start */
   caddr_t boxed_name;
   xp_node_t *xn = xp->xp_free_list;
+  XP_STRSES_FLUSH (xp);
   if (NULL == xn)
     xn = dk_alloc (sizeof (xp_node_t));
   else
     xp->xp_free_list = xn->xn_parent;
   memset (xn, 0, sizeof (xp_node_t));
-  XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
@@ -485,6 +488,9 @@ xp_xslt_element_end (void *userdata, const char * name)
   children = CONS (current->xn_attrs, children);
   l = (caddr_t *) list_to_array (children);
   dk_set_push (&parent->xn_children, (void*) l);
+  parent->xn_n_children++;
+  if (parent->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (current, "The number of children elements is over the limits");
   xp->xp_current = parent;
   if (current->xn_namespaces && xp->xp_namespaces)
     {
@@ -576,6 +582,9 @@ xp_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam
 	box_dv_short_nchars (refname, reflen) )
       );
   dk_set_push (&xp->xp_current->xn_children, (void*)list (1, head));
+  xp->xp_current->xn_n_children++;
+  if (xp->xp_current->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (xp->xp_current, "The number of children elements is over the limits");
 }
 
 void
@@ -592,6 +601,9 @@ xp_pi (vxml_parser_t * parser, const char *target, const char *data)
       (NULL != data) ?
       list (2, head, box_dv_short_string (data)) :
       list (1, head) ) );
+  xp->xp_current->xn_n_children++;
+  if (xp->xp_current->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (xp->xp_current, "The number of children elements is over the limits");
 }
 
 void
@@ -607,6 +619,9 @@ xp_comment (vxml_parser_t * parser, const char *text)
   else
     dk_set_push (&xp->xp_current->xn_children, (void*)
       list (1, list (1, uname__comment)) );
+  xp->xp_current->xn_n_children++;
+  if (xp->xp_current->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (xp->xp_current, "The number of children elements is over the limits");
 }
 
 
@@ -702,7 +717,7 @@ xp_free (xparse_ctx_t * xp)
       dk_free_tree (xp->xp_rdfa_locals->xrdfal_ict_buffer);
       xp->xp_rdfa_locals->xrdfal_ict_buffer = NULL;
 #endif
-    xp_pop_rdfa_locals (xp);
+      xp_pop_rdfa_locals (xp);
     }
   xrl = xp->xp_rdfxml_free_list;
   while (NULL != xrl)
@@ -4277,9 +4292,11 @@ bif_vectorbld_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+#define bif_vectorbld_acc_impl_BIT_PRESERVE_ARGS 1
+#define bif_vectorbld_acc_impl_BIT_IGNORE_NULLS 2
 
 caddr_t
-bif_vectorbld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args, caddr_t **acc_ptr)
+bif_vectorbld_acc_impl (caddr_t * qst, state_slot_t ** args, int flags, caddr_t **acc_ptr)
 {
   int acc_length, new_acc_length;
   int filled_count;	/* number of non-null elements in the first argument, excluding the counter */
@@ -4303,6 +4320,16 @@ bif_vectorbld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args, 
     sqlr_new_error ("22003", "SR346", "The first argument of vectorbld_acc is not made by vectorbld_init() function");
   filled_count = (int) unbox (acc[0]);
   acc_length = BOX_ELEMENTS (acc);
+  if (flags & bif_vectorbld_acc_impl_BIT_IGNORE_NULLS)
+    {
+      new_filled_count = filled_count;
+      for (arg_inx = 1; arg_inx < argcount; arg_inx++)
+        {
+          if (DV_DB_NULL != DV_TYPE_OF (QST_GET (qst, args[arg_inx])))
+            new_filled_count++;
+        }
+    }
+  else
   new_filled_count = filled_count + argcount - 1;
   for (new_acc_length = acc_length; (new_filled_count) >= new_acc_length; new_acc_length += (new_acc_length + 1)); /* do nothing */;
   if (new_acc_length > MAX_BOX_ELEMENTS)
@@ -4322,8 +4349,11 @@ bif_vectorbld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args, 
   dst = acc + filled_count + 1;
   for (arg_inx = 1; arg_inx < argcount; arg_inx++)
     {
-      dst[0] = QST_GET (qst, args[arg_inx]);
-      if (preserve_args)
+      caddr_t arg = QST_GET (qst, args[arg_inx]);
+      if ((flags & bif_vectorbld_acc_impl_BIT_IGNORE_NULLS) && (DV_DB_NULL == DV_TYPE_OF (arg)))
+        continue;
+      dst[0] = arg;
+      if (flags & bif_vectorbld_acc_impl_BIT_PRESERVE_ARGS)
     	dst[0] = box_try_copy_tree (dst[0], NULL);
       else
 	{
@@ -4456,9 +4486,8 @@ bif_vectorbld_concat_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve
   return NULL;
 }
 
-
 caddr_t
-bif_vectorbld_final_impl (caddr_t * qst, state_slot_t ** args, int plain_return)
+bif_vectorbld_final_impl (caddr_t * qst, state_slot_t ** args, int return_bits)
 {
   caddr_t *acc = NULL, new_box;
   size_t filled_size;
@@ -4482,12 +4511,17 @@ bif_vectorbld_final_impl (caddr_t * qst, state_slot_t ** args, int plain_return)
     }
   filled_size = sizeof (caddr_t) * (unbox (acc[0]));
   dk_check_vectorbld_acc (acc);
-  new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_POINTER);
   dk_free_box (acc[0]);
+  if ((0 == filled_size) && (2 & return_bits))
+    new_box = NEW_DB_NULL;
+  else
+    {
+      new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_POINTER);
   memcpy (new_box, acc + 1, filled_size);
   dk_free_box /*not ..._tree*/ ((caddr_t)acc);
+    }
   acc = (caddr_t *)new_box;
-  if (plain_return)
+  if (1 & return_bits)
     return (caddr_t) acc;
   qst_set (qst, args[0], (caddr_t) acc);
   return NULL;
@@ -4582,7 +4616,14 @@ bif_vectorbld_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_vectorbld_agg_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_vectorbld_acc_impl (qst, args, 1, ((caddr_t **)(QST_GET_ADDR (qst, args[0]))));
+  return bif_vectorbld_acc_impl (qst, args, bif_vectorbld_acc_impl_BIT_PRESERVE_ARGS, ((caddr_t **)(QST_GET_ADDR (qst, args[0]))));
+}
+
+
+caddr_t
+bif_vector_of_nonnulls_bld_agg_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_vectorbld_acc_impl (qst, args, bif_vectorbld_acc_impl_BIT_PRESERVE_ARGS | bif_vectorbld_acc_impl_BIT_IGNORE_NULLS, ((caddr_t **)(QST_GET_ADDR (qst, args[0]))));
 }
 
 
@@ -4611,6 +4652,13 @@ caddr_t
 bif_vectorbld_agg_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_vectorbld_final_impl (qst, args, 1);
+}
+
+
+caddr_t
+bif_vector_or_null_bld_agg_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_vectorbld_final_impl (qst, args, 3);
 }
 
 
@@ -5823,10 +5871,12 @@ bif_xml_init (void)
   bif_define ("vectorbld_init", bif_vectorbld_init);
   bif_define ("vectorbld_acc", bif_vectorbld_acc);
   bif_define ("vectorbld_agg_acc", bif_vectorbld_agg_acc);
+  bif_define ("vector_of_nonnulls_bld_agg_acc", bif_vector_of_nonnulls_bld_agg_acc);
   bif_define ("vectorbld_concat_acc", bif_vectorbld_concat_acc);
   bif_define ("vectorbld_concat_agg_acc", bif_vectorbld_concat_agg_acc);
   bif_define ("vectorbld_final", bif_vectorbld_final);
   bif_define ("vectorbld_agg_final", bif_vectorbld_agg_final);
+  bif_define ("vector_or_null_bld_agg_final", bif_vector_or_null_bld_agg_final);
   bif_define ("vectorbld_length", bif_vectorbld_length);
   bif_define ("vectorbld_crop", bif_vectorbld_crop);
 

@@ -67,12 +67,14 @@ drop procedure WA_DATE_GET;
 drop procedure WA_USER_IS_FRIEND;
 drop procedure WA_OPTION_IS_PUBLIC;
 drop procedure WA_USER_TEXT_SET;
+drop procedure WA_USER_OL_ACCOUNTS_SET_UP;
 
 registry_remove ('__wa_member_upgrade');
 registry_remove ('__wa_member_doinstcount');
 registry_remove ('__WA_USER_INFO_CERT_UPGRADE');
 registry_remove ('__WA_USER_INFO_NICK_UPGRADE');
 registry_remove ('__WA_USER_OL_ACCOUNTS_SET_UP');
+registry_remove ('__WA_USER_OL_ACCOUNTS_SET_UP2');
 registry_remove ('__wa_offerlist_upgrade');
 registry_remove ('__wa_wishlist_upgrade');
 registry_remove ('__wa_favorites_upgrade');

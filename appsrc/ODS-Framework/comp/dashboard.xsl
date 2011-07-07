@@ -27,29 +27,6 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
-  <!-- xsl:template match="vm:widget_wrap">
-    <div class="widget">
-      <xsl:attribute name="class">
-        <xsl:value-of select="@class"/>
-      </xsl:attribute>
-      <div class="w_title_bar">
-        <div class="w_title_text_ctr">
-          <img>
-            <xsl:attribute name="src">
-              <xsl:value-of select="id_img"/>
-            </xsl:attribute>
-          </img>
-          <xsl:value-of select="@title"/>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
-      </div--> <!-- w_title_bar -->
-      <!--xsl:apply-templates/>
-    </div--> <!-- widget -->
-  <!--/xsl:template -->
-
   <xsl:template match="vm:dash-welcome">
     <div class="widget w_welcome">
       <vm:welcome-message />
@@ -59,39 +36,6 @@
 
   <xsl:template match="vm:dash-app-ads">
     <div class="widget w_dash_app_ads">
-      <!-- add dismiss cookie/prefs check -->
-      <!-- add dismiss control and pane -->
-      <!-- vm:if test="wa_vad_check ('blog2') is not null">
-        <div class="sf_blurb">
-          <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo" />
-        </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('enews2') is not null">
-       <div class="sf_blurb">
-         <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('oDrive') is not null">
-       <div class="sf_blurb">
-   <vm:url
-     value="-->
-
-<!--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
-     self.banner)"
-     url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('wiki') is not null">
-       <div class="sf_blurb">
-   <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('oMail') is not null">
-       <div class="sf_blurb">
-   <vm:url value="Get your own ODS Webmail address!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
-       </div>
-     </vm:if -->
-
     </div>
   </xsl:template>
 
@@ -110,16 +54,12 @@
                alt="ODS user icon" />
           <span class="w_title_text">Users <span class="usr_count"> active: <?V active ?></span></span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
           <h3>Recently Signed In</h3>
           <ul class="w_act_lst">
 <?vsp
-  for select top 3  nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nu_row_id desc do
+            for (select distinct top 3 nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nu_row_id desc) do
     {
     if (not length (u_full_name))
       u_full_name := null;
@@ -128,20 +68,20 @@
 <?vsp
     }
 ?>
-          <li/></ul>
+          <li/>
+        </ul>
           <h3>New Users</h3>
         <ul class="w_act_lst">
 <?vsp
-  for select top 3  nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nr_row_id desc do
+            for (select distinct top 3 nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nr_row_id desc) do
     {
 ?>
-        <li>
-          <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nr_name) ||'/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
-        </li>
+          <li><a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nr_name) ||'/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a></li>
 <?vsp
     }
 ?>
-        <li/></ul>
+          <li/>
+        </ul>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
         <a href="search.vspx?newest=users&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
@@ -150,7 +90,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-blogs">
-    <div class="widget w_db_summary w_blog_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -158,15 +98,11 @@
                alt="ODS-Weblog icon"/>
           <span class="w_title_text">Top Blogs</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <ul>
 <?vsp
-  for select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc do
+            for (select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc) do
   {
 ?>
           <li><a href="&lt;?V wa_expand_url (wnb_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnb_title, 1, 55) ?></a></li>
@@ -182,7 +118,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-news">
-    <div class="widget w_db_summary w_news_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -190,21 +126,14 @@
                alt="ODS-Feed Reader icon" />
           <span class="w_title_text">Latest News</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <ul>
   <?vsp
-  for select top 10 wnn_efi_id, wnn_title, wnn_link from wa_new_news order by wnn_row_id desc do
+            for (select top 10 wnn_efi_id, wnn_title, wnn_link from wa_new_news order by wnn_row_id desc) do
   {
   ?>
-    <li>
-            <a href="&lt;?V wa_expand_url (SIOC..feed_item_iri2 (wnn_efi_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a>
-          </li>
+          <li><a href="&lt;?V wa_expand_url (SIOC..feed_item_iri2 (wnn_efi_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a></li>
   <?vsp
   }
   ?>
@@ -217,31 +146,22 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-wiki">
-    <div class="widget w_db_summary w_wiki_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
                src="images/icons/ods_wiki_16.png"
-               alt="ODS-Weblog icon"/>
+               alt="ODS-Wiki icon"/>
           <span class="w_title_text">Wiki Activity</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <ul>
 <?vsp
-  for select top 10 wnw_title, wnw_topic_id from wa_new_wiki order by wnw_row_id desc do
+          for (select top 10 wnw_title, wnw_topic_id from wa_new_wiki order by wnw_row_id desc) do
     {
 ?>
-    <li>
-            <a href="&lt;?V wa_expand_url (WV.WIKI.post_topic_uri (wnw_topic_id), self.login_pars) ?&gt;">
-              <?V wa_utf8_to_wide (wnw_title, 1, 55) ?>
-            </a>
-          </li>
+          <li><a href="&lt;?V wa_expand_url (WV.WIKI.post_topic_uri (wnw_topic_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnw_title, 1, 55) ?></a></li>
 <?vsp
      }
 ?>
@@ -254,18 +174,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-blog-summary">
-    <div class="widget w_app_summary w_blog_summary">
+    <div class="widget w_app_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
                src="images/icons/ods_weblog_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('WEBLOG2') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -579,7 +494,7 @@
   </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook' or insttype_from_xsl='Calendar' or insttype_from_xsl='Discussions')
+            if (insttype_from_xsl in ('WEBLOG2', 'eNews2', 'oWiki', 'Bookmark', 'oGallery', 'Polls', 'AddressBook', 'Calendar', 'Discussions'))
             {
        ?>
 
@@ -599,7 +514,7 @@
             }
        ?>
         <td nowrap="nowrap">
-          <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V coalesce (title, '*no title*') ?></a>
+          <a href="&lt;?vsp http (wa_utf8_to_wide (wa_expand_url (url, self.login_pars))); ?&gt;"><?V coalesce (title, '*no title*') ?></a>
         </td>
         <td nowrap="nowrap">
         <?vsp
@@ -642,10 +557,6 @@
                src="images/icons/ods_feeds_16.png"
                alt="ODS-Feed Reader icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('eNews2') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -709,10 +620,6 @@
                alt="ODS-Mail icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -764,10 +671,6 @@
                src="images/icons/ods_wiki_16.png"
                alt="ODS-Wiki icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oWiki') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -830,10 +733,6 @@
                alt="ODS-Briefcase icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oDrive') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -885,11 +784,6 @@
                src="images/icons/ods_bookmarks_16.png"
                alt="ODS-Bookmark icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Bookmark') ?> summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -953,11 +847,6 @@
                alt="ODS-Community icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Community') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <table class="app_summary_listing">
@@ -980,10 +869,6 @@
                src="images/icons/ods_gallery_16.png"
                alt="ODS-Gallery icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('oGallery') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1047,10 +932,6 @@
                alt="ODS-Polls icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Polls') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -1112,10 +993,6 @@
                src="images/icons/ods_ab_16.png"
                alt="ODS-AddressBook icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('AddressBook') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1179,10 +1056,6 @@
                alt="ODS-Calendar icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Calendar') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -1245,10 +1118,6 @@
                alt="ODS-IM icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('IM') ?> Summary</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
@@ -1310,10 +1179,6 @@
                src="images/icons/ods_discussion_16.png"
                alt="ODS-Discussion icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('nntpf') ?> Summary</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1378,10 +1243,6 @@
                height="16" />
           What's New
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="images/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="images/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <vm:welcome-message2 />
@@ -1390,17 +1251,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-dataspaces">
-    <div class="widget w_my_dataspaces">
+    <div class="widget w_my_instance">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
                src="images/icons/apps_16.png"
                alt="ODS-Data Spaces icon"/>
           <span class="w_title_text">My Data Spaces</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -1612,10 +1469,6 @@
                height="16"/>
           My Profile
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
         <v:template name="my_user_details" type="simple" enabled="1">
@@ -1688,6 +1541,16 @@
                     </td>
                   </tr>
           <?vsp } ?>
+                  <tr>
+                    <td></td>
+                    <th><v:label value="WebID:" /></th>
+                    <td><v:url name="lwebid1"
+                               value="--SIOC..person_iri (SIOC..user_iri (self.ufid))"
+                               url="--SIOC..person_iri (SIOC..user_iri (self.ufid))"
+                               xhtml_target="_blank"
+                               xhtml_class="url" />
+                    </td>
+                  </tr>
                 </table>
               </td>
             </tr>
@@ -1704,42 +1567,30 @@
   <xsl:template match="vm:dash-my-blog">
 <?vsp
   declare has_blog_app int;
-  has_blog_app := 0;
-  if (wa_check_package('blog2') and
-      exists (select 1 from wa_member
-                where WAM_APP_TYPE='WEBLOG2' and
-                      WAM_MEMBER_TYPE=1 and
-                      WAM_USER=self.u_id))
-    {
-      has_blog_app := 1;
-    }
+
+      has_blog_app := wa_check_owner_app ('blog2', 'WEBLOG2', self.u_id);
 ?>
     <vm:if test="not has_blog_app">
       <div class="app_ad">
-        <!-- TODO create app ad button and call template to create-->
-        <!--vm:url value="Foo" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo"-->
         <a href="index_inst.vspx?&lt;?V 'wa_name=WEBLOG2&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_blog.jpg" alt="Your Own Blog IS Just 3 Clicks Away!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="blog_app_ad_nuke"/>
-          <label for="blog_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div>
     </vm:if>
     <vm:if test="has_blog_app">
-      <div class="widget w_my_blog">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_weblog_16.png"
                  alt="ODS-Weblog icon" />
             <span class="w_title_text">My Blog</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -1757,17 +1608,11 @@
     </vm:if>
   </xsl:template>
 
-<!--vm:url value="Start using Wiki" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" /-->
-
   <xsl:template match="vm:dash-my-wiki">
 <?vsp
   declare has_wiki_app int;
-  has_wiki_app := 0;
-  if (wa_check_package('wiki') and
-      exists (select 1 from wa_member where WAM_APP_TYPE='oWiki' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id))
-        {
-          has_wiki_app := 1;
-        }
+
+      has_wiki_app := wa_check_owner_app ('wiki', 'oWiki', self.u_id);
 ?>
     <vm:if test="not has_wiki_app">
       <div class="app_ad">
@@ -1775,14 +1620,15 @@
           <img border="0" src="images/app_ads/ods_bann_wiki.jpg" alt="Share Information, Collaborate With ODS-Wiki!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="wiki_app_ad_nuke"/>
-          <label for="wiki_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div>
     </vm:if>
     <vm:if test="has_wiki_app">
-      <div class="widget w_my_wiki">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1791,7 +1637,7 @@
             <span class="w_title_text">My Wiki</span>
           </div>
         </div>
-        <div class="pane content_pane">
+        <div class="w_pane content_pane">
           <ul>
             <xsl:call-template name="user-dashboard-my-item">
               <xsl:with-param name="app">oWiki</xsl:with-param>
@@ -1809,17 +1655,10 @@
   <!--vm:url value="Create your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" /-->
 
   <xsl:template match="vm:dash-my-news">
-
 <?vsp
   declare has_news_app int;
-  has_news_app := 0;
-  if (wa_check_package('enews2') and
-      exists (select 1 from wa_member
-                       where WAM_APP_TYPE='eNews2' and
-                             WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
-    {
-      has_news_app := 1;
-    }
+
+      has_news_app := wa_check_owner_app ('enews2', 'eNews2', self.u_id);
 ?>
     <vm:if test="not has_news_app">
       <div class="app_ad">
@@ -1827,24 +1666,21 @@
           <img border="0" src="images/app_ads/ods_bann_feeds.jpg" alt="Create Your Own Personalized News Desk!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="news_app_ad_nuke"/>
-          <label for="news_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div>
     </vm:if>
     <vm:if test="has_news_app">
-      <div class="widget w_my_news">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_feeds_16.png"
                  alt="ODS-Feed Reader icon" />
             <span class="w_title_text">My News</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -1863,34 +1699,19 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-bookmarks">
-
 <?vsp
-
   declare has_bookmarks integer;
 
-  has_bookmarks := 0;
-
-  if (wa_check_package ('bookmark') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='Bookmark' and
-                      WAM_MEMBER_TYPE = 1 and
-                      WAM_USER = self.u_id))
-    has_bookmarks := 1;
-
+      has_bookmarks := wa_check_owner_app ('bookmark', 'Bookmark', self.u_id);
 ?>
     <vm:if test="has_bookmarks">
-      <div class="widget w_my_bookmarks">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_bookmarks_16.png"
                  alt="ODS-Bookmarks icon"/>
             <span class="w_title_text">My Bookmarks</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -1930,14 +1751,8 @@
                      wa_expand_url (_inst_url, self.login_pars),
                      '&tab=shared',
                      dta[0],
-                     case when dta[0] > 1
-                       then 's'
-                       else ''
-                     end,
-                     case when dta[0] > 1
-                       then 's'
-                       else ''
-                     end));
+                     case when dta[0] > 1 then 's' else '' end,
+                     case when dta[0] > 1 then 's' else '' end));
     }
 ?>
 
@@ -1950,8 +1765,9 @@
           <img border="0" src="images/app_ads/ods_bann_bookmarks.jpg" alt="Let us help you organize and share your bookmarks!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="bookmarks_app_ad_nuke"/>
-          <label for="bookmarks_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -1959,34 +1775,19 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-contacts">
-
 <?vsp
-
   declare has_addressbook integer;
 
-  has_addressbook := 0;
-
-  if (wa_check_package ('addressbook') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='AddressBook' and
-                      WAM_MEMBER_TYPE = 1 and
-                      WAM_USER = self.u_id))
-    has_addressbook := 1;
-
+      has_addressbook := wa_check_owner_app ('addressbook', 'AddressBook', self.u_id);
 ?>
     <vm:if test="has_addressbook">
-      <div class="widget w_my_addressbook">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_ab_16.png"
                  alt="ODS-AddressBook icon"/>
             <span class="w_title_text">My Contacts</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -2026,10 +1827,7 @@
                      wa_expand_url (_inst_url, self.login_pars),
                      '&tab=shared',
                      dta[0],
-                     case when dta[0] > 1
-                       then 's'
-                       else ''
-                     end ));
+                     case when dta[0] > 1 then 's' else '' end ));
     }
 ?>
 
@@ -2042,8 +1840,9 @@
           <img border="0" src="images/app_ads/ods_bann_addressbook.jpg" alt="Let us help you organize and share your contacts!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="addressbook_app_ad_nuke"/>
-          <label for="addressbook_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2090,10 +1889,6 @@
                src="images/icons/group_16.png"
                alt="ODS Connections icon" />
           <span class="w_title_text">My Connections</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -2215,17 +2010,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-community">
-    <div class="widget w_my_communities">
+    <div class="widget w_my_instance">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
                src="images/icons/ods_community_16.png"
                alt="ODS-Communities icon"/>
           <span class="w_title_text">My Communities</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -2263,6 +2054,12 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-photos">
+    <?vsp
+      declare has_gallery integer;
+
+      has_gallery := wa_check_owner_app ('Gallery', 'oGallery', self.u_id);;
+    ?>
+    <vm:if test="has_gallery">
     <div class="widget w_my_photos">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
@@ -2272,28 +2069,13 @@
                alt="ods gallery icon"/>
           <span class="w_title_text">My Photos</span>
         </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
-        </div>
       </div>
       <div class="w_pane content_pane">
-<?vsp
-  if (wa_check_package('oGallery'))
-    {
-      declare i,ii int;
-      declare ogallery_id varchar;
-      ogallery_id:='';
-      ogallery_id := coalesce ((select WAM_INST from wa_member
-                                  where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)
-                               ,'');
-      if (ogallery_id <> '')
-        {
-?>
         <br/>
         <table border="0" cellpadding="0" cellspacing="0" class="infoarea2">
           <tr>
 <?vsp
+                declare i, ii int;
   declare q_str, rc, dta, h, curr_davres any;
   declare _gallery_folder_name varchar;
 
@@ -2341,18 +2123,9 @@
            {
                _home_url:=rows[0][0];
                _inst_name:=rows[0][1];
-           }
-           else
-               goto _skip;
-
-
---           photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
            photo_href:= sprintf(' href="/dataspace/%s/photos/%U#/%s/%s" target="_blank" ',self.u_name,_inst_name, gallery_path_arr[5], gallery_path_arr[6]);
-
           }
-
-          _skip:;
-
+                    }
           declare img_size_arr,new_img_size_arr any;
 
           img_size_arr:=wa_get_image_sizes(dta[5]);
@@ -2364,8 +2137,7 @@
             if(_img_aspect_ratio>=1.333)
             {
               new_img_size_arr:=vector(100,ceiling(100/_img_aspect_ratio));
-            }else
-            {
+                      } else {
               new_img_size_arr:=vector(ceiling(75*_img_aspect_ratio),75);
             }
           }
@@ -2397,7 +2169,9 @@
                 </tr>
               </table>
             </td>
-            <td><p></p></td>
+              <td>
+                <p></p>
+              </td>
 <?vsp
            ii := ii + 1;
          }
@@ -2419,15 +2193,25 @@
           </tr>
         </table>
         <br/>
-      </div>
       <div class="w_footer">
-        <a href="&lt;?V '/photos/'||self.u_name||'/?'||subseq(self.login_pars,1) ?&gt;">More&amp;#8230;</a>
+            <a href="search.vspx?newest=photos&l=1<?V self.login_pars ?>">More&amp;#8230;</a>
+          </div>
       </div>
-     <?vsp
-           }
-     }
-     ?>
     </div> <!-- widget -->
+    </vm:if>
+    <vm:if test="not has_gallery">
+      <div class="app_ad">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=oGallery&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
+          <img border="0" src="images/app_ads/ods_bann_photos.jpg" alt="Let us help you organize and share your contacts!" />
+        </a>
+        <div class="app_ad_ft">
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
+          <a href="#">Dismiss</a>
+        </div>
+      </div> <!-- app_ad -->
+    </vm:if>
   </xsl:template>
 
   <xsl:template match="vm:dash-my-facebook">
@@ -2439,10 +2223,6 @@
                width="16" height="16"
                alt="facebook icon"/>
           <span class="w_title_text">Facebook</span>
-        </div>
-        <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -2481,10 +2261,6 @@
                  src="images/icons/group_16.png"
                  alt="ODS-Guestbook icon" />
             <span class="w_title_text">My Guestbook</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2585,7 +2361,7 @@
 
     </xsl:processing-instruction>
     <li>
-      <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;">
+      <a href="&lt;?vsp http (wa_utf8_to_wide (wa_expand_url (url, self.login_pars))); ?&gt;">
         <?V substring (coalesce (title, '*no title*'), 1, 55) ?></a>
 <!--
                  <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;">&lt;?V wa_utf8_to_wide (coalesce (author, '~unknown~')) ?></a>
@@ -2615,30 +2391,16 @@
 <?vsp
   declare has_webmail int;
 
-  has_webmail := 0;
-
-  if (wa_check_package('oMail') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='oMail' and
-                      WAM_MEMBER_TYPE=1 and
-                      WAM_USER=self.u_id) )
-    {
-      has_webmail := 1;
-    }
+      has_webmail := wa_check_owner_app ('oMail', 'oMail', self.u_id);
 ?>
     <vm:if test="has_webmail">
-      <div class="widget w_my_mail">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_mail_16.png"
                  alt="ODS-Mail icon" />
             <span class="w_title_text">My Mail</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2692,8 +2454,9 @@
           <img border="0" src="images/app_ads/ods_bann_webmail.jpg" alt="Webmail app ad banner" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="mail_app_ad_nuke"/>
-          <label for="mail_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2707,30 +2470,16 @@
 <?vsp
   declare has_briefcase int;
 
-  has_briefcase := 0;
-
-  if (wa_check_package('Briefcase') and
-      exists (select 1
-                from wa_member
-                where WAM_APP_TYPE='oDrive' and
-                      WAM_MEMBER_TYPE=1 and
-                      WAM_USER=self.u_id) )
-    {
-      has_briefcase := 1;
-    }
+      has_briefcase := wa_check_owner_app ('Briefcase', 'oDrive', self.u_id);
 ?>
     <vm:if test="has_briefcase">
-      <div class="widget w_my_news">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_briefcase_16.png"
                  alt="ODS-Briefcase icon" />
             <span class="w_title_text">My briefcase</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2805,8 +2554,9 @@
           <img border="0" src="images/app_ads/ods_bann_briefcase.jpg" alt="Briefcase app ad banner" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="briefcase_app_ad_nuke"/>
-          <label for="briefcase_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->
@@ -2817,26 +2567,14 @@
     <?vsp
       declare has_calendar integer;
 
-      has_calendar := 0;
-
-      if (wa_check_package ('calendar') and
-          exists (select 1
-                    from wa_member
-                   where WAM_APP_TYPE='Calendar' and
-                         WAM_MEMBER_TYPE = 1 and
-                         WAM_USER = self.u_id))
-        has_calendar := 1;
+      has_calendar := wa_check_owner_app ('calendar', 'Calendar', self.u_id);
     ?>
     <vm:if test="has_calendar">
-      <div class="widget w_my_calendar">
+      <div class="widget w_my_instance">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon" src="images/icons/ods_calendar_16.png" alt="ODS-Calendar icon"/>
             <span class="w_title_text">My Calendar</span>
-          </div>
-          <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -2858,8 +2596,9 @@
           <img border="0" src="images/app_ads/ods_bann_calendar.jpg" alt="Let us help you organize your events!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="calendar_app_ad_nuke"/>
-          <label for="calendar_app_ad_nuke">Do not show this next time</label>
+          <label>
+            <input type="checkbox"/> Do not show this next time
+          </label>
           <a href="#">Dismiss</a>
         </div>
       </div> <!-- app_ad -->

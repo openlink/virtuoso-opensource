@@ -254,7 +254,7 @@ public class VirtuosoStatement implements Statement
 		   // Put the options array in the args array
 		   args[5] = getStmtOpts();
 		   future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-		   return new VirtuosoResultSet(this,metaData);
+		   return new VirtuosoResultSet(this,metaData,false);
 	       }
 	       catch(IOException e)
 	       {
@@ -484,7 +484,7 @@ public class VirtuosoStatement implements Statement
 		   args[1] = new Long(future.hashCode());
 		   future.send_message(VirtuosoFuture.fetch,args);
 		   // ReArm the process
-		   vresultSet.getMoreResults();
+		   vresultSet.getMoreResults(false);
 		   return true;
 	       }
 	       catch(IOException e)

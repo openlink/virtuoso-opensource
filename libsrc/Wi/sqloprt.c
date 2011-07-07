@@ -50,6 +50,28 @@ sqlo_dfe_list_print (dk_set_t list, int offset)
   END_DO_SET();
 }
 
+void
+sqlo_index_path_print (df_elt_t * dfe)
+{
+  DO_SET (index_choice_t *, ic, &dfe->_.table.index_path)
+    {
+      if (ic->ic_key)
+	{
+	  if (ic->ic_text_order)
+	    printf ("by_text ");
+	  printf ("key %s %9.2g %9.2g ", ic->ic_key->key_name, ic->ic_unit, ic->ic_arity);
+	}
+      if (ic->ic_inx_op)
+	{
+	  DO_SET (df_inx_op_t *, dio, &ic->ic_inx_op->dio_terms)
+	    printf ("%s ", dio->dio_key->key_name);
+	  END_DO_SET();
+	}
+    }
+  END_DO_SET();
+  printf ("\n");
+}
+
 
 void
 sqlo_dfe_print (df_elt_t * dfe, int offset)
@@ -166,7 +188,7 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	sqlo_print (("Table %s(%s %s) by %s %s", dfe->_.table.ot->ot_table->tb_name,
 	      dfe->_.table.ot->ot_prefix ? dfe->_.table.ot->ot_prefix : "",
 	      dfe->_.table.ot->ot_new_prefix,
-	      dfe->_.table.key->key_name,
+	      dfe->_.table.key ? dfe->_.table.key->key_name : "<no key>",
 		     dfe->_.table.hash_role == HR_FILL ? " hash filler " : dfe->_.table.hash_role == HR_REF ? "hash join" : ""));
 	if (compiler_unit_msecs)
 	  sqlo_print (("  Reached %9.2g unit %9.2g (%g msecs) arity %9.2g\n",
@@ -178,6 +200,8 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 		(double) dfe->_.table.in_arity, (double) dfe->dfe_unit,
 		(double) dfe->dfe_arity));
 	sqlo_print (("  col preds: "));
+	if (dfe->_.table.index_path)
+	  sqlo_index_path_print (dfe);
 	if (dfe->_.table.col_preds)
 	  sqlo_print (("\n"));
 	sqlo_dfe_list_print (dfe->_.table.col_preds, offset + OFS_INCR);
@@ -306,6 +330,8 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	    sqlo_print (("   dt generated as:\n"));
 	    sqlo_dfe_print (dfe->_.sub.generated_dfe, offset + OFS_INCR);
 	  }
+	if (DFE_DT == dfe->dfe_type && dfe->_.sub.trans)
+	  sqlo_print (("  dt transitive\n"));
 	for (elt = dfe->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
 	  {
 	    sqlo_dfe_print (elt, offset + OFS_INCR);
@@ -319,6 +345,11 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	    sqlo_print (("%*.*s", offset, offset, " "));
 	    sqlo_print (("  dt after join test:\n"));
 	    sqlo_dfe_print ((df_elt_t *) dfe->_.sub.after_join_test, offset + OFS_INCR);
+	  }
+	if (DFE_DT == dfe->dfe_type && dfe->_.sub.trans && dfe->_.sub.trans->tl_complement)
+	  {
+	    sqlo_print ((" \nTransitive e from both ends, complement dt:\n"));
+	    sqlo_dfe_print (dfe->_.sub.trans->tl_complement, offset);
 	  }
 	break;
       }
@@ -357,6 +388,20 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
       if (dfe->_.setp.is_linear)
 	sqlo_print ((" linear "));
       dbg_print_box ((caddr_t) dfe->_.setp.specs, stdout);
+      if (dfe->_.setp.oby_dep_cols)
+	{
+	  int inx;
+	  printf ("oby dep:\n");
+	  DO_BOX (dk_set_t, deps, inx, dfe->_.setp.oby_dep_cols)
+	    {
+	      DO_SET (df_elt_t *, dfe, &deps)
+		{
+		  sqlo_dfe_print (dfe, 0);
+		}
+	      END_DO_SET();
+	    }
+	  END_DO_BOX;
+	}
       if (dfe->_.setp.after_test)
 	{
 	  sqlo_print (("after test: "));
@@ -423,6 +468,8 @@ sqlo_scenario_summary (df_elt_t * dfe, float cost)
 	  break;
 	case DFE_DT:
 	  sqlo_print (("%s ", elt->_.sub.ot->ot_new_prefix));
+	  if (elt->_.sub.trans)
+	    sqlo_print ((" transdir=%d ", (int)elt->_.sub.trans->tl_direction));
 	  break;
 	case DFE_ORDER:
 	  sqlo_print ((" order_by "));

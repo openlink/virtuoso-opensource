@@ -1,94 +1,136 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="9.00"
 	Name="xml"
 	ProjectGUID="{0C234EF0-7725-4BDA-A1C3-47F5835A3837}"
-	SccProjectName=""
-	SccLocalPath="">
+	TargetFrameworkVersion="131072"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\xml"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\langfunc,..\libsrc\plugin,..\libsrc\util\pcrelib"
 				PreprocessorDefinitions="_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows"
-				MinimalRebuild="TRUE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\xml/xml.pch"
 				AssemblerListingLocation="$(ConfigurationName)\xml/"
 				ObjectFile="$(ConfigurationName)\xml/"
 				ProgramDataBaseFileName="$(ConfigurationName)\xml/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefinePreprocessorDefinitions="XML_NS"/>
+				UndefinePreprocessorDefinitions="XML_NS"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\xml.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1049"/>
+				Culture="1049"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(ConfigurationName)\xml.lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\xml"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=""
 				Optimization="3"
-				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\libsrc\langfunc,..\libsrc\plugin,..\libsrc\util\pcrelib"
 				PreprocessorDefinitions="_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG"
-				MinimalRebuild="FALSE"
-				ExceptionHandling="FALSE"
+				MinimalRebuild="false"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\xml/xml.pch"
 				AssemblerListingLocation="$(ConfigurationName)\xml/"
@@ -96,36 +138,42 @@
 				ProgramDataBaseFileName="$(ConfigurationName)\xml/"
 				BrowseInformation="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="0"
 				CompileAs="0"
-				UndefinePreprocessorDefinitions="XML_NS"/>
+				UndefinePreprocessorDefinitions="XML_NS"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\xml.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1049"/>
+				Culture="1049"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(ConfigurationName)\xml.lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -133,76 +181,100 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\libsrc\Xml.new\charclasses.c">
+				RelativePath="..\libsrc\Xml.new\charclasses.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\datatypes.c">
+				RelativePath="..\libsrc\Xml.new\datatypes.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\dtd.c">
+				RelativePath="..\libsrc\Xml.new\dtd.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\encodings.c">
+				RelativePath="..\libsrc\Xml.new\encodings.c"
+				>
 				<FileConfiguration
 					Name="Debug|Win32"
-					ExcludedFromBuild="TRUE">
+					ExcludedFromBuild="true"
+					>
 					<Tool
-						Name="VCCLCompilerTool"/>
+						Name="VCCLCompilerTool"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32"
-					ExcludedFromBuild="TRUE">
+					ExcludedFromBuild="true"
+					>
 					<Tool
-						Name="VCCLCompilerTool"/>
+						Name="VCCLCompilerTool"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\html_mode.c">
+				RelativePath="..\libsrc\Xml.new\html_mode.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\schema.c">
+				RelativePath="..\libsrc\Xml.new\schema.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\schema_fsm.c">
+				RelativePath="..\libsrc\Xml.new\schema_fsm.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xml_ecm.c">
+				RelativePath="..\libsrc\Xml.new\xml_ecm.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xmlgram.c">
+				RelativePath="..\libsrc\Xml.new\xmlgram.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xmlparser.c">
+				RelativePath="..\libsrc\Xml.new\xmlparser.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xmlread.c">
+				RelativePath="..\libsrc\Xml.new\xmlread.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 			<File
-				RelativePath="..\libsrc\Xml.new\charclasses.h">
+				RelativePath="..\libsrc\Xml.new\charclasses.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\encodings.h">
+				RelativePath="..\libsrc\Xml.new\encodings.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\html_mode.h">
+				RelativePath="..\libsrc\Xml.new\html_mode.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\schema.h">
+				RelativePath="..\libsrc\Xml.new\schema.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xml_ecm.h">
+				RelativePath="..\libsrc\Xml.new\xml_ecm.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xmlparser.h">
+				RelativePath="..\libsrc\Xml.new\xmlparser.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Xml.new\xmlparser_impl.h">
+				RelativePath="..\libsrc\Xml.new\xmlparser_impl.h"
+				>
 			</File>
 		</Filter>
 	</Files>

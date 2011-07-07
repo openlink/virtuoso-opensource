@@ -86,8 +86,11 @@
 
     <xsl:choose>
       <xsl:when test="$url = ''">
-       <xsl:variable name="url">/</xsl:variable>
+        <xsl:variable name="url"><xsl:value-of select="$iri" /></xsl:variable>
        <xsl:variable name="label">Home</xsl:variable>
+      </xsl:when>
+      <xsl:when test="not(starts-with($url, 'javascript')) and not(starts-with($url, 'http'))">
+        <xsl:variable name="url"><xsl:value-of select="$iri" />/<xsl:value-of select="$url" /></xsl:variable>
       </xsl:when>
     </xsl:choose>
 
@@ -145,7 +148,7 @@
 
     <xsl:choose>
       <xsl:when test="$target = 'help-popup'">
-        <xsl:variable name="onclick">javascript:window.open('<xsl:value-of select="$url"/><xsl:value-of select="$pparams"/>','help','width=300, height=300, left=100,top=100')</xsl:variable>
+        <xsl:variable name="onclick">javascript: windowShow('<xsl:value-of select="$url" /><xsl:value-of select="$pparams" />', 'help');</xsl:variable>
         <xsl:variable name="href">#</xsl:variable>
         <xsl:variable name="target"></xsl:variable>
       </xsl:when>
@@ -288,13 +291,15 @@
   <!-- ========================================================================== -->
   <xsl:template name="make_select">
     <xsl:param name="name"/>
+    <xsl:param name="id" />
     <xsl:param name="selected"/>
     <xsl:param name="selected_def"/>
     <xsl:param name="list"/>
     <xsl:param name="listname"/>
     <xsl:param name="treelist">0</xsl:param>
     <xsl:param name="size">1</xsl:param>
-    <xsl:param name="class">-1</xsl:param>
+    <xsl:param name="class" />
+    <xsl:param name="style" />
     <xsl:param name="onclick">-1</xsl:param>
     <xsl:param name="onchange">-1</xsl:param>
     <xsl:param name="onblur">-1</xsl:param>
@@ -313,8 +318,14 @@
       <xsl:attribute name="size"><xsl:value-of select="$size"/></xsl:attribute>
 
       <!-- process conditional attributes -->
-      <xsl:if test="$class != '-1'">
+      <xsl:if test="$id">
+        <xsl:attribute name="id"><xsl:value-of select="$id" /></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$class">
         <xsl:attribute name="class"><xsl:value-of select="$class"/></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$style">
+        <xsl:attribute name="style"><xsl:value-of select="$style" /></xsl:attribute>
       </xsl:if>
       <xsl:if test="$onclick != '-1'">
         <xsl:attribute name="onClick"><xsl:value-of select="$onclick"/></xsl:attribute>

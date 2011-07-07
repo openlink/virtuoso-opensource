@@ -1,37 +1,56 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="9.00"
 	Name="wi"
 	ProjectGUID="{93051962-7797-49F0-8958-BB1CE60FFE6F}"
 	RootNamespace="wi"
-	SccProjectName=""
-	SccLocalPath="">
+	TargetFrameworkVersion="131072"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\wi"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=""
 				Optimization="3"
-				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;PCRE_STATIC"
-				MinimalRebuild="FALSE"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;PCRE_STATIC;OLD_TIDY"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\wi/wi.pch"
 				AssemblerListingLocation="$(ConfigurationName)\wi/"
@@ -39,93 +58,122 @@
 				ProgramDataBaseFileName="$(ConfigurationName)\wi/"
 				BrowseInformation="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="0"
 				CompileAs="0"
-				UndefinePreprocessorDefinitions="YYDEBUG"/>
+				UndefinePreprocessorDefinitions="YYDEBUG"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\wi.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions=""
-				Culture="1049"/>
+				Culture="1049"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(ConfigurationName)\wi.lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\wi"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200 "
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
 				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H;PCRE_STATIC"
-				MinimalRebuild="TRUE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\wi/wi.pch"
 				AssemblerListingLocation="$(ConfigurationName)\wi/"
 				ObjectFile="$(ConfigurationName)\wi/"
 				ProgramDataBaseFileName="$(ConfigurationName)\wi/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefinePreprocessorDefinitions="YYDEBUG"/>
+				UndefinePreprocessorDefinitions="YYDEBUG"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\wi.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions=""
-				Culture="1049"/>
+				Culture="1049"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(ConfigurationName)\wi.lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -133,1291 +181,1608 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\libsrc\Wi\2pc.c">
+				RelativePath="..\libsrc\Wi\2pc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\aqueue.c">
+				RelativePath="..\libsrc\Wi\aqueue.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\arith.c">
+				RelativePath="..\libsrc\Wi\arith.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\auxfiles.c">
+				RelativePath="..\libsrc\Wi\auxfiles.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_audio.c">
+				RelativePath="..\libsrc\Wi\bif_audio.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_crypto.c">
+				RelativePath="..\libsrc\Wi\bif_crypto.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_date.c">
+				RelativePath="..\libsrc\Wi\bif_date.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_dav.c">
+				RelativePath="..\libsrc\Wi\bif_dav.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_diff.c">
+				RelativePath="..\libsrc\Wi\bif_diff.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_explain.c">
+				RelativePath="..\libsrc\Wi\bif_explain.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_file.c">
+				RelativePath="..\libsrc\Wi\bif_file.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_gnw.c">
+				RelativePath="..\libsrc\Wi\bif_gnw.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_intl.c">
+				RelativePath="..\libsrc\Wi\bif_imap.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_json.c">
+				RelativePath="..\libsrc\Wi\bif_intl.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_kerberoscli.c">
+				RelativePath="..\libsrc\Wi\bif_json.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_ldapcli.c">
+				RelativePath="..\libsrc\Wi\bif_kerberoscli.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\bif_ldapcli.c"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
-						OptimizeForProcessor="0"/>
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_mts.c">
+				RelativePath="..\libsrc\Wi\bif_mts.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_nntp.c">
+				RelativePath="..\libsrc\Wi\bif_nntp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_phrasematch.c">
+				RelativePath="..\libsrc\Wi\bif_phrasematch.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_pop3.c">
+				RelativePath="..\libsrc\Wi\bif_pop3.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_regexp.c">
+				RelativePath="..\libsrc\Wi\bif_regexp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_repl.c">
+				RelativePath="..\libsrc\Wi\bif_repl.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_smtp.c">
+				RelativePath="..\libsrc\Wi\bif_smtp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_soap.c">
+				RelativePath="..\libsrc\Wi\bif_soap.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_text.c">
+				RelativePath="..\libsrc\Wi\bif_text.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_tidy.c">
+				RelativePath="..\libsrc\Wi\bif_tidy.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_uuencode.c">
+				RelativePath="..\libsrc\Wi\bif_uuencode.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_xml.c">
+				RelativePath="..\libsrc\Wi\bif_xml.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_xper.c">
+				RelativePath="..\libsrc\Wi\bif_xper.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bitmap.c">
+				RelativePath="..\libsrc\Wi\bitmap.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\blob.c">
+				RelativePath="..\libsrc\Wi\blob.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\blobio.c">
+				RelativePath="..\libsrc\Wi\blobio.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\crypt.c">
+				RelativePath="..\libsrc\Wi\cl_stubs.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\datesupp.c">
+				RelativePath="..\libsrc\Wi\crypt.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\ddlrun.c">
+				RelativePath="..\libsrc\Wi\datesupp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\disk.c">
+				RelativePath="..\libsrc\Wi\ddlrun.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\dks_esc.c">
+				RelativePath="..\libsrc\Wi\disk.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\eqlcomp.c">
+				RelativePath="..\libsrc\Wi\dks_esc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\gate.c">
+				RelativePath="..\libsrc\Wi\eqlcomp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\hash.c">
+				RelativePath="..\libsrc\Wi\extent.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\hosting.c">
+				RelativePath="..\libsrc\Wi\gate.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\http.c">
+				RelativePath="..\libsrc\Wi\hash.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\http_client.c">
+				RelativePath="..\libsrc\Wi\hosting.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\insert.c">
+				RelativePath="..\libsrc\Wi\http.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\inxop.c">
+				RelativePath="..\libsrc\Wi\http_client.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\jso.c">
+				RelativePath="..\libsrc\Wi\insert.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\json_l.c">
+				RelativePath="..\libsrc\Wi\inxop.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\json_p.c">
+				RelativePath="..\libsrc\Wi\jso.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\lisprdr.c">
+				RelativePath="..\libsrc\Wi\json_l.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\lock.c">
+				RelativePath="..\libsrc\Wi\json_p.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\log.c">
+				RelativePath="..\libsrc\Wi\lisprdr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\map_schema.c">
+				RelativePath="..\libsrc\Wi\lock.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\map_schema.h">
+				RelativePath="..\libsrc\Wi\log.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\meta.c">
+				RelativePath="..\libsrc\Wi\map_schema.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\mtwrite.c">
+				RelativePath="..\libsrc\Wi\map_schema.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\multibyte.c">
+				RelativePath="..\libsrc\Wi\meta.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\neodisk.c">
+				RelativePath="..\libsrc\Wi\mtwrite.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\numeric.c">
+				RelativePath="..\libsrc\Wi\multibyte.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\obackup.c">
+				RelativePath="..\libsrc\Wi\neodisk.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\odbccat.c">
+				RelativePath="..\libsrc\Wi\nquad_p.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\pldebug.c">
+				RelativePath="..\libsrc\Wi\numeric.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\plugin_loader.c">
+				RelativePath="..\libsrc\Wi\obackup.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\rdf_core.c">
+				RelativePath="..\libsrc\Wi\odbccat.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\rdf_mapping_jso.c">
+				RelativePath="..\libsrc\Wi\page.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\rdfbox.c">
+				RelativePath="..\libsrc\Wi\pldebug.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\rdfinf.c">
+				RelativePath="..\libsrc\Wi\plugin_loader.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\rdfxml_parser.c">
+				RelativePath="..\libsrc\Wi\rdf_core.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\recovery.c">
+				RelativePath="..\libsrc\Wi\rdf_mapping_jso.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\regist.c">
+				RelativePath="..\libsrc\Wi\rdfbox.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\repldb.c">
+				RelativePath="..\libsrc\Wi\rdfinf.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\replpush.c">
+				RelativePath="..\libsrc\Wi\rdfxml_parser.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\replsri.c">
+				RelativePath="..\libsrc\Wi\recovery.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\replsub.c">
+				RelativePath="..\libsrc\Wi\regist.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\rltrx.c">
+				RelativePath="..\libsrc\Wi\rltrx.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\row.c">
+				RelativePath="..\libsrc\Wi\row.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\schspace.c">
+				RelativePath="..\libsrc\Wi\schspace.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\scn3_vsnet.c">
+				RelativePath="..\libsrc\Wi\scn3_vsnet.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\search.c">
+				RelativePath="..\libsrc\Wi\search.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\search_in.c">
+				RelativePath="..\libsrc\Wi\search_in.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\security.c">
+				RelativePath="..\libsrc\Wi\security.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\shcompo.c">
+				RelativePath="..\libsrc\Wi\shcompo.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\shuric.c">
+				RelativePath="..\libsrc\Wi\shuric.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sort.c">
+				RelativePath="..\libsrc\Wi\sort.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\space.c">
+				RelativePath="..\libsrc\Wi\space.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql2sql.c">
+				RelativePath="..\libsrc\Wi\sparql2sql.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql2sqltext.c">
+				RelativePath="..\libsrc\Wi\sparql2sqltext.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_core.c">
+				RelativePath="..\libsrc\Wi\sparql_core.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_l.c">
+				RelativePath="..\libsrc\Wi\sparql_l.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_p.c">
+				RelativePath="..\libsrc\Wi\sparql_p.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_qm.c">
+				RelativePath="..\libsrc\Wi\sparql_qm.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_sff.c">
+				RelativePath="..\libsrc\Wi\sparql_rdb2rdf.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_tree.c">
+				RelativePath="..\libsrc\Wi\sparql_sff.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparqld.c">
+				RelativePath="..\libsrc\Wi\sparql_tree.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparul2sql.c">
+				RelativePath="..\libsrc\Wi\sparqld.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql3_vc.c">
+				RelativePath="..\libsrc\Wi\sparul2sql.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_code.c">
+				RelativePath="..\libsrc\Wi\sql3_vc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sql_code.c"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_1.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_2pc.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_adm.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_auto.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_blog.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_cache.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_code_cache_impl.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_dav.c">
+				RelativePath="..\libsrc\Wi\sql_code_1.c"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_dbp.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_code_ddk.c">
+				RelativePath="..\libsrc\Wi\sql_code_2pc.c"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_imsg.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_code_pldbg.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_repl.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_sparql.c">
+				RelativePath="..\libsrc\Wi\sql_code_adm.c"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_sys.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_uddi.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_code_vad.c">
+				RelativePath="..\libsrc\Wi\sql_code_auto.c"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\sql_code_vdb.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"/>
+						Optimization="0"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_code_ws.c">
+				RelativePath="..\libsrc\Wi\sql_code_blog.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlbif.c">
+				RelativePath="..\libsrc\Wi\sql_code_cache.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlbif2.c">
+				RelativePath="..\libsrc\Wi\sql_code_cache_impl.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlcomp.c">
+				RelativePath="..\libsrc\Wi\sql_code_dav.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlcomp2.c">
+				RelativePath="..\libsrc\Wi\sql_code_dbp.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlcost.c">
+				RelativePath="..\libsrc\Wi\sql_code_ddk.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlcr.c">
+				RelativePath="..\libsrc\Wi\sql_code_imsg.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqldf.c">
+				RelativePath="..\libsrc\Wi\sql_code_pldbg.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlexp.c">
+				RelativePath="..\libsrc\Wi\sql_code_repl.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlgen.c">
+				RelativePath="..\libsrc\Wi\sql_code_sparql.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlhash.c">
+				RelativePath="..\libsrc\Wi\sql_code_sys.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlintrp.c">
+				RelativePath="..\libsrc\Wi\sql_code_uddi.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlo.c">
+				RelativePath="..\libsrc\Wi\sql_code_vad.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqloby.c">
+				RelativePath="..\libsrc\Wi\sql_code_vdb.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlocr.c">
+				RelativePath="..\libsrc\Wi\sql_code_ws.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqloinv.c">
+				RelativePath="..\libsrc\Wi\sqlbif.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqloinx.c">
+				RelativePath="..\libsrc\Wi\sqlbif2.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqloprt.c">
+				RelativePath="..\libsrc\Wi\sqlcomp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlorder.c">
+				RelativePath="..\libsrc\Wi\sqlcomp2.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlovdb.c">
+				RelativePath="..\libsrc\Wi\sqlcost.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlpfn.c">
+				RelativePath="..\libsrc\Wi\sqlcr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlprocc.c">
+				RelativePath="..\libsrc\Wi\sqldf.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlprt.c">
+				RelativePath="..\libsrc\Wi\sqlexp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlrbuf.c">
+				RelativePath="..\libsrc\Wi\sqlgen.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlrcomp.c">
+				RelativePath="..\libsrc\Wi\sqlhash.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlrrun.c">
+				RelativePath="..\libsrc\Wi\sqlintrp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlrun.c">
+				RelativePath="..\libsrc\Wi\sqlinx.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlsrv.c">
+				RelativePath="..\libsrc\Wi\sqlo.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlstmts.c">
+				RelativePath="..\libsrc\Wi\sqloby.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqltrig.c">
+				RelativePath="..\libsrc\Wi\sqlocr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqltype.c">
+				RelativePath="..\libsrc\Wi\sqloinv.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlver.c">
+				RelativePath="..\libsrc\Wi\sqloinx.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlview.c">
+				RelativePath="..\libsrc\Wi\sqloprt.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\srvcr.c">
+				RelativePath="..\libsrc\Wi\sqlorder.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\srvmultibyte.c">
+				RelativePath="..\libsrc\Wi\sqlovdb.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\srvstat.c">
+				RelativePath="..\libsrc\Wi\sqlpfn.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\string.c">
+				RelativePath="..\libsrc\Wi\sqlprocc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\subseq.c">
+				RelativePath="..\libsrc\Wi\sqlprt.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\text.c">
+				RelativePath="..\libsrc\Wi\sqlrbuf.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\turtle_l.c">
+				RelativePath="..\libsrc\Wi\sqlrcomp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\turtle_p.c">
+				RelativePath="..\libsrc\Wi\sqlrrun.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\update.c">
+				RelativePath="..\libsrc\Wi\sqlrun.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\uuencode.c">
+				RelativePath="..\libsrc\Wi\sqlsrv.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wi_xid.c">
+				RelativePath="..\libsrc\Wi\sqlstmts.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wirpc.c">
+				RelativePath="..\libsrc\Wi\sqltrig.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wiservic.c">
+				RelativePath="..\libsrc\Wi\sqltype.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlenc-dec.c">
+				RelativePath="..\libsrc\Wi\sqlver.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlenc.c">
+				RelativePath="..\libsrc\Wi\sqlview.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlenc_algos.c">
+				RelativePath="..\libsrc\Wi\srvcr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmllazy.c">
+				RelativePath="..\libsrc\Wi\srvmultibyte.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlschema.c">
+				RelativePath="..\libsrc\Wi\srvstat.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlsearch.c">
+				RelativePath="..\libsrc\Wi\string.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlsql.c">
+				RelativePath="..\libsrc\Wi\subseq.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmltree.c">
+				RelativePath="..\libsrc\Wi\text.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpath.c">
+				RelativePath="..\libsrc\Wi\trans.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpathp.c">
+				RelativePath="..\libsrc\Wi\turtle_l.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpf.c">
+				RelativePath="..\libsrc\Wi\turtle_p.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpscn_vsnet.c">
+				RelativePath="..\libsrc\Wi\uname_const_decl.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xqf.c">
+				RelativePath="..\libsrc\Wi\update.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xslt.c">
+				RelativePath="..\libsrc\Wi\uuencode.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xslt_fmt.c">
+				RelativePath="..\libsrc\Wi\wi_xid.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xslt_opt.c">
+				RelativePath="..\libsrc\Wi\wirpc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\wiservic.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmlenc-dec.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmlenc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmlenc_algos.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmllazy.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmlschema.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmlsearch.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmlsql.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xmltree.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xpath.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xpathp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xpf.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xpscn_vsnet.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xqf.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xslt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xslt_fmt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\xslt_opt.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 			<File
-				RelativePath="..\libsrc\Wi\2pc.h">
+				RelativePath="..\libsrc\Wi\2pc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\2pc_client.h">
+				RelativePath="..\libsrc\Wi\2pc_client.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\arith.h">
+				RelativePath="..\libsrc\Wi\arith.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_text.h">
+				RelativePath="..\libsrc\Wi\bif_text.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\bif_xper.h">
+				RelativePath="..\libsrc\Wi\bif_xper.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\blobio.h">
+				RelativePath="..\libsrc\Wi\blobio.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLI.h">
+				RelativePath="..\libsrc\Wi\CLI.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\crsr.h">
+				RelativePath="..\libsrc\Wi\crsr.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\date.h">
+				RelativePath="..\libsrc\Wi\date.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\datesupp.h">
+				RelativePath="..\libsrc\Wi\datesupp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\eqlcomp.h">
+				RelativePath="..\libsrc\Wi\eqlcomp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\http.h">
+				RelativePath="..\libsrc\Wi\http.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\iodbcinst.h">
+				RelativePath="..\libsrc\Wi\iodbcinst.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\ksrvext.h">
+				RelativePath="..\libsrc\Wi\ksrvext.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\license.h">
+				RelativePath="..\libsrc\Wi\license.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\lisprdr.h">
+				RelativePath="..\libsrc\Wi\lisprdr.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\list2.h">
+				RelativePath="..\libsrc\Wi\list2.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\log.h">
+				RelativePath="..\libsrc\Wi\log.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\ltrx.h">
+				RelativePath="..\libsrc\Wi\ltrx.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\mts.h">
+				RelativePath="..\libsrc\Wi\mts.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\mts_client.h">
+				RelativePath="..\libsrc\Wi\mts_client.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\mts_com.h">
+				RelativePath="..\libsrc\Wi\mts_com.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\multibyte.h">
+				RelativePath="..\libsrc\Wi\multibyte.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\numeric.h">
+				RelativePath="..\libsrc\Wi\numeric.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\odbcinc.h">
+				RelativePath="..\libsrc\Wi\odbcinc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\remote.h">
+				RelativePath="..\libsrc\Wi\remote.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\repl.h">
+				RelativePath="..\libsrc\Wi\repl.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\replsr.h">
+				RelativePath="..\libsrc\Wi\replsr.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\security.h">
+				RelativePath="..\libsrc\Wi\security.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql.h">
+				RelativePath="..\libsrc\Wi\sparql.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_p.h">
+				RelativePath="..\libsrc\Wi\sparql_p.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql3.h">
+				RelativePath="..\libsrc\Wi\sql3.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlbif.h">
+				RelativePath="..\libsrc\Wi\sqlbif.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlcmps.h">
+				RelativePath="..\libsrc\Wi\sqlcmps.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlcomp.h">
+				RelativePath="..\libsrc\Wi\sqlcomp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlfn.h">
+				RelativePath="..\libsrc\Wi\sqlfn.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlintrp.h">
+				RelativePath="..\libsrc\Wi\sqlintrp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlnode.h">
+				RelativePath="..\libsrc\Wi\sqlnode.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlo.h">
+				RelativePath="..\libsrc\Wi\sqlo.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlocr.h">
+				RelativePath="..\libsrc\Wi\sqlocr.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlofn.h">
+				RelativePath="..\libsrc\Wi\sqlofn.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlopcod.h">
+				RelativePath="..\libsrc\Wi\sqlopcod.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlpar.h">
+				RelativePath="..\libsrc\Wi\sqlpar.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlparext.h">
+				RelativePath="..\libsrc\Wi\sqlparext.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlpfn.h">
+				RelativePath="..\libsrc\Wi\sqlpfn.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlrcomp.h">
+				RelativePath="..\libsrc\Wi\sqlrcomp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqltype.h">
+				RelativePath="..\libsrc\Wi\sqltype.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqltype_c.h">
+				RelativePath="..\libsrc\Wi\sqltype_c.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlver.h">
+				RelativePath="..\libsrc\Wi\sqlver.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlwords.h">
+				RelativePath="..\libsrc\Wi\sqlwords.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\srvmultibyte.h">
+				RelativePath="..\libsrc\Wi\srvmultibyte.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\text.h">
+				RelativePath="..\libsrc\Wi\text.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\turtle_p.h">
+				RelativePath="..\libsrc\Wi\turtle_p.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\uuencode_impl.h">
+				RelativePath="..\libsrc\Wi\uuencode_impl.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\virtext.h">
+				RelativePath="..\libsrc\Wi\virtext.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wi.h">
+				RelativePath="..\libsrc\Wi\wi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\widd.h">
+				RelativePath="..\libsrc\Wi\widd.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\widisk.h">
+				RelativePath="..\libsrc\Wi\widisk.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\widv.h">
+				RelativePath="..\libsrc\Wi\widv.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wifn.h">
+				RelativePath="..\libsrc\Wi\wifn.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wiservic.h">
+				RelativePath="..\libsrc\Wi\wiservic.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xml.h">
+				RelativePath="..\libsrc\Wi\xml.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlgen.h">
+				RelativePath="..\libsrc\Wi\xmlgen.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlnode.h">
+				RelativePath="..\libsrc\Wi\xmlnode.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmlres.h">
+				RelativePath="..\libsrc\Wi\xmlres.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xmltree.h">
+				RelativePath="..\libsrc\Wi\xmltree.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpath.h">
+				RelativePath="..\libsrc\Wi\xpath.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpathp.h">
+				RelativePath="..\libsrc\Wi\xpathp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpathp_impl.h">
+				RelativePath="..\libsrc\Wi\xpathp_impl.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpf.h">
+				RelativePath="..\libsrc\Wi\xpf.h"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xqf.h">
+				RelativePath="..\libsrc\Wi\xqf.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="PreBuild"
-			Filter="">
+			>
 			<File
-				RelativePath="..\libsrc\Wi\json.l">
+				RelativePath="..\libsrc\Wi\json.l"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f json_l.c
-flex -Pjsonyy -ojson_l.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)json_p.h"
-						Outputs="$(InputDir)json_l.c"/>
+						Outputs="$(InputDir)json_l.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f json_l.c
-flex -Pjsonyy -ojson_l.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)json_p.h"
-						Outputs="$(InputDir)json_l.c"/>
+						Outputs="$(InputDir)json_l.c"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\json.y">
+				RelativePath="..\libsrc\Wi\json.y"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f json_p.c
-rm -f json_p.h
-bison -y -vd -pjsonyy json.y -ojson_p.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f json_p.c&#x0D;&#x0A;rm -f json_p.h&#x0D;&#x0A;bison -y -vd -pjsonyy json.y -ojson_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f json_p.c
-rm -f json_p.h
-bison -y -vd -pjsonyy json.y -ojson_p.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f json_p.c&#x0D;&#x0A;rm -f json_p.h&#x0D;&#x0A;bison -y -vd -pjsonyy json.y -ojson_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\scn3.l">
+				RelativePath="..\libsrc\Wi\nquad_p.y"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c $(InputPath)
-flex -Pscn3splityy -oscn3split.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f nquad_p.c&#x0D;&#x0A;rm -f nquad_p.h&#x0D;&#x0A;bison -y -vd -pnqyy nquad_p.y -onquad_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)nquad_p.c;$(InputDir)nquad_p.h"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\scn3.l"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;flex -Pscn3splityy -oscn3split.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)sql3.h"
-						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"/>
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c $(InputPath)
-flex -Pscn3splityy -oscn3split.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;flex -Pscn3splityy -oscn3split.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)sql3.h"
-						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"/>
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_l.l">
+				RelativePath="..\libsrc\Wi\sparql_l.l"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f sparql_l.c
-flex -8 -Psparyy -osparql_l.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f sparql_l.c&#x0D;&#x0A;flex -8 -Psparyy -osparql_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)sparql_p.h"
-						Outputs="$(InputDir)sparql_l.c"/>
+						Outputs="$(InputDir)sparql_l.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f sparql_l.c
-flex -8 -Psparyy -osparql_l.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f sparql_l.c&#x0D;&#x0A;flex -8 -Psparyy -osparql_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)sparql_p.h"
-						Outputs="$(InputDir)sparql_l.c"/>
+						Outputs="$(InputDir)sparql_l.c"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sparql_p.y">
+				RelativePath="..\libsrc\Wi\sparql_p.y"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f sparql_p.c
-rm -f sparql_p.h
-bison -y -vd -psparyy sparql_p.y -osparql_p.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)sparql_p.c;$(InputDir)sparql_p.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f sparql_p.c&#x0D;&#x0A;rm -f sparql_p.h&#x0D;&#x0A;bison -y -vd -psparyy sparql_p.y -osparql_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)sparql_p.c;$(InputDir)sparql_p.h"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f sparql_p.c
-rm -f sparql_p.h
-bison -y -vd -psparyy sparql_p.y -osparql_p.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)sparql_p.c;$(InputDir)sparql_p.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f sparql_p.c&#x0D;&#x0A;rm -f sparql_p.h&#x0D;&#x0A;bison -y -vd -psparyy sparql_p.y -osparql_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)sparql_p.c;$(InputDir)sparql_p.h"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql3.y">
+				RelativePath="..\libsrc\Wi\sql3.y"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f sql3.c
-rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)sql3.c;$(InputDir)sql3.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f sql3.c&#x0D;&#x0A;rm -f sql3.h&#x0D;&#x0A;bison -y  -vd sql3.y -osql3.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)sql3.c;$(InputDir)sql3.h"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f sql3.c
-rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)sql3.c;$(InputDir)sql3.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f sql3.c&#x0D;&#x0A;rm -f sql3.h&#x0D;&#x0A;bison -y  -vd sql3.y -osql3.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)sql3.c;$(InputDir)sql3.h"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sql_to_c.awk">
+				RelativePath="..\libsrc\Wi\sql_to_c.awk"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-$(ProjectDir)\sqlcode.bat
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"/>
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-$(ProjectDir)\sqlcode.bat
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"/>
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\sqlwords.gperf">
+				RelativePath="..\libsrc\Wi\sqlwords.gperf"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)
-rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)\sqlwords.h"/>
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sqlwords.h&#x0D;&#x0A;gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\sqlwords.h"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)
-rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)\sqlwords.h"/>
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sqlwords.h&#x0D;&#x0A;gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\sqlwords.h"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\turtle_l.l">
+				RelativePath="..\libsrc\Wi\turtle_l.l"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f turtle_l.c
-flex -8 -Pttlyy -oturtle_l.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f turtle_l.c&#x0D;&#x0A;flex -8 -Pttlyy -oturtle_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)turtle_p.h"
-						Outputs="$(InputDir)turtle_l.c"/>
+						Outputs="$(InputDir)turtle_l.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f turtle_l.c
-flex -8 -Pttlyy -oturtle_l.c $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f turtle_l.c&#x0D;&#x0A;flex -8 -Pttlyy -oturtle_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)turtle_p.h"
-						Outputs="$(InputDir)turtle_l.c"/>
+						Outputs="$(InputDir)turtle_l.c"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\turtle_p.y">
+				RelativePath="..\libsrc\Wi\turtle_p.y"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f turtle_p.c
-rm -f turtle_p.h
-bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)turtle_p.c;$(InputDir)turtle_p.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f turtle_p.c&#x0D;&#x0A;rm -f turtle_p.h&#x0D;&#x0A;bison -y -vd -pttlyy turtle_p.y -oturtle_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)turtle_p.c;$(InputDir)turtle_p.h"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f turtle_p.c
-rm -f turtle_p.h
-bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)turtle_p.c;$(InputDir)turtle_p.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f turtle_p.c&#x0D;&#x0A;rm -f turtle_p.h&#x0D;&#x0A;bison -y -vd -pttlyy turtle_p.y -oturtle_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)turtle_p.c;$(InputDir)turtle_p.h"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpathp.y">
+				RelativePath="..\libsrc\Wi\xpathp.y"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f xpathp.c
-rm -f xpathp.h
-bison -y -vd -pxpyy xpathp.y -oxpathp.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)xpathp.c;$(InputDir)xpathp.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f xpathp.c&#x0D;&#x0A;rm -f xpathp.h&#x0D;&#x0A;bison -y -vd -pxpyy xpathp.y -oxpathp.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)xpathp.c;$(InputDir)xpathp.h"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f xpathp.c
-rm -f xpathp.h
-bison -y -vd -pxpyy xpathp.y -oxpathp.c
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)xpathp.c;$(InputDir)xpathp.h"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f xpathp.c&#x0D;&#x0A;rm -f xpathp.h&#x0D;&#x0A;bison -y -vd -pxpyy xpathp.y -oxpathp.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)xpathp.c;$(InputDir)xpathp.h"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\xpscn.l">
+				RelativePath="..\libsrc\Wi\xpscn.l"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f xpscn_vsnet.c
-flex -i -oxpscn_vsnet.c -Pxpyy $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f xpscn_vsnet.c&#x0D;&#x0A;flex -i -oxpscn_vsnet.c -Pxpyy $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)xpathp.h"
-						Outputs="$(InputDir)xpscn_vsnet.c"/>
+						Outputs="$(InputDir)xpscn_vsnet.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f xpscn_vsnet.c
-flex -i -oxpscn_vsnet.c -Pxpyy $(InputPath)
-cd $(ProjectDir)
-"
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f xpscn_vsnet.c&#x0D;&#x0A;flex -i -oxpscn_vsnet.c -Pxpyy $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)xpathp.h"
-						Outputs="$(InputDir)xpscn_vsnet.c"/>
+						Outputs="$(InputDir)xpscn_vsnet.c"
+					/>
 				</FileConfiguration>
 			</File>
 		</Filter>

@@ -68,6 +68,7 @@ extern "C" {
 #define SPAR_GRAPH		(ptrlong)1018
 #define SPAR_WHERE_MODIFS	(ptrlong)1019
 #define SPAR_SERVICE_INV	(ptrlong)1020	/*!< Tree type for details of invocation of an external service endpoint */
+#define SPAR_BINDINGS_INV	(ptrlong)1021	/*!< Tree type for details of bindings associated with gp */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
@@ -158,25 +159,49 @@ typedef struct rdf_grab_config_s {
 #define SPARE_GLOBALS_ARE_COLONUMBERED	1	/*!< Global parameters are numbered in output so ?:a ?:b ?:a ?:c becomes :0 :1 :0 :2 */
 #define SPARE_GLOBALS_ARE_COLONAMED	2	/*!< Global parameters are named parameters in output so ?:a ?:b ?:a ?:c becomes :a :b :a :c */
 
+/*!< Description of query sources (all input graphs, their status, automatic data loading) */
+typedef struct sparp_sources_s
+  {
+    rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
+    dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
+    dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
+    dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
+    int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
+    int			ssrc_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
+    int			ssrc_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
+    int			ssrc_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
+  } sparp_sources_t;
+
+#define spare_grab			spare_src.ssrc_grab
+#define spare_common_sponge_options	spare_src.ssrc_common_sponge_options
+#define spare_default_graphs		spare_src.ssrc_default_graphs
+#define spare_named_graphs		spare_src.ssrc_named_graphs
+#define spare_default_graphs_listed	spare_src.ssrc_default_graphs_listed
+#define spare_named_graphs_listed	spare_src.ssrc_named_graphs_listed
+#define spare_default_graphs_locked	spare_src.ssrc_default_graphs_locked
+#define spare_named_graphs_locked	spare_src.ssrc_named_graphs_locked
+
+
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
   {
     /*spar_query_t *	spare_sparqr;*/
-    ptrlong             spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
-    ptrlong *           spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
+    ptrlong		spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
+    ptrlong *		spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
     dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
     dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in spare_namespace_prefixes that points to the first inherited (not local) namespace */
     caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
-    caddr_t             spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
-    caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
-    caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
-    caddr_t             spare_output_scalar_format_name;	/*!< Overrides generic \c spare_output_format_name for scalar result sets, like ASK */
-    caddr_t             spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
-    caddr_t             spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
+    caddr_t		spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
+    caddr_t		spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
+    caddr_t		spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
+    caddr_t		spare_output_scalar_format_name;	/*!< Overrides generic \c spare_output_format_name for scalar result sets, like ASK */
+    caddr_t		spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
+    caddr_t		spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
     caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
     caddr_t		spare_output_maxrows;		/*!< boxed maximum expected number of rows to return */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
+    struct rdf_inf_ctx_s *	spare_inference_ctx;		/*!< Pointer to an inference structure, to expand transitive and add unions for inverses */
     caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
     caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
     dk_set_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
@@ -186,18 +211,12 @@ typedef struct sparp_env_s
     id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
     id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
 #endif
-    rdf_grab_config_t	spare_grab;			/*!< Grabber configuration */
-    dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
-    dk_set_t		spare_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
-    dk_set_t		spare_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
-    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
-    int			spare_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
-    int			spare_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
-    int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
+    sparp_sources_t	spare_src;			/*!< Query sources, temporarily reset to all zeroes when entering SERVICE with nonempty set of sources */
     dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
     dk_set_t		spare_groupings;		/*!< Variables that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
     caddr_t		spare_describe_mode;		/*!< Version of DESCRIBE SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
+    dk_set_t		spare_context_sinvs;		/*!< Stack of not yet closed service invocations */
     dk_set_t		spare_context_qms;		/*!< IRIs of allowed quad maps (IRI if quad map is restricted, DEFAULT_L if default qm only, _STAR if not restricted) */
     dk_set_t		spare_context_graphs;		/*!< Expressions that are default values for graph field */
     dk_set_t		spare_context_subjects;		/*!< Expressions that are default values for subject field */
@@ -206,6 +225,8 @@ typedef struct sparp_env_s
     dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
     dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
     dk_set_t		spare_acc_filters;		/*!< Sets of accumulated filters of GPs */
+    SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
+    SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
     dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
     dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
@@ -236,8 +257,10 @@ typedef struct sparp_env_s
 
 typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
-  ptrlong sg_equiv_count;		/*!< A pointer to the count of used items in the beginning of \c spare_equivs[0] buffer */
+  ptrlong sg_equiv_count;		/*!< A count of used items in the beginning of \c sg_equivs buffer */
   ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
+  struct spar_tree_s **sg_sinvs;	/*!< All descriptions of service invocations, in pointer to a growing buffer */
+  ptrlong sg_sinv_count;		/*!< A count of used items in the beginning of \c sg_sinvs buffer */
 } sparp_globals_t;
 
 typedef struct sparp_s {
@@ -266,14 +289,17 @@ typedef struct sparp_s {
   spar_lexem_t *sparp_curr_lexem;
   spar_lexbmk_t sparp_curr_lexem_bmk;
   int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
-  int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions or HAVING but not HAVING SELECT ... */
+  int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions, GROUP BY, ORDER BY, or HAVING. Each bit is responsible for one level of nesting. */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
+  int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.retval_varnames lists */
+  int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
 /* Environment of lex */
   size_t sparp_text_ofs;
   size_t sparp_text_len;
   int sparp_lexlineno;			/*!< Source line number, starting from 1 */
   int sparp_lexdepth;			/*!< Lexical depth, it's equal to the current position in \c sparp_lexpars and \c sparp_lexstates */
+  int sparp_rset_lexdepth_plus_1;	/*!< Lexical depth of current result set, increased by 1 (so when it's zero it means not in rset) */
   int sparp_lexpars[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of not-yet-closed parenthesis */
   int sparp_lexstates[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of lexical states */
   int sparp_string_literal_lexval;	/*!< Lexical value of string literal that is now in process. */
@@ -286,6 +312,7 @@ typedef struct sparp_s {
   struct sparp_trav_params_s *sparp_stp;	/*!< Parameters of traverse (callbacks in use). It is filled in by sparp_gp_grav() only, not by sparp_gp_grav_int() */
   struct sparp_trav_state_s *sparp_stss;	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
   sparp_globals_t *sparp_sg;		/*!< Pointer to data common for all sparp_t-s for whole stack of nested sparp-s */
+  int sparp_first_equiv_idx;		/*!< The index of the first equivalence class allocated in this sparp, to avoid integrity checks of incomplete equivs of outer sparps */
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
   ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
@@ -343,6 +370,7 @@ extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in
 #define SPART_GRAPH_NOT_NAMED		0x190
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
+#define SPARP_SINV(sparp,idx) ((sparp)->sparp_sg->sg_sinvs[(idx)])
 
 #ifdef DEBUG
 #define ASSERT_EQUIV_INDEX(f,l,sparp,eq_inx) do { \
@@ -485,7 +513,7 @@ typedef struct spar_tree_s
         /* #define SPAR_TRIPLE		(ptrlong)1014 */
         ptrlong subtype;
         SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
-        caddr_t qm_iri;
+        caddr_t qm_iri_or_pair;	/* !< This is one of the following: DEFAULT_L for built-in mapping or _STAR for no restriction or an UNAME of top quad map or a pair of one listed before and a serial number of a sinv */
         caddr_t selid;
         caddr_t tabid;
         triple_case_t **tc_list;
@@ -494,7 +522,7 @@ typedef struct spar_tree_s
         ptrlong ft_type;
         ptrlong src_serial;	/*!< Assigned once at parser and preserved in all clone operations */
       } triple;
-    struct { /* Note that all first members of \c retval case should match to \c var case */
+    struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
         /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
         /* #define SPAR_VARIABLE		(ptrlong)1013 */
         caddr_t vname;
@@ -504,7 +532,18 @@ typedef struct spar_tree_s
         ptrlong equiv_idx;
         rdf_val_range_t rvr;
       } var;
-    struct { /* Note that all first members of \c retval case should match to \c var case */
+    struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
+        /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
+        /* #define SPAR_VARIABLE		(ptrlong)1013 */
+        caddr_t vname;
+        caddr_t selid;
+        caddr_t tabid;
+        ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
+        ptrlong equiv_idx;
+        rdf_val_range_t rvr;
+        ptrlong bracketed;  /*!< 0 for plain, 1 for [...], 2 for fake and bnodes made for default graphs */
+      } bnode;
+    struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
         /* #define SPAR_RETVAL		(ptrlong)1008 */
         caddr_t vname;
         caddr_t selid;
@@ -552,13 +591,23 @@ typedef struct spar_tree_s
       } wm;
     struct {
         /* define SPAR_SERVICE_INV	(ptrlong)1020 */
+        ptrlong own_idx;	/*!< Boxed serial of the sinv in the parser */
         caddr_t endpoint;	/*!< An IRI of web service endpoint without static parameters */
         SPART **iri_params;	/*!< A get_keyword style array of parameters to pass in the IRI, like maxrows */
         caddr_t syntax;		/*!< Boxed bitmask of SSG_SD_xxx flags of allowed query serialization features */
         caddr_t *param_varnames;	/*!< Names of variables that are passed as parameters */
+        ptrlong in_list_implicit;	/*!< Flags if IN variables were specified using '*' or not specified at all */
         caddr_t *rset_varnames;	/*!< Names of variables that are returned in the result set from the endpoint, in the order in the rset */
         SPART **defines;	/*!< List of defines to pass, as a get_keyword style list of qnames and values or arrays of values */
+        SPART **sources;	/*!< List of sources, similar to one in req_top. If NULL then sources of parent req_top are used */
+        caddr_t storage_uri;	/*!< Storage to use: JSO UNAME if specified explicitly for a service IRI, uname_virtrdf_ns_uri_DefaultServiceStorage if unknown service */
       } sinv;
+    struct {
+        /* define SPAR_BINDINGS_INV		(ptrlong)1021 */
+        ptrlong own_idx;	/*!< Boxed serial of the bindings invocation in the parser */
+        SPART *vars;		/*!< Names of variables that are passed as parameters */
+	SPART ***data_rows;	/*!< Rows of data. Note that they're not copied from spare_bindings_rowset and not duplicated if enclosing GP is duplicated. */
+      } binv;
   } _;
 } sparp_tree_t;
 
@@ -566,8 +615,8 @@ typedef unsigned char SPART_buf[sizeof (sparp_tree_t) + BOX_AUTO_OVERHEAD];
 #define SPART_AUTO(ptr,buf,t) \
   do { \
     BOX_AUTO_TYPED(SPART *,ptr,buf,sizeof(SPART),DV_ARRAY_OF_POINTER); \
-    memset (ptr, 0, sizeof (SPART)); \
-    ptr->type = t; \
+    memset ((ptr), 0, sizeof (SPART)); \
+    (ptr)->type = t; \
     } while (0)
 
 extern sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all);
@@ -578,26 +627,27 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 #define SPAR_IS_BLANK_OR_VAR(tree) \
   ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) && \
-   ((SPAR_VARIABLE == tree->type) || \
-    (SPAR_BLANK_NODE_LABEL == tree->type) ) )
+   ((SPAR_VARIABLE == (tree)->type) || \
+    (SPAR_BLANK_NODE_LABEL == (tree)->type) ) )
 
 #define SPAR_IS_LIT(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) || \
-   (SPAR_LIT == tree->type) )
+   (SPAR_LIT == (tree)->type) )
 
 #define SPAR_IS_LIT_OR_QNAME(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) || \
-   (SPAR_LIT == tree->type) || (SPAR_QNAME == tree->type)/* || (SPAR_QNAME_NS == tree->type)*/ )
+   (SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == (tree)->type)*/ )
 
 #define SPAR_LIT_VAL(tree) \
-  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)tree) : \
-   (SPAR_LIT == tree->type) ? tree->_.lit.val : NULL )
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
+   (SPAR_LIT == (tree)->type) ? (tree)->_.lit.val : NULL )
 
 #define SPAR_LIT_OR_QNAME_VAL(tree) \
-  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)tree) : \
-   ((SPAR_LIT == tree->type) || (SPAR_QNAME == tree->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? tree->_.lit.val : NULL )
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
+   ((SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? (tree)->_.lit.val : NULL )
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
+#define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
 #define SPART_IS_DEFAULT_GRAPH_BLANK(g) ( \
@@ -607,10 +657,11 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPART_BAD_EQUIV_IDX (ptrlong)(SMALLEST_POSSIBLE_POINTER-1)
 #define SPART_BAD_GP_SUBTYPE (ptrlong)(SMALLEST_POSSIBLE_POINTER-2)
 
-#define SPAR_FT_CONTAINS	1
-#define SPAR_FT_XCONTAINS	2
-#define SPAR_FT_XPATH_CONTAINS	3
-#define SPAR_FT_XQUERY_CONTAINS	4
+#define SPAR_FT_CONTAINS	11
+#define SPAR_FT_XCONTAINS	12
+#define SPAR_FT_XPATH_CONTAINS	13
+#define SPAR_FT_XQUERY_CONTAINS	14
+#define SPAR_GEO_CONTAINS	21
 
 extern caddr_t spar_var_name_of_ret_column (SPART *tree);
 extern caddr_t spar_alias_name_of_ret_column (SPART *tree);
@@ -623,7 +674,7 @@ extern SPART *spar_exec_uid_and_gs_cbk (sparp_t *sparp);
 
 /*!< Returns statically known permissions on \c graph_iri.
 We assume that if permissions on the graph are "interesting" for some reason then the change in these permission may require query re-compilation.
-So if some factor may change some bits set in \c req_perms bitmask then a depencency from the factor is established for
+So if some factor may change some bits set in \c req_perms bitmask then a dependency from the factor is established for
 sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query
 If sparp->sparp_gs_app_callback is set then the "nobody" user is used, because the callback may cut permissions down to that level but we don't know that statically */
 extern int spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms);
@@ -653,6 +704,8 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
 
+extern caddr_t sparp_graph_sec_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname);
+extern caddr_t sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid);
 extern caddr_t sparp_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname); /*!< returns t_boxed IRI_ID or plain NULL pointer */
 extern ccaddr_t sparp_id_to_iri (sparp_t *sparp, iri_id_t iid);	/*!< returns t_boxed string or plain NULL pointer */
 
@@ -665,10 +718,13 @@ extern caddr_t spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
+#define SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp) ((ptrlong)((sparp)->sparp_env->spare_context_gp_subtypes->data))
 extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
-extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
+/*! Makes and adds a triple or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
+\c banned tricks is a bitmask that is 0 by default, 0x1 to ignore transitivity in inf rules or options, 0x2 to ignore inverse props */
+extern SPART *spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
 /*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches */
 extern int spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
@@ -676,7 +732,7 @@ extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, in
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
 extern SPART *spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong from_group_subtype, ptrlong from2_subtype, ptrlong req_perms, SPART *needle_in);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
-extern void spar_compose_service_inv (sparp_t *sparp, SPART *gp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax);
+extern SPART *spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage_uri);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);
@@ -689,9 +745,11 @@ extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **r
 extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
+extern void spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv);
+extern SPART **spar_make_sources_like_top (sparp_t *sparp);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
-extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
+extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
@@ -735,10 +793,14 @@ extern void spar_qm_pop_key (sparp_t *sparp, int key_to_pop);
 
 extern caddr_t spar_make_iri_from_template (sparp_t *sparp, caddr_t tmpl);
 
+#define SPAR_TABLE_IS_SQLQUERY(strg) (('/' == strg[0]) && ('*' == strg[1]))
+#define SPAR_SQLQUERY_PLACE(strg) t_box_dv_short_nchars (strg + 2, strstr (strg, "*/") - (strg+2))
+
+extern caddr_t spar_qm_table_or_sqlquery_report_name (caddr_t atbl);
 extern caddr_t spar_qm_find_base_alias (sparp_t *sparp, caddr_t descendant_alias);
-extern caddr_t spar_qm_find_base_table (sparp_t *sparp, caddr_t descendant_alias);
+extern caddr_t spar_qm_find_base_table_or_sqlquery (sparp_t *sparp, caddr_t descendant_alias);
 extern dk_set_t spar_qm_find_descendants_of_alias (sparp_t *sparp, caddr_t base_alias);
-extern void spar_qm_add_aliased_table (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias);
+extern void spar_qm_add_aliased_table_or_sqlquery (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias);
 extern void spar_qm_add_aliased_alias (sparp_t *sparp, caddr_t parent_alias, caddr_t new_alias);
 extern void spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl);
 extern void spar_qm_add_text_literal (sparp_t *sparp, caddr_t ft_type, caddr_t ft_table_alias, SPART *ft_col, SPART **qmv_cols, SPART **options);

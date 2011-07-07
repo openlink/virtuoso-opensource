@@ -19,6 +19,67 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
+-------------------------------------------------------------------------------
+--
+-- ACL Functions
+--
+-------------------------------------------------------------------------------
+create procedure AB.WA.acl_condition (
+  in domain_id integer,
+  in id integer := null)
+{
+  if (not is_https_ctx ())
+    return 0;
+
+  if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_ACL is not null))
+    return 1;
+
+  if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_ACL is not null))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.acl_check (
+  in domain_id integer,
+  in id integer := null)
+{
+  declare rc varchar;
+  declare graph_iri, groups_iri, acl_iris any;
+
+  rc := '';
+  if (AB.WA.acl_condition (domain_id, id))
+  {
+    acl_iris := vector (AB.WA.forum_iri (domain_id));
+    if (not isnull (id))
+      acl_iris := vector (SIOC..addressbook_contact_iri (domain_id, id), AB.WA.forum_iri (domain_id));
+
+    graph_iri := AB.WA.acl_graph (domain_id);
+    groups_iri := SIOC..acl_groups_graph (AB.WA.domain_owner_id (domain_id));
+    rc := SIOC..acl_check (graph_iri, groups_iri, acl_iris);
+  }
+  return rc;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.acl_list (
+  in domain_id integer)
+{
+  declare graph_iri, groups_iri, iri any;
+
+  iri := AB.WA.forum_iri (domain_id);
+  graph_iri := AB.WA.acl_graph (domain_id);
+  groups_iri := SIOC..acl_groups_graph (AB.WA.domain_owner_id (domain_id));
+  return SIOC..acl_list (graph_iri, groups_iri, iri);
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Session Functions
@@ -37,13 +98,15 @@ create procedure AB.WA.session_domain (
 
   options := http_map_get('options');
   if (not is_empty_or_null (options))
+  {
     domain_id := get_keyword ('domain', options);
+  }
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
     domain_id := -1;
 
 _end:;
@@ -56,64 +119,27 @@ _end:;
 create procedure AB.WA.session_restore(
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare domain_id, account_id, account_rights any;
 
-  declare exit handler for sqlstate '*'
-  {
-    domain_id := -2;
-    goto _end;
-  };
+  domain_id := AB.WA.session_domain (params);
+  account_id := -1;
 
-  sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, '');
-
-  options := http_map_get('options');
-  if (not is_empty_or_null(options))
-    domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id))
-  {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
-    domain_id := -1;
-
-_end:
-  domain_id := cast (domain_id as integer);
-  user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
          from DB.DBA.VSPX_SESSION S,
               WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = realm
-          and S.VS_SID   = sid
+        where S.VS_REALM = get_keyword ('realm', params, 'wa')
+          and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
-    user_id   := U_ID;
-    user_name := AB.WA.user_name(U_NAME, U_FULL_NAME);
-    user_role := AB.WA.access_role(domain_id, U_ID);
+    account_id := U_ID;
   }
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
-    if (domain_id = -1)
-    {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    } else if (domain_id = -2) {
-      user_role := 'public';
-      user_name := 'Public User';
-    } else {
-      user_role := 'guest';
-      user_name := 'Guest User';
-    }
-
-  return vector('domain_id', domain_id,
-                'user_id',   user_id,
-                'user_name', user_name,
-                'user_role', user_role
+  account_rights := AB.WA.access_rights (domain_id, account_id);
+  return vector (
+                 'domain_id', domain_id,
+                 'account_id',   account_id,
+                 'account_rights', account_rights
                );
 }
 ;
@@ -123,7 +149,8 @@ _end:
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure AB.WA.frozen_check(in domain_id integer)
+create procedure AB.WA.frozen_check (
+  in domain_id integer)
 {
   declare exit handler for not found { return 1; };
 
@@ -146,7 +173,8 @@ create procedure AB.WA.frozen_check(in domain_id integer)
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.frozen_page(in domain_id integer)
+create procedure AB.WA.frozen_page (
+  in domain_id integer)
 {
   return (select WAI_FREEZE_REDIRECT from DB.DBA.WA_INSTANCE where WAI_ID = domain_id);
 }
@@ -161,64 +189,23 @@ create procedure AB.WA.check_admin(
   in user_id integer) returns integer
 {
   declare group_id integer;
+
+  if ((user_id = 0) or (user_id = http_dav_uid ()))
+    return 1;
+
   group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
+  if ((group_id = 0) or (group_id = http_dav_uid ()) or (group_id = http_dav_uid()+1))
+    return 1;
 
-  if (user_id = 0)
-    return 1;
-  if (user_id = http_dav_uid ())
-    return 1;
-  if (group_id = 0)
-    return 1;
-  if (group_id = http_dav_uid ())
-    return 1;
-  if(group_id = http_dav_uid()+1)
-    return 1;
   return 0;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.check_grants(in domain_id integer, in user_id integer, in role_name varchar)
-{
-  whenever not found goto _end;
-
-  if (AB.WA.check_admin(user_id))
-    return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  if (role_name = 'admin')
-    return 0;
-  if (role_name = 'guest') {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-  }
-  if (role_name = 'owner')
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_MEMBER_TYPE = 1
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-_end:
-  return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure AB.WA.check_grants2(in role_name varchar, in page_name varchar)
+create procedure AB.WA.check_grants (
+  in role_name varchar,
+  in page_name varchar)
 {
   declare tree any;
 
@@ -231,66 +218,67 @@ create procedure AB.WA.check_grants2(in role_name varchar, in page_name varchar)
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.access_role(in domain_id integer, in user_id integer)
+create procedure AB.WA.access_rights (
+  in domain_id integer,
+  in account_id integer)
 {
-  whenever not found goto _end;
+  declare rc varchar;
 
-  if (AB.WA.check_admin (user_id))
-    return 'admin';
+  if (domain_id <= 0)
+    return null;
+
+  if (AB.WA.check_admin (account_id))
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'owner';
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 2
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'author';
+    return 'W';
+
+  if (is_https_ctx ())
+  {
+    rc := AB.WA.acl_check (domain_id);
+    if (rc <> '')
+      return rc;
+  }
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'reader';
+    return 'R';
 
   if (exists(select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
-    return 'guest';
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+    return 'R';
 
-_end:
-  return 'public';
-}
-;
+  if (is_https_ctx () and exists (select 1 from AB.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
+    return '';
 
--------------------------------------------------------------------------------
---
-create procedure AB.WA.access_is_write (in access_role varchar)
-{
-  if (is_empty_or_null (access_role))
-    return 0;
-  if (access_role = 'guest')
-    return 0;
-  if (access_role = 'public')
-    return 0;
-  return 1;
+  return null;
 }
 ;
 
@@ -331,11 +319,11 @@ create procedure AB.WA.menu_tree ()
   S :=
 '<?xml version="1.0" ?>
 <menu_tree>
-  <node name="home" url="home.vspx"            id="1"   allowed="public guest reader author owner admin">
-    <node name="11" url="home.vspx"            id="11"  allowed="public guest reader author owner admin"/>
-    <node name="12" url="search.vspx"          id="12"  allowed="public guest reader author owner admin"/>
-    <node name="13" url="error.vspx"           id="13"  allowed="public guest reader author owner admin"/>
-    <node name="14" url="settings.vspx"        id="14"  allowed="reader author owner admin"/>
+  <node name="home" url="home.vspx"            id="1"   allowed="W R">
+    <node name="11" url="home.vspx"            id="11"  allowed="W R"/>
+    <node name="12" url="search.vspx"          id="12"  allowed="W R"/>
+    <node name="13" url="error.vspx"           id="13"  allowed="W R"/>
+    <node name="14" url="settings.vspx"        id="14"  allowed="W"/>
   </node>
 </menu_tree>';
 
@@ -376,7 +364,7 @@ create procedure AB.WA.iri_fix (
   {
     declare V any;
 
-    V := rfc1808_parse_uri (S);
+    V := rfc1808_parse_uri (cast (S as varchar));
     V [0] := 'https';
     V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
     S := DB.DBA.vspx_uri_compose (V);
@@ -446,11 +434,13 @@ create procedure AB.WA.export_rss_sqlx_int (
   http ('select \n', retValue);
   http ('  XMLELEMENT(\'title\', AB.WA.utf2wide(AB.WA.domain_name (<DOMAIN_ID>))), \n', retValue);
   http ('  XMLELEMENT(\'description\', AB.WA.utf2wide(AB.WA.domain_description (<DOMAIN_ID>))), \n', retValue);
-  http ('  XMLELEMENT(\'managingEditor\', U_E_MAIL), \n', retValue);
+  http ('  XMLELEMENT(\'managingEditor\', AB.WA.utf2wide (U_FULL_NAME || \' <\' || U_E_MAIL || \'>\')), \n', retValue);
   http ('  XMLELEMENT(\'pubDate\', AB.WA.dt_rfc1123(now())), \n', retValue);
   http ('  XMLELEMENT(\'generator\', \'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\')), \n', retValue);
   http ('  XMLELEMENT(\'webMaster\', U_E_MAIL), \n', retValue);
-  http ('  XMLELEMENT(\'link\', AB.WA.ab_url (<DOMAIN_ID>)) \n', retValue);
+  http ('  XMLELEMENT(\'link\', AB.WA.ab_url (<DOMAIN_ID>)), \n', retValue);
+  http ('  (select XMLAGG (XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (SH_URL as "href", \'hub\' as "rel", \'PubSubHub\' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG where SH_PROTO = \'PubSubHub\' and SH_ID = AP_HOST_ID and AP_WAI_ID = <DOMAIN_ID>), \n', retValue);
+  http ('  XMLELEMENT(\'language\', \'en-us\') \n', retValue);
   http ('from DB.DBA.SYS_USERS where U_ID = <USER_ID> \n', retValue);
   http (']]></sql:sqlx>\n', retValue);
 
@@ -664,7 +654,7 @@ create procedure AB.WA.domain_gems_create (
 create procedure AB.WA.domain_gems_delete (
   in domain_id integer,
   in account_id integer := null,
-  in appName varchar := 'AddressBook',
+  in appName varchar := 'Gems',
   in appGems varchar := null)
 {
   declare tmp, home, appHome, path varchar;
@@ -679,15 +669,16 @@ create procedure AB.WA.domain_gems_delete (
 
   if (isnull (appGems))
     appGems := AB.WA.domain_gems_name (domain_id);
+  appHome := home || appName || '/';
   home := appHome || appGems || '/';
 
-  path := home || appName || '.rss';
+  path := home || 'AddressBook.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.rdf';
+  path := home || 'AddressBook.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.atom';
+  path := home || 'AddressBook.atom';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.comment';
+  path := home || 'AddressBook.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid, auth_pwd varchar;
@@ -831,7 +822,8 @@ create procedure AB.WA.domain_ping (
 {
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
   {
-    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), AB.WA.sioc_url (domain_id));
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), AB.WA.forum_iri (domain_id), null, AB.WA.gems_url (domain_id) || 'AddressBook.rss');
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), AB.WA.forum_iri (domain_id), null, AB.WA.gems_url (domain_id) || 'AddressBook.atom');
   }
 }
 ;
@@ -847,12 +839,38 @@ create procedure AB.WA.forum_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.acl_graph (
+  in domain_id integer)
+{
+  return SIOC..acl_graph ('AddressBook', AB.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,
   in realm varchar := null)
 {
   return AB.WA.url_fix (AB.WA.iri_fix (AB.WA.forum_iri (domain_id)), sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := AB.WA.iri_fix (AB.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
+  return AB.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -1383,11 +1401,11 @@ create procedure AB.WA.banner_links (
   if (domain_id <= 0)
     return 'Public AddressBook';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  AB.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  AB.WA.domain_sioc_url (domain_id),
                   AB.WA.domain_name (domain_id),
                   AB.WA.domain_name (domain_id),
-                  AB.WA.utf2wide (AB.WA.account_sioc_url (domain_id, sid, realm)),
+                  AB.WA.utf2wide (AB.WA.account_sioc_url (domain_id)),
                   AB.WA.account_fullName (AB.WA.domain_owner_id (domain_id)),
                   AB.WA.account_fullName (AB.WA.domain_owner_id (domain_id))
                  );
@@ -1569,8 +1587,14 @@ create procedure AB.WA.utfClear(
 create procedure AB.WA.utf2wide (
   inout S any)
 {
+  declare retValue any;
+
   if (isstring (S))
-    return charset_recode (S, 'UTF-8', '_WIDE_');
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
   return S;
 }
 ;
@@ -1580,8 +1604,14 @@ create procedure AB.WA.utf2wide (
 create procedure AB.WA.wide2utf (
   inout S any)
 {
+  declare retValue any;
+
   if (iswidestring (S))
-    return charset_recode (S, '_WIDE_', 'UTF-8' );
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
   return charset_recode (S, null, 'UTF-8' );
 }
 ;
@@ -1955,9 +1985,12 @@ create procedure AB.WA.ab_tree2(
   retValue := vector ();
 
   if ((node_type = 'u') and (node_id = -1))
-    for (select distinct U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID order by 2) do
+  {
+    for (select distinct U_ID, U_NAME from AB..GRANTS_VIEW where id = user_id order by 2) do
+    {
       retValue := vector_concat(retValue, vector(U_NAME, AB.WA.make_node ('u', U_ID), AB.WA.make_path(path, 'u', U_ID)));
-
+    }
+  }
   return retValue;
 }
 ;
@@ -1976,8 +2009,10 @@ create procedure AB.WA.ab_node_has_childs (
   node_type := AB.WA.node_type(node);
 
   if ((node_type = 'u') and (node_id = -1))
-    if (exists (select 1 from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID))
+  {
+    if (exists (select 1 from AB..GRANTS_VIEW where id = user_id))
       return 1;
+  }
 
   return 0;
 }
@@ -2227,83 +2262,62 @@ create procedure AB.WA.dt_format(
   };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat))
+  for (N := 1; N <= length(pFormat); N := N + 1)
   {
     ch := substring(pFormat, N, 1);
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    N := N + 1;
-  };
+    }
+  }
   return S;
 }
 ;
@@ -2478,8 +2492,10 @@ create procedure AB.WA.test (
   } else if (is_empty_or_null(value)) {
     return value;
   }
-  value := AB.WA.validate2 (valueClass, cast (value as varchar));
-  if (valueType = 'integer') {
+
+  value := OMAIL.WA.validate2 (valueClass, cast (value as varchar));
+  if (valueType = 'integer')
+  {
     tmp := get_keyword('minValue', params);
     if ((not isnull (tmp)) and (value < tmp))
       signal('MIN', cast (tmp as varchar));
@@ -2487,8 +2503,9 @@ create procedure AB.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull (tmp) and (value > tmp))
       signal('MAX', cast (tmp as varchar));
-
-  } else if (valueType = 'float') {
+  }
+  else if (valueType = 'float')
+  {
     tmp := get_keyword('minValue', params);
     if (not isnull (tmp) and (value < tmp))
       signal('MIN', cast (tmp as varchar));
@@ -2496,8 +2513,9 @@ create procedure AB.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull (tmp) and (value > tmp))
       signal('MAX', cast (tmp as varchar));
-
-  } else if (valueType = 'varchar') {
+  }
+  else if (valueType = 'varchar')
+  {
     tmp := get_keyword('minLength', params);
     if (not isnull (tmp) and (length(AB.WA.utf2wide(value)) < tmp))
       signal('MINLENGTH', cast (tmp as varchar));
@@ -2721,12 +2739,16 @@ create procedure AB.WA.validate_tags (
 --
 create procedure AB.WA.ab_sparql (
   in S varchar,
+  in V any := null,
   in debug any := null)
 {
   declare st, msg, meta, rows any;
 
+  if (not isnull (V))
+    V := vector ();
+
   st := '00000';
-  exec (S, st, msg, vector (), 0, meta, rows);
+  exec (S, st, msg, V, vector ('use_cache', 1), meta, rows);
   if (not isnull (debug) and ('00000' <> st))
     dbg_obj_print ('', S, st, msg);
   if ('00000' = st)
@@ -2754,43 +2776,51 @@ create procedure AB.WA.ab_graph_create ()
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.dashboard_get(
-  in domain_id integer,
-  in user_id integer)
+create procedure AB.WA.dashboard_rs(
+  in p0 integer)
 {
-  declare ses any;
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 datetime;
 
-  ses := string_output ();
-  http ('<ab-db>', ses);
-  for select top 10 *
-        from (select a.P_NAME,
-                     SIOC..addressbook_contact_iri (domain_id, P_ID) P_URI,
-                     coalesce (a.P_UPDATED, now ()) P_UPDATED
-                from AB.WA.PERSONS a,
-                     DB.DBA.WA_INSTANCE b,
-                     DB.DBA.WA_MEMBER c
-                where a.P_DOMAIN_ID = domain_id
-                  and b.WAI_ID = a.P_DOMAIN_ID
-                  and c.WAM_INST = b.WAI_NAME
-                  and c.WAM_USER = user_id
-                order by a.P_UPDATED desc
-             ) x do
+  result_names(c0, c1, c2);
+  for (select top 10 *
+         from (select P_ID,
+                      P_NAME,
+                      P_UPDATED
+                 from AB.WA.PERSONS
+                where P_DOMAIN_ID = p0
+                order by P_UPDATED desc
+              ) x) do
   {
-    declare uname, full_name varchar;
-
-    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
-    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
-
-    http ('<ab>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (P_UPDATED)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', P_NAME), ses);
-    http (sprintf ('<link><![CDATA[%s]]></link>', P_URI), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-    http (sprintf ('<uid>%s</uid>', uname), ses);
-    http ('</ab>', ses);
+    result (P_ID, P_NAME, P_UPDATED);
   }
-  http ('</ab-db>', ses);
-  return string_output_string (ses);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.dashboard_get(
+  in domain_id integer)
+{
+  declare account_id integer;
+  declare aStream any;
+
+  account_id := AB.WA.domain_owner_id (domain_id);
+  aStream := string_output ();
+  http ('<ab-db>', aStream);
+  for (select x.* from AB.WA.dashboard_rs(p0)(_id integer, _name varchar, _time datetime) x where p0 = domain_id) do
+  {
+    http ('<ab>', aStream);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (coalesce (_time, now ()))), aStream);
+    http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
+    http (sprintf ('<link>%V</link>', SIOC..addressbook_contact_iri (domain_id, _id)), aStream);
+    http (sprintf ('<from><![CDATA[%s]]></from>', AB.WA.account_fullName (account_id)), aStream);
+    http (sprintf ('<uid>%s</uid>', AB.WA.account_name (account_id)), aStream);
+    http ('</ab>', aStream);
+  }
+  http ('</ab-db>', aStream);
+  return string_output_string (aStream);
 }
 ;
 
@@ -2920,6 +2950,7 @@ create procedure AB.WA.contact_update (
         P_FOAF,
         P_PHOTO,
         P_INTERESTS,
+        P_RELATIONSHIPS,
         P_MAIL,
         P_WEB,
         P_ICQ,
@@ -2980,6 +3011,7 @@ create procedure AB.WA.contact_update (
         foaf,
         photo,
         interests,
+        relationships,
         mail,
         web,
         icq,
@@ -3119,6 +3151,8 @@ create procedure AB.WA.contact_update2 (
   if (id = -1)
     return id;
 
+  if (pName = 'P_CATEGORY_ID')
+    update AB.WA.PERSONS set P_CATEGORY_ID = pValue where P_ID = id;
   if (pName = 'P_KIND')
     update AB.WA.PERSONS set P_KIND = pValue where P_ID = id;
   if (pName = 'P_NAME')
@@ -3216,6 +3250,8 @@ create procedure AB.WA.contact_update2 (
     update AB.WA.PERSONS set P_B_MAIL = pValue where P_ID = id;
   if (pName = 'P_B_WEB')
     update AB.WA.PERSONS set P_B_WEB = pValue where P_ID = id;
+  if (pName = 'P_B_INDUSTRY')
+    update AB.WA.PERSONS set P_B_INDUSTRY = pValue where P_ID = id;
   if (pName = 'P_B_ORGANIZATION')
     update AB.WA.PERSONS set P_B_ORGANIZATION = pValue where P_ID = id;
   if (pName = 'P_B_DEPARTMENT')
@@ -3224,6 +3260,8 @@ create procedure AB.WA.contact_update2 (
     update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
   if (pName = 'P_ACL')
     update AB.WA.PERSONS set P_ACL = pValue where P_ID = id;
+  if (pName = 'P_CERTIFICATE')
+    update AB.WA.PERSONS set P_CERTIFICATE = pValue where P_ID = id;
 
   update AB.WA.PERSONS set P_UPDATED = now () where P_ID = id;
 
@@ -3270,54 +3308,22 @@ create procedure AB.WA.contact_update4 (
   in domain_id integer,
   in pFields any,
   in pValues any,
-  in tags varchar,
-  in validation any := null)
+  in tags varchar := null,
+  in options any := null,
+  in validation any := null,
+  in progress_id any := null)
 {
   declare L, N, M varchar;
   declare S varchar;
-  declare st, msg, meta, rows, F, V any;
+  declare tmp, V, F any;
 
-  if (not isnull (validation) and length (validation))
+  tmp := AB.WA.contact_validation (domain_id, pFields, pValues, options, validation, progress_id);
+  if (not isnull (tmp))
   {
-    S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
-    V := vector ();
-    for (N := 0; N < length (validation); N := N + 1)
-    {
-      M := AB.WA.vector_index (pFields, validation [N]);
-      if (not isnull (M))
-      {
-        if (not is_empty_or_null (pValues [M]))
-        {
-          S := S || sprintf (' and %s = ?', pFields [M]);
-          V := vector_concat (V, vector (pValues [M]));
-        }
-      }
-    }
-    if (length (V) = length (validation))
-    {
-      st := '00000';
-      exec (S, st, msg, V, 0, meta, rows);
-      if ((st = '00000') and (length (rows) > 0))
-      {
-        V := vector ();
-        F := vector ();
-        for (N := 0; N < length (pFields); N := N + 1) {
-          if (not AB.WA.vector_contains (validation, pFields [N]))
-          {
-            F := vector_concat (F, vector (pFields [N]));
-            V := vector_concat (V, vector (pValues [N]));
-          }
-        }
-        pFields := F;
-        pValues := V;
+    if (length (pFields) = 0)
+      return 0;
 
-        id := vector ();
-        for (N := 0; N < length (rows); N := N + 1)
-        {
-          id := vector_concat (id, vector (rows [N][0]));
-      }
-    }
-  }
+    id := tmp;
   }
 
   if ((isinteger (id)) and (id = -1))
@@ -3346,11 +3352,11 @@ create procedure AB.WA.contact_update4 (
           );
       }
       }
+
   _exit:;
     if (isinteger (id) and (id = -1))
-    {
       return 0;
-    }
+
     V := vector ();
     F := vector ();
     for (N := 0; N < L; N := N + 1)
@@ -3396,32 +3402,155 @@ create procedure AB.WA.contact_field (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.contact_delete (
-  in id integer)
+  in id integer,
+  in domain_id integer)
 {
-  delete from AB.WA.PERSONS where P_ID = id;
+  delete from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.person_permissions (
-  in id integer,
+create procedure AB.WA.contact_validation (
   in domain_id integer,
+  inout pFields any,
+  inout pValues any,
+  in options any := null,
+  in validation any := null,
+  in progress_id any := null)
+{
+  declare N, M varchar;
+  declare S varchar;
+  declare id, st, msg, meta, rows, F, V, T any;
+
+  id := null;
+  if (not isnull (validation) and length (validation))
+  {
+    S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
+    V := vector ();
+    for (N := 0; N < length (validation); N := N + 1)
+    {
+      M := AB.WA.vector_index (pFields, validation [N]);
+      if (not isnull (M))
+      {
+        S := S || sprintf (' and coalesce(%s, '''') = coalesce(?, '''')', pFields[M]);
+          V := vector_concat (V, vector (pValues [M]));
+        }
+      }
+      st := '00000';
+    exec (S, st, msg, V, vector ('use_cache', 1), meta, rows);
+      if ((st = '00000') and (length (rows) > 0))
+      {
+      declare validationMode varchar;
+
+      id := vector ();
+      for (N := 0; N < length (rows); N := N + 1)
+      {
+        id := vector_concat (id, vector (rows [N][0]));
+      }
+      validationMode := get_keyword ('validationMode', options);
+      if (validationMode = 'ask')
+      {
+        declare pollValue, pollTime varchar;
+
+	      registry_set ('addressbook_poll_' || progress_id, 'ask');
+        registry_set ('addressbook_poll_time_' || progress_id, cast (msec_time() as varchar));
+        registry_set ('addressbook_poll_data_' || progress_id, (select P_NAME from AB.WA.PERSONS where P_ID = id[0]));
+	      while (1)
+	      {
+          delay(2);
+
+          -- has answer?
+          pollValue := registry_get ('addressbook_poll_' || progress_id);
+          if (pollValue like 'answer:%')
+          {
+            validationMode := replace (pollValue, 'answer:', '');
+    	      registry_remove ('addressbook_poll_' || progress_id);
+            registry_remove ('addressbook_poll_time_' || progress_id);
+            registry_remove ('addressbook_poll_data_' || progress_id);
+
+            goto _break;
+          }
+
+          -- no client interaction
+          -- stopped?
+          pollTime := cast (registry_get ('addressbook_poll_time_' || progress_id) as integer);
+          if (((msec_time() - pollTime) > 10000) or not AB.WA.import_check_progress_id (progress_id))
+          {
+    	      registry_remove ('addressbook_poll_' || progress_id);
+            registry_remove ('addressbook_poll_time_' || progress_id);
+            registry_remove ('addressbook_poll_data_' || progress_id);
+	          registry_set ('addressbook_action_' || progress_id, 'stop');
+            validationMode := 'skip';
+
+            goto _break;
+          }
+	      }
+	    _break:;
+      }
+        F := vector ();
+      V := vector ();
+      if (validationMode = 'skip')
+      {
+        ;
+      }
+      else if (validationMode = 'merge')
+      {
+        for (N := 0; N < length (pFields); N := N + 1)
+        {
+          if (not AB.WA.vector_contains (validation, pFields [N]))
+          {
+            F := vector_concat (F, vector (pFields [N]));
+            V := vector_concat (V, vector (pValues [N]));
+          }
+        }
+      }
+      else if (validationMode = 'override')
+        {
+        for (N := 0; N < length (pFields); N := N + 1)
+        {
+          if (not AB.WA.vector_contains (validation, pFields[N]))
+          {
+            F := vector_concat (F, vector (pFields[N]));
+            V := vector_concat (V, vector (pValues[N]));
+        }
+      }
+        T := LDAP..contact_fields ();
+        for (N := 0; N < length (T); N := N + 2)
+        {
+          if ((T[N] <> 'P_NAME') and not AB.WA.vector_contains (pFields, T[N]))
+          {
+            F := vector_concat (F, vector (T[N]));
+            V := vector_concat (V, vector (null));
+          }
+        }
+      }
+      pFields := F;
+      pValues := V;
+    }
+  }
+  return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.contact_rights (
+  in domain_id integer,
+  in id integer,
   in access_role varchar)
 {
-  declare person_domain_id integer;
+  declare retValue varchar;
 
-  person_domain_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = id);
-  if (isnull (person_domain_id))
-    return '';
-  if (person_domain_id = domain_id)
+  retValue := '';
+  if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id))
   {
-    if (AB.WA.access_is_write (access_role))
-      return 'W';
-    return 'R';
+  retValue := AB.WA.acl_check (domain_id, id);
+    if (retValue = '')
+      retValue := access_role;
   }
-  return '';
-}
+    return retValue;
+  }
 ;
 
 -------------------------------------------------------------------------------
@@ -3451,21 +3580,294 @@ create procedure AB.WA.contact_tags_update (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.contact_share (
+  in account_id integer,
+  in person_id integer,
+  in grants varchar,
+  in override integer)
+{
+  declare N, pos, id integer;
+  declare name, V any;
+
+  grants := replace(grants, ' ', '');
+  grants := replace(grants, ',,', ',');
+  grants := trim(grants, ',', '');
+  grants := grants || ',';
+  for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do
+  {
+    name := U_NAME;
+    id := U_ID;
+    pos := strstr (grants, name || ',');
+    if (isnull (pos))
+    {
+      if (override)
+        delete from AB.WA.GRANTS where G_GRANTER_ID = account_id and G_GRANTEE_ID = id and G_PERSON_ID = person_id;
+    } else {
+      grants := replace (grants, name || ',', '');
+    }
+  }
+  V := split_and_decode (trim (grants, ','), 0, '\0\0,');
+  for (N := 0; N < length (V); N := N + 1)
+  {
+    id := (select U_ID from SYS_USERS where U_NAME = V[N]);
+    if (not isnull(id))
+      insert into AB.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_PERSON_ID)
+        values(account_id, id, person_id);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.contact_certificate (
+  in account_id integer,
+  in mail varchar)
+{
+  return (select TOP 1 P_CERTIFICATE
+            from AB.WA.PERSONS
+           where P_MAIL = mail
+             and length (P_CERTIFICATE) <> 0
+             and P_DOMAIN_ID in (select WAI_ID
+                                   from DB.DBA.WA_INSTANCE,
+                                        DB.DBA.WA_MEMBER
+                                  where WAM_USER = account_id
+                                    and WAM_MEMBER_TYPE = 1
+                                    and WAM_INST = WAI_NAME));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.value2str (
+  in data any,
+  in labels any,
+  in defaults any)
+{
+  declare N, M integer;
+  declare retValue varchar;
+
+  retValue := '';
+  for (N := 0; N < length (data); N := N + 1)
+  {
+    for (M := 0; M < length (labels); M := M + 1)
+    {
+      retValue := retValue || get_keyword (labels[M], data[N], defaults[M]) || ';';
+    }
+    retValue := retValue || '\n';
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_count (
+  in type integer,
+  in data any)
+{
+  -- vCard
+  if (type = 0)
+    return AB.WA.import_vcard_count (data);
+
+  -- FOAF
+  if (type = 1)
+    return AB.WA.import_foaf_count (data);
+
+  -- CSV
+  if (type = 2)
+    return AB.WA.import_csv_count (data);
+
+  -- LDAP
+  if (type = 3)
+    return AB.WA.import_ldap_count (data);
+
+  -- LinkedIn
+  if (type = 4)
+    return AB.WA.import_linkedin_count (data);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_vcard_count (
+  in content any)
+{
+  declare xmlData, items any;
+  declare retValue integer;
+
+  if (not isstring (content))
+    content := cast (content as varchar);
+
+  xmlData := DB.DBA.IMC_TO_XML (content);
+  xmlData := xml_tree_doc (xmlData);
+  items := xpath_eval ('/*', xmlData, 0);
+  retValue := 0;
+  foreach (any item in items) do
+  {
+    if (xpath_eval ('name(.)', item) = 'IMC-VCARD')
+      retValue := retValue + 1;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_foaf_count (
+  in domain_id integer,
+  in content any)
+{
+  return 10;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_csv_count (
+  in content any)
+{
+  declare N, nLength integer;
+  declare retValue integer;
+
+  retValue := 0;
+  nLength := length (content);
+  for (N := 1; N < nLength; N := N + 1)
+  {
+    retValue := retValue + 1;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_ldap_count (
+  in content any)
+{
+  declare N, nLength integer;
+  declare retValue integer;
+
+  retValue := 0;
+  nLength := length (content);
+  for (N := 0; N < nLength; N := N + 2)
+  {
+    if (content [N] = 'entry')
+      retValue := retValue + 1;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_linkedin_count (
+  in content any)
+{
+  declare items any;
+
+  items := xml_tree_doc (content);
+  items := xpath_eval('/connections/person', items, 0);
+
+  return length (items);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_check_progress_id (
+  in progress_id any)
+{
+  if (is_empty_or_null (progress_id))
+    return 1;
+
+  if  (cast (registry_get ('addressbook_action_' || progress_id) as varchar) = 'stop')
+    return 0;
+
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_inc_progress_id (
+  in progress_id any)
+{
+  declare tmp any;
+
+  if (is_empty_or_null (progress_id))
+    return;
+
+  if  (cast (registry_get ('addressbook_action_' || progress_id) as varchar) = 'stop')
+    return;
+
+  tmp := cast (registry_get('addressbook_index_' || progress_id) as integer) + 1;
+  registry_set ('addressbook_index_' || progress_id, cast (tmp as varchar));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import (
+  in domain_id integer,
+  in type integer,
+  in data any,
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
+{
+  if (type = 0)
+  {
+    -- vCard
+    AB.WA.import_vcard (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 1)
+  {
+    -- FOAF
+    AB.WA.import_foaf (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 2)
+  {
+    -- CSV
+    AB.WA.import_csv (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 3)
+  {
+    -- LDAP
+    AB.WA.import_ldap (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 4)
+  {
+    -- LinkedIn
+    AB.WA.import_linkedin (domain_id, data, options, validation, progress_id);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_vcard (
   in domain_id integer,
   in content any,
   in options any := null,
   in validation any := null,
-  in updatedBefore integer := null,
-  in externalUID varchar := null)
+  in progress_id varchar := null)
 {
   declare L, M, N, nLength, mLength, id integer;
-  declare tmp, uid, oTags, data, pFields, pValues, pField, pField2 any;
+  declare tmp, uid, data, pFields, pValues, pField, pField2 any;
   declare xmlData, xmlItems, itemName, Meta, V any;
-  declare vcardImported any;
+  declare mode, externalUID, updatedBefore, vcardImported any;
 
   vcardImported := vector ();
-  oTags := case when isnull (options) then '' else get_keyword ('tags', options, '') end;
+
+  if (isnull (options))
+    options := vector ();
+
+  mode := get_keyword ('mode', options, 0);
+  if (mode = 2)
+    return AB.WA.import_vcard2 (domain_id, data, options, validation);
+
+  updatedBefore := get_keyword ('updatedBefore', options);
+  externalUID := get_keyword ('externalUID', options);
 
   Meta := vector
     (
@@ -3503,6 +3905,9 @@ create procedure AB.WA.import_vcard (
     itemName := xpath_eval ('name(.)', xmlItem);
     if (itemName = 'IMC-VCARD')
     {
+      if (not AB.WA.import_check_progress_id (progress_id))
+        return;
+
       id := -1;
       uid := null;
       pFields := vector ();
@@ -3517,22 +3922,10 @@ create procedure AB.WA.import_vcard (
           if (not is_empty_or_null (T))
           {
             pField2 := pField;
-            if (pField2 = 'P_BIRTHDAY')
-            {
-              {
-                declare continue handler for sqlstate '*'
-              {
-                  T := '';
-                };
-                T := AB.WA.dt_reformat (T, 'YMD');
-              }
-            }
-            else if (pField2 = 'P_UID')
+            if (pField2 = 'P_UID')
             {
               uid := T;
             }
-            if (not is_empty_or_null (T))
-            {
               if (not isnull (Meta [N+1]))
               {
                 if (strstr (T, ' @TYPE_') <> 0)
@@ -3546,8 +3939,10 @@ create procedure AB.WA.import_vcard (
             } else {
                       V := split_and_decode (Meta [N+1][M], 0, '\0\0,');
                       for (L := 0; L < length (V); L := L + 1)
+                    {
                         if (isnull (strstr (T, ' @TYPE_' || V[L])))
                           goto _exit;
+                    }
                       pField2 := Meta [N+1][M+1];
                     _exit:;
                     }
@@ -3565,38 +3960,106 @@ create procedure AB.WA.import_vcard (
           }
         }
       }
-      }
       if (isnull (uid) and not isnull (externalUID))
       {
         N := strchr (externalUID, '_');
         if (isnull (N))
-        {
           N := 0;
-        }
+
         tmp := subseq (externalUID, N, length (externalUID));
         id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = tmp), -1);
         if (id <> -1)
-        {
           uid := tmp;
         }
-      }
       id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = uid), -1);
       if ((id <> -1) and not isnull (updatedBefore))
       {
         if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_UPDATED >= updatedBefore))
           goto _skip;
       }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
-      connection_set ('__addressbook_import', '0');
+
+      id := AB.WA.import_contact_update (id, domain_id, pFields, pValues, options, validation, progress_id);
       vcardImported := vector_concat (vcardImported, id);
 
     _skip:;
+      AB.WA.import_inc_progress_id (progress_id);
     }
   }
   return vcardImported;
 }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_rdf_data (
+  in domain_id integer,
+  in data  any,
+  in options varchar,
+  in validation any := null,
+  in progress_id any := null)
+  {
+  declare M integer;
+  declare meta, tags, pValue, pField, pFields, pValues any;
+
+  meta := vector
+    (
+      'iri',                     'P_IRI',
+      'personalProfileDocument', 'P_FOAF',
+      'nick',                    'P_NAME',
+      'name',                    'P_FULL_NAME',
+      'type',                    'P_KIND',
+      'firstNname',              'P_FIRST_NAME',
+      'family_name',             'P_LAST_NAME',
+      'dateOfBirth',             'P_BIRTHDAY',
+      'mbox',                    'P_MAIL',
+      'workplaceHomepage',       'P_WEB',
+      'icqChatID',               'P_ICQ',
+      'msnChatID',               'P_MSN',
+      'aimChatID',               'P_AIM',
+      'yahooChatID',             'P_YAHOO',
+      'title',                   'P_TITLE',
+      'phone',                   'P_H_PHONE',
+      'homepage',                'P_H_WEB',
+      'workplaceHomepage',       'P_B_WEB',
+      'lat',                     'P_H_LAT',
+      'lng',                     'P_H_LNG',
+      'depiction',               'P_PHOTO'
+    );
+
+  pFields := vector ();
+  pValues := vector ();
+  for (M := 0; M < length (meta); M := M + 2)
+            {
+    pValue := get_keyword (meta[M], data);
+    if (not isnull(pValue))
+              {
+      pField := meta[M+1];
+      pFields := vector_concat (pFields, vector (pField));
+      pValues := vector_concat (pValues, vector (pValue));
+            }
+          }
+  pValue := get_keyword ('keywords', data);
+  if (not isnull(pValue))
+          {
+    tags := AB.WA.tags_join (get_keyword ('tags', options, ''), pValue);
+    options := AB.WA.set_keyword ('tags', options, tags);
+          }
+  pValue := get_keyword ('interest', data);
+  if (not isnull(pValue))
+          {
+    pValue := AB.WA.value2str(pValue, vector('value', 'label'), vector('', ''));
+    pFields := vector_concat (pFields, vector ('P_INTERESTS'));
+    pValues := vector_concat (pValues, vector (pValue));
+          }
+  pValue := get_keyword ('knows', data);
+  if (not isnull(pValue))
+          {
+    pValue := AB.WA.value2str(pValue, vector('x', 'value'), vector('foaf:knows', ''));
+    pFields := vector_concat (pFields, vector ('P_RELATIONSHIPS'));
+    pValues := vector_concat (pValues, vector (pValue));
+          }
+  AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+          }
 ;
 
 -------------------------------------------------------------------------------
@@ -3606,142 +4069,53 @@ create procedure AB.WA.import_vcard2 (
   in content any,
   in options any := null,
   in validation any := null,
-  in contentType any := 0,
-  in contentIRI varchar := null)
-{
-  declare N, M, L, mLength, iLength, id integer;
-  declare tmp, tmp2, tmpTags, data, pFields, pValues any;
-  declare Tags, Meta, Persons, Person, Items any;
-  declare S, T, name, fullName varchar;
+  in progress_id varchar := null)
+          {
+  declare items, data any;
+  declare S, st, msg, meta any;
+  declare contentType, contentIRI any;
 
-  Tags := case when isnull (options) then '' else get_keyword ('tags', options, '') end;
-  if (isnull (contentIRI))
-    contentIRI := AB.WA.ab_graph_create ();
+  if (isnull (options))
+    options := vector ();
+
+  contentType := get_keyword ('contentType', options, 0);
+  contentIRI := get_keyword ('contentIRI', options, AB.WA.ab_graph_create ());
 
   declare exit handler for sqlstate '*'
-  {
-    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+          {
     AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');
   };
 
-  Meta := vector
-    (
-      'P_NAME',
-      'P_FIRST_NAME',
-      'P_LAST_NAME',
-      'P_BIRTHDAY',
-      'P_TITLE',
-      'P_TAGS'
-    );
-  mLength := length (Meta);
-
-  if (contentType = 0)
+  if (contentType > 0)
   {
-    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
-  } else {
-    declare st, msg, meta any;
-
-    -- S := sprintf ('SPARQL load <%s> into graph <%s>', content, contentIRI);
-    S := sprintf ('SPARQL\ndefine get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', content, contentIRI);
+    S := sprintf ('sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }', content, contentIRI);
     st := '00000';
-    exec (S, st, msg, vector (), 0, meta, Items);
+        commit work;
+    exec (S, st, msg, vector (), vector ('use_cache', 1), meta, Items);
     if ('00000' <> st)
       signal (st, msg);
-  }
-  S := ' SPARQL '                                                    ||
-       ' define input:storage "" '                                   ||
-       ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> '     ||
-       ' select ?P_ID'                                               ||
-       '   from <%s> '                                               ||
-       '  where { ?P_ID a vcard:vCard . }';
-  Items := AB.WA.ab_sparql (sprintf (S, contentIRI));
-  for (L := 0; L < length (Items); L := L + 1)
-  {
-    AB.WA.ab_sparql (sprintf ('SPARQL\ndefine get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', Items[L][0], contentIRI));
-    S := ' SPARQL ' ||
-         ' define input:storage "" ' ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '      ||
-         ' prefix foaf: <http://xmlns.com/foaf/0.1/> '                 ||
-         ' prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> '    ||
-         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> '     ||
-         ' prefix bio: <http://vocab.org/bio/0.1/> '                   ||
-         ' select ?P_NAME ?P_FIRST_NAME ?P_LAST_NAME ?P_BIRTHDAY ?P_TITLE ?P_TAGS' ||
-         '   from <%s> '                                          ||
-         '  where { '                                             ||
-         '         <%s> a vcard:vCard . '                         ||
-         '         optional { ?P_ID vcard:NICKNAME ?P_NAME. }. '  ||
-         '         optional { ?P_ID vcard:N ?N. '                 ||
-         '                    ?N vcard:Given ?P_FIRST_NAME. '     ||
-         '                    ?N vcard:Family ?P_LAST_NAME. '     ||
-         '                    ?N vcard:Prefix ?P_TITLE. '         ||
-         '                  }.'                                   ||
-         '         optional { ?P_ID vcard:BDAY ?P_BIRTHDAY} . '   ||
-         '         optional { ?P_ID vcard:CATEGORIES ?P_TAGS} . ' ||
-         '       }';
-    Person := AB.WA.ab_sparql (sprintf (S, Items[L][0], contentIRI));
-    if (length (Person) = 1)
-    {
-      Person := Persons[0];
-      name := Person[1];
-      if (not is_empty_or_null (name))
-      {
-        pFields := vector ('P_NAME');
-        pValues := vector (name);
-        if (content like 'http://%')
-        {
-          pFields := vector_concat (pFields, vector ('P_FOAF'));
-          pValues := vector_concat (pValues, vector (content));
-        }
-        for (M := 2; M < mLength; M := M + 1)
-        {
-          tmp := Meta[M];
-          tmp2 := Person[M];
-          tmpTags := tags;
-          if (tmp = 'P_BIRTHDAY')
-          {
-            {
-              declare continue handler for sqlstate '*'
-              {
-                tmp := '';
-              };
-              tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
-            }
-          }
-          if (tmp = 'P_KIND')
-          {
-            tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
-          }
-          if (tmp = 'P_MAIL')
-          {
-            tmp2 := replace (tmp2, 'mailto:', '');
-          }
-          if (tmp = 'P_PHONE')
-          {
-            tmp2 := replace (tmp2, 'tel:', '');
-          }
-          if (tmp = 'P_TITLE')
-          {
-            tmp2 := AB.WA.import_title (tmp2);
-          }
-          if (tmp = 'P_TAGS')
-          {
-            tmpTags := AB.WA.tags_join (tmpTags, tmp2);
-            tmp := '';
-          }
-          if (tmp <> '')
-          {
-            pFields := vector_concat (pFields, vector (tmp));
-            pValues := vector_concat (pValues, vector (tmp2));
-          }
-        }
-        commit work;
-        connection_set ('__addressbook_import', '1');
-        AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tmpTags, validation);
-        connection_set ('__addressbook_import', '0');
       }
+  else if (contentType = 0)
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
     }
+
+  S := sprintf ('sparql
+                 define input:storage ""
+                 prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+                 select ?x
+                   from <%s>
+                  where { ?x a vcard:vCard . }', contentIRI);
+  items := AB.WA.ab_sparql (S);
+  foreach (any item in items) do
+  {
+    if (not AB.WA.import_check_progress_id (progress_id))
+      return;
+
+    data := AB.WA.import_vcard2_array (item[0], contentIRI);
+    AB.WA.import_rdf_data (domain_id, data, options, validation, progress_id);
+    AB.WA.import_inc_progress_id (progress_id);
   }
 
 _delete:;
@@ -3751,21 +4125,59 @@ _delete:;
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.import_title (
-  in title varchar)
+create procedure AB.WA.import_vcard2_array (
+  in iri varchar,
+  in graph varchar)
 {
-  declare M integer;
-  declare V any;
+  declare N integer;
+  declare S varchar;
+  declare V, S, st, msg, rows, meta any;
 
-  V := vector ('Mr', 'Mrs', 'Dr', 'Ms', 'Sir');
-  for (M := 0; M < length (V); M := M + 1)
+  S := sprintf (' sparql
+                  define input:storage ""
+                  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                  prefix foaf: <http://xmlns.com/foaf/0.1/>
+                  prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+                  prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+                  prefix bio: <http://vocab.org/bio/0.1/>
+                  select ?nick ?firstName ?family_name ?birthday ?title ?keywords
+                    from <%s>
+                   where {
+                          ?iri a vcard:vCard .
+                          optional { ?iri vcard:NICKNAME ?nick. }.
+                          optional { ?iri vcard:N ?N.
+                                     ?N vcard:Given ?firstName.
+                                     ?N vcard:Family ?family_name.
+                                     ?N vcard:Prefix ?title.
+                                   }.
+                          optional { ?iri vcard:BDAY ?birthday} .
+                          optional { ?iri vcard:CATEGORIES ?keywords} .
+                          filter (?iri = iri(?::0)).
+                         }', graph);
+  V := vector ();
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (iri), vector ('use_cache', 1), meta, rows);
+  if (st = '00000')
   {
-    if (lcase (title) like (lcase (V[M])|| '%'))
+    meta := ODS.ODS_API.simplifyMeta(meta);
+    foreach (any row in rows) do
+  {
+      N := 0;
+      while (N < length(meta))
+      {
+        if (meta[N] like '%_array')
     {
-      return V[M];
+          ODS.ODS_API.appendPropertyArray (V, N, meta[N], row[N], meta, row);
+        } else {
+          ODS.ODS_API.appendProperty (V, meta[N], row[N]);
+    }
+        N := N + 1;
+  }
     }
   }
-  return '';
+  return V;
 }
 ;
 
@@ -3774,216 +4186,72 @@ create procedure AB.WA.import_title (
 create procedure AB.WA.import_foaf (
   inout domain_id integer,
   inout content any,
-  in tags any,
-  in validation any,
-  in contentType any := 0,
-  in contentIRI varchar := null,
-  in contentItems any := null,
-  in contentDepth any := 0,
-  in contentLimit any := 100,
-  in contentFollow any := 'foaf:knows')
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
 {
-  declare N, M, pLength, mLength, iLength, id integer;
-  declare tmp, tmp2, tmpTags, data, pFields, pValues any;
-  declare Meta, Persons, Person, Items any;
-  declare S, T, P, name, fullName varchar;
+  declare S, T varchar;
+  declare st, msg, meta, items, data any;
+  declare contentType, contentIRI, contentItems, contentPings, contentDepth, contentLimit, contentFollow any;
 
-  if (isnull (contentIRI))
-    contentIRI := AB.WA.ab_graph_create ();
+  if (isnull (options))
+    options := vector ();
+
+  contentType := get_keyword ('contentType', options, 0);
+  contentIRI := get_keyword ('contentIRI', options, AB.WA.ab_graph_create ());
+  contentItems := get_keyword ('contentItems', options);
+  contentPings := get_keyword ('contentPings', options);
 
   declare exit handler for sqlstate '*'
   {
-    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    -- dbg_obj_print ('', __SQL_MESSAGE);
     AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');    
   };
 
-  Meta := vector
-    (
-      'P_ID',
-      'P_NAME',
-      'P_FULL_NAME',
-      'P_KIND',
-      'P_FIRST_NAME',
-      'P_LAST_NAME',
-      'P_BIRTHDAY',
-      'P_MAIL',
-      'P_WEB',
-      'P_ICQ',
-      'P_MSN',
-      'P_AIM',
-      'P_YAHOO',
-      'P_TITLE',
-      'P_H_PHONE',
-      'P_H_WEB',
-      'P_B_WEB',
-      'P_H_LAT',
-      'P_H_LNG',
-      'P_TAGS',
-      'P_PHOTO'
-    );
-  mLength := length (Meta);
-
-  if (contentType = 0)
+  if (contentType > 0)
   {
-    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
-  } else {
-    declare st, msg, meta any;
+    contentDepth := get_keyword ('contentDepth', options, 0);
+    contentLimit := get_keyword ('contentLimit', options, 100);
+    contentFollow := get_keyword ('contentFollow', options, 'foaf:knows');
   
     T := case when contentDepth then sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI) else '' end;
     S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
+    commit work;
     exec (S, st, msg, vector (), 0, meta, Items);
     if ('00000' <> st)
       signal (st, msg);
   }
+  else if (contentType = 0)
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
+  }
+
   if (isnull (contentItems))
   {
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' define input:storage ""                                   \n' ||
-                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' SELECT ?x                                                 \n' ||
-                                       '   FROM <%s>                                               \n' ||
-                                       '  WHERE {                                                  \n' ||
-                                       '          {?x a foaf:Person .}                             \n' ||
-                                       '          UNION                                            \n' ||
-                                       '          {?x a foaf:Organization .}                       \n' ||
-                                       '        }', contentIRI));
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL
+                                         define input:storage ""
+                                         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                                         PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+                                         SELECT ?x
+                                           FROM <%s>
+                                          WHERE {
+                                                  {?x a foaf:Person .}
+                                                  UNION
+                                                  {?x a foaf:Organization .}
+                                                }', contentIRI));
   } else {
     Items := contentItems;
   }
-  iLength := length (Items);
+  foreach (any item in items) do
+      {
+    if (not AB.WA.import_check_progress_id (progress_id))
+      return;
 
-    S := ' SPARQL ' ||
-       ' define input:storage "" ' ||
-       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-       ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
-       ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
-       ' prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> ' ||
-       ' prefix bio: <http://vocab.org/bio/0.1/> ' ||
-       ' select ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE, ?P_H_WEB, ?P_B_WEB, ?P_H_LAT, ?P_H_LNG, ?P_TAGS, ?P_PHOTO' ||
-       '   from <%s> ' ||
-       '  where { ' ||
-       '         {?P_ID a foaf:Person } UNION {?P_ID a foaf:Organization } . ' ||
-       '         ?P_ID rdf:type ?P_KIND .' ||
-       '         optional { ?P_ID foaf:nick ?P_NAME} . '                        ||
-       '         optional { ?P_ID foaf:title ?P_TITLE} . '                      ||
-       '         optional { ?P_ID foaf:name ?P_FULL_NAME} . '                   ||
-       '         optional { ?P_ID foaf:firstNname ?P_FIRST_NAME} . '            ||
-       '         optional { ?P_ID foaf:family_name ?P_LAST_NAME} . '            ||
-       '         optional { ?P_ID foaf:dateOfBirth ?P_BIRTHDAY} . '             ||
-       '         optional { ?P_ID foaf:mbox ?P_MAIL} . '                        ||
-       '         optional { ?P_ID foaf:workplaceHomepage ?P_WEB} . '            ||
-       '         optional { ?P_ID foaf:icqChatID ?P_ICQ } .'                    ||
-       '         optional { ?P_ID foaf:msnChatID ?P_MSN } .'                    ||
-       '         optional { ?P_ID foaf:aimChatID ?P_AIM } .'                    ||
-       '         optional { ?P_ID foaf:yahooChatID ?P_YAHOO } .'                ||
-       '         optional { ?P_ID foaf:phone ?P_H_PHONE } .'                    ||
-       '         optional { ?P_ID foaf:homepage ?P_H_WEB} . '                   ||
-       '         optional{ ?P_ID foaf:workplaceHomepage ?P_B_WEB } .'          ||
-       '         optional{ ?P_ID foaf:depiction ?P_PHOTO } .'                  ||
-       '         optional{ ?P_ID foaf:based_near ?based_near .'                ||
-       '                   ?based_near geo:lat ?P_H_LAT ;'                     ||
-       '                               geo:long ?P_H_LNG .'                    ||
-       '                 } .'                                                  ||
-       '         optional{ ?P_ID bio:keywords ?P_TAGS } .'                     ||
-       '         optional{ ?P_ID foaf:interest ?interest .'                    ||
-       '                   ?interest rdfs:label ?interest_label. } .'          ||
-         '       }';
-  Persons := AB.WA.ab_sparql (sprintf (S, contentIRI));
-  pLength := length (Persons);
-  P := '';
-  for (N := 0; N < pLength; N := N + 1)
-    {
-    Person := Persons[N];
-    if (P <> Person[0])
-      {
-      for (M := 0; M < iLength; M := M + 1)
-      {
-        if (Person[0] = Items[M][0])
-      {
-          goto _import;
-        }
-      }
-      }
-    goto _next;
-
-  _import:;
-    P := Person[0];
-    name := Person[1];
-    fullName := Person[2];
-    if (isnull (fullName) and not (isnull (Person[4]) and isnull (Person[5])))
-    {
-      fullName := trim (Person[4] || ' ' || Person[5]);
-    }
-    if (not is_empty_or_null (coalesce (name, fullName)))
-      {
-        pFields := vector ('P_NAME');
-      pValues := vector (coalesce (name, fullName));
-      if (P not like 'nodeID://%')
-	      {
-          pFields := vector_concat (pFields, vector ('P_IRI'));
-        pValues := vector_concat (pValues, vector (P));
-	      }
-	      if (content like 'http://%')
-	      {
-          pFields := vector_concat (pFields, vector ('P_FOAF'));
-          pValues := vector_concat (pValues, vector (content));
-	      }
-            if (not isnull (fullName))
-            {
-        pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
-              pValues := vector_concat (pValues, vector (fullName));
-            }
-      for (M := 3; M < mLength; M := M + 1)
-      {
-            tmp := Meta[M];
-        tmp2 := Person[M];
-        tmpTags := tags;
-            if (tmp = 'P_BIRTHDAY')
-            {
-              {
-            declare continue handler for sqlstate '*'
-            {
-                  tmp := '';
-                };
-                tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
-              }
-            }
-            if (tmp = 'P_KIND')
-            {
-          tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
-            }
-            if (tmp = 'P_MAIL')
-            {
-              tmp2 := replace (tmp2, 'mailto:', '');
-            }
-        if (tmp = 'P_PHONE')
-        {
-          tmp2 := replace (tmp2, 'tel:', '');
-        }
-        if (tmp = 'P_TITLE')
-        {
-          tmp2 := AB.WA.import_title (tmp2);
-        }
-        if (tmp = 'P_TAGS')
-        {
-          tmpTags := AB.WA.tags_join (tmpTags, tmp2);
-          tmp := '';
-        }
-            if (tmp <> '')
-            {
-              pFields := vector_concat (pFields, vector (tmp));
-              pValues := vector_concat (pValues, vector (tmp2));
-            }
-          }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tmpTags, validation);
-      connection_set ('__addressbook_import', '0');
-      }
-  _next:;
+    data := ODS.ODS_API.extractFOAFDataArray (item[0], contentIRI);
+    AB.WA.import_rdf_data (domain_id, data, options, validation, progress_id);
+    AB.WA.import_inc_progress_id (progress_id);
   }
 
 _delete:;
@@ -3995,15 +4263,19 @@ _delete:;
 --
 create procedure AB.WA.import_foaf_content (
   inout content any,
-  in contentType any := 0,
-  in contentIRI any := null,
-  in contentDepth any := 0,
-  in contentLimit any := 100,
-  in contentFollow any := 'foaf:knows')
+  in options any := null)
 {
   declare N, M integer;
   declare tmp, Items, Persons any;
+  declare st, msg, meta any;
   declare S, T, personIRI varchar;
+  declare contentType, contentIRI, contentDepth, contentLimit, contentFollow any;
+
+  if (isnull (options))
+    options := vector ();
+
+  contentType := get_keyword ('contentType', options, 0);
+  contentIRI := get_keyword ('contentIRI', options, AB.WA.ab_graph_create ());
 
   declare exit handler for sqlstate '*'
   {
@@ -4013,90 +4285,76 @@ create procedure AB.WA.import_foaf_content (
   };
 
   Persons := vector ();
-  if (isnull (contentIRI))
-    contentIRI := AB.WA.ab_graph_create ();
   AB.WA.ab_graph_delete (contentIRI);
 
   -- store in QUAD Store
-  if (contentType)
+  if (contentType > 0)
   {
-    declare st, msg, meta any;
+    contentDepth := get_keyword ('contentDepth', options, 0);
+    contentLimit := get_keyword ('contentLimit', options, 100);
+    contentFollow := get_keyword ('contentFollow', options, 'foaf:knows');
 
-    T := '';
-    if (contentDepth)
-      T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
+    T := case when contentDepth then sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI) else '' end;
     S := sprintf ('sparql \n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
     exec (S, st, msg, vector (), 0, meta, Items);
-    if ('00000' <> st)
+    if (st <> '00000')
       signal (st, msg);
-  } else {
+  }
+  else
+  {
     DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
   }
-  Items := AB.WA.ab_sparql (sprintf (' sparql \n' ||
-                                     ' define input:storage ""                                   \n' ||
-                                     ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                     ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                     ' select ?person, ?nick, ?name, ?mbox                       \n' ||
-                                     '   from <%s>                                               \n' ||
-                                     '  where {                                                  \n' ||
-                                     '          [] a foaf:PersonalProfileDocument ;              \n' ||
-                                     '             foaf:primaryTopic ?person .                   \n' ||
-                                     '          optional { ?person foaf:nick ?nick } .           \n' ||
-                                     '          optional { ?person foaf:name ?name } .           \n' ||
-                                     '          optional { ?person foaf:mbox ?mbox } .           \n' ||
-                                     '        }', contentIRI));
+  Items := AB.WA.ab_sparql (sprintf (' sparql
+                                       define input:storage ""
+                                       prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                                       prefix foaf: <http://xmlns.com/foaf/0.1/>
+                                       select ?person, ?nick, ?name, ?mbox
+                                         from <%s>
+                                        where {
+                                                [] a foaf:PersonalProfileDocument ;
+                                                   foaf:primaryTopic ?person .
+                                                optional { ?person foaf:nick ?nick } .
+                                                optional { ?person foaf:name ?name } .
+                                                optional { ?person foaf:mbox ?mbox } .
+                                              }', contentIRI));
   if (length (Items))
   {
     personIRI := Items[0][0];
     tmp := replace (Items[N][3], 'mailto:', '');
     Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), tmp)));
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' define input:storage ""                                   \n' ||
-                                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' select ?person, ?nick, ?name, ?mbox                       \n' ||
-                                       '   from <%s>                                               \n' ||
-                                       '  where {                                                  \n' ||
-                                       '          {                                                \n' ||
-                                       '            <%s> foaf:knows ?person .                      \n' ||
-                                       '            ?person a foaf:Person .                        \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '          UNION                                            \n' ||
-                                       '          {                                                \n' ||
-                                       '            <%s> foaf:knows ?person .                      \n' ||
-                                       '            ?person a foaf:Organization .                  \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '        }', contentIRI, personIRI, personIRI));
+    S := sprintf (' sparql
+                    define input:storage ""
+                    prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                    prefix foaf: <http://xmlns.com/foaf/0.1/>
+                    select ?person, ?nick, ?name, ?mbox
+                      from <%s>
+                     where {
+                             <%s> foaf:knows ?person .
+                             {?person a foaf:Person .}
+                             UNION
+                             {?person a foaf:Organization .}
+                             optional { ?person foaf:nick ?nick } .
+                             optional { ?person foaf:name ?name } .
+                             optional { ?person foaf:mbox ?mbox } .
+                           }', contentIRI, personIRI);
   } else {
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
-                                       ' define input:storage ""                                   \n' ||
-                                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                       ' prefix foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
-                                       ' select ?person, ?nick, ?name, ?mbox                       \n' ||
-                                       '   from <%s>                                               \n' ||
-                                       '  where {                                                  \n' ||
-                                       '          {                                                \n' ||
-                                       '            ?person a foaf:Person .                        \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '          UNION                                            \n' ||
-                                       '          {                                                \n' ||
-                                       '            ?person a foaf:Organization .                  \n' ||
-                                       '            optional { ?person foaf:nick ?nick } .         \n' ||
-                                       '            optional { ?person foaf:name ?name } .         \n' ||
-                                       '            optional { ?person foaf:mbox ?mbox } .         \n' ||
-                                       '          }                                                \n' ||
-                                       '        }', contentIRI));
+    S := sprintf (' SPARQL
+                    define input:storage ""
+                    prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                    prefix foaf: <http://xmlns.com/foaf/0.1/>
+                    select ?person, ?nick, ?name, ?mbox
+                      from <%s>
+                     where {
+                             {?person a foaf:Person .}
+                             UNION
+                             {?person a foaf:Organization .}
+                             optional { ?person foaf:nick ?nick } .
+                             optional { ?person foaf:name ?name } .
+                             optional { ?person foaf:mbox ?mbox } .
+                           }', contentIRI);
   }
+  Items := AB.WA.ab_sparql (S);
   for (N := 0; N < length (Items); N := N + 1)
   {
     if (not isnull (coalesce (Items[N][2], Items[N][1])))
@@ -4122,99 +4380,40 @@ _exit:;
 create procedure AB.WA.import_csv (
   in domain_id integer,
   in content any,
-  in tags any,
-  in maps any,
-  in validation any)
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
 {
-  declare N, M, nLength, mLength, id integer;
-  declare tmp, tmp2, data, pFields, pValues any;
-  declare nameIdx, firstNameIdx, lastNameIdx, fullNameIdx integer;
-  declare name, fullName varchar;
+  declare N, M, nLength, mLength integer;
+  declare tmp, data, pFields, pValues any;
+  declare maps any;
 
-  nameIdx := -1;
-  firstNameIdx := -1;
-  lastNameIdx := -1;
-  fullNameIdx := -1;
-  for (N := 0; N < length (maps); N := N + 2)
-  {
-    if (maps[N+1] = 'P_NAME')
-      nameIdx := cast (maps[N] as integer);
-    if (maps[N+1] = 'P_FIRST_NAME')
-      firstNameIdx := cast (maps[N] as integer);
-    if (maps[N+1] = 'P_LAST_NAME')
-      lastNameIdx := cast (maps[N] as integer);
-    if (maps[N+1] = 'P_FULL_NAME')
-      fullNameIdx := cast (maps[N] as integer);
-  }
+  if (isnull (options))
+    options := vector ();
+
+  maps := get_keyword ('maps', options, vector());
+
   nLength := length (content);
   for (N := 1; N < nLength; N := N + 1)
   {
+    if (not AB.WA.import_check_progress_id (progress_id))
+      return;
+
+    pFields := vector ();
+    pValues := vector ();
     data := split_and_decode (content [N], 0, '\0\0,');
-    name := '';
-    fullName := '';
-    if ((nameIdx <> -1) and (nameIdx < length (data)))
-      name := trim (trim (data[nameIdx], '"'));
-    if ((fullNameIdx <> -1) and (fullNameIdx < length (data)))
-      fullName := trim (trim (data[fullNameIdx], '"'));
-    if (fullName = '')
-    {
-      if ((firstNameIdx <> -1) and (firstNameIdx < length (data)))
-         fullName := trim (trim (data[firstNameIdx], '"'));
-      if ((lastNameIdx <> -1) and (lastNameIdx < length (data)))
-         fullName := fullName || ' ' || trim (trim (data[lastNameIdx], '"'));
-       fullName := trim (fullName);
-    }
-    if (name = '')
-      name := fullName;
-    if (name <> '')
-    {
-      pFields := vector ('P_NAME');
-      pValues := vector (name);
       mLength := length (data);
       for (M := 0; M < mLength; M := M + 1)
       {
-        if (M <> nameIdx)
-        {
-          if (M = fullNameIdx)
-          {
-            if (fullName <> '')
-            {
-               pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
-               pValues := vector_concat (pValues, vector (fullName));
-             }
-          } else
-          {
              tmp := get_keyword (cast (M as varchar), maps, '');
             if (tmp <> '')
             {
-               tmp2 := trim (data[M], '"');
-              if (tmp = 'P_BIRTHDAY')
-              {
-                 {
-                   declare continue handler for sqlstate '*' {
-                     tmp := '';
-                   };
-                   tmp2 := AB.WA.dt_reformat (tmp2);
-                 }
-               }
-              if (tmp = 'P_TITLE')
-              {
-                tmp2 := AB.WA.import_title (tmp2);
-              }
-              if (tmp <> '')
-              {
                  pFields := vector_concat (pFields, vector (tmp));
-                 pValues := vector_concat (pValues, vector (tmp2));
-               }
-             }
-           }
+        pValues := vector_concat (pValues, vector (trim (data[M], '"')));
          }
       }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
-      connection_set ('__addressbook_import', '0');
-    }
+    AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+    AB.WA.import_inc_progress_id (progress_id);
   }
 }
 ;
@@ -4224,18 +4423,27 @@ create procedure AB.WA.import_csv (
 create procedure AB.WA.import_ldap (
   in domain_id integer,
   in content any,
-  in tags any,
-  in maps any,
-  in validation any)
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
 {
   declare N, M, nLength, mLength, id integer;
   declare data, pFields, pValues any;
+  declare maps any;
+
+  if (isnull (options))
+    options := vector ();
+
+  maps := get_keyword ('maps', options, vector());
 
   nLength := length (content);
   for (N := 0; N < nLength; N := N + 2)
   {
     if (content [N] = 'entry')
     {
+      if (not AB.WA.import_check_progress_id (progress_id))
+        return;
+
       data := content [N+1];
       mLength := length (data);
         pFields := vector ();
@@ -4248,12 +4456,177 @@ create procedure AB.WA.import_ldap (
             pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
           }
         }
-      commit work;
-      connection_set ('__addressbook_import', '1');
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
-      connection_set ('__addressbook_import', '0');
+      AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+      AB.WA.import_inc_progress_id (progress_id);
     }
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_linkedin (
+  in domain_id integer,
+  in content any,
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
+{
+  declare N, M, id integer;
+  declare items, pFields, pValues any;
+  declare tmp, meta, mLength any;
+
+  if (isnull (options))
+    options := vector ();
+
+  Meta := vector
+    (
+      'P_NAME',           'string(./first-name)',
+      'P_FIRST_NAME',     'string(./first-name)',
+      'P_LAST_NAME',      'string(./last-name)',
+      'P_H_COUNTRY',      'string(./location/name)',
+      'P_B_INDUSTRY',     'string(./industry)'
+    );
+  mLength := length (Meta);
+
+  items := xml_tree_doc (content);
+  items := xpath_eval('/connections/person', items, 0);
+  foreach (any item in items) do
+  {
+    if (not AB.WA.import_check_progress_id (progress_id))
+      return;
+
+    pFields := vector ();
+    pValues := vector ();
+    for (M := 0; M < mLength; M := M + 2)
+    {
+      tmp := serialize_to_UTF8_xml (xpath_eval (Meta[M+1], item, 1));
+      if (not is_empty_or_null (tmp))
+      {
+        pFields := vector_concat (pFields, vector (Meta[M]));
+        pValues := vector_concat (pValues, vector (tmp));
+      }
+    }
+    AB.WA.import_contact_update (-1, domain_id, pFields, pValues, options, validation, progress_id);
+
+    AB.WA.import_inc_progress_id (progress_id);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_contact_update (
+  in id integer,
+  in domain_id integer,
+  in pFields any,
+  in pValues any,
+  in options any,
+  in validation any,
+  in progress_id varchar)
+{
+  declare N, noRelations inteher;
+  declare tmp, tags, name, firstName, lastName, fullName, iri varchar;
+
+  name := '';
+  firstName := '';
+  lastName := '';
+  fullName := '';
+  iri := '';
+  noRelations := 1;
+  for (N := 0; N < length (pFields); N := N + 1)
+  {
+    if (pFields[N] = 'P_NAME')
+    {
+      name := pValues[N];
+    }
+    else if (pFields[N] = 'P_FIRST_NAME')
+    {
+      firstName := pValues[N];
+    }
+    else if (pFields[N] = 'P_LAST_NAME')
+    {
+      lastName := pValues[N];
+    }
+    else if (pFields[N] = 'P_FULL_NAME')
+    {
+      fullName := pValues[N];
+    }
+    else if (pFields[N] = 'P_IRI')
+    {
+      iri := pValues[N];
+    }
+    else if (pFields[N] = 'P_BIRTHDAY')
+    {
+      {
+        declare continue handler for sqlstate '*'
+        {
+          pValues[N] := '';
+        };
+        pValues[N] := AB.WA.dt_reformat (pValues[N], 'Y-M-D');
+      }
+    }
+    else if (pFields[N] = 'P_KIND')
+    {
+      pValues[N] := case when (pValues[N] = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
+    }
+    else if (pFields[N] = 'P_MAIL')
+    {
+      pValues[N] := replace (pValues[N], 'mailto:', '');
+    }
+    else if (pFields[N] = 'P_PHONE')
+    {
+      pValues[N] := replace (pValues[N], 'tel:', '');
+    }
+    else if (pFields[N] = 'P_TITLE')
+    {
+      pValues[N] := ODS.ODS_API.appendPropertyTitle (pValues[N]);
+    }
+    else if (pFields[N] = 'P_RELATIONSHIPS')
+    {
+      pValues[N] := pValues[N] || '\nfoaf:knows;' || AB.WA.account_sioc_url (domain_id);
+      noRelations := 0;
+    }
+  }
+  if (noRelations)
+  {
+    pFields := vector_concat (pFields, vector ('P_RELATIONSHIPS'));
+    pValues := vector_concat (pValues, vector ('foaf:knows;' || AB.WA.account_sioc_url (domain_id)));
+  }
+  if (fullName = '')
+  {
+    fullName := trim (firstName || ' ' || lastName);
+    pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
+    pValues := vector_concat (pValues, vector (fullName));
+  }
+  if (name = '')
+  {
+    pFields := vector_concat (pFields, vector ('P_NAME'));
+    pValues := vector_concat (pValues, vector (fullName));
+  }
+  tags := get_keyword ('tags', options, '');
+
+      commit work;
+      connection_set ('__addressbook_import', '1');
+  id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, tags, options, validation, progress_id);
+  if (length (id))
+  {
+    tmp := get_keyword ('grants', options, '');
+    if (tmp <> '')
+      AB.WA.contact_share (AB.WA.domain_owner_id (domain_id), id[0], tmp, 1);
+
+    tmp := get_keyword ('acls', options, '');
+    if (tmp <> '')
+      AB.WA.contact_update2 (id[0], domain_id, 'P_ACL', tmp);
+
+    tmp := get_keyword ('contentPings', options, vector());
+    if (AB.WA.vector_contains (tmp, iri))
+      SEMPING.DBA.CLI_PING (AB.WA.account_sioc_url (domain_id), iri);
+
+  }
+  connection_set ('__addressbook_import', '0');
+
+  return id;
 }
 ;
 
@@ -5170,8 +5543,7 @@ create procedure AB.WA.syncml2entry_internal (
 
   if (not isinteger (_data))
   {
-    IDs := AB.WA.import_vcard (_domain_id, _data, vector ('tags', _tags), null, _res_mod_time, _res_name);
-    -- return;
+    IDs := AB.WA.import_vcard (_domain_id, _data, vector ('tags', _tags, 'updatedBefore', _res_mod_time, 'externalUID', _res_name));
     for (N := 0; N < length (IDs); N := N + 1)
     {
       _uid := (select P_UID from AB.WA.PERSONS where P_ID = IDs[N]);
@@ -5202,8 +5574,9 @@ create procedure AB.WA.syncml2entry_internal (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.search_sql (
-  inout domain_id integer,
-  inout account_id integer,
+  in domain_id integer,
+  in account_id integer,
+  in account_rights varchar,
   inout data varchar,
   in maxRows varchar := '')
 {
@@ -5240,12 +5613,20 @@ create procedure AB.WA.search_sql (
          '  p.P_UPDATED     P_UPDATED    \n' ||
          'from                           \n' ||
          '  AB.WA.PERSONS p,             \n' ||
-         '  AB.WA.GRANTS g               \n' ||
+         '  AB..GRANTS_PERSON_VIEW g     \n' ||
          'where p.P_ID = g.G_PERSON_ID   \n' ||
-         '  and g.G_GRANTEE_ID = <ACCOUNT_ID> <TEXT> <WHERE>';
+         '  and g.TO_ID = <ACCOUNT_ID> <TEXT> <WHERE>';
   }
-
   S := 'select <MAX> * from (' || S || ') x';
+  if (account_rights = '')
+  {
+    if (is_https_ctx ())
+    {
+      S := S || ' where SIOC..addressbook_contact_iri (<DOMAIN_ID>, x.P_ID) in (select a.iri from AB.WA.acl_list (id)(iri varchar) a where a.id = <DOMAIN_ID>)';
+    } else {
+      S := S || ' where 1=0';
+    }
+  }
 
   T := '';
   tmp := AB.WA.xml_get('keywords', data);
@@ -5293,6 +5674,30 @@ create procedure AB.WA.search_sql (
 
 -----------------------------------------------------------------------------------------
 --
+create procedure AB.WA.category_insert (
+  in domain_id integer,
+  in name varchar)
+{
+  declare id integer;
+
+  name := trim (name);
+  if (is_empty_or_null (name))
+    return null;
+
+  id := (select C_ID from AB.WA.CATEGORIES where C_DOMAIN_ID = domain_id and C_NAME = name);
+  if (not is_empty_or_null (id))
+    return null;
+
+  id := sequence_next ('AB.WA.category_id');
+  insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME, C_CREATED, C_UPDATED)
+    values (id, domain_id, name, now (), now ());
+
+  return id;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure AB.WA.category_update (
   in domain_id integer,
   in name varchar)
@@ -5307,8 +5712,8 @@ create procedure AB.WA.category_update (
   if (is_empty_or_null (id))
   {
     id := sequence_next ('AB.WA.category_id');
-    insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME)
-      values (id, domain_id, name);
+    insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME, C_CREATED, C_UPDATED)
+      values (id, domain_id, name, now (), now ());
   }
   return id;
 }
@@ -6082,16 +6487,24 @@ create procedure AB.WA.isApiObject (inout o any)
 --
 create procedure AB.WA.obj2xml (
   in o any,
-  in d integer := 3,
-  in tag varchar := null)
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
 {
   declare N, M integer;
   declare R, T any;
-  declare retValue any;
+  declare S, nsValue, retValue any;
 
   if (d = 0)
     return '[maximum depth achieved]';
 
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
   retValue := '';
   if (isnumeric (o))
   {
@@ -6107,9 +6520,22 @@ create procedure AB.WA.obj2xml (
     {
       if (not AB.WA.isApiObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
       {
-        retValue := retValue || AB.WA.obj2xml (o[N+1], d-1, o[N]);
+        retValue := retValue || AB.WA.obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
       } else {
-        retValue := retValue || sprintf ('<%s>%s</%s>\n', o[N],  AB.WA.obj2xml (o[N+1], d-1), o[N]);
+    	  if (chr (o[N][0]) <> attributePrefix)
+    	  {
+          nsArray := null;
+          S := '';
+          if (not isnull (attributePrefix) and AB.WA.isApiObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+          	  if (chr (o[N+1][M][0]) = attributePrefix)
+          	    S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), AB.WA.obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, AB.WA.obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
       }
     }
   }
@@ -6119,9 +6545,19 @@ create procedure AB.WA.obj2xml (
     {
       if (isnull (tag))
       {
-        retValue := retValue || AB.WA.obj2xml (o[N], d-1);
+        retValue := retValue || AB.WA.obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
       } else {
-        retValue := retValue || sprintf ('<%s>%s</%s>\n', tag,  AB.WA.obj2xml (o[N], d-1), tag);
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and AB.WA.isApiObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+        	  if (chr (o[N][M][0]) = attributePrefix)
+        	    S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), AB.WA.obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, AB.WA.obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
       }
     }
   }
@@ -6630,7 +7066,7 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
   {
     http (ODS..obj2json (oResult, 10));
   } else {
-    http (AB.WA.obj2xml (oResult, 10));
+    http (AB.WA.obj2xml (oResult));
   }
   return '';
 }
@@ -6668,7 +7104,7 @@ create procedure AB.WA.lcPredefinedFilters (
 --
 create procedure AB.WA.lcFilterFields_Int (
   in lcFilter varchar,
-  in lcPath varchar,
+  in apiPath varchar,
   inout lcFields any)
 {
   declare L_Brace, R_Brace, L_Comma integer;
@@ -6679,7 +7115,7 @@ create procedure AB.WA.lcFilterFields_Int (
   {
     if (not isnull (L_Comma) and (isnull (L_Brace) or (L_Comma < L_Brace)))
     {
-      lcFields := vector_concat (lcFields, vector (lcPath || case when lcPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, l_Comma))));
+      lcFields := vector_concat (lcFields, vector (apiPath || case when apiPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, l_Comma))));
       lcFilter := trim (subseq (lcFilter, L_Comma+1, length (lcFilter)));
       goto _loop;
     }
@@ -6688,14 +7124,14 @@ create procedure AB.WA.lcFilterFields_Int (
       return;
     if (not isnull (L_Brace) and isnull (R_Brace))
       return;
-    AB.WA.lcFilterFields_Int (trim (subseq (lcFilter, L_Brace+1, R_Brace)), lcPath || case when lcPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, L_Brace)), lcFields);
+    AB.WA.lcFilterFields_Int (trim (subseq (lcFilter, L_Brace+1, R_Brace)), apiPath || case when apiPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, L_Brace)), lcFields);
     lcFilter := trim (subseq (lcFilter, R_Brace+1, length (lcFilter)));
   _loop:
     L_Brace := strchr (lcFilter, '(');
     L_Comma := strchr (lcFilter, ',');
   }
   if (lcFilter <> '')
-    lcFields := vector_concat (lcFields, vector (lcPath || case when lcPath = '' then '' else '.' end || lcFilter));
+    lcFields := vector_concat (lcFields, vector (apiPath || case when apiPath = '' then '' else '.' end || lcFilter));
 }
 ;
 
@@ -6704,11 +7140,11 @@ create procedure AB.WA.lcFilterFields_Int (
 create procedure AB.WA.lcFilterFields (
   in lcFilter varchar)
 {
-  declare lcPath, lcFields any;
+  declare apiPath, lcFields any;
 
-  lcPath := '';
+  apiPath := '';
   lcFields := Vector ();
-  AB.WA.lcFilterFields_Int (lcFilter, lcPath, lcFields);
+  AB.WA.lcFilterFields_Int (lcFilter, apiPath, lcFields);
 
   return lcFields;
 }
@@ -6947,8 +7383,8 @@ create procedure AB.WA.lcContactObject (
 --
 create procedure AB.WA.lcPathAnalyze (
   in domainID integer,
-  in lcPath varchar,
-  in lcMethod varchar,
+  in apiPath varchar,
+  in apiMethod varchar,
   inout objectType varchar,
   inout objectBodyXPath any,
   inout objectXPath varchar,
@@ -6962,20 +7398,20 @@ create procedure AB.WA.lcPathAnalyze (
   objectBodyXPath := vector ();
   objectID := null;
 
-  V := split_and_decode (trim (lcPath, '/'), 0, '\0\0/');
-  if ((length (V) <> 2) and (lcMethod = 'DELETE'))
+  V := split_and_decode (trim (apiPath, '/'), 0, '\0\0/');
+  if ((length (V) <> 2) and (apiMethod = 'DELETE'))
     signal ('__400', '');
-  if ((length (V) = 0) and (lcMethod in ('POST', 'PUT')))
+  if ((length (V) = 0) and (apiMethod in ('POST', 'PUT')))
     signal ('__400', '');
   if (length (V) = 0)
     return 1;
   if ((V[0] <> 'owner') and (V[0] <> 'contacts'))
     signal ('__400', '');
-  if ((V[0] = 'owner') and (lcMethod = 'DELETE'))
+  if ((V[0] = 'owner') and (apiMethod = 'DELETE'))
     signal ('__400', '');
   if (V[0] = 'owner')
   {
-    if (lcMethod in ('POST', 'DELETE'))
+    if (apiMethod in ('POST', 'DELETE'))
       signal ('__400', '');
     I := 1;
     objectType := 'o';
@@ -6995,13 +7431,13 @@ create procedure AB.WA.lcPathAnalyze (
       if (length (A) <> 1)
         signal ('__404', '');
       objectID := A[0];
-      if (lcMethod = 'POST')
+      if (apiMethod = 'POST')
         signal ('__400', '');
       if (not exists (select 1 from AB.WA.PERSONS where P_DOMAIN_ID = domainID and P_ID = objectID))
         signal ('__400', '');
       objectXPath := objectXPath || sprintf ('/Contact[ID=%d]', objectID);
     }
-    if (isnull (ObjectID) and (lcMethod = 'PUT'))
+    if (isnull (ObjectID) and (apiMethod = 'PUT'))
       signal ('__400', '');
   }
   for (N := I; N < length (V); N := N + 1)
@@ -7067,43 +7503,43 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
   declare L, N, M, domain_id integer;
   declare xt, objectError, objectType, objectBodyXPath, objectXPath, objectID any;
   declare tmp, uname, V, A, oResult, oContacts, oContact, oTag any;
-  declare lcLines, lcPath, lcParams, lcMethod, lcBody any;
-  declare ocMap, filter, lcFields, lcMap, lcTags, lcField, lcFieldDef, lcMapField, lcXPath any;
+  declare apiLines, apiPath, apiParams, apiMethod, apiBody any;
+  declare ocMap, filter, lcFields, apiMap, lcTags, lcField, lcFieldDef, apiMapField, lcXPath any;
   declare S, st, msg, meta, data any;
 
-  lcLines := http_request_header ();
-  lcPath := http_path ();
-  lcParams := http_param ();
-  lcMethod := ucase (http_request_get ('REQUEST_METHOD'));
-  lcBody := string_output_string (http_body_read ());
+  apiLines := http_request_header ();
+  apiPath := http_path ();
+  apiParams := http_param ();
+  apiMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  apiBody := string_output_string (http_body_read ());
 
   -- domain_id := 2;
-  domain_id := atoi (get_keyword_ucase ('inst_id', lcParams));
+  domain_id := atoi (get_keyword_ucase ('inst_id', apiParams));
   if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
     signal ('__401', '');
 
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
     signal ('__401', '');
 
-  if (lcPath not like '/ods/livecontacts%')
+  if (apiPath not like '/ods/livecontacts%')
     signal ('__404', '');
 
-  lcPath := substring (lcPath, length ('/ods/livecontacts')+1, length (lcPath));
-  lcMap := AB.WA.lcMap();
-  AB.WA.lcPathAnalyze (domain_id, lcPath, lcMethod, objectType, objectBodyXPath, objectXPath, objectID);
+  apiPath := substring (apiPath, length ('/ods/livecontacts')+1, length (apiPath));
+  apiMap := AB.WA.lcMap();
+  AB.WA.lcPathAnalyze (domain_id, apiPath, apiMethod, objectType, objectBodyXPath, objectXPath, objectID);
 
   set_user_id ('dba');
-  if (lcMethod = 'GET')
+  if (apiMethod = 'GET')
   {
-    filter := get_keyword ('filter', lcParams);
+    filter := get_keyword ('filter', apiParams);
     tmp := AB.WA.lcPredefinedFilters (filter);
     if (not isnull (tmp))
       filter := tmp;
     lcFields := vector ();
     if (isnull (filter))
     {
-      for (N := 0; N < length (lcMap); N := N + 2)
-        lcFields := vector_concat (lcFields, vector (lcMap[N]));
+      for (N := 0; N < length (apiMap); N := N + 2)
+        lcFields := vector_concat (lcFields, vector (apiMap[N]));
     } else {
       tmp := AB.WA.lcFilterFields(filter);
       for (M := 0; M < length (tmp); M := M + 1)
@@ -7115,14 +7551,14 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
           lcField := subseq (lcField, length ('Contact.'));
         if (lcField = '')
           goto _next_filterField;
-        for (N := 0; N < length (lcMap); N := N + 2)
+        for (N := 0; N < length (apiMap); N := N + 2)
         {
-          lcMapField := lcase (lcMap[N]);
-          L := strchr (lcMapField, '[');
+          apiMapField := lcase (apiMap[N]);
+          L := strchr (apiMapField, '[');
           if (not isnull (L))
-            lcMapField := subseq (lcMapField, 0, L);
-          if (lcMapField like lcField || '%')
-            lcFields := vector_concat (lcFields, vector (lcMap[N]));
+            apiMapField := subseq (apiMapField, 0, L);
+          if (apiMapField like lcField || '%')
+            lcFields := vector_concat (lcFields, vector (apiMap[N]));
         }
       _next_filterField:;
       }
@@ -7145,7 +7581,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
           if (not isnull (tmp))
             meta[N] := tmp;
         }
-        oContact := AB.WA.lcContactObject (lcFields, data, meta, lcMap, lcTags);
+        oContact := AB.WA.lcContactObject (lcFields, data, meta, apiMap, lcTags);
         if (not isnull (oContact))
           oResult := vector_concat (oResult, vector ('Owner', oContact));
       }
@@ -7163,7 +7599,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
         meta := AB.WA.simplifyMeta (meta);
         for (N := 0; N < length (data); N := N + 1)
         {
-          oContact := AB.WA.lcContactObject (lcFields, data[N], meta, lcMap, lcTags);
+          oContact := AB.WA.lcContactObject (lcFields, data[N], meta, apiMap, lcTags);
           if (not isnull (oContact))
             oContacts := vector_concat (oContacts, vector ('Contact', oContact));
         }
@@ -7187,14 +7623,14 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
     }
     if (length (oResult) > 2)
       oResult := vector_concat (AB.WA.apiObject (), vector ('LiveContacts', oResult));
-    http (AB.WA.obj2xml (oResult, 10));
+    http (AB.WA.obj2xml (oResult));
   }
-  else if (lcMethod = 'DELETE')
+  else if (apiMethod = 'DELETE')
   {
     delete from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = objectID;
     signal ('__204', '');
   }
-  else if ((lcMethod = 'POST') or (lcMethod = 'PUT'))
+  else if ((apiMethod = 'POST') or (apiMethod = 'PUT'))
   {
     -- Insert Contact ('POST'), Update Contact/Owner ('PUT')
     declare abID, abPath, abCheckPath, abTmpPath, abNeedAdded, abField, abFields, abValue, abValues any;
@@ -7214,14 +7650,14 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
         abCheckPath := abCheckPath || '/' || objectBodyXPath[N];
       }
     }
-    xt := xtree_doc (lcBody);
+    xt := xtree_doc (apiBody);
     abID := -1;
     abFields := vector ();
     abValues := vector ();
-    for (N := 0; N < length (lcMap); N := N + 2)
+    for (N := 0; N < length (apiMap); N := N + 2)
     {
-      lcField := lcMap[N];
-      lcFieldDef := lcMap[N+1];
+      lcField := apiMap[N];
+      lcFieldDef := apiMap[N+1];
       if (isnull (lcFieldDef))
         goto _next;
       abValue := null;
@@ -7264,11 +7700,11 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
       }
     _next:;
     }
-    if (lcMethod = 'PUT')
+    if (apiMethod = 'PUT')
     {
       if (objectType = 'c')
       {
-        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues);
       } else {
         uname := AB.WA.domain_owner_name (domain_id);
         ocMap := AB.WA.vector_reverse (AB.WA.owner2contactMap ());
@@ -7281,7 +7717,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
       }
       signal ('__204', '');
     } else {
-      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues, null);
+      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues);
       signal ('__201', '');
     }
   }
@@ -7292,4 +7728,1476 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
 ;
 
 grant execute on AB.WA.livecontacts to SOAP_ADDRESSBOOK
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Yahoo Conatacts API
+--
+----------------------------------------------------------------------------------------
+create procedure AB.WA.yahooOutput (
+  in data any,
+  in options any)
+{
+  if (get_keyword ('format', options, 'xml') = 'xml')
+  {
+    http (AB.WA.obj2xml (data, 10, null, vector ('', 'http://social.yahooapis.com/v1/schema.rng', 'yahoo', 'http://www.yahooapis.com/v1/base.rng', 'ns', 'http://social.yahooapis.com/v1/schema.rng'), '@'));
+  } else {
+    http (ODS..obj2json (data, 10, vector ('yahoo', 'ns'), '@'));
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooMap ()
+{
+  return vector ('id',            vector ('field', 'P_ID'),
+                 'guid',          vector ('field', 'P_UID'),
+                 'nickName',      vector ('field', 'P_NAME'),
+                 'name',          vector ('field', vector ('title', 'P_TITLE', 'givenName', 'P_FIRST_NAME', 'middleName', 'P_MIDDLE_NAME', 'familyName', 'P_LAST_NAME')),
+                 'birthday',      vector ('field', 'P_BIRTHDAY',  'function', 'select AB.WA.yahooDate (?)'),
+                 'email',         vector ('field', 'P_MAIL'),
+                 'phone',         vector ('field', 'P_PHONE'),
+                 'address',       vector ('field', vector ('street', 'P_H_ADDRESS1', 'city', 'P_H_CITY', 'stateOrProvince', 'P_H_STATE', 'postalCode', 'P_H_CODE', 'country', 'P_H_COUNTRY')),
+                 'company',       vector ('field', 'P_B_ORGANIZATION'),
+                 'jobTitle',      vector ('field', 'P_B_JOB')
+                );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooDate (
+  in aValue any)
+{
+  if (isnull (aValue))
+    return null;
+
+  return vector_concat (AB.WA.apiObject (), vector ('day', dayofmonth (aValue), 'month', month (aValue), 'year', year (aValue)));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactField (
+  in field varchar,
+  in map varchar,
+  in fields any := null)
+{
+  if (not isnull (fields) and not AB.WA.vector_contains (fields, field))
+    return null;
+
+  return get_keyword (field, map);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactFieldIndex (
+  in field varchar,
+  in meta any)
+{
+  declare N integer;
+
+  for (N := 0; N < length (meta); N := N + 1)
+    if (field = meta[N])
+      return N;
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactValue2 (
+  in abField varchar,
+  inout data any,
+  inout meta any)
+{
+  declare abFieldIndex any;
+
+  abFieldIndex := AB.WA.yahooContactFieldIndex (abField, meta);
+  if (not isnull (abFieldIndex))
+    return data[abFieldIndex];
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactValue (
+  in field varchar,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N integer;
+  declare tmp, fieldDef any;
+  declare abValue, abField, abFieldIndex any;
+
+  abValue := null;
+  fieldDef := AB.WA.yahooContactField (field, map);
+  if (isnull (fieldDef))
+    goto _skip;
+  abField := get_keyword ('field', fieldDef);
+  if (isnull (abField))
+    goto _skip;
+
+  if (isarray (abField) and not isstring (abField))
+  {
+    abValue := AB.WA.apiObject ();
+    for (N := 0; N < length (abField); N := N + 2)
+    {
+      tmp := AB.WA.yahooContactValue2 (abField[N+1], data, meta);
+      if (length (tmp))
+        abValue := vector_concat (abValue, vector (abField[N], tmp));
+    }
+    if (length (abValue) = 2)
+      abValue := null;
+  } else {
+    abValue := AB.WA.yahooContactValue2 (abField, data, meta);
+    if (isnull (abValue))
+      goto _skip;
+    if (not isnull (get_keyword ('function', fieldDef)))
+    {
+      tmp := get_keyword ('function', fieldDef);
+      if (not isnull (tmp))
+      {
+        tmp := AB.WA.exec (tmp, vector (abValue));
+        if (length (tmp))
+          abValue := tmp[0][0];
+      }
+    }
+  }
+_skip:;
+  return abValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactObject (
+  inout fields any,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N integer;
+  declare oEntry any;
+  declare F, C any;
+  declare abValue, field any;
+
+  oEntry := AB.WA.apiObject ();
+  abValue := AB.WA.yahooContactValue ('id', data, meta, map);
+  oEntry := vector_concat (oEntry, vector ('id', abValue));
+  abValue := AB.WA.yahooContactValue ('guid', data, meta, map);
+  oEntry := vector_concat (oEntry, vector ('guid', abValue));
+  abValue := AB.WA.yahooContactValue2 ('P_CREATED', data, meta);
+  if (not isnull (abValue))
+    oEntry := vector_concat (oEntry, vector ('@yahoo:uri', AB.WA.dt_iso8601 (abValue)));
+  abValue := AB.WA.yahooContactValue2 ('P_CREATED', data, meta);
+  if (not isnull (abValue))
+    oEntry := vector_concat (oEntry, vector ('@yahoo:created', date_iso8601 (dt_set_tz (abValue, 0))));
+  abValue := AB.WA.yahooContactValue2 ('P_UPDATED', data, meta);
+  if (not isnull (abValue))
+    oEntry := vector_concat (oEntry, vector ('@yahoo:updated', date_iso8601 (dt_set_tz (abValue, 0))));
+
+  -- fields
+  F := vector ();
+  for (N := 0; N < length (fields); N := N + 1)
+  {
+    field := trim (fields[N]);
+    abValue := AB.WA.yahooContactValue (field, data, meta, map);
+    if (is_empty_or_null (abValue))
+      goto _skip;
+    F := vector_concat (F, vector (vector_concat (AB.WA.apiObject(), vector ('type', field, 'value', abValue, 'flags', vector()))));
+
+  _skip:;
+  }
+  oEntry := vector_concat (oEntry, vector ('fields', F));
+
+  -- categories
+  abValue := AB.WA.yahooContactValue2 ('C_ID', data, meta);
+  if (not isnull (abValue))
+  {
+    C := AB.WA.apiObject();
+    C := vector_concat (C, vector ('id', abValue));
+    abValue := AB.WA.yahooContactValue2 ('C_NAME', data, meta);
+    if (not isnull (abValue))
+      C := vector_concat (C, vector ('name', abValue));
+    oEntry := vector_concat (oEntry, vector ('categories', vector (C)));
+  }
+
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooSQL (
+  in sql varchar,
+  in params any,
+  inout options any,
+  inout data any,
+  inout meta any)
+{
+  declare N integer;
+  declare st, msg, _data, _meta, _start, _count, _total, _min any;
+
+  st := '00000';
+  if (get_keyword ('_sqlFilter', options) <> '')
+  {
+    sql := sql || ' and ' || get_keyword ('_sqlFilter', options);
+    params := vector_concat (params, get_keyword ('_sqlParams', options));
+  }
+  _start := atoi (get_keyword ('start', options, '0'));
+  _count := atoi (get_keyword ('count', options, '10'));
+  if (_count = 0)
+    _count := 10;
+  _min := _start + _count;
+  sql := replace (sql, '%TOP%', cast (_min as varchar));
+
+  exec (sql, st, msg, params, 0, _meta, _data);
+  if ('00000' <> st)
+    return 0;
+
+  _total := 0;
+  data := vector ();
+  if (_min > length (_data))
+    _min := length (_data);
+  for (N := _start; N < _min; N := N + 1)
+  {
+    data := vector_concat (data, vector (_data[N]));
+    _total := _total + 1;
+  }
+  meta := AB.WA.simplifyMeta (_meta);
+  options := vector_concat (options, vector ('_start', _start));
+  options := vector_concat (options, vector ('_count', _count));
+  options := vector_concat (options, vector ('_total', _total));
+
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooPathAnalyze (
+  in apiParams varchar,
+  in apiPath varchar,
+  in apiMethod varchar,
+  in apiMap varchar,
+  inout apiCommand varchar,
+  inout apiOptions varchar)
+{
+  declare N, M integer;
+  declare tmp, tmp2, tmp3, V, matrix, query, inverse, field, expression, apiExpressions, apiAction, apiActions, leftPath, rightPath any;
+  declare sqlFilter, sqlParams any;
+
+  apiActions := vector (
+                        'contacts',           vector ('methods', vector ('GET', 'POST', 'PUT'),
+                                                      'regex', '^contacts',
+                                                      'query', vector ('format', 'view', 'start', 'count', 'rev'),
+                                                      'matrix', vector ('start', 'count', 'bucket', 'maxbucketsize', 'minbucketcount', 'sort-fields', 'sort'),
+                                                      'filter', 1
+                                                     ),
+                        'contactField',       vector ('methods', vector ('GET', 'DELETE'),
+                                                      'regex', '^contact/([0-9]*)/(address|anniversary|birthday|company|custom|email|guid|jobTitle|link|name|nickname|notes|otherid|phone|yahooid)\$',
+                                                      'inverse', 'contact/%d/%s',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'contactFields',      vector ('methods', vector ('GET', 'POST'),
+                                                      'regex', '^contact/([0-9]*)/(addresses|anniversaries|birthdays|companies|customFields|emails|guids|jobTitles|links|names|nicknames|notesFields|otherids|phones|yahooids)\$',
+                                                      'inverse', 'contact/%d/%s',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'categoriesByContact',vector ('methods', vector ('GET', 'POST'),
+                                                      'regex', '^contact/([0-9]*)/categories',
+                                                      'inverse', 'contact/%d/categories',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'contact',            vector ('methods', vector ('GET', 'DELETE'),
+                                                      'regex', '^contact/([0-9]*)',
+                                                      'inverse', 'contact/%d',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'categories',         vector ('methods', vector ('GET', 'POST'),
+                                                      'regex', '^categories',
+                                                      'query', vector ('format'),
+                                                      'matrix', vector ('start', 'count')
+                                                     ),
+                        'contactsByCategory', vector ('methods', vector ('GET'),
+                                                      'regex', '^category/([^/]*)/contacts',
+                                                      'inverse', 'category/%s/contacts',
+                                                      'query', vector ('format', 'bucketinfo'),
+                                                      'matrix', vector ('start', 'count', 'bucket', 'maxbucketsize', 'minbucketcount'),
+                                                      'sqlFilter', 'c.C_NAME = ?'
+                                                     )
+                        );
+
+  apiExpressions := vector (
+                            'is', 'cast (%FIELD% as varchar) = ?',
+                            'startswith', 'cast (%FIELD% as varchar) like ?',
+                            'contains', 'cast (%FIELD% as varchar) like ?',
+                            'cs-is', 'ucase (cast (%FIELD% as varchar)) = ?',
+                            'cs-startswith', 'ucase (cast (%FIELD% as varchar)) like ?',
+                            'cs-contains', 'ucase (cast (%FIELD% as varchar)) like ?',
+                            'present', '%FIELD% is %VALUE% null'
+                           );
+
+  for (N := 0; N < length (apiActions); N := N + 2)
+  {
+    apiCommand := apiActions[N];
+    apiAction := apiActions[N+1];
+    if (regexp_match (get_keyword ('regex', apiAction), apiPath))
+    {
+      if (not AB.WA.vector_contains (get_keyword ('methods', apiAction), apiMethod))
+        signal ('__400', '');
+      goto _correct;
+    }
+  }
+  signal ('__400', '');
+
+_correct:;
+  apiOptions := vector ();
+  query := get_keyword ('query', apiAction);
+  for (N := 0; N < length (query); N := N + 1)
+  {
+    if (get_keyword (query[N], apiParams, '') <> '')
+      apiOptions := vector_concat (apiOptions, vector (query[N], get_keyword (query[N], apiParams)));
+  }
+
+  leftPath := apiPath;
+  rightPath := '';
+  N := strstr (apiPath, ';');
+  if (not isnull (N))
+  {
+    leftPath := subseq (apiPath, 0, N);
+    rightPath := subseq (apiPath, N+1);
+  }
+
+  inverse := vector ();
+  tmp := get_keyword ('inverse', apiAction);
+  if (not isnull (tmp))
+    inverse := sprintf_inverse (leftPath, tmp, 0);
+
+  matrix := get_keyword ('matrix', apiAction);
+  if (isnull (matrix) and rightPath <> '')
+    signal ('__400', '');
+
+  sqlFilter := get_keyword ('sqlFilter', apiAction, '');
+  sqlParams := vector ();
+  if (sqlFilter <> '')
+  {
+    sqlParams := vector_concat (sqlParams, subseq (inverse, 0, 1));
+  }
+  if (rightPath <> '')
+  {
+    tmp := split_and_decode (rightPath, 0, '\0\0;');
+    for (N := 0; N < length (tmp); N := N + 1)
+    {
+      tmp2 := split_and_decode (tmp[N], 0, '\0\0=');
+      if (length (tmp2) <> 2)
+        signal ('__400', '');
+      for (M := 0; M < length (matrix); M := M + 1)
+      {
+        if (matrix[M] = tmp2[0])
+        {
+          apiOptions := vector_concat (apiOptions, vector (tmp2[0], tmp2[1]));
+          goto _skip;
+        }
+      }
+      if (get_keyword ('filter', apiAction, 0) = 0)
+        signal ('__400', '');
+      tmp3 := split_and_decode (tmp2[0], 0, '\0\0.');
+      if (length (tmp3) <> 2)
+        signal ('__400', '');
+
+      field := get_keyword (tmp3[0], apiMap);
+      if (isnull (field))
+        signal ('__400', '');
+
+      expression := get_keyword (tmp3[1], apiExpressions);
+      if (isnull (expression))
+        signal ('__400', '');
+
+      if (tmp3[0] like 'cs-%')
+        tmp3[1] := ucase (tmp3[1]);
+
+      if (tmp3[0] = 'present')
+        tmp3[1] := case when tmp3[1] = '1' then 'NOT' else '' end;
+
+      expression := replace (expression, '%FIELD%', 'p.'||get_keyword ('field', field));
+      expression := replace (expression, '%VALUE%', tmp3[1]);
+
+      if (sqlFilter <> '')
+        sqlFilter := sqlFilter || ' and ';
+      sqlFilter := sqlFilter || expression;
+      if (tmp3[0] <> 'present')
+        sqlParams := vector_concat (sqlParams, vector (tmp2[1]));
+
+    _skip:;
+    }
+  }
+  apiOptions := vector_concat (apiOptions, vector ('_inverse', inverse));
+  apiOptions := vector_concat (apiOptions, vector ('_sqlFilter', sqlFilter));
+  apiOptions := vector_concat (apiOptions, vector ('_sqlParams', sqlParams));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahoocontacts () __SOAP_HTTP 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '__201')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 201 Creates');
+    }
+    else if (__SQL_STATE = '__204')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 204 No Content');
+    }
+    else if (__SQL_STATE = '__400')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 400 Bad Request');
+    }
+    else if (__SQL_STATE = '__401')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 401 Unauthorized');
+    }
+    else if (__SQL_STATE = '__404')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 404 Not Found');
+    }
+    else if (__SQL_STATE = '__406')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 406 Requested representation not available for the resource');
+    }
+    else if (__SQL_STATE = '__500')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 500 Not Found');
+    }
+    else if (__SQL_STATE = '__503')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 503 Service Unavailable');
+    }
+    else
+    {
+      dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    }
+    return null;
+  };
+  declare N, M, domain_id integer;
+  declare xt any;
+  declare tmp, uname, V, A, oResult, oCategories, oCategory, oContacts, oContact, oTag any;
+  declare apiLines, apiPath, apiParams, apiMethod, apiBody any;
+  declare apiMap, apiCommand, apiOptions, apiFields any;
+  declare sql, st, msg, params, meta, data any;
+
+  apiLines := http_request_header ();
+  apiPath := http_path ();
+  apiParams := http_param ();
+  apiMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  apiBody := string_output_string (http_body_read ());
+  if (apiBody = '')
+    apiBody := get_keyword ('content', apiParams);
+
+  domain_id := 22;
+  domain_id := atoi (get_keyword_ucase ('inst_id', apiParams));
+  if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
+    signal ('__401', '');
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
+    signal ('__401', '');
+
+  if (apiPath not like '/ods/yahoocontacts/%')
+    signal ('__404', '');
+
+  apiPath := substring (apiPath, length ('/ods/yahoocontacts/')+1, length (apiPath));
+  apiMap := AB.WA.yahooMap();
+  AB.WA.yahooPathAnalyze (apiParams, apiPath, apiMethod, apiMap, apiCommand, apiOptions);
+
+  if (get_keyword ('view', apiOptions, '') = 'rev')
+    signal ('__406', '');
+
+  if (get_keyword ('view', apiOptions, '') = 'sync')
+    signal ('__406', '');
+
+  if (get_keyword ('view', apiOptions, '') = 'tinyusercard')
+  {
+    apiFields := 'nickName,name';
+  } else {
+    apiFields := get_keyword ('out', apiOptions, 'all');
+    if (apiFields = 'all')
+      apiFields := 'guid,nickName,name,birthday,email,phone,address,company,jobTitle';
+  }
+  apiFields := split_and_decode (apiFields, 0, '\0\0,');
+
+  set_user_id ('dba');
+  if (apiCommand = 'contacts')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% p.*, c.C_ID, c.C_NAME from AB.WA.PERSONS p left join AB.WA.CATEGORIES c on c.C_ID = p.P_CATEGORY_ID where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+      _contacts:
+        oResult := AB.WA.apiObject();
+        oContacts := vector_concat (AB.WA.apiObject(),
+                                    vector (
+                                            '@yahoo:start', get_keyword ('_start', apiOptions),
+                                            '@yahoo:count', get_keyword ('_count', apiOptions),
+                                            '@yahoo:total', get_keyword ('_total', apiOptions)
+                                           )
+                                   );
+        V := vector ();
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oContact := AB.WA.yahooContactObject(apiFields, data[N], meta, apiMap);
+          V := vector_concat (V, vector (oContact));
+        }
+        oContacts := vector_concat (oContacts, vector ('contact', V));
+        oResult := vector_concat (oResult, vector ('contacts', oContacts));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod in ('PUT', 'POST'))
+    {
+      declare field, fieldDef, apiXPath, tmpXPath any;
+      declare abID, abField, abFields, abValues any;
+
+      V := apiBody;
+      if (get_keyword ('format', apiOptions, 'xml') = 'json')
+        V := AB.WA.obj2xml (json_parse (V));
+
+      V := xml_tree_doc (xml_tree (V));
+
+      abID := -1;
+      abFields := vector ();
+      abValues := vector ();
+      for (N := 0; N < length (apiMap); N := N + 2)
+      {
+        field := apiMap[N];
+        fieldDef := apiMap[N+1];
+
+        abField := get_keyword ('field', fieldDef);
+        if (isnull (abField))
+          goto _next;
+
+        apiXPath := get_keyword ('xpath', fieldDef);
+        if (isNull (apiXPath))
+          apiXPath := sprintf ('/contact/fields[type = "%s"]/value', field);
+
+        if (not (isarray (abField) and not isstring (abField)))
+          abField := vector (null, abField);
+
+        for (M := 0; M < length (abField); M := M + 2)
+        {
+          tmpXPath := apiXPath;
+          if (not isnull (abField[M]))
+            tmpXPath := tmpXPath || '/' || abField[M];
+          tmp := trim (cast (xquery_eval (tmpXPath, V, 1) as varchar));
+
+          if (is_empty_or_null (tmp))
+            goto _next_xpath;
+
+          if (abField = 'P_BIRTHDAY')
+          {
+            {
+              declare continue handler for sqlstate '*'
+              {
+                tmp := null;
+              };
+              tmp := stringdate (tmp);
+            }
+          }
+          if (not AB.WA.vector_contains (abFields, abField))
+          {
+            abFields := vector_concat (abFields, vector (abField[M+1]));
+            abValues := vector_concat (abValues, vector (tmp));
+          }
+          if (abField = 'P_ID')
+            abID := tmp;
+        _next_xpath:;
+        }
+      _next:;
+      }
+      if ((apiMethod = 'PUT') and not exists (select 1 from AB.WA.PERSONS where P_ID = abID and P_DOMAIN_ID = domain_id))
+        signal ('__404', '');
+
+      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues);
+    }
+  }
+  if (apiCommand = 'contact')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% p.*, c.C_ID, c.C_NAME from AB.WA.PERSONS p left join AB.WA.CATEGORIES c on c.C_ID = p.P_CATEGORY_ID where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        if (length (data) = 0)
+          signal ('__406', '');
+
+        oResult := AB.WA.apiObject();
+        oContact := AB.WA.yahooContactObject(apiFields, data[0], meta, apiMap);
+        oResult := vector_concat (oResult, vector ('contact', oContact));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod = 'DELETE')
+    {
+      V := get_keyword ('_sqlParams', apiOptions);
+      if (length (V) = 0)
+        signal ('__404', '');
+
+      AB.WA.contact_delete (V[0], domain_id);
+    }
+  }
+  else if (apiCommand = 'contactField')
+  {
+    tmp := get_keyword ('_inverse', apiOptions)[1];
+    if (apiMethod = 'GET')
+    {
+    _contactField:
+      if (AB.WA.yahooSQL ('select TOP %TOP% p.* from AB.WA.PERSONS p where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        declare abValue any;
+
+        if (length (data) = 0)
+          signal ('__406', '');
+
+        oResult := AB.WA.apiObject();
+        abValue := AB.WA.yahooContactValue (tmp, data[0], meta, apiMap);
+        if (not is_empty_or_null (abValue))
+          oResult := vector_concat (oResult, vector (tmp, vector_concat (AB.WA.apiObject(), vector ('type', tmp, 'value', abValue, 'flags', vector()))));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod = 'DELETE')
+    {
+      declare abID, abField, field, fieldDef any;
+
+      abID := get_keyword ('_inverse', apiOptions)[0];
+      field := get_keyword ('_inverse', apiOptions)[1];
+      fieldDef := get_keyword (field, apiMap);
+      if (not isnull (fieldDef))
+      {
+        abField := get_keyword ('field', fieldDef);
+        if (not isnull (abField))
+        {
+          if (not (isarray (abField) and not isstring (abField)))
+            abField := vector (null, abField);
+
+          for (M := 0; M < length (abField); M := M + 2)
+          {
+            AB.WA.contact_update2 (abID, domain_id, abField[M+1], null);
+          }
+        }
+      }
+    }
+  }
+  else if (apiCommand = 'contactFields')
+  {
+    tmp := get_keyword ('_inverse', apiOptions)[1];
+    V := vector (
+                 'addresses',    'address',
+                 'anniversaries','anniversary',
+                 'birthdays',    'birthday',
+                 'companies',    'company',
+                 'customFields', 'custom',
+                 'emails',       'email',
+                 'guids',        'guid',
+                 'jobTitles',    'jobTitle',
+                 'links',        'link',
+                 'names',        'name',
+                 'nicknames',    'nickname',
+                 'notesFields',  'notes',
+                 'otherids',     'otherid',
+                 'phones',       'phone',
+                 'yahooids',     'yahooid'
+                );
+    tmp := get_keyword (tmp, V);
+    if (apiMethod = 'GET')
+    {
+      goto _contactField;
+    }
+    if (apiMethod = 'POST')
+    {
+      ;
+    }
+  }
+  else if (apiCommand = 'contactsByCategory')
+  {
+    -- GET only
+    if (AB.WA.yahooSQL ('select TOP %TOP% p.*, c.C_ID, c.C_NAME from AB.WA.PERSONS p, AB.WA.CATEGORIES c where p.P_DOMAIN_ID = ? and c.C_ID = p.P_CATEGORY_ID', vector (domain_id), apiOptions, data, meta))
+      goto _contacts;
+  }
+  else if (apiCommand = 'categories')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% c.C_ID, c.C_NAME from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+      _categories:
+        oResult := AB.WA.apiObject();
+        oCategories := vector_concat (AB.WA.apiObject(),
+                                      vector (
+                                              '@yahoo:start', get_keyword ('_start', apiOptions),
+                                              '@yahoo:count', get_keyword ('_count', apiOptions),
+                                              '@yahoo:total', get_keyword ('_total', apiOptions)
+                                             )
+                                     );
+        V := vector ();
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oCategory := vector_concat (AB.WA.apiObject(), vector ('id', data[N][0], 'name', data[N][1]));
+          V := vector_concat (V, vector (oCategory));
+        }
+        oCategories := vector_concat (oCategories, vector ('category', V));
+        oResult := vector_concat (oResult, vector ('categories', oCategories));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod = 'POST')
+    {
+      declare name any;
+
+      V := apiBody;
+      if (get_keyword ('format', apiOptions, 'json') = 'json')
+        V := AB.WA.obj2xml (json_parse (V));
+
+      V := xml_tree_doc (xml_tree (V));
+      name := cast (xpath_eval('//name', V) as varchar);
+      AB.WA.category_update (domain_id, name);
+    }
+  }
+  else if (apiCommand = 'categoriesByContact')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% c.C_ID, c.C_NAME from AB.WA.CATEGORIES c, AB.WA.PERSONS p where c.C_DOMAIN_ID = ? and c.C_ID = p.P_CATEGORY_ID', vector (domain_id), apiOptions, data, meta))
+        goto _categories;
+    }
+    if (apiMethod = 'POST')
+    {
+      declare category_id, name any;
+
+      V := apiBody;
+      if (get_keyword ('format', apiOptions, 'json') = 'json')
+        V := AB.WA.obj2xml (json_parse (V));
+
+      V := xml_tree_doc (xml_tree (V));
+      name := cast (xpath_eval('//name', V) as varchar);
+      category_id := AB.WA.category_update (domain_id, name);
+
+      V := get_keyword ('_sqlParams', apiOptions);
+      if (length (V) = 0)
+        signal ('__404', '');
+
+      AB.WA.contact_update2 (V[0], domain_id, 'P_CATEGORY_ID', category_id);
+    }
+  }
+
+  http_request_status ('HTTP/1.1 200 OK');
+  return '';
+}
+;
+
+grant execute on AB.WA.yahoocontacts to SOAP_ADDRESSBOOK
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Google Conatacts API
+--
+----------------------------------------------------------------------------------------
+create procedure AB.WA.googleOutput (
+  in data any,
+  in options any)
+{
+  if (get_keyword ('out', options, 'atom') = 'atom')
+  {
+    http (AB.WA.obj2xml (
+                         data,
+                         10,
+                         null,
+                         vector ('',           'http://www.w3.org/2005/Atom',
+                                 'openSearch', 'http://a9.com/-/spec/opensearch/1.1/',
+                                 'gContact',   'http://schemas.google.com/contact/2008',
+                                 'batch',      'http://schemas.google.com/gdata/batch',
+                                 'gd',         'http://schemas.google.com/g/2005'
+                                ),
+                         '@')
+                        );
+  }
+  else if (get_keyword ('out', options) = 'json')
+  {
+    http (ODS..obj2json (
+                         data,
+                         10,
+                         vector ('openSearch', 'http://a9.com/-/spec/opensearch/1.1/',
+                                 'gContact',   'http://schemas.google.com/contact/2008',
+                                 'batch',      'http://schemas.google.com/gdata/batch',
+                                 'gd',         'http://schemas.google.com/g/2005'
+                                ),
+                         '@')
+                        );
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleMap ()
+{
+  return vector (
+                 'id',                                        vector ('field', 'P_ID'),
+                 '@gd:etag',                                  vector ('field', 'P_UID', 'xpath', '@gd:etag'),
+                 'published',                                 vector ('field', 'P_CREATED', 'function', 'select date_iso8601 (dt_set_tz (?, 0))'),
+                 'updated',                                   vector ('field', 'P_UPDATED', 'function', 'select date_iso8601 (dt_set_tz (?, 0))'),
+                 'title',                                     vector ('field', 'P_NAME'),
+                 'gd:name/gd:givenName',                      vector ('field', 'P_FIRST_NAME'),
+                 'gd:name/gd:familyName',                     vector ('field', 'P_LAST_NAME'),
+                 'gd:name/gd:fullName',                       vector ('field', 'P_FULL_NAME'),
+                 'gd:email',                                  vector ('field', 'P_MAIL', 'xpath', 'gd:email[@rel = "http://schemas.google.com/g/2005#other"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#other', '@primary', 'true')), 'value', '@address'),
+                 'gd:email[2]',                               vector ('field', 'P_H_MAIL', 'xpath', 'gd:email[@rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home')), 'value', '@address'),
+                 'gd:email[3]',                               vector ('field', 'P_B_MAIL', 'xpath', 'gd:email[@rel = "http://schemas.google.com/g/2005#work"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work')), 'value', '@address'),
+                 'gd:phoneNumber',                            vector ('field', 'P_PHONE', 'xpath', 'gd:phoneNumber[@rel = "http://schemas.google.com/g/2005#other"]', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#other', '@primary', 'true'))),
+                 'gd:phoneNumber[2]',                         vector ('field', 'P_H_PHONE', 'xpath', 'gd:phoneNumber[@rel = "http://schemas.google.com/g/2005#home"]', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home'))),
+                 'gd:phoneNumber[3]',                         vector ('field', 'P_B_PHONE', 'xpath', 'gd:phoneNumber[@rel = "http://schemas.google.com/g/2005#work"]', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:im',                                     vector ('field', 'P_ICQ', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#ICQ" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#ICQ')), 'value', '@address'),
+                 'gd:im[2]',                                  vector ('field', 'P_SKYPE', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#SKYPE" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#SKYPE')), 'value', '@address'),
+                 'gd:im[3]',                                  vector ('field', 'P_AIM', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#AIM" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#AIM')), 'value', '@address'),
+                 'gd:im[4]',                                  vector ('field', 'P_YAHOO', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#YAHOO" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#YAHOO')), 'value', '@address'),
+                 'gd:im[5]',                                  vector ('field', 'P_MSN', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#MSN" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#MSN')), 'value', '@address'),
+                 'gd:structuredPostalAddress/gd:city',        vector ('field', 'P_H_CITY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:city', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:street',      vector ('field', 'P_H_ADDRESS1', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:street', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:region',      vector ('field', 'P_H_STATE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:region', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:postcode',    vector ('field', 'P_H_CODE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:postcode', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:country',     vector ('field', 'P_H_COUNTRY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:country', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:city[2]',     vector ('field', 'P_B_CITY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:city', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:street[2]',   vector ('field', 'P_B_ADDRESS1', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:street', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:region[2]',   vector ('field', 'P_B_STATE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:region', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:postcode[2]', vector ('field', 'P_B_CODE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:postcode', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:country[2]',  vector ('field', 'P_B_COUNTRY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:country', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:organization/gd:orgName',                vector ('field', 'P_B_ORGANIZATION', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work', '@label', 'Work', '@primary', 'true')))
+                );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactField (
+  in field varchar,
+  in map varchar,
+  in fields any := null)
+{
+  if (not isnull (fields) and not AB.WA.vector_contains (fields, field))
+    return null;
+
+  return get_keyword (field, map);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactFieldIndex (
+  in field varchar,
+  in meta any)
+{
+  declare N integer;
+
+  for (N := 0; N < length (meta); N := N + 1)
+    if (field = meta[N])
+      return N;
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactValue (
+  in field varchar,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N integer;
+  declare tmp, fieldDef any;
+  declare abValue, abField, abFieldIndex any;
+
+  abValue := null;
+  fieldDef := AB.WA.googleContactField (field, map);
+  if (isnull (fieldDef))
+    goto _skip;
+  abField := get_keyword ('field', fieldDef);
+  if (isnull (abField))
+    goto _skip;
+
+  abValue := AB.WA.googleContactValue2 (abField, data, meta);
+  if (isnull (abValue))
+    goto _skip;
+  if (not isnull (get_keyword ('function', fieldDef)))
+  {
+    tmp := get_keyword ('function', fieldDef);
+    if (not isnull (tmp))
+    {
+      tmp := AB.WA.exec (tmp, vector (abValue));
+      if (length (tmp))
+        abValue := tmp[0][0];
+    }
+  }
+
+_skip:;
+  return abValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactValue2 (
+  in abField varchar,
+  inout data any,
+  inout meta any)
+{
+  declare abFieldIndex any;
+
+  abFieldIndex := AB.WA.googleContactFieldIndex (abField, meta);
+  if (not isnull (abFieldIndex))
+    return data[abFieldIndex];
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactProperty (
+  in property varchar,
+  in oEntry any,
+  in template any := null,
+  in mode integer := 1)
+{
+  declare N, M integer;
+
+  for (N := 0; N < length (oEntry); N := N + 2)
+  {
+    if (oEntry[N] = property)
+    {
+      if (not (isnull (template) or (isstring (oEntry[N+1]) and not isarray (oEntry[N+1]))))
+      {
+        for (M := 0; M < length (template); M := M + 2)
+        {
+          if (get_keyword (template[M], oEntry[N+1]) <> template[M+1])
+            goto _skip;
+        }
+      }
+      if (mode)
+        return oEntry[N+1];
+      return N+1;
+    }
+  _skip:;
+  }
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleFeedObject (
+  inout oFeed any,
+  inout domain_id integer,
+  inout options any)
+{
+  declare owner_id, V any;
+
+  oFeed := vector_concat (oFeed, vector ('id', AB.WA.domain_name (domain_id)));
+  oFeed := vector_concat (oFeed, vector ('title', AB.WA.domain_description (domain_id)));
+  V := vector_concat (AB.WA.apiObject(), vector ('@scheme', 'http://schemas.google.com/g/2005#kind', '@term', 'http://schemas.google.com/contact/2008#group'));
+  oFeed := vector_concat (oFeed, vector ('category', V));
+  owner_id := AB.WA.domain_owner_id (domain_id);
+  V := vector_concat (AB.WA.apiObject(), vector ('name', AB.WA.account_name (owner_id), 'email', AB.WA.account_mail (owner_id)));
+  oFeed := vector_concat (oFeed, vector ('author', V));
+  oFeed := vector_concat (oFeed, vector ('@openSearch:startIndex', get_keyword ('_start', options)));
+  oFeed := vector_concat (oFeed, vector ('@openSearch:itemsPerPage', get_keyword ('_count', options)));
+  oFeed := vector_concat (oFeed, vector ('@openSearch:totalResults', get_keyword ('_total', options)));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactObject (
+  in fields any,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N, L integer;
+  declare oEntry any;
+  declare V, T any;
+  declare abValue, field, fieldDef, template any;
+
+  oEntry := AB.WA.apiObject ();
+  fields := split_and_decode (fields, 0, '\0\0,');
+  for (N := 0; N < length (fields); N := N + 1)
+  {
+    field := fields[N];
+    abValue := AB.WA.googleContactValue (field, data, meta, map);
+    if (is_empty_or_null (abValue))
+      goto _skip;
+
+    fieldDef := AB.WA.googleContactField (field, map);
+    L := strchr (field, '[');
+    if (not isnull (L))
+      field := subseq (field, 0, L);
+
+    if (isnull (strchr (field, '/')))
+    {
+      template := get_keyword ('template', fieldDef);
+      if (isnull (template))
+      {
+        oEntry := vector_concat (oEntry, vector (field, abValue));
+      } else {
+        V := get_keyword ('value', fieldDef, '@value');
+        template := vector_concat (template, vector (V, abValue));
+        oEntry := vector_concat (oEntry, vector (field, template));
+      }
+    }
+    else
+    {
+      template := get_keyword ('template', fieldDef, AB.WA.apiObject ());
+      V := split_and_decode (field, 0, '\0\0/');
+      if (length (V) <> 2)
+        goto _skip;
+
+      if (isnull (AB.WA.googleContactProperty (V[0], oEntry, template)))
+        oEntry := vector_concat (oEntry, vector (V[0], template));
+
+      T := AB.WA.googleContactProperty (V[0], oEntry, template);
+      T := AB.WA.set_keyword (V[1], T, abValue);
+      L := AB.WA.googleContactProperty (V[0], oEntry, template, 0);
+      oEntry[L] := T;
+    }
+
+  _skip:;
+  }
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleGroupObject (
+  inout data any,
+  inout meta any)
+{
+  declare N, tmp, oEntry any;
+
+  oEntry := AB.WA.apiObject ();
+
+  N := AB.WA.vector_index (meta, 'C_ID');
+  if (not isnull (N) and not isnull (data[N]))
+    oEntry := vector_concat (oEntry, vector ('id', data[N]));
+  N := AB.WA.vector_index (meta, 'C_NAME');
+  if (not isnull (N) and not isnull (data[N]))
+    oEntry := vector_concat (oEntry, vector ('title', data[N]));
+  N := AB.WA.vector_index (meta, 'C_NAME');
+  if (not isnull (N) and not isnull (data[N]))
+    oEntry := vector_concat (oEntry, vector ('content', data[N]));
+
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleSQL (
+  in sql varchar,
+  in params any,
+  inout options any,
+  inout data any,
+  inout meta any)
+{
+  declare N integer;
+  declare st, msg, _data, _meta, _start, _count, _total, _min any;
+
+  st := '00000';
+  if (get_keyword ('updated-min', options) <> '')
+  {
+    sql := sql || ' and P_UPDATED > ?';
+    params := vector_concat (params, get_keyword ('updated-min', options));
+  }
+  if (get_keyword ('orderby', options) <> '')
+  {
+    sql := sql || ' order by P_UPDATED';
+    if (get_keyword ('sortorder', options) = 'descending')
+      sql := sql || ' desc';
+  }
+  _start := atoi (get_keyword ('start-index', options, '0'));
+  _count := atoi (get_keyword ('max-results', options, '25'));
+  if (_count = 0)
+    _count := 25;
+  _min := _start + _count;
+  sql := replace (sql, '%TOP%', cast (_min as varchar));
+
+  exec (sql, st, msg, params, 0, _meta, _data);
+  if ('00000' <> st)
+    return 0;
+
+  _total := 0;
+  data := vector ();
+  if (_min > length (_data))
+    _min := length (_data);
+  for (N := _start; N < _min; N := N + 1)
+  {
+    data := vector_concat (data, vector (_data[N]));
+    _total := _total + 1;
+  }
+  meta := AB.WA.simplifyMeta (_meta);
+  options := vector_concat (options, vector ('_start', _start));
+  options := vector_concat (options, vector ('_count', _count));
+  options := vector_concat (options, vector ('_total', _total));
+
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googlePathAnalyze (
+  in apiParams varchar,
+  in apiPath varchar,
+  in apiMethod varchar,
+  inout apiMap any,
+  inout apiCommand varchar,
+  inout apiOptions any)
+{
+  apiMap := AB.WA.googleMap ();
+  apiOptions := vector ();
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googlecontacts () __SOAP_HTTP 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '__201')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 201 Creates');
+    }
+    else if (__SQL_STATE = '__204')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 204 No Content');
+    }
+    else if (__SQL_STATE = '__400')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 400 Bad Request');
+    }
+    else if (__SQL_STATE = '__401')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 401 Unauthorized');
+    }
+    else if (__SQL_STATE = '__404')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 404 Not Found');
+    }
+    else if (__SQL_STATE = '__406')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 406 Requested representation not available for the resource');
+    }
+    else if (__SQL_STATE = '__500')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 500 Not Found');
+    }
+    else if (__SQL_STATE = '__503')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 503 Service Unavailable');
+    }
+    else
+    {
+      dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    }
+    return null;
+  };
+  declare N, M, domain_id integer;
+  declare domain_mode, xt any;
+  declare tmp, uname, V, A, oResult, oFeed, oGroups, oGroup, oContacts, oContact, oTag any;
+  declare apiLines, apiPath, apiParams, apiMethod, apiBody any;
+  declare apiMap, apiCommand, apiOptions, apiFields any;
+  declare params, meta, data any;
+
+  apiLines := http_request_header ();
+  apiPath := http_path ();
+  apiParams := http_param ();
+  apiMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  --if (apiMethod <> 'application/atom+xml')
+  --  signal ('__404', '');
+  apiBody := string_output_string (http_body_read ());
+  if (apiBody = '')
+    apiBody := get_keyword ('content', apiParams);
+
+  V := sprintf_inverse (apiPath, '/ods/google/%s/%d/full', 0);
+  if (isnull (V) or (length (V) <> 2))
+    signal ('__404', '');
+  domain_mode := V[0];
+  domain_id := V[1];
+
+  if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
+    signal ('__401', '');
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
+    signal ('__401', '');
+
+  AB.WA.googlePathAnalyze (apiParams, apiPath, apiMethod, apiMap, apiCommand, apiOptions);
+  if (domain_mode = 'contacts')
+  {
+    apiFields := '';
+    for (N := 0; N < length (apiMap); N := N + 2)
+      apiFields := apiFields || apiMap[N] || ',';
+    apiFields := trim (apiFields, ',');
+
+    set_user_id ('dba');
+    if (apiMethod = 'GET')
+    {
+      -- retrieve
+
+      oResult := AB.WA.apiObject();
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select TOP %TOP% p.* from AB.WA.PERSONS p where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oContact := AB.WA.googleContactObject(apiFields, data[N], meta, apiMap);
+          oFeed := vector_concat (oFeed, vector ('entry', oContact));
+        }
+      }
+      AB.WA.googleFeedObject (oFeed, domain_id, apiOptions);
+      oResult := vector_concat (oResult, vector ('feed', oFeed));
+      AB.WA.googleOutput (oResult, apiParams);
+    }
+    else if ((apiMethod = 'POST') or (apiMethod = 'PUT'))
+    {
+      -- Insert Contact ('POST'), Update Contact ('PUT')
+      declare field, fieldDef, objectID, abPath, abField, abFields, abValue, abValues any;
+
+      xt := xtree_doc (apiBody);
+      objectID := -1;
+      abFields := vector ();
+      abValues := vector ();
+      for (N := 0; N < length (apiMap); N := N + 2)
+      {
+        field := apiMap[N];
+        fieldDef := apiMap[N+1];
+        if (isnull (fieldDef))
+          goto _next;
+
+        abValue := null;
+        abField := get_keyword ('field', fieldDef);
+        if (isnull (abField))
+          goto _next;
+
+        abPath := get_keyword ('xpath', fieldDef);
+        if (isNull (abPath))
+          abPath := field;
+
+        tmp := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/' || abPath, xt, 1) as varchar);
+        if (is_empty_or_null (tmp))
+          goto _next;
+
+        if (abField = 'P_BIRTHDAY')
+        {
+          tmp := AB.WA.dt_reformat (tmp, 'YMD');
+          if (is_empty_or_null (tmp))
+            goto _next;
+        }
+        if (not AB.WA.vector_contains (abFields, abField))
+        {
+          abFields := vector_concat (abFields, vector (abField));
+          abValues := vector_concat (abValues, vector (tmp));
+        }
+      _next:;
+      }
+      M := AB.WA.vector_index (abFields, 'P_NAME');
+      if (isnull (M))
+      {
+        V := vector ('P_TITLE', 'P_FULL_NAME', 'P_FIRST_NAME', 'P_MIDDLE_NAME', 'P_LAST_NAME');
+        for (N := 0; N < length (V); N := N + 1)
+        {
+          M := AB.WA.vector_index (abFields, V[N]);
+          if (not isnull (M))
+          {
+            abFields := vector_concat (abFields, vector ('P_NAME'));
+            abValues := vector_concat (abValues, vector (abValues[M]));
+            goto _exit;
+          }
+        }
+      _exit:;
+      }
+      if (apiMethod = 'PUT')
+      {
+        M := AB.WA.vector_index (abFields, 'P_UID');
+        if (isnull (M))
+          signal ('__404', '');
+        objectID := (select P_ID from AB.WA.PERSONS where P_UID = abValues[M] and P_DOMAIN_ID = domain_id);
+        if (isnull (objectID))
+          signal ('__404', '');
+        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues);
+      } else {
+        objectID := AB.WA.contact_update4 (objectID, domain_id, abFields, abValues);
+        if (isarray (objectID) and length (objectID) = 1)
+          objectID := objectID[0];
+      }
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select p.* from AB.WA.PERSONS p where p.P_DOMAIN_ID = ? and p.P_ID = ?', vector (domain_id, objectID), vector(), data, meta))
+      {
+        if (length (data) = 1)
+        {
+          oContact := AB.WA.googleContactObject(apiFields, data[0], meta, apiMap);
+          oFeed := vector_concat (oFeed, vector ('entry', oContact));
+        }
+      }
+      AB.WA.googleOutput (oFeed, apiParams);
+    }
+    else if (apiMethod = 'DELETE')
+    {
+      -- Delete Contact ('DELETE')
+      declare field, fieldDef, objectID, abPath, abField, abValue any;
+
+      xt := xtree_doc (apiBody);
+      field := '@gd:etag';
+      fieldDef := get_keyword (field, apiMap);
+      if (isnull (fieldDef))
+        signal ('__404', '');
+
+      abValue := null;
+      abField := get_keyword ('field', fieldDef);
+      if (isnull (abField))
+        signal ('__404', '');
+
+      abPath := get_keyword ('xpath', fieldDef);
+      if (isNull (abPath))
+        abPath := field;
+
+      tmp := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/' || abPath, xt, 1) as varchar);
+      if (is_empty_or_null (tmp))
+        signal ('__404', '');
+
+      objectID := (select P_ID from AB.WA.PERSONS where P_UID = tmp and P_DOMAIN_ID = domain_id);
+      if (isnull (objectID))
+        signal ('__404', '');
+
+      AB.WA.contact_delete (objectID, domain_id);
+    }
+  }
+  else if (domain_mode = 'groups')
+  {
+    set_user_id ('dba');
+    if (apiMethod = 'GET')
+    {
+      -- retrieve Groups
+
+      oResult := AB.WA.apiObject();
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select TOP %TOP% c.* from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oGroup := AB.WA.googleGroupObject(data[N], meta);
+          oFeed := vector_concat (oFeed, vector ('entry', oGroup));
+        }
+      }
+      AB.WA.googleFeedObject (oFeed, domain_id, apiOptions);
+      oResult := vector_concat (oResult, vector ('feed', oFeed));
+      AB.WA.googleOutput (oResult, apiParams);
+    }
+    else if (apiMethod = 'POST')
+    {
+      -- Insert Group ('POST')
+      declare gID, gName any;
+
+      xt := xtree_doc (apiBody);
+      gName := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/atom:title', xt, 1) as varchar);
+      if (isnull (gName))
+        signal ('__400', '');
+
+      gID := AB.WA.category_insert (domain_id, gName);
+      if (isnull (gID))
+        signal ('__400', '');
+
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select c.* from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ? and c.C_ID = ?', vector (domain_id, gID), vector (), data, meta))
+      {
+        if (length (data) = 1)
+        {
+          oGroup := AB.WA.googleGroupObject(data[0], meta);
+          oFeed := vector_concat (oFeed, vector ('entry', oGroup));
+        }
+      }
+      AB.WA.googleOutput (oFeed, apiParams);
+    }
+    else if (apiMethod = 'PUT')
+    {
+      -- Update Group ('PUT')
+      declare gID, gName any;
+
+      xt := xtree_doc (apiBody);
+      gID := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/id', xt, 1) as varchar);
+      if (isnull (gName))
+        signal ('__400', '');
+      if (not exists (select 1 from AB.WA.CATEGORIES where C_ID = gID and C_DOMAIN_ID = domain_id))
+        signal ('__404', '');
+
+      gName := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/title', xt, 1) as varchar);
+      if (isnull (gName))
+        signal ('__400', '');
+
+      update AB.WA.CATEGORIES
+         set C_NAME = gName,
+             C_UPDATED = now ()
+       where C_ID = gID
+         and C_DOMAIN_ID = domain_id;
+
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select c.* from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ? and c.C_ID = ?', vector (domain_id, gID), vector (), data, meta))
+      {
+        if (length (data) = 1)
+        {
+          oGroup := AB.WA.googleGroupObject(data[0], meta);
+          oFeed := vector_concat (oFeed, vector ('entry', oGroup));
+        }
+      }
+      AB.WA.googleOutput (oFeed, apiParams);
+    }
+    else if (apiMethod = 'DELETE')
+    {
+      -- Delete Group ('DELETE')
+      declare gID any;
+
+      xt := xtree_doc (apiBody);
+      gID := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/id', xt, 1) as varchar);
+      if (isnull (gID))
+        signal ('__400', '');
+
+      delete from AB.WA.CATEGORIES where C_ID = gID and C_DOMAIN_ID = domain_id;
+    }
+  }
+
+  http_request_status ('HTTP/1.1 200 OK');
+  return '';
+}
+;
+
+grant execute on AB.WA.googlecontacts to SOAP_ADDRESSBOOK
 ;

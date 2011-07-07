@@ -67,7 +67,8 @@ char * xmlt5 =
 "	VI_ID_COL varchar, VI_INDEX_TABLE varchar,"
 "       VI_ID_IS_PK integer, VI_ID_CONSTR varchar,"
 "       VI_OFFBAND_COLS varchar, VI_OPTIONS varchar, VI_LANGUAGE varchar, VI_ENCODING varchar,"
-"       primary key (VI_TABLE, VI_COL))";
+"       primary key (VI_TABLE, VI_COL))\n"
+"alter index SYS_VT_INDEX on SYS_VT_INDEX partition cluster REPLICATED";
 
 
 xml_schema_t *xml_global;
@@ -170,6 +171,7 @@ xmls_init (void)
 
   qr = sql_compile_static ("select A_ID, A_NAME from SYS_ATTR",
 		    bootstrap_cli, &err, SQLC_DEFAULT);
+  if (NULL != err) goto no_attrs;
   err = qr_quick_exec (qr, bootstrap_cli, "", &lc, 0);
   while (lc_next (lc))
     {
@@ -181,14 +183,14 @@ xmls_init (void)
     }
   lc_free (lc);
   qr_free (qr);
-
+no_attrs:
   ddl_sel_for_effect ("select count (*) from SYS_ELEMENT_TABLE where xmls_element_table (ET_ELEMENT, ET_TABLE)");
   ddl_sel_for_effect ("select count (*) from SYS_ELEMENT_MAP where xmls_element_col (EM_TABLE, EM_COL_ID, EM_A_ID)");
   tb = sch_name_to_table (isp_schema (NULL), "DB.DBA.SYS_VT_INDEX");
   if (tb && tb_name_to_column (tb, LAST_FTI_COL))
-    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR))");
+    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR), VI_OPTIONS)");
   else
-    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, NULL, deserialize (VI_ID_CONSTR))");
+    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, NULL, deserialize (VI_ID_CONSTR), VI_OPTIONS)");
 #ifdef OLD_VXML_TABLES
   xp_comp_init ();
 #endif
@@ -485,11 +487,26 @@ bif_vt_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_error ("S0022", "no index in vt_index");
   id_col = tb_name_to_column (tb, id_col_name);
   text_col = tb_name_to_column (tb, text_col_name);
+  if (!text_col)
+    {
+      /* text col is always case insensitive.  Trick to allow geo and ft inxon the same o col of rdf_quad */
+      DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
+	{
+	  if (0 == stricmp (col->col_name, text_col_name))
+	    {
+	      text_col = col;
+	      break;
+	    }
+	}
+      END_DO_SET();
+    }
   if (!id_col || !text_col)
     sqlr_error ("S0002", "No column in vt_index");
-  id_key->key_text_table = inx_tb;
-  id_key->key_text_col = text_col;
-  text_col->col_is_text_index = 1;
+    {
+    id_key->key_text_table = inx_tb;
+    id_key->key_text_col = text_col;
+    text_col->col_is_text_index = 1;
+    }
   /* added: init of language & offband cols members */
   if (BOX_ELEMENTS (args) > 5)
     {
@@ -639,7 +656,7 @@ qi_tb_xml_schema (query_instance_t * qi, char *read_tb)
   if (tb && !tb_name_to_column (tb, LAST_FTI_COL))
     return NULL;
 
-  err = qi_sel_for_effect (qi, "select __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR)) "
+  err = qi_sel_for_effect (qi, "select __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR), VI_OPTIONS) "
 		     " from DB.DBA.SYS_VT_INDEX where VI_TABLE = ?", 1,
 		     ":0", read_tb, QRP_STR);
   if (err)

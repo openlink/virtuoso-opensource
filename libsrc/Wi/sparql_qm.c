@@ -181,7 +181,7 @@ sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
     case SPARQL_PLAIN_ID:
       prefix = sparp->sparp_env->spare_qm_current_table_alias;
       if (NULL != prefix)
-        aliased_table = spar_qm_find_base_table (sparp, prefix);
+        aliased_table = spar_qm_find_base_table_or_sqlquery (sparp, prefix);
       else
         aliased_table = sparp->sparp_env->spare_qm_default_table;
       if (NULL == aliased_table)
@@ -196,7 +196,7 @@ sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
       {
         if (NULL == right_dot)
           spar_internal_error (sparp, "sparp_" "make_qm_sqlcol(): no dot in SPARQL_SQL_ALIASCOLNAME");
-        aliased_table = spar_qm_find_base_table (sparp, prefix);
+        aliased_table = spar_qm_find_base_table_or_sqlquery (sparp, prefix);
         if (NULL == aliased_table)
           spar_error (sparp, "Undefined table alias %.100s in SQL column name %.100s", prefix, name);
         return spartlist (sparp, 4, SPAR_SQLCOL, aliased_table, prefix, t_box_dv_short_string (right_dot+1));
@@ -210,8 +210,9 @@ sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
         if (NULL == sparp->sparp_env->spare_qm_default_table)
           sparp->sparp_env->spare_qm_default_table = prefix;
         else if (strcmp (sparp->sparp_env->spare_qm_default_table, prefix))
-          spar_error (sparp, "Table name %.100s of column %.100s does not match previously set default table name %.100s; consider using aliases",
-            prefix, name, sparp->sparp_env->spare_qm_default_table );
+          spar_error (sparp, "%.100s of column %.100s does not match previously set default %.100s; consider using aliases",
+            spar_qm_table_or_sqlquery_report_name (prefix), name,
+            spar_qm_table_or_sqlquery_report_name (sparp->sparp_env->spare_qm_default_table) );
         return spartlist (sparp, 4, SPAR_SQLCOL,
           sparp->sparp_env->spare_qm_default_table, NULL, t_box_dv_short_string (right_dot+1) );
       }
@@ -303,13 +304,21 @@ end_of_free_text: ;
 }
 
 caddr_t
+spar_qm_table_or_sqlquery_report_name (caddr_t atbl)
+{
+  if (!SPAR_TABLE_IS_SQLQUERY(atbl))
+    return t_box_sprintf (500, "table %.300s", atbl);
+  return t_box_sprintf (500, "SQL query at %.100s", SPAR_SQLQUERY_PLACE(atbl));
+}
+
+caddr_t
 spar_qm_find_base_alias (sparp_t *sparp, caddr_t descendant_alias)
 {
   dk_set_t p_a = sparp->sparp_env->spare_qm_parent_aliases_of_aliases;
   caddr_t curr = descendant_alias;
   for (;;)
     {
-      caddr_t prev = dk_set_get_keyword (p_a, curr, NULL);
+      caddr_t prev = (caddr_t)dk_set_get_keyword (p_a, curr, NULL);
       if (NULL == prev)
         break;
       curr = prev;
@@ -359,11 +368,11 @@ cond_is_redundant: ;
 }
 
 caddr_t
-spar_qm_find_base_table (sparp_t *sparp, caddr_t descendant_alias)
+spar_qm_find_base_table_or_sqlquery (sparp_t *sparp, caddr_t descendant_alias)
 {
   dk_set_t p_t = sparp->sparp_env->spare_qm_parent_tables_of_aliases;
   caddr_t base_alias = spar_qm_find_base_alias (sparp, descendant_alias);
-  caddr_t t = dk_set_get_keyword (p_t, (NULL == base_alias) ? descendant_alias : base_alias, NULL);
+  caddr_t t = (caddr_t) dk_set_get_keyword (p_t, (NULL == base_alias) ? descendant_alias : base_alias, NULL);
   return t;
 }
 
@@ -376,12 +385,13 @@ spar_qm_find_descendants_of_alias (sparp_t *sparp, caddr_t base_alias)
 }
 
 void
-spar_qm_add_aliased_table (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias)
+spar_qm_add_aliased_table_or_sqlquery (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias)
 {
   dk_set_t *atables_ptr = &(sparp->sparp_env->spare_qm_parent_tables_of_aliases);
-  caddr_t prev_use = spar_qm_find_base_table (sparp, new_alias);
+  caddr_t prev_use = spar_qm_find_base_table_or_sqlquery (sparp, new_alias);
   if (NULL != prev_use)
-    spar_error (sparp, "Alias %.100s is in use already (table %.200s above)", new_alias, prev_use);
+    spar_error (sparp, "Alias %.100s is in use already for %.500s",
+      new_alias, spar_qm_table_or_sqlquery_report_name (prev_use) );
   t_set_push (atables_ptr, parent_qtable);
   t_set_push (atables_ptr, new_alias);
 }
@@ -391,12 +401,13 @@ spar_qm_add_aliased_alias (sparp_t *sparp, caddr_t parent_alias, caddr_t new_ali
 {
   dk_set_t *parent_aliases_ptr = &(sparp->sparp_env->spare_qm_parent_aliases_of_aliases);
   dk_set_t *desc_aliases_ptr = &(sparp->sparp_env->spare_qm_descendants_of_aliases);
-  caddr_t prev_use = spar_qm_find_base_table (sparp, new_alias);
+  caddr_t prev_use = spar_qm_find_base_table_or_sqlquery (sparp, new_alias);
   caddr_t curr;
-  if (NULL == spar_qm_find_base_table (sparp, parent_alias))
+  if (NULL == spar_qm_find_base_table_or_sqlquery (sparp, parent_alias))
     spar_error (sparp, "Alias %.100s is not defined", parent_alias);
   if (NULL != prev_use)
-    spar_error (sparp, "Alias %.100s is in use already (table %.200s above)", new_alias, prev_use);
+    spar_error (sparp, "Alias %.100s is in use already for %.500s", new_alias,
+      spar_qm_table_or_sqlquery_report_name (prev_use) );
   t_set_push (parent_aliases_ptr, parent_alias);
   t_set_push (parent_aliases_ptr, new_alias);
 /* Now we register \c new alias as a descendant of \c parent_alias and all ancestors of \c parent_alias */
@@ -581,10 +592,11 @@ spar_qm_get_atables_and_aliases (sparp_t *sparp, caddr_t qm_id, caddr_t alias, c
       t_set_push (map_atables_ret, atbl);
       t_set_push (map_atables_ret, alias);
       t_set_push (map_aliases_ret, alias);
+      return;
     }
-  else if (strcmp (old_atbl, atbl))
-    spar_error (sparp, "One alias %.100s is used for different tables (%.300s and %.300s) in two different quad map values of the quad map pattern <%.300s>",
-      alias, atbl, old_atbl, qm_id );
+  if (strcmp (old_atbl, atbl))
+    spar_error (sparp, "One alias %.100s is used for %.300s and %.300s in two different quad map values of the quad map pattern <%.300s>",
+      alias, spar_qm_table_or_sqlquery_report_name(atbl), spar_qm_table_or_sqlquery_report_name (old_atbl), qm_id );
 }
 
 
@@ -694,9 +706,9 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
       all_atables = sub_atables;
       DO_SET (caddr_t, extra_alias, &extra_aliases)
         {
-          caddr_t atbl = spar_qm_find_base_table (sparp, extra_alias);
+          caddr_t atbl = spar_qm_find_base_table_or_sqlquery (sparp, extra_alias);
           if (0 <= dk_set_position_of_string (map_aliases, extra_alias))
-            spar_error (sparp, "Alias names occurs in 'option (using %.100s)' and in some value of the quad map pattern", extra_alias);
+            spar_error (sparp, "Alias name occurs in 'option (using %.100s)' and in some value of the quad map pattern", extra_alias);
           spar_qm_get_atables_and_aliases (sparp, qm_id, extra_alias, atbl, &all_atables, &map_aliases);
         }
       END_DO_SET()

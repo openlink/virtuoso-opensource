@@ -28,9 +28,12 @@ Table of Contents
  * .... Mac OS X 10.4 PPC 32-bit
  * .... Mac OS X 10.4 PPC 64-bit
  * .... Mac OS X 10.4 Universal 32-bit
- * .... Mac OS X 10.5 PPC 32-bit
- * .... Mac OS X 10.5 PPC 64-bit
+ * .... Mac OS X 10.5 32-bit
+ * .... Mac OS X 10.5 64-bit
  * .... Mac OS X 10.5 Universal
+ * .... Mac OS X 10.6 32-bit
+ * .... Mac OS X 10.6 64-bit
+ * .... Mac OS X 10.6 Universal
  * .... Solaris 2.x i386 32-bit
  * .... Solaris 2.10 Opteron 32-bit
  * .... Solaris 2.10 Opteron 64-bit
@@ -252,13 +255,13 @@ Linux 64-bit
 
 Mac OS X 10.2 and 10.3 PPC 32-bit
 ---------------------------------
-    CFLAGS="-O -m32 -mmacosx-version-min=10.2"
+    CFLAGS="-O -m32 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
 Mac OS X 10.4 PPC 32-bit
 ------------------------
-    CFLAGS="-O -m32 -mmacosx-version-min=10.2"
+    CFLAGS="-O -m32 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
@@ -289,6 +292,24 @@ Mac OS X 10.5 64-bit
 Mac OS X 10.5 Universal 
 -----------------------
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.5.sdk -arch ppc -arch i386 -arch ppc64 -arch x86_64 -mmacosx-version-min=10.5"
+    export CFLAGS
+    ./configure --disable-dependency-tracking ...
+
+Mac OS X 10.6 32-bit
+--------------------
+    CFLAGS="-O -m32 -mmacosx-version-min=10.6"
+    export CFLAGS
+    ./configure ...
+
+Mac OS X 10.6 64-bit
+--------------------
+    CFLAGS="-O -m64 -mmacosx-version-min=10.6"
+    export CFLAGS
+    ./configure ...
+
+Mac OS X 10.6 Universal 
+-----------------------
+    CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.6.sdk -arch i386 -arch x86_64 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 

@@ -38,12 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_charsets_list"><title>Parameters</title>
-    <refsect2><title><parameter>gen_res_set</parameter></title>
-      <para><type>Integer</type> flag to determine whether to produce a result set: 0 means no, 1 means yes.</para></refsect2>
-  </refsect1>
-  <refsect1 id="ret_charsets_list"><title>Return Types</title>
-    <para>An <type>array</type> of <type>string</type>, optionally generates a result set of single varchar columns.</para></refsect1>
   <refsect1 id="desc_charsets_list">
     <title>Description</title>
       <para>This function produces a list of all character set names and aliases
@@ -53,6 +47,12 @@
       produces a result set in which each row contains one varchar column with
       a name of a character set or alias.</para>
   </refsect1>
+  <refsect1 id="params_charsets_list"><title>Parameters</title>
+    <refsect2><title><parameter>gen_res_set</parameter></title>
+      <para><type>Integer</type> flag to determine whether to produce a result set: 0 means no, 1 means yes.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_charsets_list"><title>Return Types</title>
+    <para>An <type>array</type> of <type>string</type>, optionally generates a result set of single varchar columns.</para></refsect1>
   <refsect1 id="errors_charsets_list"><title>Errors</title>
     <para>This function can generate the following errors:</para>
     <errorcode>SR008</errorcode>

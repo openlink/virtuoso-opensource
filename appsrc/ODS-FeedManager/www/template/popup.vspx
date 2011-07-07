@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
-  -  $Id$
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -25,7 +25,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
+    <base href="<?V ENEWS.WA.host_url () || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
+    <?vsp
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
+    ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/common.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
       <script type="text/javascript">
@@ -36,6 +43,7 @@
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
+      <script type="text/javascript" src="/ods/typeahead.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="js/enews.js"></script>
       <script type="text/javascript">
@@ -55,31 +63,28 @@
           OAT.Anchor.zIndex = 1001;
 
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-          {
-            if ($('app_area'))
-            {
               generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
-            }
-          }
 
           // init tabs
           showTab('a', 2, 0);
         }
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+        OAT.MSG.attach(OAT, 'OAT_LOADED', myInit);
+      	window.onkeyup = function (event) {
+      		if (event.keyCode == 27) {
+      			window.close ();
+      		}
+      	}
       </script>
     ]]>
     <title></title>
   </head>
   <body>
     <v:page name="popup" xmlns:v="http://www.openlinksw.com/vspx/">
-      <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
-        <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+        <v:variable persist="0" name="account_rights" type="varchar" default="''"/>
         <v:variable persist="0" name="settings" type="any" />
-      </vm:variables>
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';
@@ -90,9 +95,8 @@
 
           aSessInfo := ENEWS.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
-          self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
+          self.account_rights := get_keyword ('account_rights', aSessInfo, '');
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ENEWS.WA.settings (self.domain_id, self.account_id));
         ]]>
       </v:on-init>

@@ -128,7 +128,8 @@ public class VirtuosoConnection implements Connection
    private boolean readOnly = false;
 
    // The timeout for I/O
-   protected int timeout = 60;
+   protected int timeout_def = 60;
+   protected int timeout = 0;
    protected int txn_timeout = 0;
 
    protected int fbs = VirtuosoTypes.DEFAULTPREFETCH;
@@ -164,6 +165,8 @@ public class VirtuosoConnection implements Connection
 
   private Vector hostList = new Vector();
 #endif
+   protected boolean rdf_type_loaded = false;
+   protected boolean rdf_lang_loaded = false;
 
   private boolean useRoundRobin;
   // The pingStatement to know if the connection is still available
@@ -356,6 +359,7 @@ public class VirtuosoConnection implements Connection
    public boolean isConnectionLost() 
    {
      try{
+	pingStatement.setQueryTimeout(1);
         pingStatement.execute();
         return false;
      } catch (Exception e ) {
@@ -531,6 +535,8 @@ public class VirtuosoConnection implements Connection
 	else
 #endif
 	 socket = new Socket(host,port);
+
+	 if (timeout > 0)
 	 socket.setSoTimeout(timeout*1000);
 	 socket.setTcpNoDelay(true);
 #if JDK_VER >= 12
@@ -654,13 +660,23 @@ public class VirtuosoConnection implements Connection
 			 //  System.err.println (client_charset.elementAt(0).toString());
 			 //else
 			 //  System.err.println ("<NULL>");
-			 timeout = (int) (cdef_param (client_defaults, "SQL_QUERY_TIMEOUT", timeout * 1000) / 1000);
+
+			 if (timeout <= 0) {
+			   timeout = (int) (cdef_param (client_defaults, "SQL_QUERY_TIMEOUT", timeout_def * 1000) / 1000);
 			 //System.err.println ("timeout = " + timeout);
+			 }
+                         if (timeout > 0)
 			 socket.setSoTimeout(timeout*1000);
+
+			 if (txn_timeout <= 0) {
 			 txn_timeout = (int) (cdef_param (client_defaults, "SQL_TXN_TIMEOUT", txn_timeout * 1000)/ 1000);
 			 //System.err.println ("txn timeout = " + txn_timeout);
+			 }
+
+			 if (trxisolation <= 0) {
 			 trxisolation = (int) cdef_param (client_defaults, "SQL_TXN_ISOLATION", trxisolation);
 			 //System.err.println ("txn isolation = " + trxisolation);
+			 }
 
 			 utf8_execs = cdef_param (client_defaults, "SQL_UTF8_EXECS", 0) != 0;
 			 //System.err.println ("utf8_execs = " + utf8_execs);

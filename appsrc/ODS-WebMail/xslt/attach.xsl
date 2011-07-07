@@ -26,14 +26,8 @@
   <xsl:include href="common.xsl"/>
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="attach.vsp" method="post" enctype="multipart/form-data" name="f1">
-      <script>
-        function windowShow(sPage)
-        {
-          win = window.open(sPage, 'blank', "width=600,height=525,top=100,left=100,status=yes,toolbar=yes,menubar=yes,scrollbars=yes,resizable=yes");
-          win.window.focus();
-        };
-      </script>
+    <form method="post" enctype="multipart/form-data" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/attach.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="ap">
         <xsl:attribute name="value"><xsl:value-of select="ap"/></xsl:attribute>
@@ -77,6 +71,9 @@
           <input type="button" name="att_2_button" value="Browse...">
             <xsl:attribute name="onclick">javascript: f1.att_source[1].checked = true; davBrowse ('att_2'); </xsl:attribute>
           </input>
+  		    <script type="text/javascript">
+            OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+  		    </script>
         </td>
       </tr>
       <tfoot>

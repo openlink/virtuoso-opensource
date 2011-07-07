@@ -40,6 +40,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_cfg_item_name"><title>Description</title>
+    <para>Returns the name of the item specified by item_index
+    (begins from zero). If the index and section name do not point
+    to a valid item, then zero is returned, otherwise on success the
+    function returns the item name.</para>
+  </refsect1>
   <refsect1 id="params_cfg_item_name"><title>Parameters</title>
     <refsect2><title>path</title>
       <para>Name of the INI file.</para>
@@ -54,12 +60,6 @@
   <refsect1 id="ret_cfg_item_name"><title>Return Values</title>
     <para>A <type>varchar</type> containing the name of item referenced
     by <parameter>section</parameter> and <parameter>item_index</parameter>.</para>
-  </refsect1>
-  <refsect1 id="desc_cfg_item_name"><title>Description</title>
-    <para>Returns the name of the item specified by item_index
-    (begins from zero). If the index and section name do not point
-    to a valid item, then zero is returned, otherwise on success the
-    function returns the item name.</para>
   </refsect1>
   <refsect1 id="examples_cfg_item_name"><title>Examples</title>
     <example id="ex_cfg_item_name_1"><title>Simple examples</title>

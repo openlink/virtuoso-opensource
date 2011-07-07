@@ -43,6 +43,22 @@ struct numeric_s
       char n_value[NUMERIC_PADDING];
     };
 
+#define num_is_zero(N)		((N)->n_len + (N)->n_scale == 0)
+#define num_is_invalid(N)	((N)->n_invalid)
+#define num_is_nan(N)		((N)->n_invalid & NDF_NAN)
+#define num_is_inf(N)		((N)->n_invalid & NDF_INF)
+#define num_is_plus_inf(N)	(num_is_inf (N) && (N)->n_neg == 0)
+#define num_is_minus_inf(N)	(num_is_inf (N) && (N)->n_neg == 1)
+
+/* flags in marshalled number */
+#define NDF_INF		0x10	/* Inf */
+#define NDF_NAN		0x08	/* NaN */
+#define NDF_LEAD0	0x04	/* Leading 0 */
+#define NDF_TRAIL0	0x02	/* Trailing 0 */
+#define NDF_NEG		0x01	/* Negative */
+
+#define is_dv_negative(X)	((X)[NDV_FLAGS] & NDF_NEG)
+
 /* intrinsics */
 #define DV_NUMERIC			219
 
@@ -88,6 +104,10 @@ int numeric_init (void);
 void numeric_rc_clear (void);
 
 /* allocation, free */
+
+
+numeric_t mp_numeric_allocate (mem_pool_t * mp);
+
 #ifdef MALLOC_DEBUG
 #define numeric_allocate() dbg_numeric_allocate (__FILE__, __LINE__)
 #define t_numeric_allocate() dbg_t_numeric_allocate (__FILE__, __LINE__)
@@ -106,6 +126,7 @@ int numeric_error (int code, char *sqlstate, int state_len, char *sqlerror, int 
 
 /* conversion */
 int numeric_from_string (numeric_t n, const char *s);
+const char *numeric_from_string_is_ok (const char *s);
 int numeric_from_int32 (numeric_t n, int32 i);
 int numeric_from_int64 (numeric_t n, int64 i);
 int numeric_from_double (numeric_t n, double d);

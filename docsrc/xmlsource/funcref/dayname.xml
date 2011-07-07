@@ -121,16 +121,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_dayname"><title>Parameters</title>
-    <refsect2><title><parameter>dt</parameter></title>
-      <para>A <type>datetime</type> value.</para>
-    </refsect2>
-  </refsect1>
-  <refsect1 id="ret_dayname"><title>Return Values</title>
-    <para><function>monthname</function> and <function>dayname</function>
-    return a <type>varchar</type>. The others return an
-    <type>integer</type>.</para>
-  </refsect1>
   <refsect1 id="desc_dayname"><title>Description</title>
       <para>These functions decompose a <type>datetime</type> to its components.  These can be used on <type>timestamps</type>, <type>datetimes</type>, <type>dates</type> and <type>times</type>, all being the same internal data type.</para>
       <programlisting>
@@ -148,7 +138,16 @@
 :  second  		second
 :  timezone  	offset from UTC in minutes
 </programlisting>
-
+  </refsect1>
+  <refsect1 id="params_dayname"><title>Parameters</title>
+    <refsect2><title><parameter>dt</parameter></title>
+      <para>A <type>datetime</type> value.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_dayname"><title>Return Values</title>
+    <para><function>monthname</function> and <function>dayname</function>
+    return a <type>varchar</type>. The others return an
+    <type>integer</type>.</para>
   </refsect1>
   <refsect1 id="examples_dayname"><title>Examples</title>
     <example id="ex_dayname_1"><title>Simple example</title>

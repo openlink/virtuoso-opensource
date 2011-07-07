@@ -48,7 +48,7 @@
     </vm:variables>
     <vm:pagebody>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
-      <div class="new-form-header">
+      <div class="form-header">
         Preferences
       </div>
       <div id="p" class="c1">
@@ -70,15 +70,19 @@
               <tr>
                 <th />
                 <td>
+                  <label>
                   <v:check-box name="f_favourites" xhtml_id="f_favourites" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('favourites', self.settings, '0') as integer)"  xhtml_title="Show Favourites" />
-                  <vm:label for="f_favourites" value="show Favourites"/>
+                    show Favourites
+                  </label>
                 </td>
               </tr>
               <tr>
                 <th />
                 <td>
+                  <label>
                   <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('feedIcons', self.settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
-                  <vm:label for="f_feedIcons" value="show Feed''s Images"/>
+                    show Feed's Image
+                  </label>
                 </td>
               </tr>
               <tr>
@@ -86,14 +90,18 @@
                   <v:label value="Auto-refresh at login"/>
                 </th>
                 <td>
+                  <label>
                   <v:check-box name="f_updateFeeds" xhtml_id="f_updateFeeds" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateFeeds', self.settings, '0') as integer)" xhtml_title="Auto-refresh feeds at login" />
-                  <vm:label for="f_updateFeeds" value="for feeds"/>
+                    for feeds
+                  </label>
                 </td>
               </tr>
               <tr>
                 <td>
+                  <label>
                   <v:check-box name="f_updateBlogs" xhtml_id="f_updateBlogs" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateBlogs', self.settings, '0') as integer)"  xhtml_title="Auto-refresh blogs at login" />
-                  <vm:label for="f_updateBlogs" value="for blogs"/>
+                    for blogs
+                  </label>
                 </td>
               </tr>
               <tr>
@@ -161,7 +169,7 @@
           </div>
         </div>
       </div>
-      <div class="new-form-footer">
+      <div class="form-footer">
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
@@ -200,15 +208,14 @@
          				if (f_conv and f_conv_init)
   					    ENEWS.WA.nntp_fill (self.domain_id);
     					}
-
-              self.vc_redirect('news.vspx');
+              self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'news.vspx')));
       	    ]]>
       	  </v:on-post>
         </v:button>
         <v:button action="simple" value="Cancel" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
-              self.vc_redirect('news.vspx');
+              self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'news.vspx')));
       	    ]]>
       	  </v:on-post>
         </v:button>

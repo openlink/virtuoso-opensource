@@ -228,6 +228,11 @@ directory_init() {
   mkdir vad/data/blog2/templates/thin_pastel
   mkdir vad/data/blog2/templates/squeaky_clean
   mkdir vad/data/blog2/templates/columns_clean
+  mkdir vad/data/blog2/templates/digital_bazaar
+  mkdir vad/data/blog2/templates/digital_bazaar/images
+  mkdir vad/data/blog2/templates/newspaper_view
+  mkdir vad/data/blog2/templates/newspaper_view/images
+  mkdir vad/data/blog2/templates/micro
   mkdir vad/data/blog2/widgets
   cp index.vspx vad/data/blog2
   cp *.sql vad/data/blog2
@@ -251,6 +256,12 @@ directory_init() {
   cp -f templates/thin_pastel/* vad/data/blog2/templates/thin_pastel 2>/dev/null
   cp -f templates/squeaky_clean/* vad/data/blog2/templates/squeaky_clean 2>/dev/null
   cp -f templates/columns_clean/* vad/data/blog2/templates/columns_clean 2>/dev/null
+  cp -f templates/digital_bazaar/* vad/data/blog2/templates/digital_bazaar 2>/dev/null
+  cp -f templates/digital_bazaar/images/* vad/data/blog2/templates/digital_bazaar/images 2>/dev/null
+  cp -f templates/newspaper_view/* vad/data/blog2/templates/newspaper_view 2>/dev/null
+  cp -f templates/newspaper_view/images/* vad/data/blog2/templates/newspaper_view/images 2>/dev/null
+  cp -f templates/micro/* vad/data/blog2/templates/micro 2>/dev/null
+
   cp -f templates/main.vspx vad/data/blog2/templates/main.vspx
   cp -rf widgets/* vad/data/blog2/widgets
 }
@@ -270,7 +281,7 @@ sticker_init() {
   echo "  <name package=\"Weblog\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Weblog\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/blog2/download\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/blog2/download\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -282,8 +293,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.67.12\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2010-03-29 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.77.31\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2010-10-20 00:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER
@@ -325,8 +336,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/DET_Blog.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/wa_search_blog.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/conv.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/sioc_blog.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/blog_api.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/sioc_blog.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

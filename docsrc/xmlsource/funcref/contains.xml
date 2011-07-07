@@ -41,6 +41,23 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_contains">
+    <title>Description</title>
+      <para> This is a SQL predicate that specifies a condition on a column
+      on which a free text index exists.  The expression is a
+      <type>string</type> matching the grammar of a text search expression.
+      This is computed for each evaluation of the contains predicate and
+      does not have to be a constant. For example a parameter or variable
+      of a containing score (e.g. procedure) is accepted. </para>
+      <para>The <parameter>score_limit</parameter> is optional. If
+      specified, it should be a numeric expression determining the minimum score
+      required to produce a hit.</para>
+      <para>A virtual column named &apos;SCORE&apos; is available in queries
+      involving a <function>contains</function> predicate. This can for
+      example be returned in a result set or used for sorting.
+      Note that the name is in upper case and is case sensitive in all
+      case modes.</para>
+  </refsect1>
   <refsect1 id="params_contains"><title>Parameters</title>
     <refsect2><title><parameter>column</parameter></title>
       <para>The table column whose contents are free text indexed</para>
@@ -121,23 +138,6 @@
   <refsect1 id="ret_contains"><title>Return Types</title>
     <para>The contains is a predicate, therefore returning a
     <type>boolean</type>.</para>
-  </refsect1>
-  <refsect1 id="desc_contains">
-    <title>Description</title>
-      <para> This is a SQL predicate that specifies a condition on a column
-      on which a free text index exists.  The expression is a
-      <type>string</type> matching the grammar of a text search expression.
-      This is computed for each evaluation of the contains predicate and
-      does not have to be a constant. For example a parameter or variable
-      of a containing score (e.g. procedure) is accepted. </para>
-      <para>The <parameter>score_limit</parameter> is optional. If
-      specified, it should be a numeric expression determining the minimum score
-      required to produce a hit.</para>
-      <para>A virtual column named &apos;SCORE&apos; is available in queries
-      involving a <function>contains</function> predicate. This can for
-      example be returned in a result set or used for sorting.
-      Note that the name is in upper case and is case sensitive in all
-      case modes.</para>
   </refsect1>
   <!-- refsect1 id="errors_contains"><title>Errors</title>
     <table><title>Errors signalled by <function>contains</function></title>

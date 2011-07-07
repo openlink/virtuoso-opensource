@@ -88,7 +88,9 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:refresh', get_keyword_ucase ('get:refresh', env),
         'get:method', get_method,
         'get:destination', final_dest,
-        'get:group-destination', final_gdest
+        'get:group-destination', final_gdest,
+        'get:strategy', get_keyword_ucase ('get:strategy', env),
+        'get:error-recovery', get_keyword_ucase ('get:error-recovery', env)
 	 );
       dict_put (grabbed, url, 1);
       call (get_keyword ('loader', env))(url, opts);
@@ -109,11 +111,14 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   }
 end_of_sponge:
   commit work;
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE will try to recover after ', __SQL_STATE, __SQL_MESSAGE, ' with ', get_keyword_ucase ('get:error-recovery', env));
   recov := get_keyword_ucase ('get:error-recovery', env);
   if (recov is not null)
     {
+      if (recov = 'signal')
+        signal (__SQL_STATE, __SQL_MESSAGE);
       whenever sqlstate '*' goto end_of_recov;
-    call (recov) (__SQL_STATE, __SQL_MESSAGE);
+      call (recov) (__SQL_STATE, __SQL_MESSAGE, val, grabbed, env);
       commit work;
       return 0;
 end_of_recov:
@@ -146,6 +151,26 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
   sa_preds := get_keyword ('sa_preds', env);
   sa_graphs := get_keyword ('sa_graphs', env);
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO (', subj, opt_g, ') in graphs ', sa_graphs, ' with preds ', sa_preds);
+  if (sa_graphs is null)
+    {
+      foreach (varchar pred in sa_preds) do
+        {
+          for (sparql define input:storage "" select ?val where { ?:subj ?:pred ?val . filter (isIRI(?val)) } ) do
+            {
+              -- dbg_obj_princ ('found { ?g, ', subj, pred, val, '}');
+              if ("val" like 'http://%')
+                {
+                  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                  --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
+                  aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
+                  if (dict_size (grabbed) > doc_limit)
+                    goto out_of_limit;
+                }
+            }
+        }
+    }
+  else
+    {
   foreach (varchar pred in sa_preds) do
     {
       foreach (varchar graph in sa_graphs) do
@@ -163,6 +188,7 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
                 }
             }
         }
+    }
     }
   if (opt_g is not null)
     {
@@ -213,7 +239,7 @@ DB.DBA.RDF_GRAB (
 {
   declare rctr, rcount, colcount, iter_ctr integer;
   declare stat, msg varchar;
-  declare grab_params, all_params any;
+  declare grab_params, all_params, sa_params any;
   declare grabbed, metas, rset, aq any;
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB (..., ', ret_limit, const_iris, depth, doc_limit, base_iri, destination, group_destination, resolver, loader, plain_ret, ')');
   grab_params := vector ('sa_graphs', sa_graphs, 'sa_preds', sa_preds,
@@ -223,9 +249,11 @@ DB.DBA.RDF_GRAB (
     'resolver', resolver, 'loader', loader,
     'refresh_free_text', refresh_free_text,
     'flags', flags, 'grabbed', dict_new() );
-  all_params := vector_concat (vector (grab_params), app_params);
+  all_params := vector_concat (grab_params, app_params);
   aq := async_queue (8);
   grabbed := dict_new ();
+  if (sa_preds is not null)
+    sa_params := vector_concat (all_params, vector ('grabbed', grabbed));
   foreach (any val in const_iris) do
     {
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB: const IRI', val);
@@ -234,6 +262,11 @@ DB.DBA.RDF_GRAB (
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () aq_request ', vector (val, '...', grab_params, doc_limit));
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
           aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
+          if (sa_preds is not null)
+            {
+              -- dbg_obj_princ ('DB.DBA.RDF_GRAB () grabs seealso for ', val);
+              DB.DBA.RDF_GRAB_SEEALSO (val, null, sa_params);
+            }
         }
     }
   commit work;
@@ -261,12 +294,21 @@ DB.DBA.RDF_GRAB (
             {
               declare val any;
               declare dest varchar;
+              if (dict_size (grabbed) >= doc_limit)
+                goto final_exec;
               val := rset[rctr][colctr];
               if (is_named_iri_id (val) and __rgs_ack_cbk (val, uid, 4))
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, ', row ', rctr, ', col ', colctr, ', vector (', val, '=<', id_to_iri(val), ',..., ', grab_params, doc_limit, ')');
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
+                  if (dict_size (grabbed) >= doc_limit)
+                    goto final_exec;
+                  if (sa_preds is not null)
+                    {
+                      -- dbg_obj_princ ('DB.DBA.RDF_GRAB () grabs seealso for ', val);
+                      DB.DBA.RDF_GRAB_SEEALSO (val, null, sa_params);
+                    }
                   if (dict_size (grabbed) >= doc_limit)
                     goto final_exec;
                 }
@@ -278,7 +320,10 @@ DB.DBA.RDF_GRAB (
       DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
       commit work;
       if (old_doc_count = dict_size (grabbed))
+        {
+          -- dbg_obj_princ ('DB.DBA.RDF_GRAB () has reached a stable point with ', old_doc_count, ' grabbed docs');
         goto final_exec;
+    }
     }
 
 final_exec:
@@ -406,8 +451,9 @@ create table DB.DBA.SYS_HTTP_SPONGE (
   HS_QUALITY double precision,
   primary key (HS_LOCAL_IRI, HS_PARSER)
 )
-create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc)
-create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER)
+alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
+create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
+create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
 ;
 
 --#IF VER=5
@@ -448,25 +494,33 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
   ret_dt_date := http_string_date (ret_date, NULL, NULL);
   ret_dt_expires := http_string_date (ret_expires, NULL, now());
   ret_dt_last_modified := http_string_date (ret_last_modif, NULL, now());
+  -- if no cache directive we say it is now
   if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or
     http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
     ret_dt_expires := now ();
+  -- if not modified and no last given we take old last modified
   if (ret_304_not_modified and ret_dt_last_modified is null)
     ret_dt_last_modified := old_last_modified;
+  -- if we have date given
   if (ret_dt_date is not null)
     {
+      -- we calculate on which date it expiry
       if (ret_dt_expires is not null)
         ret_dt_expires := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_expires);
+      -- if we have last modified we calculate based on date given
       if (ret_dt_last_modified is not null)
         ret_dt_last_modified := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_last_modified);
     }
+  -- if we have expires and it is less tand date we reset to null
   if (ret_dt_expires is not null and
     (ret_dt_expires < coalesce (ret_dt_date, ret_dt_last_modified, now ())) )
     ret_dt_expires := NULL;
+  -- new expiration is expires date if not null
   if (ret_dt_expires is not null)
     new_expiration := ret_dt_expires;
   else
     {
+      -- we have date and last modified but not expires, so we calculate based on date and modified date
       if (ret_dt_date is not null and ret_dt_last_modified is not null and (ret_dt_date >= ret_dt_last_modified))
         new_expiration := dateadd ('second',
 		__min (
@@ -477,17 +531,20 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
     }
   if (ret_304_not_modified)
     {
+      -- if not modified and we have explicit refresh, we use explicit
       if (new_expiration is null and explicit_refresh is not null)
         new_expiration := dateadd ('second', 0.7 * explicit_refresh, now());
 
+      -- we take less from new expiration and expilicit refresh
       if (ret_dt_expires is null and new_expiration is not null and explicit_refresh is not null)
         new_expiration := __min (new_expiration, dateadd ('second', explicit_refresh, now()));
     }
 }
 ;
 
-
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
+--#ENDIF
 create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
 {
 
@@ -556,15 +613,16 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare old_last_load, old_expiration, old_last_modified datetime;
   declare load_begin_msec, load_end_msec, old_exp_is_true,
     old_download_size, old_download_msec_time, old_read_count,
-    new_download_size, explicit_refresh integer;
+    new_download_size, explicit_refresh, max_sz integer;
   declare get_method varchar;
   declare ret_hdr, immg, req_hdr_arr any;
   declare req_hdr varchar;
   declare ret_body, ret_content_type, ret_etag, ret_last_modified, ret_date, ret_last_modif, ret_expires varchar;
   declare get_proxy varchar;
-  declare ret_dt_date, ret_dt_last_modified, ret_dt_expires datetime;
+  declare ret_dt_date, ret_dt_last_modified, ret_dt_expires, expiration, min_expiration datetime;
   declare ret_304_not_modified integer;
   declare parser_rc, max_refresh int;
+  declare stat, msg varchar;
 
   -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP (', local_iri, get_uri, options, ')');
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
@@ -582,6 +640,9 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   else if (isstring (explicit_refresh))
     explicit_refresh := atoi (explicit_refresh);
+  min_expiration := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MinExpiration'), '-1'));
+  if (min_expiration < 0)
+    min_expiration := null;
   set isolation='serializable';
   whenever not found goto add_new_origin;
   select HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_LAST_ETAG,
@@ -721,6 +782,19 @@ perform_actual_load:
           ret_304_not_modified := 1;
           goto resp_received;
         }
+      if (ret_hdr[0] like 'HTTP/1._ 5__ %' or ret_hdr[0] like 'HTTP/1._ 4__ %')
+	{
+	  rollback work;
+	  update DB.DBA.SYS_HTTP_SPONGE
+	      set HS_SQL_STATE = 'RDFXX',
+	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	      HS_EXPIRATION = now (),
+	      HS_EXP_IS_TRUE = 0
+		  where
+		  HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+	  commit work;
+	  signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+	}
       goto resp_received;
     }
   if (eraser is not null)
@@ -767,8 +841,24 @@ resp_received:
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
 
-  if (__tag (ret_body) = 185)
-    ret_body := string_output_string (subseq (ret_body, 0, 10000000));
+  max_sz := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxDataSourceSize'), '20971520'));
+
+  if (max_sz < new_download_size)
+    {
+      rollback work;
+      update DB.DBA.SYS_HTTP_SPONGE
+	  set HS_SQL_STATE = 'RDFXX',
+	  HS_SQL_MESSAGE = sprintf ('Content length %d is over the limit %d', new_download_size, max_sz),
+	  HS_EXPIRATION = now (),
+	  HS_EXP_IS_TRUE = 0
+	      where
+	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+      commit work;
+      signal ('RDFXX', sprintf ('Content length %d is over the limit %d', new_download_size, max_sz));
+    }
+
+  --if (__tag (ret_body) = 185)
+  --  ret_body := string_output_string (subseq (ret_body, 0, 10000000));
 
   {
   whenever sqlstate '*' goto error_during_load;
@@ -799,11 +889,14 @@ resp_received:
     new_expiration := dateadd ('second', load_end_msec - load_begin_msec, now()); -- assuming that expiration is at least 1000 times larger than load time.
   if (ret_dt_expires is null and explicit_refresh is not null)
     new_expiration := __min (new_expiration, dateadd ('second', 0.7 * explicit_refresh, now()));
+  expiration := coalesce (ret_dt_expires, new_expiration, now());
+  if (explicit_refresh is null and min_expiration is not null)
+    expiration := __max (dateadd ('second', min_expiration, now()), expiration);
   commit work;
   update DB.DBA.SYS_HTTP_SPONGE
   set HS_LAST_LOAD = now(), HS_LAST_ETAG = new_last_etag, HS_LAST_READ = now(),
     HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
-    HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
+    HS_EXPIRATION = expiration,
     HS_LAST_MODIFIED = ret_dt_last_modified,
     HS_DOWNLOAD_SIZE = new_download_size,
     HS_DOWNLOAD_MSEC_TIME = load_end_msec - load_begin_msec,
@@ -818,7 +911,8 @@ resp_received:
 error_during_load:
   rollback work;
   -- dbg_obj_princ ('error during load: ', __SQL_STATE, __SQL_MESSAGE);
-
+  stat := __SQL_STATE;
+  msg := __SQL_MESSAGE;
   load_end_msec := msec_time();
   if (new_expiration is null)
     new_expiration := dateadd ('second', load_end_msec - load_begin_msec, now());
@@ -826,13 +920,16 @@ error_during_load:
     new_expiration := __min (new_expiration, dateadd ('second', 0.7 * explicit_refresh, now()));
 
   update DB.DBA.SYS_HTTP_SPONGE
-  set HS_SQL_STATE = __SQL_STATE,
-    HS_SQL_MESSAGE = __SQL_MESSAGE,
+  set HS_SQL_STATE = stat,
+    HS_SQL_MESSAGE = msg,
     HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
     HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end
   where
     HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
   commit work;
+  -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP logged ', stat, msg, local_iri, parser, ', get:error-recovery is ', get_keyword_ucase ('get:error-recovery', options));
+  if (get_keyword_ucase ('get:error-recovery', options) is not null)
+    signal (stat, msg);
   return local_iri;
 }
 ;
@@ -880,7 +977,9 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'text/rdf+n3';
     }
   declare ret_begin, ret_html any;
-  ret_begin := "LEFT" (ret_body, 1024);
+  ret_begin := subseq (ret_body, 0, 4096);
+  if (isstring_session (ret_begin))
+    ret_begin := string_output_string (ret_begin);
   ret_html := xtree_doc (ret_begin, 2);
   if (xpath_eval ('/html|/xhtml', ret_html) is not null)
     return 'text/html';
@@ -933,8 +1032,9 @@ create table DB.DBA.SYS_RDF_MAPPERS (
     RM_OPTIONS any,
     RM_PID integer identity,		-- permanent id for fk in application tables
     primary key (RM_HOOK))
-create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID)
-create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID)
+alter index SYS_RDF_MAPPERS on DB.DBA.SYS_RDF_MAPPERS partition cluster replicated
+create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID) partition cluster replicated
+create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID) partition cluster replicated
 ;
 
 --#IF VER=5
@@ -944,6 +1044,10 @@ alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
 
 --!AFTER
 alter table DB.DBA.SYS_RDF_MAPPERS add RM_OPTIONS any
+;
+
+--!AFTER
+alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
 ;
 
 --!AFTER
@@ -1069,11 +1173,11 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 -- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest, groupdest, cset varchar;
+  declare dest, groupdest, cset, base, first_stat, first_msg varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
-  declare saved_log_mode integer;
+  declare saved_log_mode, only_rdfa integer;
   aq := null;
   ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
   if (length (ps))
@@ -1086,24 +1190,31 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);
   groupdest := get_keyword_ucase ('get:group-destination', options);
+  base := get_keyword ('http-redirect-to', options, new_origin_uri);
+  if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only')
+    only_rdfa := 1;
+  else
+    only_rdfa := 0;
   if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
     signal ('RDFXX', sprintf ('Unable to load RDF graph <%.500s> from <%.500s>: the sparql-results XML answer does not contain triples', graph_iri, new_origin_uri));
+  if (get_keyword ('http-headers', options) is null)
+    options := vector_concat (options, vector ('http-headers', vector (req_hdr_arr, ret_hdr)));
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
     {
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       whenever sqlstate '*' goto load_grddl;
-      log_enable (2, 1);
+      --log_enable (2, 1);
       xt := xtree_doc (ret_body);
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
 	goto load_grddl;
-      DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
       if (groupdest is not null)
-        DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
-      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+        DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-      log_enable (saved_log_mode, 1);
+      --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
@@ -1119,16 +1230,28 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
        strstr (ret_content_type, 'application/turtle') is not null or
        strstr (ret_content_type, 'application/x-turtle') is not null )
     {
-      whenever sqlstate '*' goto load_grddl;
-      log_enable (2, 1);
+      whenever sqlstate '*' goto load_grddl_after_error;
+      --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri), 255);
+      DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), 255);
       if (groupdest is not null)
-        DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
-      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+        DB.DBA.TTLP (ret_body, base, groupdest);
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-      log_enable (saved_log_mode, 1);
+      --log_enable (saved_log_mode, 1);
+      if (aq is not null)
+        aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
+      return 1;
+    }
+  else if (only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null)
+    {
+      whenever sqlstate '*' goto load_grddl;
+      --log_enable (2, 1);
+      DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri), 2);
+      if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
+	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest, 2);
+      --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
@@ -1139,9 +1262,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   --    DB.DBA.SPARUL_CLEAR (graph_iri, 1);
   --    commit work;
   --  }
+
 load_grddl:;
   cset := http_request_header (ret_hdr, 'Content-Type', 'charset', null);
-  for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
+  for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS, RM_DESCRIPTION from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
     {
       declare val_match, pcols, new_opts any;
       declare npars int;
@@ -1172,13 +1296,14 @@ load_grddl:;
           npars := 8;
           if (isarray (pcols))
 	    npars := length (pcols);
-	  --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
+	  --!!!TBD: Carefully check what happens when dest is NULL vs dest is not NULL, then add support for groupdest.
           if (registry_get ('__sparql_mappers_debug') = '1')
             dbg_obj_prin1 ('Match ', RM_HOOK);
 	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type, 'charset', cset));
+	  if (__proc_exists ('DB.DBA.RDF_SPONGER_STATUS'))
+	    call ('DB.DBA.RDF_SPONGER_STATUS') (graph_iri, new_origin_uri, dest, RM_DESCRIPTION, options);
 	  if (RM_TYPE <> 'HTTP')
 	    {
-	      commit work;
 	      if (npars = 7)
 	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, RM_KEY);
 	      else
@@ -1186,7 +1311,6 @@ load_grddl:;
 	    }
           else
 	    {
-	      commit work;
 	      if (npars = 7)
 	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr));
 	      else
@@ -1202,14 +1326,6 @@ load_grddl:;
 	    {
 	      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
 		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-	      if (aq is not null)
-		{
-		  declare uri varchar;
-		  uri := new_origin_uri;
-		  if (uri not like 'http://%/about/rdf/%')
-		    uri := 'http://' || registry_get ('URIQADefaultHost') || '/about/rdf/' || new_origin_uri;
-		  aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, uri));
-		}
               if (__tag(rc) = 193)
                 return rc;
 	      return (case when rc < 0 then 0 else 1 end);
@@ -1235,31 +1351,60 @@ load_grddl:;
     }
   if (strstr (ret_content_type, 'text/plain') is not null)
     {
+      -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal text/plain error re. ', graph_iri, new_origin_uri, ret_content_type);
       signal ('RDFXX', sprintf (
-          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
-          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], "LEFT" (ret_body, 500) ) );
+          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s'' body %.300s',
+          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], subseq (ret_body, 0, 300) ) );
     }
   if (strstr (ret_content_type, 'text/html') is not null)
     {
+      -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal text/html error re. ', graph_iri, new_origin_uri, ret_content_type);
       signal ('RDFZZ', sprintf (
-          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
+          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.300s',
           graph_iri, new_origin_uri, ret_content_type, ret_hdr[0],
---          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 500)
-          "LEFT" (ret_body, 500)
- ) );
+--          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 300)
+          subseq (ret_body, 0, 300) ) );
     }
+  if (isstring (first_stat))
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal first error re. ', graph_iri, new_origin_uri, ret_content_type, first_stat, first_msg);
+      signal ('RDFZZ', sprintf (
+          'Unable to load RDF graph <%.200s> from <%.200s> with Content-Type ''%.50s'': %.6s: %.1000s',
+          graph_iri, new_origin_uri, ret_content_type, first_stat, first_msg ) );
+    }
+  -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal generic error re. ', graph_iri, new_origin_uri, ret_content_type);
   signal ('RDFZZ', sprintf (
       'Unable to load RDF graph <%.500s> from <%.500s>: returned unsupported Content-Type ''%.300s''',
       graph_iri, new_origin_uri, ret_content_type ) );
 resignal_parse_error:
-  log_enable (saved_log_mode, 1);
+--  log_enable (saved_log_mode, 1);
+  -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will resignal ', __SQL_STATE, __SQL_MESSAGE);
   resignal;
+
+load_grddl_after_error:
+  first_stat := __SQL_STATE;
+  first_msg := __SQL_MESSAGE;
+  goto load_grddl;
 }
 ;
 
 create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout options any)
 {
   declare dest varchar;
+  declare deadl int;
+  deadl := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxDeadlockRetries'), '5'));
+  declare exit handler for sqlstate '40001'
+    {
+      deadl := deadl - 1;
+      rollback work;
+      if (deadl > 0)
+	{
+	  delay (0.2);
+	  goto again;
+	}
+      resignal;
+    };
+again:
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is null)
     DB.DBA.SPARUL_CLEAR (graph_iri, 1, 0);
@@ -1271,15 +1416,20 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
   declare aq, cookie varchar;
   declare dest, local_iri varchar;
 
-  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'AsyncQueue') = '0')
+  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'AsyncQueue'), '0') = '0' or get_keyword ('__rdf_sponge_queue', options) = 1)
     {
       return DB.DBA.RDF_SPONGE_UP_1 (graph_iri, options, uid);
     }
-
-  set_user_id ('dba', 1);
+  commit work;
+  --set_user_id ('dba', 1);
   cookie := connection_get ('__rdf_sponge_sid');
   if (cookie is not null)
     options := vector_concat (options, vector ('rdf_sponge_sid', cookie));
+  if (connection_get ('__rdf_sponge_debug') is not null)
+    options := vector_concat (options, vector ('rdf_sponge_debug', connection_get ('__rdf_sponge_debug')));
+  if (is_http_ctx ())
+    options := vector_concat (options, vector ('http_host', http_request_header(http_request_header (), 'Host', null, null)));
+  options := vector_concat (options, vector ('__rdf_sponge_log_mode', log_enable (null, 1)));
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
   commit work;
@@ -1298,10 +1448,10 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
 create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri, cookie varchar;
-  declare perms integer;
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
+  declare perms, log_mode integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
-  set_user_id ('dba', 1);
+  --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)
     local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
@@ -1310,14 +1460,20 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   cookie := get_keyword ('rdf_sponge_sid', options);
   if (cookie is not null)
     connection_set ('__rdf_sponge_sid', cookie);
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ') set local_iri=', local_iri);
+  if (get_keyword ('rdf_sponge_debug', options) is not null)
+    connection_set ('__rdf_sponge_debug', get_keyword ('rdf_sponge_debug', options));
+  if (get_keyword ('http_host', options) is not null)
+    connection_set ('__http_host', get_keyword ('http_host', options));
+  log_mode := get_keyword ('__rdf_sponge_log_mode', options);
+  if (log_mode is not null) -- when in aq mode
+    log_enable (log_mode, 1);
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ') set local_iri=', local_iri);
   perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
   if ('soft' = get_soft)
     {
-      if ((dest = graph_iri) and
-        exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri) ) and
-        not exists (select top 1 1 from DB.DBA.SYS_HTTP_SPONGE
+      if ((dest = graph_iri) and exists (select 1 from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where G = iri_to_id (graph_iri, 0) ) and
+        not exists (select 1 from DB.DBA.SYS_HTTP_SPONGE
           where HS_LOCAL_IRI = local_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' and
 	  HS_EXPIRATION is not null))
         {
@@ -1350,7 +1506,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   -- if requested iri is immutable, do not try to get it at all
   -- this is to preserve rdf storage in certain cases
   immg := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ImmutableGraphs');
-  if (immg is not null)
+  if (immg is not null and user <> 'dba')
     {
       immg := split_and_decode (immg, 0, '\0\0,');
       foreach (any imm in immg) do
@@ -1362,9 +1518,22 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
               -- dbg_obj_princ ('immutable');
               goto graph_is_ready;
             }
-	}
+	  if (imm = 'inference-graphs' and exists (select 1 from DB.DBA.SYS_RDF_SCHEMA where RS_URI = dest))
+	    {
+              res_graph_iri := dest;
+              -- dbg_obj_princ ('immutable');
+              goto graph_is_ready;
+	    }
+	  -- Like pattern allowed
+	  if (dest like imm)
+	    {
+	      res_graph_iri := local_iri;
+	      goto graph_is_ready;
+	    }
+        }
     }
   -- dbg_obj_princ ('will sponge...');
+  set_user_id ('dba', 1);
   if (lower (graph_iri) like 'file:%')
     {
       res_graph_iri := DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);

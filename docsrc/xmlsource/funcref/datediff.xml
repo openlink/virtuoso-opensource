@@ -40,6 +40,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_datediff"><title>Description</title>
+    <para>datediff subtracts date1 from date2 and returns the difference as
+    an integer in the specified units.</para>
+  </refsect1>
   <refsect1 id="params_datediff"><title>Parameters</title>
     <refsect2><title>unit</title>
       <para>The resulting unit name as a string. May be 'millisecond', 'second', 'minute', 'hour', 'day',
@@ -57,10 +61,6 @@
   <refsect1 id="ret_datediff"><title>Return Values</title>
      <para>Difference of <parameter>date1</parameter> and
      <parameter>date2</parameter> as an <type>integer</type>.</para>
-  </refsect1>
-  <refsect1 id="desc_datediff"><title>Description</title>
-    <para>datediff subtracts date1 from date2 and returns the difference as
-    an integer in the specified units.</para>
   </refsect1>
   <refsect1 id="errors_datediff"><title>Errors</title>
     <table><title>Errors signalled by <function>datediff</function></title>

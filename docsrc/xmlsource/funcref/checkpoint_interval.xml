@@ -38,13 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_checkpoint_interval"><title>Parameters</title>
-    <refsect2><title>minutes</title>
-      <para><type>integer</type> number of minutes between checkpoints.</para></refsect2>
-  </refsect1>
-  <refsect1 id="ret_checkpoint_interval"><title>Return Types</title>
-    <para>Previous value of CheckpointInterval in the configuration file as an integer.</para>
-  </refsect1>
   <refsect1 id="desc_checkpoint_interval">
     <title>Description</title>
       <para>This function changes the database checkpointing interval to the given
@@ -67,6 +60,13 @@
       logs, which in turn prolongs the time it takes for the database to
       perform a roll forward upon restart in case it was shut down without
       making a checkpoint.</para>
+  </refsect1>
+  <refsect1 id="params_checkpoint_interval"><title>Parameters</title>
+    <refsect2><title>minutes</title>
+      <para><type>integer</type> number of minutes between checkpoints.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_checkpoint_interval"><title>Return Types</title>
+    <para>Previous value of CheckpointInterval in the configuration file as an integer.</para>
   </refsect1>
   <refsect1 id="errors_checkpoint_interval"><title>Errors</title>
     <para><link linkend="datatypeerror">Parameter data type checking errors</link></para>

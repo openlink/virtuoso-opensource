@@ -114,6 +114,34 @@ DBG_NAME(box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp
   return dest;
 }
 
+caddr_t
+mp_box_wide_as_utf8_char (mem_pool_t * mp, ccaddr_t _wide, size_t wide_len, dtp_t dtp)
+{
+  char *dest;
+  size_t utf8_len;
+  virt_mbstate_t state;
+  wchar_t *wide = (wchar_t *) _wide;
+  wchar_t *wide_work;
+#ifdef DEBUG
+  if (wide_len & ~0xFFFFFF)
+    GPF_T1 ("bad wide_len in cast wide as UTF8");
+#endif
+  wide_work = wide;
+  memset (&state, 0, sizeof (virt_mbstate_t));
+  utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
+  if (((long) utf8_len) < 0)
+    return NULL;
+  dest = mp_alloc_box (mp, utf8_len + 1, dtp);
+
+  wide_work = wide;
+  memset (&state, 0, sizeof (virt_mbstate_t));
+  if (utf8_len != virt_wcsnrtombs ((unsigned char *) dest, &wide_work, wide_len, utf8_len + 1, &state))
+    GPF_T1("non consistent wide char to multi-byte translation of a buffer");
+
+  dest[utf8_len] = '\0';
+  return dest;
+}
+
 int
 wide_serialize (caddr_t wide_data, dk_session_t *ses)
 {

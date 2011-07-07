@@ -65,4 +65,18 @@ create procedure WV.WIKI.temp ()
 ;
 
 WV.WIKI.temp ();
+
+create procedure WV.WIKI.temp ()
+{
+  if (registry_get ('wiki_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_wiki_services();
+  registry_set ('wiki_services_update', '1');
+}
+;
+
+WV.WIKI.temp ();
+
+
 drop procedure WV.WIKI.temp;

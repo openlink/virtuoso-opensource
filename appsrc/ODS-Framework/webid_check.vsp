@@ -1,0 +1,72 @@
+<?vsp
+  declare info, res, cb, mod, exp, webid, ret_url any;
+  cb := {?'callback'};
+  if (not length (cb))
+    {
+      goto html;
+    }
+  if (strchr (cb, '?') is null)
+    cb := cb || '?';
+  else
+    cb := cb || '&';
+  mod := exp := '';
+  if (not is_http_ctx ())
+    res := 'noCert';
+  else
+    { 
+      info := get_certificate_info (9);
+      if (info is null)
+        res := 'noCert';
+      else if (FOAF_SSL_AUTH_GEN (null, 1, 0))
+        {
+          webid := FOAF_SSL_WEBID_GET ();
+	  res := 'success'; 
+        }
+      else
+	res := 'noVerified';
+      if (info is not null)
+        { 
+      	  mod := info[1];
+          exp := bin2hex (info[2]);
+	}
+    }
+   if (res = 'success')
+     {
+       ret_url := sprintf ('%swebid=%U', cb, webid);
+     }
+   else
+     {
+       ret_url := sprintf ('%serror=%U', cb, res);
+     }
+   ret_url := ret_url || sprintf ('&ts=%U', date_iso8601 (now ()));  
+   ret_url := ret_url || sprintf ('&signature=%U', sha1_digest (ret_url));  
+   http_status_set (302);
+   http_header (sprintf ('Location: %s\r\n', ret_url));
+   return;
+html:
+?>
+<html>
+  <head>
+   <title>WebId Identity Provider</title>
+  </head>
+  <body>
+    <h1>WebId Identity Provider</h1>
+    <div>
+      This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your WebID.
+    </div>
+    <div>
+    <form method="get">
+    Requesting service endpoint: <input type="text" value="" size="120" name="callback" /> <input type="submit" name="Log in" value="go"/>
+    </form>
+    </div>
+    <div>
+	The return values are:
+	<ul>
+	  <li>webid: the webid have been verified</li>
+	  <li>error: error code if verification fails </li>
+	  <li>ts: timestamp in ISO 8601 format</li>
+	  <li>signature: SHA1 digest over returning URL</li>
+	</ul>
+    </div>
+  </body>
+</html>

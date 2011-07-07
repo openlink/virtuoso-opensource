@@ -176,7 +176,7 @@
 		      </div>
 		      <div class="post-content" property="sioc:content">
 			  <vm:trackback-discovery/>
-			  <vm:if test="post-view">
+			  <!--vm:if test="post-view">
 			  <div class="tweetmeme_button" style="">
 				  <script type="text/javascript">
 				      tweetmeme_url = "<vm:post-uri />";
@@ -184,7 +184,7 @@
 				  <script type="text/javascript" src="http://tweetmeme.com/i/scripts/button.js">
 				  </script>
 			  </div>
-			  </vm:if>
+			  </vm:if-->
 			  <vm:post-body />
 		      </div>
 		      <vm:if test="summary-post-view">
@@ -198,6 +198,7 @@
 			      <vm:post-delicious-link title="Post to del.icio.us">bookmark it!</vm:post-delicious-link>
 			      <vm:post-diggit-link title="submit digg.com">digg it!</vm:post-diggit-link>
 			      <vm:post-reddit-link title="post reddit">reddit!</vm:post-reddit-link>
+			      <vm:post-tweet-link/>
 			  </div>
 			  <div class="post-actions">
 			      <vm:post-anchor title="#" />

@@ -89,6 +89,7 @@ extern "C" {
 #define XP_STAR		(ptrlong) 1106	/*!< This is a wildcard for part of name, not a node test */
 #define XP_ELT		(ptrlong) 1107	/*!< This is a node test for any element but not a wildcard for part of name */
 #define XP_ELT_OR_ROOT	(ptrlong) 1108
+#define XP_FAKE_VAR	(ptrlong) 1109
 
 /*
 #define XP_HTTP		(ptrlong) 1200
@@ -517,6 +518,12 @@ extern caddr_t sqlr_make_new_error_xdl (const char *code, const char *virt_code,
 #endif
 ;
 extern void sqlr_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 4, 5)))
+#endif
+;
+extern caddr_t 
+sqlr_make_new_error_xqi_xdl (const char *code, const char *virt_code, xp_instance_t * xqi, const char *string, ...)
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 4, 5)))
 #endif

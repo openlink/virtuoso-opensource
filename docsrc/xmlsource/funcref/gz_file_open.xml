@@ -54,7 +54,7 @@
     <example id="ex_gz_file_open"><title></title>
       <para>For loading gzipped N3 and Turtle files you can use:</para>
 <screen><![CDATA[
-SQL>DB.DBA.TTLP_MT (gz_file_open('/path/myfile.n3.gz'), 'base uri', 'graph uri', 255);
+SQL>DB.DBA.TTLP_MT (gz_file_open('path/myfile.n3.gz'), 'base uri', 'graph uri', 255);
 ]]></screen>
       <para>Note that the last parameter means the parser uses relaxed parsing rules, the default value
 of 0 means strict syntax rules.</para>

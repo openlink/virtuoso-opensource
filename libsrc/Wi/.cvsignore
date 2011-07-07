@@ -26,6 +26,8 @@ rdf_mapping_jso.h
 rdf_mapping_jso.ttl
 rdf_mapping_jso.ttl-sample
 rdfxml2n3xml.xsl
+nquad_p.c
+nquad_p.h
 scn3.c
 scn3split.c
 scn3_vsnet.c

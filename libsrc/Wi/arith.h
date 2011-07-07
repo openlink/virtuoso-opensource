@@ -37,22 +37,16 @@ int cmp_dv_box (caddr_t dv, caddr_t box);
 
 int cmp_double (double x1, double x2, double epsilon);
 
-extern int cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
-extern int cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
-extern int bool_bop_boxes (int bop, caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
+extern int cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2);
+extern int cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2);
+extern int bool_bop_boxes (int bop, ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2);
 
-caddr_t box_add (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
-
-caddr_t box_sub (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
-
-caddr_t box_div (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
-
-caddr_t box_mpy (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
-
-caddr_t box_mod (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
-
-caddr_t box_identity (caddr_t arg, caddr_t ignore, caddr_t * qst,
-    state_slot_t * target);
+caddr_t box_add (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
+caddr_t box_sub (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
+caddr_t box_div (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
+caddr_t box_mpy (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
+caddr_t box_mod (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
+caddr_t box_identity (ccaddr_t arg, ccaddr_t ignore, caddr_t * qst, state_slot_t * target);
 
 #ifndef _WI_STRLIKE_H
 #include "strlike.h"

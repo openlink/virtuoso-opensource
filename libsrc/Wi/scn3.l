@@ -236,7 +236,9 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
    sparqre->sparqre_compiled_text = NULL;
    sparqre->sparqre_catched_error = NULL;
    sparqre->sparqre_super_sc = top_sc;
-   if (0 == sparql_inited && inside_view)
+   if (!rdf_no_string_inline)
+     yyerror ("This server version only works with RDF data with no strings inlined.  To convert an existing database, see the documentation concerning the clrdf23.sql script and upgrading pre 06.00.3126 databases. This takes a potentially long time.  To avoid this operation, use the server executable with which the database was created instead.");
+   if (0 == cl_run_local_only && (1 != cl_rdf_inf_inited && THREAD_CURRENT_THREAD != cl_rdf_inf_init_thread))
      yyerror ("RDFNI");
    sparp_compile_subselect (sparqre);
    if (NULL != sparqre->sparqre_catched_error)
@@ -616,11 +618,11 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 
 <SQL>0hex[0-9A-Fa-f]* {
   size_t ctr, len;
-  ptrlong res;
+  int64 res;
   len = strlen (yytext);
   ctr = 4;
   while ((ctr < len) && ('0' == yytext[ctr])) ctr++;
-  if ((len-ctr) > 8)
+  if ((len-ctr) > 16)
     RETURN_CODE (NUM_ERROR); /* Too many significant digits */
   res = 0;
   while (ctr < len)
@@ -630,7 +632,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
       ctr ++;
     }
   yylval.box = t_box_num_and_zero (res);
-  RETURN_CODE (BINARYNUM);
+  RETURN_CODE (INTNUM);
 }
 
 <SQL>0x[0-9A-Fa-f]* {
@@ -822,7 +824,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SQL>[ \t]+	{ save_str(" "); RETURN_WS (WS_WHITESPACE); }
 
 	/* Pragmas */
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9-]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"push"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_push (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"pop"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_pop (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line"([ \t]+"reset")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line_reset (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
@@ -1000,13 +1002,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>[""]		{ BEGIN(SPARQL_DQ_SKIP); TOK_SKIP; }
 <SPARQL_SQ_SKIP>['']		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
 <SPARQL_DQ_SKIP>[""]		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
-<SPARQL_SQ_SKIP>{S_NL}		{ TOK_NL_SKIP; }
+<SPARQL_SQ_SKIP>{S_NL}	{ yyerror ("End-of-line in a SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP>{S_NL}	{ yyerror ("End-of-line in a SPARQL short double-quoted string"); }
 <SPARQL_SQ_SKIP>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
 <SPARQL_DQ_SKIP>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
-<SPARQL_SQ_SKIP>['']['']	TOK_SKIP;
-<SPARQL_SQ_SKIP>[\\]{S_NL}	{ TOK_NL_SKIP; }
-<SPARQL_SQ_SKIP>\\.		TOK_SKIP;
 <SPARQL_SQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL short double-quoted string"); }
 <SPARQL_SQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL short single-quoted string"); }

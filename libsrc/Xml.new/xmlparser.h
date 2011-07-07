@@ -277,6 +277,7 @@ struct vxml_parser_config_s
   caddr_t			auto_load_xmlschema_dtd_s;	/*!< xmlschema namespace suffix */
   caddr_t			auto_load_xmlschema_uri;	/*!< uri of the schema that is requested by parser caller */
   int				dc_namespaces;		/*!< Enforced fixed value for parser's dc_namespaces, dtd config will not override */
+  int				feed_buf_size;		/*!< If nonzero then the size of the buffer for text input. */
 };
 
 typedef struct vxml_parser_config_s vxml_parser_config_t;

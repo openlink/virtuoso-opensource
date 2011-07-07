@@ -23,46 +23,299 @@
  -  
 -->
 
-  <sect1 id="virtclientref"><title>Virtuoso .NET Data Provider</title>
+  <sect1 id="virtclientref">
+      <title>ADO.Net Data Provider</title>
+      <sect2 id="virtclientrefintro">
+        <title>Introduction</title>
+        <para>Virtuoso includes an ADO.NET 2.x &amp; 3.x  data providers compatible with Visual Studio
+2008 and Entity Frameworks, that provides access to native Virtuoso data (SQL, XML, and RDF) in
+addition to any Virtuoso Linked Tables from external <link linkend="vdbengineodbcod">ODBC</link>
+and <link linkend="vdbengineodtjd">JDBC</link> accessible data sources.
+Known-compatible external data sources include <link linkend="vdbenginemc">Oracle (versions 7.x to 11.x)</link>,
+<link linkend="vdbenginemsqls">Microsoft SQL Server (6.x to 2005)</link>,
+<link linkend="vdbenginedb2">IBM DB2</link>, <link linkend="vdbenginesyb">Sybase (4.2 to 15.x)</link>,
+<link linkend="vdbengineinf">IBM Informix (5.x to 11.x)</link>,
+<link linkend="vdbengineing">Ingres (6.4 to 9.x)</link>,
+<link linkend="vdbenginepr">Progress (7.x to 10.x)</link>,
+<link linkend="vdbenginemsql">MySQL</link>,
+<link linkend="vdbenginepsql">PostgreSQL</link> and <link linkend="vdbenginefirebd">Firebird</link>.</para>
+        <para><emphasis>Benefits</emphasis></para>
+        <para>This provider equips Microsoft .NET based applications, development environments,
+and programming languages with conceptual entity-based access to native and heterogeneous data sources.</para>
+        <para><emphasis>Features</emphasis></para>
+        <itemizedlist mark="bullet">
+          <listitem>ADO.NET 3.5 compliance</listitem>
+          <listitem>.NET Entity Frameworks compatibility</listitem>
+          <listitem>Full integration with Visual Studio 2008</listitem>
+          <listitem>ADO.NET Data Services compatibility</listitem>
+          <listitem>LINQ to Entities compatibility </listitem>
+          <listitem>High-Performance &amp; Scalability </listitem>
+          <listitem>High Security</listitem>
+          <listitem>Support for Native and 3rd party ODBC and JDBC accessible RDBMS engines and Web Services</listitem>
+          <listitem>Tested against all major .NET applications and development environments</listitem>
+          <listitem>Support for Microsoft Siliverlight versions 2 and 3</listitem>
+          <listitem>Support for .Net RIA Services</listitem>
+        </itemizedlist>
+      </sect2>
+      <sect2 id="virtclientrefinstallandconfig">
+        <title>Installation &amp; Configuration</title>
+        <para>There are two installation types to consider:</para>
+        <itemizedlist mark="bullet">
+          <listitem>If you have an existing Virtuoso instance, or will install Virtuoso on a different
+host, you only need to install of the <link linkend="virtclientrefinstallandconfigonwin">ADO.Net Provider Client</link> on the Visual Studio host.</listitem>
+          <listitem>If you have no existing Virtuoso instance, you can
+<link linkend="virtclientrefinstallandconfigvirt">install both the ADO.Net Provider Client and the Virtuoso Universal Server</link> on the Visual Studio host.</listitem>
+        </itemizedlist>
+        <sect3 id="virtclientrefinstallandconfigonwin"><title>Installation of the ADO.Net Provider Client on Windows</title>
+          <para>The Virtuoso ADO.Net Provider is part of the Virtuoso Client Connectivity Kit installer,
+and if the target Virtuoso Server installation  already exists on the network this is the only component
+that needs to be installed.
+          </para>
+          <orderedlist>
+            <listitem>Download and run the Virtuoso Client Connectivity Kit installer for your target Windows OS:
+              <itemizedlist mark="bullet">
+                <listitem><ulink url="http://download.openlinksw.com/download/login.vsp?pfam=2&amp;pform=26&amp;pcat=51&amp;prod=virtuoso-connect-psnl&amp;os=i686-generic-win-32&amp;release-dbms=5.0-virt50">Windows 98/NT/2000/XP/2003/Vista/2008 (32 Bit) (x86)</ulink></listitem>
+                <listitem><ulink url="http://download.openlinksw.com/download/login.vsp?pfam=2&amp;pform=26&amp;pcat=51&amp;prod=virtuoso-connect-psnl&amp;os=x86_64-generic-win-64&amp;release-dbms=5.0-virt50">Windows XP/2003/Vista/2008 (64 Bit) (x86_64) </ulink></listitem>
+              </itemizedlist>
+            </listitem>
+            <listitem>Choose the "run" button to allow the signed "Virtuoso Client Connectivity kit" installer to start.
+              <figure id="ado1" float="1">
+                <title>Run</title>
+                <graphic fileref="ui/ado1.png"/>
+              </figure>
+            </listitem>
+            <listitem>Choose the "Next" button to begin the installation process.
+              <figure id="ado3" float="1">
+                <title>Installation: Next</title>
+                <graphic fileref="ui/ado3.png"/>
+              </figure>
+            </listitem>
+            <listitem>Check the "I agree with license agreement" checkbox and choose the "Next" button.
+              <figure id="ado4" float="1">
+                <title>Installation: Agree license</title>
+                <graphic fileref="ui/ado4.png"/>
+              </figure>
+            </listitem>
+            <listitem>Choose the "Custom" option to manually select what components are installed and in which location, or choose the "Typical" or "Complete" options as recommended and skip to step 7.
+              <figure id="ado5" float="1">
+                <title>Custom Install</title>
+                <graphic fileref="ui/ado5.png"/>
+              </figure>
+            </listitem>
+            <listitem>If the "Custom" option what chosen, select the installation directory or leave default and choose the "Next" button to continue.
+              <figure id="ado6" float="1">
+                <title>Installation</title>
+                <graphic fileref="ui/ado6.png"/>
+              </figure>
+            </listitem>
+            <listitem>Select which of the ADO.NET Providers are to be installed and choose "Next" to continue.
+              <figure id="ado7" float="1">
+                <title>ADO.NET Providers</title>
+                <graphic fileref="ui/ado7.png"/>
+              </figure>
+            </listitem>
+            <listitem>The installer is now ready to begin the installation, choose the "Install" button to commence the process.
+              <figure id="ado8" float="1">
+                <title>Install</title>
+                <graphic fileref="ui/ado8.png"/>
+              </figure>
+            </listitem>
+            <listitem>The installation was successfully completed.
+              <figure id="ado10" float="1">
+                <title>Completed installation</title>
+                <graphic fileref="ui/ado10.png"/>
+              </figure>
+            </listitem>
+            <listitem>The installation of the Provider can be verified by checking the %WINDOWS%\assembly folder and checking that the Provider(s) chosen for installation is(are) listed - "virtado3" and/or "virtado2".
+              <figure id="" float="1">
+                <title>Provider</title>
+                <graphic fileref="ui/adon8.png"/>
+              </figure>
+            </listitem>
+          </orderedlist>
+          <para>The installation of the ADO.Net Provider Client is complete.</para>
 
-      <title>OpenLink.Data.Virtuoso and OpenLink.Data.VirtuosoClient</title>
+          <sect4 id="virtclientrefinstallandconfigonwinuninst">
+            <title>Uninstallation</title>
+            <orderedlist>
+              <listitem>If you attempt to run the installer again, the following message will be displayed.
+                <figure id="adon9" float="1">
+                  <title>Installer message</title>
+                  <graphic fileref="ui/adon9.png"/>
+                </figure>
+              </listitem>
+              <listitem>The Provider can be uninstalled from the "Control Panel" -> "Programs and Features"
+menu, by selecting the "Virtuoso Client Connectivity kit" from the list of installed components and clicking
+the "unistall" option presented.
+                <figure id="ado11" float="1">
+                  <title>Uninstall</title>
+                  <graphic fileref="ui/ado11.png"/>
+                </figure>
+              </listitem>
+              <listitem>Choose "Yes" to uninstall the Virtuoso ADO.Net Provider.
+                <figure id="ado12" float="1">
+                  <title>Uninstall</title>
+                  <graphic fileref="ui/ado12.png"/>
+                </figure>
+              </listitem>
+            </orderedlist>
+          </sect4>
+        </sect3>
+        <sect3 id="virtclientrefinstallandconfigvirt"><title>Installation of the ADO.Net Provider Client and Virtuoso Universal Server on Windows</title>
+          <para>If both the ADO.Net Provider client and Virtuoso Server are to be installed on the same
+Windows machine, then the Virtuoso Universal Server installer can be used as it includes all the Virtuoso
+client and server components available in a single installer. An instance in which this particular
+installation type is require would be when using the Provider to provide Entity Framework connectivity
+to the remote database schema objects.</para>
+          <orderedlist>
+            <listitem>Download and run the Virtuoso Universal Server installer for your target Windows OS:
+              <itemizedlist mark="bullet">
+                <listitem><ulink url="http://download.openlinksw.com/download/login.vsp?pfam=2&amp;pform=26&amp;pcat=47&amp;prod=virtuoso-uim-unisvr-psnl&amp;os=i686-generic-win-32&amp;os2=i686-generic-win-32&amp;xpfam=virtuoso&amp;xpform=personal&amp;xpcat=unisvr&amp;xos=i686-generic-win-32&amp;xprod=virtuoso-uim-unisvr-psnl&amp;release-dbms=5.0-virt50&amp;proceed=Next+%3E">Windows 98/NT/2000/XP/2003/Vista/2008 (32 Bit) (x86)</ulink></listitem>
+                <listitem><ulink url="http://download.openlinksw.com/download/login.vsp?pfam=2&amp;pform=26&amp;pcat=47&amp;prod=virtuoso-uim-unisvr-psnl&amp;os=x86_64-generic-win-64&amp;os2=x86_64-generic-win-64&amp;xpfam=virtuoso&amp;xpform=personal&amp;xpcat=unisvr&amp;xos=x86_64-generic-win-64&amp;xprod=virtuoso-uim-unisvr-psnl&amp;release-dbms=5.0-virt50&amp;proceed=Next+%3E">Windows XP/2003/Vista/2008 (64 Bit) (x86_64)</ulink></listitem>
+              </itemizedlist>
+            </listitem>
+            <listitem>Choose the "run" button to allow the signed "Virtuoso Universal Server" installer to start.
+              <figure id="adow1" float="1">
+                <title>Run</title>
+                <graphic fileref="ui/adow1.png"/>
+              </figure>
+            </listitem>
+            <listitem>Choose the "Next" button to begin the installation process.
+              <figure id="adow3" float="1">
+                <title>Next</title>
+                <graphic fileref="ui/adow3.png"/>
+              </figure>
+            </listitem>
+            <listitem>Check the "I agree with license agreement" checkbox and choose the "Next" button.
+              <figure id="adow4" float="1">
+                <title>Agree license</title>
+                <graphic fileref="ui/adow4.png"/>
+              </figure>
+            </listitem>
+            <listitem>Choose the "Custom" option to manually select what components are installed and in which location, or choose the "Typical" or "Complete" options as recommended and skip to step 7.
+              <figure id="adow5" float="1">
+                <title>Custom option</title>
+                <graphic fileref="ui/adow5.png"/>
+              </figure>
+            </listitem>
+            <listitem>If the "Custom" option what chosen, select the installation directory or leave default and choose the "Next" button to continue.
+              <figure id="adow6" float="1">
+                <title>Installation directory</title>
+                <graphic fileref="ui/adow6.png"/>
+              </figure>
+            </listitem>
+            <listitem>Select which of the ADO.NET Providers are to be installed and choose "Next" to continue.
+              <figure id="adow8" float="1">
+                <title>ADO.NET Providers</title>
+                <graphic fileref="ui/adow8.png"/>
+              </figure>
+            </listitem>
+            <listitem>The installer is now ready to begin the installation, choose the "Install" button to commence the process.
+              <figure id="adow9" float="1">
+                <title>Begin installation</title>
+                <graphic fileref="ui/adow9.png"/>
+              </figure>
+            </listitem>
+            <listitem>The installation was successfully completed.
+              <figure id="adow11" float="1">
+                <title>Installation completed</title>
+                <graphic fileref="ui/adow11.png"/>
+              </figure>
+            </listitem>
+            <listitem>Post installation the Virtuoso Server can be started by running the "Virtuoso Service Manager" which gets added to the Windows "Icons Tray" in the status bar.
+              <figure id="adow12" float="1">
+                <title>Post installation</title>
+                <graphic fileref="ui/adow12.png"/>
+              </figure>
+            </listitem>
+            <listitem>Double click on the  "Virtuoso Service Manager" icon in the "Icons Tray" to load the application, select the "OpenLink Virtuoso Server" instance and press the "Start" button to run the Service.
+              <figure id="adow13" float="1">
+                <title>Virtuoso Service Manager</title>
+                <graphic fileref="ui/adow13.png"/>
+              </figure>
+            </listitem>
+            <listitem>Once the Virtuoso service has successfully started, it is *recommended* that the default "dba" and "dav" passwords be changed to secure values by loading the URL "http://localhost:8890/install" in a Web Browser which loads the following page for making these changes.
+              <figure id="adow15" float="1">
+                <title>Defaults</title>
+                <graphic fileref="ui/adow15.png"/>
+              </figure>
+            </listitem>
+            <listitem>The Virtuoso Server is now available for use.
+              <figure id="adow16" float="1">
+                <title>Virtuoso Server</title>
+                <graphic fileref="ui/adow16.png"/>
+              </figure>
+            </listitem>
+            <listitem>The installation of the ADO.Net Provider can be verified by checking the %WINDOWS%\assembly folder and checking that the Provider(s) chosen for installation is(are) listed &mdash; "virtado3" and/or "virtado2".
+              <figure id="adon8" float="1">
+                <title>Installation verification</title>
+                <graphic fileref="ui/adon8.png"/>
+              </figure>
+            </listitem>
+          </orderedlist>
+          <para>The installation of the ADO.Net Provider Client and Virtuoso Universal Server is complete.</para>
+          <sect4 id="virtclientrefinstallandconfigvirtuninst">
+            <title>Uninstallation</title>
+            <orderedlist>
+              <listitem>If you attempt to run the installer again, the following message will be displayed.
+                <figure id="adon9" float="1">
+                  <title>Installer message</title>
+                  <graphic fileref="ui/adon9.png"/>
+                </figure>
+              </listitem>
+              <listitem>The Provider can be uninstalled from the "Control Panel" -> "Programs and Features" menu, by selecting the "Virtuoso Client Connectivity kit" from the list of installed components and clicking the "unistall" option presented.
+                <figure id="ado11" float="1">
+                  <title>Uninstall</title>
+                  <graphic fileref="ui/ado11.png"/>
+                </figure>
+              </listitem>
+              <listitem>Choose "Yes" to uninstall the Virtuoso ADO.Net Provider.
+                <figure id="ado13" float="1">
+                  <title>Uninstall</title>
+                  <graphic fileref="ui/ado13.png"/>
+                </figure>
+              </listitem>
+            </orderedlist>
+          </sect4>
+        </sect3>
+      </sect2>
+      <sect2 id="virtclientrefprogrammersguide">
+        <title>Programmers Guide</title>
+        <sect3 id="virtclientrefprogrammersguidewalk"><title>Sample Walk through Applications</title>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="installvsgrid">Using Visual Studio 2008 to Build a Data Grid Form Application</link></listitem>
+  <listitem><link linkend="installvsent">Using Visual Studio 2008 to Build an Entity Frameworks based Windows Form Application</link></listitem>
+  <listitem><link linkend="installusado">Using Visual Studio 2008 to Build an ADO.NET Data Services based Application</link></listitem>
+  <listitem><link linkend="installwfas">Windows Form Application for accessing Virtuoso RDF data via SPASQL using the Virtuoso ADO.Net Provider</link></listitem>
+  <listitem><link linkend="installcrweb">Web Data Service Application for accessing Virtuoso RDF data via SPASQL using the Virtuoso ADO.Net Provider</link></listitem>
+  <listitem><link linkend="installsilver">Creating a Silverlight Application to consume the service</link></listitem>
+  <listitem><link linkend="installnetriadd">Creating A Simple .NET RIA Services Application to Display Data from Virtuoso</link></listitem>
+  <listitem><link linkend="installnetriavd">Creating a .Net RIA Services Application that will Update Virtuoso Data</link></listitem>
 
-      <para>A .NET Data Provider is a set of classes that provide database access
-      for .NET applications.  There are two .NET Data Providers for Virtuoso. Each of the
-Virtuoso providers reside in their own namespace and assembly. The difference
-between them is that one relies on the Virtuoso ODBC driver for communication with
-the server while another doesn't involve any intermediary unmanaged layers and
-performs all the communication with the server using managed code only.</para>
-
-      <table>
-	<tgroup cols="3">
-	  <thead>
-	    <row>
-	      <entry>Provider</entry>
-	      <entry>Namespace</entry>
-	      <entry>Assembly</entry>
-	    </row>
-	  </thead>
-	  <tbody>
-	    <row>
-	      <entry>ODBC-based</entry>
-	      <entry>OpenLink.Data.VirtuosoClient</entry>
-	      <entry>OpenLink.Data.VirtuosoClient.dll</entry>
-	    </row>
-	    <row>
-	      <entry>All-managed</entry>
-	      <entry>OpenLink.Data.Virtuoso</entry>
-	      <entry>OpenLink.Data.Virtuoso.dll</entry>
-	    </row>
-	  </tbody>
-	</tgroup>
-      </table>
-
-      <para>The ODBC-based provider depends on virtodbc.dll to function properly. Note that
-it calls the dll directly bypassing the ODBC Driver Manager so when an application uses
-the ODBC-based provider the ODBC-driver dll should also be in the PATH.</para>
-
-      <sect2 id="vcrvirtdbtype">
+</itemizedlist>
+        </sect3>
+        <sect3 id="virtclientrefprogrammersguideentfr"><title>Using Entity Frameworks, ADO.NET, the Virtuoso Virtual Database Engine</title>
+          <para>Virtuoso's in-built virtual database engine for ODBC and JDBC accessible databases enables it
+to act as bridge between Entity Frameworks &amp; ADO.NET based client applications. Thus, you simply link
+external databases into Virtuoso using the browser based Conductor UI or programmatically using SQL
+extensions. Once the external tables a linked/attached, they inherit the functionality prowess of Virtuoso,
+and this particular use case scenario, complete compatibility with Entity Frameworks and ADO.NET 3.5.</para>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="vdbenginemc">Using Microsoft Entity Frameworks to Access Oracle Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginepr">Using Microsoft Entity Frameworks to Access Progress Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbengineing">Using Microsoft Entity Frameworks to Access Ingres Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbengineinf">Using Microsoft Entity Frameworks to Access Informix Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginedb2">Using Microsoft Entity Frameworks to Access DB2 Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginesyb">Using Microsoft Entity Frameworks to Access Sybase Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginemsql">Using Microsoft Entity Frameworks to Access MySQL Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginepsql">Using Microsoft Entity Frameworks to Access PostgreSQL Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbengineodtjd">Using Microsoft Entity Frameworks to Access JDBC Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbengineodbcod">Using Microsoft Entity Frameworks to Access ODBC Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginefirebd">Using Microsoft Entity Frameworks to Access Firebird Schema Objects with Virtuoso</link></listitem>
+  <listitem><link linkend="vdbenginemsqls">Using Microsoft Entity Frameworks to Access Microsoft SQL Server Schema Objects with Virtuoso</link></listitem>
+</itemizedlist>
+        </sect3>
+      <sect3 id="vcrvirtdbtype">
 	<title>VirtDbType Enumeration</title>
 
 	<para>Specifies Virtuoso data types.</para>
@@ -165,9 +418,9 @@ the ODBC-based provider the ODBC-driver dll should also be in the PATH.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtuosocommandclass">
+      <sect3 id="vcrvirtuosocommandclass">
 	<title>VirtuosoCommand Class</title>
 
 	<para>Represents an SQL statement or stored procedure to execute against a Virtuoso database.
@@ -363,6 +616,149 @@ an VirtuosoConnection object.</para>
 
 	  </section>
 
+	  <section>
+	    <title>ConnectionString Property</title>
+
+	    <para>The Virtuoso ADO.NET Provider ConnectionString property implements the 
+	    IDbConnection.ConnectionString property to get or set the string used to open a Virtuoso 
+	    database connection, and includes the source database name and other parameters needed to 
+	    establish the initial connection. The default value is an empty string.</para>
+
+	    <fieldsynopsis>
+	      <modifier>public</modifier>
+	      <type>string</type>
+	      <varname>ConnectionString</varname>
+	    </fieldsynopsis>
+
+	    <section>
+	      <title>Property Value</title>
+	      <para>Includes the source database name and other parameters needed to establish the 
+	      initial connection. The default value is an empty string.</para>
+	      <para>ConnectionString has the following syntax: Each connection string is a sequence of settings 
+	      Individual settings are separated by semicolons. Each setting is a pair of name and value delimited 
+	      by the equal sign. Whitespace is ignored on either side of both names and values. Names are case 
+	      insensitive. The value part can be quoted by either single or double quote characters or remain 
+	      unquoted at all. However if it includes a semicolon, single quote, or double quote characters, 
+	      it must be enclosed in either type of quotes. To embed the same character that is used for 
+	      enclosing the value the character within the value must be doubled.</para>
+	      
+	      <para>The following table lists the valid names for values within the ConnectionString:</para>
+
+	      <table>
+		      <tgroup cols="3">
+		        <thead>
+		          <row>
+		            <entry>Name</entry>
+		            <entry>Default</entry>
+		            <entry>Description</entry>		            
+		          </row>
+		        </thead>
+		        <tbody>
+		          <row>
+		            <entry>Connect Timeout or<br/>Connection Timeout</entry>
+		            <entry>15</entry>
+		            <entry>The number of seconds to wait for a connection to the server before terminating the attempt and generating an error.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Connection Lifetime</entry>
+		            <entry>0</entry>
+		            <entry>When a connection is returned to the pool, its creation time is compared with the current time, and the connection is destroyed if that time span (in seconds) exceeds the value specified by connection lifetime. Useful in clustered configurations to force load balancing between a running server and a server just brought on-line.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Charset</entry>
+		            <entry>utf-16</entry>
+		            <entry>Specifies the character set to be used by the provider when passing string values to and from the database. Must be set to utf-8 to handle Unicode strings passed in SPARQL/SPASQL queries of RDF data.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Data Source or<br/>Server or<br/>Address or<br/>Network Address or<br/>Host</entry>
+		            <entry></entry>
+		            <entry>The name or network address of the instance of Virtuoso server to which to connect. Can take comma delimited list of instances for connection fail over.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Encrypt</entry>
+		            <entry>false</entry>
+		            <entry>Specifies if the connection must be SSL encrypted. Currently encryption only works with an ODBC-based provider.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Enlist</entry>
+		            <entry>true</entry>
+		            <entry>When true, the pooler automatically enlists the connection in the creation thread's current transaction context.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Initial Catalog or<br/>Database</entry>
+		            <entry></entry>
+		            <entry>The name of the database.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Max Pool Size</entry>
+		            <entry>100</entry>
+		            <entry>The maximum number of connections allowed in the pool.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Min Pool Size</entry>
+		            <entry>0</entry>
+		            <entry>The minimum number of connections allowed in the pool.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Password or<br/>Pwd</entry>
+		            <entry></entry>
+		            <entry>The password for the Virtuoso account logging on. </entry>		            
+		          </row>
+		          <row>
+		            <entry>Persist Security Info</entry>
+		            <entry>false</entry>
+		            <entry>When set to 'false', security-sensitive information, such as the password, is not returned as part of the connection if the connection is open or has ever been in an open State. Resetting the connection string resets all connection string values including the password.</entry>		            
+		          </row>
+		          <row>
+		            <entry>Pooling</entry>
+		            <entry>true</entry>
+		            <entry>	When true, the VirtuosoConnection object is drawn from the appropriate pool, or if necessary, is created and added to the appropriate pool.</entry>		            
+		          </row>
+		          <row>
+		            <entry>RoundRobin</entry>
+		            <entry>false</entry>
+		            <entry>Enables load balancing in which case the server for the connection is chosen at random from the comma delimited provided as for a Failover connection.</entry>		            
+		          </row>
+		          <row>
+		            <entry>User ID or<br/>Uid</entry>
+		            <entry></entry>
+		            <entry>The Virtuoso login name.</entry>		            
+		          </row>		          
+		        </tbody>
+		      </tgroup>
+	      </table>
+	    </section>
+
+	    <section>
+	      <title>Implements</title>
+	      <para>IDbCommand.ConnectionString</para>
+	    </section>
+ 
+      <section>
+	      <title>Remarks</title>
+	       <para>The <emphasis>ConnectionString</emphasis> is similar to an OLE DB connection string, but 
+	       is not identical. Unlike OLE DB or ADO, the connection string that is returned is the same as the 
+	       user set <emphasis>ConnectionString</emphasis> minus security information if the 
+	       <emphasis>Persist Security Info</emphasis> value is set to <emphasis>false</emphasis> (default). 
+	       The Virtuoso ADO.NET Data Provider neither persists nor returns the password in a connection 
+	       string unless you set <emphasis>Persist Security Info</emphasis> to true.</para>
+	       <para>The <emphasis>ConnectionString</emphasis> property can be set only when the connection is 
+	       closed. Many of the connection string values have corresponding read-only properties. When the 
+	       connection string is set, all of these properties are updated, except when an error is detected; 
+	       in this case, none of the properties are updated. <emphasis>VirtuosoConnection</emphasis> 
+	       properties return only those settings contained in the <emphasis>ConnectionString</emphasis>.</para>
+	       <para>Resetting the <emphasis>ConnectionString</emphasis> on a closed connection resets all 
+	       connection string values (and related properties) including the password. For example, if you set a 
+	       connection string that includes "<emphasis>Database=Demo</emphasis>", and then reset the connection 
+	       string to "<emphasis>Data Source=myserver;User ID=dba;Password=dba</emphasis>", the Database 
+	       property is no longer set to <emphasis>Demo</emphasis>.</para>	      
+	       <para>The connection string is parsed immediately after being set. If errors in syntax are found 
+	       when parsing, a runtime exception (e.g., <emphasis>ArgumentException</emphasis>) is generated. 
+	       Other errors can be found only when an attempt is made to open the connection.</para>	       
+	    </section>
+	    
+	  </section>
+	  
 	  <section>
 	    <title>VirtuosoCommand Constructor (string, VirtuosoConnection, VirtuosoTransaction)</title>
 
@@ -923,9 +1319,9 @@ from your code.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtcmdbuildr">
+      <sect3 id="vcrvirtcmdbuildr">
 	<title>VirtuosoCommandBuilder Class</title>
 
 	<para>Provides a means of automatically generating single-table commands used to reconcile changes
@@ -1337,9 +1733,9 @@ GetUpdateCommand.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtconnclass">
+      <sect3 id="vcrvirtconnclass">
 	<title>VirtuosoConnection Class</title>
 
 	<para>Represents an open connection to a Virtuoso database. This class cannot be inherited.</para>
@@ -2081,9 +2477,9 @@ close the connection by calling Close or Dispose.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtdataadaclass">
+      <sect3 id="vcrvirtdataadaclass">
 	<title>VirtuosoDataAdapter Class</title>
 
 	<para>Represents a set of data commands and a connection to a data source that are used to fill the
@@ -2772,9 +3168,9 @@ The order of execution is as follows:</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtdatareadrclass">
+      <sect3 id="vcrvirtdatareadrclass">
 	<title>VirtuosoDataReader Class</title>
 
 	<para>Provides a means of reading a forward-only stream of rows from a Virtuoso database. This class cannot
@@ -4338,9 +4734,9 @@ you must call Read to begin accessing any data.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirterrclass">
+      <sect3 id="vcrvirterrclass">
 	<title>VirtuosoError Class</title>
 
 	<para>Collects information relevant to a warning or error returned by Virtuoso server. This class cannot
@@ -4416,9 +4812,9 @@ VirtuosoException class.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirterrcollclass">
+      <sect3 id="vcrvirterrcollclass">
 	<title>VirtuosoErrorCollection Class</title>
 
 	<para>Collects all errors generated by the Virtuoso .NET Data Provider. This class cannot be inherited.</para>
@@ -4573,9 +4969,9 @@ used directly from your code.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtexcepclass">
+      <sect3 id="vcrvirtexcepclass">
 	<title>VirtuosoException Class</title>
 
 	<para>The exception that is thrown when Virtuoso server returns a warning or error. This class cannot be
@@ -4667,9 +5063,9 @@ exceptions generated by the Virtuoso .NET Data Provider.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtinfmsgevtargclass">
+      <sect3 id="vcrvirtinfmsgevtargclass">
 	<title>VirtuosoInfoMessageEventArgs Class</title>
 
 	<para>Provides data for the InfoMessage event. This class cannot be inherited.</para>
@@ -4727,9 +5123,9 @@ Virtuoso srver.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtinfmsgevthndlrdel">
+      <sect3 id="vcrvirtinfmsgevthndlrdel">
 	<title>VirtuosoInfoMessageEventHandler Delegate</title>
 
 	<para>Represents the method that will handle the InfoMessage event of a VirtuosoConnection.</para>
@@ -4779,9 +5175,9 @@ delegates, see "Events and Delegates" in the .NET Framework SDK documentation.</
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtparamclass">
+      <sect3 id="vcrvirtparamclass">
 	<title>VirtuosoParameter Class</title>
 
 	<para>Represents a parameter to an VirtuosoCommand and optionally, its mapping to a DataColumn.
@@ -5590,9 +5986,9 @@ directly from your code.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtparamcollclass">
+      <sect3 id="vcrvirtparamcollclass">
 	<title>VirtuosoParameterCollection Class</title>
 
 	<para>Represents a collection of parameters relevant to a VirtuosoCommand as well as their respective mappings
@@ -6418,9 +6814,9 @@ name.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtpermclass">
+      <sect3 id="vcrvirtpermclass">
 	<title>VirtuosoPermission Class</title>
 
 	<para>Provides the capability for the Virtuoso .NET Data Provider to ensure that a user has a security level
@@ -6766,9 +7162,9 @@ passes their union.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtpermattr">
+      <sect3 id="vcrvirtpermattr">
 	<title>VirtuosoPermissionAttribute</title>
 
 	<para>Allows security actions for VirtuosoPermission to be applied to code using declarative security.
@@ -6850,9 +7246,9 @@ Any instance members are not guaranteed to be thread safe.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtrowupdevtargclass">
+      <sect3 id="vcrvirtrowupdevtargclass">
 	<title>VirtuosoRowUpdatedEventArgs Class</title>
 
 	<para>Provides data for the RowUpdated event. This class cannot be inherited.</para>
@@ -6964,9 +7360,9 @@ Any instance members are not guaranteed to be thread safe.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtrowupdevthndlrdel">
+      <sect3 id="vcrvirtrowupdevthndlrdel">
 	<title>VirtuosoRowUpdatedEventHandler Delegate</title>
 
 	<para>Represents the method that will handle the RowUpdated event of a VirtuosoDataAdapter.</para>
@@ -7018,9 +7414,9 @@ see "Events and Delegates" in the .NET Framework SDK documentation.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtrowupsevtargsclass">
+      <sect3 id="vcrvirtrowupsevtargsclass">
 	<title>VirtuosoRowUpdatingEventArgs Class</title>
 
 	<para>Provides data for the RowUpdating event. This class cannot be inherited.</para>
@@ -7132,9 +7528,9 @@ Any instance members are not guaranteed to be thread safe.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirtrowupdingevthndlrdel">
+      <sect3 id="vcrvirtrowupdingevthndlrdel">
 	<title>VirtuosoRowUpdatingEventHandler Delegate</title>
 
 	<para>Represents the method that will handle the RowUpdating event of a VirtuosoDataAdapter.</para>
@@ -7186,9 +7582,9 @@ see "Events and Delegates" in the .NET Framework SDK documentation.</para>
 
 	</section>
 
-      </sect2>
+      </sect3>
 
-      <sect2 id="vcrvirttransclass">
+      <sect3 id="vcrvirttransclass">
 	<title>VirtuosoTransaction Class</title>
 
 	<para>Represents a transaction to be made at a Virtuoso database. This class cannot be inherited.</para>
@@ -7354,6 +7750,7 @@ releases the managed resources.</para>
 
 	</section>
 
+      </sect3>
       </sect2>
 
   </sect1>

@@ -24,6 +24,21 @@
 -->
 <v:page name="ab" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      self.ds.vc_reset ();
+      if (self.v_order = columnName)
+      {
+        self.v_direction := either (equ (self.v_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.v_direction := 'asc';
+      }
+      self.v_order := columnName;
+    ]]>
+  </v:method>
+
   <v:method name="mode_test" arglist="">
     <![CDATA[
       declare pos integer;
@@ -33,10 +48,10 @@
       self.abContact := get_keyword ('id', params, '');
       if (self.abContact <> '')
       {
-        self.v_id := cast (self.abContact as integer);
+        self.v_id := atoi(self.abContact);
         if (self.v_id = -1)
         {
-          if (self.account_role not in ('public', 'guest'))
+          if (self.account_rights = 'W')
           {
             self.abAction := 'create';
             self.v_name := trim (get_keyword ('name', params, ''));
@@ -55,6 +70,7 @@
               self.v_lName := names [length (names) - 1];
           }
         } else {
+          if (exists (select 1 from AB.WA.PERSONS where P_ID = self.v_id and P_DOMAIN_ID = self.domain_id))
           self.abAction := 'view';
       }
       }
@@ -77,11 +93,11 @@
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if ((cmd = 'create') and ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'create') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
-      if ((cmd = 'import') and ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'import') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
-      if ((cmd = 'export') and ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'export') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
       return 1;
     ]]>
@@ -91,23 +107,24 @@
     <![CDATA[
       declare imageSrc, onclickEvent, styleStr varchar;
 
+      styleStr := '';
+      onclickEvent := '';
       if (self.toolbarEnable(cmd))
       {
         onclickEvent := cmdOnClick;
         imageSrc := cmdImageSrc;
-        styleStr := 'style="cursor: pointer;"';
+        styleStr := styleStr || 'cursor: pointer;';
       } else {
-        onclickEvent := '';
         imageSrc := cmdImageGraySrc;
-        styleStr := '';
       }
+      styleStr := sprintf('style="%s"', styleStr);
       http (sprintf ('<span %s class="toolbar" %s title="%s">', onclickEvent, styleStr, cmdLabel));
         http (sprintf ('<img src="image/%s" border="0" alt="%s" />%s', imageSrc, cmdLabel, self.toolbarLabel(cmdLabel)));
       http ('</span>');
     ]]>
   </v:method>
 
-  <v:method name="render_select" arglist="inout name any">
+  <v:method name="render_select" arglist="inout options any, inout name any">
     <![CDATA[
       declare N any;
       declare S, T any;
@@ -120,12 +137,10 @@
 
   	  http (sprintf ('<select name="sel_%s">', name));
   	  http ('<option value="skip">--</option>');
-      for (N := 0; N < length (self.i_Options); N := N + 2)
+      for (N := 0; N < length (options); N := N + 2)
       {
-        S := '';
-        if (self.i_Options[N] = T)
-          S := ' selected="selected"';
-        http (sprintf ('<option value="%s"%s>%s</option>', self.i_Options[N], S, self.i_Options[N+1]));
+        S := case when (options[N] = T) then ' selected="selected"' else '' end;
+        http (sprintf ('<option value="%s"%s>%s</option>', options[N], S, options[N+1]));
       }
   	  http ('</select>');
 	  ]]>
@@ -166,7 +181,7 @@
       -- value
       if (fProperty = 'description')
          {
-        F := '<pre>' || AB.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
+        F := '<pre style="margin: 0; white-space: pre-wrap;">' || AB.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
       }
       else if (internal_type (fValue) = 211)
            {
@@ -225,7 +240,9 @@
 
   <v:method name="viewImage" arglist="inout fValue any">
     <![CDATA[
-       if (self.abAction = 'view')
+      if (self.abAction <> 'view')
+        return;
+
          if (is_empty_or_null (fValue))
          {
            http ('&nbsp;');
@@ -237,7 +254,9 @@
 
   <v:method name="viewTags" arglist="inout fValue any">
     <![CDATA[
-      if (self.abAction = 'view')
+      if (self.abAction <> 'view')
+        return;
+
         if (is_empty_or_null (fValue))
         {
           http ('&nbsp;');
@@ -316,7 +335,9 @@
         {
           image := 'c.gif';
           image2 := 'folder_16.png';
-        } else if (AB.WA.vector_contains(self.abState, nodes[N+2])) {
+        }
+        else if (AB.WA.vector_contains(self.abState, nodes[N+2]))
+        {
           image := 'minus.gif';
           image2 := 'folder_open_16.png';
           alt := 'Close Node';
@@ -348,45 +369,12 @@
     ]]>
   </v:method>
 
-  <v:method name="shareNode" arglist="in person_id integer, in grants varchar, in override integer">
-    <![CDATA[
-      declare N, pos, id integer;
-      declare name, V any;
-
-      grants := replace(grants, ' ', '');
-      grants := replace(grants, ',,', ',');
-      grants := trim(grants, ',', '');
-      grants := grants || ',';
-      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do
-      {
-        name := U_NAME;
-        id := U_ID;
-        pos := strstr(grants, name || ',');
-        if (isnull (pos))
-        {
-          if (override)
-            delete from AB.WA.GRANTS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = id and G_PERSON_ID = person_id;
-        } else {
-          grants := replace(grants, name || ',', '');
-        }
-      }
-      V := split_and_decode(trim(grants, ','), 0, '\0\0,');
-      for (N := 0; N < length (V); N := N + 1)
-      {
-        id := (select U_ID from SYS_USERS where U_NAME = V[N]);
-        if (not isnull(id))
-          insert into AB.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_PERSON_ID)
-            values(self.account_id, id, person_id);
-      }
-    ]]>
-  </v:method>
-
   <v:method name="shareSelect" arglist="in person_id integer">
     <![CDATA[
       declare grants any;
 
       grants := '';
-      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and G_PERSON_ID = person_id) do
+      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = AB.WA.domain_owner_id (self.domain_id) and G_GRANTEE_ID = U_ID and G_PERSON_ID = person_id) do
         grants := grants || cast (U_NAME as varchar) || ',';
       return trim (grants, ',');
     ]]>
@@ -404,9 +392,11 @@
     ]]>
   </v:method>
 
-  <v:method name="resetImport" arglist="">
+  <v:method name="resetImport" arglist="in mode integer">
     <![CDATA[
+      if (not mode)
       AB.WA.ab_graph_delete (self.i_iri);
+
       self.i_source := -1;
       self.i_type := -1;
       self.i_lName := '';
@@ -417,13 +407,20 @@
       self.i_lPassword := '';
       self.i_lMaps := null;
       self.i_maps := null;
+      self.i_number := 0;
       self.i_iri := null;
       self.i_contentItems := null;
+      self.i_contentPings := null;
       self.i_contentDepth := 0;
-      self.i_contentDepth := 100;
+      self.i_contentLimit := 100;
       self.i_contentFollow := null;
       self.i_data := null;
       self.i_validation := null;
+      self.i_validationMode := 'ask';
+      self.v_grants := '';
+      self.v_acl := '';
+
+      self.abAction := 'browse';
     ]]>
   </v:method>
 
@@ -436,7 +433,7 @@
           http ('<td>');
             for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do
             {
-              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
+              http (sprintf ('<a href="#" onclick="javascript: return addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
             }
           http ('</td>');
         http ('</tr>');
@@ -446,14 +443,14 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'addressbook_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=600, width=800\'); return false;" title="%s %s" class="link">%s</span>', AB.WA.url_fix (sprintf ('%s%s', AB.WA.ab_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<span onclick="javascript: windowShow (\'%s\', \'addressbook_%s_window\'); return false;" title="%s %s" class="link">%s</span>', AB.WA.page_url (self.domain_id, p_url, self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
   <v:method name="saveData" arglist="">
     <![CDATA[
-      declare N integer;
-      declare suffix, tmp, acl, params any;
+      declare N, M integer;
+      declare suffix, tmp, tmpValue, acl, acl_users, params any;
 
       params := self.vc_page.vc_event.ve_params;
 
@@ -464,6 +461,7 @@
       acl := vector ();
       self.v_interests := '';
       self.v_relationships := '';
+      self.v_grants := '';
       for (N := 0; N < length (params); N := N + 4)
       {
         if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
@@ -473,20 +471,27 @@
         }
         else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          if (not AB.WA.vector_contains (tmp, trim (params [N+1])))
+          suffix := replace (params [N], 'b_fld_1_', '');
+          tmpValue := trim (params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, params, '')) || '\n';
+          if (not AB.WA.vector_contains (tmp, tmpValue))
           {
-            tmp := vector_concat (tmp, vector (trim (params [N+1])));
-            self.v_relationships := self.v_relationships || trim (params [N+1]) || '\n';
+            tmp := vector_concat (tmp, vector (tmpValue));
+            self.v_relationships := self.v_relationships || tmpValue;
           }
+
         }
-        else if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
+        else if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 's_fld_2_', '');
-          acl := vector_concat (acl, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
+          acl_users := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+          for (M := 0; M < length (acl_users); M := M + 1)
+          {
+            if (not isnull (AB.WA.account_id (trim (acl_users[M]))))
+              self.v_grants := self.v_grants || ',' || acl_users[M];
+      }
         }
       }
-      acl := vector_concat (vector (vector ('v1.0', length (acl))), acl);
-      self.v_acl := serialize (acl);
+      self.v_grants := trim (self.v_grants, ',');
+      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
     ]]>
   </v:method>
 
@@ -496,6 +501,9 @@
       AddressBook
     </vm:header>
     <vm:variables>
+      <v:variable name="v_order" type="varchar" default="'P_NAME'" />
+      <v:variable name="v_direction" type="varchar" default="'asc'" />
+
       <v:variable persist="0" name="abAction" type="varchar" param-name="action" default="'browse'" />
       <v:variable persist="0" name="abSubAction" type="varchar" default="''" />
       <v:variable persist="0" name="abSelected" type="any" default="null" />
@@ -512,7 +520,7 @@
       <v:variable name="abChars" type="integer" default="60" />
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
 
-      <v:variable persist="0" name="abStep" type="varchar" default="''" />
+      <v:variable persist="0" name="abStep" type="varchar" param-name="step" default="''" />
       <v:variable persist="0" name="abSteps" type="any" default="null" />
       <v:variable name="v_id" type="any" default="-1" />
 
@@ -532,6 +540,7 @@
       <v:variable name="v_interests" type="varchar" default="''" />
       <v:variable name="v_relationships" type="varchar" default="''" />
       <v:variable name="v_acl" type="any" default="null" />
+      <v:variable name="v_certificate" type="any" default="null" />
 
       <v:variable name="v_mail" type="varchar" default="''" />
       <v:variable name="v_web" type="varchar" default="''" />
@@ -594,17 +603,19 @@
       <v:variable name="i_lPassword" type="varchar" default="''"/>
       <v:variable name="i_lSearch" type="varchar" default="'(cn=*)'"/>
       <v:variable name="i_lMaps" type="any" default="null"/>
-      <v:variable persist="temp" name="i_Options" type="any" default="null" />
       <v:variable persist="temp" name="i_Items" type="any" default="null" />
 
       <v:variable name="i_data" type="varchar" default="null"/>
       <v:variable name="i_iri" type="varchar" default="null" />
       <v:variable name="i_contentItems" type="any" default="null" />
+      <v:variable name="i_contentPings" type="any" default="null" />
       <v:variable name="i_contentDepth" type="integer" default="0" />
       <v:variable name="i_contentLimit" type="integer" default="100" />
       <v:variable name="i_contentFollow" type="any" default="null" />
-      <v:variable name="i_validation" type="varchar" default="null" />
+      <v:variable name="i_validation" type="any" default="null" />
+      <v:variable name="i_validationMode" type="varchar" default="'ask'" />
       <v:variable name="i_maps" type="any" default="null" />
+      <v:variable name="i_number" type="integer" default="0" />
 
       <v:variable name="ve_id" type="any" default="-1" />
       <v:variable name="ve_name" type="varchar" default="''" />
@@ -630,7 +641,7 @@
             self.abSubAction := '';
             self.abValue := '';
           }
-          if ((self.account_role in ('public', 'guest')) and (self.abAction = 'settings'))
+          if ((self.account_rights <> 'W') and (self.abAction = 'settings'))
             self.abAction := 'browse';
             
           self.mode_test();
@@ -690,8 +701,9 @@
                     self.v_foaf := '';
                   self.v_photo := '';
                   self.v_interests := '';
-                  self.v_relationships := '';
+                  self.v_relationships := 'foaf:knows;' || AB.WA.account_sioc_url (self.domain_id);
                   self.v_acl := null;
+                  self.v_certificate := null;
                   self.v_photo_preview_path := '';
 
                     self.v_mail := '';
@@ -771,13 +783,13 @@
                     if (params[N] = 'cb_item')
                     {
                       id := cast(params[N+1] as integer);
-                      AB.WA.contact_delete (id);
+                      AB.WA.contact_delete (id, self.domain_id);
                       }
                     }
                   }
                 else if (cmd = 'import')
                 {
-                  self.resetImport ();
+                  self.resetImport (0);
                     self.abAction := cmd;
                     self.abStep := '1';
                   self.abSteps  := vector ();
@@ -814,6 +826,10 @@
         ?>
         <div class="toolbar">
         <?vsp
+          declare toolbarWidth varchar;
+
+          --toolbarWidth := case when (self.abLabels = 0) then ' width: 40px;' else '' end;
+          toolbarWidth := '';
           self.toolbarShow ('', 'My Contacts', 'onclick="javascript: toolbarPost(\'MyContacts\');"', 'ab_32.png', '');
           self.toolbarShow ('', 'Shared Contacts', 'onclick="javascript: toolbarPost(\'MySharedContacts\');"', 'ab_shared_32.png', '');
         ?>
@@ -834,29 +850,29 @@
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
         <vm:if test="self.toolbarEnable('tag')">
-          <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('tag');" title="Tag">
+          <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: toolbarPost('tag');" title="Tag">
             <img src="image/tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
         </vm:if>
-          <span id="tbTag_gray" class="toolbar" style="display: inline;">
+        <span id="tbTag_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
 
         <vm:if test="self.toolbarEnable('grants')">
-          <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('grants');" title="Sharing">
+          <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: toolbarPost('grants');" title="Sharing">
             <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http (self.toolbarLabel('Sharing'));?>
           </span>
         </vm:if>
-          <span id="tbSharing_gray" class="toolbar" style="display: inline;">
+        <span id="tbSharing_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http(self.toolbarLabel('Sharing'));?>
           </span>
 
         <vm:if test="self.toolbarEnable('delete')">
-          <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: if (confirmAction('Are you sure that you want to delete selected items?', document.F1, 'cb_', 'No items were selected for deletion.')) toolbarPost('delete');" title="Delete">
+          <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: if (confirmAction('Are you sure that you want to delete selected items?', document.F1, 'cb_', 'No items were selected for deletion.')) toolbarPost('delete');" title="Delete">
             <img src="image/del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
             </span>
         </vm:if>
-          <span id="tbDelete_gray" class="toolbar" style="display: inline;">
+        <span id="tbDelete_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
             </span>
 
@@ -864,7 +880,7 @@
       <br style="clear: both;" />
 
       <vm:if test="self.abAction <> 'settings'">
-      <div class="ab_main">
+        <div id="ab_main" class="ab_main">
         <?vsp
           if (0)
           {
@@ -910,7 +926,7 @@
                     if (action = 'delete')
                     {
                     self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
-                      AB.WA.contact_delete (self.v_id);
+                      AB.WA.contact_delete (self.v_id, self.domain_id);
                     }
                     if (action = 'edit')
                     {
@@ -961,7 +977,7 @@
                         http ('<div style="border-top: 1px solid #7f94a5;"></div>');
                       }
 
-                      S := AB.WA.gems_url (self.domain_id);
+                      S := AB.WA.utf2wide (AB.WA.gems_url (self.domain_id));
                       http (sprintf ('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems noapp"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
                       http (sprintf ('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems noapp"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
                       http (sprintf ('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems noapp"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
@@ -1008,8 +1024,7 @@
                 declare _done, tMin, tMax integer;
                 declare tClass, tStyle varchar;
 
-                select max(T_COUNT),
-                       min(T_COUNT)
+                  select max(T_COUNT), min(T_COUNT)
                   into tMax, tMin
                   from AB.WA.TAGS
                  where T_DOMAIN_ID = self.domain_id
@@ -1110,7 +1125,7 @@
                         if (not is_empty_or_null (cast (self.abValue as integer)))
                           AB.WA.xml_set('category', data, self.abValue);
                       }
-                    control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, data);
+                        control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data);
                     }
                     else if (self.abScope = 'MySharedContacts')
                     {
@@ -1124,10 +1139,8 @@
                                                         null                           P_TAGS,
                                                         null                           P_UPDATED,
                                                         null                           P_CREATED
-                                                   from AB.WA.GRANTS,
-                                                        DB.DBA.SYS_USERS
-                                                  where G_GRANTEE_ID = <USER_ID>
-                                                    and G_GRANTER_ID = U_ID) x
+                                                       from AB..GRANTS_VIEW
+                                                      where id = <USER_ID>) x
                                             where 1 = 1';
                       control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
                       }
@@ -1141,16 +1154,18 @@
                                                         a.P_UPDATED                     P_UPDATED,
                                                         a.P_CREATED                     P_CREATED
                                                    from AB.WA.PERSONS a,
-                                                        AB.WA.GRANTS b
+                                                            AB..GRANTS_PERSON_VIEW b
                                                   where a.P_ID = b.G_PERSON_ID
-                                                    and b.G_GRANTER_ID = <ID>
-                                                    and b.G_GRANTEE_ID = <USER_ID>) x
+                                                        and b.FROM_ID = <ID>
+                                                        and b.TO_ID = <USER_ID>) x
                                             where 1 = 1';
                       control.ds_sql := replace(control.ds_sql, '<ID>', AB.WA.node_suffix(self.abNode));
                       control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
                     }
                   }
 
+                      self.sortChange (get_keyword ('sortColumn', params, ''));
+                      control.ds_sql := concat (control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
                   control.ds_nrows := AB.WA.settings_rows (self.settings);
                   control.ds_parameters := vector ();
                 ]]>
@@ -1163,17 +1178,15 @@
             <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
 
               <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom" >
-                <table id="contacts" class="ab_grid" cellspacing="0">
-                  <thead class="sortHeader">
+                    <table class="ODS_grid" style="border: 0px;">
+                      <thead>
                     <tr>
-                          <v:template name="t2" type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
-                        <th class="checkbox" width="1%">
+                          <v:template name="t2" type="simple" enabled="--case when ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
+                            <th class="checkbox">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
                       </v:template>
-                          <th>
-                        Name
-                      </th>
+                          <?vsp http (DB.DBA.wa_show_column_header ('Name', 'P_NAME', self.v_order, self.v_direction)); ?>
                     </tr>
                   </thead>
                 </table>
@@ -1182,25 +1195,27 @@
               <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <?vsp
+                        declare id integer;
+                        declare permissions any;
+
+                        id := (control as vspx_row_template).te_column_value('P_ID');
+                        permissions := AB.WA.contact_rights (self.domain_id, id, self.account_rights);
+                      ?>
                   <table>
                     <tr>
-                          <v:template  name="t3" type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
-                        <td align="center" valign="top">
+                          <vm:if test="(self.account_rights = 'W') and (self.abScope <> 'MySharedContacts')">
+                            <td class="checkbox" valign="top">
                           <?vsp
-                            declare S varchar;
-
-                            S := '';
-                            if (self.abContact = ((control.vc_parent) as vspx_row_template).te_column_value('P_ID'))
-                              S := 'checked="checked"';
-
-                            http (sprintf ('<input type="checkbox" name="cb_item" value="%d" %s onclick="selectCheck(this, \'cb_item\')" />', ((control.vc_parent) as vspx_row_template).te_column_value('P_ID'), S));
+                                if (permissions = 'W')
+                                  http (sprintf ('<input type="checkbox" name="cb_item" value="%d" %s onclick="selectCheck(this, \'cb_item\')" />', id, case when (self.abContact = id) then 'checked="checked"' else '' end));
                           ?>
                         </td>
-                      </v:template>
+                          </vm:if>
                           <td class="vcard" valign="top">
                         <?vsp
-                          declare N, id, did integer;
-                              declare tmp, title, title2, permissions, actions, tags any;
+                              declare N integer;
+                              declare tmp, title, title2, actions, tags any;
 
                             if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
                             {
@@ -1208,14 +1223,11 @@
                             goto _skip;
                           }
 
-                          id := (control as vspx_row_template).te_column_value('P_ID');
-                          did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
-                              permissions := AB.WA.person_permissions (id, self.domain_id, self.account_role);
                               title2 := self.prepareField (AB.WA.stringCut(title, self.abChars), 'nickname', null);
 
-                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), id, title, title2));
+                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, AB.WA.utf2wide (SIOC..addressbook_contact_iri (self.domain_id, id)), id, title, title2));
                           
                           actions := '';
                               if (permissions = 'W')
@@ -1264,7 +1276,6 @@
               </div>
             <script type="text/javascript">
               <![CDATA[
-                coloriseTable('contacts');
                   exchangeHTML();
 
                 var objForm = document.forms['F1'];
@@ -1370,7 +1381,7 @@
                   </th>
                   <td>
                     <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                    <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=s_grants:s1;',520)" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?dst=mc&amp;params=s_grants:s1;&nrows=<?V AB.WA.settings_rows (self.settings) ?>')" class="button" />
                     <input type="button" value="Clear" onclick="javascript: document.F1.elements['s_grants'].value = ''" class="button" />
                   </td>
                 </tr>
@@ -1393,7 +1404,7 @@
                     self.v_override := self.s_override.ufl_selected;
 
                     for (N := 0; N < length(self.abSelected); N := N + 1)
-                      self.shareNode (self.abSelected[N], self.v_grants, self.v_override);
+                         AB.WA.contact_share (self.account_id, self.abSelected[N], self.v_grants, self.v_override);
 
                     self.abAction := 'browse';
                     self.vc_data_bind(e);
@@ -1419,7 +1430,7 @@
                   declare exit handler for not found goto _end;
 
                 params := self.vc_page.vc_event.ve_params;
-                if (isnull (get_keyword ('ab_name', params)))
+                  if (isnull (get_keyword ('ab_name', params)) or (self.abAction = 'view'))
                   self.v_tabNo := '1';
                   if ((self.abAction in ('edit', 'view')) and isnull (get_keyword ('ab_name', params)))
                   {
@@ -1478,6 +1489,7 @@
                          P_B_WEB,
                            P_TAGS,
                            P_ACL,
+                           P_CERTIFICATE,
                            C_ID,
                            C_NAME
                     into self.v_kind,
@@ -1535,6 +1547,7 @@
                          self.v_bWeb,
                            self.v_tags,
                            self.v_acl,
+                           self.v_certificate,
                            self.v_category_id,
                            self.v_category_name
                     from AB.WA.PERSONS
@@ -1542,6 +1555,7 @@
                    where P_ID = self.v_id;
                   self.v_grants := self.shareSelect (self.v_id);
                     self.v_photo_preview_path := '';
+                    self.rdf_iri := SIOC..addressbook_contact_iri (self.domain_id, self.v_id);
                 }
                 _end:;
               ]]>
@@ -1575,44 +1589,65 @@
             <v:text name="dirty_force_global" xhtml_id="dirty_force_global" type="hidden" value="--get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')"/>
             <div id="a" class="c1">
               <div class="tabs">
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="0" caption="Main" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="1" caption="Contact" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="2" caption="Home" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="3" caption="Business" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="4" caption="Relationships" />
-                  <vm:if test="AB.WA.domain_is_public (self.domain_id) = 2">
-                    &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Access" />
+                  <vm:if test="self.abAction <> 'view'">
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="0" caption="Import" />
+                  </vm:if>
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="1" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="2" caption="Contact" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="3" caption="Home" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="4" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="5" caption="Relationships" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="6" caption="Sharing" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="7" caption="X.509 Certificate" />
+                  <vm:if test="(self.abAction = 'view') and (not isnull (__proc_exists ('QRcode encodeString8bit', 2)))">
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="9" tabNo="8" caption="QRCode" />
                   </vm:if>
               </div>
                 <div class="contents vcard">
+                  <vm:if test="self.abAction <> 'view'">
                 <div id="a_content_0" class="tabContent" style="display: none;">
                     <table class="form-body n" cellspacing="0">
-                      <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
-                    <tr>
+                      <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Contact URI" />
+                          <v:label for="ab_foaf" value="Profile Document URL" />
                         </th>
                         <td>
-                          <?vsp self.viewField (SIOC..addressbook_contact_iri (self.domain_id, self.v_id), 'uid', null); ?>
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:text name="x_foaf" xhtml_id="x_foaf" value="" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('x_foaf')); return false;" class="button" />
+                            <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                          </vm:if>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  </vm:if>
+                  <div id="a_content_1" class="tabContent" style="display: none;">
+                    <table class="form-body n" cellspacing="0">
+                      <vm:if test="self.abAction in ('view', 'edit')">
+                    <tr>
+                        <th>
+                          Contact URI
+                        </th>
+                        <td>
+                          <?vsp http (self.prepareField(AB.WA.utf2wide (SIOC..addressbook_contact_iri (self.domain_id, self.v_id)), 'uid', null)); ?>
                         </td>
                       </tr>
                       </vm:if>
                       <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Person''s FOAF URI" />
+                          <v:label for="ab_foaf" value="Profile Document URL" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_foaf" xhtml_id="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
-                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('ab_foaf')); return false;" class="button" />
-                            <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
                           </vm:if>
                           <?vsp self.viewField (self.v_foaf, '', null); ?>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <v:label for="ab_iri" value="Person URI" />
+                          <v:label for="ab_iri" value="WebID" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
@@ -1725,7 +1760,7 @@
                       <th>
                           <v:label for="ab_birthday" value="Birthday" />
                       </th>
-                      <td nowrap="1">
+                        <td nowrap="nowrap">
                         <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_birthday" xhtml_id="ab_birthday" null-value="--''" value="--AB.WA.dt_format (self.v_birthday, 'Y-M-D')" xhtml_onclick="javascript: datePopup(\'ab_birthday\');" xhtml_class="textbox" xhtml_size="10" />
                             <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="datePopup('ab_birthday'); return false;" class="noapp">
@@ -1739,17 +1774,17 @@
                         <th valign="top">
                           <label for="ab_interests">Topic of interest</label>
                         </th>
-                        <td>
+                        <td style="padding-left: 0;">
                           <table>
                             <tr>
-                              <td style="width: 40em; background-color: white;">
-                                <table id="a_tbl" width="100%" cellspacing="0">
-                                  <thead class="sortHeader">
+                              <td style="padding: 0; width: 600px; background-color: white;">
+                                <table id="a_tbl" class="ODS_grid">
+                                  <thead>
                                     <tr>
-                                      <th>URL</th>
-                                      <th>Label</th>
+                                      <th width="50%">URL</th>
+                                      <th width="50%">Label</th>
                                       <vm:if test="self.abAction <> 'view'">
-                                        <th width="50px">Action</th>
+                                        <th class="action">Action</th>
                                       </vm:if>
                                     </tr>
                                   </thead>
@@ -1788,7 +1823,7 @@
                         <th valign="top">
                           <label for="ab_photo">Photo</label>
                         </th>
-                        <td class="listing_col" nowrap="1">
+                        <td class="listing_col" nowrap="nowrap">
                           <vm:if test="self.abAction <> 'view'">
                             <v:text name="ab_photo" value="--self.v_photo" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                             <v:button name="ab_photo_preview" value="Preview" action="simple" xhtml_class="button">
@@ -1897,18 +1932,6 @@
                           </td>
                         </tr>
                       </vm:if>
-                    <vm:if test="self.abAction <> 'view'">
-                      <tr>
-                        <th>
-                          <v:label for="ab_grants" value="Share with" />
-                        </th>
-                        <td>
-                          <v:text name="ab_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=ab_grants:s1;',520)" class="button" />
-                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['ab_grants'].value = ''" class="button" />
-                        </td>
-                      </tr>
-                    </vm:if>
                     <tr>
                         <th>
                           <v:label for="ab_category" value="Category" />
@@ -1963,7 +1986,7 @@
                     </vm:if>
                   </table>
                 </div>
-                <div id="a_content_1" class="tabContent" style="display: none;">
+                  <div id="a_content_2" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -2044,7 +2067,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_2" class="tabContent adr" style="display: none;">
+                  <div id="a_content_3" class="tabContent" style="display: none;">
                     <span class="type" style="display: none;">HOME</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
@@ -2221,7 +2244,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_3" class="tabContent adr" style="display: none;">
+                  <div id="a_content_4" class="tabContent" style="display: none;">
                     <span class="type" style="display: none;">WORK</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
@@ -2446,62 +2469,108 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_4" class="tabContent" style="display: none;">
+                  <div id="a_content_5" class="tabContent" style="display: none;">
                     <table class="form-body" cellspacing="0">
                       <tr>
-                        <td style="width: 40em; background-color: white;">
-                          <table id="b_tbl" width="100%" cellspacing="0">
-                            <thead class="sortHeader">
+                        <td style="width: 60em; background-color: white;">
+                          <table id="b_tbl" class="ODS_grid">
+                            <thead>
                               <tr>
-                                <th>Relationship</th>
+                                <th width="50%">Relationship</th>
+                                <th width="50%">URI</th>
                                 <vm:if test="self.abAction <> 'view'">
-                                  <th width="50px">Action</th>
+                                  <th class="action">Action</th>
                                 </vm:if>
                               </tr>
                             </thead>
                       		  <![CDATA[
                       		    <script type="text/javascript">
                             <?vsp
-                                declare N integer;
+                                declare owner_iri integer;
 
-                              N := 0;
-                              for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = self.v_relationships) do
+                                owner_iri := AB.WA.account_sioc_url (self.domain_id);
+                                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.v_relationships) do
                               {
-                                N := N + 1;
+                                  if (DB.DBA.is_empty_or_null (fld2))
+                                    fld2 := owner_iri;
                               if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_"}});});', relationship));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_"}, fld_2: {value: "%s", className: "_validate_ _uri_"}});});', fld1, fld2));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("b", {fld_1: {value: "%s"}});});', relationship));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("b", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', fld1, fld2));
                                   }
                                 }
                             ?>
                       		    </script>
                       		  ]]>
-                            <tr id="b_tr_no" style="display: <?V case when N=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 1 else 2 end ?>"><b>No Relationships</b></td></tr>
+                            <tr id="b_tr_no"><td colspan="<?V case when self.abAction='view' then 2 else 3 end ?>"><b>No Relationships</b></td></tr>
                           </table>
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_'}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_'}, fld_2: {className: '_validate_ _uri_'}});" />
                           </td>
                         </vm:if>
                       </tr>
                     </table>
                   </div>
-                  <div id="a_content_5" class="tabContent" style="display: none;">
+                  <div id="a_content_6" class="tabContent" style="display: none;">
+                    <fieldset>
+                      <legend><b>ODS users</b></legend>
+                      <table class="form-body" cellspacing="0">
+                        <tr>
+                          <td style="width: 90%; background-color: white;">
+                            <table id="f_tbl" class="ODS_grid">
+                              <thead>
+                                <tr>
+                                  <th width="100%">Value</th>
+                                  <th class="action">Action</th>
+                                </tr>
+                              </thead>
+                        		  <![CDATA[
+                        		    <script type="text/javascript">
+                                <?vsp
+                                  declare N, L integer;
+                                  declare acl_values any;
+
+                                  L := 0;
+                                  acl_values := split_and_decode (self.v_grants, 0, '\0\0,');
+                                  for (N := 0; N < length (acl_values); N := N + 1)
+                                  {
+                                    L := 1;
+                                    if (self.abAction <> 'view')
+                                    {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1"}});});', acl_values[N], 'U'));
+                                    } else {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
+                                    }
+                                  }
+                                ?>
+                        		    </script>
+                        		  ]]>
+                              <tr id="f_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 1 else 2 end ?>"><b>No Shares</b></td></tr>
+                        		</table>
+                        	</td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <td valign="top" nowrap="nowrap">
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1'}});" />
+                            </td>
+                          </vm:if>
+                        </tr>
+                      </table>
+                    </fieldset>
+                    <fieldset>
+                      <legend><b>WebID users</b></legend>
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">
-                          <table id="s_tbl" width="100%" cellspacing="0">
-                            <thead class="sortHeader">
+                            <table id="s_tbl" class="ODS_grid">
+                              <thead>
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px">Access</th>
-                                <vm:if test="self.abAction <> 'view'">
-                                  <th width="50px">Action</th>
-                                </vm:if>
+                                <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                  <th class="action">Action</th>
                               </tr>
                             </thead>
                       		  <![CDATA[
@@ -2510,26 +2579,23 @@
                                 declare N, L integer;
                                 declare acl, aType, aAccess any;
 
-                                aType := vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression');
-                                aAccess := vector ('G', 'Grant', 'R', 'Revoke');
-
                               L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                               }
                               acl := deserialize (self.v_acl);
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
                                   if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                                   }
                                 }
                            		    ?>
@@ -2540,16 +2606,87 @@
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {}, fld_3: {mode: 31}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                           </td>
                         </vm:if>
+                      </tr>
+                    </table>
+                    </fieldset>
+                  </div>
+                  <div id="a_content_7" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+              	      <?vsp if (length (self.v_certificate)) { ?>
+                        <tr>
+                          <th width="25%">
+                            Subject
+                          </th>
+                          <td>
+                      		  <?vsp
+                		          http_value (get_certificate_info (2, cast(self.v_certificate as varchar), 0, ''));
+                		        ?>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th width="25%">
+                            Agent ID
+                          </th>
+                          <td>
+                      		  <?vsp
+              		            http_value (ODS.ODS_API.SSL_WEBID_GET (cast(self.v_certificate as varchar)));
+                		        ?>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th width="25%">
+                            Fingerprint
+                          </th>
+                          <td>
+                      		  <?vsp
+              		            http_value (get_certificate_info (6, cast(self.v_certificate as varchar), 0, ''));
+                		        ?>
+                          </td>
+                        </tr>
+             	        <?vsp } ?>
+                      <tr>
+                        <th width="25%" valign="top">
+                          <v:label for="ab_Certificate" value="Certificate" />
+                        </th>
+                        <td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:textarea name="ab_Certificate" null-value="" value="--self.v_certificate" xhtml_cols="70" xhtml_rows="20" />
+                          </vm:if>
+                          <?vsp self.viewField (self.v_certificate, null, null); ?>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="a_content_8" class="tabContent" style="display: none;">
+              		  <?vsp
+              		    declare vcard, qrcode any;
+
+        		          vcard := AB.WA.export_vcard (self.domain_id, vector (self.v_id));
+                      qrcode := ODS.ODS_API.qrcode (vcard, 120, 120, 3);
+        		        ?>
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                    		  <?vsp
+                            if (qrcode is not null)
+	                            http (sprintf ('<img id="qrcode" src="data:image/jpg;base64,%s"/>', qrcode));
+              		        ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center">
+                          <b>vCard Contact Data</b>
+                        </td>
                       </tr>
                     </table>
                   </div>
               </div>
             </div>
             <div class="new-form-footer">
-                <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
+                <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
                 <v:on-post>
                   <![CDATA[
                       declare N, tmp any;
@@ -2734,6 +2871,7 @@
                     self.v_bJob          := trim (self.ab_bJob.ufl_value);
                     self.v_bMail         := trim (self.ab_bMail.ufl_value);
                     self.v_bWeb          := trim (self.ab_bWeb.ufl_value);
+                      self.v_certificate   := trim (self.ab_certificate.ufl_value);
 
                       self.v_category_id   := AB.WA.category_update (self.domain_id, get_keyword ('ab_category_name', e.ve_params));
 
@@ -2799,14 +2937,22 @@
                     );
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_RELATIONSHIPS', self.v_relationships);
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_ACL', self.v_acl);
-                    self.v_grants := trim (self.ab_grants.ufl_value);
-                    self.shareNode (self.v_id, self.v_grants, 1);
+                      AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_CERTIFICATE', self.v_certificate);
+                      AB.WA.contact_share (self.account_id, self.v_id, self.v_grants, 1);
 
                     self.abAction := 'browse';
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
               </v:button>
+                <v:button action="simple" name="ab_edit" value="Edit" enabled="--case when (AB.WA.contact_rights (self.domain_id, self.v_id, self.account_rights) = 'W') and (self.abAction = 'view') then 1 else 0 end" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.abAction := 'edit';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
                 <v:button name="ab_cancel" action="simple" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
@@ -2833,58 +2979,105 @@
 	            <div class="new-form-body">
 	              <table cellspacing="0">
 	                <tr>
-                    <th rowspan="4" valign="middle" width="45%">
+                      <th valign="top" width="45%">
 	                    <v:label for="i_file" value="Source type"/>
 	                  </th>
 	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0">
+                        <label>
+                          <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(lte(self.i_source, 0), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_source_0" value="--'File'" /></b>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1">
+                          <b>File</b>
+                        </label>
+                        <br />
+                        <label>
+                          <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(equ(self.i_source, 1), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_source_1" value="--'WebDAV'" /></b>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2">
+                          <b>WebDAV</b>
+                        </label>
+                        <br />
+                        <label>
+                          <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(equ(self.i_source, 2), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-                        <b><vm:label for="i_source_2" value="--'URI'" /></b>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td nowrap="nowarap">
-                      <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3">
+                          <b>URI</b>
+                        </label>
+                        <br />
+                        <label>
+                          <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := either(equ(self.i_source, 3), 1, 0);
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      <xsl:call-template name="nbsp" />
-                      <b><vm:label for="i_source_3" value="--'LDAP Server'" /></b>
+                          <b>LDAP Server</b>
+                        </label>
+                        <br />
+                        <vm:if test="not isnull (ODS.ODS_API.get_oauth_tok ('LinkedIn API'))">
+                          <label>
+                            <v:radio-button name="i_source_4" xhtml_id="i_source_4" group-name="i_source" value="4" xhtml_onchange="javascript: destinationChange(this, {hide: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
+                              <v:before-render>
+                                <![CDATA[
+                                  control.ufl_selected := either (equ (self.i_source, 4), 1, 0);
+                                ]]>
+                              </v:before-render>
+                            </v:radio-button>
+                            <b>LinkedIn</b>
+                          </label>
+                        </vm:if>
+	                  </td>
+	                </tr>
+                    <tr id="imp_tr_0">
+                      <th valign="top" width="45%">
+	                    <v:label for="i_file" value="Content type"/>
+	                  </th>
+	                  <td nowrap="nowarap">
+                        <label>
+	                    <v:radio-button name="i_type_0" xhtml_id="i_type_0" group-name="i_type" value="0">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(lte(self.i_type, 0), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+                          <b>vCard</b>
+                        </label>
+                        <br />
+                        <label>
+	                    <v:radio-button name="i_type_1" xhtml_id="i_type_1" group-name="i_type" value="1">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(equ(self.i_type, 1), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+                          <b>FOAF</b>
+                        </label>
+                        <br />
+                        <label>
+	                    <v:radio-button name="i_type_2" xhtml_id="i_type_2" group-name="i_type" value="2">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(equ(self.i_type, 2), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+                          <b>CSV</b>
+                        </label>
 	                  </td>
 	                </tr>
 	              </table>
@@ -2894,109 +3087,31 @@
                   <v:button name="i1_next" action="simple" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    declare tmp any;
-
-                      self.abStep := '2';
-	                    tmp := self.i_source;
-                        if (self.i_source_0.ufl_selected)
+                        if (self.i_source_3.ufl_selected)
                         {
-	                      self.i_source := 0;
+                          self.i_source := 3;
+                          self.i_type   := 3;
                         }
-                        else if (self.i_source_1.ufl_selected)
+                        else if (self.i_source_4.ufl_selected)
                         {
-	                      self.i_source := 1;
+                          self.i_source := 4;
+                          self.i_type   := 4;
                         }
-                        else if (self.i_source_2.ufl_selected)
+                        else
                         {
-	                      self.i_source := 2;
-                        }
-                        else if (self.i_source_3.ufl_selected)
-                        {
-                        self.i_source := 3;
-	                      self.i_type := 3;
-                        self.abStep := '3';
-	                    }
+                          if (self.i_source_0.ufl_selected)
+                          {
+                            self.i_source := 0;
+                          }
+                          else if (self.i_source_1.ufl_selected)
+                          {
+                            self.i_source := 1;
+                          }
+                          else if (self.i_source_2.ufl_selected)
+                          {
+                            self.i_source := 2;
+                          }
 
-                      AB.WA.push (self.abSteps, '1');
-                      self.vc_data_bind(e);
-	                  ]]>
-	                </v:on-post>
-	              </v:button>
-                <v:button action="simple" name="i1_cancel" value="Cancel" xhtml_class="form-button">
-	                <v:on-post>
-	                  <![CDATA[
-	                    self.abAction := 'browse';
-	                    self.vc_data_bind(e);
-	                  ]]>
-	                </v:on-post>
-	              </v:button>
-	            </div>
-	          </v:template>
-
-              <v:template  name="t9" type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
-	            <div class="new-form-header">
-	              <v:label format="%s" value="Import: Select content type"/>
-	            </div>
-
-	            <div class="new-form-body">
-	              <table cellspacing="0">
-	                <tr>
-	                  <th rowspan="3" valign="middle" width="45%">
-	                    <v:label for="i_file" value="Content type"/>
-	                  </th>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_type_0" xhtml_id="i_type_0" group-name="i_type" value="0">
-	                      <v:before-render>
-	                        <![CDATA[
-	                          control.ufl_selected := either(lte(self.i_type, 0), 1, 0);
-	                        ]]>
-	                      </v:before-render>
-	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_type_0" value="--'vCard'" /></b>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_type_1" xhtml_id="i_type_1" group-name="i_type" value="1">
-	                      <v:before-render>
-	                        <![CDATA[
-	                          control.ufl_selected := either(equ(self.i_type, 1), 1, 0);
-	                        ]]>
-	                      </v:before-render>
-	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_type_1" value="--'FOAF'" /></b>
-	                  </td>
-	                </tr>
-	                <tr>
-	                  <td nowrap="nowarap">
-	                    <v:radio-button name="i_type_2" xhtml_id="i_type_2" group-name="i_type" value="2">
-	                      <v:before-render>
-	                        <![CDATA[
-	                          control.ufl_selected := either(equ(self.i_type, 2), 1, 0);
-	                        ]]>
-	                      </v:before-render>
-	                    </v:radio-button>
-	                    <xsl:call-template name="nbsp"/>
-	                    <b><vm:label for="i_type_2" value="--'CSV'" /></b>
-	                  </td>
-	                </tr>
-	              </table>
-	            </div>
-
-	            <div class="new-form-footer">
-                  <v:button action="simple" name="i2_back" value="Back" xhtml_class="form-button">
-	                <v:on-post>
-	                  <![CDATA[
-                      self.abStep := AB.WA.pop (self.abSteps);
-                      self.vc_data_bind(e);
-	                  ]]>
-	                </v:on-post>
-	              </v:button>
-                  <v:button action="simple" name="i2_next" value="Next" xhtml_class="form-button">
-	                <v:on-post>
-	                  <![CDATA[
                         if (self.i_type_0.ufl_selected)
                         {
 	                      self.i_type := 0;
@@ -3009,18 +3124,18 @@
                         {
 	                      self.i_type := 2;
 	                    }
+                        }
 
-                      self.abStep := '3';
-                      AB.WA.push (self.abSteps, '2');
+                        self.abStep := '2';
+                        AB.WA.push (self.abSteps, '1');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i1_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
-                      self.resetImport ();
 	                    self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -3028,7 +3143,53 @@
 	            </div>
 	          </v:template>
 
-              <v:template name="t10" type="simple" enabled="-- case when (self.abStep = '3') then 1 else 0 end">
+              <v:template name="t10" type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
+                <v:after-data-bind>
+                  <![CDATA[
+                    declare params, names any;
+                    declare token, result, url, my_sid, oauth_token, return_url any;
+
+                    params := self.vc_page.vc_event.ve_params;
+                    if (get_keyword ('oauth_verifier', params) is not null)
+                    {
+                      token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+
+                      my_sid := get_keyword ('my_sid', params);
+                      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/accessToken', sprintf ('oauth_token=%U&oauth_verifier=%U', get_keyword ('oauth_token', params), get_keyword ('oauth_verifier', params)), token, my_sid, 1);
+                      result := http_get (url);
+                      my_sid := OAUTH..parse_response (my_sid, token, result);
+
+                      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~/connections', '', token, my_sid, 1);
+                      result := http_get (url);
+                      OAUTH..session_terminate (my_sid);
+
+                      self.abStep := '5';
+                      self.i_source := 4;
+                      self.i_type   := 4;
+                      self.i_data := result;
+                      self.i_number := AB.WA.import_count (self.i_type, self.i_data);
+                      AB.WA.push (self.abSteps, '1');
+
+                      self.vc_data_bind(e);
+                    }
+                    else if (self.i_source = 4)
+                    {
+                      token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+
+                      my_sid := md5 (datestring (now ()));
+                      return_url := sprintf ('%shome.vspx?my_sid=%U&sid=%s&realm=%s&action=%s&step=%s', AB.WA.ab_url (self.domain_id), my_sid, self.sid, self.realm, self.abAction, self.abStep);
+                      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+                      result := http_get (url);
+                      my_sid := OAUTH..parse_response (my_sid, token, result);
+
+                      OAUTH..set_session_data (my_sid, vector ());
+                      oauth_token := OAUTH..get_auth_token (my_sid);
+                      url := sprintf ('https://www.linkedin.com/uas/oauth/authenticate?oauth_token=%U', oauth_token);
+                      self.vc_redirect (url);
+                    }
+                  ]]>
+                </v:after-data-bind>
+
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Source parameters"/>
 	            </div>
@@ -3052,13 +3213,12 @@
 		                  </th>
 		                  <td>
                         <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="40" />
-                          <v:button action="browse" name="browse" value="Browse...">
-                       	  <v:after-data-bind>
+                          <input type="button" value="Browse..." onclick="davBrowse ('f_dav');" />
                        		  <![CDATA[
-                              control.vc_add_attribute ('onclick', 'javascript: davBrowse (''f_dav'');');
+                    		    <script type="text/javascript">
+                              OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                    		    </script>
                   			    ]]>
-                  			  </v:after-data-bind>
-                  		  </v:button>
 		                  </td>
 		                </tr>
                   </vm:if>
@@ -3120,6 +3280,7 @@
                       </vm:if>
                   </vm:if>
                   <vm:if test="self.i_source = 3">
+                      <vm:if test="exists (select 1 from LDAP..LDAP_SERVERS where LS_USER_ID = self.account_id)">
                     <tr>
                       <th width="30%">
                         LDAP server
@@ -3163,6 +3324,7 @@
               	        </v:data-list>
               	      </td>
               	    </tr>
+                      </vm:if>
                     <tr>
 		                  <th width="30%">
                         Host URL
@@ -3246,7 +3408,7 @@
 	            </div>
 
 	            <div class="new-form-footer">
-                <v:button action="simple" name="i3_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i2_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3254,7 +3416,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                  <v:button action="simple" name="i3_next" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i2_next" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                         declare tmp, host varchar;
@@ -3276,12 +3438,7 @@
                         {
                           self.i_data := trim(get_keyword ('f_file', params, ''));
                           if (is_empty_or_null (self.i_data))
-                          {
-	                        self.vc_error_message := 'Please select file from your local file system!';
-	                        self.vc_is_valid := 0;
-	                        return;
-	                      }
-
+                            signal ('TEST', 'Please select file from your local file system!');
                         }
                         else if (self.i_source = 1)
                         {
@@ -3289,22 +3446,14 @@
                           tmp := http_physical_path_resolve (replace (self.f_dav.ufl_value, ' ', '%20'));
                           self.i_data := AB.WA.dav_content (AB.WA.host_url () || tmp, AB.WA.account_name (self.account_id));
                           if (isnull(self.i_data))
-                          {
-	                        self.vc_error_message := 'Bad import source!';
-	                        self.vc_is_valid := 0;
-	                        return;
-	                      }
-
+                            signal ('TEST', 'Bad import source!');
                         }
                         else if (self.i_source = 2)
                         {
                         self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                           if (is_empty_or_null (self.f_uri.ufl_value))
-                          {
-                          self.vc_error_message := 'Please select correct URL address!';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
+                            signal ('TEST', 'Please select correct URL address!');
+
                           if (self.i_type = 1)
                           {
                             AB.WA.test (self.i_limit.ufl_value, vector('name', 'Grab Limit', 'class', 'integer', 'minValue', 1, 'maxValue', 100));
@@ -3330,20 +3479,21 @@
 
                       	declare exit handler for sqlstate '*'
                       	{
-                      	  self.vc_error_message := 'Unknown LDAP server. Please, check parameters!';
-                      	  self.vc_is_valid := 0;
-                      	  return;
+                            signal ('TEST', 'Unknown LDAP server. Please, check parameters!');
                       	};
                         connection_set ('LDAP_VERSION', 2);
                       	host := 'ldap://' || self.i_lHost || ':' || self.i_lPort;
                         self.i_data := ldap_search (host, 0, self.i_lBase_dn, self.i_lSearch, self.i_lBind_dn, self.i_lPassword);
 	                    }
 
+                        self.i_number := 0;
                         if (self.i_type = 1)
                         {
                           AB.WA.ab_graph_delete (self.i_iri);
                           self.i_iri := AB.WA.ab_graph_create ();
-                          self.i_Items := AB.WA.import_foaf_content (self.i_data, case when (self.i_source = 2) then 1 else 0 end, self.i_iri, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
+                          self.i_Items := AB.WA.import_foaf_content (self.i_data, vector ('contentType', case when (self.i_source = 2) then 1 else 0 end, 'contentIRI', self.i_iri, 'contentDepth', self.i_contentDepth, 'contentLimit', self.i_contentLimit, 'contentFollow', self.i_contentFollow));
+
+                          self.i_number := length (self.i_Items);
                       }
                         else if (self.i_type = 2)
                         {
@@ -3352,23 +3502,39 @@
                         self.i_data := replace (self.i_data, '\015', '\012');
                         self.i_data := replace (self.i_data, '\012 ', '');
                         self.i_data := split_and_decode (self.i_data, 0, '\0\0\n');
-                      }
 
-                      self.abStep := '5';
+                          self.i_number := AB.WA.import_count (self.i_type, self.i_data);
+                      }
+                        else
+                        {
+                          self.i_number := AB.WA.import_count (self.i_type, self.i_data);
+                        }
+                        if (self.i_number = 0)
+                          signal ('TEST', 'No persons founded!<>');
+
+                        -- next step
                       if (self.i_type = 0)
-                        self.abStep := '6';
-                      if (self.i_type = 1)
+                        {
+                          self.abStep := '5';
+                        }
+                        else if (self.i_type = 1)
+                        {
+                          self.abStep := '3';
+                        }
+                        else
+                        {
                         self.abStep := '4';
-                      AB.WA.push (self.abSteps, '3');
+                        }
+
+                        AB.WA.push (self.abSteps, '2');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                <v:button action="simple" name="i3_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (0);
 	                    self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -3376,64 +3542,64 @@
 	            </div>
 	          </v:template>
 
-              <v:template name="t11" type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
+              <v:template name="t11" type="simple" enabled="-- case when (self.abStep = '3') then 1 else 0 end">
 	            <div class="new-form-header">
-                <v:label format="%s" value="Import: Select persons" />
+                  Import: Select persons
               </div>
 
               <div class="new-form-mapping">
-                <?vsp
-                  declare N integer;
-
-                  if (length (self.i_Items) = 0)
-                  {
-                ?>
-          		  No Persons
-                <?vsp
-                  } else {
-                ?>
-                  <table id="foaf" class="AB_grid" style="border-width: 0" cellspacing="0">
-                  <thead class="sortHeader">
+                  <table class="ODS_grid" style="border: 0px">
+                    <thead>
                     <tr>
-                      <th class="checkbox" width="1%">
+                        <th class="checkbox">
                         <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                       </th>
                       <th>Name</th>
                       <th>Mail</th>
                       <th>Comment</th>
-                        <th width="1%">Action</th>
+                        <th class="checkbox last-child" style="border-width: 0px 0px 1px 0px;">
+                          <input type="checkbox" name="cb_all_ping" value="Select All" onclick="selectAllCheckboxes(this, 'cb_ping')" />
+                        </th>
+                        <th class="action">Ping</th>
+                        <th class="action">Action</th>
                     </tr>
                   </thead>
                 <?vsp
-                    for (N := 0; N < length (self.i_Items); N := N + 1)
+                      foreach (any item in self.i_Items) do
                     {
                 ?>
-              	  <tr class="<?V case when (self.i_Items[N][0] = 1) then 'tr_select' else '' end ?>">
-              		  <td width="1%">
+                    <tr class="<?V case when (item[0] = 1) then 'tr_select' else '' end ?>">
+                      <td class="checkbox">
                       <?vsp
-                        if (self.i_Items[N][0] = 0)
-                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', self.i_Items[N][1]));
+                          if (item[0] = 0)
+                            http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', item[1]));
                       ?>
               		  </td>
               		  <td>
-                        <?V AB.WA.utf2wide (self.i_Items[N][2]) ?>
+                        <?V AB.WA.utf2wide (item[2]) ?>
               		  </td>
               		  <td>
-                      <?V self.i_Items[N][3] ?>
+                        <?V item[3] ?>
               		  </td>
               		  <td>
                       <?vsp
-                          if (self.i_Items[N][0] = 1)
+                          if (item[0] = 1)
                           {
                           http ('FOAF Owner');
-                          http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', self.i_Items[N][1]));
+                            http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', item[1]));
                         }
                       ?>
               		  </td>
+                      <td width="1%" colspan="2">
+                        <?vsp
+                          if (item[1] not like 'nodeID://%')
+                            http (sprintf ('<input type="checkbox" name="cb_ping" value="%s" onclick="selectCheck(this, \'cb_ping\')" />', item[1]));
+                        ?>
+                      </td>
               		  <td>
                       <?vsp
-                        if (not is_empty_or_null (self.i_Items[N][3]))
-                            http (self.windowOpen (sprintf ('invite.vspx?name=%U&mail=%U', self.i_Items[N][2], self.i_Items[N][3]), 'invite', self.i_Items[N][2]));
+                          if (not is_empty_or_null (item[3]))
+                            http (self.windowOpen (sprintf ('invite.vspx?name=%U&mail=%U', item[2], item[3]), 'invite', item[2]));
                       ?>
               		  </td>
                   </tr>
@@ -3441,18 +3607,10 @@
                     }
                 ?>
                 </table>
-                <?vsp
-                  }
-                ?>
               </div>
-              <script>
-                <![CDATA[
-                  coloriseTable('foaf');
-                ]]>
-              </script>
 
               <div class="new-form-footer">
-                <v:button action="simple" name="i4_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i3_back" value="Back" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3460,7 +3618,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                  <v:button action="simple" name="i4_next" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i3_next" value="Next" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -3468,33 +3626,35 @@
 
                       params := e.ve_params;
                         self.i_contentItems := vector ();
+                        self.i_contentPings := vector ();
                       for (N := 0; N < length (params); N := N + 4)
                       {
                         if (params[N] = 'cb_item')
                             self.i_contentItems := vector_concat (self.i_contentItems, vector (vector (params[N+1])));
+                          else if (params[N] = 'cb_ping')
+                            self.i_contentPings := vector_concat (self.i_contentPings, vector (params[N+1]));
                       }
 
-                        if (length (self.i_contentItems))
-                        {
-                        self.abStep := '6';
-                        if ((self.i_type = 2) or (self.i_type = 3))
+                        self.i_number := length (self.i_contentItems);
+                        if (self.i_number)
                         {
                           self.abStep := '5';
-                        }
-                        AB.WA.push (self.abSteps, '4');
+                          if ((self.i_type = 2) or (self.i_type = 3))
+                            self.abStep := '4';
+
+                          AB.WA.push (self.abSteps, '3');
                       } else {
-                        self.abAction := 'browse';
-                        self.resetImport ();
+                          self.resetImport (0);
+                          self.abAction := 'import';
                       }
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i3_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (0);
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
@@ -3502,14 +3662,14 @@
               </div>
             </v:template>
 
-              <v:template name="t12" type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
+              <v:template name="t12" type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
               <div class="new-form-header">
 	              <v:label format="%s" value="Import: Mapping"/>
 	            </div>
 	            <div class="new-form-mapping">
               <vm:if test="self.i_type = 2">
-                    <table id="ldap" class="AB_grid" style="border-width: 0" cellspacing="0">
-                  <thead class="sortHeader">
+                    <table class="ODS_grid" style="border: 0px">
+                      <thead>
                     <tr>
                       <th>CSV Column</th>
                       <th>Contact Property</th>
@@ -3519,9 +3679,9 @@
                   </tr>
                   <?vsp
                     declare N, M integer;
-                    declare data any;
+                        declare data, options any;
 
-                      self.i_Options := LDAP..contact_fields ();
+                        options := LDAP..contact_fields ();
                       for (N := 0; N < 1; N := N + 2)
                       {
                       data := split_and_decode (self.i_data [N], 0, '\0\0,');
@@ -3532,9 +3692,9 @@
               	    <td>
               		    <?V trim (data[M], '"') ?>
               		  </td>
-              		  <td nowrap="1">
+                        <td nowrap="nowrap">
               		    <?vsp
-              		      self.render_select (cast (M as varchar));
+                            self.render_select (options, cast (M as varchar));
               		    ?>
               		  </td>
                   </tr>
@@ -3545,8 +3705,8 @@
                 </table>
               </vm:if>
               <vm:if test="self.i_type = 3">
-                    <table id="ldap" class="AB_grid" style="border-width: 0" cellspacing="0">
-                  <thead class="sortHeader">
+                    <table id="ldap" class="ODS_grid" style="border: 0px">
+                      <thead>
                     <tr>
                       <th>LDAP Property</th>
                       <th>Contact Property</th>
@@ -3557,9 +3717,9 @@
                   </tr>
                   <?vsp
                       declare L, N, M integer;
-                    declare data any;
+                        declare data, options any;
 
-                      self.i_Options := LDAP..contact_fields ();
+                        options := LDAP..contact_fields ();
                       for (N := 0; N < length (self.i_data); N := N + 2)
                       {
                         if (self.i_data [N] = 'entry')
@@ -3574,9 +3734,9 @@
               	    <td>
               		    <?V data[M] ?>
               		  </td>
-              		  <td nowrap="1">
+                        <td nowrap="nowrap">
               		    <?vsp
-              		      self.render_select (data[M]);
+                            self.render_select (options, data[M]);
               		    ?>
               		  </td>
               		  <td>
@@ -3594,9 +3754,9 @@
                       <td>
                         <?V self.i_lMaps[M] ?>
                       </td>
-                      <td nowrap="1">
+                        <td nowrap="nowrap">
                         <?vsp
-                          self.render_select (self.i_lMaps[M]);
+                            self.render_select (options, self.i_lMaps[M]);
                         ?>
                       </td>
                       <td>
@@ -3699,7 +3859,7 @@
                 </v:button>
               </div>
 	            <div class="new-form-footer">
-                  <v:button action="simple" name="i5_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i4_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3707,7 +3867,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                  <v:button action="simple" name="i5_next" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i4_next" value="Next" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -3716,20 +3876,20 @@
                       params := e.ve_params;
                       self.i_maps := vector ();
                       for (N := 0; N < length (params); N := N + 2)
+                        {
                         if (params[N] like 'sel_%' and params[N+1] <> 'skip')
                           self.i_maps := vector_concat (self.i_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
-
-                      self.abStep := '6';
-                      AB.WA.push (self.abSteps, '5');
+                        }
+                        self.abStep := '5';
+                        AB.WA.push (self.abSteps, '4');
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (0);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -3742,7 +3902,7 @@
               </script>
 	          </v:template>
 
-              <v:template name="t14" type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
+              <v:template name="t14" type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Options"/>
 	            </div>
@@ -3760,32 +3920,124 @@
                     <?vsp self.myTags ('i_tags'); ?>
                   <tr>
                     <th valign="top">
-                      Validation Fields
+                        Sharing
+                      </th>
+                      <td>
+                        <fieldset>
+                          <legend><b>ODS users</b></legend>
+                          <table class="form-body" cellspacing="0">
+                            <tr>
+                              <td style="width: 90%; background-color: white;">
+                                <table id="f_tbl" class="ODS_grid">
+                                  <thead>
+                                    <tr>
+                                      <th width="100%">Value</th>
+                                      <th class="action">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tr id="f_tr_no"><td colspan="2"><b>No Shares</b></td></tr>
+                            		</table>
+                            	</td>
+                              <td valign="top" nowrap="nowrap">
+                                <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', tdCssText: 'white-space: nowrap;'}});" />
+                              </td>
+                            </tr>
+                          </table>
+                        </fieldset>
+                        <fieldset>
+                          <legend><b>WebID users</b></legend>
+                          <table class="form-body" cellspacing="0">
+                            <tr>
+                              <td style="width: 90%; background-color: white;">
+                                <table id="s_tbl" class="ODS_grid">
+                                  <thead>
+                                    <tr>
+                                      <th width="15%">Type</th>
+                                      <th>Value</th>
+                                      <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                      <th width="50px">Action</th>
+                                    </tr>
+                                  </thead>
+                            		  <![CDATA[
+                            		    <script type="text/javascript">
+                                    <?vsp
+                                      declare N, L integer;
+                                      declare acl, aType, aAccess any;
+
+                                      L := 0;
+                                      acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                                      acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                                      for (N := 0; N < length (acl); N := N + 1)
+                                      {
+                                        L := L + 1;
+                                        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                                      }
+                                    ?>
+                            		    </script>
+                            		  ]]>
+                                  <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="4"><b>No Shares</b></td></tr>
+                            		</table>
+                            	</td>
+                              <td valign="top" nowrap="nowrap">
+                                <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                              </td>
+                            </tr>
+                          </table>
+                        </fieldset>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th valign="top">
+                        Duplicate entries mode
+                      </th>
+                      <td>
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_0" value="merge" %s />', case when (self.i_validationMode = 'merge') then 'checked="checked"' else '' end)); ?> Merge
+                        </label>
+                        <br />
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_1" value="override" %s />', case when (self.i_validationMode = 'override') then 'checked="checked"' else '' end)); ?>  Override
+                        </label>
+                        <br />
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_2" value="skip" %s />', case when (self.i_validationMode = 'skip') then 'checked="checked"' else '' end)); ?>  Skip
+                        </label>
+                        <br />
+                        <label>
+                          <?vsp http(sprintf('<input type="radio" name="i_validationMode" id="i_validationMode_3" value="ask" %s />', case when (self.i_validationMode = 'ask') then 'checked="checked"' else '' end)); ?> Ask
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th valign="top">
+                        Specify fields to identify entries
                     </th>
                     <td>
-                        <div style="height: 400px; overflow: auto;">
+                        <div style="height: 250px; overflow: auto;">
                         <table cellspacing="0" style="background-color: #fff;">
                           <?vsp
-                            declare N integer;
+                              declare N, M integer;
                             declare data, fields any;
 
                             data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.account_id), vector());
                             fields := LDAP..contact_fields ();
-                              for (N := 0; N < length (fields); N := N + 2)
+                              M := length (fields) / 2;
+                              for (N := 0; N < M; N := N + 2)
                               {
                       	  ?>
                       	  <tr>
                       	    <td width="1%">
-                      	      <?vsp
-                                declare S varchar;
-
-                                  S := case when (get_keyword(fields[N], data, '') <> '') then 'checked="checked"' else '' end;
-                                http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, fields[N]));
-                              ?>
+        	                      <?vsp http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', case when (get_keyword (fields[N], data, '') <> '') then 'checked="checked"' else '' end, fields[N])); ?>
                       		  </td>
-                      		  <td >
+                              <td width="50%">
                       		    <?V fields[N+1] ?>
                       		  </td>
+                              <td width="1%">
+        	                      <?vsp http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', case when (get_keyword (fields[M+N], data, '') <> '') then 'checked="checked"' else '' end, fields[M+N])); ?>
+                              </td>
+                              <td width="50%">
+                                <?V fields[M+N+1] ?>
+                              </td>
                           </tr>
                       	  <?vsp
                             }
@@ -3798,7 +4050,7 @@
 	            </div>
 
 	            <div class="new-form-footer">
-                  <v:button action="simple" name="i6_back" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i5_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3806,10 +4058,10 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                  <v:button action="simple" name="i6_import" value="Import" xhtml_class="form-button">
+                  <v:button action="simple" name="i5_import" value="Import" xhtml_class="form-button">
 			            <v:on-post>
 			              <![CDATA[
-                      declare N integer;
+                        declare N, M integer;
                       declare tmp, params any;
 
                         declare exit handler for SQLSTATE '*'
@@ -3822,6 +4074,7 @@
                         }
                         resignal;
                       };
+                        params := e.ve_params;
 
                       -- test tags value
                       self.v_tags := trim (self.i_tags.ufl_value);
@@ -3830,53 +4083,140 @@
                       tmp := AB.WA.vector_unique (tmp);
                       self.v_tags := AB.WA.vector2tags (tmp);
 
-                      params := e.ve_params;
+                        self.i_validationMode := get_keyword ('i_validationMode', params, 'ask');
                       self.i_validation := vector ();
+                        self.v_grants := '';
+                        self.v_acl := '';
                         for (N := 0; N < length (params); N := N + 4)
                         {
                         if (params[N] = 'cb_item')
+                          {
                           self.i_validation := vector_concat (self.i_validation, vector (params[N+1]));
                       }
+                          else if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+                          {
+                            tmp := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+                            for (M := 0; M < length (tmp); M := M + 1)
+                            {
+                              if (not isnull (AB.WA.account_id (trim (tmp[M]))))
+                                self.v_grants := self.v_grants || ',' || tmp[M];
+                            }
+                          }
+                        }
+                        self.v_grants := trim (self.v_grants, ',');
+                        tmp  := DB.DBA.wa_acl_params (params);
+                        if (length (tmp))
+                          self.v_acl := serialize (tmp);
 
-			                -- vCard
+                        self.abStep := '6';
+                        self.vc_data_bind(e);
+                       ]]>
+                     </v:on-post>
+                  </v:button>
+                  <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.resetImport (0);
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+              </v:template>
+
+              <v:template name="t13" type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
+                <?vsp
+                  declare options any;
+
+                  options := vector ();
                       if (self.i_type = 0)
+                  {
+                    -- vCard
                           if (self.i_source = 2)
                           {
-                            AB.WA.import_vcard2 (self.domain_id, self.i_data, vector ('tags', self.v_tags), self.i_validation, 2);
+                      options := vector ('tags', self.v_tags, 'mode', 2);
                           } else {
-                          AB.WA.import_vcard (self.domain_id, self.i_data, vector ('tags', self.v_tags), self.i_validation);
+                      options := vector ('tags', self.v_tags);
                           }
-
-
+                  }
+                  else if (self.i_type = 1)
+                  {
 			                -- FOAF
-                      if (self.i_type = 1)
-                          AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, 2, self.i_iri, self.i_contentItems, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
-
+                    options := vector ('tags', self.v_tags, 'contentItems', self.i_contentItems, 'contentPings', self.i_contentPings, 'contentType', -1, 'contentIRI', self.i_iri, 'contentDepth', self.i_contentDepth, 'contentLimit', self.i_contentLimit, 'contentFollow', self.i_contentFollow);
+                  }
+                  else if (self.i_type = 2)
+                  {
 			                -- CSV
-                      if (self.i_type = 2)
-                        AB.WA.import_csv (self.domain_id, self.i_data, self.v_tags, self.i_maps, self.i_validation);
-
+                    options := vector ('tags', self.v_tags, 'maps', self.i_maps);
+                  }
+                  else if (self.i_type = 3)
+                  {
 			                -- LDAP
-                      if (self.i_type = 3)
-                        AB.WA.import_ldap (self.domain_id, self.i_data, self.v_tags, self.i_maps, self.i_validation);
+                    options := vector ('tags', self.v_tags, 'maps', self.i_maps);
+                  }
+                  else if (self.i_type = 4)
+                  {
+                    -- LinkedIn
+                    options := vector ('tags', self.v_tags);
+                  }
 
-	                    self.abAction := 'browse';
-                      self.resetImport ();
-                      self.vc_data_bind(e);
-			               ]]>
-			             </v:on-post>
-			          </v:button>
-                <v:button action="simple" name="i6_cancel" value="Cancel" xhtml_class="form-button">
+                  if (self.v_grants <> '')
+                    options := vector_concat (options, vector ('grants', self.v_grants));
+
+                  if (self.v_acl <> '')
+                    options := vector_concat (options, vector ('acls', self.v_acl));
+
+                  options := vector_concat (options, vector ('validationMode', self.i_validationMode));
+
+                  http (sprintf ('<input type="hidden" name="i_type" id="i_type" value="%V" />', encode_base64 (serialize (self.i_type))));
+                  http (sprintf ('<input type="hidden" name="i_data" id="i_data" value="%V" />', encode_base64 (serialize (self.i_data))));
+                  http (sprintf ('<input type="hidden" name="i_options" id="i_options" value="%V" />', encode_base64 (serialize (options))));
+                  http (sprintf ('<input type="hidden" name="i_validation" id="i_validation" value="%V" />', encode_base64 (serialize (self.i_validation))));
+                ?>
+                <div class="new-form-header">
+                  Import contacts
+                </div>
+                <div class="new-form-body">
+                  <span id="progressMax" style="display: none;"><?V self.i_number ?></span>
+                  <table id="progressTable" cellspacing="0">
+                    <tr>
+                      <td>
+                        <div id="progressText"></div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div id="progressBar"></div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="form-footer">
+                  <v:button action="simple" name="btn_Background" xhtml_id="btn_Background" value="Background" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    self.abAction := 'browse';
-                      self.resetImport ();
+                        self.resetImport (1);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
+                  <input type="button" id="btn_Stop" value="Stop" onclick="javascript: stopState(); return false;" xhtml_class="form-button" />
 	            </div>
+                <div id="askDiv" style="display: none;">
+                  <br />
+                  <span style="margin-left: 50px;">Select action for duplicated contact "<span id="askDiv_data">XXL</span>":</span>
+                  <br /><br />
+                  <label><input type="radio" name="i_ask" id="i_ask_0" value="merge" checked="checked" style="margin-left: 110px;" />Merge</label><br />
+                  <label><input type="radio" name="i_ask" id="i_ask_1" value="override" style="margin-left: 110px;" />Override</label><br />
+                  <label><input type="radio" name="i_ask" id="i_ask_2" value="skip" style="margin-left: 110px;" />Skip</label><br />
+                </div>
+                <script type="text/javascript">
+                  <![CDATA[
+                    OAT.MSG.attach(OAT, "PAGE_LOADED", initState);
+                  ]]>
+                </script>
 	          </v:template>
+
           </v:template>
 
             <v:template name="t17" type="simple" enabled="--case when (self.abAction = 'export') then 1 else 0 end">
@@ -3891,17 +4231,26 @@
                     <v:label for="e_format" value="Content type" />
                   </th>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_0" value="vCard" checked="checked" onclick="changeExportName('e_file', ['.foaf', '.csv'], '.vcf');" /><xsl:call-template name="nbsp" /><label for="e_format_0">vCard</label>
+                      <label>
+                        <input type="radio" name="e_format" id="e_format_0" value="vCard" checked="checked" onclick="changeExportName('e_file', ['.foaf', '.csv'], '.vcf');" />
+                        vCard
+                      </label>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', ['.vcf', '.csv'], '.foaf');" /><xsl:call-template name="nbsp" /><label for="e_format_1">FOAF</label>
+                      <label>
+                        <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', ['.vcf', '.csv'], '.foaf');" />
+                        FOAF
+                      </label>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_2" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" /><xsl:call-template name="nbsp" /><label for="e_format_2">CSV</label>
+                      <label>
+                        <input type="radio" name="e_format" id="e_format_2" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" />
+                        CSV
+                      </label>
                   </td>
                 </tr>
                 <tr>
@@ -3968,7 +4317,7 @@
           <tr>
             <td id="LC">
               <div class="lc lc_close">
-                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2">Settings</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', '');" title="Settings" class="gems gems2">Settings</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'categoryBrowse');" title="Categories" class="gems gems2">Categories</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems gems2">Publications</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems gems2">Subscriptions</span>
@@ -4059,28 +4408,14 @@
                       <v:label for="f_chars" value="Contact name display"/>
                     </th>
                     <td>
-                      <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
-                      ?>
+                            <?vsp http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', case when (cast(get_keyword('chars', self.settings, '0') as integer) = 0) then 'checked="checked"' else '' end)); ?>
                       <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
                     </td>
                   </tr>
                   <tr>
                     <th />
                     <td>
-                      <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
-                      ?>
+                            <?vsp http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', case when (cast(get_keyword('chars', self.settings, '0') as integer) = 0) then '' else 'checked="checked"' end)); ?>
                       <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
                       <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
                       <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
@@ -4260,21 +4595,21 @@
                   <v:param name="p0" value="--self.domain_id" />
 
                   <v:template name="ds_categories_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                    <table id="categoriesTable" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                      <thead class="sortHeader">
+                    <table id="categoriesTable" class="ODS_grid">
+                      <thead>
                         <tr>
-                          <th class="checkbox" width="1%">
+                          <th class="checkbox">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                           </th>
-                          <th style="text-align: left;">Name</th>
-                          <th style="text-align: left;" width="5%">Action</th>
+                          <th>Name</th>
+                          <th class="action">Action</th>
                         </tr>
                       </thead>
                     </table>
                   </v:template>
                   <v:template name="ds_categories_repeat" type="repeat">
 
-                    <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <v:template name="ds_categories_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                       <table>
                         <tr align="center">
                           <td colspan="3">No categories</td>
@@ -4285,13 +4620,13 @@
                     <v:template name="ds_categories_browse" type="browse" name-to-remove="table" set-to-remove="both">
                       <table>
                         <tr>
-                          <td align="center" valign="top">
+                          <td class="checkbox">
                             <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('C_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                           </td>
                           <td nowrap="nowrap">
                             <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('C_NAME')" />
                           </td>
-                          <td nowrap="nowrap">
+                          <td class="action">
                             <v:button value="Edit" action="simple" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
@@ -4387,12 +4722,14 @@
                         if (self.abSubAction = 'categoryCreate')
                         {
                           self.v_id := sequence_next ('AB.WA.category_id');
-                          insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME)
-                            values (self.v_id, self.domain_id, self.v_name);
+                          insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME, C_CREATED, C_UPDATED)
+                            values (self.v_id, self.domain_id, self.v_name, now (), now ());
                         } else {
                           update AB.WA.CATEGORIES
-                             set C_NAME = self.v_name
-                           where C_ID = self.v_id;
+                             set C_NAME = self.v_name,
+                                 C_UPDATED = now ()
+                           where C_ID = self.v_id
+                             and C_DOMAIN_ID = self.domain_id;
                         }
 
                         self.abSubAction := 'categoryBrowse';
@@ -4470,24 +4807,42 @@
 
                 <v:data-set name="ds_exchanges" data-source="self.dsrc_exchanges" scrollable="1">
                   <v:template name="ds_exchanges_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                    <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                      <thead class="sortHeader">
+                    <table id="preferences" class="ODS_grid">
+                      <thead>
                         <tr>
-                          <th class="checkbox" width="1%">
+                          <th class="checkbox">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                           </th>
-                          <th style="text-align: left;">Name</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
-                          <th style="text-align: left;" width="5%" nowrap="nowrap">Action</th>
+                          <th>Name</th>
+                          <th width="5%" nowrap="nowrap">Executed On</th>
+                          <th width="5%" nowrap="nowrap">Status</th>
+                          <th class="action">Action</th>
                         </tr>
                       </thead>
                     </table>
                   </v:template>
                   <v:template name="ds_exchanges_repeat" type="repeat">
 
-                    <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <v:template name="ds_exchanges_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                       <table>
+                        <tr align="center">
+                          <td colspan="5">
+                            <?vsp
+                              if (self.abSubAction = 'publishBrowse')
+                              {
+                                http ('No publications');
+                              }
+                              else if (self.abSubAction = 'subscribeBrowse')
+                              {
+                                http ('No subscriptions');
+                              }
+                              else
+                              {
+                                http ('No SyncMLs');
+                              }
+                            ?>
+                          </td>
+                        </tr>
                       </table>
                     </v:template>
 
@@ -4730,15 +5085,12 @@
                       <td>
                         <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
                         <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
-                        <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
-                          <v:after-data-bind>
+                          <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name');" style="display: <?V case when (get_keyword ('type', self.ve_options, 1) <> 1) then 'none' else '' end ?>" />
                             <![CDATA[
-                              control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
-                                if (get_keyword ('type', self.ve_options, 1) <> 1)
-                                  control.vc_add_attribute ('style', 'display: none');
+                    		    <script type="text/javascript">
+                              OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                    		    </script>
                             ]]>
-                          </v:after-data-bind>
-                        </v:button>
                         </vm:if>
                       </td>
                     </tr>
@@ -4747,7 +5099,7 @@
                         User
                       </th>
                       <td>
-                        <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" />
+                        <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
                       </td>
                     </tr>
                     <tr>
@@ -4755,7 +5107,7 @@
                         Password
                       </th>
                       <td>
-                        <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" />
+                        <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
                       </td>
                     </tr>
                     <tr>

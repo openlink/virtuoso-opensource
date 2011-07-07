@@ -1,4 +1,6 @@
 --
+--  users.sql
+--
 --  $Id$
 --
 --  Unified user model
@@ -186,6 +188,14 @@ nf:
 }
 ;
 
+create procedure DB.DBA.SECURITY_CL_EXEC_AND_LOG (in txt varchar, in args any)
+{
+  set_user_id ('dba');
+  cl_exec (txt, args);
+  cl_exec ('log_text_array (?, ?)', vector (txt, args), 1);
+}
+;
+
 create procedure
 USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 {
@@ -267,17 +277,15 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 		 _pwd_mode, _pwd_mode_data, _get_pwd, _login_qual,
 		 _u_home, _u_perms);
 
-  if (_sql_enable)
+  if (not _sql_enable) /* pure web accounts must be disabled for odbc/sql login */
     {
-      sec_set_user_struct (_name, passwd, _u_id, _prim_group_id,
-		concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass);
-      log_text ('sec_set_user_struct (?,?,?,?,?,?,?)',
-	  _name, passwd, _u_id, _prim_group_id, concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass);
+      _disabled := 1;
+    }
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?,?)', vector (
+	  _name, passwd, _u_id, _prim_group_id, concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass ) );
       if (_disabled = 1)
         {
-          sec_user_enable (_name, 0);
-          log_text ('sec_user_enable (?, ?)', _name, 0);
-        }
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (_name, 0));
     }
 
   return _u_id;
@@ -301,12 +309,7 @@ USER_ROLE_CREATE (in _name varchar, in is_dav integer := 0)
   if (is_dav)
     _sql_enable := 0;
   insert into SYS_USERS (U_ID, U_NAME, U_GROUP, U_IS_ROLE, U_DAV_ENABLE, U_SQL_ENABLE) values (_g_id, _name, _g_id, 1, is_dav, _sql_enable);
-  if (_sql_enable)
-    {
-      sec_set_user_struct (_name, '', _g_id, _g_id, NULL, 1);
-      log_text ('sec_set_user_struct (?,?,?,?,?,?)',
-	  _name, '', _g_id, _g_id, NULL, 1);
-    }
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?)', vector (_name, '', _g_id, _g_id, NULL, 1) );
   return _g_id;
 }
 ;
@@ -324,10 +327,7 @@ USER_ROLE_DROP (in _name varchar)
   delete from SYS_ROLE_GRANTS where GI_SUPER = _u_id or GI_SUB = _u_id or GI_GRANT = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
   if (_u_is_sql)
-    {
-      sec_remove_user_struct (_name);
-      log_text ('sec_remove_user_struct(?)', _name);
-    }
+    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
 ;
 
@@ -379,8 +379,7 @@ USER_SET_QUALIFIER (in _name varchar, in qual varchar)
       if (not length (qual))
 	signal ('22023', 'Qualifier cannot be empty string');
       update DB.DBA.SYS_USERS set U_DATA = concatenate ('Q ', qual), U_DEF_QUAL = qual where U_NAME = _name;
-      sec_set_user_data (_name, concatenate ('Q ', qual));
-      log_text ('sec_set_user_data(?,?)', _name, concatenate ('Q ', qual));
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_data(?,?)', vector (_name, concatenate ('Q ', qual)));
     }
   else
     {
@@ -474,8 +473,7 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
 	    rg.GI_SUPER = _u_id and rg.GI_GRANT = _g_id and u.U_ID = GI_SUB and u.U_SQL_ENABLE
 	    do
 	      {
-		sec_grant_user_role (_u_id, GI_SUB);
-		log_text ('sec_grant_user_role (?,?)', _u_id, GI_SUB);
+		DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_grant_user_role (?,?)', vector (_u_id, GI_SUB));
 	      }
 	}
     }
@@ -504,10 +502,7 @@ USER_REVOKE_ROLE (in _name varchar, in _role varchar)
 	      {
 		if (_u_is_sql and
 		  exists (select 1 from SYS_USERS where U_ID = sub and U_SQL_ENABLE) )
-		  {
-	            sec_revoke_user_role (_u_id, sub);
-	            log_text ('sec_revoke_user_role (?,?)', _u_id, sub);
-		  }
+		  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_revoke_user_role (?,?)', vector (_u_id, sub));
 	      }
 	  }
 
@@ -573,10 +568,7 @@ USER_DROP (in _name varchar, in _cascade integer := 0)
   delete from SYS_USER_GROUP where UG_UID = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
   if (_u_is_sql)
-    {
-      sec_remove_user_struct (_name);
-      log_text ('sec_remove_user_struct(?)', _name);
-    }
+    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
 ;
 
@@ -653,27 +645,15 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
       U_ACCOUNT_DISABLED = _disabled
       where U_NAME = _name;
 
-  if (_sql_enable)
+  if (not _sql_enable) /* pure web accounts must be disabled for odbc/sql login */
     {
+      _disabled := 1;
+    }
       select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into passwd from SYS_USERS where U_NAME = _name;
-      sec_set_user_struct (_name, passwd, _u_id, _u_group_id,
-	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end);
-      sec_user_enable (_name, case when _disabled = 0 then 1 else 0 end);
-      log_text ('sec_set_user_struct (?,?,?,?,?)',
-	  _name, passwd, _u_id, _u_group_id,
-	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end);
-      log_text ('sec_user_enable (?, ?)', _name, case when _disabled = 0 then 1 else 0 end);
-    }
-  else
-    {
-      declare exit handler for sqlstate '28000'
-	{
-	  goto done;
-	};
-      sec_remove_user_struct (_name);
-      log_text ('sec_remove_user_struct(?)', _name);
-      done:;
-    }
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?)',
+      vector (_name, passwd, _u_id, _u_group_id,
+	case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end));
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (_name, case when _disabled = 0 then 1 else 0 end));
 }
 ;
 
@@ -1090,7 +1070,7 @@ normal_auth:
     {
       rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
     }
-  else
+  else if (rc <= 0) -- only if not authenticated
     {
       rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
       if (rc = 0)
@@ -1336,7 +1316,7 @@ create index SYS_USER_WEBID_NAME on SYS_USER_WEBID (UW_U_NAME) partition cluster
 create procedure
 DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph, gr any;
+  declare stat, msg, meta, data, info, qr, hf, graph, gr, alts any;
   declare agent varchar;
   declare rc int;
   rc := 0;
@@ -1355,10 +1335,16 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
   info := get_certificate_info (9);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
 
-  if (not isarray (info) or agent is null or agent not like 'URI:%')
+  if (not isarray (info) or agent is null)
+    return 0;
+  alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+  alts := split_and_decode (alts, 0, '\0\0,:');
+  if (alts is null)
+    return 0;
+  agent := get_keyword ('URI', alts);
+  if (agent is null)
     return 0;
 
-  agent := subseq (agent, 4);
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   gr := uuid ();
@@ -1380,7 +1366,12 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
 	gr, agent);
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+  if (stat = '00000' and length (data))
+    {
+      foreach (any _row in data) do
+	{
+	  if (_row[0] = cast (info[1] as varchar) and
+	      lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
     {
       declare uname varchar;
       uname := (select UW_U_NAME from SYS_USER_WEBID where UW_WEBID = agent);
@@ -1388,6 +1379,8 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
 	{
 	  user_name := uname;
           rc := 1;
+	}
+    }
 	}
     }
   err_ret:

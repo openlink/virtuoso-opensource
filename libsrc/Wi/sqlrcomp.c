@@ -540,6 +540,8 @@ bop_text (int bop)
       return (" UNION ALL ");
     case BOP_LIKE:
       return (" LIKE ");
+    case BOP_NOT:
+      return "not";
     case BOP_NULL:
       return (" IS NULL ");
     }
@@ -1177,7 +1179,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	  {
 	    caddr_t col_alias = rds_get_info (target_rds, SQL_COLUMN_ALIAS);
 	    sqlc_exp_print (sc, ct, tree->_.as_exp.left, text, tlen, fill);
-	    if (ST_P (tree->_.as_exp.left, COL_DOTTED) && !tree->_.as_exp.left->_.col_ref.prefix &&
+	    if (ST_COLUMN (tree->_.as_exp.left, COL_DOTTED) && !tree->_.as_exp.left->_.col_ref.prefix &&
 		!CASEMODESTRCMP (tree->_.as_exp.left->_.col_ref.name, tree->_.as_exp.name))
 	      break;
 	    if (DV_STRINGP (col_alias) && box_length (col_alias) > 1 && toupper (col_alias[0]) == 'Y')
@@ -1191,9 +1193,18 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	case SEARCHED_CASE:
 	  {
 	    int inx;
+	    id_hash_t *old_private_elts = NULL;
+	    df_elt_t * case_dfe = NULL;
+	    if (sc->sc_so)
+	      case_dfe = sqlo_df (sc->sc_so, tree);
 	    sprintf_more (text, tlen, fill, "CASE ");
 	    for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (tree->_.comma_exp.exps); inx += 2)
 	      {
+		if (sc->sc_so)
+		  {
+		    old_private_elts = sc->sc_so->so_df_private_elts;
+		    sc->sc_so->so_df_private_elts = case_dfe->_.control.private_elts[inx];
+		  }
 		if (ST_P (tree->_.comma_exp.exps[inx], QUOTE))
 		  {
 		    sprintf_more (text, tlen, fill, " ELSE ");
@@ -1206,6 +1217,8 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		    sprintf_more (text, tlen, fill, " THEN ");
 		    sqlc_exp_print (sc, ct, tree->_.comma_exp.exps[inx + 1], text, tlen, fill);
 		  }
+		if (sc->sc_so)
+		  sc->sc_so->so_df_private_elts = old_private_elts;
 	      }
 	    sprintf_more (text, tlen, fill, " END ");
 	  }

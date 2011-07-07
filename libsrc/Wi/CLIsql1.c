@@ -134,6 +134,12 @@ virtodbc__SQLAllocStmt (
 {
   CON (con, hdbc);
   stmt_options_t *opts = (stmt_options_t *) dk_alloc_box (sizeof (stmt_options_t), DV_ARRAY_OF_LONG_PACKED);
+#if (ODBCVER >= 0x0300)
+  NEW_VAR (stmt_descriptor_t, desc1);
+  NEW_VAR (stmt_descriptor_t, desc2);
+  NEW_VAR (stmt_descriptor_t, desc3);
+  NEW_VAR (stmt_descriptor_t, desc4);
+#endif
   NEW_VARZ (cli_stmt_t, stmt);
 
   memset (opts, 0, sizeof (stmt_options_t));
@@ -157,6 +163,35 @@ virtodbc__SQLAllocStmt (
 
   stmt->stmt_connection = con;
   stmt->stmt_retrieve_data = SQL_RD_ON;
+
+#if (ODBCVER >= 0x0300)
+  stmt->stmt_app_row_descriptor = desc1;
+  stmt->stmt_app_row_descriptor->d_type = ROW_APP_DESCRIPTOR;
+  stmt->stmt_app_row_descriptor->d_stmt = stmt;
+  stmt->stmt_app_row_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_app_row_descriptor->d_max_recs = 0;
+
+  stmt->stmt_imp_row_descriptor = desc2;
+  stmt->stmt_imp_row_descriptor->d_type = ROW_IMP_DESCRIPTOR;
+  stmt->stmt_imp_row_descriptor->d_stmt = stmt;
+  stmt->stmt_imp_row_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_imp_row_descriptor->d_max_recs = 0;
+
+  stmt->stmt_app_param_descriptor = desc3;
+  stmt->stmt_app_param_descriptor->d_type = PARAM_APP_DESCRIPTOR;
+  stmt->stmt_app_param_descriptor->d_stmt = stmt;
+  stmt->stmt_app_param_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_app_param_descriptor->d_max_recs = 0;
+
+  stmt->stmt_imp_param_descriptor = desc4;
+  stmt->stmt_imp_param_descriptor->d_type = PARAM_IMP_DESCRIPTOR;
+  stmt->stmt_imp_param_descriptor->d_stmt = stmt;
+  stmt->stmt_imp_param_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_imp_param_descriptor->d_max_recs = 0;
+
+  stmt->stmt_opts->so_is_async = con->con_async_mode;
+  stmt->stmt_opts->so_timeout = STMT_MSEC_OPTION (con->con_defs.cdef_txn_timeout);
+#endif
 
   return SQL_SUCCESS;
 }
@@ -692,10 +727,7 @@ ssl_get_password (char * name, char *tpass)
 }
 #endif
 
-
 #ifdef INPROCESS_CLIENT
-
-#include "sqlnode.h"
 
 static void *
 get_inprocess_client ()
@@ -833,6 +865,8 @@ internal_sql_connect (
   else
 #endif
     {
+      srand ((unsigned) time (NULL));
+
       if (index_count > 1 && useRoundRobin)
         startIndex = hostIndex = (rand () % index_count);
 
@@ -1645,6 +1679,8 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
 {
   CON (con, hdbc);
 
+  set_error (&con->con_error, NULL, NULL, NULL);
+
   if (con->con_session)
     {
       /* if client by some reason do SQLFreeConnect but not SQLDisconnect */
@@ -1674,6 +1710,12 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
   if (con->con_dsn)
     dk_free_box ((box_t) con->con_dsn);
 
+  if (con->con_rdf_langs)
+    hash_table_free (con->con_rdf_langs);
+
+  if (con->con_rdf_types)
+    hash_table_free (con->con_rdf_types);
+
   mutex_free (con->con_mtx);
 
   dk_set_delete (&con->con_environment->env_connections, (void *) con);
@@ -1695,6 +1737,8 @@ virtodbc__SQLFreeEnv (SQLHENV henv)
 {
   ENV (env, henv);
 
+  set_error (&env->env_error, NULL, NULL, NULL);
+
   mutex_free (env->env_mtx);
 
   dk_free ((caddr_t) env, sizeof (cli_environment_t));
@@ -1710,6 +1754,7 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
   future_t *f;
 
   cli_dbg_printf (("virtodbc__SQLFreeStmt (hstmt=%p, fOption=%u)\n", (void *) hstmt, (unsigned) fOption));
+  set_error (&stmt->stmt_error, NULL, NULL, NULL);
 
   switch (fOption)
     {
@@ -1809,11 +1854,11 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 
       if (stmt->stmt_bookmarks)
 	stmt_free_bookmarks (stmt);
-
       if (stmt->stmt_future)
 	PrpcFutureFree (stmt->stmt_future);
-
+      IN_CON (stmt->stmt_connection);
       dk_set_delete (&stmt->stmt_connection->con_statements, (void *) stmt);
+      LEAVE_CON (stmt->stmt_connection);
       stmt_free_current_rows (stmt);
       dk_free_tree (stmt->stmt_prefetch_row);
       stmt->stmt_prefetch_row = NULL;
@@ -1837,6 +1882,16 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
       dk_free_tree ((box_t) stmt->stmt_param_array);
       stmt->stmt_param_array = NULL;
       dk_free_box (stmt->stmt_identity_value);
+
+#if (ODBCVER >= 0x0300)
+      if (stmt->stmt_app_row_descriptor)
+	{
+	  dk_free ((caddr_t) stmt->stmt_app_row_descriptor, sizeof (stmt_descriptor_t));
+	  dk_free ((caddr_t) stmt->stmt_imp_row_descriptor, sizeof (stmt_descriptor_t));
+	  dk_free ((caddr_t) stmt->stmt_app_param_descriptor, sizeof (stmt_descriptor_t));
+	  dk_free ((caddr_t) stmt->stmt_imp_param_descriptor, sizeof (stmt_descriptor_t));
+	}
+#endif
       dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));
     }
 

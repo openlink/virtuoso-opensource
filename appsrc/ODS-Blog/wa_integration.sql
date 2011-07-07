@@ -790,15 +790,18 @@ create method wa_dashboard () for wa_blog2 {
               XMLAGG(XMLELEMENT('dash-row',
                          XMLATTRIBUTES('normal' as "class", BLOG.DBA.BLOG2_DATE_FOR_HUMANS(B_TS) as "time", self.wa_name as "application"),
                          XMLELEMENT('dash-data',
-	    XMLATTRIBUTES(sprintf('<a href=\"%s/%s\">%s</a>', url, B_POST_ID,
-		BLOG.DBA.BLOG2_GET_TITLE (B_META, B_CONTENT)) "content", B_COMMENTS_NO "comments")
+	    XMLATTRIBUTES(
+
+	      concat ( N'<a href="' , cast (url as nvarchar),
+	       	       N'/', cast (B_POST_ID as nvarchar), N'">',
+		       charset_recode (BLOG.DBA.BLOG2_GET_TITLE (B_META, B_CONTENT), 'UTF-8', '_WIDE_'), N'</a>')
+
+	      "content", B_COMMENTS_NO "comments")
                          )
                     )
               )
             from
       (select top 10 * from BLOG.DBA.SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = self.blogid order by B_TS desc) T);
-  notf:
-  return '';
 }
 ;
 
@@ -1282,7 +1285,7 @@ create procedure BLOG2_INSERT_MEDIA_MESSAGE (in _caller_name varchar, in _params
 {
   -- determine next post_id number from sequence
   declare _post_id any;
-  declare _content any;
+  declare _content, _texts any;
   declare  iurl, turl varchar;
 
   _post_id := cast(sequence_next ('blogger.postid') as varchar);
@@ -1297,6 +1300,7 @@ create procedure BLOG2_INSERT_MEDIA_MESSAGE (in _caller_name varchar, in _params
   _res.author := _caller_name;
   _res.userid := _res.author;
   _res.dateCreated := now ();
+  _texts := get_keyword('description', _params, '');
 
   -- create message body
   iurl := BLOG_GET_MEDIA_URL (_path);
@@ -1309,7 +1313,7 @@ create procedure BLOG2_INSERT_MEDIA_MESSAGE (in _caller_name varchar, in _params
     _content := '<div><a href="' || iurl || '">' ||
                 '<img src="' || turl ||
                 '" width="200" border="0" /></a></div><div><pre>' ||
-                get_keyword ('changed_name', _params, '') || ' </pre></div>';
+                get_keyword ('changed_name', _params, '') || ' </pre></div><div>' || _texts || '</div>';
   }
   else {
     _content := '<div><a href="' || iurl || '">' ||
@@ -1333,6 +1337,7 @@ create procedure MOB_GET_BLOG_ID (in _msg any, in tag varchar := 'blogId')
 
   foreach (any elm in res) do
     {
+      --dbg_obj_print_vars (elm);
       tok := regexp_match(sprintf ('@%s=[^@]+@', tag), elm);
       if (tok is not null)
   {
@@ -1558,9 +1563,19 @@ create procedure DB.DBA.BLOG2_MOBLOG_PROCESS_MSG(in _caller_user_name varchar, i
     new_message:
 
       -- retrieve attachments with allowed mime types from mail
-      declare _attaches any;
+      declare _attaches, res, parsed_message, texts any;
       _attaches := BLOG2_MOBBLOGGING_GET_MOB_MESSAGE(_mbody, _opts);
       decode_uuencoded_attachement (_mbody, _attaches, _opts);
+
+      parsed_message := mime_tree (_mbody);
+      res := null;
+      MOB_PROCESS_PARTS (parsed_message, _mbody, res);
+      
+      texts := '';
+      foreach (any elm in res) do
+	{
+	  texts := texts || elm;
+	}
 
       -- if attaches was not founded - skip next block
       if(_attaches is null or not isarray(_attaches) or length(_attaches) = 0) goto _endmark;
@@ -1584,6 +1599,7 @@ create procedure DB.DBA.BLOG2_MOBLOG_PROCESS_MSG(in _caller_user_name varchar, i
 	  _a_name := _attaches[_i][0];
 	  _a_mime := _attaches[_i][1];
 	  _a_content := _attaches[_i][2];
+--	  dbg_obj_print_vars (_a_name, _a_mime, _a_content);
 	  _publ := 0;
 	  if (_state = 'mob-pub')
 	    {
@@ -1596,7 +1612,7 @@ create procedure DB.DBA.BLOG2_MOBLOG_PROCESS_MSG(in _caller_user_name varchar, i
 		    -- matching secret
 	            declare thumb_path varchar;
 		    _media_path := BLOG2_UPLOAD_IMAGES_TO_BLOG_HOME(_caller_user_id, _blog_id, _a_content, _a_name, thumb_path);
-		    BLOG2_INSERT_MEDIA_MESSAGE (_u_name, vector('subj2', _subject), _blog_id, _media_path, _a_mime, thumb_path,
+		    BLOG2_INSERT_MEDIA_MESSAGE (_u_name, vector('subj2', _subject, 'description', texts), _blog_id, _media_path, _a_mime, thumb_path,
 			_bi_owner, _bi_home);
 		    _publ := 1;
 		  }

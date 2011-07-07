@@ -255,8 +255,7 @@ div.w_pane a {
 div.w_pane a:hover {
   color: #255}
 
-div.error_msg
-{
+div.error_msg {
   background-color: #FFF;
   color: red;
   padding-left:5px;
@@ -331,9 +330,15 @@ div.w_activity ul li a {
 
 
 /* welcome */
-div.w_welcome p { margin: 4px}
+div.w_welcome {
+  padding: 3px}
+
+div.w_welcome p {
+  margin: 4px}
+
 div.w_welcome h3 {
   margin: 4px}
+
 div.w_welcome a {
   color: #224}
 
@@ -353,31 +358,12 @@ table.app_summary_listing {
 table.app_summary_listing th a {
   color: inherit}
 
-/* ODS-Weblog */
-
-div.w_blog_summary ul {
+div.w_db_summary ul {
   font-size: 8pt;
   list-style-type: none;
-  margin: 3px}
-div.w_blog_summary ul li a {
-  color: #444}
+  padding: 0 0 0 1em;}
 
-/* ODS-Wiki */
-
-div.w_wiki_summary {}
-div.w_wiki_summary ul {
-  font-size: 8pt;
-  list-style-type: none}
-div.w_wiki_summary ul li a {
-  color: #444}
-
-/* ODS-Feed Reader */
-
-div.w_news_summary ul {
-  font-size: 8pt;
-  list-style-type: none;
-  margin: 0}
-div.w_news_summary ul li a {
+div.w_db_summary ul li a {
   color: #444}
 
 /* User home page (myhome.vspx) */
@@ -399,103 +385,12 @@ div.w_whats_new .content_pane p {
 div.w_whats_new .w_title_bar {
   display: none}
 
-/* My Blog */
-
-div.w_my_blog {}
-div.w_my_blog ul {
-  font-size: 8pt;
-  list-style-type: none;
-  padding: 0 0 0 4px;}
-
-/* My Bookmarks */
-
-div.w_my_bookmarks {}
-div.w_my_bookmarks ul {
-  font-size: 8pt;
-  list-style-type: none;
-  padding: 0 0 0 4px;}
-
-/* My Contacts */
-
-div.w_my_addressbook {}
-div.w_my_addressbook ul {
-  font-size: 8pt;
-  list-style-type: none;
-  padding: 0 0 0 4px;}
-
-/* Feed reader */
-
-div.w_feed_reader {}
-div.w_feed_reader ul {
-  margin: 3px;
-  list-style-type: none}
-div.w_feed_reader ul li img {
-  border: 0}
-div.w_feed_reader div.footer {
-  background-color: #77d}
-table.feed_table { }
-
-/* Data Spaces */
-
-div.w_my_dataspaces {}
-div.w_my_dataspaces ul {
-  margin: 3px;
-  font-size: 8pt;
-  list-style-type: none}
-div.w_my_dataspaces ul li img {
-  border: 0}
-div.w_my_dataspaces div.footer {
-  background-color: #77d}
-
-/* Feed reader */
-
-div.w_my_news {}
-div.w_my_news ul {
-  margin: 3px;
-  font-size: 8pt;
-  list-style-type: none}
-div.w_my_news ul li img {
-  border: 0}
-div.w_my_news div.footer {
-  background-color: #77d}
-table.feed_table {}
-
-table.feed_table img { vertical-align: middle;
-  border: 0;
-  padding: 0 3px 0 0}
-
-table.feed_table td.time {
-  color: #8d9696}
-
-/* My Wiki */
-div.w_my_wiki { }
-
-div.w_my_wiki ul {
-  font-size: 8pt;
-  clear: both;
-  list-style-type: none;
-  padding: 3px}
-
-div.w_my_wiki .content_pane a {
-  color: #477}
-
-/* My Mail */
-div.w_my_mail {}
-div.w_my_mail ul {
-  font-size: 8pt;
-  clear: both;
-  list-style-type: none;
-  padding: 3px}
-div.w_my_mail p {
-  font-size: 8pt;
-  padding-left: 3px}
-
 /* My Profile */
 div.w_my_profile {
   background-color: #fff}
 div.w_my_profile table {
   border: 0;
-  margin: 8px;}
+  margin: 0.5em;}
 div.w_my_profile th {
   font-size: 8pt;
   color: #777;
@@ -525,13 +420,12 @@ div.w_my_photos ul {
   padding: 0;
   list-style-type: none}
 
-/* My Calendar */
-
-div.w_my_calendar {}
-div.w_my_calendar ul {
+/* My Instance */
+div.w_my_instance {}
+div.w_my_instance ul {
   font-size: 8pt;
   list-style-type: none;
-  padding: 0 0 0 4px;}
+  padding: 0 0 0 1em;}
 
 /* (transient) Message widget */
 
@@ -757,22 +651,24 @@ a.profile_tab {
   color: #888;
   text-decoration: none}
 
-#u_profile_r ul { list-style-type: none; padding: 0px; }
+#u_profile_r ul {
+  list-style-type: none; padding: 0px; }
 
 /* Contacts */
-
 div.contacts_ctr {
   margin: 5px;}
 
-div.contacts_ctr h2 { font-size: 12pt}
+div.contacts_ctr h2 {
+  font-size: 12pt}
+
 div.contacts_ctr ul {
   list-style-type: none;
   padding: 0;}
 
-ul.button_bar { margin: 5px; padding: 3px;}
+ul.button_bar {
+  margin: 5px; padding: 3px;}
 
 /* ODS Applications */
-
 div.app_page_hdr {
   width: 100%;
   float: left; clear: both}
@@ -795,31 +691,6 @@ div.google_map
   width: 800px;
   height: 400px}
 
-/* Site settings pages
-
-div.settings_form {
-  margin: 5px}
-
-div.settings_form label {
-  float: left;
-  clear: left;
-  width: 20em;
-  margin: 2px}
-
-div.settings_form label.rb_cb {
-  float: none;
-  clear: none;
-  width: 20em;
-  margin: 2px}
-
-div.settings_form input[type="text"]{
-  width: 40em;
-  margin: 2px;}
-
-div.settings_form input[type="radio"]{
-  clear: left;
-  margin: 2px}
-*/
 /* =BEGIN= Listing controls colorization returned back =BEGIN= */
 
 table.listing
@@ -829,50 +700,58 @@ table.listing
 
 table.listing th
 {
+  text-align: left !important;
   border-color: #FFFFFF;
   border-style: solid;
-  border-width: 0px 0px 0px 1px}
+  border-width: 0px 0px 0px 1px;
+}
 
-
-tr.listing_header_row
-{
+tr.listing_header_row {
   background-image: url(images/stl_blu1_grad.gif);
-  background-repeat: repeat-x}
+  background-repeat: repeat-x;
+}
 
-tr.listing_header_row th
-{
+tr.listing_header_row th {
   text-align: left;
-  white-space: nowrap
-}
-
-a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover
-{
   white-space: nowrap;
-  color: #000000
 }
 
-tr.listing_row_even
-{ }
+a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover {
+  white-space: nowrap;
+  color: #000000;
+}
 
-tr.listing_row_odd
-{
-  background-color: #f0f0f0}
+tr.listing_row_even {
+}
 
-tr.listing_row_selected
-{
-  background-color: gray}
+tr.listing_row_odd {
+  background-color: #f0f0f0;
+}
 
-/* Listing controls colorization */
+tr.listing_row_selected {
+  background-color: gray;
+}
 
-/* ---------------- table -------------- */
+.listing_row_odd:hover, .listing_row_even:hover {
+ 	background-color: #eec;
+}
 
+tr.listing_navigation td {
+  border-color: #99B3C5;
+  border-style: solid;
+  border-width: 2px 0px 0px 0px;
+}
+/*
+tbody.colorize tr:nth-child(even)  { background-color:#fff; }
+tbody.colorize tr:nth-child(odd) { background-color:#f0f0f0; }
+*/
+/* table */
 table.grid {
 	border-collapse: collapse;
 	font: menu;
 }
 
-/* ---------------- rows -------------- */
-
+/* rows */
 .grid tr {
 	border-left: 1px solid #000;
 	border-right: 1px solid #000;
@@ -895,8 +774,7 @@ table.grid {
 	background-color: #aac;
 }
 
-/* ---------------- cols -------------- */
-
+/* cols  */
 .grid thead td {
 	background-color: #ebeadb;
 	font-weight: bold;
@@ -940,8 +818,8 @@ a.tabX {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
-  padding: 2px 10px 2px 10px;
-  margin-right: 3px;
+  padding: 2px 5px 2px 5px;
+  margin-right: 2px;
   position: relative;
   text-decoration: none;
   top: -1px;
@@ -950,7 +828,6 @@ a.tabX {
 
 a.activeTabX {
   background-color: #EFEFEF;
-  border-color: #7f94a5;
 }
 
 a.tabX:visited
@@ -988,6 +865,7 @@ div.contents {
   background-color: #EFEFEF;
   border: 1px solid #7F94A5;
   padding: 0.5em;
+  margin-top: -1px;
 }
 
 /* ComboList */
@@ -1054,7 +932,7 @@ a.img_button {
   color: #FFFFFF;
   font-size: 0.8em;
   font-weight: bold;
-  padding: 3px 4px 1px;
+  padding: 2px 2px 1px;
   text-decoration:none;
 }
 
@@ -1074,10 +952,202 @@ span.button {
   color: #FFFFFF;
   font-size: 0.8em;
   font-weight: bold;
-  padding: 3px 4px 1px;
+  padding: 2px 2px 1px;
   text-decoration:none;
+  margin-right: 1px;
 }
 
 img.button {
   margin-bottom: -3px;
+}
+
+.navi-button {
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  text-decoration: none;
+  margin-right: 2px;
+  padding: 0.1em 0.3em 0.1em 0.3em ;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+	cursor: pointer;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+}
+
+.navi-button:hover {
+  text-decoration: none;
+}
+
+div.form {
+  width: 550px;
+  background-color: #FFF;
+  margin: 5px;
+}
+
+div.header {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+div.footer {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+table.form {
+  width: 100%;
+}
+
+table.form th {
+  text-align: right;
+  padding-right: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+table.form td {
+  padding-left: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+.tabs {
+	margin-top: 1.5em;
+	list-style-type: none;
+	padding-bottom: 1px;
+	padding-left: 0.5em;
+}
+
+.tabs li {
+	display: inline;
+	padding: 1px 3px;
+	margin-left: 0.1em;
+	cursor: pointer;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-top-right-radius: 3px;
+	background-color: #EFEFEF;
+	z-index: 10;
+}
+
+.tabs li.tab_selected {
+	background-color: #FFF;
+}
+
+.tabs li.tab:hover {
+	background-color: #FFF;
+}
+
+#lf_logo {
+  margin: 50px 25px 25px 30px
+}
+
+label span.small {
+  font-size: smaller;
+  font-weight: normal;
+  display: block;
+  color: #666;
+}
+
+fieldset.form {
+  padding: 1em;
+}
+
+fieldset.form div {
+  clear: left;
+  display: block;
+  width: 800px;
+  zoom: 1;
+  margin: 5px 0 0 0;
+  padding: 1px 3px;
+}
+
+fieldset.form div label.form {
+  display: block;
+  float: left;
+  width: 200px;
+  padding: 3px 5px;
+  margin: 0 0 5px 0;
+  font-weight: bold;
+  text-align: right;
+}
+
+/* ODS grid */
+table.ODS_grid {
+  width: 100%;
+  background-color: white;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  border-spacing: 0;
+}
+
+table.ODS_grid thead tr {
+  background-color: #b0cde4;
+}
+
+table.ODS_grid tbody tr:nth-child(odd) {
+  background-color:#f0f0f0;
+}
+
+table.ODS_grid tbody tr:nth-child(even) {
+  background-color:#fff;
+}
+
+table.ODS_grid thead tr th {
+  text-align: left !important;
+  white-space: nowrap;
+  padding-left: 3px;
+  border: solid #7f94a5;
+  border-width: 0px 1px 1px 0px;
+  background-image: url(/ods/images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+table.ODS_grid thead tr th[onclick] {
+  cursor: pointer;
+}
+
+table.ODS_grid thead tr th:last-child {
+  border-width: 0px 0px 1px 0px;
+}
+
+table.ODS_grid th.checkbox, table.ODS_grid td.checkbox {
+  width: 1px;
+  text-align: center;
+  margin: 0;
+  padding: 0.5px;
+}
+
+table.ODS_grid th.action, table.ODS_grid td.action {
+  width: 1px;
+  white-space: nowrap;
+}
+
+table.ODS_grid tbody tr:hover {
+ 	background-color: #eec;
+}
+
+table.ODS_grid td {
+  padding: 2px 3px;
+}
+
+table.ODS_grid tfoot td {
+  padding: 2px 3px 3px 3px;
+  border: solid #7f94a5;
+  border-width: 1px 0px 0px 0px;
 }

@@ -891,6 +891,7 @@ skip_this:
 create procedure RDF_VIEW_GEN_VD (in qual varchar)
 {
   declare ses, pref any;
+  declare fct_installed int;
   ses := string_output ();
   pref := lower (qual);
 
@@ -905,6 +906,9 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     return '\n-- WARNING: there are already created virtual directory "/'||qual||'", skipping virtual directory generation\n'||
     '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
 
+  if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+    fct_installed := 1;
+
   http (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_rule2'',
@@ -915,7 +919,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
@@ -932,7 +936,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fo+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fp+%%3Fo+}&format=%U'',
     vector(''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
@@ -948,26 +952,56 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/objects/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
 
   http ('\n', ses);
-  http (
+  http (concat (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_rule1'',
     1,
     ''([^#]*)'',
     vector(''path''),
-    1,
-    ''/about/html/http://^{URIQADefaultHost}^%s'',
-    vector(''path''),
+    1,\n',
+
+    case when fct_installed
+    then
+      '''/describe/?url=http://^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+    else
+      '''/about/html/http://^{URIQADefaultHost}^%s'','
+    end
+
+    ,'\nvector(''path''),
     null,
     null,
     2,
     303
-    );', ses);
+    );'), ses);
+  http ('\n', ses);
+
+  http (concat (
+  'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    ''<pref>_rule7'',
+    1,
+    ''/<qual>/stat([^#]*)'',
+    vector(''path''),
+    1,\n',
+
+    case when fct_installed
+    then
+      '''/describe/?url=http://^{URIQADefaultHost}^/<qual>/stat%%23&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+    else
+      '''/about/html/http://^{URIQADefaultHost}^/<qual>/stat%%01'','
+    end
+
+    ,'\nvector(''path''),
+    null,
+    null,
+    2,
+    303
+    );'), ses);
   http ('\n', ses);
 
   http (
@@ -986,7 +1020,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     );', ses);
 
   http ('\n', ses);
-  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule5'', ''<pref>_rule2'', ''<pref>_rule4'', ''<pref>_rule6''));', ses);
+  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule7'', ''<pref>_rule5'', ''<pref>_rule2'', ''<pref>_rule4'', ''<pref>_rule6''));', ses);
 
   http ('\n', ses);
   http ('DB.DBA.VHOST_REMOVE (lpath=>''/<qual>'');', ses);
@@ -1003,6 +1037,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
 
 create procedure RDF_OWL_GEN_VD (in qual varchar)
 {
+  declare fct_installed int;
   declare ses, pref any;
   ses := string_output ();
   pref := lower (qual);
@@ -1016,6 +1051,9 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
     return '\n-- WARNING: there are already created virtual directory "/schemas/'||qual||'", skipping virtual directory generation\n'||
     '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
 
+  if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+    fct_installed := 1;
+
   http (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_owl_rule2'',
@@ -1026,26 +1064,32 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
 
   http ('\n', ses);
   http (
+  concat (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_owl_rule1'',
     1,
     ''([^#]*)'',
     vector(''path''),
-    1,
-    ''/about/html/http://^{URIQADefaultHost}^%s'',
-    vector(''path''),
+    1,\n',
+    case when fct_installed
+    then
+    '''/describe/?url=http://^{URIQADefaultHost}^%U&graph=http%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23'','
+    else
+    '''/about/html/http://^{URIQADefaultHost}^%s'','
+    end,
+    '\nvector(''path''),
     null,
     null,
     2,
     303
-    );', ses);
+    );'), ses);
   http ('\n', ses);
   http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_owl_rule_list1'', 1, vector ( ''<pref>_owl_rule1'', ''<pref>_owl_rule2''));', ses);
 
@@ -1059,5 +1103,100 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
    ses := replace (ses, '<pref>', pref);
    ses := replace (ses, '<qual>', qual);
    return ses;
+}
+;
+
+create procedure
+RDF_VIEW_CHECK_SYNC_TB (in tb varchar)
+{
+  declare tree, tbname any;
+  tree := sql_parse (sprintf ('SELECT 1 from %s', tb));
+  tbname := tree [4][1][0][1][1];
+  tbname := complete_table_name (tbname, 1);
+  if (exists (select 1 from SYS_VIEWS where V_NAME = tbname))
+    return 0;
+  return 1;
+}
+;
+
+create procedure
+RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0)
+{
+   declare mask varchar;
+   declare txt, tbls, err_ret any;
+   declare stat, msg varchar;
+
+   tbls := vector ();
+   err_ret := vector ();
+   mask := sprintf ('http://%s/schemas/%s/qm-%%', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   for select "o" from
+   (sparql define input:storage "" select ?o from virtrdf:
+     {
+       virtrdf:DefaultQuadStorage-UserMaps ?p ?o .
+       ?o a virtrdf:QuadMap  .
+       filter (?o like ?:mask)
+     }
+     order by asc (bif:sprintf_inverse (bif:concat (str(rdf:_), "%d"), str (?p), 1))) x do
+   {
+     declare qm varchar;
+     if ("o" not like '%/qm-VoidStatistics')
+       {
+	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', "o"), stat, msg);
+	 stat := '00000';
+	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', "o"), stat, msg);
+	 if (stat <> '00000')
+	   err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+
+	 qm := "o";
+	 for select "tb" from (sparql define input:storage ""
+	    select distinct ?tb from virtrdf:
+	    {
+	      ?:qm virtrdf:qmUserSubMaps ?sm .
+	      ?sm ?inx ?q .
+	      ?q virtrdf:qmTableName ?tb  .
+	    }) xx do
+	   {
+	     if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
+ 	       tbls := vector_concat (tbls, vector ("tb"));
+	     else
+	       err_ret := vector_concat (err_ret, vector (vector ('42000', sprintf ('Reference to VIEW %s cannot be added automatically', "tb"))));
+	   }
+       }
+   }
+  foreach (varchar tb in tbls) do
+    {
+      for (declare ctr int, ctr := 1; ctr <= 4; ctr := ctr + 1)
+        {
+	  txt := sparql_rdb2rdf_codegen (tb, ctr);
+	  stat := '00000';
+	  if (isvector (txt))
+	    {
+	      exec (cast (txt[0] as varchar), stat, msg);
+	      if (stat <> '00000')
+		{
+		  err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+		  stat := '00000';
+		}
+	      exec (cast (txt[1] as varchar), stat, msg);
+	      if (stat <> '00000')
+		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+	    }
+	  else
+	    {
+	      exec (cast (txt as varchar), stat, msg);
+	      if (stat <> '00000')
+		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+	    }
+	}
+      if (load_data)
+	{
+	  declare pname varchar;
+	  pname := sprintf ('DB.DBA."RDB2RDF_FILL__%s" ()', replace (replace (tb, '"', '`'), '.', '~'));
+	  stat := '00000';
+	  exec (pname, stat, msg);
+	  if (stat <> '00000') err_ret := vector_concat (err_ret, vector (sprintf ('%s: %s', stat, msg)));
+	}
+    }
+  return err_ret;
 }
 ;

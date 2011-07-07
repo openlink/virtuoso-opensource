@@ -45,14 +45,28 @@ create procedure OMAIL.WA.uninstall ()
 OMAIL.WA.uninstall ()
 ;
 
+create procedure OMAIL.WA.uninstall ()
+{
+  for select DB.DBA.DAV_SEARCH_PATH (COL_ID, 'C') path from WS.WS.SYS_DAV_COL where COL_DET = 'oMail' do
+  {
+    DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+    commit work;
+  }
+}
+;
+OMAIL.WA.uninstall ()
+;
+
 -- Scheduler
 OMAIL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'WebMail External POP3 Scheduler\'');
+OMAIL.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'WebMail External Scheduler\'');
 OMAIL.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'WebMail Spam Clean Scheduler\'');
 
 -- Tables
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MSG_PARTS_TDATA_WORDS');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MESSAGES_ADDRESS_WORDS');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MIME_HANDLERS');
+OMAIL.WA.exec_no_error ('DROP TABLE OMAIL.WA.EXTERNAL_ACCOUNT');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.EXTERNAL_POP_ACC');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MSG_PARTS');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MESSAGES');
@@ -73,6 +87,17 @@ vhost_remove (lpath=>'/oMail/res');
 -- Types
 OMAIL.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'oMail\'');
 OMAIL.WA.exec_no_error('drop type wa_mail');
+
+-- Registry
+registry_remove ('_oMail_path_');
+registry_remove ('_oMail_version_');
+registry_remove ('_oMail_build_');
+registry_remove ('_oMail_spam_');
+registry_remove ('omail_version_upgrade');
+registry_remove ('omail_path_upgrade2');
+registry_remove ('mail_index_version');
+registry_remove ('__ods_mail_sioc_init');
+registry_remove ('omail_services_update');
 
 -- Procedures
 create procedure OMAIL.WA.omail_drop_procedures()
@@ -119,6 +144,45 @@ OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.folder.delete"');
 OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.folder.rename"');
 OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.options.set"');
 OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.options.get"');
+
+-- dropping DET procs
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_AUTHENTICATE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_NORM"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_GET_CONFIG"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_FNMERGE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_FNSPLIT"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_FIXNAME"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_COMPOSE_NAME"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_SEARCH_ID_IMPL"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_AUTHENTICATE_HTTP"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_GET_PARENT"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_COL_CREATE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_COL_MOUNT"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_COL_MOUNT_HERE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_DELETE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_RES_UPLOAD"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_PROP_REMOVE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_PROP_SET"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_PROP_GET"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_PROP_LIST"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_COLNAME_OF_FOLDER"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_RESNAME_OF_MAIL"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_DIR_SINGLE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_DIR_LIST"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_FC_PRED_METAS"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_FC_TABLE_METAS"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_FC_PRINT_WHERE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_DIR_FILTER"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_SEARCH_ID"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_SEARCH_PATH"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_RES_UPLOAD_COPY"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_RES_UPLOAD_MOVE"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_RES_CONTENT"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_SYMLINK"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_LOCK"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_UNLOCK"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_IS_LOCKED"');
+OMAIL.WA.exec_no_error ('DROP procedure DB.DBA."oMail_DAV_LIST_LOCKS"');
 
 -- final proc
 OMAIL.WA.exec_no_error('DROP procedure OMAIL.WA.exec_no_error');

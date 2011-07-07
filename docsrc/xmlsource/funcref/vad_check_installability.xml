@@ -24,7 +24,7 @@
 <refentry id="fn_vad_check_installability">
   <refmeta> 
     <refentrytitle>VAD_CHECK_INSTALLABILITY</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_CHECK_INSTALLABILITY</refname> 

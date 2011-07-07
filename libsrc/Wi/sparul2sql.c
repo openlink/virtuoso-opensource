@@ -1,4 +1,5 @@
 /*
+ *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -351,6 +352,12 @@ bnode_found_or_added_for_big_ssl:
           switch (fld_type)
             {
             case SPAR_VARIABLE:
+              if (SPART_VARNAME_IS_GLOB (fld->_.var.vname))
+                {
+                  tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+                  tvector_args [(fld_ctr-1)*2 + 1] = fld;
+                  break;
+                }
               var_ctr = spar_cve_find_or_add_variable (sparp, cve, fld);
               tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_VARIABLE);
               tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);
@@ -416,7 +423,8 @@ args_ready:
       (SPART **)t_list (4, arg0, arg1, var_vector_arg, arg3) );
   else
     ctor_call = spar_make_funcall (sparp, 1, funname,
-      (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num (use_limits)) );
+      /* Names arg1 and arg3 become slightly misleading when arg0 is not provided, e.g., in case of SPARQL_CONSTRUCT */
+      (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num_nonull (use_limits)) );
   if (cve->cve_limofs_var_alias)
     {
       SPART *alias = spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO);
@@ -462,6 +470,27 @@ spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g)
   return g->_.graph.expn;
 }
 
+int
+spar_find_sc_for_big_ssl_const (sparp_t *sparp, sql_comp_t **sc_ret)
+{
+  if (sparp->sparp_disable_big_const)
+    {
+      sc_ret[0] = NULL;
+      return 0;
+    }
+  sc_ret[0] = sparp->sparp_sparqre->sparqre_super_sc;
+  if (NULL == sc_ret[0])
+    {
+      spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text, add 'define sql:big-data-const 0' for workaround");
+    }
+  else
+    {
+      while (NULL != sc_ret[0]->sc_super)
+        sc_ret[0]->sc_super = sc_ret[0]->sc_super;
+    }
+  return 1;
+}
+
 void
 spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp)
 {
@@ -486,21 +515,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   if (big_ssl_const_mode)
-    {
-      sc_for_big_ssl_const = sparp->sparp_sparqre->sparqre_super_sc;
-      if (NULL == sc_for_big_ssl_const)
-        {
-          big_ssl_const_mode = 0;
-#ifdef NDEBUG
-          spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text");
-#endif
-        }
-      else
-        {
-          while (NULL != sc_for_big_ssl_const->sc_super)
-            sc_for_big_ssl_const->sc_super = sc_for_big_ssl_const->sc_super;
-        }
-    }
+    big_ssl_const_mode = spar_find_sc_for_big_ssl_const (sparp, &sc_for_big_ssl_const);
   if ((INSERT_L != top->_.req_top.subtype) && (SPARUL_INSERT_DATA != top->_.req_top.subtype))
     cve.cve_bnodes_are_prohibited = 1;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", sc_for_big_ssl_const, NULL, NULL,
@@ -599,8 +614,8 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
       {
         if (NULL == bnode_emulation)
 #ifdef DEBUG
-          bnode_emulation = box_copy_tree (spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
-            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS ) );
+          bnode_emulation = box_copy_tree (spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
+            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS, NULL ) );
 #else
           bnode_emulation = box_copy_tree (spartlist (sparp, 1, SPAR_BLANK_NODE_LABEL));
 #endif
@@ -756,7 +771,12 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *call = retvals [retvals_count-1];
+      if (SPAR_ALIAS == SPART_TYPE (call))
+        call = call->_.alias.arg;
+      known_vars = call->_.funcall.argtrees;
+    }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
   all_triple_count = bad_triple_count = BOX_ELEMENTS (var_triples);

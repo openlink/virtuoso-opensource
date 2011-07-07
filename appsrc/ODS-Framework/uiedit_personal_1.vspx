@@ -43,7 +43,8 @@
       {
         if ((params [N] like 'x1_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          tmp_e := tmp_e || trim (params [N+1]) || '\n';
+          suffix := replace (params [N], 'x1_fld_1_', '');
+          tmp_e := tmp_e || trim (params [N+1]) || ';' || trim (get_keyword ('x1_fld_2_'||suffix, params, '')) || '\n';
         }
         else if ((params [N] like 'x2_fld_1_%') and (trim (params [N+1]) <> ''))
         {
@@ -56,8 +57,8 @@
           tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('x3_fld_2_'||suffix, params, '')) || '\n';
         }
       }
-      self.interests := tmp_a;
-      self.interestTopics := tmp_b;
+      self.interestTopics := tmp_a;
+      self.interests := tmp_b;
       self.efoaf := tmp_e;
 	  ]]>
 	</v:method>
@@ -84,7 +85,7 @@
         self.vc_is_valid := 0;
         return;
       }
-      if (exists (select 1 from SYS_USERS where U_E_MAIL = self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+      if (exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1) and exists (select 1 from SYS_USERS where U_E_MAIL = self.regmail.ufl_value and U_ID <> self.u_id))
       {
         self.vc_error_message := 'This e-mail address is already registered.';
         self.vc_is_valid := 0;
@@ -216,7 +217,13 @@
           self.vc_is_valid := 0;
           self.vc_error_message := DAV_PERROR (rc);
         }
+        if (p_path like '/DAV/%')
+          p_path := subseq (p_path, 4);
         WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
+      }
+      else if (get_keyword ('s_audio', params, '') = '')
+      {
+        WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', '');
       }
       if (self.is_org)
       {
@@ -245,11 +252,12 @@
       WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
 
       self.storePersonal_1();
-      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
       WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.interestTopics);
+      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
       WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.efoaf);
 
       WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
+      WA_USER_EDIT (self.u_name, 'WAUI_SPB_ENABLE', self.spb_enable.ufl_selected);
       -- change user_text data
       WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
     ]]>
@@ -271,11 +279,12 @@
   <v:variable persist="0" name="photo" type="varchar" default="''"/>
   <v:variable persist="0" name="audio" type="varchar" default="''"/>
 
-  <v:variable persist="0" name="issearch" type="int" default="1"/>
+  <v:variable persist="0" name="inSearch" type="int" default="1"/>
   <v:variable persist="0" name="showactive" type="int" default="1"/>
   <v:variable persist="0" name="interests" type="varchar" default="''"/>
   <v:variable persist="0" name="interestTopics" type="varchar" default="''"/>
   <v:variable persist="0" name="appEnable" type="integer" default="0"/>
+  <v:variable persist="0" name="spbEnable" type="integer" default="0"/>
 
   <v:variable name="sav0" type="varchar" default="'1'" />
   <v:variable name="sav1" type="varchar" default="'1'" />
@@ -285,7 +294,6 @@
   <v:variable name="sav5" type="varchar" default="'1'" />
   <v:variable name="sav6" type="varchar" default="'1'" />
   <v:variable name="sav7" type="varchar" default="'1'" />
-  <v:variable name="sav8" type="varchar" default="'1'" />
   <v:variable name="sav9" type="varchar" default="'3'" />
 
   <v:variable name="sav33" type="varchar" default="'1'" />
@@ -318,6 +326,7 @@
              WAUI_INTERESTS,
              WAUI_INTEREST_TOPICS,
              WAUI_APP_ENABLE,
+             WAUI_SPB_ENABLE,
              WAUI_NICK,
              U_E_MAIL
         INTO self.utitle,
@@ -332,11 +341,12 @@
              self.summ,
              self.photo,
              self.audio,
-             self.issearch,
+             self.inSearch,
              self.showactive,
              self.interests,
              self.interestTopics,
              self.appEnable,
+             self.spbEnable,
              self.nick,
              self.email
         FROM WA_USER_INFO,
@@ -360,7 +370,6 @@
         self.sav5 := tmp[5];
         self.sav6 := tmp[6];
         self.sav7 := tmp[7];
-        self.sav8 := tmp[8];
 
         self.sav33 := tmp[33];
         self.sav37 := tmp[37];
@@ -420,7 +429,6 @@
                     control.ufl_selected := self.is_org;
                 </v:after-data-bind>
               </v:check-box>
-              <![CDATA[&nbsp;]]>
               <b>Organization</b>
             </label>
           </td>
@@ -434,6 +442,8 @@
               <v:item name="Mrs" value="Mrs"/>
               <v:item name="Dr" value="Dr"/>
               <v:item name="Ms" value="Ms"/>
+              <v:item name="Sir" value="Sir"/>
+
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.utitle;
@@ -479,8 +489,7 @@
         </tr>
         <tr>
           <th>
-            <label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-            <span class="explain"> (mandatory field)</span>
+            <label for="regmail">E-mail<span style="font-weight: normal; color:red;"> *</span><span class="small">Mandatory field, used for notifications, etc.</span></label>
           </th>
           <td class="listing_col" nowrap="nowrap">
             <v:text xhtml_id="regmail" name="regmail" value="--self.email" xhtml_class="_validate_ _mail_" xhtml_style="width:216px" xhtml_onblur="javascript: validateField(this);" />
@@ -532,6 +541,9 @@
                          <th>
                            URI
                          </th>
+                         <th width="10%">
+                           Access
+                         </th>
                          <th width="65px">
                            Action
                          </th>
@@ -540,26 +552,25 @@
                		   <![CDATA[
                 		   <script type="text/javascript">
                      <?vsp
-                       for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
+                         for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.efoaf) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});', interest));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _webid_ _canEmpty_"}, fld_2: {mode: 4, value: "%s"}});});});', interest, label));
                        }
                      ?>
                 		   </script>
                   	 ]]>
-                     <tr id="x1_tr_no"><td colspan="2"><b>No Personal URIs</b></td></tr>
+                     <tr id="x1_tr_no"><td colspan="3"><b>No Personal URIs</b></td></tr>
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
-                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                   <vm:u-prop-select name="sel_8" value="self.sav8" />
+                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                  </td>
                </tr>
              </table>
            </td>
          </tr>
          <tr id="pers_17" class="initial_hidden">
-           <th><label for="m_sign">Mail Signature</label></th>
+           <th><label for="m_sign">Mail Signature<span class="small">Automatically added to mails sent by you</span></label></th>
            <td class="listing_col" nowrap="1">
              <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" fmt-function="wa_utf8_to_wide" error-glyph="*">
                <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
@@ -575,8 +586,8 @@
            </td>
          </tr>
          <tr>
-          <th><label for="s_tags">Tags</label>
-            <span class="explain"> (comma separated list of keywords)</span>
+          <th>
+            <label for="s_tags">Tags<span class="small">(comma separated list of keywords)</span></label>
           </th>
           <td class="listing_col" nowrap="1">
             <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_cols="50" xhtml_rows="5" />
@@ -587,7 +598,7 @@
          </tr>
          <tr>
            <th>
-             <label for="e_int">Web page URL indicating a topic of interest</label>
+             <label>Interest topics<span class="small">Web page URLs indicating topics of interest</span></label>
            </th>
            <td class="listing_col" nowrap="1">
              <table>
@@ -610,14 +621,14 @@
                		   <![CDATA[
                 		   <script type="text/javascript">
                      <?vsp
-                       for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
+                         for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});', interest, label));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});});', interest, label));
                        }
                      ?>
                 		   </script>
                   	 ]]>
-                     <tr id="x2_tr_no"><td colspan="3"><b>No Topic of Interests</b></td></tr>
+                     <tr id="x2_tr_no"><td colspan="3"><b>No Interests Defined</b></td></tr>
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
@@ -630,7 +641,7 @@
          </tr>
          <tr>
            <th>
-             <label for="e_int2">Resource URI indicating thing of interest</label>
+             <label>Interests<span class="small">Resource URIs indicating thing of interest</span></label>
            </th>
            <td class="listing_col" nowrap="1">
              <table>
@@ -653,14 +664,14 @@
                		   <![CDATA[
                 		   <script type="text/javascript">
                      <?vsp
-                       for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
+                         for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});', interest, label));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});});', interest, label));
                        }
                      ?>
                 		   </script>
                   	 ]]>
-                     <tr id="x3_tr_no"><td colspan="3"><b>No Thing of Interests</b></td></tr>
+                     <tr id="x3_tr_no"><td colspan="3"><b>No interest URIs</b></td></tr>
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
@@ -796,10 +807,24 @@
            <td> </td>
            <td>
              <label>
+           	   <v:check-box name="spb_enable" value="1" xhtml_id="spb_enable">
+                 <v:after-data-bind>
+                   if (not e.ve_is_post)
+                     control.ufl_selected := self.spbEnable;
+                 </v:after-data-bind>
+               </v:check-box>
+               <b>Enable Semantic Pingback for ACLs</b>
+             </label>
+           </td>
+         </tr>
+         <tr>
+           <td> </td>
+           <td>
+             <label>
                <v:check-box name="in_search" value="1" xhtml_id="in_search" >
                  <v:after-data-bind>
                    if (not e.ve_is_post)
-                     control.ufl_selected := self.issearch;
+                     control.ufl_selected := self.inSearch;
                  </v:after-data-bind>
                </v:check-box>
                <b>Include my profile in search results</b>
@@ -822,10 +847,10 @@
         <tr>
           <th><label for="set_personal_1">Set access for all fields as </label></th>
           <td class="ctrl">
-            <v:select-list name="set_personal_1" xhtml_id="set_personal_1" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+            <v:select-list name="set_personal_1" xhtml_id="set_personal_1" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_"); setSelectLists (this.value, this.form, "x1_fld_2_");'>
               <v:item name="*no change*"  value="0" />
               <v:item name="public"  value="1" />
-              <v:item name="friends" value="2" />
+              <v:item name="acl" value="2" />
               <v:item name="private" value="3" />
             </v:select-list>
           </td>

@@ -102,7 +102,7 @@ encoding_handler_t *i18n_volume_emergency_encoding = NULL;
 
 extern dk_session_t *http_session_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
 extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
-int dks_read_line (dk_session_t * ses, char *buf, int max);
+extern int dks_read_line (dk_session_t * ses, char *buf, int max);
 
 char *temp_ses_dir;		/* For viconfig.c */
 char _srv_cwd[PATH_MAX + 1], *srv_cwd = _srv_cwd;
@@ -301,7 +301,7 @@ init_file_acl (void)
   if (sys_files) /* during backup restore, db is not open, therefore we skip this part */
     {
       id_hash_iterator (&it, sys_files);
-      while (hit_next (&it, (char **) &sys_name, (char **) &sys_file))
+      while (hit_next (&it, (char**) &sys_name, (char**) &sys_file))
 	{
 	  dk_set_push (&d_db_files, box_dv_short_string (*sys_name));
 	}
@@ -591,7 +591,7 @@ bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fname_cvt = file_native_name (fname);
   file_path_assert (fname_cvt, NULL, 1);
   fd = open (fname_cvt, OPEN_FLAGS_RO);
-  if (-1 == fd)
+  if (fd < 0)
     {
       err = srv_make_new_error ("39000", "FA005", "Can't open file '%.1000s', error %d", fname_cvt,
 	errno);
@@ -752,7 +752,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   else
     to = st.st_size;
   fd = open (fname, OPEN_FLAGS_RO);
-  if (fd == -1)
+  if (fd < 0)
     {
       int eno = errno;
       err = srv_make_new_error ("42000", "FA012", "Can't open file '%.1000s', error (%d) : %s", fname_cvt,
@@ -781,15 +781,18 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   need = to - from;
   for (;;)
     {
-      if (need == -1) {
-	next = sizeof (buffer);
-      } else {
-      next = need - total;
-      if (sizeof (buffer) < next)
-	next = sizeof (buffer);
-      if (next <= 0)
-	break;
-      }
+      if (need == -1)
+	{
+	  next = sizeof (buffer);
+	}
+      else
+	{
+	  next = need - total;
+	  if (sizeof (buffer) < next)
+	    next = sizeof (buffer);
+	  if (next <= 0)
+	    break;
+	}
       readed = read (fd, buffer, (unsigned) next);
       if (readed <= 0)
 	break;
@@ -798,7 +801,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
       if (DK_ALLOC_ON_RESERVE)
 	{
 	  strses_free (res);
-          close (fd);
+	  close (fd);
 	  qi_signal_if_trx_error ((query_instance_t *)qst);
 	}
       if (need != -1 && total >= need)
@@ -822,6 +825,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
       goto signal_error;
     }
   close (fd);
+  dk_free_box (fname_cvt);
   if (is_utf8)
     strses_set_utf8 (res, 1);
   if (ses_exists)
@@ -893,7 +897,7 @@ file_stat_int (caddr_t fname, int what)
 #if defined (HAVE_DIRECT_H) && (defined (_AMD64_) || defined (_FORCE_WIN32_FILE_TIME))
       if (!file_mtime_to_dt (fname_cvt, dt))
 	{
-	  dk_free_box (fname_cvt);
+          dk_free_box (fname_cvt);
 	  return NULL;
 	}
 #else
@@ -908,11 +912,11 @@ file_stat_int (caddr_t fname, int what)
     }
   else if (what == 1)
     {
-      snprintf (szTemp, sizeof (szTemp), OFF_T_PRINTF_FMT, (OFF_T_PRINTF_DTP) st.st_size);
+      snprintf (szTemp, sizeof(szTemp), OFF_T_PRINTF_FMT, (OFF_T_PRINTF_DTP) st.st_size);
     }
   else if (what == 2)
     {
-      snprintf (szTemp, sizeof (szTemp), "%ld", (long) st.st_mode);
+      snprintf (szTemp, sizeof (szTemp), "%ld", (long)st.st_mode);
     }
   else if (what == 4)
     {
@@ -1143,7 +1147,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
   DIR *df = 0;
   struct dirent *de;
-  struct stat st;
+  STAT_T st;
 #else
   ptrlong rc = 0;
   WIN32_FIND_DATA fd, *de;
@@ -1194,7 +1198,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
                   char path [PATH_MAX];
 		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
-		  stat (path, &st);
+		  V_STAT (path, &st);
 		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
 		    hit = 1; /* Different values of \c hit are solely for debugging purposes */
 		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
@@ -1465,7 +1469,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     fd = fd_open (fname_cvt, OPEN_FLAGS);
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
@@ -2424,11 +2428,10 @@ bif_mdigest5 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define MOD_ADLER 65521
 #define ADLER_MAX_BLOCK_LEN 5550
 #define MOD_ADLER_WRAP(x) x = (x & 0xffff) | ((x >> 16) * (65536 - MOD_ADLER))
-static caddr_t
-bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+
+int
+adler32_of_buffer (unsigned char *data, size_t len)
 {
-  unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "adler32");
-  size_t len = box_length (data) - 1;
   unsigned lo = 1, hi = 0;
   while (len)
    {
@@ -2447,7 +2450,15 @@ bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     lo -= MOD_ADLER;
   if (hi >= MOD_ADLER)
     hi -= MOD_ADLER;
-  return box_num ((hi << 16) | lo);
+  return ((hi << 16) | lo);
+}
+
+static caddr_t
+bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "adler32");
+  size_t len = box_length (data) - 1;
+  return box_num (adler32_of_buffer (data, len));
 }
 
 static caddr_t
@@ -2567,7 +2578,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   pid_t child_pid;
   int status;
 #endif
-  struct stat st;
+  STAT_T st;
 
 
   if (2 + MAXARGS < argc)
@@ -2617,7 +2628,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifdef WIN32
   strcat_ck (full_exe_name, ".exe");
 #endif
-  if (-1 == stat (full_exe_name, &st))
+  if (-1 == V_STAT (full_exe_name, &st))
     {
       sqlr_new_error ("42000", "SR408",
 	  "Required executable '%s' does not exist, error %d", full_exe_name,
@@ -2980,6 +2991,49 @@ mime_find_boundry (char *szMessage, long message_size, long offset,
   while (1);
 }
 
+caddr_t
+mime_parse_header (int *rfc822, caddr_t szMessage, long message_size, long offset)
+{
+  char szNewBoundry[1000], szHeaderLine[1000], szAttr[1000], szValue[1000];
+  long newOffset = offset, tempOffset = 0, lineOffset;
+  int new_mode = *rfc822;
+  int override_to_mime = 0;
+  dk_set_t attrs = NULL;
+  caddr_t result = NULL;
+
+  *szNewBoundry = 0;
+
+  /* skip the empty lines if in RFC822 header */
+  if (*rfc822)
+    while ((iswhite (szMessage + newOffset) || isendline (szMessage + newOffset)) && newOffset < message_size)
+      newOffset++;
+  while (0 < (tempOffset = mime_get_line (szMessage, message_size, newOffset, szHeaderLine, 1000)))
+    {
+      newOffset = tempOffset;
+      lineOffset = 0;
+      if (strlen (szHeaderLine) < 2)
+	break;
+      override_to_mime = 0;
+
+      lineOffset = mime_get_attr (szHeaderLine, 0, ':', rfc822, &override_to_mime, szAttr, 1000, szValue, 1000);
+      if (lineOffset == -1)
+	continue;
+      dk_set_push (&attrs, (void *) box_dv_short_string (szAttr));
+      dk_set_push (&attrs, (void *) box_dv_short_string (szValue));
+      if (override_to_mime || !*rfc822)
+	{
+	  new_mode = 0;
+	  while (-1 != (lineOffset = mime_get_attr (szHeaderLine, lineOffset, '=', rfc822, &override_to_mime, szAttr, 1000, szValue, 1000)))
+	    {
+	      dk_set_push (&attrs, (void *) box_dv_short_string (szAttr));
+	      dk_set_push (&attrs, (void *) box_dv_short_string (szValue));
+	    }
+	}
+    }
+  if (attrs)
+    result = list_to_array (dk_set_nreverse (attrs));
+  return result;
+}
 
 long
 get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
@@ -3760,6 +3814,19 @@ bif_mime_tree (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) result;
 }
 
+static caddr_t
+bif_mime_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *szMessage = bif_string_arg (qst, args, 0, "mime_header");
+  int rfc822 = 1;
+  caddr_t result = NULL;
+
+  if (BOX_ELEMENTS (args) > 1)
+    rfc822 = (int) bif_long_arg (qst, args, 1, "mime_header");
+
+  result = mime_parse_header (&rfc822, szMessage, box_length (szMessage) - 1, 0);
+  return result ? result : NEW_DB_NULL;
+}
 
 static voidpf
 zlib_dk_alloc (voidpf opaque, uInt items, uInt size)
@@ -3876,6 +3943,103 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   inflateEnd (&zs);
 }
 
+void
+zlib_blob_uncompress (lock_trx_t *lt, blob_handle_t *bh, dk_session_t * out, caddr_t * err_ret)
+{
+  z_stream zs;
+  int rc;
+  char szBuffer[DKSES_OUT_BUFFER_LENGTH];
+  size_t bytes = bh->bh_length;
+  long fill = 0;
+  dp_addr_t start;
+  buffer_desc_t *buf;
+  long from_byte, bytes_filled, bytes_on_page;
+  it_cursor_t *tmp_itc;
+  bh->bh_current_page = bh->bh_page;
+  bh->bh_position = 0;
+  if (!bytes)
+    return;
+  ZLIB_INIT_DK_STREAM (zs);
+  inflateInit (&zs);
+  bh_fetch_dir (lt, bh);
+  bh_read_ahead (lt, bh, 0, (unsigned) bh->bh_length);
+  start = bh->bh_current_page;
+  buf = NULL;
+  from_byte = bh->bh_position;
+  bytes_filled = 0;
+  tmp_itc = itc_create (NULL, lt);
+  itc_from_it (tmp_itc, bh->bh_it);
+  while (start)
+    {
+      long len, next;
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+      if (is_reg)
+	db_dbg_account_add_page (start);
+#endif
+      if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, bh, 1))
+        break;
+      len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
+      bytes_on_page = len - from_byte;
+      if (bytes_on_page)
+	{
+	  /* dbg_printf (("Read blob page %ld, %ld bytes.\n", start,
+	     bytes_on_page)); */
+          zs.next_in = (Bytef *)(buf->bd_buffer + DP_DATA + from_byte);
+          zs.avail_in = bytes_on_page;
+          do
+            {
+              zs.next_out = (Bytef *) szBuffer;
+              zs.avail_out = sizeof (szBuffer);
+              rc = inflate (&zs, Z_NO_FLUSH);
+              if (rc != Z_OK && rc != Z_STREAM_END)
+                {
+                  if (err_ret)
+                    *err_ret = srv_make_new_error ("22025", "SR104", "Error in decompressing of blob, page %ld", (long)start);
+                  next = 0;
+                  goto next_is_set; /* see below */
+                }
+              if (sizeof (szBuffer) - zs.avail_out > 0)
+                session_buffered_write (out, szBuffer,
+                sizeof (szBuffer) - zs.avail_out );
+            } while (rc != Z_STREAM_END);
+	  bytes_filled += bytes_on_page;
+	  from_byte += bytes_on_page;
+	}
+      next = LONG_REF (buf->bd_buffer + DP_OVERFLOW);
+next_is_set:
+      if (start == bh->bh_page)
+	{
+	  dp_addr_t t = LONG_REF (buf->bd_buffer + DP_BLOB_DIR);
+	  if (bh->bh_dir_page && t != bh->bh_dir_page)
+	    log_info ("Mismatch in directory page ID %d(%x) vs %d(%x).",
+		t, t, bh->bh_dir_page, bh->bh_dir_page);
+	  bh->bh_dir_page = t;
+	}
+      ITC_IN_KNOWN_MAP (tmp_itc, buf->bd_page);
+      page_leave_inner (buf);
+      ITC_LEAVE_MAP_NC (tmp_itc);
+      bh->bh_current_page = next;
+      bh->bh_position = 0;
+      from_byte = 0;
+      start = next;
+    }
+  itc_free (tmp_itc);
+
+  bh->bh_current_page = bh->bh_page;
+  bh->bh_position = 0;
+
+  if (bytes_filled != bytes)
+    goto stub_for_corrupted_blob;	/* see below */
+  return;
+
+/* If blob handle references to a field of deleted row, or in case of internal error, we should return empty string */
+stub_for_corrupted_blob:
+  log_info ("Attempt to convert invalid blob to string_output at page %d, %ld bytes expected, %ld retrieved%s",
+    bh->bh_page, bytes, fill,
+    ((0 == fill) ? "; it may be access to deleted page." : "") );
+  inflateEnd (&zs);
+}
+
 static int
 zget_byte (z_stream * stream)
 {
@@ -3979,6 +4143,67 @@ zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   while (rc != Z_STREAM_END);
   inflateEnd (&zs);
 }
+
+void
+zlib_strses_gzip_uncompress (dk_session_t * ses, dk_session_t * out, caddr_t *err_ret)
+{
+  z_stream zs;
+  int rc, started = 0;
+  char out_buffer[DKSES_OUT_BUFFER_LENGTH];
+  char in_buffer[DKSES_OUT_BUFFER_LENGTH];
+  long ofs = 0, unread_bytes;
+
+  ZLIB_INIT_DK_STREAM (zs);
+  inflateInit2 (&zs, -MAX_WBITS);
+  while (sizeof (in_buffer) > (unread_bytes = strses_get_part (ses, in_buffer, ofs, sizeof (in_buffer))))
+    {
+      ofs += sizeof (in_buffer) - unread_bytes;
+
+      if (out)
+	session_flush_1 (out);
+
+      zs.next_in = (Bytef *) in_buffer;
+      zs.avail_in = sizeof (in_buffer) - unread_bytes;
+      if (!started)
+	{
+	  zcheck_header (&zs, err_ret);
+	  if (err_ret && *err_ret)
+	    {
+	      inflateEnd (&zs);
+	      return;
+	    }
+	  started = 1;
+	}
+      do
+	{
+	  zs.next_out = (Bytef *) out_buffer;
+	  zs.avail_out = sizeof (out_buffer);
+	  rc = inflate (&zs, Z_NO_FLUSH);
+	  if (rc != Z_OK && rc != Z_STREAM_END)
+	    goto error;
+
+	  if (sizeof (out_buffer) - zs.avail_out > 0 && out)
+	    session_buffered_write (out, out_buffer, sizeof (out_buffer) - zs.avail_out);
+	}
+      while (zs.avail_in && rc != Z_STREAM_END);
+    }
+  zs.next_in = (Bytef *) in_buffer;
+  zs.avail_in = 0;
+  zs.next_out = (Bytef *) out_buffer;
+  zs.avail_out = sizeof (out_buffer);
+  rc = inflate (&zs, Z_FINISH);
+  if (rc != Z_OK && rc != Z_STREAM_END)
+    goto error;
+  if (sizeof (out_buffer) - zs.avail_out > 0 && out)
+    session_buffered_write (out, out_buffer, sizeof (out_buffer) - zs.avail_out);
+
+error:
+  inflateEnd (&zs);
+  if (rc != Z_OK && rc != Z_STREAM_END)
+    *err_ret = srv_make_new_error ("22000", "SR093", "Error in de-compressing");
+  return;
+}
+
 
 long
 strses_write_out_compressed (dk_session_t * ses, dk_session_t * out)
@@ -4088,11 +4313,21 @@ static caddr_t
 bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char *szMe = "gzip_uncompress";
-  caddr_t src = bif_string_arg (qst, args, 0, szMe);
-  dk_session_t *out = strses_allocate ();
+  caddr_t src = bif_arg (qst, args, 0, szMe);
+  dk_session_t *out;
+  dtp_t dtp = DV_TYPE_OF (src);
+
+  if (DV_STRING_SESSION != dtp && !DV_STRINGP (src))
+    sqlr_new_error ("22023", "SR095",
+	"%s needs a string_output or string as a first argument,"
+	" not an argument of type %s (%d)", szMe, dv_type_title (dtp), dtp);
+  out = strses_allocate ();
   strses_enable_paging (out, http_ses_size);
 
-  zlib_box_gzip_uncompress (src, out, err_ret);
+  if (DV_STRING_SESSION != dtp)
+    zlib_box_gzip_uncompress (src, out, err_ret);
+  else
+    zlib_strses_gzip_uncompress ((dk_session_t *) src, out, err_ret);
   return (caddr_t) out;
 }
 
@@ -4122,7 +4357,7 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       dk_free_box (dname_cvt);
@@ -4181,7 +4416,7 @@ bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_resignal (err);
     }
   fd = fd_open (fname_cvt, OPEN_FLAGS | O_TRUNC);
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       dk_free_box (dname_cvt);
@@ -4567,7 +4802,7 @@ strses_write_out_gz (dk_session_t * ses, dk_session_t * out, strses_chunked_out_
   strses_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   strses_file_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   gzwrite_ses (outd, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
-  gzclose_ses (outd); /* free of the stream and set outd->sc_buff to null as next flush on output may jump ouside with dead memory in outd members */
+  gzclose_ses (outd); /* free of the stream and set outd->sc_buff to null as next flush on output may jump outside with dead memory in outd members */
   session_flush_1 (out);
   outd->sc_bytes_sent = out->dks_bytes_sent - start;
 }
@@ -5666,7 +5901,7 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fd = fd_open (fname, OPEN_FLAGS_RO);
 #endif
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       sqlr_new_error ("39000", "FA003", "Can't open file %s, error : %s",
@@ -5779,7 +6014,7 @@ bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
@@ -5809,6 +6044,16 @@ signal_error:
   dk_free_box ((caddr_t) ses);
   sqlr_resignal (err);
   return NULL;
+}
+
+caddr_t
+bif_getenv (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t var = bif_string_arg (qst, args, 0, "getenv");
+  char * res = NULL;
+  sec_check_dba ((query_instance_t *)qst, "getenv");
+  res = getenv (var);
+  return res ? box_dv_short_string (res) : NEW_DB_NULL;
 }
 
 /* hooks for operating on gz stram via string session */
@@ -5853,7 +6098,7 @@ bif_gz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
@@ -5895,7 +6140,14 @@ signal_error:
 }
 
 
+#if defined(__APPLE__)
+#define fseeko64 fseeko
+#define ftello64 ftello
+#define fopen64  fopen
+#endif
+
 #include "zlib/contrib/minizip/unzip.h"
+#include "zlib/contrib/minizip/ioapi.h"
 #include "zlib/contrib/minizip/ioapi.c"
 #include "zlib/contrib/minizip/unzip.c"
 
@@ -5931,13 +6183,14 @@ bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rc = unzOpenCurrentFilePassword (uf, NULL /* password */);
   if (rc != UNZ_OK)
     {
-      *err_ret = srv_make_new_error ("37000", "ZIP01", "Can not open file from archive");
+      *err_ret = srv_make_new_error ("37000", "ZIP02", "Can not open file from archive");
       goto err_end;
     }
 
   ses = strses_allocate ();
+  strses_enable_paging (ses, http_ses_size);
 
-  do 
+  do
     {
       rc = unzReadCurrentFile (uf, buffer, sizeof (buffer));
       if (rc < 0)
@@ -5950,9 +6203,93 @@ bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   while (rc > 0);
 
 err_end:
-  unzCloseCurrentFile (uf);
+  unzClose (uf);
   dk_free_box (fname_cvt);
   return (caddr_t) ses;
+}
+
+
+/**
+   an entry in result consist of:
+   1. file name incl. path
+   2. uncompressed size
+   3. compressed size
+   4. original file date
+ */
+static caddr_t
+bif_unzip_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "unzip_list";
+  caddr_t fname = bif_string_arg (qst, args, 0, szMe);
+  unzFile uf;
+  uint32 i;
+  unz_global_info gi;
+  caddr_t fname_cvt;
+  caddr_t err = NULL;
+  int rc = 0;
+  dk_set_t set = NULL;
+
+  sec_check_dba ((query_instance_t *) qst, szMe);
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 1);
+  if (NULL != err)
+    {
+      dk_free_box (fname_cvt);
+      sqlr_resignal (err);
+    }
+  uf = unzOpen (fname);
+  if (!uf)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP03", "Can not open archive");
+      goto err_end;
+    }
+  rc = unzGetGlobalInfo (uf, &gi);
+  if (rc != UNZ_OK)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP04", "error %d with zipfile in unzGetGlobalInfo", rc);
+      goto err_end;
+    }
+  for (i = 0; i < gi.number_entry; i++)
+    {
+      char filename_inzip[PATH_MAX + 1];
+      unz_file_info file_info;
+      TIMESTAMP_STRUCT ts;
+      caddr_t dt;
+
+      rc = unzGetCurrentFileInfo (uf, &file_info, filename_inzip, sizeof (filename_inzip), NULL, 0, NULL, 0);
+      if (rc != UNZ_OK)
+	{
+	  *err_ret = srv_make_new_error ("37000", "ZIP05", "error %d with zipfile in unzGetCurrentFileInfo", rc);
+	  break;
+	}
+      /* convert tmu_date to DV_DATETIME */
+      dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+      ts.year = file_info.tmu_date.tm_year;
+      ts.month = file_info.tmu_date.tm_mon;
+      ts.day = file_info.tmu_date.tm_mday;
+      ts.hour = file_info.tmu_date.tm_hour;
+      ts.minute = file_info.tmu_date.tm_min;
+      ts.second	= file_info.tmu_date.tm_sec;
+      ts.fraction = 0;
+      timestamp_struct_to_dt (&ts, dt);
+      dk_set_push (&set, list (4, box_dv_short_string (filename_inzip),
+	    box_num (file_info.uncompressed_size), box_num (file_info.compressed_size), dt));
+      if ((i+1) < gi.number_entry)
+	{
+	  rc = unzGoToNextFile (uf);
+	  if (rc != UNZ_OK)
+	    {
+	      *err_ret = srv_make_new_error ("37000", "ZIP06", "error %d with zipfile in unzGoToNextFile", rc);
+	      break;
+	    }
+	}
+    }
+
+err_end:
+  unzClose (uf);
+  dk_free_box (fname_cvt);
+  return (caddr_t) list_to_array (dk_set_nreverse (set));
 }
 
 /* tiny CSV parser */
@@ -5967,14 +6304,20 @@ err_end:
 #define CSV_FIELD(set,ses) \
     do \
 	{ \
-	  dk_set_push (&set, csv_field (ses)); \
+	  dk_set_push (&set, csv_field (ses, mode)); \
 	  strses_flush (ses); \
 	  quoted = 0; \
 	  state = CSV_FIELD_NOT_STARTED; \
 	} \
     while (0)
 
-#define CSV_CHAR(c,ses) session_buffered_write_char (c, ses)
+#define CSV_CHAR(c,ses) \
+    do \
+	{ \
+	  char * tail = eh_encode_char__UTF8 (c, utf8char, utf8char + sizeof (utf8char)); \
+	  session_buffered_write (ses, utf8char, tail - utf8char); \
+	} \
+    while (0)
 
 /* CSV errors */
 #define CSV_OK 		0
@@ -5983,11 +6326,19 @@ err_end:
 #define CSV_ERR_UNK 	3
 #define CSV_ERR_END 	4
 
+/* CSV mode */
+#define CSV_STRICT	1
+#define CSV_LAX		2
+
 static caddr_t
-csv_field (dk_session_t * ses)
+csv_field (dk_session_t * ses, int mode)
 {
   caddr_t regex, ret = NULL, str = strses_string (ses);
-  if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
+  if (mode == CSV_LAX && !strcmp (str, "NULL"))
+    {
+      ret = NEW_DB_NULL;
+    }
+  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
     {
       float d = 0;
       sscanf (str, "%f", &d);
@@ -6003,20 +6354,47 @@ csv_field (dk_session_t * ses)
     }
   else
     {
+      if (0 != str[0])
       ret = str;
+      else
+	{
+	  dk_free_box (str);
+	  ret = NEW_DB_NULL;
+	}
     }
   return ret;
+}
+
+static unichar
+get_uchar_from_session (dk_session_t * in, encoding_handler_t * eh)
+{
+  unichar c = UNICHAR_EOD;
+  char buf [MAX_ENCODED_CHAR];
+  int readed = 0;
+  do
+    {
+      const char * ptr = &(buf[0]);
+      if ((readed + eh->eh_minsize) > MAX_ENCODED_CHAR)
+	return UNICHAR_BAD_ENCODING;
+      readed += session_buffered_read (in, buf + readed, eh->eh_minsize);
+      c = eh->eh_decode_char (&ptr, buf + readed);
+    }
+  while (c == UNICHAR_NO_DATA);
+  return c;
 }
 
 caddr_t
 bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
+  dk_session_t *in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
   dk_set_t row = NULL;
-  dk_session_t * fl;
+  dk_session_t *fl;
   caddr_t res = NULL;
-  int quoted = 0, error = CSV_OK;
-  unsigned char c, state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  int quoted = 0, error = CSV_OK, mode = CSV_STRICT, signal_error = 0;
+  unsigned char state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  unichar c;
+  char utf8char[MAX_UTF8_CHAR];
+  encoding_handler_t *eh = &eh__ISO8859_1;
   if (BOX_ELEMENTS (args) > 1)
     {
       caddr_t ch = bif_string_or_null_arg (qst, args, 1, "get_csv_row");
@@ -6027,123 +6405,156 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t ch = bif_string_or_null_arg (qst, args, 2, "get_csv_row");
       quote = ch && ch[0] ? ch[0] : CSV_QUOTE;
     }
+  if (BOX_ELEMENTS (args) > 3)
+    {
+      caddr_t enc = bif_string_or_null_arg (qst, args, 3, "get_csv_row");
+      if (enc && enc[0])
+	eh = eh_get_handler (enc);
+      if (NULL == eh)
+	sqlr_new_error ("42000", "CSV01", "Invalid encoding name '%s' is specified", enc);
+    }
+  if (BOX_ELEMENTS (args) > 4)
+    {
+      int is_null_f = 0;
+      long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
+      signal_error = f & 0x04;
+      f &= 0x03;
+      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT)
+	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
+      mode = f;
+    }
   fl = strses_allocate ();
   CATCH_READ_FAIL (in)
-    {
-      while (CSV_OK == error)
-	{
-	  c = session_buffered_read_char (in);
-	  switch (state)
+  {
+    while (CSV_OK == error)
+      {
+	c = get_uchar_from_session (in, eh);
+	if (UNICHAR_BAD_ENCODING == c)
+	  {
+	    *err_ret = srv_make_new_error ("42000", "CSV02", "Invalid character encoding");
+	    error = CSV_ERR_UNK;
+	    goto end;
+	  }
+	switch (state)
+	  {
+	  case CSV_ROW_NOT_STARTED:
+	  case CSV_FIELD_NOT_STARTED:
 	    {
-	      case CSV_ROW_NOT_STARTED:
-	      case CSV_FIELD_NOT_STARTED:
+	      if (delim != c && (c == 0x20 || c == 0x09 || c == 0xfeff))	/* space or BOM at the start */
+		continue;
+	      else if (c == 0x0d || c == 0x0a)
+		{
+		  if (state == CSV_ROW_NOT_STARTED)	/* skip empty lines */
+		    continue;
+		  else
 		    {
-		      if (delim != c && (c == 0x20 || c == 0x09)) /* space */
-			continue;
-		      else if (c == 0x0d || c == 0x0a)
-			{
-			  if (state == CSV_ROW_NOT_STARTED) /* skip empty lines */
-			    continue;
-			  else
-			    {
-			      CSV_FIELD (row, fl);
-			      goto end; /* row end */
-			    }
-			}
-		      else if (c == delim)
-			{
-			  CSV_FIELD (row, fl);
-			}
-		      else if (c == quote)
-			{
-			  state = CSV_FIELD_STARTED;
-			  quoted = 1;
-			}
-		      else
-			{
-			  CSV_CHAR (c, fl);
-			  state = CSV_FIELD_STARTED;
-			  quoted = 0;
-			}
+		      CSV_FIELD (row, fl);
+		      goto end;	/* row end */
 		    }
-		  break;
-	      case CSV_FIELD_STARTED:
+		}
+	      else if (c == delim)
+		{
+		  CSV_FIELD (row, fl);
+		}
+	      else if (c == quote)
+		{
+		  state = CSV_FIELD_STARTED;
+		  quoted = 1;
+		}
+	      else
+		{
+		  CSV_CHAR (c, fl);
+		  state = CSV_FIELD_STARTED;
+		  quoted = 0;
+		}
+	    }
+	    break;
+	  case CSV_FIELD_STARTED:
+	    {
+	      if (c == quote)
+		{
+		  if (quoted)
 		    {
-		      if (c == quote)
-			{
-			  if (quoted)
-			    {
-			      CSV_CHAR (c, fl);
-			      state = CSV_FIELD_MAY_END;
-			    }
-			  else
-			    {
-			      error = CSV_ERR_ESC;
-			      break;
-			    }
-			}
-		      else if (c == delim)
-			{
-			  if (quoted)
-			    CSV_CHAR (c, fl);
-			  else
-			    CSV_FIELD (row, fl);
-			}
-		      else if (c == 0x0d || c == 0x0a)
-			{
-			  if (quoted)
-			    CSV_CHAR (c, fl);
-			  else
-			    {
-			      CSV_FIELD (row, fl);
-			      goto end; /* row end */
-			    }
-			}
-		      else
-			{
-			  CSV_CHAR (c, fl);
-			}
+		      CSV_CHAR (c, fl);
+		      state = CSV_FIELD_MAY_END;
 		    }
-		  break;
-	      case CSV_FIELD_MAY_END:
+		  else
 		    {
-		      if (c == quote)
-			{
-			  /* skip, double quote */
-			  state = CSV_FIELD_STARTED;
-			}
-		      else if (c == delim)
-			{
-			  fl->dks_out_fill--;
-			  CSV_FIELD (row, fl);
-			}
-		      else if (c == 0x0d || c == 0x0a)
-			{
-			  fl->dks_out_fill--;
-			  CSV_FIELD (row, fl);
-			  goto end; /* row end */
-			}
-		      else
+		      if (CSV_STRICT == mode)
 			{
 			  error = CSV_ERR_ESC;
 			  break;
-			  /*CSV_CHAR (c, fl);*/
 			}
+		      CSV_CHAR (c, fl);
 		    }
-		  break;
-	      default: /* an error */
-		  error = CSV_ERR_UNK;
-		  break;
+		}
+	      else if (c == delim)
+		{
+		  if (quoted)
+		    CSV_CHAR (c, fl);
+		  else
+		    CSV_FIELD (row, fl);
+		}
+	      else if (c == 0x0d || c == 0x0a)
+		{
+		  if (quoted)
+		    CSV_CHAR (c, fl);
+		  else
+		    {
+		      CSV_FIELD (row, fl);
+		      goto end;	/* row end */
+		    }
+		}
+	      else
+		{
+		  CSV_CHAR (c, fl);
+		}
 	    }
-	}
-    }
+	    break;
+	  case CSV_FIELD_MAY_END:
+	    {
+	      if (c == quote)
+		{
+		  /* skip, double quote */
+		  state = CSV_FIELD_STARTED;
+		}
+	      else if (c == delim)
+		{
+		  fl->dks_out_fill--;
+		  CSV_FIELD (row, fl);
+		}
+	      else if (c == 0x0d || c == 0x0a)
+		{
+		  fl->dks_out_fill--;
+		  CSV_FIELD (row, fl);
+		  goto end;	/* row end */
+		}
+	      else
+		{
+		  /* char after closing quote */
+		  if (CSV_STRICT == mode)
+		    {
+		      error = CSV_ERR_ESC;
+		      break;
+		    }
+		  CSV_CHAR (c, fl);
+		  quoted = 0;
+		}
+	    }
+	    break;
+	  default:		/* an error */
+	    error = CSV_ERR_UNK;
+	    break;
+	  }
+      }
+  }
   FAILED
-    {
-      if (CSV_ROW_NOT_STARTED == state) /* when no one char can be read */
-	error = CSV_ERR_END;
-    }
+  {
+    if (CSV_ROW_NOT_STARTED == state)	/* when no one char can be read */
+      error = CSV_ERR_END;
+  }
   END_READ_FAIL (in);
-  if (state == CSV_FIELD_STARTED) /* case when no cr/lf at the end of file */
+  if (state == CSV_FIELD_STARTED)	/* case when no cr/lf at the end of file */
     {
       CSV_FIELD (row, fl);
     }
@@ -6156,7 +6567,11 @@ end:
   if (CSV_OK == error)
     res = list_to_array (dk_set_nreverse (row));
   else
-    dk_free_tree (list_to_array (dk_set_nreverse (row)));
+    {
+      dk_free_tree (list_to_array (dk_set_nreverse (row)));
+      if (signal_error)
+	*err_ret = srv_make_new_error ("37000", "CSV04", "Error parsing CSV row, error code: %d", error);
+    }
   dk_free_box (fl);
   return res;
 }
@@ -6195,6 +6610,7 @@ bif_file_init (void)
     bif_define_typed ("system", bif_system, &bt_integer);
   bif_define_typed ("run_executable", bif_run_executable, &bt_integer);
   bif_define_typed ("mime_tree", bif_mime_tree, &bt_any);
+  bif_define_typed ("mime_header", bif_mime_header, &bt_any);
   bif_define_typed ("gz_compress", bif_gz_compress, &bt_varchar);
   bif_define_typed ("string_output_gz_compress",
       bif_string_output_gz_compress, &bt_integer);
@@ -6203,6 +6619,7 @@ bif_file_init (void)
   bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
   bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
   bif_define ("unzip_file", bif_unzip_file);
+  bif_define ("unzip_list", bif_unzip_list);
   bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
   bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
@@ -6213,6 +6630,7 @@ bif_file_init (void)
   bif_define ("http_mime_type_add", bif_http_mime_type_add);
   bif_define_typed ("http_mime_type", bif_http_mime_type, &bt_varchar);
   bif_define_typed ("delay", bif_sleep, &bt_integer);
+  bif_set_uses_index (bif_sleep); /* is io sect, means can't hold a page wired */
   bif_define_typed ("trace_on", bif_trace_on, &bt_any);
   bif_define_typed ("trace_status", bif_trace_status, &bt_any);
   bif_define_typed ("trace_off", bif_trace_off, &bt_any);
@@ -6230,6 +6648,7 @@ bif_file_init (void)
   bif_define_typed ("file_open", bif_file_open, &bt_any);
   bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
   bif_define_typed ("get_csv_row", bif_get_csv_row, &bt_any);
+  bif_define_typed ("getenv", bif_getenv, &bt_varchar);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif

@@ -50,11 +50,13 @@ typedef struct text_node_s
     state_slot_t *	txs_score_limit;
     state_slot_t *	txs_d_id;		/*!< Text-index id of the row found */
     state_slot_t *	txs_sst;
-    struct xpath_node_s *	txs_xpath_node;
     state_slot_t *	txs_main_range_out;
     state_slot_t *	txs_attr_range_out;
     ptrlong		txs_why_ranges;			/*!< Bits from TXS_RANGES4XXX */
-    ptrlong		txs_is_driving;
+    char		txs_is_driving;
+    char		txs_order; /* if should give deterministic order in cluster */
+    char		txs_is_rdf;
+    table_source_t *	txs_loc_ts; /* half filled ts to serve for partitioning in cluster if txs partitioned by d_id */
     state_slot_t *	txs_cached_string;		/*!< previous string, compiled by xp_text_parse() for this node, as caddr_t */
     state_slot_t *	txs_cached_compiled_tree;	/*!< result of compilation txs_cached_str by xp_text_parse(), as caddr_t * */
     state_slot_t *	txs_cached_dtd_config;
@@ -63,6 +65,11 @@ typedef struct text_node_s
     state_slot_t *	txs_desc;
     state_slot_t *	txs_init_id;
     state_slot_t *	txs_end_id;
+    float		txs_card;
+    /* if xcontains, properties of xpath node duplicated here */
+    char		txs_xn_pred_type;
+    state_slot_t *	txs_xn_xq_compiled;
+    state_slot_t *	txs_xn_xq_source;
   } text_node_t;
 
 
@@ -229,8 +236,11 @@ void ddl_init_xml (void);
 
 #define ENTITY_MAX_ATTRS 200
 
+void geo_node_input (text_node_t * txs, caddr_t * inst, caddr_t * state);
 void txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state);
 void txs_free (text_node_t * txs);
+void xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state);
+caddr_t txs_xn_text_query (text_node_t * txs, query_instance_t * qi, caddr_t xp_str);
 
 #endif /* _XMLNODE_H */
 

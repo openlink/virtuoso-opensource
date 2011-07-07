@@ -80,6 +80,11 @@
       <v:variable persist="session" name="wt_bookmark" type="varchar" default="null" />
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'weblog.vspx'));
+        ]]>
+      </v:before-render>
     	<v:on-post>
         <![CDATA[
           if (e.ve_button is not null)
@@ -272,7 +277,7 @@
             self.v_password := get_keyword('f_password', self.vc_page.vc_event.ve_params, '');
           ]]>
         </v:before-data-bind>
-        <div class="new-form-header">
+        <div class="form-header">
           <v:label format="%s" value="--concat(initcap(self.v_mode), ' weblog')"/>
         </div>
         <div class="new-form-body">
@@ -340,7 +345,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Save" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -435,7 +440,7 @@
             self.v_store_days := get_keyword('f_store_days', self.vc_page.vc_event.ve_params, '30');
           ]]>
         </v:before-data-bind>
-        <div class="new-form-header">
+        <div class="form-header">
           <v:label format="%s" value="--'Update blog'"/>
         </div>
         <div class="new-form-body">
@@ -494,7 +499,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Save" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[

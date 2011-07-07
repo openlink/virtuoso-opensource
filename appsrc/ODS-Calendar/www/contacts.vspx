@@ -24,30 +24,6 @@
 -->
 <v:page name="users" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
-
-      if (self.v_order = columnName and self.v_direction = 'desc')
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      }
-      else if (self.v_order = columnName and self.v_direction = 'asc')
-      {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      }
-      else
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
-
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
       if (columnName = '')
@@ -97,6 +73,7 @@
 
         http (sprintf ('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', params)));
         http (sprintf ('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', params)));
+        http (sprintf ('<input type="hidden" name="form"  id="form"  value="%s"/>', get_keyword('form', params, 'page_form')));
         http (sprintf ('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', params, '')));
         http (sprintf ('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', params, 'sc')));
         http (sprintf ('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', params, '')));
@@ -117,6 +94,8 @@
             <![CDATA[
               self.v_how := self.how.ufl_value;
               self.v_value := trim(self.value.ufl_value);
+
+              self.ds.vc_reset();
               self.vc_data_bind (e);
             ]]>
           </v:on-post>
@@ -151,29 +130,26 @@
             control.ds_sql := concat (control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
           ]]>
         </v:before-data-bind>
+        <v:after-data-bind>
+          control.ds_make_statistic ();
+        </v:after-data-bind>
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="users" class="CAL_grid" cellspacing="0">
-            <thead class="sortHeader">
+          <table class="ODS_grid">
+            <thead>
               <tr>
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
-                  <th class="checkbox" width="1%">
+                  <th class="checkbox">
                     <?vsp
-                      http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this, ''cb_item''); "/>');
+                      http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this); updateChecked(this, ''cb_item''); "/>');
                     ?>
                   </th>
                 </v:template>
-                <th>
-                  <?vsp self.sortColumn('Name', 'P_NAME'); ?>
-                </th>
-                <th>
-                  <?vsp self.sortColumn('Mail', 'P_MAIL'); ?>
-                </th>
+                <?vsp http (DB.DBA.wa_show_column_header('Name', 'P_NAME', self.v_order, self.v_direction, 'width="50%"')); ?>
+                <?vsp http (DB.DBA.wa_show_column_header('Mail', 'P_MAIL', self.v_order, self.v_direction, 'width="50%"')); ?>
                 <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                  <th width="1%">
-                    Action
-                  </th>
+                  <th class="action">Action</th>
                 </v:template>
               </tr>
             </thead>
@@ -185,26 +161,22 @@
           <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table>
               <tr align="center">
-                <td colspan="3">No records</td>
+                <td colspan="<?V either(equ(self.isMultiple(self.v_dst),1),4,3) ?>">No records</td>
               </tr>
             </table>
           </v:template>
 
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
-              <tr>
+              <tr onclick="rowSelected(this);" class="pointer">
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
-                  <td  align="center">
+                  <td class="checkbox">
                     <?vsp
-                      declare pos integer;
                       declare S, name any;
 
                       name := (control.vc_parent as vspx_row_template).te_column_value('P_MAIL');
-                      S := '';
-                      pos := strstr (self.v_s1, concat(name, ','));
-                      if (not isnull (pos))
-                        S := 'checked="checked"';
-                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item''); " />', name, S));
+                      S := case when isnull (strstr(self.v_s1, concat(name, ','))) then '' else 'checked="checked"' end;
+                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item'', event); " />', name, S));
                     ?>
                   </td>
                 </v:template>
@@ -229,6 +201,13 @@
 
         <v:template type="simple" name-to-remove="table" set-to-remove="top">
           <table>
+            <tfoot>
+              <tr>
+                <td style="text-align: right;" colspan="<?V either(equ(self.isMultiple(self.v_dst),1),4,3) ?>">
+                  <vm:ds-navigation data-set="ds"/>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </v:template>
 
@@ -236,14 +215,9 @@
       <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
         <div style="padding: 0 0 0.5em 0;">
           <hr />
-          <a href="#" onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
+          <span onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition.');" class="button"> Add selected</span>
         </div>
       </v:template>
-      <script>
-        <![CDATA[
-          coloriseTable('users');
-        ]]>
-      </script>
     </vm:pagebody>
   </vm:popup_page_wrapper>
 </v:page>

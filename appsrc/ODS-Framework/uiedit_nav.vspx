@@ -1,0 +1,82 @@
+<v:page name="ui_profile"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+	xmlns:v="http://www.openlinksw.com/vspx/">
+<tr class="navtab_row">
+  <?vsp
+    declare btn varchar;
+
+    btn := case self.pg
+             when 1 then 'user_s_personal_' || cast (self.tabNo as varchar)
+             when 2 then 'user_s_business_' || cast (self.tabNo as varchar)
+             else ''
+           end;
+  ?>
+  <script type="text/javascript">
+    def_btn = '<?V btn ?>';
+  </script>
+<td class="<?V case when self.pg = 1 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url01"
+         value="Personal"
+         format="%s"
+         url="--sprintf('uiedit.vspx?page=1')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 2 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url02"
+         value="Business"
+         format="%s"
+         url="--sprintf('uiedit_bz.vspx?page=2')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 3 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url03"
+         value="Security"
+         format="%s"
+         url="--sprintf('uiedit_sec.vspx?page=3')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 4 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url04"
+         value="Associations &amp; Web Services"
+         format="%s"
+         url="--sprintf('uiedit_ws.vspx?page=4')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url05"
+         value="Annotations"
+         format="%s"
+         url="--sprintf('uiedit_ann.vspx?page=5')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url7"
+         value="LDAP Servers"
+         format="%s"
+         url="--sprintf('uiedit_ldap.vspx?page=7')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url8"
+         value="Groups"
+         format="%s"
+         url="--sprintf('uiedit_grp.vspx?page=8')"
+         xhtml_class="tab"/>
+</td>
+<td class="<?V case when self.pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url8"
+         value="ACL Sharing"
+         format="%s"
+         url="--sprintf('uiedit_acl.vspx?page=9')"
+         xhtml_class="tab"/>
+</td>
+<td class="page_tab_empty" align="center" width="100%">
+   <table cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="100%">&nbsp;
+        </td>
+      </tr>
+   </table>
+</td>
+</tr>
+</v:page>

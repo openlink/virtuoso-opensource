@@ -29,7 +29,7 @@
 
       if (isnull(self.v_pid))
       {
-            select EFI_TITLE into title from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
+        select EFI_TITLE into title from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_id;
           } else {
             select EFIC_TITLE into title from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = self.v_pid;
           }
@@ -43,7 +43,7 @@
 
       if (isnull(self.v_pid))
       {
-            select EFI_TITLE into comment from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
+        select EFI_TITLE into comment from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_id;
           } else {
             select EFIC_COMMENT into comment from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = self.v_pid;
           }
@@ -55,7 +55,7 @@
   <vm:popup_pagewrapper>
         <vm:variables>
       <v:variable persist="0" name="v_mode" type="varchar" default="'show'" param-name="mode" />
-          <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
+      <v:variable persist="0" name="v_id" param-name="id" type="integer" />
           <v:variable persist="0" name="v_pid" type="integer"/>
       <v:variable persist="0" name="openid_identity" type="varchar" default="null" param-name="openid.identity" />
       <v:variable persist="0" name="openid_sig" type="varchar" default="null" param-name="openid.sig" />
@@ -64,10 +64,10 @@
       <v:variable persist="0" name="openid_name" type="varchar" default="null" param-name="openid.sreg.fullname" />
         </vm:variables>
     <vm:pagebody>
-      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params, ''))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params, ''))); ?>
       <?vsp http(sprintf('<input type="hidden" name="user_name" id="user_name" value="%s" />', ENEWS.WA.account_name (self.account_id))); ?>
-          <div class="new-form-header">
+      <div class="form-header">
         Discussion
           </div>
           <div class="new-form-body">
@@ -78,7 +78,7 @@
                   <v:label value="">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := (select coalesce(EFI_TITLE, '~ no title ~') from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid);
+                    control.ufl_value := (select coalesce (EFI_TITLE, '~ no title ~') from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_id);
                       ]]>
                     </v:after-data-bind>
                   </v:label>
@@ -96,18 +96,18 @@
                 </td>
               </tr>
           <?vsp
-            if (exists (select 1 from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is not null))
+            if (exists (select 1 from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = self.v_id and EFIC_PARENT_ID is not null))
             {
           ?>
               <tr>
                 <td>
               <div class="comment-section">Comments</div>
-                  <v:tree name="comments_list" multi-branch="1" orientation="vertical" start-path="--self.v_fid" open-at="--'//*'" root="ENEWS.WA.cm_root_node"	child-function="ENEWS.WA.cm_child_node">
+              <v:tree name="comments_list" multi-branch="1" orientation="vertical" start-path="--self.v_id" open-at="--'//*'" root="ENEWS.WA.cm_root_node"  child-function="ENEWS.WA.cm_child_node">
 	                  <v:node-template name="node_tmpl">
 	                    <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
                     		<?vsp
                       		{
-                      		  declare id, comment, title, u_name, last_update any;
+                        declare id, comment, title, iri, u_name, last_update any;
 
                       		  id := cast (control.tn_value as integer);
                       		  declare exit handler for not found;
@@ -115,6 +115,7 @@
                       		    into title, comment, u_name, last_update
                       		    from ENEWS.WA.FEED_ITEM_COMMENT
                       		   where EFIC_ID = id;
+                        iri := ENEWS.WA.url_fix (SIOC..feed_comment_iri (self.domain_id, self.v_id, id), get_keyword ('sid', self.vc_page.vc_event.ve_params), get_keyword ('realm', self.vc_page.vc_event.ve_params));
                          
                         declare parsed_message any;
                         declare _print_body,d_name varchar;
@@ -152,7 +153,8 @@
                       	?>
 	                      <div class="comment" id="msg_<?V id ?>">
 		                      <div class="comment-header">
-                        <span class="comment-subj"><?V ENEWS.WA.utf2wide (title) ?></span> <br />
+                        <?vsp http (sprintf ('<a href="%V">%s</a>', iri, title)); ?>
+                        <br />
 		                      </div>
 		                      <div class="comment-msg">
                             <?vsp
@@ -281,7 +283,7 @@
 
                             host := http_request_header (lines, 'Host');
 
-                            this_page := 'http://' || host || http_path () || sprintf ('?fid=%d&mode=reply', self.v_fid);
+                            this_page := 'http://' || host || http_path () || sprintf ('?fid=%d&mode=reply', self.v_id);
                             trust_root := 'http://' || host;
                             oi_ident := self.openid_url.ufl_value;
                             if (oi_ident is not null)
@@ -383,17 +385,17 @@
                             if (isnull(self.v_pid))
                             {
                                   -- get root comment;
-                              self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.domain_id and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
+                              self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.domain_id and EFIC_ITEM_ID = self.v_id and EFIC_PARENT_ID is null);
                               if (isnull(self.v_pid))
                               {
-                                ENEWS.WA.nntp_root (self.domain_id, self.v_fid);
-                                self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.domain_id and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
+                                ENEWS.WA.nntp_root (self.domain_id, self.v_id);
+                                self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.domain_id and EFIC_ITEM_ID = self.v_id and EFIC_PARENT_ID is null);
                               }
                                 }
 
-                            ENEWS.WA.nntp_update_item (self.domain_id, self.v_fid);
+                            ENEWS.WA.nntp_update_item (self.domain_id, self.v_id);
                             insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE, EFIC_OPENID_SIG)
-                              values (self.v_pid, self.domain_id, self.v_fid, title, comment, name, mail, url, now (), self.oid_sig.ufl_value || '&mac_key=' || self.oid_key.ufl_value);
+                              values (self.v_pid, self.domain_id, self.v_id, title, comment, name, mail, url, now (), self.oid_sig.ufl_value || '&mac_key=' || self.oid_key.ufl_value);
 
                                 self.v_mode := 'show';
                                 self.vc_data_bind(e);
@@ -420,7 +422,7 @@
             <td>
               Subscribe to an RSS feed of this comment thread:
               <?vsp
-                http(sprintf('<a href="%sOFM.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS conversation" class="gems"><img src="image/rss-icon-16.gif" border="0" /></a>', ENEWS.WA.gems_url (self.domain_id), self.v_fid));
+                http(sprintf('<a href="%sOFM.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS conversation" class="gems"><img src="image/rss-icon-16.gif" border="0" /></a>', ENEWS.WA.gems_url (self.domain_id), self.v_id));
               ?>
             </td>
           </tr>

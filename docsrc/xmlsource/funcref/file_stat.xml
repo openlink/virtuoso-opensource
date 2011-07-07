@@ -39,6 +39,17 @@
 	    </funcprototype>
 	</funcsynopsis>
     </refsynopsisdiv>
+    <refsect1 id="desc"><title>Description</title>
+	<para><function>file_stat</function> returns various information for
+	    an OS file by calling stat () system call and converting the
+	    relevant value to a <type>varchar</type>. The path is relative
+	    to the server's working directory. The what is an integer value
+	    selecting what information to return. If you don't supply second
+	    argument to the function it defaults to mode = 0.</para>
+	<para>The DirsAllowed and DirsDenied lists in Parameters section of the
+	    virtuoso configuration file (virtuoso.ini by default) are not used to control
+	    disk access. </para>
+    </refsect1>
     <refsect1 id="params"><title>Parameters</title>
 	<refsect2><title>path</title>
 	    <para><type>varchar</type> relative path.</para>
@@ -54,17 +65,6 @@
 		<member>5 - file group (group name corresponding to st_gid) </member>
 	    </simplelist>
 	</refsect2>
-    </refsect1>
-    <refsect1 id="desc"><title>Description</title>
-	<para><function>file_stat</function> returns various information for
-	    an OS file by calling stat () system call and converting the
-	    relevant value to a <type>varchar</type>. The path is relative
-	    to the server's working directory. The what is an integer value
-	    selecting what information to return. If you don't supply second
-	    argument to the function it defaults to mode = 0.</para>
-	<para>The DirsAllowed and DirsDenied lists in Parameters section of the
-	    virtuoso configuration file (virtuoso.ini by default) are not used to control
-	    disk access. </para>
     </refsect1>
     <refsect1 id="examples"><title>Examples</title>
 	<example id="ex_file_stat"><title>Simple example</title>

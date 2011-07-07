@@ -1,22 +1,23 @@
 /*
+ *  $Id$
  *
- *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
- *   project.
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
  *
  *  Copyright (C) 1998-2009 OpenLink Software
  *
- *   This project is free software; you can redistribute it and/or modify it
- *   under the terms of the GNU General Public License as published by the
- *   Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
  *
- *   This program is distributed in the hope that it will be useful, but
- *   WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- *   General Public License for more details.
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
  *
- *   You should have received a copy of the GNU General Public License along
- *   with this program; if not, write to the Free Software Foundation, Inc.,
- *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
 
@@ -25,7 +26,7 @@
 %parse-param {yyscan_t yyscanner}
 %lex-param {ttlp_t * ttlp_arg}
 %lex-param {yyscan_t yyscanner}
-%expect 3
+%expect 2
 
 %{
 
@@ -83,6 +84,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _COMMA		/*:: PUNCT_TTL_LAST(",") ::*/
 %token _DOT_WS		/*:: PUNCT("."), TTL, LAST(". "), LAST(".\n"), LAST(".") ::*/
 %token _LBRA		/*:: PUNCT_TTL_LAST("{") ::*/
+%token _LBRA_TOP_TRIG	/*:: PUNCT_TRIG_LAST("{") ::*/
 %token _LPAR		/*:: PUNCT_TTL_LAST("(") ::*/
 %token _LSQBRA		/*:: PUNCT_TTL_LAST("[") ::*/
 %token _LSQBRA_RSQBRA	/*:: PUNCT_TTL_LAST("[]") ::*/
@@ -91,6 +93,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _RSQBRA		/*:: PUNCT_TTL_LAST("[ ]") ::*/
 %token _SEMI		/*:: PUNCT_TTL_LAST(";") ::*/
 %token _EQ		/*:: PUNCT_TTL_LAST("=") ::*/
+%token _EQ_TOP_TRIG	/*:: PUNCT_TRIG_LAST("=") ::*/
 %token _EQ_GT		/*:: PUNCT_TTL_LAST("=>") ::*/
 %token _LT_EQ		/*:: PUNCT_TTL_LAST("<=") ::*/
 %token _BANG		/*:: PUNCT_TTL_LAST("!") ::*/
@@ -151,10 +154,26 @@ turtledoc
 
 clause
         : _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
-	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_tf->tf_base_uri); ttlp_arg->ttlp_tf->tf_base_uri = $2; }
+	| _AT_base_L Q_IRI_REF dot_opt { TF_CHANGE_BASE_AND_DEFAULT_GRAPH(ttlp_arg->ttlp_tf,$2); }
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
-		dk_set_push (&(ttlp_arg->ttlp_namespaces), $3);
-		dk_set_push (&(ttlp_arg->ttlp_namespaces), $2); }
+		caddr_t *old_uri_ptr;
+		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)
+		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, &($2));
+		else
+		  {
+		    ttlp_arg->ttlp_namespaces_prefix2iri = (id_hash_t *)box_dv_dict_hashtable (31);
+		    old_uri_ptr = NULL;
+		  }
+		if (NULL != old_uri_ptr)
+		  {
+		    int err = strcmp (old_uri_ptr[0], $3);
+		    dk_free_box ($2);
+		    dk_free_box ($3);
+		    if (err)
+		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
+		  }
+		else
+		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, &($2), &($3)); }
 	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
 		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
@@ -163,6 +182,12 @@ clause
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 		trig_block_or_predicate_object_list
 	| top_triple_clause_with_nonq_subj
+	| _LBRA_TOP_TRIG {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
+	    inner_triple_clauses trig_group_end dot_opt {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf; }
+
         | error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
 
@@ -188,8 +213,9 @@ trig_block_or_predicate_object_list
 	;
 
 opt_eq_lbra
-	: _LBRA
-	| _EQ _LBRA
+	: _LBRA_TOP_TRIG
+	| _EQ_TOP_TRIG _LBRA_TOP_TRIG
+	| _EQ_TOP_TRIG error { ttlyyerror_action ("No '{' after an equality sign in TriG"); }
 	;
 
 inner_triple_clauses
@@ -524,8 +550,7 @@ items
 		      ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
 		      ttlp_triple_and_inf (ttlp_arg, last_node);
 		      dk_free_tree (ttlp_arg->ttlp_subj_uri);
-		      ttlp_arg->ttlp_subj_uri = NULL; 
-		    }
+		      ttlp_arg->ttlp_subj_uri = NULL; }
 		  if (NULL == ttlp_arg->ttlp_unused_seq_bnodes)
 		    ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  else

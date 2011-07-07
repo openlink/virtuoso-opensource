@@ -142,8 +142,8 @@ JSO_SCALAR qmvcColumnName STRING REQUIRED		--!< Column name
 JSO_SCALAR qmvcColumnFromIRI STRING OPTIONAL
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN qm_ftext virtrdf QuadMapFText		--!< Free text parameters of a quad map value
-JSO_SCALAR qmvftAlias STRING REQUIRED			--!< Alias of a table with free-text data
+JSO_STRUCT_BEGIN qm_ftext virtrdf QuadMapFText		--!< Free text or geo parameters of a quad map value
+JSO_SCALAR qmvftAlias STRING OPTIONAL			--!< Alias of a table with free-text data
 JSO_SCALAR qmvftAuxAlias STRING OPTIONAL		--!< Alias of a table that links free-text data back to object (if needed)
 JSO_SCALAR qmvftTableName STRING OPTIONAL		--!< Name of a table with free-text data
 JSO_SCALAR qmvftAuxTableName STRING OPTIONAL		--!< Name of a table that links free-text data back to object (if needed)
@@ -159,6 +159,7 @@ JSO_POINTER qmvColumns qm_column_array REQUIRED		--!< Relational columns used as
 JSO_SCALAR qmvConds STRING_array OPTIONAL		--!< Templates of filters and join conditions related to the value
 JSO_POINTER qmvFormat qm_format REQUIRED		--!< Quad map format used to convert relational data into RDF nodes
 JSO_POINTER qmvFText qm_ftext OPTIONAL			--!< Free text parameters
+JSO_POINTER qmvGeo qm_ftext OPTIONAL			--!< Geo parameters
 JSO_SCALAR qmvColumnsFormKey BOOLEAN REQUIRED		--!< Flags whether columns of qmvColumns form a unique key of the relational table
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
 JSO_SCALAR qmvIriClass ANY_URI OPTIONAL			--!< Known IRI class, if the IRI is calculable
@@ -206,6 +207,7 @@ JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< DEPRECATED Filter expression t
 JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
 JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map
 JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps
+JSO_SCALAR qmAliasesKeyrefdByQuad STRING_array OPTIONAL	--!< List of aliases such that any quad made by the quad map can be made from exactly one row from the alias, so quad identifies the row there
 JSO_SCALAR qmAllATableUses INTEGER_array PRIVATE	--!< Complete list of all qmatu made for qmATables and qmvATables, sorted alphabetically by qmatu_alias
 JSO_SCALAR qmAllATableUseCount INTEGER PRIVATE		--!< Number of used elements in qmAllATableUseCount
 JSO_SCALAR qmAllConds STRING_array PRIVATE		--!< Complete list of all join conditions from qmConds and qmvConds, sorted alphabetically

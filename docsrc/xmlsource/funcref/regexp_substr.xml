@@ -58,8 +58,11 @@
     The regexp syntax allows subexpressions to be marked in the regular expression
     (using the braces syntax). An example of such type of expression will be: '(2[34]).*(2[35])' which means a regular
     expression having two subexpressions: '2[34]' and '2[35]'.</para>
+  </refsect1>
+  <refsect1 id="examples_regexp_substr"><title>Examples</title>
+    <example id="ex_regexp_substr_1"><title>Simple example</title>
   <para>Let's apply the above regexp to the following source string: 22232225222323</para>
-  <programlisting>
+      <screen>
 SQL> select regexp_substr('(2[34]).*(2[35])','22242226222527', 0);
 callret
 VARCHAR
@@ -68,10 +71,9 @@ _______________________________________________________________________________
 2422262225
 
 1 Rows. -- 0 msec.
-</programlisting>
-<para>This returns the hole matched string from the expression.</para>
-
-<programlisting>
+      </screen>
+      <para>This returns the whole matched string from the expression.</para>
+      <screen>
 SQL> select regexp_substr('(2[34]).*(2[35])','22242226222527', 1);
 callret
 VARCHAR
@@ -80,11 +82,10 @@ _______________________________________________________________________________
 24
 
 1 Rows. -- 0 msec.
-</programlisting>
+      </screen>
 <para>This returns what has been matched for the first ('2[34]') regexp subexpression
 out of the whole matched substring (see above) : basically denoted as \1 in perl</para>
-
-<programlisting>
+      <screen>
 SQL> select regexp_substr('(2[34]).*(2[35])','22242226222527', 2);
 callret
 VARCHAR
@@ -93,13 +94,13 @@ _______________________________________________________________________________
 25
 
 1 Rows. -- 10 msec.
-</programlisting>
+      </screen>
 <para>This returns what has been matched for the second ('2[35]') regexp subexpression
 out of the whole matched substring. This is \2 in perl.
 Note that the text '22' (that corresponds to '.*' part of the regexp) is not
 returned by the above call because it is not contained in the second pair of braces.</para>
+    </example>
 	</refsect1>
-
   <refsect1 id="seealso_regexp_substr"><title>See Also</title>
     <para><link linkend="fn_regexp_match"><function>regexp_match()</function></link></para>
     <para><link linkend="fn_regexp_like"><function>regexp_like()</function></link></para>

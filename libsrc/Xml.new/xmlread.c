@@ -208,7 +208,7 @@ get_one_xml_char (vxml_parser_t * parser)
 	GPF_T;
       if (parser->feed_tail > parser->feed_end)
 	GPF_T;
-      if (parser->feed_end > parser->feed_buf+FEED_BUF_SIZE)
+      if (parser->feed_end > parser->feed_buf + parser->feed_buf_size)
 	GPF_T;
 #endif
       if (parser->feed_tail < parser->feed_end)
@@ -233,10 +233,10 @@ get_one_xml_char (vxml_parser_t * parser)
 	GPF_T;
       if (parser->feed_tail > parser->feed_end)
 	GPF_T;
-      if (parser->feed_end > parser->feed_buf+FEED_BUF_SIZE)
+      if (parser->feed_end > parser->feed_buf + parser->feed_buf_size)
 	GPF_T;
 #endif
-	  feed_result = parser->feeder (parser->read_cd, put_begin, parser->feed_buf+FEED_BUF_SIZE-put_begin);
+	  feed_result = parser->feeder (parser->read_cd, put_begin, parser->feed_buf + parser->feed_buf_size - put_begin);
 	  if (0 >= feed_result)
 	    goto fail;
 	  parser->input_weight += 1 + (feed_result / 16);
@@ -247,7 +247,7 @@ get_one_xml_char (vxml_parser_t * parser)
 	GPF_T;
       if (parser->feed_tail > parser->feed_end)
 	GPF_T;
-      if (parser->feed_end > parser->feed_buf+FEED_BUF_SIZE)
+      if (parser->feed_end > parser->feed_buf + parser->feed_buf_size)
 	GPF_T;
 #endif
 	} while (0);
@@ -545,10 +545,10 @@ advance_ptr (vxml_parser_t * parser)
 	dk_free (old->data_begin, -1);
       else if (NULL != old->data_owner)
 	old->data_owner->data_refctr -= 1;
-      dk_free (old, sizeof (brick_t));
 #ifdef UNIT_DEBUG
       printf ("Releasing a buffer element. %x\n", old);
 #endif
+      dk_free (old, sizeof (brick_t));
     }
   leftmost_saved->prev = NULL;
   validate_parser_bricks(parser);
@@ -1008,6 +1008,41 @@ test_class_str (vxml_parser_t * parser, const xml_char_class_t cclass)
 	    break;
 	}
 
+/*c_is_not_in_char_class:*/
+      parser->pptr = tmp;
+      return (ptr_diff (tmp, rem));
+
+c_is_in_char_class:
+      ;
+    }
+}
+
+int
+test_class_str_noentity (vxml_parser_t * parser, const xml_char_class_t cclass)
+{
+  unichar c;
+  buf_ptr_t rem = parser->pptr;
+  buf_ptr_t tmp;
+  const xml_char_range_t * cl_ptr;
+  for (;;)
+    {
+      if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+        skip_plain_tok_chars (parser, VXML_CHARPROP_ANY_NONCHAR);
+      tmp = parser->pptr;
+      c = get_tok_char (parser);
+      if (c < 0)
+	return 0;
+      cl_ptr = cclass;
+      for (;;)
+	{
+	  if (c < cl_ptr->start)
+	    break;
+	  if (c <= cl_ptr->end)
+	    goto c_is_in_char_class;
+	  cl_ptr++;
+	  if (cl_ptr->start < 0)
+	    break;
+	}
 /*c_is_not_in_char_class:*/
       parser->pptr = tmp;
       return (ptr_diff (tmp, rem));
@@ -2409,6 +2444,12 @@ start_token_again:
                     { 
                       buf_ptr_t tmp2 = parser->pptr;
                       if (!get_to_string (parser, "-->"))
+                        parser->pptr = tmp2;
+                    }
+                  else if (test_string (parser, "[CDATA["))
+                    { 
+                      buf_ptr_t tmp2 = parser->pptr;
+                      if (!get_to_string (parser, "]]>"))
                         parser->pptr = tmp2;
                     }
 		  goto character_data; /* no tags may be closed this way inside <SCRIPT> or <STYLE> */

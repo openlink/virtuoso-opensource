@@ -71,10 +71,43 @@ create procedure briefcase_sparql (
   declare st, msg, meta, rows any;
 
   st := '00000';
-  exec (sql, st, msg, vector (), 0, meta, rows);
+  exec (sql, st, msg, vector (), vector ('use_cache', 1), meta, rows);
   if ('00000' = st)
     return rows;
   return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure briefcase_resource_iri (
+  in full_path varchar)
+{
+  declare id, path, wai_name any;
+
+  path := split_and_decode (full_path, 0, '\0\0/');
+  if (length (path) < 6 or path [4] <> 'Public')
+    return null;
+
+  wai_name := (select WAI_NAME
+                 from DB.DBA.WA_INSTANCE,
+                      DB.DBA.WA_MEMBER,
+                      DB.DBA.SYS_USERS
+                where WAI_TYPE_NAME = 'oDrive'
+                  and WAM_INST = WAI_NAME
+                  and WAM_USER = U_ID
+                  and WAM_IS_PUBLIC = 1
+                  and U_NAME = path[3]
+                  and U_ACCOUNT_DISABLED = 0
+                  and U_DAV_ENABLE = 1);
+  if (isnull (wai_name))
+    return null;
+
+  id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = full_path);
+  if (isnull (id))
+    return null;
+
+  return post_iri_ex (briefcase_iri (wai_name), id);
 }
 ;
 
@@ -84,6 +117,9 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
 {
   declare iri, c_iri, creator_iri, t_iri, link, content varchar;
   declare linksTo, tags any;
+
+  -- init services
+  SIOC..fill_ods_briefcase_services ();
 
   for (select WAI_ID,
               WAI_NAME,
@@ -149,14 +185,49 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
         briefcase_sioc_insert_ex (RES_FULL_PATH, RES_TYPE, RES_OWNER, _U_NAME, content);
       }
     }
-  }
-  -- update WebAccess graph
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (waGraph());
-  for (select * from ODRIVE.WA.FOAF_GROUPS) do
-  {
-    foaf_group_insert (FG_USER_ID, FG_NAME, FG_WEBIDS);
+    for (select RES_FULL_PATH, RES_OWNER, RES_GROUP, PROP_VALUE
+           from WS.WS.SYS_DAV_RES
+                  join WS.WS.SYS_DAV_PROP ON PROP_PARENT_ID = RES_ID and PROP_TYPE = 'R'
+          where RES_FULL_PATH like ODRIVE.WA.dav_home(_U_NAME) || '%'
+            and PROP_NAME = 'virt:aci_meta_n3') do
+    {
+      WS.WS.WAC_DELETE (RES_FULL_PATH, 1);
+      WS.WS.WAC_INSERT (RES_FULL_PATH, PROP_VALUE, RES_OWNER, RES_GROUP, 1);
+    }
+    for (select DB.DBA.DAV_SEARCH_PATH (COL_ID, PROP_TYPE) COL_FULL_PATH, COL_OWNER, COL_GROUP, PROP_VALUE
+           from WS.WS.SYS_DAV_COL
+                  join WS.WS.SYS_DAV_PROP ON PROP_PARENT_ID = COL_ID and PROP_TYPE = 'C'
+          where DB.DBA.DAV_SEARCH_PATH (COL_ID, PROP_TYPE) like ODRIVE.WA.dav_home(_U_NAME) || '%'
+            and PROP_NAME = 'virt:aci_meta_n3') do
+    {
+      WS.WS.WAC_DELETE (COL_FULL_PATH, 1);
+      WS.WS.WAC_INSERT (COL_FULL_PATH, PROP_VALUE, COL_OWNER, COL_GROUP, 1);
+    }
   }
   return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure fill_ods_briefcase_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('briefcase.resource.store', 'briefcase.collection.create', 'briefcase.options.set',  'briefcase.options.get');
+  ods_object_services (graph_iri, 'briefcase', 'ODS briefcase instance services', svc_functions);
+
+  -- contact
+  svc_functions := vector ('briefcase.resource.info', 'briefcase.resource.get', 'briefcase.resource.delete', 'briefcase.copy', 'briefcase.move', 'briefcase.property.set', 'briefcase.property.get', 'briefcase.property.remove');
+  ods_object_services (graph_iri, 'briefcase/resource', 'ODS briefcase resource services', svc_functions);
+
+  -- contact comment
+  svc_functions := vector ('briefcase.collection.info', 'briefcase.collection.delete', 'briefcase.copy', 'briefcase.move', 'briefcase.property.set', 'briefcase.property.get', 'briefcase.property.remove');
+  ods_object_services (graph_iri, 'briefcase/collection', 'ODS briefcase collection services', svc_functions);
 }
 ;
 
@@ -195,8 +266,8 @@ create procedure briefcase_sioc_insert (
   declare graph_iri, iri, c_iri, creator_iri, t_iri, link varchar;
   declare linksTo, tags, content any;
 
-  declare exit handler for sqlstate '*' {
-    --dbg_obj_print (__SQL_MESSAGE);
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -205,7 +276,6 @@ create procedure briefcase_sioc_insert (
   {
     r_full_path := (select r.RES_FULL_PATH from WS.WS.SYS_DAV_RES r where r.RES_ID = r_id);
   }
-  --dbg_obj_print (r_id, r_full_path);
   if (r_full_path not like '/DAV/%/Public/%' or r_name[0] = ascii ('.'))
     return;
 
@@ -247,13 +317,16 @@ create procedure briefcase_sioc_insert (
       tags := '';
     scot_tags_insert (WAI_ID, iri, tags);
 
+    -- briefcase services
+    SIOC..ods_object_services_dettach (graph_iri, c_iri, 'briefcase/resource');
+
     -- SIOC data for 'application/foaf+xml' and AddressBook application
-    briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, U_NAME, r_content);
+    SIOC..briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, U_NAME, r_content);
   }
 }
 ;
 
--- SIOC data for 'application/foaf+xml' and SocialNetwork application
+-- SIOC data for 'application/foaf+xml' and AddressBook application
 --
 create procedure briefcase_sioc_insert_ex (
   in r_full_path varchar,
@@ -262,11 +335,6 @@ create procedure briefcase_sioc_insert_ex (
   in r_ownerName varchar,
   inout r_content any)
 {
-  declare continue handler for SQLSTATE '*' {
-    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE )
-    ;
-  };
-
   declare K, L, M, N, is_xml, instance_id integer;
   declare appType, g_iri, c_iri, w_iri, also_iri, creator_iri, p_iri, a_iri, r_iri, e_iri any;
   declare personName any;
@@ -368,7 +436,8 @@ create procedure briefcase_sioc_insert_ex (
 
   -- is vCard or vCalendar file?
   --
-  if ((r_type = 'text/directory') or (r_type = 'text/calendar')) {
+  if ((r_type = 'text/directory') or (r_type = 'text/calendar'))
+  {
     -- main IRI-s
     g_iri := get_graph ();
     creator_iri := user_iri (r_owner);
@@ -516,7 +585,9 @@ create procedure briefcase_sioc_insert_ex (
             eLink := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/URL/val', N), xmlItem, 1) as varchar);
             eSummary := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
             eDescription := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
-            { declare continue handler for sqlstate '*' {
+            {
+              declare continue handler for sqlstate '*'
+              {
                 eCreated := null;
               };
               eCreated := stringdate (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DTSTAMP/val', N), xmlItem, 1) as varchar));
@@ -590,7 +661,8 @@ create procedure briefcase_sioc_delete (
     }
 
   also_iri := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_PARENT_ID = r_id and PROP_NAME = 'virt:graphIri');
-  if (not isnull (also_iri)) {
+  if (not isnull (also_iri))
+  {
     declare _g, _p, persons any;
 
     persons := briefcase_sparql (sprintf (' SPARQL ' ||
@@ -646,8 +718,8 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_I after insert on WS.WS.SYS_DAV_PROP 
 {
   declare meta, c_iri, iri, xt, graph_iri, path any;
   declare full_path, _wai_name varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -789,100 +861,6 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_D before delete on WS.WS.SYS_DAV_PROP
 
 -------------------------------------------------------------------------------
 --
-create procedure waGraph ()
-{
-  return sprintf ('http://%s/webdav/webaccess', get_cname ());
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure waGroup (
-  in id integer,
-  in name varchar)
-{
-  return sprintf ('%s/%s#%s', waGraph (), ODRIVE.WA.account_name (id), name);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure foaf_group_insert (
-  inout id integer,
-  inout name varchar,
-  inout webIDs any)
-{
-  declare N integer;
-  declare graph_iri, group_iri varchar;
-  declare tmp any;
-  declare exit handler for sqlstate '*'
-  {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := SIOC..waGraph();
-  group_iri := SIOC..waGroup(id, name);
-  DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, rdf_iri ('type'), foaf_iri ('Group'));
-  tmp := split_and_decode (webIDs, 0, '\0\0\n');
-  for (N := 0; N < length (tmp); N := N + 1)
-  {
-    if (length (tmp[N]))
-      DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, foaf_iri ('member'), tmp[N]);
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure foaf_group_delete (
-  inout id integer,
-  inout name varchar)
-{
-  declare graph_iri, group_iri varchar;
-  declare exit handler for sqlstate '*'
-  {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := SIOC..waGraph();
-  group_iri := SIOC..waGroup(id, name);
-  delete_quad_s_or_o (graph_iri, group_iri, group_iri);
-}
-;
-
--------------------------------------------------------------------------------
---
-create trigger FOAF_GROUPS_SIOC_I after insert on ODRIVE.WA.FOAF_GROUPS referencing new as N
-{
-  foaf_group_insert (N.FG_USER_ID,
-                     N.FG_NAME,
-                     N.FG_WEBIDS);
-}
-;
-
--------------------------------------------------------------------------------
---
-create trigger FOAF_GROUPS_SIOC_U after update on ODRIVE.WA.FOAF_GROUPS referencing old as O, new as N
-{
-  foaf_group_delete (O.FG_USER_ID,
-                     O.FG_NAME);
-  foaf_group_insert (N.FG_USER_ID,
-                     N.FG_NAME,
-                     N.FG_WEBIDS);
-}
-;
-
--------------------------------------------------------------------------------
---
-create trigger FOAF_GROUPS_SIOC_D before delete on ODRIVE.WA.FOAF_GROUPS referencing old as O
-{
-  foaf_group_delete (O.FG_USER_ID,
-                     O.FG_NAME);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ods_briefcase_sioc_init ()
 {
   declare sioc_version any;
@@ -900,6 +878,22 @@ create procedure ods_briefcase_sioc_init ()
 
 --ODRIVE.WA.exec_no_error ('ods_briefcase_sioc_init ()');
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_update ()
+{
+  if (registry_get ('odrive_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_briefcase_services();
+  registry_set ('odrive_services_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
 use DB;
 -- ODRIVE
 

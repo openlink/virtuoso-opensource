@@ -94,7 +94,7 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 
 	  -- base
 	  --
-    ODRIVE.WA.dc_set_base (newSearch, 'path', ODRIVE.WA.dav_dc_get (oldSearch, 'base', 'path'));
+    ODRIVE.WA.dc_set_base (newSearch, 'path', ODRIVE.WA.dc_get (oldSearch, 'base', 'path'));
 
 	  ODRIVE.WA.tmp_set_criteria (newSearch, M, 'RES_NAME',         'like',                                                   ODRIVE.WA.dc_get(oldSearch, 'base', 'name'));
 	  ODRIVE.WA.tmp_set_criteria (newSearch, M, 'RES_CONTENT',      'contains_text',                                          ODRIVE.WA.dc_get(oldSearch, 'base', 'content'));

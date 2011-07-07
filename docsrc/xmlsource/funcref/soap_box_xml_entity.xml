@@ -41,7 +41,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_soap_box_xml_entity"><title>Description</title><para>
-This function converts an XML entity to an SQL value based on the type of the entity and the desired SQL type.
+Converts an XML entity to an SQL value based on the type of the entity and the desired SQL type.
 This function is called internally to convert a SOAP request parameter to a PL procedure parameter when a SOAP
 request is being processed by the SOAP server.
 </para></refsect1>

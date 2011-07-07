@@ -24,19 +24,6 @@ use sioc;
 
 -------------------------------------------------------------------------------
 --
--- the same as feeds_iri (wai_name)
-create procedure feed_mgr_iri (
-  inout domain_id integer)
-{
-  declare instance varchar;
-  declare exit handler for not found { return null; };
-  select WAI_NAME into instance from DB.DBA.WA_INSTANCE where WAI_ID = domain_id;
-  return feeds_iri (instance);
-}
-;
-
--------------------------------------------------------------------------------
---
 -- this represents a feed, not an instance
 create procedure feed_iri (
   inout feed_id integer)
@@ -250,6 +237,27 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
   declare id, deadl, cnt any;
 
  {
+    -- init service containers
+    fill_ods_feeds_services ();
+
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'eNews2') do
+    {
+      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select EFD_DOMAIN_ID, EFD_FEED_ID, EFD_ACL
+             from ENEWS.WA.FEED_DOMAIN
+            where EFD_DOMAIN_ID = WAI_ID and EFD_ACL is not null) do
+      {
+        feedDomain_acl_insert (EFD_DOMAIN_ID, EFD_FEED_ID, EFD_ACL);
+      }
+    }
 
     id := -1;
     deadl := 3;
@@ -264,8 +272,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     l0:
 
   for select EFD_ID, EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EF_ID, EF_URI, EF_HOME_URI, EF_SOURCE_URI, EF_TITLE, EF_DESCRIPTION
-        from ENEWS..FEED_DOMAIN,
-             ENEWS..FEED,
+          from ENEWS.WA.FEED_DOMAIN,
+               ENEWS.WA.FEED,
              DB.DBA.WA_INSTANCE
          where EFD_ID > id
          and EFD_FEED_ID = EF_ID
@@ -274,7 +282,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
          order by EFD_ID do
   {
       iri := feed_iri (EF_ID);
-      m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
+      m_iri := ENEWS.WA.forum_iri (EFD_DOMAIN_ID);
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
       DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
@@ -352,7 +360,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
             where A_OBJECT_ID = EFI_ID) do
       {
         feeds_annotation_insert (graph_iri,
-                                 feed_mgr_iri (A_DOMAIN_ID),
+                                 ENEWS.WA.forum_iri (A_DOMAIN_ID),
                                  A_ID,
                                  A_DOMAIN_ID,
                                  A_OBJECT_ID,
@@ -376,6 +384,37 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
 
 -------------------------------------------------------------------------------
 --
+create procedure fill_ods_feeds_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('feeds.subscribe', 'feeds.blog.subscribe', 'feeds.options.set',  'feeds.options.get');
+  ods_object_services (graph_iri, 'feeds', 'ODS feeds instance services', svc_functions);
+
+  -- feed
+  svc_functions := vector ('feeds.get', 'feeds.unsubscribe', 'feeds.refresh');
+  ods_object_services (graph_iri, 'feeds/feed', 'ODS Feeds feed services', svc_functions);
+
+  -- blog
+  svc_functions := vector ('feeds.blog.unsubscribe', 'feeds.blog.refresh');
+  ods_object_services (graph_iri, 'feeds/blog', 'ODS Feeds blog services', svc_functions);
+
+  -- feed item comment
+  svc_functions := vector ('feeds.comment.get', 'feeds.comment.delete');
+  ods_object_services (graph_iri, 'feeds/item/comment', 'ODS Feeds comment services', svc_functions);
+
+  -- feed item annotation
+  svc_functions := vector ('feeds.annotation.get', 'feeds.annotation.claim', 'feeds.annotation.delete');
+  ods_object_services (graph_iri, 'feeds/item/annotation', 'ODS Feeds annotation services', svc_functions);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- ENEWS..FEED
 create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new as N
 {
@@ -384,9 +423,10 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
   graph_iri := get_graph ();
   iri := feed_iri (N.EFD_FEED_ID);
-  m_iri := feed_mgr_iri (N.EFD_DOMAIN_ID);
+  m_iri := ENEWS.WA.forum_iri (N.EFD_DOMAIN_ID);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
@@ -403,13 +443,104 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
   graph_iri := get_graph ();
   iri := feed_iri (O.EFD_FEED_ID);
-  m_iri := feed_mgr_iri (O.EFD_DOMAIN_ID);
+  m_iri := ENEWS.WA.forum_iri (O.EFD_DOMAIN_ID);
   delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
   delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
   delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_container'), m_iri);
   delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('container_of'), iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feedDomain_acl_insert (
+  inout domain_id integer,
+  inout feed_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..feed_iri (feed_id);
+  graph_iri := ENEWS.WA.acl_graph (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feedDomain_acl_delete (
+  inout domain_id integer,
+  inout feed_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..feed_iri (feed_id);
+  graph_iri := ENEWS.WA.acl_graph (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FEED_DOMAIN_SIOC_ACL_I after insert on ENEWS.WA.FEED_DOMAIN order 100 referencing new as N
+{
+  if (coalesce (N.EFD_ACL, '') <> '')
+  {
+    feedDomain_acl_insert (N.EFD_DOMAIN_ID,
+                           N.EFD_FEED_ID,
+                           N.EFD_ACL);
+
+    SIOC..acl_ping (N.EFD_DOMAIN_ID,
+                    SIOC..feed_iri (N.EFD_FEED_ID),
+                    null,
+                    N.EFD_ACL);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FEED_DOMAIN_SIOC_ACL_U after update (EFD_ACL) on ENEWS.WA.FEED_DOMAIN order 100 referencing old as O, new as N
+{
+  if (coalesce (O.EFD_ACL, '') <> '')
+    feedDomain_acl_delete (O.EFD_DOMAIN_ID,
+                           O.EFD_FEED_ID,
+                           O.EFD_ACL);
+
+  if (coalesce (N.EFD_ACL, '') <> '')
+    feedDomain_acl_insert (N.EFD_DOMAIN_ID,
+                           N.EFD_FEED_ID,
+                           N.EFD_ACL);
+
+  SIOC..acl_ping (N.EFD_DOMAIN_ID,
+                  SIOC..feed_iri (N.EFD_FEED_ID),
+                  O.EFD_ACL,
+                  N.EFD_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FEED_DOMAIN_SIOC_ACL_D before delete on ENEWS.WA.FEED_DOMAIN order 100 referencing old as O
+{
+  if (coalesce (O.EFD_ACL, '') <> '')
+    feedDomain_acl_delete (O.EFD_DOMAIN_ID,
+                           O.EFD_FEED_ID,
+                           O.EFD_ACL);
 }
 ;
 
@@ -586,7 +717,8 @@ create procedure feeds_comment_insert (
   declare feed_id integer;
   declare graph_iri, iri, feed_iri, item_iri varchar;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -596,9 +728,12 @@ create procedure feeds_comment_insert (
   feed_iri := feed_iri (feed_id);
   item_iri := feed_item_iri (feed_id, item_id);
   iri := feed_comment_iri (domain_id, item_id, id);
-  if (not isnull (iri)) {
+  if (not isnull (iri))
+  {
   foaf_maker (graph_iri, u_url, u_name, u_mail);
     ods_sioc_post (graph_iri, iri, feed_iri, null, title, last_update, last_update, feed_item_url (domain_id, item_id), comment, null, null, u_url);
+    -- services
+    SIOC..ods_object_services_attach (graph_iri, iri, 'feeds/item/comment');
     DB.DBA.ODS_QUAD_URI (graph_iri, item_iri, sioc_iri ('has_reply'), iri);
     DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), item_iri);
 }
@@ -622,7 +757,8 @@ create procedure feeds_comment_delete (
   graph_iri := get_graph ();
   iri := feed_comment_iri (domain_id, item_id, id);
   delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
+  -- services
+  SIOC..ods_object_services_dettach (graph_iri, iri, 'feeds/item/comment');
 }
 ;
 
@@ -669,7 +805,7 @@ create procedure feeds_annotation_insert (
   inout created datetime,
   inout updated datetime)
 {
-  declare master_iri, annotattion_iri varchar;
+  declare master_iri, annotation_iri varchar;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -688,26 +824,27 @@ create procedure feeds_annotation_insert (
       forum_iri := feeds_iri (WAI_NAME);
     }
 
-  if (not isnull (graph_iri)) {
+  if (isnull (graph_iri))
+    return;
+
     declare feed_id integer;
 
     feed_id := (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = master_id);
     master_iri := feed_item_iri (feed_id, master_id);
-    annotattion_iri := feed_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
+  annotation_iri := feed_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
 
-	  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), annotattion_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, sioc_iri ('has_container'), forum_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), annotation_iri);
 
-	  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-	  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, an_iri ('annotates'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotation_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('author'), author);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('body'), body);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('created'), created);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('modified'), updated);
 
-	  feeds_claims_insert (graph_iri, annotattion_iri, claims);
-  }
-  return;
+  feeds_claims_insert (graph_iri, annotation_iri, claims);
+  SIOC..ods_object_services_attach (graph_iri, annotation_iri, 'feeds/item/annotation');
 }
 ;
 
@@ -719,7 +856,7 @@ create procedure feeds_annotation_delete (
   inout master_id integer,
   inout claims any)
 {
-  declare graph_iri, annotattion_iri varchar;
+  declare graph_iri, annotation_iri varchar;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -727,8 +864,9 @@ create procedure feeds_annotation_delete (
   };
 
   graph_iri := get_graph ();
-  annotattion_iri := feed_annotation_iri (domain_id, master_id, annotation_id);
-  delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+  annotation_iri := feed_annotation_iri (domain_id, master_id, annotation_id);
+  delete_quad_s_or_o (graph_iri, annotation_iri, annotation_iri);
+  SIOC..ods_object_services_dettach (graph_iri, annotation_iri, 'feeds/item/annotation');
 }
 ;
 
@@ -825,6 +963,22 @@ create procedure ods_feeds_sioc_init ()
 ;
 --ENEWS.WA.exec_no_error('ods_feeds_sioc_init ()');
 
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.tmp_update ()
+{
+  if (registry_get ('news_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_feeds_services();
+  registry_set ('news_services_update', '1');
+}
+;
+
+ENEWS.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
 use DB;
 -- FEEDS
 
@@ -923,8 +1077,8 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
         sioc:link sioc:proxy_iri (EF_URI) ;
 	atom:link sioc:proxy_iri (EF_URI) ;
 	atom:title EF_TITLE ;
-	sioc:has_parent sioc:feed_mgr_iri (U_NAME, WAI_NAME) .
-	sioc:feed_mgr_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.U_NAME, DB.DBA.ODS_FEED_FEED_DOMAIN.WAI_NAME)
+	  sioc:has_parent sioc:feeds_iri (WAI_NAME) .
+	  sioc:feeds_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.WAI_NAME)
 	sioc:parent_of sioc:feed_iri (EF_ID) .
 
 	# Posts

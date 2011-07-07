@@ -186,3 +186,19 @@ create procedure CAL.WA.tmp_update ()
 ;
 CAL.WA.tmp_update ()
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_acl_update') = '1')
+    return;
+  registry_set ('cal_acl_update', '1');
+
+  set triggers off;
+  update CAL.WA.EVENTS set E_ACL = null where E_ACL is not null;
+  set triggers on;
+}
+;
+
+CAL.WA.tmp_update ();

@@ -27,11 +27,11 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:wfw="http://wellformedweb.org/CommentAPI/"
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
-  xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns="http://www.w3.org/2005/Atom"
+  xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
-  xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
   exclude-result-prefixes="atom"
   version="1.0">
 
@@ -58,6 +58,8 @@
     <link href="{.}" type="text/html" rel="alternate"/>
     <xsl:if test="parent::channel">
 	<link href="{$httpUrl}" type="application/atom+xml" rel="self"/>
+	<xsl:copy-of select="parent::channel/atom:link[@rel='hub' and @href]"/>
+	<xsl:copy-of select="parent::channel/atom:link[@rel='salmon' and @href]"/>
     </xsl:if>
     <xsl:if test="parent::item and not ($isRegularFeed)">
 	<xsl:choose>

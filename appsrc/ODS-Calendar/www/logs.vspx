@@ -38,8 +38,8 @@
         <v:param name="p0" value="--self.v_oid" />
 
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="upstreamsTable" style="width: 100%; background-color: #FFF;" cellspacing="0">
-            <thead class="sortHeader">
+          <table class="ODS_grid">
+            <thead>
               <tr>
                 <th style="text-align: left;">Time</th>
                 <th style="text-align: left;">Message</th>

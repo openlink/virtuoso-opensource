@@ -24,7 +24,7 @@
 <refentry id="fn_vad_install">
   <refmeta> 
     <refentrytitle>VAD_INSTALL</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_INSTALL</refname> 

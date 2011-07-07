@@ -343,7 +343,7 @@ bh_string_output_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t *
       page_leave_outside_map (buf);
       if (start == bh->bh_page)
       {
-	      dp_addr_t t = LONG_REF (buf->bd_buffer + DP_PARENT);
+	      dp_addr_t t = LONG_REF (buf->bd_buffer + DP_BLOB_DIR);
 	      if (bh->bh_dir_page && t!=bh->bh_dir_page)
 		log_info ("Mismatch in directory page ID %d(%x) vs %d(%x).",
 		    t,t,bh->bh_dir_page,bh->bh_dir_page);
@@ -907,6 +907,7 @@ box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset
   return box;
 }
 
+/* this function take a string not a box as _str argument */
 caddr_t
 t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
 {
@@ -924,7 +925,7 @@ t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wchars
     charset = default_charset;
 
   memset (&state, 0, sizeof (virt_mbstate_t));
-  len = (long) virt_mbsnrtowcs (NULL, (unsigned char **) &src, box_length (str), 0, &state);
+  len = (long) virt_mbsnrtowcs (NULL, (unsigned char **) &src, strlen ((char *) str), 0, &state);
   if (max_len > 0 && len > max_len)
     len = max_len;
   if (len < 0) /* there was <= 0 - bug */
@@ -933,7 +934,7 @@ t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wchars
   for (inx = 0, src = str, memset (&state, 0, sizeof (virt_mbstate_t)); inx < len; inx++)
     {
       wchar_t wc;
-      long char_len = (long) virt_mbrtowc (&wc, src, (box_length (str)) - (long)((src - str)), &state);
+      long char_len = (long) virt_mbrtowc (&wc, src, (strlen ((char *) str)) - (long)((src - str)), &state);
       if (char_len <= 0)
 	{
 	  box[inx] = '?';

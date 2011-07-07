@@ -31,6 +31,7 @@
   <!-- ====================================================================================== -->
   <xsl:template match="page">
     <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/open.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:call-template name="msg_tools"/>
       <xsl:apply-templates select="message"/>
@@ -136,6 +137,27 @@
           </xsl:choose>
         </td>
       </tr>
+      <!-- Options -->
+      <xsl:if test="options/ssl = 1">
+        <tr>
+          <th>Options</th>
+          <td>
+            Signed: <b>Yes</b>
+            <xsl:choose>
+              <xsl:when test="options/sslVerified = 1">
+                <b><i>(verified)</i></b>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:if test="options/webID != ''">; WebID: <b><xsl:value-of select="options/webID" /></b>
+                  <xsl:if test="options/webIDVerified">
+                    (<img src="/ods/images/icons/lock_16.png" height="14" />)
+                  </xsl:if>
+                </xsl:if>
+              </xsl:otherwise>
+            </xsl:choose>
+          </td>
+        </tr>
+      </xsl:if>
       <!-- Tags -->
       <tr>
         <th>Comma separated tags</th>
@@ -582,7 +604,7 @@
           <tr>
             <th class="left">
               <label for="fid">Move to folder</label>
-              <xsl:apply-templates select="folders" mode="combo"/>
+              <xsl:apply-templates select="foldersCombo" mode="combo" />
               <xsl:call-template name="make_href">
                 <xsl:with-param name="url">javascript: formSubmit('fa_move.x', '1'); </xsl:with-param>
                 <xsl:with-param name="title">Move</xsl:with-param>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_sparql_rdb2rdf_list_tables">
+  <refmeta>
+    <refentrytitle>DB.DBA.SPARQL_RDB2RDF_LIST_TABLES</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.SPARQL_RDB2RDF_LIST_TABLES</refname>
+    <refpurpose>Returns a vector of names of tables that are used as sources for RDF Views.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sparql_rdb2rdf_list_tables">
+      <funcprototype id="fproto_sparql_rdb2rdf_list_tables">
+        <funcdef><function>DB.DBA.SPARQL_RDB2RDF_LIST_TABLES</function></funcdef>
+	        <paramdef>in <parameter>mode</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_sparql_rdb2rdf_list_tables">
+    <title>Description</title>
+    <para>Returns a vector of names of tables that are used as sources for RDF Views. Application 
+    	developer should decide what to do with each of them - create triggers or do some 
+    	application-specific workarounds.</para>
+    <para>Note that if some SQL views are used as sources for RDF Views and these views does not 
+    	have INSTEAD triggers then workarounds become mandatory for them, not just a choice, because 
+    	BEFORE or AFTER triggers on views are not allowed if there is no appropriate INSTEAD trigger. 
+    	The mode argument should be zero in current version.</para>	
+  </refsect1>
+  <refsect1 id="params_sparql_rdb2rdf_list_tables">
+    <title>Parameters</title>
+    <refsect2><title>mode</title>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_sparql_rdb2rdf_list_tables"><title>Return Types</title>
+    <para>vector</para>
+  </refsect1>
+
+  <!--refsect1 id="examples_sparql_rdb2rdf_list_tables">
+    <title>Examples</title>
+    <example id="ex_sparql_rdb2rdf_list_tables"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+]]></programlisting>
+    </example>
+  </refsect1-->
+  <refsect1 id="seealso_sparql_rdb2rdf_list_tables">
+    <title>See Also</title>
+    <para><link linkend="rdb2rdftriggers">RDB2RDF Triggers</link></para>             
+    <para><link linkend="fn_sparql_rdb2rdf_codegen">DB.DBA.SPARQL_RDB2RDF_CODEGEN</link></para>                
+  </refsect1>
+</refentry>

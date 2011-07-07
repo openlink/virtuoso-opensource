@@ -238,9 +238,8 @@
     <xsl:choose>
 	<xsl:when test="not boolean ($udt_struct)">
 	  <xsl:variable name="ext" select="vs:getExtension (@base)"/>
-	  <xsl:if test="not $ext//xs:element or not xs:sequence/xs:element">
-             <extension error="The 'extension' element is not supported"/>
-	 </xsl:if>
+	  <xsl:choose>
+	      <xsl:when test="$ext//xs:element or xs:sequence/xs:element">
 	  <restriction base="enc:Struct">
 	      <sequence>
 		  <xsl:apply-templates select="$ext//xs:element">
@@ -249,6 +248,20 @@
 		  <xsl:apply-templates select="xs:sequence/*"/>
 	      </sequence>
 	  </restriction>
+      </xsl:when>
+	      <xsl:when test="$ext//xs:simpleContent">
+		  <restriction base="enc:Struct">
+		      <xsl:apply-templates select="$ext//xs:simpleContent/xs:attribute"/>
+		      <xsl:apply-templates select="xs:attribute"/>
+		  </restriction>
+	      </xsl:when>
+	      <xsl:otherwise>
+		  <xsl:message terminate="no"><xsl:copy-of select="vs:getExtension (@base)"/></xsl:message>
+		  <extension>
+		      <xsl:attribute name="error">The 'extension' element [<xsl:value-of select="@base"/>] can not be found when expanding <xsl:value-of select="ancestor::*[@name]/@name"/></xsl:attribute>
+		  </extension>
+	      </xsl:otherwise>
+	  </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
         <xsl:copy>

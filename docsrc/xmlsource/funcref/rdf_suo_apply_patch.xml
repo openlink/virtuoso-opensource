@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_suo_apply_patch">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_SUO_APPLY_PATCH</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_SUO_APPLY_PATCH</refname>
+    <refpurpose>Modifies either the target graph specified in the patch via 
+    	<code>guo:target_graph</code> or the graph specified by default_target_graph argument.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_suo_apply_patch">
+      <funcprototype id="fproto_rdf_suo_apply_patch">
+        <funcdef><function>DB.DBA.RDF_SUO_APPLY_PATCH</function></funcdef>
+	        <paramdef>in <parameter>patch_graph</parameter> IRI_ID</paramdef>
+	        <paramdef>in <parameter>default_target_graph</parameter> IRI_ID</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_suo_apply_patch">
+    <title>Description</title>
+    <para>This function tries to modify either the target graph specified in the patch via 
+    	<code>guo:target_graph</code> (hence, the non-NULL target_graph argument of the diff creator, 
+    	<link linkend="fn_rdf_suo_diff_ttl">DB.DBA.RDF_SUO_DIFF_TTL()</link> ) or the graph specified by 
+    	default_target_graph argument. The function returns zero in case of success, non-zero value 
+    	otherwise. In addition, the function produces a result set that describes the process of 
+    	matching blank node in the target graph to instructions in the patch.</para>
+    <para>The TURTLE made by <link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link> can be 
+      loaded later into an empty graph and the IRI_ID of that graph can be passed as the first 
+      argument to this patch function.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_suo_apply_patch">
+    <title>Parameters</title>
+    <refsect2><title>patch_graph</title>
+      <para>IRI ID of the patch graph</para>
+    </refsect2>
+    <refsect2><title>default_target_graph</title>
+      <para>IRI ID of the default target graph</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_suo_apply_patch"><title>Return Types</title>
+    <para>integer</para>
+  </refsect1>
+
+  <!--refsect1 id="examples_rdf_suo_apply_patch">
+    <title>Examples</title>
+    <example id="ex_rdf_suo_apply_patch"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+]]></programlisting>
+    </example>
+  </refsect1-->
+  <refsect1 id="seealso_rdf_suo_apply_patch">
+    <title>See Also</title>
+    <para><link linkend="fastapproxdiffandpatch">Fast Approximate RDF Graph Diff and Patch</link></para>             
+    <para><link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link></para>
+    <para><link linkend="fn_rdf_suo_diff_ttl">DB.DBA.RDF_SUO_DIFF_TTL</link></para>
+    <para><link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link></para>            
+  </refsect1>
+</refentry>

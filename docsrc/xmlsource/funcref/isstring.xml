@@ -39,17 +39,21 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_isstring"><title>Description</title>
+    <para>isstring returns one if its argument is of type VARCHAR, zero otherwise.</para>
+  </refsect1>
   <refsect1 id="params_isstring"><title>Parameters</title>
     <refsect2><title>arg</title><para>Some variable to be assessed.</para></refsect2>
   </refsect1>
-  <refsect1 id="desc_isstring"><title>Description</title>
-    <para>isstring returns one if its argument is of type VARCHAR, zero otherwise.
-</para>
-			<screen>
-isstring('Cadena de los patos amarillos')
+  <refsect1 id="examples_isstring">
+    <title>Examples</title>
+    <example id="ex_isstring"><title></title>
+      <screen><![CDATA[
+SQL>select isstring('Cadena de los patos amarillos')
 		-&gt; 1 (Yes it is a string)
+]]>
 </screen>
-
+    </example>
 	</refsect1>
 </refentry>
 

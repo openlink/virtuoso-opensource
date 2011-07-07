@@ -50,6 +50,7 @@
 #include "sqlcstate.h"
 #include "sqlo.h"
 #include "rdfinf.h"
+#include "rdf_core.h"
 
 /* sqlprt.c */
 void trset_start (caddr_t *qst);
@@ -60,6 +61,28 @@ void trset_end (void);
 
 static void qr_print (query_t * qr);
 static void node_print (data_source_t * node);
+
+
+
+caddr_t
+dv_iri_short_name (caddr_t x)
+{
+  caddr_t pref, local, r;
+  iri_id_t iid = unbox_iri_id (x);
+  caddr_t name = key_id_to_iri ((query_instance_t*)THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST), iid);
+  if (!name)
+    return NULL;
+  if (iri_split (name, &pref, &local))
+    {
+      dk_free_box (name);
+      dk_free_box (pref);
+      r = box_dv_short_string (local + 4);
+      dk_free_box (local);
+      return r;
+    }
+  dk_free_box (name);
+  return NULL;
+}
 
 
 static void
@@ -90,6 +113,7 @@ ssl_print (state_slot_t * ssl)
 
     case SSL_CONSTANT:
 	{
+	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
 	  caddr_t err_ret = NULL;
 	  if (DV_TYPE_OF (ssl->ssl_constant) == DV_DB_NULL)
 	    stmt_printf (("<constant DB_NULL>"));
@@ -100,7 +124,26 @@ ssl_print (state_slot_t * ssl)
 		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
 		  &err_ret);
 	      if (!err_ret && strval)
-		stmt_printf (("<constant (" EXPLAIN_LINE_MAX_STR_FORMAT ")>", strval));
+		{
+		  switch (dtp)
+		    {
+		      case DV_IRI_ID:
+			    {
+			      caddr_t str = dv_iri_short_name (ssl->ssl_constant);
+			      if (str)
+				{
+				  stmt_printf ((" #" EXPLAIN_LINE_MAX_STR_FORMAT " ", str));
+				  dk_free_box (str);
+				  break;
+				}
+			    }
+		      case DV_LONG_INT: case DV_NUMERIC: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
+			  stmt_printf ((" " EXPLAIN_LINE_MAX_STR_FORMAT " ", strval));
+			  break;
+		      default:
+			  stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
+		    }
+		}
 	      else
 		stmt_printf (("<constant>"));
 	      if (err_ret)
@@ -423,7 +466,7 @@ ks_print (key_source_t * ks)
   stmt_printf (("\n%s", ks->ks_spec.ksp_key_cmp ? " inlined " : ""));
 
   sp_list_print (ks->ks_spec.ksp_spec_array);
-  stmt_printf (("\n"));
+  stmt_printf (("%s\n", ks->ks_copy_search_pars ? " [copies params]" : ""));
 
   if (ks->ks_row_spec)
     {
@@ -446,6 +489,8 @@ ks_print (key_source_t * ks)
       stmt_printf ((" Local setp:\n"));
       node_print ((data_source_t *) ks->ks_setp);
     }
+  if (ks->ks_qf_output)
+    stmt_printf (("  qf output\n"));
 }
 
 
@@ -491,18 +536,39 @@ ts_print (table_source_t * ts)
   else
     {
       char card[30];
+      char max_rows[30];
       snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+      if (ts->ts_max_rows)
+	snprintf (max_rows, sizeof (max_rows), "max %d", ts->ts_max_rows);
+      else
+	max_rows[0] = 0;
       if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
-	stmt_printf (("from %s by %s %s %s\n",
-		      ts->ts_order_ks->ks_key->key_table->tb_name,
-		      ts->ts_order_ks->ks_key->key_name,
-		      ts->ts_is_outer ? "OUTER" : "",
-		      ts->ts_is_unique ? "Unique" : card));
+	{
+	  char idstr[20];
+      char card[30];
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+	  if (ts->clb.clb_fill)
+	    sprintf (idstr, "fill=%d", ts->clb.clb_fill);
+	  else
+	    idstr[0] = 0;
+	  stmt_printf (("from %s by %s %s %s %s %s %s\n",
+			ts->ts_order_ks->ks_key->key_table->tb_name,
+			ts->ts_order_ks->ks_key->key_name,
+			ts->ts_is_outer ? "OUTER" : "",
+			ts->ts_is_unique ? "Unique" : card,
+			ts->clb.clb_fill ? (ts->ts_order_ks->ks_cl_order ? "cluster" : "cluster  unordered") : "", idstr, max_rows));
+	}
       ks_print (ts->ts_order_ks);
+      if (ts->clb.clb_fill)
+	{
+	  stmt_printf (("    Cluster save ctx: "));
+	  ssl_array_print (ts->clb.clb_save);
+	  stmt_printf (("\n"));
+	}
     }
   if (ts->ts_main_ks)
     ks_print (ts->ts_main_ks);
-  if (ts->ts_current_of)
+  if (0 && ts->ts_current_of && ts->ts_current_of != ts->ts_order_cursor && !ts->ts_current_of->ssl_is_alias)
     {
       stmt_printf (("\nCurrent of: "));
       ssl_print (ts->ts_current_of);
@@ -513,7 +579,12 @@ ts_print (table_source_t * ts)
       code_vec_print (ts->ts_after_join_test);
     }
   stmt_printf (("\n"));
-
+  if (ts->ts_alternate)
+    {
+      stmt_printf (("Alternate ts {\n"));
+      node_print ((data_source_t *) ts->ts_alternate);
+      stmt_printf (("\n}\n"));
+    }
 }
 
 
@@ -550,10 +621,46 @@ node_print (data_source_t * node)
       else
 	code_vec_print (node->src_pre_code);
     }
+  if (node->src_local_save)
+    {
+      stmt_printf (("  local save: "));
+      ssl_array_print (node->src_local_save);
+      stmt_printf (("\n"));
+    }
   if (in == (qn_input_fn) table_source_input ||
       in == (qn_input_fn) table_source_input_unique)
     {
       ts_print ((table_source_t *) node);
+    }
+  else if (in == (qn_input_fn) query_frag_input)
+    {
+      query_frag_t * qf = (query_frag_t *) node;
+      char max_rows[30];
+      if (qf->qf_max_rows)
+	snprintf (max_rows, sizeof (max_rows), " max %d", qf->qf_max_rows);
+      else
+	max_rows[0] = 0;
+      stmt_printf (("  { Cluster location fragment %d %d %s %s\n   Params: ", node->src_in_state, (int)qf->qf_nth, qf->qf_order ? "" : "unordered", max_rows));
+      ssl_array_print (qf->qf_params);
+      stmt_printf (("\nOutput: "));
+      ssl_array_print (qf->qf_result);
+      stmt_printf (("    \nsave ctx:"));
+      ssl_array_print (qf->clb.clb_save);
+      stmt_printf (("\n"));
+      if (qf->qf_trigger_args)
+	{
+	  stmt_printf (("  trigger args: "));
+	  ssl_array_print (qf->qf_trigger_args);
+	  stmt_printf (("\n"));
+	}
+      if (qf->qf_local_save)
+	{
+	  stmt_printf (("  qf Local save: "));
+	  ssl_array_print (qf->qf_local_save);
+	  stmt_printf (("\n"));
+	}
+      node_print (qf->qf_head_node);
+      stmt_printf (("  \n}\n"));
     }
   else if (in == (qn_input_fn) skip_node_input)
     {
@@ -607,6 +714,22 @@ node_print (data_source_t * node)
 	{
 	  stmt_printf ((" -> "));
 	  ssl_list_print (setp->setp_dependent);
+	  if (setp->setp_card)
+	    stmt_printf ((" up to %9.2g distinct", setp->setp_card));
+	  if (setp->setp_any_user_aggregate_gos)
+	    {
+	      DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+		{
+		  if (go->go_ua_init_setp_call)
+		    {
+		      stmt_printf (("\nuser aggr init\n"));
+		      code_vec_print (go->go_ua_init_setp_call);
+		      stmt_printf ((" user aggr acc\n"));
+		      code_vec_print (go->go_ua_acc_setp_call);
+		    }
+		}
+	      END_DO_SET();
+	    }
 	  stmt_printf (("\n"));
 	}
       stmt_printf (("\n"));
@@ -615,8 +738,20 @@ node_print (data_source_t * node)
 	   || in == (qn_input_fn) hash_fill_node_input)
     {
       fun_ref_node_t *fref = (fun_ref_node_t *) node;
-      stmt_printf (("Fork\n{  %s\n",
+      stmt_printf (("Fork %d \n{  %s\n", node->src_in_state,
 		    fref->fnr_hi_signature ? " shareable hash fill " : ""));
+      if (fref->clb.clb_fill)
+	{
+	  stmt_printf (("    \nsave ctx:"));
+	  ssl_array_print (fref->clb.clb_save);
+	  stmt_printf (("\n  set no = "));
+	  ssl_print (fref->fnr_ssa.ssa_set_no);
+	  stmt_printf ((" array "));
+	  ssl_print (fref->fnr_ssa.ssa_array);
+	  stmt_printf ((" save: "));
+	  ssl_array_print (fref->fnr_ssa.ssa_save);
+	  stmt_printf (("\n"));
+	}
       node_print (fref->fnr_select);
       stmt_printf (("}\n"));
     }
@@ -656,12 +791,23 @@ node_print (data_source_t * node)
 	  stmt_printf (("\nAfter join test:\n"));
 	  code_vec_print (rts->rts_after_join_test);
 	}
+      if (rts->rts_save_env)
+	{
+	  stmt_printf ((" save env: "));
+	  ssl_array_print (rts->rts_save_env);
+	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) subq_node_input)
     {
       subq_source_t *sqs = (subq_source_t *) node;
-      stmt_printf (("Subquery %s\n", sqs->sqs_is_outer ? "OUTER" : ""));
+      stmt_printf (("Subquery %d %s\n", node->src_in_state, sqs->sqs_is_outer ? "OUTER" : ""));
+      if (sqs->sqs_set_no)
+	{
+	  stmt_printf (("  multistate set no = "));
+	  ssl_print (sqs->sqs_set_no);
+	  stmt_printf (("\n"));
+	}
       qr_print (sqs->sqs_query);
       if (sqs->sqs_after_join_test)
 	{
@@ -705,8 +851,11 @@ node_print (data_source_t * node)
     }
   else if (in == (qn_input_fn) delete_node_input)
     {
+      QNCAST (delete_node_t, del, node);
       stmt_printf (("Delete "));
-      ssl_print (((delete_node_t *) node)->del_place);
+      ssl_print (del->del_place);
+      if (del->del_key_only)
+	stmt_printf ((" only key %s ", del->del_key_only->key_name));
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) insert_node_input)
@@ -714,6 +863,15 @@ node_print (data_source_t * node)
       insert_node_t *ins = (insert_node_t *) node;
       stmt_printf (("Insert %s ", ins->ins_table->tb_name));
       ssl_list_print (ins->ins_values);
+      if (ins->ins_key_only)
+	stmt_printf ((" only key %s ", ins->ins_key_only));
+      if (ins->ins_daq)
+	{
+	  stmt_printf ((" DAQ ("));
+	  ssl_print (ins->ins_daq);
+	  stmt_printf ((")"));
+	}
+      stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) select_node_input_subq)
     {
@@ -775,6 +933,59 @@ node_print (data_source_t * node)
       ssl_print (ri->ri_p);
       stmt_printf (("\n"));
     }
+  else if (in == (qn_input_fn) trans_node_input)
+    {
+      QNCAST (trans_node_t, tn, node);
+      if (tn->tn_prepared_step)
+	{
+	  if (tn->tn_ifp_ctx_name)
+	    stmt_printf (("  Multistate transitive canned over ifps of %s,  input ", tn->tn_ifp_ctx_name));
+	  else
+	    stmt_printf (("  Multistate transitive canned,  input "));
+	  ssl_array_print (tn->tn_input);
+	  stmt_printf ((" output "));
+	  ssl_array_print (tn->tn_output);
+	  stmt_printf  ((" %s\n", tn->tn_lowest_sas ? "min same-as id" : ""));
+	}
+      else
+	{
+	  stmt_printf (("Transitive dt dir %d, input: ", tn->tn_direction));
+	  ssl_array_print (tn->tn_input);
+	  stmt_printf (("\n  output: "));
+	  ssl_array_print (tn->tn_output);
+	  if (tn->tn_keep_path)
+	    {
+	      stmt_printf (("\n  step data: "));
+	      ssl_array_print (tn->tn_data);
+	      ssl_print (tn->tn_path_no_ret);
+	      ssl_print (tn->tn_step_no_ret);
+	    }
+	  stmt_printf (("\n"));
+	  if (tn->tn_target)
+	    {
+	      stmt_printf ((" Target:  "));
+	      ssl_array_print (tn->tn_target);
+	      stmt_printf (("\n"));
+	    }
+	  qr_print (tn->tn_inlined_step);
+	  if (tn->tn_complement)
+	    {
+	      trans_node_t * tn2 = tn->tn_complement;
+	      stmt_printf (("Reverse transitive node, input: "));
+	      ssl_array_print (tn2->tn_input);
+	      stmt_printf (("\n  output: "));
+	      ssl_array_print (tn2->tn_output);
+	      stmt_printf (("\n"));
+	      if (tn2->tn_target)
+		{
+		  stmt_printf ((" Target:  "));
+		  ssl_array_print (tn2->tn_target);
+		  stmt_printf (("\n"));
+		}
+	      qr_print (tn2->tn_inlined_step);
+	    }
+	}
+    }
   else if (in == (qn_input_fn) in_iter_input)
     {
       in_iter_node_t *ii = (in_iter_node_t *) node;
@@ -785,16 +996,36 @@ node_print (data_source_t * node)
       stmt_printf (("\n"));
 
     }
+  else if (in == (qn_input_fn) outer_seq_end_input)
+    {
+      outer_seq_end_node_t * ose = (outer_seq_end_node_t *)node;
+      stmt_printf (("end of outer seq "));
+      ssl_print (ose->ose_set_no);
+      stmt_printf (("\n out: "));
+      ssl_array_print (ose->ose_out_slots);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) set_ctr_input)
+    {
+      QNCAST (set_ctr_node_t, sctr, node);
+      stmt_printf (("cluster outer seq start, set no "));
+      ssl_print (sctr->sctr_set_no);
+      stmt_printf (("    \nsave ctx:"));
+      ssl_array_print (sctr->clb.clb_save);
+      stmt_printf (("\n"));
+    }
 #ifdef BIF_XML
   else if (in == (qn_input_fn) txs_input)
     {
       text_node_t *txs = (text_node_t *) node;
-      if (txs->txs_xpath_text_exp)
+	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
       else
 	stmt_printf (("CONTAINS ("));
       ssl_print (txs->txs_text_exp);
-      stmt_printf ((") node on %s\n", txs->txs_table->tb_name));
+      stmt_printf ((") node on %s %9.2g rows\n", txs->txs_table->tb_name, txs->txs_card));
+      ssl_print (txs->txs_d_id);
+      stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) xn_input)
     {
@@ -963,6 +1194,14 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (SQLC_SQLO_SCORE != cr_type && (qr && !qr->qr_proc_name))
 	qr_free (qr);
+      if (strstr (((caddr_t*)err)[2], "RDFNI"))
+	{
+	  dk_free_tree (err);
+	  err = NULL;
+	  cl_rdf_inf_init (bootstrap_cli, &err);
+	  if (!err)
+	    return bif_explain (qst, err_ret, args);
+	}
       sqlr_resignal (err);
     }
   if (SQLC_SQLO_SCORE == cr_type)
@@ -1119,7 +1358,7 @@ xsql_print_stmt (sql_comp_t * sc, comp_table_t * ct, ST * tree, char * text, siz
       sprintf_more (text, tlen, fill, " %s ", (caddr_t) tree);
       return 1;
     }
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       caddr_t pref = tree->_.col_ref.prefix;
       sprintf_more (text, tlen, fill, " ");

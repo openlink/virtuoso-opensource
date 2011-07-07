@@ -46,6 +46,30 @@ ID (OID) of the username attribute can be used any valid object identifier that
 does not conflict with existing OIDs (for example 2.16.840.1.NNNNNN).
 It will be best to have one's own registered OID for that purpose.</para>
 
+  <sect3 id="secureodbcx509foafsll"><title>WebID Protocol ODBC Login</title>
+    <para>Virtuoso supports WebID Protocol ODBC Login. Thus, the INI parameter X509ClientVerify can accept the following values:</para>
+    <itemizedlist mark="bullet">
+      <listitem>0 - do not require</listitem>
+      <listitem>1 - ask for trusted certificates</listitem>
+      <listitem>2 - optionally ask, if certificate is given will be verified</listitem>
+      <listitem>3 - accept optionally any certificate even self-signed</listitem>
+    </itemizedlist>
+    <para>If certificate contains WebID, the odbc login will use it. The WebID can be setup to particular account via Conductor's
+users interface. </para>
+    <para>A typical [Parameters] INI section should contain:</para>
+<programlisting><![CDATA[
+SSLServerPort         = 1113
+SSLCertificate          = keys/server.crt
+SSLPrivateKey         =  keys/server.key
+X509ClientVerify      = 3
+]]></programlisting>
+    <para>The client could connect in following way:</para>
+<programlisting><![CDATA[
+isql 1113 "" -X client.p12 -T server.crt
+]]></programlisting>
+    <para>Note: The client certificate client.p12 contains WebID which is registered to some sql user account via Conductor.</para>
+  </sect3>
+
 <sect3 id="secureodbccertgen"><title>ODBC Client Certificate Generation Using "openssl" Tool</title>
 
   <para>To generate X509 certificates one can use the "openssl" tool obtained

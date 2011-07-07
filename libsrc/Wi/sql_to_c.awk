@@ -1,5 +1,7 @@
 #
-#  $Id$
+# sql_to_c.awk
+#
+# $Id$
 #
 #  Embeds SQL code into a C file
 #
@@ -42,12 +44,30 @@ function strip_comments(text, pl_stats, arr)
      special_comment2 = index (curline, "--!AFTER")
      if_comment = index (curline, "--#IF VER=")
      endif_comment = index (curline, "--#ENDIF")
-     if (if_comment > 0 || endif_comment > 0)
+     if (in_if && endif_comment > 0)
+       {
+	 in_if = 0
+       }	
+
+     if (if_comment > 0)
+       {
+	 match (curline, /[0-9]+/, arr)
+	 ver = arr[0] + 0
+	 if (ver == srv_ver)
+	   {
+	      inx = inx + 1
+	      continue
+	   }
+	 else
+	   in_if = 1
+       }	
+
+     if (in_if)
        {
 	 inx = inx + 1
 	 continue
-       }	
-     if (special_comment > 0)
+       }
+     else if (special_comment > 0)
        {
 	 res_line = substr (curline, special_comment + 3) "@"
        }
@@ -166,6 +186,16 @@ function get_awk_macro_defines (awk_command)
 }
 
 BEGIN   {
+          while (getline < "sqlver.h" > 0)
+	  {
+	     if(match ($0, /^#define DBMS_SRV_VER_ONLY/))
+	       {	
+	         res = match ($0, /[0-9]+/, arr)
+		 srv_ver = arr[0] + 0
+                 break	
+	       }
+	  }
+	  close ("sqlver.h")
 	  defines = ""
 	  defines_arfw = ""
 	  nproc = 0
@@ -198,6 +228,7 @@ BEGIN   {
 	  first_xsd_rec = 1
 	  n_xslts = 0
 	  n_xsds = 0
+	  in_if = 0
 	}
 
 	{
@@ -449,12 +480,12 @@ BEGIN   {
 		    if ((pieces[2] == "PROCEDURE" || pieces[2] == "FUNCTION") &&  three_part != "VIEW" )
 		      {
 			_defines1 = "\n  " define_proc_macro " (\"" pieces[3] "\", proc" nproc ");"
+			print "static const char *proc" nproc " = \n\"#line " line_begin_no+1 " \\\"[executable]/" end_name "\\\"\\n\"\n" fun
                         # Here is a debug comment code
 			if (pl_stats == "PLDBG")
-			  print "static const char *proc" nproc " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
+			  print "\"--src " end_name ":" line_begin_no-1 "\\n\";\n"
 			else
-			  print "static const char *proc" nproc " = \n" fun ";\n"
-
+			  print ";\n"
 			nproc = nproc + 1
 		      }
 	            else if (pieces[2] == "TYPE")
@@ -469,10 +500,11 @@ BEGIN   {
 		    else if (pieces[2] == "TRIGGER")
 		      {
 			_defines1 = "\n  ddl_std_proc (trig" ntriggers ", 0x0);"
+			print "static const char *trig" ntriggers " = \n\"#line " line_begin_no+1 " \\\"[executable]/" end_name "\\\"\\n\"\n" fun
 			if (pl_stats == "PLDBG")
-			  print "static const char *trig" ntriggers " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
+			  print "\"--src " end_name ":" line_begin_no-1 "\\n\";\n"
 			else
-			  print "static const char *trig" ntriggers " = \n" fun ";\n"
+			  print ";\n"
 			ntriggers = ntriggers + 1
 		      }
 		    else if (pieces[2] == "INDEX")

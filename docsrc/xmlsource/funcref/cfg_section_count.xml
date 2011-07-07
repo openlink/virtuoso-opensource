@@ -38,6 +38,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_section_count"><title>Description</title>
+    <para>Returns the number of sections in an INI file.</para>
+  </refsect1>
   <refsect1 id="params_section_count"><title>Parameters</title>
     <refsect2><title>path</title>
       <para>Name of the INI file.</para>
@@ -46,9 +49,6 @@
   <refsect1 id="ret_section_count"><title>Return Values</title>
     <para>An <type>integer</type> containing the number of sections
     in the INI file.</para>
-  </refsect1>
-  <refsect1 id="desc_section_count"><title>Description</title>
-    <para>Returns the number of sections in an INI file.</para>
   </refsect1>
   <refsect1 id="examples_section_count"><title>Examples</title>
     <example id="ex_cfg_section_count"><title>Simple examples</title>

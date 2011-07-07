@@ -39,6 +39,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_cfg_item_count"><title>Description</title>
+    <para>Return the number of items that exist
+    in the specified section of the INI file.</para>
+  </refsect1>
   <refsect1 id="params_cfg_item_count"><title>Parameters</title>
     <refsect2><title>path</title>
       <para>Name of the INI file.</para>
@@ -50,10 +54,6 @@
   <refsect1 id="ret_cfg_item_count"><title>Return Values</title>
     <para>An <type>integer</type> containing the number of items that exist
     in the section.</para>
-  </refsect1>
-  <refsect1 id="desc_cfg_item_count"><title>Description</title>
-    <para>Return the number of items that exist
-    in the specified section of the INI file.</para>
   </refsect1>
   <refsect1 id="examples_cfg_item_count"><title>Examples</title>
     <example id="ex_cfg_item_count"><title>Simple examples</title>

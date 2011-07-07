@@ -56,6 +56,12 @@
 <!ENTITY bif_string_or_wide_or_null_arg		SYSTEM "funcref/bif_string_or_wide_or_null_arg.xml">
 <!ENTITY bif_strses_arg				SYSTEM "funcref/bif_strses_arg.xml">
  -->
+<!ENTITY ann_phrase_class_add			SYSTEM	"funcref/ann_phrase_class_add.xml">
+<!ENTITY ann_phrase_class_del			SYSTEM	"funcref/ann_phrase_class_del.xml">
+<!ENTITY ap_build_match_list			SYSTEM	"funcref/ap_build_match_list.xml">
+<!ENTITY ap_add_phrases			        SYSTEM	"funcref/ap_add_phrases.xml">
+
+
 <!ENTITY bit_and				SYSTEM "funcref/bit_and.xml">
 <!ENTITY bit_or					SYSTEM "funcref/bit_or.xml">
 <!ENTITY bit_not				SYSTEM "funcref/bit_not.xml">
@@ -114,12 +120,18 @@
 <!ENTITY dbg_printf				SYSTEM "funcref/dbg_printf.xml">
 <!ENTITY dbname					SYSTEM "funcref/dbname.xml">
 <!ENTITY delay					SYSTEM "funcref/delay.xml">
+<!ENTITY dict_dec_or_remove			SYSTEM  "funcref/dict_dec_or_remove.xml">
 <!ENTITY dict_duplicate         		SYSTEM "funcref/dict_duplicate.xml">
 <!ENTITY dict_get               		SYSTEM "funcref/dict_get.xml">
+<!ENTITY dict_inc_or_put			SYSTEM  "funcref/dict_inc_or_put.xml">
+<!ENTITY dict_iter_next				SYSTEM  "funcref/dict_iter_next.xml">
+<!ENTITY dict_iter_rewind			SYSTEM  "funcref/dict_iter_rewind.xml">
 <!ENTITY dict_list_keys         		SYSTEM "funcref/dict_list_keys.xml">
+<!ENTITY dict_destructive_list_rnd_keys		SYSTEM  "funcref/dict_destructive_list_rnd_keys.xml">
 <!ENTITY dict_new               		SYSTEM "funcref/dict_new.xml">
 <!ENTITY dict_put               		SYSTEM "funcref/dict_put.xml">
 <!ENTITY dict_remove            		SYSTEM "funcref/dict_remove.xml">
+<!ENTITY dict_size				SYSTEM  "funcref/dict_size.xml">
 <!ENTITY dict_to_vector         		SYSTEM "funcref/dict_to_vector.xml">
 <!ENTITY disconnect_user			SYSTEM "funcref/disconnect_user.xml">
 <!ENTITY dt_set_tz				SYSTEM "funcref/dt_set_tz.xml">
@@ -140,6 +152,7 @@
 <!ENTITY exp					SYSTEM "funcref/exp.xml">
 <!ENTITY explain				SYSTEM "funcref/explain.xml">
 <!ENTITY file_delete				SYSTEM "funcref/file_delete.xml">
+<!ENTITY file_open				SYSTEM	"funcref/file_open.xml">
 <!ENTITY file_stat				SYSTEM "funcref/file_stat.xml">
 <!ENTITY file_to_string				SYSTEM "funcref/file_to_string.xml">
 <!ENTITY file_to_string_output			SYSTEM "funcref/file_to_string_output.xml">
@@ -148,17 +161,26 @@
 <!ENTITY file_mkdir 				SYSTEM "funcref/file_mkdir.xml">
 <!ENTITY file_mkpath				SYSTEM "funcref/file_mkpath.xml">
 <!ENTITY file_dirlist				SYSTEM "funcref/file_dirlist.xml">
+
+<!ENTITY csv_load_file				SYSTEM	"funcref/csv_load_file.xml">
+<!ENTITY csv_load				SYSTEM	"funcref/csv_load.xml">
+<!ENTITY csv_parse				SYSTEM	"funcref/csv_parse.xml">
+<!ENTITY csv_cols_def				SYSTEM	"funcref/csv_cols_def.xml">
+<!ENTITY csv_table_def				SYSTEM	"funcref/csv_table_def.xml">
+
 <!ENTITY fk_check_input_values			SYSTEM "funcref/fk_check_input_values.xml">
 <!ENTITY floor					SYSTEM "funcref/floor.xml">
 <!ENTITY ftp_get				SYSTEM "funcref/ftp_get.xml">
 <!ENTITY ftp_ls					SYSTEM "funcref/ftp_ls.xml">
 <!ENTITY ftp_put				SYSTEM "funcref/ftp_put.xml">
 <!ENTITY get_certificate_info			SYSTEM "funcref/get_certificate_info.xml">
-<!ENTITY x509_certificate_verify 		SYSTEM "funcref/x509_certificate_verify.xml">
+<!ENTITY get_csv_row				SYSTEM	"funcref/get_csv_row.xml">
 <!ENTITY getdate				SYSTEM "funcref/getdate.xml">
 <!ENTITY get_keyword				SYSTEM "funcref/get_keyword.xml">
 <!ENTITY get_keyword_ucase			SYSTEM "funcref/get_keyword_ucase.xml">
 <!ENTITY get_timestamp				SYSTEM "funcref/get_timestamp.xml">
+<!ENTITY gvector_sort				SYSTEM	"funcref/gvector_sort.xml">
+<!ENTITY gvector_digit_sort			SYSTEM	"funcref/gvector_digit_sort.xml">
 <!ENTITY gz_compress				SYSTEM "funcref/gz_compress.xml">
 <!ENTITY gz_uncompress				SYSTEM "funcref/gz_uncompress.xml">
 <!ENTITY hour					SYSTEM "funcref/hour.xml">
@@ -285,9 +307,21 @@
 <!ENTITY rdf_backup_metadata    		SYSTEM "funcref/rdf_backup_metadata.xml">
 <!ENTITY rdf_graph_group_create                 SYSTEM  "funcref/rdf_graph_group_create.xml">
 <!ENTITY rdf_graph_group_ins                    SYSTEM  "funcref/rdf_graph_group_ins.xml">
+<!ENTITY rdfs_rule_set                          SYSTEM  "funcref/rdfs_rule_set.xml">
 
+<!ENTITY rdf_load_rdfa                          SYSTEM  "funcref/rdf_load_rdfa.xml">
 <!ENTITY rdf_load_rdfxml        		SYSTEM "funcref/rdf_load_rdfxml.xml">
 <!ENTITY rdf_load_rdfxml_mt     		SYSTEM "funcref/rdf_load_rdfxml_mt.xml">
+
+<!ENTITY rdf_graph_collect_fp_list              SYSTEM  "funcref/rdf_graph_collect_fp_list.xml">
+<!ENTITY rdf_graph_diff                         SYSTEM  "funcref/rdf_graph_diff.xml">
+<!ENTITY rdf_suo_apply_patch                    SYSTEM  "funcref/rdf_suo_apply_patch.xml">
+<!ENTITY rdf_suo_diff_ttl                       SYSTEM  "funcref/rdf_suo_diff_ttl.xml">
+<!ENTITY sparql_rdb2rdf_codegen                 SYSTEM  "funcref/sparql_rdb2rdf_codegen.xml">
+<!ENTITY sparql_rdb2rdf_list_tables             SYSTEM  "funcref/sparql_rdb2rdf_list_tables.xml">
+<!ENTITY sparql_select_known_graphs             SYSTEM  "funcref/sparql_select_known_graphs.xml">
+
+<!ENTITY ld_dir                                 SYSTEM  "funcref/ld_dir.xml">
 <!ENTITY ttlp                   		SYSTEM "funcref/ttlp.xml">
 <!ENTITY ttlp_mt                		SYSTEM "funcref/ttlp_mt.xml">
 <!ENTITY ttlp_mt_local_file                     SYSTEM  "funcref/ttlp_mt_local_file.xml">
@@ -297,6 +331,13 @@
 <!ENTITY rdf_restore_metadata           	SYSTEM "funcref/rdf_restore_metadata.xml">
 <!ENTITY rdf_64bit_upgrade              	SYSTEM "funcref/rdf_64bit_upgrade.xml">
 <!ENTITY rdf_convert_rdfxml_to_ttl      	SYSTEM "funcref/rdf_convert_rdfxml_to_ttl.xml">
+<!ENTITY isref                                  SYSTEM  "funcref/isref.xml">
+
+<!--
+- Uncommented for Virtuoso 6 Release-->
+<!ENTITY iri_split                              SYSTEM  "funcref/iri_split.xml">
+<!ENTITY xml_get_ns_prefix                      SYSTEM  "funcref/xml_get_ns_prefix.xml">
+<!ENTITY xml_get_ns_uri                         SYSTEM  "funcref/xml_get_ns_uri.xml">
 
 <!ENTITY sparql_eval                    	SYSTEM "funcref/sparql_eval.xml">
 <!ENTITY sparql_eval_to_array           	SYSTEM "funcref/sparql_eval_to_array.xml">
@@ -355,6 +396,12 @@
 <!ENTITY REPL_ADD_CR  	 			SYSTEM "funcref/REPL_ADD_CR.xml">
 <!ENTITY REPL_ADD_DAV_CR  	 		SYSTEM "funcref/REPL_ADD_DAV_CR.xml">
 <!ENTITY REPL_ADD_SNAPSHOT_CR  	 		SYSTEM "funcref/REPL_ADD_SNAPSHOT_CR.xml">
+
+<!ENTITY rdf_repl_start  	     SYSTEM	"funcref/rdf_repl_start.xml">
+<!ENTITY rdf_repl_graph_ins  	 SYSTEM	"funcref/rdf_repl_graph_ins.xml">
+<!ENTITY rdf_repl_graph_del  	 SYSTEM	"funcref/rdf_repl_graph_del.xml">
+
+
 <!ENTITY replace				SYSTEM "funcref/replace.xml">
 <!ENTITY replay					SYSTEM "funcref/replay.xml">
 <!ENTITY result					SYSTEM "funcref/result.xml">
@@ -366,6 +413,8 @@
 <!ENTITY rnd					SYSTEM "funcref/rnd.xml">
 <!ENTITY rnext					SYSTEM "funcref/rnext.xml">
 <!ENTITY row_count				SYSTEM "funcref/row_count.xml">
+<!ENTITY rowvector_digit_sort			SYSTEM	"funcref/rowvector_digit_sort.xml">
+<!-- <!ENTITY rowvector_subj_sort			SYSTEM	"funcref/rowvector_subj_sort.xml"> -->
 <!ENTITY identity_value				SYSTEM "funcref/identity_value.xml">
 <!ENTITY rtrim					SYSTEM "funcref/rtrim.xml">
 <!ENTITY search_excerpt				SYSTEM "funcref/search_excerpt.xml">
@@ -391,6 +440,8 @@
 <!ENTITY sinv_drop_inverse			SYSTEM "funcref/sinv_drop_inverse.xml">
 <!ENTITY smime_sign				SYSTEM "funcref/smime_sign.xml">
 <!ENTITY smime_verify				SYSTEM "funcref/smime_verify.xml">
+<!ENTITY smime_encrypt				SYSTEM	"funcref/smime_encrypt.xml">
+<!ENTITY smime_decrypt				SYSTEM	"funcref/smime_decrypt.xml">
 <!ENTITY smtp_send				SYSTEM "funcref/smtp_send.xml">
 <!ENTITY soap_call				SYSTEM "funcref/soap_call.xml">
 <!ENTITY soap_client				SYSTEM "funcref/soap_client.xml">
@@ -545,6 +596,7 @@
 <!ENTITY vt_is_noise				SYSTEM "funcref/vt_is_noise.xml">
 <!ENTITY week					SYSTEM "funcref/week.xml">
 <!ENTITY wsdl_import_udt			SYSTEM "funcref/wsdl_import_udt.xml">
+<!ENTITY user_key_load					SYSTEM	"funcref/user_key_load.xml">
 <!ENTITY wst_cli                        	SYSTEM "funcref/wst_cli.xml">
 <!-- ENTITY xcontains				SYSTEM "funcref/xcontains.xml" -->
 <!ENTITY XMLAGG					SYSTEM "funcref/XMLAGG.xml">
@@ -579,6 +631,7 @@
 <!ENTITY XMLInsertAfter				SYSTEM "funcref/XMLInsertAfter.xml">
 <!ENTITY XMLAppendChildren			SYSTEM "funcref/XMLAppendChildren.xml">
 <!ENTITY XMLAddAttribute			SYSTEM "funcref/XMLAddAttribute.xml">
+<!ENTITY x509_certificate_verify		SYSTEM	"funcref/x509_certificate_verify.xml">
 <!ENTITY xml_auto				SYSTEM "funcref/xml_auto.xml">
 <!ENTITY xml_auto_dtd				SYSTEM "funcref/xml_auto_dtd.xml">
 <!ENTITY xml_auto_schema			SYSTEM "funcref/xml_auto_schema.xml">
@@ -816,6 +869,8 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xenc_SPKI_read			SYSTEM	"funcref/xenc_SPKI_read.xml">
 <!ENTITY xenc_bn2dec			SYSTEM	"funcref/xenc_bn2dec.xml">
 
+  <!ENTITY vacuum SYSTEM	"funcref/vacuum.xml">
+
 <!-- include the document chapters/sections -->
 <!ENTITY xmltableview 				SYSTEM "xmltableview.xml">
 <!ENTITY overview 				SYSTEM "overview.xml">
@@ -831,6 +886,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY isql 					SYSTEM "isql.xml">
 <!ENTITY perfdiag               		SYSTEM "perfdiag.xml">
 <!ENTITY ptune 					SYSTEM "ptune.xml">
+<!ENTITY fault 	                		SYSTEM "fault.xml">
 <!ENTITY sqlreference 				SYSTEM "sqlreference.xml">
 <!ENTITY functions 				SYSTEM "functions.xml">
 <!ENTITY sqlprocedures 				SYSTEM "sqlprocedures.xml">
@@ -838,7 +894,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY odbcimplementation 			SYSTEM "odbcimplementation.xml">
 <!ENTITY oledbimplementation 			SYSTEM "oledbimplementation.xml">
 <!ENTITY repl 					SYSTEM "repl.xml">
-<!ENTITY vad 					SYSTEM "vad.xml">
+<!ENTITY vaddistr 				SYSTEM "vaddistr.xml">
 <!ENTITY dbpump 				SYSTEM "dbpump.xml">
 <!ENTITY webserver 				SYSTEM "webserver.xml">
 <!ENTITY uddi	 				SYSTEM "uddi.xml">
@@ -854,6 +910,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY adminui 				SYSTEM "adminui.xml">
 <!ENTITY adminui.dbadmin  			SYSTEM "adminui.dbadmin.xml">
 <!ENTITY adminui.mailsrvadm  			SYSTEM "adminui.mailsrvadm.xml">
+  <!ENTITY adminui.newssrvadm  SYSTEM "adminui.rdfadm.xml">
 <!ENTITY adminui.newssrvadm  			SYSTEM "adminui.newssrvadm.xml">
 <!ENTITY adminui.querytools  			SYSTEM "adminui.querytools.xml">
 <!ENTITY adminui.replicationandsynchronization  SYSTEM "adminui.replicationandsynchronization.xml">
@@ -908,7 +965,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xmla    				SYSTEM "xmla.xml">
 <!ENTITY jsphosting  		  		SYSTEM "jsphosting.xml">
 <!ENTITY rth.aspx    				SYSTEM "rth.aspx.xml">
-<!ENTITY migrate27to30    			SYSTEM "migrate27to30.xml">
+  <!--ENTITY migrate27to30    SYSTEM "migrate27to30.xml"-->
 <!ENTITY rendezvous    				SYSTEM "rendezvous.xml">
 <!ENTITY secureodbc    				SYSTEM "secureodbc.xml">
 <!ENTITY virtclientref    			SYSTEM "virtclientref.xml">
@@ -932,7 +989,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xsql       				SYSTEM "xsql.xml">
 <!ENTITY blogger       				SYSTEM "blogger.xml">
 <!ENTITY rdfandsparql       			SYSTEM "rdfandsparql.xml">
-<!ENTITY vacuum 				SYSTEM "funcref/vacuum.xml">
+  <!ENTITY rdfviewssamples       SYSTEM "rdfviewssamples.xml">
 ]>
 <book id="virtdocs">
 	<title>OpenLink Virtuoso Universal Server: Documentation</title>
@@ -964,7 +1021,6 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 &sampleapps;
 &concepts;
 &server;
-&adminui;
 &accessinterfaces;
 &sqlreference;
 &sqlprocedures;

@@ -1,4 +1,6 @@
 --
+--  information schema.sql
+--
 --  $Id$
 --
 --  INFORMATION schema support

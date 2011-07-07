@@ -38,7 +38,7 @@
 #include "sqlpfn.h"
 #include "http.h"
 #include "libutil.h"
-#include "sqloinv.h"
+#include "sqlo.h"
 #include "sqlver.h"
 #include "srvmultibyte.h"
 #include "xmlparser.h"
@@ -51,7 +51,7 @@
 #include <grp.h>
 #endif
 
-#ifndef NDEBUG
+#ifndef KEYCOMP
 extern ptrlong itc_dive_transit_call_ctr;
 extern ptrlong itc_try_land_call_ctr;
 
@@ -765,6 +765,16 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+static caddr_t
+bif_query_instance_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  long depth = bif_long_range_arg (qst, args, 0, "query_instance_id", 0, 0xffff);
+  while ((depth-- > 0) && (NULL != qi)) qi = qi->qi_caller;
+  if (NULL == qi)
+    return NEW_DB_NULL;
+  return box_num ((ptrlong)qi);
+}
 
 static caddr_t
 bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -894,7 +904,7 @@ rfc1808_parse_uri (const char *iri, rdf1808_split_t *split_ret)
       const char *scan = iri;
       while (scan <  delim)
         {
-          if (!isalnum (scan[0]) && (NULL == strchr ("+-.", scan[0])))
+          if (!isalnum ((unsigned char) (scan[0])) && (NULL == strchr ("+-.", scan[0])))
             goto schema_done;
           scan++;
         }
@@ -973,7 +983,7 @@ rfc1808_parse_wide_uri (const wchar_t *iri, rdf1808_split_t *split_ret)
         {
           if (scan[0] & ~0x7f)
             goto schema_done;
-          if (!isalnum (scan[0]) && (NULL == strchr ("+-.", ((char *)scan)[0])))
+          if (!isalnum ((unsigned char) (scan[0])) && (NULL == strchr ("+-.", ((char *)scan)[0])))
             goto schema_done;
           scan++;
         }
@@ -1396,11 +1406,164 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy (res);
 }
 
+static caddr_t
+bif_patch_restricted_xml_chars (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#define o 0
+static char restricted_xml_chars[0x80] = {
+/*0 1 2 3 4 5 6 7 8 9 A B C D E F */
+  3,3,3,3,3,3,3,3,3,5,5,3,3,5,3,3,
+/*0 1 2 3 4 5 6 7 8 9 A B C D E F */
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+/*  ! " # $ % & ' ( ) * + , - . / */
+  o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,
+/*0 1 2 3 4 5 6 7 8 9 : ; < = > ? */
+  o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,
+/*@ A B C D E F G H I J K L M N O */
+  o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,
+/*P Q R S T U V W X Y Z [ \ ] ^ _ */
+  o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,
+/*` a b c d e f g h i j k l m n o */
+  o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,
+/*p q r s t u v w x y z { | } ~   */
+  o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o };
+#undef o
+  caddr_t src = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "patch_restricted_xml_chars");
+  int add_percents = bif_long_arg (qst, args, 1, "patch_restricted_xml_chars");
+  dtp_t src_dtp;
+  int src_box_length;
+  int weird_char_ctr = 0;
+  caddr_t dest_to_swap;
+  if (NULL == src)
+    return NULL;
+  src_dtp = DV_TYPE_OF (src);
+  src_box_length = box_length (src);
+  if (!SSL_IS_REFERENCEABLE (args[0]))
+    sqlr_new_error ("22023", "SR642", "The first argument of patch_restricted_xml_chars() should be a variable, not a constant or an expression");
+  if (DV_WIDE == src_dtp)
+    {
+      wchar_t *tail = (wchar_t *)src;
+      wchar_t *end = ((wchar_t *)(src + src_box_length)) - 1;
+      wchar_t *dest, *dest_tail;
+      if (add_percents)
+        {
+          for (;tail < end; tail++)
+            {
+              if (tail[0] & ~0x7F)
+                continue;
+              if (restricted_xml_chars[tail[0]])
+                weird_char_ctr++;
+            }
+          if (0 == weird_char_ctr)
+            return NULL;
+          dest = dest_tail = dk_alloc_box ((sizeof (wchar_t) * 2 * weird_char_ctr) + src_box_length, src_dtp);
+          dest_to_swap = (caddr_t) dest;
+          for (tail = (wchar_t *)src; tail < end; tail++)
+            {
+              if ((tail[0] & ~0x7F) || (0 == restricted_xml_chars[(unsigned)(tail[0])]))
+                (dest_tail++)[0] = tail[0];
+              else
+                {
+                  (dest_tail++)[0] = '%';
+                  (dest_tail++)[0] = "0123456789ABCDEF"[(tail[0] >> 4) & 0xf];
+                  (dest_tail++)[0] = "0123456789ABCDEF"[tail[0] & 0xf];
+                }
+            }
+          dest_tail[0] = 0;
+        }
+      else
+        {
+          for (;tail < end; tail++)
+            {
+              if (tail[0] & ~0x7F)
+                continue;
+              if (restricted_xml_chars[tail[0]] & 2)
+                tail[0] = ' ';
+            }
+          return NULL;
+        }
+    }
+  else
+    {
+      char *tail = src;
+      char *end = src + src_box_length - 1;
+      char *dest, *dest_tail;
+      int dest_box_len;
+      if (add_percents)
+        {
+          for (;tail < end; tail++)
+            {
+              if (tail[0] & ~0x7F)
+                continue;
+              if (restricted_xml_chars[(unsigned)(tail[0])])
+                weird_char_ctr++;
+            }
+          if (0 == weird_char_ctr)
+            return NULL;
+          dest_box_len = (2 * weird_char_ctr) + src_box_length;
+          dest_to_swap = dest = dest_tail = dk_alloc_box (dest_box_len, (DV_UNAME == src_dtp) ? DV_STRING : src_dtp);
+          for (tail = src; tail < end; tail++)
+            {
+              if ((tail[0] & ~0x7F) || (0 == restricted_xml_chars[(unsigned)(tail[0])]))
+                (dest_tail++)[0] = tail[0];
+              else
+                {
+                  (dest_tail++)[0] = '%';
+                  (dest_tail++)[0] = "0123456789ABCDEF"[(tail[0] >> 4) & 0xf];
+                  (dest_tail++)[0] = "0123456789ABCDEF"[tail[0] & 0xf];
+                }
+            }
+          dest_tail[0] = 0;
+          if (DV_UNAME == src_dtp)
+            {
+              dest_to_swap = box_dv_uname_nchars (dest, dest_box_len - 1);
+              dk_free_tree (dest);
+            }
+        }
+      else
+        {
+          if (DV_UNAME == src_dtp)
+            {
+              for (;tail < end; tail++)
+                {
+                  if (tail[0] & ~0x7F)
+                    continue;
+                  if (restricted_xml_chars[(unsigned)(tail[0])])
+                    weird_char_ctr++;
+                }
+              if (0 == weird_char_ctr)
+                return NULL;
+              tail = src = box_dv_short_nchars (src, src_box_length - 1);
+              end = src + src_box_length - 1;
+            }
+          for (;tail < end; tail++)
+            {
+              if (tail[0] & ~0x7F)
+                continue;
+              if (restricted_xml_chars[(unsigned)(tail[0])] & 2)
+                tail[0] = ' ';
+            }
+          if (DV_UNAME == src_dtp)
+            {
+              dest_to_swap = box_dv_uname_nchars (src, src_box_length - 1);
+              dk_free_tree (src);
+            }
+          else
+            return NULL;
+        }
+    }
+  qst_swap (qst, args[0], &dest_to_swap);
+  dk_free_tree (dest_to_swap);
+  return NULL;
+}
+
+
+
 /*
    __stop_cpt (0,1,2,3)
    for testing cpt recovery only,
    the flag == 1 will cause server to exit after cpt recov file is done
-   flag == 2 will exit before recov file is markd as complete
+   flag == 2 will exit before recov file is marked as complete
    flag == 3 will simulate out of space
  */
 static caddr_t
@@ -1432,12 +1595,20 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+
+static caddr_t
+bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NEW_DB_NULL;
+}
+
+
 void
 sqlbif2_init (void)
 {
   pwnam_mutex = mutex_allocate ();
   mutex_option (pwnam_mutex, "pwnam_mutex", NULL, NULL);
-#ifndef NDEBUG
+#ifndef KEYCOMP
   bif_define_typed ("itc_dive_transit_call_ctr", bif_itc_dive_transit_call_ctr, &bt_integer);
   bif_define_typed ("itc_try_land_call_ctr", bif_itc_try_land_call_ctr, &bt_integer);
 #endif
@@ -1450,6 +1621,7 @@ sqlbif2_init (void)
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
   bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
+  bif_define_typed ("query_instance_id", bif_query_instance_id, &bt_integer);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
@@ -1457,12 +1629,21 @@ sqlbif2_init (void)
   bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
+  bif_define ("patch_restricted_xml_chars", bif_patch_restricted_xml_chars);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
+  bif_define ("repl_this_server", bif_this_server);
+  /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }
 
+void
+sqlbif_sequence_init (void)
+{
+  /* sequence_set bifs */
+  bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
+}
 
 /* This should stay the last part of the file */
 #define YY_INPUT(buf, res, max) \

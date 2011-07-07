@@ -507,10 +507,10 @@
                 function getTags ()
                  {
                   oEditor.updateElement();
-                   window.hdntext2=document.page_form['hdntext2'];
+                  // window.hdntext2=document.page_form['hdntext2'];
                    window.post_tags=document.page_form['post_tags'];
                    window.open ('index.vspx?page=get_tags&amp;sid=<?V self.sid ?>&amp;realm=wa&amp;hdntext2=' +
-                   escape (document.page_form['hdntext2'].value) +
+                  escape ($v('text2')) +
                    '&amp;post_tags='+ escape (document.page_form['post_tags'].value),
                    'tags_suggest_window', 'scrollbars=yes, resize=yes, menubar=no, height=200, width=600');
                  }
@@ -518,10 +518,10 @@
                 function getTb ()
                  {
                   oEditor.updateElement();
-                   window.hdntext2=document.page_form['hdntext2'];
+                  // window.hdntext2=document.page_form['hdntext2'];
                    window.tpurl1=document.page_form['tpurl1'];
                    window.open ('index.vspx?page=suggest_tb&sid=<?V self.sid ?>&realm=wa&hdntext2=' +
-                   escape (document.page_form['hdntext2'].value) +
+                  escape ($v('text2')) +
                    '&tpurl1='+ escape (document.page_form['tpurl1'].value),
                    'tags_suggest_window', 'scrollbars=yes, resize=yes, menubar=no, height=200, width=600');
                  }
@@ -570,6 +570,9 @@
 			    </v:check-box>
 			    <label for="ins_media">Insert Media Object</label>
 			</span>
+                                <br/>
+				<v:check-box name="salmon_ping" value="1" xhtml_id="salmon_ping"/>
+				<label for="salmon_ping">Notify everybody mentioned in the post</label>
 			<script type="text/javascript"><![CDATA[
 			    <!--
       			    if (oEditor)
@@ -866,6 +869,10 @@
 		      post_title,
 		      bdate);
                     self.preview_post_id := id;
+                    if (self.salmon_ping.ufl_selected)
+		      {
+                         ODS.DBA.sp_send_all_mentioned (self.owner_name, sioc..blog_post_iri (self.blogid, id), msg);
+		      }
                   }
                   else
 		  {
@@ -1281,7 +1288,7 @@
      oi_handle := get_keyword ('assoc_handle', cnt, null);
      oi_key := get_keyword ('mac_key', cnt, '');
 
-     insert into OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
+     insert soft OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
      	values (oi_handle, oi_key, 'RAW', dateadd ('hour', 1, now()));
      self.openid_key := oi_key;
 
@@ -1348,6 +1355,14 @@
 			</v:before-render>
 		    </v:check-box> <label for="notify_me">Notify me on future updates</label>
 		</div>
+                <div>
+		    <v:check-box name="semping1" value="on" initial-checked="0" xhtml_id="semping1"/>
+		    	<label for="semping1">Issue Semantic Pingback</label>
+                </div>
+		    <div>
+				<v:check-box name="salmon_ping" value="1" xhtml_id="salmon_ping"/>
+				<label for="salmon_ping">Notify everybody mentioned in the post</label>
+		    </div>
 		<div><v:check-box name="comment1_disable_html" enabled="--equ(length (self.sid), 0)" initial-checked="--equ(isnull(self.comm_ref), 0)" /><v:label value=" Contains Markup" name="comment1_disable_html_l1" enabled="--equ(length (self.sid), 0)"/> </div>
               </td>
             </tr>
@@ -1459,7 +1474,34 @@
                 self.warn1.vc_enabled := 1;
              }
 
+	      declare blog_iri, src_iri varchar; 
+              src_iri := sioc..blog_comment_iri (self.blogid, self.postid, comm_id);
+	  if (self.semping1.ufl_selected)
+	    {
+	      if (not length (src_iri))
+	        {
+                  rollback work;
+		  self.vc_error_message := 'You must specify valid WebID in order to issue Semantic Pingback';
+                  self.vc_is_valid := 0;
+		  return; 
+		}
+              for select BI_WAI_NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid do
+	        {
+		  blog_iri := sioc..blog_iri (BI_WAI_NAME);
+		  SEMPING..CLI_PING (src_iri, blog_iri);
+		}
+	      for select CL_LINK from BLOG..BLOG_COMMENT_LINKS 
+		where CL_BLOG_ID = self.blogid and CL_POST_ID = self.postid and CL_CID = comm_id and CL_PING = 1 do
+                {
+		  SEMPING..CLI_PING (src_iri, CL_LINK);
+                }		
+	    }
+	  if (self.salmon_ping.ufl_selected)
+	    {
+              ODS.DBA.sp_send_all_mentioned (self.owner_name, src_iri, self.comment2);
+	    }
                        self.comment2 := '';
+
 	  if (self.cook1.ufl_selected and self.blog_access <> 1)
                        {
                         if (self.vid is not null)
@@ -1528,6 +1570,47 @@
       </v:form>
     </div>
 </v:template>
+  </xsl:template>
+
+  <xsl:template match="vm:micro-post">
+      <v:template name="mpt" type="simple" enabled="--(case when (self.blog_access = 1 or self.blog_access = 2) then 1 else 0 end)">
+	  <div class="micro-post">
+	      <div id="mptitle"><xsl:value-of select="@title"/></div>
+	      <v:form name="mpf" method="POST" type="simple">
+		  <v:textarea name="mpta" xhtml_cols="70" xhtml_rows="5" xhtml_id="mpta"/>
+		  <v:button name="mpb" action="simple" value="Send" xhtml_id="mpb" xhtml_class="real_button">
+		      <v:on-post><![CDATA[
+			  declare res BLOG.DBA."MTWeblogPost";
+			  declare dat datetime;
+			  declare id, dummy, title, message, tmp any;
+
+			  tmp := trim (self.mpta.ufl_value);
+			  if (length (tmp) = 0)
+			    {
+			      self.vc_is_valid := 0;
+			      self.vc_error_message := 'No content';
+			      return 0;
+			    }
+			  title := BLOG..BLOG_RESOLVE_REFS (sprintf ('%V', tmp));
+			  message := '';
+			  dat := now ();
+			  id := cast (sequence_next ('blogger.postid') as varchar);
+			  dummy := null;
+			  res := BLOG.DBA.BLOG_MESSAGE_OR_META_DATA (dummy, self.user_id, dummy, id, dat);
+
+			  res.title := title;
+			  res.dateCreated := dat;
+			  res.postid := id;
+			  insert into BLOG.DBA.SYS_BLOGS( B_APPKEY, B_POST_ID, B_BLOG_ID, B_TS, B_CONTENT, B_USER_ID, B_META, B_STATE, B_TITLE, B_TS)
+			    values( 'appKey', id, self.blogid, dat, message, self.user_id, res, 2, title, dat);
+			  self.mpta.ufl_value := '';
+                          self.vc_data_bind(e);
+			  ODS.DBA.sp_send_all_mentioned (self.owner_name, sioc..blog_post_iri (self.blogid, id), title);
+			  ]]></v:on-post>
+		  </v:button>
+	      </v:form>
+	  </div>
+      </v:template>
   </xsl:template>
 
   <xsl:template match="vm:advanced-search-link">
@@ -1789,7 +1872,48 @@
       <v:variable name="imp_pwd" type="any" default="null" />
       <v:variable name="imp_api" type="any" default="null" />
       <v:variable name="imp_n" type="int" default="0" />
+      <v:variable name="imp_hub" type="varchar" default="null" />
       <v:template name="tmpl1" type="simple" condition="self.step = 1">
+	  <div>
+	      <h3>Active PubSubHub subscriptions</h3>
+	      <table class="listing">
+		  <tr class="listing_header_row">
+		      <th>URL</th>
+		      <th>Action</th>
+		  </tr>
+		  <v:data-set name="psh_list" sql="select PS_URL, PS_HUB from WA_PSH_SUBSCRIPTIONS where PS_INST_ID = :inst" 
+		      scrollable="0" edit="0" nrows="1000">
+		      <v:param name="inst" value="-- self.inst_id"/>
+		      <v:template name="t_rep" type="repeat">
+			  <v:template name="t_brws" type="browse">
+			      <tr>
+				  <td><v:label render-only="1" name="psh_l1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/></td>
+				  <td>
+				      <v:button name="subdrop" value="Unsubscribe" action="simple">
+					  <v:on-post>
+					      PSH.DBA.ods_cli_subscribe (self.inst_id, 
+					        (control.vc_parent as vspx_row_template).te_rowset[1], 
+                                                'unsubscribe',
+					      	(control.vc_parent as vspx_row_template).te_rowset[0] 
+						);
+				              self.psh_list.vc_data_bind (e);		
+					  </v:on-post>
+				      </v:button>
+				  </td>
+			      </tr>
+			  </v:template>
+			  <v:template type="if-not-exists" name="t_nf">
+			      <tr>
+				  <td colspan="2">
+				      No subscriptions
+				  </td>
+			      </tr>
+			  </v:template>
+		      </v:template>
+		  </v:data-set>
+	      </table>
+	  </div>
+	  <hr/>
 	  <h3>To import posts from another blog system enter:</h3>
 	  <div>
 	      <fieldset>
@@ -1813,6 +1937,7 @@
 			    {
                               self.imp_url := url;
 			      self.step := 4;
+			      self.imp_hub := xpath_eval ('/rss/link[@rel="hub"]/@href|/feed/link[@rel="hub"]/@href', xt);
 			      return;
 			    }
 
@@ -1925,6 +2050,9 @@
       </v:template>
       <v:template name="tmpl4" type="simple" condition="self.step = 4">
 	  <h3>Do you want to import posts from <?V self.imp_url ?> ?</h3>
+	  <?vsp if (length (self.imp_hub)) { ?>
+	  <v:check-box name="use_psh" value="1" initial-checked="1"/> Use PubSubHub <v:label name="pshep" value="--self.imp_hub"/><br/>
+	  <?vsp } ?>
 	      <v:button xhtml_class="real_button" action="simple" name="bt_discov4" value="Yes">
 		  <v:on-post>
 		      declare exit handler for sqlstate '*'
@@ -1933,7 +2061,8 @@
 		        self.vc_error_message := __SQL_MESSAGE;
 		      };
 		      self.imp_n :=
-		      BLOG..IMPORT_BLOG (self.blogid, self.user_id, self.imp_url, self.imp_api, self.imp_bid, self.imp_uid, self.imp_pwd);
+		      BLOG..IMPORT_BLOG (self.blogid, self.user_id, self.imp_url, self.imp_api, 
+		      		self.imp_bid, self.imp_uid, self.imp_pwd, case when self.use_psh.ufl_selected then self.imp_hub else null end);
 		      self.step := 5;
 		  </v:on-post>
 	      </v:button>
@@ -1947,6 +2076,8 @@
 	  <h3>Imported: <?V self.imp_n ?> post(s)</h3>
 	  <v:button xhtml_class="real_button" action="simple" name="bt_discov6" value="Ok">
 	      <v:on-post>
+		  self.imp_url := '';
+		  self.imp_blog.ufl_value := '';
 		  self.step := 1;
 	      </v:on-post>
 	  </v:button>

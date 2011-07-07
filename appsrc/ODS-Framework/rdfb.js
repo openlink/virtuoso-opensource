@@ -237,7 +237,8 @@ OAT.Dereference = {
 	rdfb.addTab("browser","Browser",{});
 	rdfb.addTab("triples","Raw triples",{});
 	rdfb.addTab("svg","SVG Graph",{});
-	rdfb.addTab("map","Yahoo Map",{provider:OAT.MapData.TYPE_Y});
+	// rdfb.addTab("map","Yahoo Map",{provider:OAT.MapData.TYPE_Y});
+  rdfb.addTab("map","Google Map",{provider:OAT.Map.TYPE_G3});
 	rdfb.addTab("timeline","Timeline",{});
 	rdfb.addTab("images","Images",{});
 	rdfb.addTab("tagcloud","Tag Cloud",{});

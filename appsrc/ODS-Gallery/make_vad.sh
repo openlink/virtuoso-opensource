@@ -28,9 +28,8 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
-
 LOGDIR=`pwd`
-VERSION="0.3.58"
+VERSION="0.3.59"
 LOGFILE="${LOGDIR}/make_vad.log"
 STICKER="make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
@@ -226,7 +225,7 @@ sticker_init() {
   echo "  <name package=\"Gallery\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Gallery\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -239,8 +238,8 @@ sticker_init() {
   echo "  <require>" >> $STICKER
   echo "   <name package=\"Framework\">" >> $STICKER
   echo "   </name>" >> $STICKER
-  echo "    <versions_later package=\"1.67.12\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2010-03-29 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.81.91\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2011-05-16 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "   </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER

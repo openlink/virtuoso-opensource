@@ -26,7 +26,8 @@
   <xsl:include href="common.xsl"/>
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="set_mail.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/set_mail.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <table width="100%" cellpadding="0" cellspacing="0" align="center" class="content">
         <colgroup>
@@ -80,6 +81,14 @@
     <xsl:apply-templates select="spam_msg_clean"/>
     <xsl:apply-templates select="spam_msg_header"/>
     <xsl:apply-templates select="spam"/>
+    <tr>
+      <th style="background-color: #EAEAEE;" />
+      <th style="background-color: #EAEAEE; text-align: left;">Security</th>
+    </tr>
+    <xsl:apply-templates select="security_sign"/>
+    <xsl:apply-templates select="security_sign_mode"/>
+    <xsl:apply-templates select="security_encrypt"/>
+    <xsl:apply-templates select="security_encrypt_mode"/>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="msg_name">
@@ -190,14 +199,15 @@
     <tr>
       <th>Discussion</th>
       <td>
+        <label>
         <xsl:call-template name="make_checkbox">
           <xsl:with-param name="name">conversation</xsl:with-param>
-          <xsl:with-param name="id">conversation</xsl:with-param>
           <xsl:with-param name="value">1</xsl:with-param>
           <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
           <xsl:with-param name="disabled"><xsl:choose><xsl:when test="../discussion = 0">1</xsl:when><xsl:otherwise>-1</xsl:otherwise></xsl:choose></xsl:with-param>
         </xsl:call-template>
-        <label for="conversation">Enable discussion on this instance</label>
+          Enable discussion on this instance
+        </label>
       </td>
     </tr>
     <xsl:if test="../discussion = 0">
@@ -301,7 +311,6 @@
     </tr>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <!-- ====================================================================================== -->
   <xsl:template match="spam">
     <tr>
       <th>Allow messages from</th>
@@ -313,6 +322,81 @@
         </xsl:call-template>
       </td>
     </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="security_sign">
+    <tr>
+      <th>Digitally signing (with certificate)</th>
+      <td>
+        <select name="security_sign">
+          <option></option>
+          <xsl:apply-templates select="certificates/certificate" />
+        </select>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="security_sign_mode">
+    <tr>
+      <th></th>
+      <td>
+        <label>
+          <xsl:call-template name="make_checkbox">
+            <xsl:with-param name="name">security_sign_mode</xsl:with-param>
+            <xsl:with-param name="value">1</xsl:with-param>
+            <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+          </xsl:call-template>
+          Digitally sign messages (by default)
+        </label>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="security_encrypt">
+    <tr>
+      <th>Encryption (with certificate)</th>
+      <td>
+        <select name="security_encrypt">
+          <option></option>
+          <xsl:apply-templates select="certificates/certificate" />
+        </select>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="security_encrypt_mode">
+    <tr>
+      <th></th>
+      <td>
+        <label>
+          <input type="radio" name="security_encrypt_mode" value="0">
+            <xsl:if test="../security_encrypt_mode = 0">
+              <xsl:attribute name="checked"/>
+            </xsl:if>
+          </input>
+  			  Never (do not use encryption)
+  	    </label>
+  	    <br />
+        <label>
+          <input type="radio" name="security_encrypt_mode" value="1">
+            <xsl:if test="../security_encrypt_mode = 1">
+              <xsl:attribute name="checked"/>
+            </xsl:if>
+          </input>
+  			  Required (can't send message unless all recipients have certificates)
+  	    </label>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="certificate">
+    <option>
+      <xsl:value-of select="."/>
+      <xsl:if test="@selected">
+        <xsl:attribute name="selected">1</xsl:attribute>
+      </xsl:if>
+    </option>
+    <xsl:apply-templates select="certificates/certificate" />
   </xsl:template>
   <!-- ====================================================================================== -->
 </xsl:stylesheet>

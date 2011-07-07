@@ -21,45 +21,19 @@
 --
 --
 
---drop table DB.DBA.RDF_QUAD;
---drop table DB.DBA.RDF_OBJ;
---drop table DB.DBA.RDF_URL;
---drop table DB.DBA.RDF_DATATYPE;
---drop table DB.DBA.RDF_LANGUAGE;
-
------
--- Database schema
-
-
 create table DB.DBA.RDF_QUAD (
-  G IRI_ID,
-  S IRI_ID,
-  P IRI_ID,
+  G IRI_ID_8,
+  S IRI_ID_8,
+  P IRI_ID_8,
   O any,
-  primary key (G,S,P,O)
+  primary key (P, S, O, G)
   )
-create bitmap index RDF_QUAD_OGPS on DB.DBA.RDF_QUAD (O, G, P, S)
-;
+alter index RDF_QUAD on DB.DBA.RDF_QUAD partition (S int (0hexffff00))
 
-create procedure RDF_CREATE_LITE_IDX ()
-{
-  if (not sys_stat ('st_lite_mode'))
-    return;
-  if (not exists (select 1 from SYS_KEYS where fix_identifier_case (KEY_NAME) = 'RDF_QUAD_OPGS'))
-    EXEC_STMT ('create bitmap index RDF_QUAD_OPGS on RDF_QUAD (O, P, G, S) partition (O varchar (-1, 0hexffff))', 1);
-  if (not exists (select 1 from SYS_KEYS where fix_identifier_case (KEY_NAME) = 'RDF_QUAD_POGS'))
-    EXEC_STMT ('create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff))', 1);
-  if (not exists (select 1 from SYS_KEYS where fix_identifier_case (KEY_NAME) = 'RDF_QUAD_GPOS'))
-    EXEC_STMT ('create bitmap index RDF_QUAD_GPOS on RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff))', 1);
-  if (registry_get ('LITE_RDF_RULE') = '1')
-    return;
-  RDF_OBJ_FT_RULE_ADD (null, null, 'All');
-  registry_set ('LITE_RDF_RULE', '1');
-}
-;
-
---!AFTER
-RDF_CREATE_LITE_IDX()
+create distinct no primary key ref bitmap index RDF_QUAD_SP on RDF_QUAD (S, P) partition (S int (0hexffff00))
+create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff))
+create distinct no primary key ref bitmap index RDF_QUAD_GS on RDF_QUAD (G, S) partition (S int (0hexffff00))
+create distinct no primary key ref index RDF_QUAD_OP on RDF_QUAD (O, P) partition (O varchar (-1, 0hexffff))
 ;
 
 create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
@@ -99,43 +73,50 @@ DB.DBA.RDF_QNAME_OF_IID (null)
 --}
 --;
 
-
-create table DB.DBA.RDF_URL (
-  RU_IID IRI_ID not null primary key,
-  RU_QNAME varchar )
-create unique index RU_QNAME on DB.DBA.RDF_URL (RU_QNAME)
-;
-
---create table DB.DBA.RDF_PREFIX (RP_NAME varchar primary key, RP_ID int not null unique)
---;
-
---create table DB.DBA.RDF_IRI (RI_NAME varchar primary key, RI_ID IRI_ID not null unique)
---;
-
 create table DB.DBA.RDF_OBJ (
-  RO_ID integeR primary key,
-  RO_VAL varchar,
+  RO_ID bigint primary key,
+  RO_VAL varchar not null,
   RO_LONG long varchar,
-  RO_DIGEST any
+  RO_FLAGS smallint not null default 0,
+  RO_DT_AND_LANG integer not null default 16843009 compress any
 )
-create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL, RO_DIGEST)
+alter index RDF_OBJ on RDF_OBJ partition (RO_ID int (0hexffff00))
+
+create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL, RO_DT_AND_LANG)
+ partition (RO_VAL varchar (-4, 0hexffff))
 ;
 
---#IF VER=5
-alter table DB.DBA.RDF_OBJ add RO_DIGEST any
+
+create table DB.DBA.RO_START (RS_START varchar, RS_DT_AND_LANG int, RS_RO_ID any,
+  primary key (RS_START, RS_DT_AND_LANG, RS_RO_ID))
+alter index RO_START on DB.DBA.RO_START partition (RS_RO_ID varchar (-1, 0hexffff))
 ;
---#ENDIF
+
+
+--create table DB.DBA.RDF_FT (
+--  RF_ID bigint primary key,
+--  RF_O any)
+--alter index RDF_FT on RDF_FT partition (RF_ID int (0hexffff00))
+--create index RF_O on RDF_FT (RF_O) partition (RF_O varchar  (-1, 0hexffff))
+--;
 
 create table DB.DBA.RDF_DATATYPE (
-  RDT_IID IRI_ID not null primary key,
+  RDT_IID IRI_ID_8 not null primary key,
   RDT_TWOBYTE integer not null unique,
   RDT_QNAME varchar not null unique )
+alter index RDF_DATATYPE on RDF_DATATYPE partition cluster replicated
+alter index DB_DBA_RDF_DATATYPE_UNQC_RDT_TWOBYTE   on RDF_DATATYPE partition cluster replicated
+alter index DB_DBA_RDF_DATATYPE_UNQC_RDT_QNAME on RDF_DATATYPE partition cluster replicated
 ;
 
 create table DB.DBA.RDF_LANGUAGE (
   RL_ID varchar not null primary key,
   RL_TWOBYTE integer not null unique )
+alter index RDF_LANGUAGE on RDF_LANGUAGE  partition cluster replicated
+alter index DB_DBA_RDF_LANGUAGE_UNQC_RL_TWOBYTE on RDF_LANGUAGE  partition cluster replicated
 ;
+
+
 
 create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key,
@@ -145,16 +126,12 @@ create table DB.DBA.SYS_SPARQL_HOST (
 )
 ;
 
---#IF VER=5
-alter table DB.DBA.SYS_SPARQL_HOST add SH_DEFINES long varchar
-;
---#ENDIF
-
 create table DB.DBA.RDF_OBJ_FT_RULES (
   ROFR_G varchar not null,
   ROFR_P varchar not null,
   ROFR_REASON varchar not null,
   primary key (ROFR_G, ROFR_P, ROFR_REASON) )
+alter index RDF_OBJ_FT_RULES on RDF_OBJ_FT_RULES partition cluster replicated
 ;
 
 create table DB.DBA.SYS_SPARQL_SW_LOG (
@@ -171,11 +148,33 @@ create table DB.DBA.SYS_XML_PERSISTENT_NS_DECL
   NS_PREFIX varchar not null primary key,
   NS_URL varchar not null
 )
+alter index SYS_XML_PERSISTENT_NS_DECL on SYS_XML_PERSISTENT_NS_DECL partition cluster replicated
 ;
 
 create table DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH
 (
   REC_GRAPH_IID IRI_ID not null primary key
+)
+alter index RDF_EXPLICITLY_CREATED_GRAPH on RDF_EXPLICITLY_CREATED_GRAPH partition cluster replicated
+;
+
+create table RDF_GEO (X real no compress, Y real no compress,X2 real no compress, Y2 real no compress, ID bigint no compress, primary key (X, Y, X2, Y2, ID))
+alter index RDF_GEO on RDF_GEO partition (ID int (0hexffff00))
+;
+
+create table DB.DBA.RDF_LABEL (RL_O any primary key, RL_RO_ID bigint, RL_TEXT varchar, RL_LANG int)
+alter index RDF_LABEL on RDF_LABEL partition (RL_O varchar (-1, 0hexffff))
+create index RDF_LABEL_TEXT on RDF_LABEL (RL_TEXT, RL_O) partition (RL_TEXT varchar (6, 0hexffff))
+;
+
+create table DB.DBA.RDF_QUAD_DELETE_QUEUE (
+  EVENT_ID bigint not null,
+  RULE_ID bigint not null,
+  QG IRI_ID not null,
+  QS IRI_ID not null,
+  QP IRI_ID not null,
+  QO any not null,
+  primary key (EVENT_ID, RULE_ID,  QG, QS, QP, QO)
 )
 ;
 
@@ -215,12 +214,25 @@ sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 1)
 sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 1)
 ;
 
-create procedure DB.DBA.RDF_OBJ_RO_DIGEST_INDEX_HOOK (inout vtb any, inout d_id any)
+create procedure RDF_GEO_INIT ()
 {
-  for (select RO_LONG, RO_VAL, RO_DIGEST
-    from DB.DBA.RDF_OBJ where RO_ID=d_id and RO_DIGEST is not null) do
+  if (not exists (select 1 from SYS_VT_INDEX where VI_COL = 'o'))
     {
-      if (__tag of XML = rdf_box_data_tag (RO_DIGEST))
+      insert soft SYS_VT_INDEX (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, VI_ID_IS_PK, VI_OPTIONS)
+	values ('DB.DBA.RDF_QUAD', 'RDF_QUAD_OP', 'O', 'O', 'DB.DBA.RDF_GEO', 1, 'GR');
+      insert soft SYS_VT_INDEX (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, VI_ID_IS_PK, VI_OPTIONS)
+	values ('DB.DBA.RDF_QUAD', 'RDF_QUAD_OP', 'o', 'O', 'DB.DBA.RDF_OBJ_RO_FLAGS_WORDS', 1, null);
+      __ddl_changed ('DB.DBA.RDF_QUAD');
+    }
+}
+;
+
+create procedure DB.DBA.RDF_OBJ_RO_FLAGS_INDEX_HOOK (inout vtb any, inout d_id any)
+{
+  for (select RO_LONG, RO_VAL, RO_FLAGS
+	 from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID=d_id and bit_and (RO_FLAGS, 1)) do
+    {
+      if (bit_and (RO_FLAGS, 2))
         vt_batch_feed (vtb, xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 0);
       else
         vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL), 0);
@@ -229,12 +241,12 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_INDEX_HOOK (inout vtb any, inout d_id 
 }
 ;
 
-create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_id any)
+create procedure DB.DBA.RDF_OBJ_RO_FLAGS_UNINDEX_HOOK (inout vtb any, inout d_id any)
 {
-  for (select RO_LONG, RO_VAL, RO_DIGEST
-    from DB.DBA.RDF_OBJ where RO_ID=d_id and RO_DIGEST is not null) do
+  for (select RO_LONG, RO_VAL, RO_FLAGS
+	 from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID=d_id and bit_and (RO_FLAGS, 1)) do
     {
-      if (__tag of XML = rdf_box_data_tag (RO_DIGEST))
+      if (bit_and (RO_FLAGS, 2))
         vt_batch_feed (vtb, xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 1);
       else
         vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL), 1);
@@ -242,6 +254,26 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_i
   return 1;
 }
 ;
+
+create procedure sparql_exec_quiet (in expn varchar)
+{
+  declare sta, msg varchar;
+  exec (expn, sta, msg);
+}
+;
+
+sparql_exec_quiet ('DB.DBA.vt_create_text_index (
+      fix_identifier_case (''DB.DBA.RDF_OBJ''),
+      fix_identifier_case (''RO_FLAGS''),
+      fix_identifier_case (''RO_ID''),
+      0, 0, vector (), 1, ''*ini*'', ''UTF-8-QR'')')
+;
+
+sparql_exec_quiet ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)')
+;
+
+--sparql_exec_quiet ('alter index VTLOG_DB_DBA_RDF_OBJ on VTLOG_DB_DBA_RDF_OBJ partition (VTLOG_RO_ID int (0hexffff00))')
+--;
 
 --!AWK PUBLIC
 create function DB.DBA.XML_SET_NS_DECL (in prefix varchar, in url varchar, in persist integer := 1) returns integer
@@ -318,6 +350,7 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'dc'	, 'http://purl.org/dc/elements/1.1/'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'go'	, 'http://purl.org/obo/owl/GO#'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'geo'	, 'http://www.w3.org/2003/01/geo/wgs84_pos#'		, 2);
+  DB.DBA.XML_SET_NS_DECL (	'fn'	, 'http://www.w3.org/2005/xpath-functions/#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'foaf'	, 'http://xmlns.com/foaf/0.1/'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'obo'	, 'http://www.geneontology.org/formats/oboInOwl#'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'owl'	, 'http://www.w3.org/2002/07/owl#'		, 2);
@@ -325,15 +358,20 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'math'	, 'http://www.w3.org/2000/10/swap/math#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'mf'	, 'http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'nci'	, 'http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'product'	, 'http://www.buy.com/rss/module/productV2/'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'protseq'	, 'http://purl.org/science/protein/bysequence/'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdf'	, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'rdfa'	, 'http://www.w3.org/ns/rdfa#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfdf'	, 'http://www.openlinksw.com/virtrdf-data-formats#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfs'	, 'http://www.w3.org/2000/01/rdf-schema#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'sc'	, 'http://purl.org/science/owl/sciencecommons/'		, 2);
+  DB.DBA.XML_SET_NS_DECL (	'sioc'	, 'http://rdfs.org/sioc/ns#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'skos'	, 'http://www.w3.org/2004/02/skos/core#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'sql'	, 'sql:'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'virtrdf'	, 'http://www.openlinksw.com/schemas/virtrdf#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'virtcxml'	, 'http://www.openlinksw.com/schemas/virtcxml#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'vcard'	, 'http://www.w3.org/2001/vcard-rdf/3.0#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'vcard2006'	, 'http://www.w3.org/2006/vcard/ns#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xf'	, 'http://www.w3.org/2004/07/xpath-functions'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xml'	, 'http://www.w3.org/XML/1998/namespace'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xsd'	, 'http://www.w3.org/2001/XMLSchema#'	, 2);
@@ -343,11 +381,6 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'yago'	, 'http://dbpedia.org/class/yago/'	, 2);
 }
 ;
-
-create table DB.DBA.SYS_RDF_SCHEMA (RS_NAME VARCHAR , RS_URI VARCHAR, RS_G IRI_ID,
-	PRIMARY KEY (RS_NAME, RS_URI))
-;
-
 
 DB.DBA.XML_LOAD_ALL_NS_DECLS ()
 ;
@@ -373,9 +406,159 @@ again:
 DB.DBA.RDF_LOAD_ALL_FT_RULES ()
 ;
 
+create procedure DB.DBA.RDF_REPL_START (in quiet integer := 0)
+{
+  if (repl_this_server () is null)
+    return;
+  if (isstring (registry_get ('DB.DBA.RDF_REPL')))
+    {
+      if (quiet)
+        return;
+      signal ('RDF99', 'RDF replication is already enabled');
+    }
+  for (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+  where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group')
+    and not (bit_and (__rdf_graph_approx_perms (RGGM_MEMBER_IID, http_nobody_uid()), 1)) ) do
+    {
+      signal ('RDF99', 'RDF replication can not be enabled because it will violate security rules for public read access to graph <' || id_to_iri(RGGM_MEMBER_IID) || '>');
+    }
+  repl_publish ('__rdf_repl', '__rdf_repl.log');
+  repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
+  DB.DBA.RDF_GRAPH_GROUP_CREATE (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group', 1);
+  registry_set ('DB.DBA.RDF_REPL', cast (now() as varchar));
+  exec ('checkpoint');
+}
+;
+
+create procedure DB.DBA.RDF_REPL_STOP (in quiet integer := 0)
+{
+  if (not isstring (registry_get ('DB.DBA.RDF_REPL')))
+    {
+      if (quiet)
+        return;
+      signal ('RDF99', 'RDF replication is not enabled');
+    }
+  repl_unpublish ('__rdf_repl');
+  registry_remove ('DB.DBA.RDF_REPL');
+}
+;
+
+create procedure DB.DBA.RDF_REPL_GRAPH_INS (in memb_iri varchar)
+{
+  declare memb_iid IRI_ID;
+  memb_iid := iri_to_id (memb_iri);
+  memb_iri := id_to_iri (memb_iid);
+  if (memb_iri = DB.DBA.JSO_SYS_GRAPH())
+    signal ('RDF99', 'Can not enable RDF replication of <' || memb_iri || '> (the system metadata graph)');
+  DB.DBA.RDF_GRAPH_GROUP_INS (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group', memb_iri);
+  if (not (bit_and (__rdf_graph_approx_perms (memb_iid, http_nobody_uid()), 1)))
+    signal ('RDF99', 'Can not enable RDF replication of graph <' || memb_iri || '> because it is not readable by public');
+}
+;
+
+create procedure DB.DBA.RDF_REPL_GRAPH_DEL (in memb_iri varchar)
+{
+  declare memb_iid IRI_ID;
+  DB.DBA.RDF_GRAPH_GROUP_DEL (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group', memb_iri);
+}
+;
+
+create procedure DB.DBA.RDF_REPL_SYNC (in publisher varchar, in u varchar, in pwd varchar)
+{
+  declare lvl, stat integer;
+  if (repl_this_server () is null)
+    return;
+  commit work;
+retr:
+
+  repl_sync (publisher, '__rdf_repl', u, pwd);
+again:
+  repl_status (publisher, '__rdf_repl', lvl, stat);
+  if (0 = stat)
+    {
+      __rdf_repl_flush_queue();
+      return;
+    }
+  if (1 = stat)
+    {
+      delay (0.1);
+      goto again;
+    }
+  if (2 = stat)
+    {
+      __rdf_repl_flush_queue();
+      return;
+    }
+  goto retr;
+}
+;
+
+
+create procedure DB.DBA.RDF_REPL_INSERT_TRIPLES (in graph_iri varchar, inout triples any)
+{
+  declare ctr integer;
+  for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
+    {
+      declare s_iri, p_iri, o_val, o_type, o_lang any;
+      s_iri := iri_canonicalize (triples[ctr][0]);
+      p_iri := iri_canonicalize (triples[ctr][1]);
+      o_val := triples[ctr][2];
+      if (isiri_id (o_val))
+        __rdf_repl_quad (84, graph_iri, s_iri, p_iri, iri_canonicalize (o_val));
+      else if (__tag of rdf_box <> __tag (o_val))
+        __rdf_repl_quad (80, graph_iri, s_iri, p_iri, o_val);
+      else
+        {
+          declare dt_twobyte, lang_twobyte integer;
+          dt_twobyte := rdf_box_type (o_val);
+          lang_twobyte := rdf_box_lang (o_val);
+          if (257 <> dt_twobyte)
+            __rdf_repl_quad (81, graph_iri, s_iri, p_iri, rdf_box_data (o_val), (select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte), NULL);
+          else if (257 <> lang_twobyte)
+            __rdf_repl_quad (82, graph_iri, s_iri, p_iri, rdf_box_data (o_val), NULL, (select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte));
+          else
+            __rdf_repl_quad (80, graph_iri, s_iri, p_iri, rdf_box_data (o_val));
+        }
+    }
+}
+;
+
+create procedure DB.DBA.RDF_REPL_DELETE_TRIPLES (in graph_iri varchar, inout triples any)
+{
+  declare ctr integer;
+  for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
+    {
+      declare s_iri, p_iri, o_val, o_type, o_lang any;
+      s_iri := iri_canonicalize (triples[ctr][0]);
+      p_iri := iri_canonicalize (triples[ctr][1]);
+      o_val := triples[ctr][2];
+      if (isiri_id (o_val))
+        __rdf_repl_quad (164, graph_iri, s_iri, p_iri, iri_canonicalize (o_val));
+      else if (__tag of rdf_box <> __tag (o_val))
+        __rdf_repl_quad (160, graph_iri, s_iri, p_iri, o_val);
+      else
+        {
+          declare dt_twobyte, lang_twobyte integer;
+          dt_twobyte := rdf_box_type (o_val);
+          lang_twobyte := rdf_box_lang (o_val);
+          if (257 <> dt_twobyte)
+            __rdf_repl_quad (161, graph_iri, s_iri, p_iri, rdf_box_data (o_val), (select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte), NULL);
+          else if (257 <> lang_twobyte)
+            __rdf_repl_quad (162, graph_iri, s_iri, p_iri, rdf_box_data (o_val), NULL, (select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte));
+          else
+            __rdf_repl_quad (160, graph_iri, s_iri, p_iri, rdf_box_data (o_val));
+        }
+    }
+}
+;
+
 --!AFTER
 create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
 {
+  if (isstring (registry_get ('DB.DBA.RDF_REPL')))
+    {
+      signal ('42RDF', 'Can not make DB.DBA.RDF_GLOBAL_RESET while an RDF replication is enabled');
+    }
 --  checkpoint;
   __atomic (1);
   iri_id_cache_flush ();
@@ -388,23 +571,27 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
   delete from DB.DBA.RDF_GRAPH_GROUP;
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER;
   delete from DB.DBA.RDF_GRAPH_USER;
-  dict_list_keys (__rdf_graph_group_dict(), 2);
-  dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
-  dict_list_keys (__rdf_graph_default_perms_of_user_dict(0), 2);
-  dict_list_keys (__rdf_graph_default_perms_of_user_dict(1), 2);
-  dict_list_keys (__rdf_graph_public_perms_dict(), 2);
+  delete from DB.DBA.RDF_LABEL;
+  delete from DB.DBA.RDF_GEO;
+  dict_zap (__rdf_graph_group_dict(), 2);
+  dict_zap (__rdf_graph_group_of_privates_dict(), 2);
+  dict_zap (__rdf_graph_default_perms_of_user_dict(0), 2);
+  dict_zap (__rdf_graph_default_perms_of_user_dict(1), 2);
+  dict_zap (__rdf_graph_public_perms_dict(), 2);
+  commit work;
   if (hard)
     {
-      delete from DB.DBA.RDF_URL;
+      --delete from DB.DBA.RDF_URL;
       delete from DB.DBA.RDF_IRI;
       delete from DB.DBA.RDF_PREFIX;
       delete from DB.DBA.RDF_OBJ;
+      delete from DB.DBA.RO_START;
       delete from DB.DBA.RDF_DATATYPE;
       delete from DB.DBA.RDF_LANGUAGE;
-      __rdf_twobyte_cache_zap();
-      log_text ('__rdf_twobyte_cache_zap()');
+      --__rdf_twobyte_cache_zap();
+      --log_text ('__rdf_twobyte_cache_zap()');
       delete from DB.DBA.VTLOG_DB_DBA_RDF_OBJ;
-      delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS;
+      delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS;
       sequence_set ('RDF_URL_IID_NAMED', 1000000, 0);
       sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 0);
       sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()), 0);
@@ -444,6 +631,21 @@ virtrdf:DefaultQuadStorage
   virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
 virtrdf:DefaultQuadStorage-UserMaps
       rdf:type virtrdf:array-of-QuadMap .
+
+virtrdf:DefaultServiceStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultServiceStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultServiceMap ;
+  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
+virtrdf:DefaultServiceStorage-UserMaps
+  rdf:type virtrdf:array-of-QuadMap .
+
+virtrdf:SyncToQuads
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:SyncToQuads-UserMaps .
+virtrdf:SyncToQuads-UserMaps
+  rdf:type virtrdf:array-of-QuadMap .
+
   ', '', 'http://www.openlinksw.com/schemas/virtrdf#' );
   delete from SYS_HTTP_SPONGE where HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
   commit work;
@@ -459,137 +661,6 @@ virtrdf:DefaultQuadStorage-UserMaps
 }
 ;
 
-create procedure DB.DBA.RDF_64BIT_UPGRADE ()
-{
-  declare stat, msg varchar;
-  if (min_bnode_iri_id() = #ib0)
-    signal ('22023', 'DB.DBA.RDF_64BIT_UPGRADE () is called, but the RDF storage is 64-bit already');
-  whenever sqlstate '*' goto kill_server;
-  -- dbg_obj_princ ('__atomic(1) ...');
-  __atomic (1);
-  -- dbg_obj_princ ('iri_id_cache_flush () ...');
-  iri_id_cache_flush ();
-  set triggers off;
-  -- dbg_obj_princ ('drop indexes...');
-  exec ('drop index RDF_QUAD_OGPS');
-  exec ('drop index RU_QNAME');
-  exec ('drop index DB_DBA_RDF_DATATYPE_UNQC_RDT_TWOBYTE', stat, msg);
-  exec ('drop index RDT_TWOBYTE', stat, msg);
-  exec ('drop index RO_VAL');
-  -- dbg_obj_princ ('create new tables...');
-  exec ('create table DB.DBA.RDF_QUAD_NEW (
-  G IRI_ID_8,
-  S IRI_ID_8,
-  P IRI_ID_8,
-  O any,
-  primary key (G,S,P,O)
-  )');
-  exec ('create table DB.DBA.RDF_URL_NEW (
-  RU_IID IRI_ID_8 not null primary key,
-  RU_QNAME varchar )');
-  exec ('create table DB.DBA.RDF_DATATYPE_NEW (
-  RDT_IID IRI_ID_8 not null primary key,
-  RDT_TWOBYTE integer not null,
-  RDT_QNAME varchar not null )');
-  exec ('create table DB.DBA.RDF_OBJ_NEW (
-  RO_ID integeR primary key,
-  RO_VAL varchar,
-  RO_LONG long varchar,
-  RO_DIGEST any )');
-  exec ('create table DB.DBA.RDF_OBJ_RO_DIGEST_WORDS_NEW (
-  VT_WORD varchar,
-  VT_D_ID integer,
-  VT_D_ID_2 integer,
-  VT_DATA varchar,
-  VT_LONG_DATA long varchar,
-  primary key (VT_WORD, VT_D_ID, VT_D_ID_2) )');
-  -- dbg_obj_princ ('data copying...');
-  exec ('create procedure DB.DBA.RDF_64BIT_UPGRADE_I () {
-    for (select G as g_old, S as s_old, P as p_old, O as o_old from RDF_QUAD) do
-      {
-        insert into DB.DBA.RDF_QUAD_NEW (G,S,P,O) values (
-          iri_id_bnode32_to_bnode64 (g_old),
-          iri_id_bnode32_to_bnode64 (s_old),
-          iri_id_bnode32_to_bnode64 (p_old),
-          iri_id_bnode32_to_bnode64 (o_old) );
-      }
-    for (select RU_IID as ru_iid_old, RU_QNAME ru_qname_old from DB.DBA.RDF_URL) do
-      {
-        insert into DB.DBA.RDF_URL_NEW (RU_IID, RU_QNAME) values (
-          ru_iid_old, ru_qname_old );
-      }
-    for (select RDT_IID as rdt_iid_old, RDT_TWOBYTE as rdt_twobyte_old,
-        RDT_QNAME as rdt_qname_old from DB.DBA.RDF_DATATYPE) do
-      {
-        insert into DB.DBA.RDF_DATATYPE_NEW (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
-          values (rdt_iid_old, rdt_twobyte_old, rdt_qname_old);
-      }
-    for (select RO_ID as ro_id_old, RO_VAL as ro_val_old, RO_LONG as ro_long_old,
-        RO_DIGEST as ro_digest_old from DB.DBA.RDF_OBJ) do
-      {
-        insert into DB.DBA.RDF_OBJ_NEW (RO_ID, RO_VAL, RO_LONG, RO_DIGEST)
-          values (ro_id_old, ro_val_old, ro_long_old, ro_digest_old);
-      }
-    for (select VT_WORD as vt_word_old, VT_D_ID as vt_d_id_old, VT_D_ID_2 as vt_d_id_2_old,
-        VT_DATA as vt_data_old, VT_LONG_DATA vt_long_data_old
-        from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS ) do
-      {
-        insert into DB.DBA.RDF_OBJ_RO_DIGEST_WORDS_NEW (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA, VT_LONG_DATA)
-          values (vt_word_old, vt_d_id_old, vt_d_id_2_old, vt_data_old, vt_long_data_old);
-      }
-  }');
-  exec ('DB.DBA.RDF_64BIT_UPGRADE_I ()');
-  -- dbg_obj_princ ('permissions copying...');
-  for (select G_USER as g_user_old, G_OP as g_op_old, G_OBJECT as g_object_old,
-      G_COL as g_col_old, G_GRANTOR as g_grantor_old, G_ADMIN_OPT as g_admin_opt_old
-      from DB.DBA.SYS_GRANTS
-      where G_OBJECT in ('DB.DBA.RDF_OBJ', 'DB.DBA.RDF_OBJ_RO_DIGEST_WORDS',
-          'DB.DBA.RDF_QUAD', 'DB.DBA.RDF_URL', 'DB.DBA.RDF_DATATYPE') ) do
-    {
-      insert soft DB.DBA.SYS_GRANTS (G_USER, G_OP, G_OBJECT, G_COL, G_GRANTOR, G_ADMIN_OPT)
-      values (g_user_old, g_op_old, g_object_old || '_NEW', g_col_old, g_grantor_old, g_admin_opt_old);
-    }
-  -- dbg_obj_princ ('drop old tables...');
-  exec ('drop table DB.DBA.RDF_OBJ_RO_DIGEST_WORDS');
-  exec ('drop table DB.DBA.RDF_OBJ');
-  exec ('drop table DB.DBA.RDF_QUAD');
-  exec ('drop table DB.DBA.RDF_URL');
-  exec ('drop table DB.DBA.RDF_DATATYPE');
-  -- dbg_obj_princ ('rename new tables to original names...');
-  exec ('alter table DB.DBA.RDF_QUAD_NEW rename DB.DBA.RDF_QUAD');
-  exec ('alter table DB.DBA.RDF_URL_NEW rename DB.DBA.RDF_URL');
-  exec ('alter table DB.DBA.RDF_DATATYPE_NEW rename DB.DBA.RDF_DATATYPE');
-  exec ('alter table DB.DBA.RDF_OBJ_NEW rename DB.DBA.RDF_OBJ');
-  exec ('alter table DB.DBA.RDF_OBJ_RO_DIGEST_WORDS_NEW rename DB.DBA.RDF_OBJ_RO_DIGEST_WORDS');
-  -- dbg_obj_princ ('create indexes...');
-  exec ('create bitmap index RDF_QUAD_OGPS on DB.DBA.RDF_QUAD (O, G, P, S)');
-  exec ('create unique index RU_QNAME on DB.DBA.RDF_URL (RU_QNAME)');
-  exec ('create unique index RDT_TWOBYTE on DB.DBA.RDF_DATATYPE (RDT_TWOBYTE)');
-  exec ('create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL, RO_DIGEST)');
-  -- dbg_obj_princ ('final __set_64bit_min_bnode_iri_id ()...');
-  __set_64bit_min_bnode_iri_id ();
-  sequence_set ('RDF_URL_IID_BLANK',
-    iri_id_num ( iri_id_bnode32_to_bnode64 (
-        iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')) ) ),
-    1 );
-  -- dbg_obj_princ ('checkpoint');
-  exec ('checkpoint');
-  log_message ('DB.DBA.RDF_64BIT_UPGRADE () has changed tables of RDF storage, now all ID columns are 64-bit wide');
-  log_message ('For security reasons, this operation requires database server shutdown. Bye.');
-  raw_exit ();
-  return;
-
-kill_server:
-  log_message ('DB.DBA.RDF_64BIT_UPGRADE () failed: ' || __SQL_STATE || ': ' || __SQL_MESSAGE);
-  log_message ('Remove the transaction log and start previous version of Virtuoso.');
-  log_message ('You may use the database with new version of Virtuoso server for');
-  log_message ('diagnostics and error recovery; to make it possible, add parameter');
-  log_message ('"RecoveryMode=1" to the [SPARQL] section of ' || virtuoso_ini_path ());
-  log_message ('and restart the server; remove the parameter and restart as soon as possible');
-  log_message ('This error is critical. The server will now exit. Sorry.');
-  raw_exit ();
-}
-;
 
 -----
 -- Handling of IRI IDs
@@ -600,74 +671,6 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME (in qname varchar) returns IRI_ID
 }
 ;
 
-create procedure DB.DBA.RDF_MIGRATE_URL_TO_IRI ()
-{
-  declare ctr integer;
-  declare iid IRI_ID;
-  declare qname, tail varchar;
-  __atomic (1);
-  declare exit handler for sqlstate '*'
-    {
-      __atomic (0);
-      resignal;
-    };
-  if (not exists (select top 1 1 from DB.DBA.RDF_URL))
-    goto rdf_url_is_empty;
-
-again:
-  ctr := 0;
-  declare cr cursor for select RU_IID, RU_QNAME from DB.DBA.RDF_URL for update;
-  open cr (exclusive);
-  whenever not found goto rdf_url_is_empty;
-
-next_fetch:
-  fetch cr into iid, qname;
-  declare parts any;
-  declare prefix_id integer;
-  parts := iri_to_rdf_prefix_and_local (qname);
-  if (parts is null)
-    {
-      log_message ('The function DB.DBA.RDF_MIGRATE_URL_TO_IRI() can not migrate an abnormally long URL.');
-      log_message ('This means that this version of Virtuoso server can not process RDF data stored in the database.');
-      log_message ('To fix the problem, remove the transaction log and start previous version of Virtuoso.');
-      log_message ('The example of unsupported RDF node URL is');
-      log_message (qname);
-      log_message ('This error is critical. The server will now exit. Sorry.');
-      raw_exit();
-    }
-  prefix_id := (select RP_ID from DB.DBA.RDF_PREFIX where RP_NAME = parts[0]);
-  if (prefix_id is null)
-    {
-      prefix_id := sequence_next ('RDF_PREF_SEQ');
-      insert into DB.DBA.RDF_PREFIX (RP_NAME, RP_ID) values (parts[0], prefix_id);
-    }
-  tail := parts[1];
-  tail[0] := bit_and (255, bit_shift (prefix_id, -24));
-  tail[1] := bit_and (255, bit_shift (prefix_id, -16));
-  tail[2] := bit_and (255, bit_shift (prefix_id, -8));
-  tail[3] := bit_and (255, prefix_id);
-  insert into DB.DBA.RDF_IRI (RI_NAME, RI_ID) values (tail, iid);
-  delete from DB.DBA.RDF_URL where current of cr;
-  ctr := ctr + 1;
-  if (ctr > 1000)
-    {
-      commit work;
-      close cr;
-      goto again;
-    }
-  goto next_fetch;
-
-rdf_url_is_empty:
-
-  if (exists (select top 1 1 from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE < 512 and RDT_QNAME[0] < 32))
-    update DB.DBA.RDF_DATATYPE set RDT_QNAME = id_to_iri (RDT_IID) where RDT_QNAME[0] < 32;
-  commit work;
-  __atomic (0);
-}
-;
-
-DB.DBA.RDF_MIGRATE_URL_TO_IRI ()
-;
 
 create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID -- DEPRECATED
 {
@@ -707,7 +710,7 @@ skip_acc: ;
 -----
 -- Datatypes and languages
 
-create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
+create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid any) returns integer
 {
   declare res integer;
   declare qname varchar;
@@ -722,9 +725,15 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
       iid := new_iid;
     }
   qname := id_to_iri (iid);
-  res := __rdf_twobyte_cache (121, qname);
-  if (res is not null)
+  res := rdf_cache_id ('t', qname);
+  if (res)
     return res;
+  whenever not found goto mknew;
+  set isolation='committed';
+  select RDT_TWOBYTE into res from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
+  return res;
+
+mknew:
   set isolation='serializable';
   declare tb_cr cursor for select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
   open tb_cr (exclusive);
@@ -735,12 +744,26 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
 mknew_ser:
   res := sequence_next ('RDF_DATATYPE_TWOBYTE');
   if (0 = bit_and (res, 255))
-    res := sequence_next ('RDF_DATATYPE_TWOBYTE');
+    {
+      if (res = 0hex7F00)
+        {
+          sequence_set ('RDF_DATATYPE_TWOBYTE', 0hex7F00, 0);
+          res := 0hex7F01;
+          qname := 'http://www.openlinksw.com/schemas/virtrdf#Unsaved';
+          iid := iri_to_id (qname);
+          insert soft DB.DBA.RDF_DATATYPE
+            (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
+          values (iid, res, qname);
+          goto cache_and_log;
+        }
+      res := sequence_next ('RDF_DATATYPE_TWOBYTE');
+    }
   insert into DB.DBA.RDF_DATATYPE
     (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
   values (iid, res, qname);
-  __rdf_twobyte_cache (121, qname, res);
-  log_text ('__rdf_twobyte_cache (121, ?, ?)', qname, res);
+cache_and_log:
+  rdf_cache_id ('t', qname, res);
+  log_text ('rdf_cache_id (\'t\', ?, ?)', qname, res);  --'
   return res;
 }
 ;
@@ -751,9 +774,15 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
   if (id is null)
     return 257;
   id := lower (id);
-  res := __rdf_twobyte_cache (122, id);
-  if (res is not null)
+  res := rdf_cache_id ('l', id);
+  if (res)
     return res;
+  whenever not found goto mknew;
+  set isolation='committed';
+  select RL_TWOBYTE into res from DB.DBA.RDF_LANGUAGE where RL_ID = id;
+  return res;
+
+mknew:
   set isolation='serializable';
   declare tb_cr cursor for select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = id;
   open tb_cr (exclusive);
@@ -764,10 +793,21 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
 mknew_ser:
   res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
   if (0 = bit_and (res, 255))
-    res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
+    {
+      if (res = 0hex7F00)
+        {
+          sequence_set ('RDF_LANGUAGE_TWOBYTE', 0hex7F00, 0);
+          res := 0hex7F01;
+          id := 'x-unsaved';
+          insert soft DB.DBA.RDF_LANGUAGE (RL_ID, RL_TWOBYTE) values (id, res);
+          goto cache_and_log;
+        }
+      res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
+    }
   insert into DB.DBA.RDF_LANGUAGE (RL_ID, RL_TWOBYTE) values (id, res);
-  __rdf_twobyte_cache (122, id, res);
-  log_text ('__rdf_twobyte_cache (122, ?, ?)', id, res);
+cache_and_log:
+  rdf_cache_id ('l', id, res);
+  log_text ('rdf_cache_id (\'l\', ?, ?)', id, res); --'
   return res;
 }
 ;
@@ -853,16 +893,109 @@ create function DB.DBA.RQ_O_IS_LIT (in shortobj any) returns integer -- DEPRECAT
 -----
 -- Conversions from and to values in short representation that may be not field values (may perform more validation checks)
 
+
+
+create procedure RDF_G_INS (in id int, in g any)
+{
+  geo_insert ('DB.DBA.RDF_GEO', g, id);
+}
+;
+
+create procedure cl_rdf_geo_insert (in id int, inout g any)
+{
+  declare daq any;
+  daq := daq (1);
+  daq_call (daq, 'DB.DBA.RDF_OBJ', 'RDF_OBJ', 'DB.DBA.RDF_G_INS', vector (id, g), 1);
+  daq_results (daq);
+}
+;
+
+create function rdf_geo_add (in v any)
+{
+  declare id, h, ser, g any;
+  if (rdf_box_ro_id (v))
+    return v;
+ g := rdf_box_data (v);
+  if (not isgeometry (g))
+    signal ('22023', 'RDFXX', 'Must be geometry box if to be stored as geo object');
+  ser := serialize (g);
+  if (length (ser) > 50)
+    h := mdigest5 (ser);
+  else
+    {
+      h := ser;
+      ser := null;
+    }
+  set isolation = 'committed';
+  id := (select ro_id, ro_val, ro_long from rdf_obj where ro_val = h and ro_dt_and_lang = 0hex1000101 and case when ro_long is not null then eq (blob_to_string (ro_long),  ser) else 1 end );
+  if (id is not null)
+    {
+      rdf_box_set_ro_id (v, id);
+      return v;
+    }
+  set isolation = 'serializable';
+  id := (select ro_id, ro_val, ro_long from rdf_obj where ro_val = h and ro_dt_and_lang = 0hex1000101 and case when ro_long is not null then eq (blob_to_string (ro_long),  ser) else 1 end for update);
+  if (id is not null)
+    {
+      rdf_box_set_ro_id (v, id);
+      return v;
+    }
+ id := sequence_next ('RDF_RO_ID');
+  set triggers off;
+  insert into rdf_obj (ro_id, ro_val, ro_long, ro_dt_and_lang)
+    values (id, h, ser, 0hex1000101);
+  if (1 = sys_stat ('cl_run_local_only'))
+  geo_insert ('DB.DBA.RDF_GEO', g, id);
+  else
+    cl_rdf_geo_insert (id, g);
+  rdf_box_set_ro_id (v, id);
+  return v;
+}
+;
+
+create function rdf_geo_set_id (inout v any)
+{
+  declare id, h, ser, g any;
+  if (rdf_box_ro_id (v))
+    return v;
+  g := rdf_box_data (v);
+  if (not isgeometry (g))
+    signal ('22023', 'RDFXX', 'Must be geometry box if to be stored as geo object');
+  ser := serialize (g);
+  if (length (ser) > 50)
+    h := mdigest5 (ser);
+  else
+    {
+      h := ser;
+      ser := null;
+    }
+  set isolation = 'committed';
+  id := (select RO_ID from RDF_OBJ where RO_VAL = h and RO_DT_AND_LANG = 0hex1000101
+  	and case when RO_LONG is not null then eq (blob_to_string (RO_LONG),  ser) else 1 end );
+  if (id is not null)
+    {
+      rdf_box_set_ro_id (v, id);
+      return v;
+    }
+  return null;
+}
+;
 create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in ro_id_dict any := null) returns varchar
 {
   declare llong, id, need_digest integer;
-  declare digest, old_digest any;
+  declare digest any;
+  declare old_flags, dt_and_lang integer;
   -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD (', dt_twobyte, v, lang_twobyte, case (isnull (ro_id_dict)) when 1 then '/*no_ft*/' else '/*want_ft*/' end,')');
   if (126 = __tag (v))
     v := blob_to_string (v);
-      need_digest := rdf_box_needs_digest (v, ro_id_dict);
+  if (isstring (rdf_box_data (v)))
+    need_digest := rdf_box_needs_digest (v, ro_id_dict);
+  else if (__tag of XML = __tag (v))
+    need_digest := 1;
   if (__tag of rdf_box = __tag (v))
     {
+      if (256 = rdf_box_type (v))
+	return rdf_geo_add (v);
       if (0 = need_digest)
         return v;
       if (1 = need_digest)
@@ -887,6 +1020,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
         signal ('RDFXX', sprintf ('Bad lang code: DB.DBA.RDF_OBJ_ADD (%d, %s, %d)',
           dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
     }
+  dt_and_lang := bit_or (bit_shift (dt_twobyte, 16), lang_twobyte);
   if (not isstring (v))
     {
       declare sum64 varchar;
@@ -896,12 +1030,11 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
       sum64 := xtree_sum64 (v);
       whenever not found goto serializable_xtree;
       set isolation='committed';
-      select RO_ID, RO_DIGEST into id, old_digest
+      select RO_ID, RO_FLAGS into id, old_flags
       from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = sum64
-      and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-      and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-      and rdf_box_data_tag (RO_DIGEST) = __tag of XML;
+      and RO_DT_AND_LANG = dt_and_lang
+      and bit_and (RO_FLAGS, 2);
       --!TBD ... and paranoid check
 
       goto found_xtree;
@@ -909,17 +1042,23 @@ serializable_xtree:
       whenever not found goto new_xtree;
       set isolation='serializable';
       declare id_cr cursor for
-        select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = sum64
-        and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-        and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-      and rdf_box_data_tag (RO_DIGEST) = __tag of XML;
+        select RO_ID, RO_FLAGS from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = sum64
+        and RO_DT_AND_LANG = dt_and_lang
+        and bit_and (RO_FLAGS, 2);
       --!TBD ... and paranoid check
       open id_cr (exclusive);
-      fetch id_cr into id, old_digest;
+      fetch id_cr into id, old_flags;
 found_xtree:
-      digest := old_digest;
+      digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+        {
+          if (not (bit_and (old_flags, 1)))
+	    {
+	      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
+	      --insert soft rdf_ft (rf_id, rf_o) values (id, digest);
+	    }
+          dict_put (ro_id_dict, id, 1);
+        }
       if (not (rdf_box_is_storeable (digest)))
         signal ('RDFX2', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
@@ -927,7 +1066,10 @@ found_xtree:
 new_xtree:
       id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-      insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DIGEST) values (id, sum64, __xml_serialize_packed (v), digest);
+      insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_FLAGS, RO_DT_AND_LANG) values
+        (id, sum64, __xml_serialize_packed (v), case (isnull (ro_id_dict)) when 0 then 3 else 2 end, dt_and_lang);
+      --if (ro_id_dict is not null)
+	--insert soft rdf_ft (rf_id, rf_o) values (id, digest);
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
       if (not (rdf_box_is_storeable (digest)))
@@ -936,7 +1078,7 @@ new_xtree:
       -- old_digest := null;
       -- goto recheck;
     }
-  if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
+  if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= -1))
     {
       if (1 >= need_digest)
         return v;
@@ -944,261 +1086,197 @@ new_xtree:
       set isolation='committed';
       select RO_ID into id
       from DB.DBA.RDF_OBJ table option (index RO_VAL)
-      where RO_VAL = v and RO_DIGEST = v;
+      where RO_VAL = v and RO_DT_AND_LANG = dt_and_lang and not (bit_and (RO_FLAGS, 2));
       goto found_veryshort;
 serializable_veryshort:
       whenever not found goto new_veryshort;
       set isolation='serializable';
       declare id_cr cursor for select RO_ID
       from DB.DBA.RDF_OBJ table option (index RO_VAL)
-      where RO_VAL = v and RO_DIGEST = v;
+      where RO_VAL = v and RO_DT_AND_LANG = dt_and_lang and not (bit_and (RO_FLAGS, 2));
       open id_cr (exclusive);
       fetch id_cr into id;
 found_veryshort:
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+	{
+	  dict_put (ro_id_dict, id, 1);
+	  --insert soft rdf_ft (rf_id, rf_o) values (id, v);
+	}
       if (not (rdf_box_is_storeable (v)))
         signal ('RDFX4', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return v;
-      -- digest := v;
-      -- goto recheck;
 new_veryshort:
       id := sequence_next ('RDF_RO_ID');
-      insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, v);
+      insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG) values (id, v, 1, dt_and_lang);
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+	{
+	  dict_put (ro_id_dict, id, 1);
+	}
+      insert into DB.DBA.RO_START (RS_START, RS_DT_AND_LANG, RS_RO_ID)
+        values (subseq (v, 0, case when length (v) > 10 then 10 else length (v) end), dt_and_lang, rdf_box (0, 257, 257, id, 0));
       if (not (rdf_box_is_storeable (v)))
         signal ('RDFX5', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return v;
-      -- digest := v;
-      -- old_digest := null;
-      -- goto recheck;
     }
-  llong := 1010;
+  llong := 50;
   if (length (v) > llong)
     {
-      declare tridgell varchar;
-      tridgell := tridgell32 (v, 1);
+      declare chksm varchar;
+      chksm := mdigest5 (v, 1);
       whenever not found goto serializable_long;
       set isolation='committed';
-      select RO_ID, RO_DIGEST into id, old_digest
+      select RO_ID, RO_FLAGS into id, old_flags
       from DB.DBA.RDF_OBJ table option (index RO_VAL)
-      where RO_VAL = tridgell
-      and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-      and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
+      where RO_VAL = chksm
+      and RO_DT_AND_LANG = dt_and_lang
+      and not (bit_and (RO_FLAGS, 2))
       and blob_to_string (RO_LONG) = v;
       goto found_long;
 serializable_long:
       whenever not found goto new_long;
       set isolation='serializable';
       declare id_cr cursor for
-        select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = tridgell
-        and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-        and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-        and blob_to_string (RO_LONG) = v;
+        select RO_ID, RO_FLAGS from DB.DBA.RDF_OBJ
+      table option (index RO_VAL) where RO_VAL = chksm
+      and RO_DT_AND_LANG = dt_and_lang
+      and not (bit_and (RO_FLAGS, 2))
+      and blob_to_string (RO_LONG) = v;
       open id_cr (exclusive);
-      fetch id_cr into id, old_digest;
+      fetch id_cr into id, old_flags;
 found_long:
-      if (old_digest is null)
-        {
-          digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-          if (1 < need_digest)
-            update DB.DBA.RDF_OBJ set RO_DIGEST = digest where RO_ID = id;
-        }
-      else
-        digest := old_digest;
+      digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
+      if ((not (bit_and (old_flags, 1))) and (1 < need_digest))
+        update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+	{
+	  dict_put (ro_id_dict, id, 1);
+	}
       if (not (rdf_box_is_storeable (digest)))
         signal ('RDFX6', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
-      -- goto recheck;
 new_long:
       id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
       if (1 < need_digest)
-        insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DIGEST) values (id, tridgell, v, digest);
+        insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_FLAGS, RO_DT_AND_LANG)
+        values (id, chksm, v, 1, dt_and_lang);
       else
         {
           set triggers off;
-          insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG) values (id, tridgell, v);
+          insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DT_AND_LANG)
+          values (id, chksm, v, dt_and_lang);
           set triggers on;
         }
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+	{
+	  dict_put (ro_id_dict, id, 1);
+	}
+      insert into DB.DBA.RO_START (RS_START, RS_DT_AND_LANG, RS_RO_ID)
+        -- no need in values (subseq (v, 0, case when length (v) > 10 then 10 else length (v), RO_DT_AND_LANG, rdf_box (0, 257, 257, id, 0));
+        values (subseq (v, 0, 10), dt_and_lang, rdf_box (0, 257, 257, id, 0));
       if (not (rdf_box_is_storeable (digest)))
         signal ('RDFX7', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
-      -- old_digest := null;
-      -- goto recheck;
     }
   else
     {
       whenever not found goto serializable_short;
       set isolation='committed';
-      select RO_ID, RO_DIGEST into id, old_digest
+      select RO_ID, RO_FLAGS into id, old_flags
       from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = v
-      and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-      and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end);
+      and RO_DT_AND_LANG = dt_and_lang;
       goto found_short;
 serializable_short:
       whenever not found goto new_short;
       set isolation='serializable';
-      declare id_cr cursor for select RO_ID, RO_DIGEST
+      declare id_cr cursor for select RO_ID, RO_FLAGS
       from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = v
-      and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-      and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end);
+      and RO_DT_AND_LANG = dt_and_lang;
       open id_cr (exclusive);
-      fetch id_cr into id, old_digest;
+      fetch id_cr into id, old_flags;
 found_short:
-      if (old_digest is null)
-        {
-          digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-          if (1 < need_digest)
-            update DB.DBA.RDF_OBJ set RO_DIGEST = digest where RO_ID = id;
-        }
-      else
-        digest := old_digest;
+      digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
+      if ((not (bit_and (old_flags, 1))) and (1 < need_digest))
+        update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+	{
+	  dict_put (ro_id_dict, id, 1);
+	}
       if (not (rdf_box_is_storeable (digest)))
         signal ('RDFX8', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
-      -- goto recheck;
 new_short:
       id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
       if (1 < need_digest)
-        insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, digest);
+        insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG)
+        values (id, v, 1, dt_and_lang);
       else
         {
           set triggers off;
-          insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
+          insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG)
+          values (id, v, 0, dt_and_lang);
           set triggers on;
         }
+      insert into DB.DBA.RO_START (RS_START, RS_DT_AND_LANG, RS_RO_ID)
+        values (subseq (v, 0, case when length (v) > 10 then 10 else length (v) end), dt_and_lang, rdf_box (0, 257, 257, id, 0));
       if (ro_id_dict is not null)
-        dict_put (ro_id_dict, id, 1);
+	{
+	  dict_put (ro_id_dict, id, 1);
+	}
       if (not (rdf_box_is_storeable (digest)))
         signal ('RDFX9', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
-      -- old_digest := null;
-      -- goto recheck;
     }
 recheck:
   -- dbg_obj_princ ('recheck: id=', id, ', old_digest=', old_digest, ', need_digest=', need_digest, ', digest=', digest);
   signal ('FUNNY', 'Debug code of DB.DBA.RDF_OBJ_ADD() is reached. This can not happen (I believe). Please report this error.');
-  --if (not need_digest and old_digest is null)
-  --  return digest;
-  --if (not exists (select top 1 1
-  --  from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
-  --  where (a.RO_ID = id) option (LOOP) ))
-  --  signal ('RDFXX', sprintf ('Lost RO_ID index entry (lookup): RO_ID=%d (digest=%U)', id, serialize (digest)));
-  --if (not exists (select top 1 1
-  --  from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
-  --  where (a.RO_DIGEST = digest) option (LOOP) ))
-  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (lookup): RO_DIGEST=%U (id=%d)', serialize (digest), id));
-  --if (not exists (select top 1 1
-  --  from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
-  --  join DB.DBA.RDF_OBJ as b table option (index RO_DIGEST)
-  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-  --  where (a.RO_ID = id) option (LOOP) ))
-  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (LOOP join): RO_ID=%d (digest=%U)', id, serialize (digest)));
-  --if (not exists (select top 1 1
-  --  from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
-  --  join DB.DBA.RDF_OBJ as b table option (index RDF_OBJ)
-  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-  --  where (a.RO_DIGEST = digest) option (LOOP) ))
-  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (LOOP join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
-  --if (not exists (select top 1 1
-  --  from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
-  --  join DB.DBA.RDF_OBJ as b table option (index RO_DIGEST)
-  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-  --  where (a.RO_ID = id) option (HASH) ))
-  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_ID=%d (digest=%U)', id, serialize (digest)));
-  --if (not exists (select top 1 1
-  --  from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
-  --  join DB.DBA.RDF_OBJ as b table option (index RDF_OBJ)
-  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-  --  where (a.RO_DIGEST = digest) option (HASH) ))
-  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
-  --  if (ro_id_dict is not null)
-  --    dict_put (ro_id_dict, id, 1);
-  --return digest;
 }
 ;
 
-create function DB.DBA.RDF_OBJ_FIND_EXISTING (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR) returns varchar
+create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR) returns varchar
 {
-  declare llong, id, need_digest integer;
+  declare llong, dt_and_lang int;
+  declare dt_s, lang_s, chksm, sum64 varchar;
   declare digest, old_digest any;
-  -- dbg_obj_princ ('DB.DBA.RDF_OBJ_FIND_EXISTING (', dt_twobyte, v, lang_twobyte, ')');
   if (126 = __tag (v))
     v := blob_to_string (v);
-  need_digest := rdf_box_needs_digest (v, NULL);
-  if (__tag of rdf_box = __tag (v))
+  dt_and_lang := bit_or (bit_shift (dt_twobyte, 16), lang_twobyte);
+  if (not (isstring (v)))
     {
-      if (0 = need_digest)
-        return v;
-      if (1 = need_digest)
-        {
-          if (0 <> rdf_box_ro_id (v))
-            return v;
-        }
-      dt_twobyte := rdf_box_type (v);
-      lang_twobyte := rdf_box_lang (v);
-      v := __rdf_sqlval_of_obj (v, 1);
-    }
-  else
-    {
-      if (dt_twobyte <> 257 or lang_twobyte <> 257)
-        need_digest := 3;
-      else if (0 = need_digest)
-        return v;
-      if (dt_twobyte < 257)
-        signal ('RDFXX', sprintf ('Bad datatype code: DB.DBA.RDF_OBJ_FIND_EXISTING (%d, %s, %d)',
-          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
-      if (lang_twobyte < 257)
-        signal ('RDFXX', sprintf ('Bad lang code: DB.DBA.RDF_OBJ_FIND_EXISTING (%d, %s, %d)',
-          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
-    }
-  if (not isstring (v))
-    {
-      declare sum64 varchar;
       if (__tag of XML <> __tag (v))
-        signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_OBJ_FIND_EXISTING (%d, %s, %d)',
-          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
+        return v;
       sum64 := xtree_sum64 (v);
-      return coalesce ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-          from DB.DBA.RDF_OBJ table option (index RO_VAL)
-          where RO_VAL = sum64
-          and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-          and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-          and rdf_box_data_tag (RO_DIGEST) = __tag of XML ));
-      --!TBD ... and paranoid check
+      return (select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
+        where RO_VAL = sum64
+        and RO_DT_AND_LANG = dt_and_lang
+        and bit_and (RO_FLAGS, 2)
+        --!TBD ... and paranoid check
+        );
     }
   if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
     return v;
-  llong := 1010;
+  llong := 50;
   if (length (v) > llong)
     {
-      declare tridgell varchar;
-      tridgell := tridgell32 (v, 1);
-      return ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-          from DB.DBA.RDF_OBJ table option (index RO_VAL)
-          where RO_VAL = tridgell
-          and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-          and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-          and blob_to_string (RO_LONG) = v ));
+      chksm := mdigest5 (v, 1);
+      return (select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
+        where RO_VAL = chksm
+        and RO_DT_AND_LANG = dt_and_lang
+        and not (bit_and (RO_FLAGS, 2))
+        and blob_to_string (RO_LONG) = v );
     }
   else
     {
-      return ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
-          from DB.DBA.RDF_OBJ table option (index RO_VAL)
-          where RO_VAL = v
-          and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-          and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end) ));
+      return (select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
+        where RO_VAL = v
+        and RO_DT_AND_LANG = dt_and_lang
+        and not (bit_and (RO_FLAGS, 2)) );
     }
 }
 ;
@@ -1331,15 +1409,18 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
         {
           if (__tag of XML = __tag (parsed))
             {
-              insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-              values (g_iid, iri_to_id (s_uri), p_iid,
-                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
-                  parsed, iri_to_id (o_type), null ) );
-              return;
+              return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+                parsed, iri_to_id (o_type), null );
             }
           if (__tag of rdf_box = __tag (parsed))
+            {
+              if (256 = rdf_box_type (parsed))
+                db..rdf_geo_add (parsed);
+              else
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+              parsed := DB.DBA.RDF_OBJ_ADD (257, parsed, 257, null);
+            }
           return parsed;
         }
       return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
@@ -1370,6 +1451,8 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
     {
       if (isiri_id (shortobj))
         return null;
+      if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
+        return null;
       return iri_to_id (__xsd_type (shortobj, dflt));
     }
   twobyte := rdf_box_type (shortobj);
@@ -1390,7 +1473,13 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
   declare twobyte integer;
   declare res varchar;
   if (__tag of rdf_box <> __tag (shortobj))
-    return case (isiri_id (shortobj)) when 0 then dflt else null end;
+    {
+      if (isiri_id (shortobj))
+        return null;
+      if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
+        return null;
+      return dflt;
+    }
   twobyte := rdf_box_lang (shortobj);
   if (257 = twobyte)
     return dflt;
@@ -1458,8 +1547,42 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 
 create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
-  if (__tag of rdf_box <> __tag(longobj))
+  declare t int;
+  t := __tag (longobj);
+  if (__tag of rdf_box <> t)
+    {
+      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
     return longobj;
+      if (__tag of nvarchar = t)
+        longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
+      else if (t in (126, 217))
+        longobj := cast (longobj as varchar);
+      else if (bit_and (1, __box_flags (longobj)))
+        return iri_to_id (longobj);
+      return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
+    }
+  if (0 = rdf_box_needs_digest (longobj))
+    return longobj;
+  return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
+}
+;
+
+create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any, in g_iid IRI_ID, inout old_g_iid IRI_ID, in ro_id_dict any := null) returns any
+{
+  declare t int;
+  t := __tag (longobj);
+  if (__tag of rdf_box <> t)
+    {
+      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+        return longobj;
+      if (__tag of nvarchar = t)
+        longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
+      else if (t in (126, 217))
+        longobj := cast (longobj as varchar);
+      else if (bit_and (1, __box_flags (longobj)))
+        return iri_to_id (longobj);
+      return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
+    }
   if (0 = rdf_box_needs_digest (longobj))
     return longobj;
   return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
@@ -1471,12 +1594,16 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
   declare t int;
   t := __tag (v);
   if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+    {
+      if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
+        return DB.DBA.RDF_OBJ_ADD (257, v, 257);
     return v;
+    }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
-  else if (1 = __box_flags (v))
+  else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -1496,7 +1623,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
-  else if (1 = __box_flags (v))
+  else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
   res := rdf_box (v, 257, 257, 0, 1);
   return res;
@@ -1557,7 +1684,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
       return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (
         o_val,
         iri_to_id (o_type),
-        o_lang );
+        null );
     }
   if (__tag (o_lang) in (__tag of varchar, 217))
     return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (o_val, NULL, o_lang);
@@ -1614,7 +1741,7 @@ create function DB.DBA.RDF_DATATYPE_OF_LONG (in longobj any, in dflt any := UNAM
   if (__tag of rdf_box = __tag (longobj))
     {
       declare twobyte integer;
-      declare res varchar;
+      declare res IRI_ID;
       twobyte := rdf_box_type (longobj);
       if (257 = twobyte)
         return case (rdf_box_lang (longobj)) when 257 then iri_to_id (dflt) else null end;
@@ -1749,7 +1876,7 @@ create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any,
   if (__tag of rdf_box = __tag (v))
     {
       declare twobyte integer;
-      declare res varchar;
+      declare res IRI_ID;
       twobyte := rdf_box_type (v);
       if (257 = twobyte)
         return case (rdf_box_lang (v)) when 257 then iri_to_id (strg_datatype) else null end;
@@ -1764,6 +1891,7 @@ badtype:
 }
 ;
 
+-- /* keep the input parameter as varchar in order to make jdbc happy and receive 182 instead of 242 on which it breaks the utf8 support */
 create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 {
   declare t int;
@@ -1776,6 +1904,11 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
     v := cast (v as varchar);
   else if ((t = __tag of varchar) and (1 = __box_flags (v)))
     return iri_to_id (v);
+--  if ((t = __tag of varchar) and (v like 'http://%'))
+--    {
+--     -- dbg_obj_princ ('DB.DBA.RDF_LONG_OF_SQLVAL (', v, '): no box flag, suspicious value');
+--      ;
+--    }
   return rdf_box (v, 257, 257, 0, 1);
 }
 ;
@@ -1815,6 +1948,18 @@ create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any) -- DEPRECATED
 create function DB.DBA.RDF_LANGUAGE_OF_SQLVAL (in v any, in dflt varchar := '') returns any
 {
   declare t int;
+  if (__tag of rdf_box = __tag (v))
+    {
+      declare twobyte integer;
+      declare res varchar;
+      twobyte := rdf_box_lang (v);
+      whenever not found goto badtype;
+      select RL_ID into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+      return res;
+
+badtype:
+  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_SQLVAL, bad id %d', twobyte));
+    }
   return case (isiri_id (v)) when 0 then dflt else null end;
 --  t := __tag (v);
 --  if (not (t in (__tag of varchar, 217, __tag of nvarchar)))
@@ -1834,7 +1979,7 @@ create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
     }
   if (__tag (v) = 243)
     {
-      if (v < min_bnode_iri_id)
+      if (v < min_bnode_iri_id ())
         return 0;
       return 1;
     }
@@ -1853,7 +1998,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
     }
   if (__tag (v) = 243)
     {
-      if (v < min_bnode_iri_id)
+      if (v < min_bnode_iri_id ())
         return 1;
       return 0;
     }
@@ -2039,9 +2184,13 @@ create function DB.DBA.__not (in e1 any) returns integer
 
 create procedure DB.DBA.RDF_QUAD_URI (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_uri varchar)
 {
+  declare g_iid IRI_ID;
+  g_iid := iri_to_id (g_uri);
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    __rdf_repl_quad (84, iri_canonicalize (g_uri), iri_canonicalize (s_uri), iri_canonicalize (p_uri), iri_canonicalize (o_uri));
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
   values (
-    iri_to_id (g_uri),
+    g_iid,
     iri_to_id (s_uri),
     iri_to_id (p_uri),
     iri_to_id (o_uri) );
@@ -2050,40 +2199,86 @@ create procedure DB.DBA.RDF_QUAD_URI (in g_uri varchar, in s_uri varchar, in p_u
 
 create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any, in ro_id_dict any := null)
 {
-  declare g_iid, p_iid IRI_ID;
+  declare g_iid, s_iid, p_iid IRI_ID;
+  declare o_obj any;
   g_iid := iri_to_id (g_uri);
+  s_iid := iri_to_id (s_uri);
   p_iid := iri_to_id (p_uri);
-  insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-  values (
-    g_iid,
-    iri_to_id (s_uri),
-    p_iid,
-    DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict) );
+  o_obj := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict);
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    {
+      declare triples any;
+      triples := vector (vector (s_iid, p_iid, o_obj));
+      DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (g_iid), triples);
+    }
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_obj);
 }
 ;
 
 create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any, in dt any, in lang varchar, in ro_id_dict any := null)
 {
-  declare g_iid, p_iid IRI_ID;
+  declare g_iid, s_iid, p_iid IRI_ID;
+  declare o_obj any;
   g_iid := iri_to_id (g_uri);
+  s_iid := iri_to_id (s_uri);
   p_iid := iri_to_id (p_uri);
   if (dt is null and lang is null)
+    o_obj := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict);
+  else
+    o_obj := DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (o_lit, iri_to_id (dt), lang, g_iid, p_iid, ro_id_dict);
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
     {
-      insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-      values (
-        g_iid,
-        iri_to_id (s_uri),
-        p_iid,
-        DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict) );
-      return;
+      declare triples any;
+      triples := vector (vector (s_iid, p_iid, o_obj));
+      DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (g_iid), triples);
     }
-  insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-  values (
-    g_iid,
-    iri_to_id (s_uri),
-    p_iid,
-    DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (
-      o_lit, iri_to_id (dt), lang, g_iid, p_iid, ro_id_dict ) );
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_obj);
+}
+;
+
+create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, in p_iid varchar, inout o_val any, inout old_g_iid any, inout ro_id_dict any)
+{
+  declare t int;
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    {
+      declare triples any;
+      triples := vector (vector (s_iid, p_iid, o_val));
+      DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (g_iid), triples);
+    }
+  t := __tag (o_val);
+  if (__tag of rdf_box <> t)
+    {
+      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+        {
+          goto o_val_done;
+        }
+      if (__tag of nvarchar = t)
+        o_val := charset_recode (o_val, '_WIDE_', 'UTF-8');
+      else if (t in (126, 217))
+        o_val := cast (o_val as varchar);
+      else if (bit_and (1, __box_flags (o_val)))
+        {
+          o_val := iri_to_id (o_val);
+          goto o_val_done;
+        }
+    }
+  if (__rdf_obj_ft_rule_check (g_iid, p_iid))
+    {
+      if (old_g_iid <> g_iid)
+        {
+          if (dict_size (ro_id_dict))
+            DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g_iid, ro_id_dict);
+          old_g_iid := g_iid;
+        }
+      if (ro_id_dict is null)
+        ro_id_dict := dict_new ();
+      o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257, ro_id_dict);
+    }
+  else
+    o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
+
+o_val_done:
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_val);
 }
 ;
 
@@ -2093,12 +2288,16 @@ create procedure DB.DBA.TTLP_EV_NEW_GRAPH (inout g varchar, inout g_iid IRI_ID, 
     app_env[1] := dict_new (app_env[2]);
   else
     app_env[1] := null;
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    app_env[3] := g;
+  else
+    app_env[3] := null;
 }
 ;
 
 create procedure DB.DBA.TTLP_EV_NEW_BLANK (inout g_iid IRI_ID, inout app_env any, inout res IRI_ID) {
   res := iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'));
-  -- dbg_obj_princ ('DB.DBA.TTLP_EV_NEW_BLANK (', g, app_env, ') returns ', res);
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_NEW_BLANK (', g_iid, app_env, ') returns ', res);
 }
 ;
 
@@ -2115,8 +2314,9 @@ create procedure DB.DBA.TTLP_EV_TRIPLE (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE (', g_iid, s_uri, p_uri, o_uri, ');');
-  insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-  values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri) );
+  if (app_env[3] is not null)
+    __rdf_repl_quad (84, app_env[3], iri_canonicalize (s_uri), iri_canonicalize (p_uri), iri_canonicalize (o_uri));
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, iri_to_id (s_uri), iri_to_id (p_uri), iri_to_id (o_uri));
 }
 ;
 
@@ -2129,6 +2329,15 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
   declare log_mode integer;
   declare p_iid IRI_ID;
   declare ro_id_dict any;
+  if (app_env[3] is not null)
+    {
+      if (isstring (o_type))
+        __rdf_repl_quad (81, app_env[3], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val, iri_canonicalize (o_type), NULL);
+      else if (isstring (o_lang))
+        __rdf_repl_quad (82, app_env[3], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val, null, o_lang);
+      else
+        __rdf_repl_quad (80, app_env[3], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val);
+    }
   log_mode := app_env[0];
   ro_id_dict := app_env[1];
   p_iid := iri_to_id (p_uri);
@@ -2142,14 +2351,19 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
             {
               insert soft DB.DBA.RDF_QUAD (G,S,P,O)
               values (g_iid, iri_to_id (s_uri), p_iid,
-                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (
-                  parsed, iri_to_id (o_type), null,
-                  g_iid, p_iid, ro_id_dict ) );
+                DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (
+                  parsed, g_iid, p_iid, ro_id_dict ) );
               return;
             }
           if (__tag of rdf_box = __tag (parsed))
-            rdf_box_set_type (parsed,
-              DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+	    {
+	      if (256 = rdf_box_type (parsed))
+		db..rdf_geo_add (parsed);
+	      else
+		rdf_box_set_type (parsed,
+				  DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+	      parsed := DB.DBA.RDF_OBJ_ADD (257, parsed, 257, ro_id_dict);
+	    }
           insert soft DB.DBA.RDF_QUAD (G,S,P,O)
           values (g_iid, iri_to_id (s_uri), p_iid, parsed);
           return;
@@ -2216,8 +2430,8 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_XLAT (
   declare xlat_cbk, s_xlat, o_xlat varchar;
   declare xlat_env any;
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_XLAT (', g_iid, s_uri, p_uri, o_uri, ');');
-  xlat_cbk := app_env[3];
-  xlat_env := app_env[4];
+  xlat_cbk := app_env[4];
+  xlat_env := app_env[5];
   s_xlat := call(xlat_cbk)(s_uri, xlat_env);
   o_xlat := call(xlat_cbk)(o_uri, xlat_env);
   DB.DBA.TTLP_EV_TRIPLE (g_iid, s_xlat, p_uri, o_xlat, app_env);
@@ -2232,8 +2446,8 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_XLAT (
   declare xlat_cbk, s_xlat varchar;
   declare xlat_env any;
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_XLAT (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ');');
-  xlat_cbk := app_env[3];
-  xlat_env := app_env[4];
+  xlat_cbk := app_env[4];
+  xlat_env := app_env[5];
   s_xlat := call(xlat_cbk)(s_uri, xlat_env);
   DB.DBA.TTLP_EV_TRIPLE_L (g_iid, s_xlat, p_uri, o_val, o_type, o_lang, app_env);
 }
@@ -2251,9 +2465,12 @@ create procedure DB.DBA.TTLP_XLAT_CONCAT (
 }
 ;
 
-create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
+create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
+	in log_enable int := null, in transactional int := 0)
 {
   declare app_env any;
+  declare old_log_mode int;
+  declare ret any;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP()');
   else if (graph is null)
@@ -2262,10 +2479,25 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
     }
+  old_log_mode := null;
+  if (transactional = 0)
+    {
+      if (log_enable = 0 or log_enable = 1)
+        log_enable := log_enable + 2;
+    }
+  if (log_enable is not null)
+    {
+      old_log_mode := log_enable (log_enable, 1);
+    }
+  if (1 <> sys_stat ('cl_run_local_only'))
+    {
+      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
+      return;
+    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
-  app_env := vector (flags, null, __max (length (strg) / 100, 100000));
-  return rdf_load_turtle (strg, base, graph, flags,
+  app_env := vector (flags, null, __max (length (strg) / 100, 100000), null);
+  ret := rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH',
       'DB.DBA.TTLP_EV_NEW_BLANK',
@@ -2275,6 +2507,9 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       'DB.DBA.TTLP_EV_COMMIT',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+  return ret;
 }
 ;
 
@@ -2283,6 +2518,7 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
         in iri_xlate_cbk varchar, in iri_xlate_env any )
 {
   declare app_env any;
+  declare old_log_mode int;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP()');
   else if (graph is null)
@@ -2291,9 +2527,24 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
     }
+  old_log_mode := null;
+  if (transactional = 0)
+    {
+      if (log_enable = 0 or log_enable = 1)
+        log_enable := log_enable + 2;
+    }
+  if (log_enable is not null)
+    {
+      old_log_mode := log_enable (log_enable, 1);
+    }
+--  if (1 <> sys_stat ('cl_run_local_only'))
+--    {
+--      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
+--      return;
+--    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
-  app_env := vector (flags, null, __max (length (strg) / 100, 100000), iri_xlate_cbk, iri_xlate_env);
+  app_env := vector (flags, null, __max (length (strg) / 100, 100000), null, iri_xlate_cbk, iri_xlate_env);
   return rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH',
@@ -2328,6 +2579,23 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
   return rdf_load_turtle_local_file (strg, base, graph, flags,
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
+}
+;
+
+create procedure DB.DBA.RDF_VALIDATE_RDFXML (in strg varchar, in base varchar, in graph varchar)
+{
+  declare app_env any;
+  declare old_log_mode int;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() requires a valid IRI as a base argument if graph is not specified');
+    }
+  rdf_load_rdfxml (strg, 0, graph, vector ( '', '', '', '', '', '', '' ), app_env, base );
+  return graph;
 }
 ;
 
@@ -2464,9 +2732,11 @@ create function DB.DBA.RDF_TTL2SQLHASH (in strg varchar, in base varchar, in gra
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar := null)
+create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar,
+	in log_enable int := null, in transactional int := 0)
 {
   declare app_env any;
+  declare old_log_mode int;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML()');
   else if (graph is null)
@@ -2475,7 +2745,23 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() requires a valid IRI as a base argument if graph is not specified');
     }
-  app_env := vector (null, null, __max (length (strg) / 100, 100000));
+  old_log_mode := null;
+  if (transactional = 0)
+    {
+      if (log_enable = 0 or log_enable = 1)
+        log_enable := log_enable + 2;
+    }
+  if (log_enable is not null)
+    {
+      old_log_mode := log_enable (log_enable, 1);
+    }
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return rdf_load_rdfxml_cl (strg, base, graph);
+  app_env := vector (
+    null,
+    null,
+    __max (length (strg) / 100, 100000),
+    null );
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
@@ -2488,6 +2774,8 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
     base );
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   return graph;
 }
 ;
@@ -2512,6 +2800,73 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 }
 ;
 
+
+create procedure DB.DBA.RDF_RDFA11_FETCH_PROFILES (in profile_iris any, inout prefixes any, inout terms any, inout vocab any)
+{
+  declare agg any;
+  --dbg_obj_princ ('DB.DBA.RDF_RDFA11_FETCH_PROFILES (', profile_iris, ')');
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      if (not exists (sparql define input:storage "" ask where { graph `iri(?:profile_iri)` { ?s ?p ?o }}))
+        DB.DBA.SPARUL_LOAD (profile_iri, profile_iri, 0, NULL, 0);
+    }
+  vectorbld_init (agg);
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      for (sparql define input:storage "" prefix rdfa: <http://www.w3.org/ns/rdfa#>
+        select ?p, ?u
+        where {
+            graph `iri(?:profile_iri)` {
+                ?s rdfa:prefix ?p ; rdfa:uri ?u .
+                optional { ?s rdfa:uri ?u2 . filter (?u != ?u2). }
+                filter (isliteral (?p))
+                filter (isliteral (?u))
+                filter (?u != '')
+                filter (!bound (?u2)) } }
+        ) do { vectorbld_acc (agg, "p", "u"); }
+    }
+  vectorbld_final (agg);
+  prefixes := agg;
+  vectorbld_init (agg);
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      for (sparql define input:storage "" prefix rdfa: <http://www.w3.org/ns/rdfa#>
+        select ?t, ?u
+        where {
+            graph `iri(?:profile_iri)` {
+                ?s rdfa:term ?t ; rdfa:uri ?u .
+                optional { ?s rdfa:uri ?u2 . filter (?u != ?u2). }
+                optional { ?s rdfa:term ?t2 . filter (?t != ?t2). }
+                filter (isliteral (?t))
+                filter (isliteral (?u))
+                filter (?t != '')
+                filter (?u != '')
+                filter (!bound (?t2))
+                filter (!bound (?u2)) } }
+        order by ?t
+        ) do { vectorbld_acc (agg, "t", "u"); }
+    }
+  vectorbld_final (agg);
+  if (1 < length (profile_iris))
+    gvector_sort (agg, 2, 0, 1);
+  terms := agg;
+  vocab := null;
+  foreach (varchar profile_iri in profile_iris) do
+    {
+      vocab := (sparql define input:storage "" prefix rdfa: <http://www.w3.org/ns/rdfa#>
+        select (max(str(?v)))
+        where {
+            graph `iri(?:profile_iri)` {
+                ?s rdfa:vocabulary ?v } } );
+      if (isstring (vocab))
+        goto vocab_is_set;
+    }
+vocab_is_set: ;
+  --dbg_obj_princ ('DB.DBA.RDF_RDFA11_FETCH_PROFILES (', profile_iris, ' returned ', prefixes, terms, vocab);
+}
+;
+
+
 create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null, in xml_parse_mode integer := 0)
 {
   declare app_env any;
@@ -2523,7 +2878,13 @@ create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in grap
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFA() requires a valid IRI as a base argument if graph is not specified');
     }
-  app_env := vector (null, null, __max (length (strg) / 100, 100000));
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return DB.DBA.RDF_LOAD_RDFA_CL (strg, base, graph, xml_parse_mode);
+  app_env := vector (
+    null,
+    null,
+    __max (length (strg) / 100, 100000),
+    null );
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)),
     graph,
     vector (
@@ -2536,6 +2897,8 @@ create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in grap
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
     base );
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   return graph;
 }
 ;
@@ -2552,7 +2915,15 @@ create procedure DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (in strg varchar, in 
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION () requires a valid IRI as a base argument if graph is not specified');
     }
-  app_env := vector (null, null, __max (length (strg) / 100, 100000), iri_xlate_cbk, iri_xlate_env);
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION_CL (strg, base, graph, xml_parse_mode, iri_xlate_cbk, iri_xlate_env);
+  app_env := vector (
+    null,
+    null,
+    __max (length (strg) / 100, 100000),
+    null,
+    iri_xlate_cbk,
+    iri_xlate_env );
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)),
     graph,
     vector (
@@ -2565,6 +2936,8 @@ create procedure DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (in strg varchar, in 
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
     base );
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   return graph;
 }
 ;
@@ -3040,7 +3413,7 @@ create procedure DB.DBA.RDF_GRAPH_TO_TTL (in graph_iri varchar, inout ses any)
   tcount := 0;
   prev_s := null;
   prev_p := null;
-  for (select S as subj, P as pred, O as obj from RDF_QUAD where G = iri_to_id (graph_iri)) do
+  for (select S as subj, P as pred, O as obj from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)) do
     {
       if (prev_s = subj)
         {
@@ -3360,6 +3733,34 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
 }
 ;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any)
+    {
+  declare env any;
+  declare tcount, tctr, status integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_LD:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('{ }\n', ses);
+      return;
+    }
+  env := vector (0, 0, 0, null);
+-- No error handlers here because failed sorting by predicate or subject would result in poorly structured output.
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  http ('{ "@": [\n  ', ses);
+  status := 0;
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      if (http_ld_json_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses))
+        status := 1;
+    }
+  if (status)
+    http (' ] }\n', ses);
+  http ('] }\n', ses);
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_JSON (inout triples any, inout ses any)
 {
   declare tcount, tctr, env integer;
@@ -3377,6 +3778,27 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON (inout triples any, inout ses any)
       aset_zap_arg (triples, tctr, triple);
     }
   http (' ] } }', ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_CSV (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr, status integer;
+  http ('"subject","predicate","object"\n', ses);
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_CSV:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  { whenever sqlstate '*' goto p_done; rowvector_subj_sort (triples, 1, 1); p_done: ; }
+  { whenever sqlstate '*' goto s_done; rowvector_subj_sort (triples, 0, 1); s_done: ; }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][0]);
+      http (',', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][1]);
+      http (',', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][2]);
+      http ('\n', ses);
+    }
 }
 ;
 
@@ -3440,7 +3862,7 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
             http ('\n</div>', ses);
           http ('\n<div about="[', ses);
           split := sparql_iri_split_rdfa_qname (subj, nsdict, 2);
-          dbg_obj_princ ('Split of ', subj, ' is ', split);
+          -- dbg_obj_princ ('Split of ', subj, ' is ', split);
           if ('' = split[1])
             {
               http_escape (split[2], 3, ses, 1, 1);
@@ -3573,6 +3995,672 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
 }
 ;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout ses any)
+{
+  declare env, prev_subj, prev_pred, nsdict, nslist any;
+  declare ctr, len, tcount, tctr, status, obj_needs_br integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
+  if (0 = tcount)
+    {
+      http ('<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Empty HTML Microdata document</title></head><body>
+<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
+This time the service made zero such statements, sorry.</p></body></html>', ses);
+      return;
+    }
+  nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
+  dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
+  dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
+  for (tctr := 0; (tctr < tcount) and (1000 > dict_size (nsdict)); tctr := tctr + 1)
+    {
+      sparql_iri_split_rdfa_qname (triples[tctr][0], nsdict, 1);
+      sparql_iri_split_rdfa_qname (triples[tctr][1], nsdict, 1);
+      sparql_iri_split_rdfa_qname (triples[tctr][2], nsdict, 1);
+    }
+  http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
+  http ('>\n<head><title>HTML Microdata document</title></head><body>\n', ses);
+  http (sprintf ('<p>This document contains %d facts in HTML Microdata format.</p>',
+    tcount), ses);
+  http ('<p>A generic web browser may not display them properly but the document can be saved on disk and used by some appropriate program or sent to a third party.
+Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, not "text file" or "web archive".
+</p><p>The rest of the document may look like garbage for humans or not displayed by the browser.</p>', ses);
+  http ('\n<table><tr><th>Prefix</th><th>Namespace IRI</th></tr>', ses);
+  nslist := dict_to_vector (nsdict, 0);
+  len := length (nslist);
+  for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
+    {
+      http (sprintf ('\n<tr><td>%V</td><td>%V</td></tr>', nslist[ctr+1], nslist[ctr]), ses);
+    }
+  http ('</table>', ses);
+  env := vector (0, 0, 0, null);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  prev_subj := prev_pred := null;
+  obj_needs_br := 0;
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare subj, pred, obj, split, obj_iri_split any;
+      declare pred_tagname varchar;
+      declare res varchar;
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA: subj:', subj, __tag(subj), __box_flags (subj));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA: pred:', pred, __tag(pred), __box_flags (pred));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA: obj:', obj, __tag(obj), __box_flags (obj));
+      if (prev_subj is null or (subj <> prev_subj))
+        {
+          if (prev_subj is not null)
+            http ('\n</dd></dl>', ses);
+          http (sprintf ('\n<dl itemscope itemid="%s">', replace (id_to_iri (subj), '"', '%22')), ses);
+          split := sparql_iri_split_rdfa_qname (subj, nsdict, 2);
+          -- dbg_obj_princ ('Split of ', subj, ' is ', split);
+          if ('' = split[1])
+            http (sprintf ('\n<dt>Subject Item</dt><dd>%V</dd>', split[2]), ses);
+          else if (isstring (split[0]))
+            http (sprintf ('\n<dt>Subject Item</dt><dd>%V:%V</dd>', split[0], split[2]), ses);
+          else
+            http (sprintf ('\n<dt>Subject Item</dt><dd>%V%V</dd>', split[1], split[2]), ses);
+          prev_subj := subj;
+          prev_pred := null;
+        }
+      if (prev_pred is null or (pred <> prev_pred))
+        {
+          if (prev_pred is not null)
+            http ('\n</dd>', ses);
+          split := sparql_iri_split_rdfa_qname (pred, nsdict, 2);
+          -- dbg_obj_princ ('Split of ', pred, ' is ', split);
+          if ('' = split[1])
+            http (sprintf ('\n<dt>%V</dt><dd>', split[2]), ses);
+          else if (isstring (split[0]))
+            http (sprintf ('\n<dt>%V:%V</dt><dd>', split[0], split[2]), ses);
+          else
+            http (sprintf ('\n<dt>%V%V</dt><dd>', split[1], split[2]), ses);
+          prev_pred := pred;
+          obj_needs_br := 0;
+        }
+      if (obj is null)
+        signal ('RDFXX', 'DB.DBA.TRIPLES_TO_HTML_MICRODATA: object is NULL');
+      if (obj_needs_br)
+        http ('\n', ses);
+      else
+        obj_needs_br := 1;
+      obj_iri_split := sparql_iri_split_rdfa_qname (obj, nsdict, 2);
+      if (isvector (obj_iri_split))
+        {
+          http (sprintf ('\n<a itemprop="%s" href="%s">', replace (id_to_iri (pred), '"', '%22'), replace (id_to_iri (obj), '"', '%22')), ses);
+          if ('' = obj_iri_split[1])
+            http (sprintf ('%V</a>', obj_iri_split[2]), ses);
+          else if (isstring (obj_iri_split[0]))
+            http (sprintf ('%V:%V</a>', obj_iri_split[0], obj_iri_split[2]), ses);
+          else
+            http (sprintf ('%V%V</a>', obj_iri_split[1], obj_iri_split[2]), ses);
+        }
+      else
+        {
+          declare sqlval any;
+          declare dt, lang, strval any;
+          http (sprintf ('\n<span itemprop="%s"', replace (id_to_iri (pred), '"', '%22')), ses);
+          dt := 0; lang := 0;
+          if (__tag of rdf_box = __tag (obj))
+            {
+              if (257 <> rdf_box_lang (obj))
+                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+--DT          else if (257 <> rdf_box_type (obj))
+--DT            dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
+              sqlval := __rdf_sqlval_of_obj (obj, 1);
+--DT          if (__tag of datetime = __tag (sqlval))
+--DT            {
+--DT              if (257 = rdf_box_type (obj))
+--DT                dt := __xsd_type (sqlval);
+--DT            }
+            }
+          else if (__tag (obj) not in (__tag of varchar, __tag of varbinary))
+            {
+              sqlval := obj;
+--DT          dt := __xsd_type (sqlval);
+            }
+          else
+            sqlval := obj;
+--DT      if (not (isinteger (dt)))
+--DT        {
+--DT          http (' datatype="', ses);
+--DT          split := sparql_iri_split_rdfa_qname (dt, nsdict, 2);
+--DT          if ('' = split[1])
+--DT            {
+--DT              http_escape (split[2], 3, ses, 1, 1);
+--DT              http ('"', ses);
+--DT            }
+--DT          else if (isstring (split[0]))
+--DT            {
+--DT              http_escape (concat (split[0], ':', split[2]), 3, ses, 1, 1);
+--DT              http ('"', ses);
+--DT            }
+--DT          else
+--DT            {
+--DT              http_escape (concat ('dt:', split[2]), 3, ses, 1, 1);
+--DT              http ('" xmlns:dt="', ses);
+--DT              http_escape (split[1], 3, ses, 1, 1);
+--DT              http ('"', ses);
+--DT            }
+--DT        }
+          if (isstring (lang))
+            {
+              http (' xml:lang="', ses);
+              http_escape (lang, 3, ses, 1, 1);
+              http ('"', ses);
+            }
+          http ('>', ses);
+          if (__tag of datetime = __tag(sqlval))
+            __rdf_long_to_ttl (sqlval, ses);
+          else if (__tag (sqlval) in (__tag of varbinary, __tag of XML))
+            http_value (sqlval, 0, ses);
+          else if (__tag of varchar = __tag (sqlval))
+            http_value (charset_recode (sqlval, 'UTF-8', '_WIDE_'), 0, ses);
+          else
+            {
+              sqlval := __rdf_strsqlval (obj);
+              if (__tag of varchar = __tag (sqlval))
+                sqlval := charset_recode (sqlval, 'UTF-8', '_WIDE_');
+              http_value (sqlval, 0, ses);
+            }
+          http ('</span>', ses);
+        }
+    }
+  if (prev_subj is not null)
+    http ('\n</dd></dl>', ses);
+  http ('\n</body></html>\n', ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout ses any)
+{
+  declare env, prev_subj, prev_pred any;
+  declare ctr, len, tcount, tctr, status, obj_needs_comma integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  http ('{ "items" : [', ses);
+  env := vector (0, 0, 0, null);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  prev_subj := prev_pred := null;
+  obj_needs_comma := 0;
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare subj, pred, obj, split, obj_iri_split any;
+      declare pred_tagname varchar;
+      declare res varchar;
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA: subj:', subj, __tag(subj), __box_flags (subj));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA: pred:', pred, __tag(pred), __box_flags (pred));
+      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA: obj:', obj, __tag(obj), __box_flags (obj));
+      if (prev_subj is null or (subj <> prev_subj))
+        {
+          declare subj_iri varchar;
+          if (prev_subj is not null)
+            http (' ] } },\n', ses);
+          subj_iri := id_to_iri (subj);
+          if (starts_with (subj_iri, 'nodeID://'))
+            subj_iri := '_:' || subseq (subj_iri, 9);
+          http ('\n    { "id" : "', ses); http_escape (subj_iri, 14, ses, 1, 1); http ('"\n      "properties" : {', ses);
+          prev_subj := subj;
+          prev_pred := null;
+        }
+      if (prev_pred is null or (pred <> prev_pred))
+        {
+          if (prev_pred is not null)
+            http (' ] ,', ses);
+          http ('\n        "', ses); http_escape (id_to_iri (pred), 14, ses, 1, 1); http ('" : [ ', ses);
+          prev_pred := pred;
+          obj_needs_comma := 0;
+        }
+      if (obj is null)
+        signal ('RDFXX', 'DB.DBA.TRIPLES_TO_JSON_MICRODATA: object is NULL');
+      if (obj_needs_comma)
+        http (',\n          ', ses);
+      else
+        obj_needs_comma := 1;
+      if (isiri_id (obj))
+        {
+          declare obj_iri varchar;
+          obj_iri := id_to_iri (obj);
+          if (starts_with (obj_iri, 'nodeID://'))
+            obj_iri := '_:' || subseq (obj_iri, 9);
+          http ('{ "id" : "', ses); http_escape (obj_iri, 14, ses, 1, 1); http ('" }', ses);
+        }
+      else
+        {
+          declare sqlval any;
+          declare dt, lang, strval any;
+          dt := 0; lang := 0;
+          if (__tag of rdf_box = __tag (obj))
+            {
+              if (257 <> rdf_box_lang (obj))
+                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+--DT          else if (257 <> rdf_box_type (obj))
+--DT            dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
+              sqlval := __rdf_sqlval_of_obj (obj, 1);
+--DT          if (__tag of datetime = __tag (sqlval))
+--DT            {
+--DT              if (257 = rdf_box_type (obj))
+--DT                dt := __xsd_type (sqlval);
+--DT            }
+            }
+          else if (__tag (obj) not in (__tag of varchar, __tag of varbinary))
+            {
+              sqlval := obj;
+--DT          dt := __xsd_type (sqlval);
+            }
+          else
+            sqlval := obj;
+--DT      if (not (isinteger (dt)))
+--DT        {
+--DT          http (' datatype="', ses);
+--DT          split := sparql_iri_split_rdfa_qname (dt, nsdict, 2);
+--DT          if ('' = split[1])
+--DT            {
+--DT              http_escape (split[2], 3, ses, 1, 1);
+--DT              http ('"', ses);
+--DT            }
+--DT          else if (isstring (split[0]))
+--DT            {
+--DT              http_escape (concat (split[0], ':', split[2]), 3, ses, 1, 1);
+--DT              http ('"', ses);
+--DT            }
+--DT          else
+--DT            {
+--DT              http_escape (concat ('dt:', split[2]), 3, ses, 1, 1);
+--DT              http ('" xmlns:dt="', ses);
+--DT              http_escape (split[1], 3, ses, 1, 1);
+--DT              http ('"', ses);
+--DT            }
+--DT        }
+--DT      if (isstring (lang))
+--DT        {
+--DT          http (' xml:lang="', ses);
+--DT          http_escape (lang, 3, ses, 1, 1);
+--DT          http ('"', ses);
+--DT        }
+--DT      http ('>', ses);
+          if (__tag (sqlval) in (__tag of integer, __tag of real, __tag of double precision, __tag of decimal))
+            http_value (sqlval, 0, ses);
+          else if (__tag (sqlval) in (__tag of varbinary, __tag of XML))
+            {
+              declare tmpses any;
+              tmpses := string_output();
+              http_value (sqlval, 0, tmpses);
+              http ('"', ses); http_escape (string_output_string (tmpses), 14, ses, 1, 1); http ('"', ses);
+            }
+          else if (__tag of varchar = __tag (sqlval))
+            {
+              http ('"', ses); http_escape (sqlval, 14, ses, 1, 1); http ('"', ses);
+            }
+          else
+            {
+              sqlval := __rdf_strsqlval (obj);
+              http ('"', ses); http_escape (sqlval, 14, ses, 1, 1); http ('"', ses);
+            }
+        }
+    }
+  if (prev_subj is not null)
+    http ('] } }', ses);
+  http (' }\n', ses);
+}
+;
+
+-- /* OData ATOM format */
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (triples, 1, ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.ODATA_EDM_TYPE (in obj any)
+{
+  if (__tag of int = __tag (obj))
+    return 'Int32';
+  else if (__tag of smallint  = __tag (obj))
+    return 'Int16';
+  else if (__tag of bigint = __tag (obj))
+    return 'Int64';
+  else if (__tag of numeric = __tag (obj))
+    return 'Decimal';
+  else if (__tag of double precision = __tag (obj))
+    return 'Double';
+  else if (__tag of real = __tag (obj))
+    return 'Double';
+  else if (__tag of datetime = __tag (obj))
+    return 'DateTime';
+  else if (__tag of date = __tag (obj))
+    return 'Date';
+  else if (__tag of time = __tag (obj))
+    return 'Time';
+  else if (__tag of varbinary = __tag (obj))
+    return 'Binary';
+  return null;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON (inout triples_dict any) returns long varchar
+    {
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+        {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses any)
+{
+  declare tcount, tctr, ns_ctr integer;
+  declare dict, entries any;
+  declare subj, pred, obj any;
+  declare entry_dict, ns_dict, ns_arr any;
+  declare pred_tagname varchar;
+  declare p_ns_uri, p_ns_pref varchar;
+
+  dict := dict_new ();
+  ns_dict := dict_new ();
+  ns_ctr := 0;
+  tcount := length (triples);
+  http ('{ "d" : { \n  "results": [ \n', ses);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      entry_dict := dict_get (dict, subj);
+      if (entry_dict is null)
+	{
+	  entry_dict := dict_new ();
+	  dict_put (dict, subj, entry_dict);
+	}
+      dict_put (entry_dict, vector (pred, obj), 1);
+    }
+  entries := dict_list_keys (dict, 0);
+  tcount := length (entries);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare meta any;
+      declare has_meta, mcount int;
+      declare title, content varchar;
+
+      has_meta := 0; title := null; content := null;
+      subj := entries[tctr];
+      entry_dict := dict_get (dict, subj);
+      meta := dict_list_keys (entry_dict, 1);
+
+      if (isiri_id (subj)) subj := id_to_iri (subj);
+      http ('    { ', ses);
+      http (sprintf ('"__metadata": { "uri": "%s" }, \n', subj), ses);
+      for (declare i, l int, i := 0, l := length (meta); i < l; i := i + 1)
+        {
+	  pred := meta[i][0];
+	  obj := meta[i][1];
+	  if (isiri_id (pred)) pred := id_to_iri (pred);
+	  if (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1))
+	    {
+	      -- links
+	      if (isiri_id (obj)) obj := id_to_iri (obj);
+	      http (sprintf ('      "%s": { "__deferred": { "uri": "%s" } }', pred, obj), ses);
+	    }
+	  else
+	    {
+	      -- data
+	      declare tmp any;
+	      http (sprintf ('      "%s": ', pred), ses);
+	      if (__tag of rdf_box = __tag (obj))
+		{
+		  tmp := __rdf_strsqlval (obj);
+		  if (__tag of varchar = __tag (tmp))
+		    tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
+		}
+	      else
+		{
+		  tmp := obj;
+		}
+	      http ('"', ses);
+	      http_value (tmp, 0, ses);
+	      http ('"', ses);
+	    }
+	  if (i < l - 1)
+  	    http (', \n', ses);
+	}
+      http ('\n     } ', ses);
+      if (tctr < tcount - 1)
+	http (', ', ses);
+    }
+  http (sprintf ('\n ], "__count": "%d"\n } }', tcount), ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in print_top_level integer, inout ses any)
+{
+  declare tcount, tctr, ns_ctr integer;
+  declare dict, entries any;
+  declare subj, pred, obj any;
+  declare entry_dict, ns_dict, ns_arr any;
+  declare pred_tagname varchar;
+  declare p_ns_uri, p_ns_pref, lang, range varchar;
+  declare pct integer;
+  declare twobyte integer;
+
+  dict := dict_new ();
+  ns_dict := dict_new ();
+  ns_ctr := 0; pct := 0;
+  tcount := length (triples);
+  if (print_top_level)
+    {
+       http ('<?xml version="1.0" encoding="utf-8" ?>\n<feed \n\t xmlns="http://www.w3.org/2005/Atom" \n'||
+      			'\t xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" \n'||
+			'\t xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" \n', ses);
+    }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      entry_dict := dict_get (dict, subj);
+      if (entry_dict is null)
+	{
+	  entry_dict := dict_new ();
+	  dict_put (dict, subj, entry_dict);
+	}
+      dict_put (entry_dict, vector (pred, obj), 1);
+
+      if (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1))
+	goto next;
+      if (isiri_id (pred)) pred := id_to_iri (pred);
+
+      p_ns_uri := iri_split (pred, pred_tagname);
+      if (length (p_ns_uri) > 0 and dict_get (ns_dict, p_ns_uri) is null)
+	{
+	  p_ns_pref := __xml_get_ns_prefix (p_ns_uri, 3);
+	  if (p_ns_pref is null)
+	    {
+	      p_ns_pref := sprintf ('ns%dpred', ns_ctr);
+	      ns_ctr := ns_ctr + 1;
+	    }
+	  dict_put (ns_dict, p_ns_uri, p_ns_pref);
+	}
+      next:;
+    }
+  ns_arr := dict_to_vector (ns_dict, 0);
+  for (declare i int, i := 0; i < length (ns_arr); i := i + 2)
+    {
+      http (sprintf ('\t xmlns:%s="%s"\n', ns_arr[i+1], ns_arr[i]), ses);
+    }
+  http ('>\n', ses);
+  if (is_http_ctx ())
+    {
+      declare q, u, h, id varchar;
+      declare lines any;
+      q := http_request_get ('QUERY_STRING');
+      if (length (q))
+	q := '?' || q;
+      else
+        q := '';
+      u := http_request_get ('REQUEST_URI');
+      h := WS.WS.PARSE_URI (http_requested_url () || q);
+      h [2] := u; h [4] := '';
+      id := WS.WS.VFS_URI_COMPOSE (h);
+      http (sprintf ('\t<id>%V</id>\n', id), ses);
+      lines := http_request_header ();
+      range := http_request_header_full (lines, 'Accept-Language', 'en');
+    }
+  else
+    {
+    http ('\t<id/>\n', ses);
+      range := 'en, */*;0.1';
+    }
+  http (sprintf ('\t<updated>%s</updated>\n', date_iso8601 (dt_set_tz (now (), 0))), ses);
+  http ('\t<author><name /></author>\n', ses);
+  http (sprintf ('\t<title type="text">OData Service and Descriptor Document</title>\n'), ses);
+  entries := dict_list_keys (dict, 0);
+  tcount := length (entries);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare meta any;
+      declare has_meta int;
+      declare title, content varchar;
+
+      pct := 0;
+      has_meta := 0; title := null; content := null;
+      subj := entries[tctr];
+      entry_dict := dict_get (dict, subj);
+      meta := dict_list_keys (entry_dict, 1);
+      http ('\t<entry>\n', ses);
+      if (isiri_id (subj)) subj := id_to_iri (subj);
+      http (sprintf ('\t\t<id>%s</id>\n', subj), ses);
+      --http (sprintf ('\t\t<link rel="self" href="%s"/>\n', subj), ses);
+      for (declare i, l int, i := 0, l := length (meta); i < l; i := i + 1)
+        {
+	  pred := meta[i][0];
+	  obj := meta[i][1];
+	  if (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1))
+	    {
+	      if (isiri_id (obj)) obj := id_to_iri (obj);
+	      if (isiri_id (pred)) pred := id_to_iri (pred);
+              --p_ns_uri := iri_split (pred, pred_tagname);
+	      --if (length (p_ns_uri) > 0)
+	      --{
+              --  p_ns_pref := dict_get (ns_dict, p_ns_uri);
+	      --  pred_tagname := p_ns_pref || ':' || pred_tagname;
+              --}
+	      http (sprintf ('\t\t<link rel="%s" href="%s"/>\n', pred, obj), ses);
+	    }
+	  else
+	    {
+	      if (title is null and
+		(
+		 pred = iri_to_id ('http://purl.org/dc/terms/title') or
+	      	 pred = iri_to_id ('http://www.w3.org/2000/01/rdf-schema#label'))
+		)
+		{
+		   declare rc int;
+		   lang := 'en';
+		   if (__tag of rdf_box = __tag (obj))
+		     {
+		       twobyte := rdf_box_lang (obj);
+		       if (twobyte <> 257)
+		         {
+			   lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
+			 }
+		     }
+		   rc := langmatches_pct_http (lang, range);
+		   if (pct < rc)
+		     {
+		title := __rdf_strsqlval (obj);
+		       pct := rc;
+		     }
+		}
+	      has_meta := 1;
+	    }
+	}
+      if (title is not null)
+	http (sprintf ('\t\t<title>%s</title>\n', title), ses);
+      http (sprintf ('\t\t<updated>%s</updated>\n', date_iso8601 (dt_set_tz (now (), 0))), ses);
+      http ('\t\t<author><name /></author>\n', ses);
+      if (has_meta)
+	http ('\t\t<content type="application/xml">\n\t\t\t<m:properties>\n', ses);
+      for (declare i, l int, i := 0, l := length (meta); i < l; i := i + 1)
+        {
+	  pred := meta[i][0];
+	  obj := meta[i][1];
+	  if (isiri_id (pred)) pred := id_to_iri (pred);
+	  if (not (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1)))
+	    {
+
+              p_ns_uri := iri_split (pred, pred_tagname);
+	      if (length (p_ns_uri) = 0)
+		{
+		  http ('<', ses); http (pred_tagname, ses);
+		}
+	      else
+		{
+		  p_ns_pref := dict_get (ns_dict, p_ns_uri);
+		  pred_tagname := p_ns_pref || ':' || pred_tagname;
+		  http ('\t\t\t\t<', ses); http (pred_tagname, ses);
+		  if (__tag of rdf_box = __tag (obj))
+		    {
+		      declare tmp any;
+		      tmp := __rdf_strsqlval (obj);
+		       twobyte := rdf_box_lang (obj);
+		       if (twobyte <> 257)
+			 {
+			   lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
+			   http (sprintf (' xml:lang="%s"', lang), ses);
+			 }
+		      http ('>', ses);
+		      if (__tag of varchar = __tag (tmp))
+			tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
+		      http_value (tmp, 0, ses);
+		    }
+		  else
+		    {
+		      declare tp varchar;
+		      tp := ODATA_EDM_TYPE (obj);
+		      if (tp is not null)
+                        http (sprintf (' m:type="Edm.%s"', tp), ses);
+		      http ('>', ses);
+		      if (__tag of varbinary = __tag (obj))
+			obj := encode_base64 (cast (obj as varchar));
+		      http_value (obj, 0, ses);
+		    }
+		  http ('</', ses); http (pred_tagname, ses); http ('>\n', ses);
+		}
+	    }
+	}
+      if (has_meta)
+	http ('\t\t\t</m:properties>\n\t\t</content>\n', ses);
+      http ('\t</entry>\n', ses);
+    }
+  if (print_top_level)
+    {
+      http ('</feed>', ses);
+    }
+}
+;
+
 
 
 -----
@@ -3647,16 +4735,17 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN
+order
 ;
 
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (inout _env any)
 {
-  _env := string_output();
+  _env := vector (0, 0, string_output());
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rs: <http://www.w3.org/2005/sparql-results#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2005/sparql-results#results> .\n', _env);
+_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2005/sparql-results#results> .\n', _env[2]);
 }
 ;
 
@@ -3666,6 +4755,8 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
   declare rowid varchar;
   declare blank_ids any;
   if (__tag of vector <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
+  if (isinteger (_env[1]))
     {
       declare col_buf any;
       col_count := length (colnames);
@@ -3674,7 +4765,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
       col_buf := make_array (col_count * 7, 'any');
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
         col_buf [col_ctr * 7] := colnames[col_ctr];
-      _env := vector (0, col_buf, _env);
+      _env[1] := col_buf;
     }
   sparql_rset_nt_write_row (0, _env, colvalues);
 }
@@ -3682,14 +4773,15 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of vector <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
-  return string_output_string (_env);
+  return string_output_string (_env[2]);
 }
 ;
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN
+order
 ;
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (inout _env any)
@@ -3784,6 +4876,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN (inout _env any) ret
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN
+order
 ;
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT (inout _env any)
@@ -3847,6 +4940,137 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN (inout _env any) return
 
 create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON (in colvalues any, in colnames any) returns long varchar
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN
+order
+;
+
+
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (inout _env any, in val any)
+{
+  declare t integer;
+  t := __tag (val);
+  if (t = __tag of rdf_box)
+    {
+      val := rdf_box_data (val);
+      t := __tag (val);
+    }
+  if (t in (__tag of integer, __tag of numeric, __tag of double precision, __tag of float, __tag of date, __tag of time, __tag of datetime))
+    {
+      http_value (val, 0, _env);
+      return;
+    }
+  if (t = __tag of IRI_ID)
+    val := id_to_iri (val);
+  http ('"', _env);
+  http (replace (cast (val as varchar), '"', '"""'), _env);
+  http ('"', _env);
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare sol_id varchar;
+  declare col_ctr, col_count integer;
+  declare blank_ids any;
+  col_count := length (colnames);
+  if (185 <> __tag(_env))
+    {
+      _env := string_output ();
+      for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+        {
+          if (col_ctr > 0)
+            http(',', _env);
+          DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, colnames[col_ctr]);
+        }
+      http ('\n', _env);
+    }
+  for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+    {
+      declare val any;
+      val := colvalues[col_ctr];
+      if (col_ctr > 0)
+        http(',', _env);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, val);
+    }
+  http('\n', _env);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN (inout _env any) returns long varchar
+{
+  if (185 <> __tag(_env))
+    return '';
+  return string_output_string (_env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN
+order
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare agg, colvalues_copy any;
+  colvalues_copy := colvalues;
+  if (isinteger (_env))
+    {
+      vectorbld_init (agg);
+      _env := vector (0, colnames);
+    }
+  else
+    {
+      agg := aref_set_0 (_env, 0);
+    }
+  vectorbld_acc (agg, colvalues_copy);
+  aset_zap_arg (_env, 0, agg);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN (inout _env any) returns long varchar
+{
+  declare ses, metas, rset any;
+  declare accept varchar;
+  declare add_http_headers integer;
+  ses := string_output ();
+  if (isinteger (_env))
+    {
+      metas := vector (vector (vector ('s')), 1);
+      rset := vector ();
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE (ses, metas, rset, accept, add_http_headers);
+    }
+  else
+    {
+      declare cols any;
+      declare colctr, colcount integer;
+      rset := aref_set_0 (_env, 0);
+      vectorbld_final (rset);
+      cols := aref_set_0 (_env, 1);
+      colcount := length (cols);
+      for (colctr := 0; colctr < colcount; colctr := colctr + 1) cols[colctr] := vector (cols[colctr]);
+      metas := vector (cols, vector ());
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE (ses, metas, rset, accept, add_http_headers);
+    }
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN
+order
 ;
 
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar
@@ -3854,7 +5078,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) re
   declare triples, ses any;
   ses := string_output ();
   if (214 <> __tag (triples_dict))
-    {
+            {
       triples := vector ();
     }
   else
@@ -3909,6 +5133,66 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON (inout triples_dict 
 }
 ;
 
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
+  return ses;
+}
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
@@ -3920,6 +5204,42 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML (inout triples_dict 
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  declare accept varchar;
+  declare add_http_headers integer;
+  add_http_headers := 0;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 0);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML_QRCODE (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  declare accept varchar;
+  declare add_http_headers integer;
+  add_http_headers := 0;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 1);
   return ses;
 }
 ;
@@ -3989,7 +5309,7 @@ create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_FIN (inout _env any) re
  xmlns:rs="http://www.w3.org/2005/sparql-results#"
  xmlns:xsd="http://www.w3.org/2001/XMLSchema#" >
   <rs:results rdf:nodeID="rset">
-   <rs:boolean rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">' || ans || '</rs:boolean></results></rdf:RDF>', ses);
+   <rs:boolean rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">' || ans || '</rs:boolean></rs:results></rdf:RDF>', ses);
   return ses;
 }
 ;
@@ -4049,19 +5369,104 @@ create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN (inout _env any) returns
 ;
 
 create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT (inout one any) returns long varchar
-from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_INIT
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_ACC
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN
 ;
 
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_FIN (inout _env any) returns long varchar
+{
+  declare ans varchar;
+  if (isinteger (_env) and _env)
+    return '"bool"\n1\n';
+  else
+    return '"bool"\n0\n';
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_INIT
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_ACC
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_FIN
+;
 
 -----
 -- Insert, delete, modify operations for lists of triples
 
-create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
+create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triples any, in log_mode integer := null)
+{
+  declare is_text, ctr, old_log_enable, l integer;
+  declare ro_id_dict, dp any;
+  if ('1' = registry_get ('cl_rdf_text_index'))
+    is_text := 1;
+  if (not isiri_id (graph_iri))
+    graph_iri := iri_to_id (graph_iri);
+  if (__rdf_graph_is_in_enabled_repl (graph_iri))
+    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iri), triples);
+  connection_set ('g_iid', graph_iri);
+  ro_id_dict := dict_new ();
+  connection_set ('g_dict', ro_id_dict);
+  dp := dpipe (0, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+  dpipe_set_rdf_load (dp);
+ l := length (triples);
+  for (ctr := 0; ctr < l; ctr := ctr + 1)
+    {
+      declare r, o_val any;
+      r := triples[ctr];
+      o_val := r[2];
+      if (__tag (o_val) in (__tag of varchar, __tag of XML))
+        {
+          if (is_text)
+            {
+              -- make first first non default type because if all is default it will make no box
+              declare o_val_2 any;
+              o_val_2 := rdf_box (o_val, 300, 257, 0, 1);
+              rdf_box_set_is_text (o_val_2, 1);
+              rdf_box_set_type (o_val_2, 257);
+              -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text1 ', r[0], r[1], null, o_val_2, null);
+              dpipe_input (dp, r[0], r[1], null, o_val_2, null);
+            }
+          else
+            {
+              -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text0 ', r[0], r[1], null, o_val, null);
+              dpipe_input (dp, r[0], r[1], null, o_val, null);
+            }
+        }
+      else
+        {
+          -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts ', r[0], r[1], null, o_val);
+          dpipe_input (dp, r[0], r[1], null, o_val, null);
+        }
+      if (mod (ctr + 1, 40000) = 0 and l > 60000)
+	{
+	  dpipe_next (dp, 0);
+	  dpipe_next (dp, 1);
+	  dpipe_reuse (dp);
+	}
+    }
+  dpipe_next (dp, 0);
+  dpipe_next (dp, 1);
+  if (ro_id_dict is not null)
+    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (graph_iri, ro_id_dict);
+}
+;
+
+create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any, in log_mode integer := null)
 {
   declare ctr, old_log_enable integer;
   declare ro_id_dict any;
+  if (0 = sys_stat ('cl_run_local_only'))
+    return RDF_INSERT_TRIPLES_CL (graph_iri, triples, log_mode);
   if (not isiri_id (graph_iri))
     graph_iri := iri_to_id (graph_iri);
+  if (__rdf_graph_is_in_enabled_repl (graph_iri))
+    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iri), triples);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   ro_id_dict := null;
@@ -4075,6 +5480,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in
         goto do_insert;
       if (ro_id_dict is null and __rdf_obj_ft_rule_check (graph_iri, p_iid))
         ro_id_dict := dict_new ();
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES got ', graph_iri, triples[ctr][0], p_iid, o_final);
       need_digest := rdf_box_needs_digest (o_final, ro_id_dict);
       if (1 < need_digest)
         {
@@ -4085,17 +5491,17 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in
               signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
         }
         }
-      else --if (1 = need_digest)
+      else
         {
-          o_final := DB.DBA.RDF_OBJ_OF_LONG (o_final);
+	o_final := DB.DBA.RDF_OBJ_ADD (257, o_final, 257);
           if (not rdf_box_is_storeable (o_final))
             {
               -- dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig, '=>', o_final);
-              signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
+              signal ('OBLOM', 'Bad O after DB.DBA.RDF_OBJ_ADD');
             }
         }
 do_insert:
-      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES: ', graph_iri, triples[ctr][0], p_iid, o_final);
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES inserts ', graph_iri, triples[ctr][0], p_iid, o_final);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (graph_iri, triples[ctr][0], p_iid, o_final);
     }
@@ -4110,6 +5516,8 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
   declare ctr, old_log_enable integer;
   if (not isiri_id (graph_iri))
     graph_iri := iri_to_id (graph_iri);
+  if (__rdf_graph_is_in_enabled_repl (graph_iri))
+    DB.DBA.RDF_REPL_DELETE_TRIPLES (id_to_iri (graph_iri), triples);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
@@ -4131,6 +5539,71 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
 -- complete: ;
     }
   log_enable (old_log_enable, 1);
+}
+;
+
+
+create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples any, in log_mode integer := null)
+{
+  declare ctr, old_log_enable, l integer;
+  if (not isiri_id (graph_iid))
+    graph_iid := iri_to_id (graph_iid);
+  if (__rdf_graph_is_in_enabled_repl (graph_iid))
+    DB.DBA.RDF_REPL_DELETE_TRIPLES (id_to_iri (graph_iid), triples);
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+--  declare daq, cols any;
+--    cols := vector ('G', 'S', 'P', 'O');
+--      log_enable (bit_and (coalesce (log_mode, old_log_enable), 1), 1);
+--    daq := daq (1);
+--      for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
+--	{
+--	  declare r any;
+--	r := triples[ctr];
+--	  daq_delete (daq, 'DB.DBA.RDF_QUAD', cols, vector (graph_iid, r[0], r[1], r[2] ));
+--	}
+--      daq_results (daq);
+--      if (bit_and (coalesce (log_mode, old_log_enable), 2))
+--	commit work;
+      declare dp any;
+      log_enable (bit_and (coalesce (log_mode, old_log_enable), 1), 1);
+      dp := dpipe (0, '__I2IDN', '__I2IDN', 'O_LOOKN');
+      dpipe_set_rdf_load (dp, 3);
+      connection_set ('g_iid', graph_iid);
+      l := length (triples);
+      for (ctr := 0; ctr < l; ctr := ctr + 1)
+	{
+	  declare r any;
+	r := triples[ctr];
+          dpipe_input (dp, r[0], r[1], r[2]);
+          if (mod (ctr + 1, 40000) = 0 and l > 60000)
+            {
+              dpipe_next (dp, 0);
+              dpipe_next (dp, 1);
+              dpipe_reuse (dp);
+              if (bit_and (coalesce (log_mode, old_log_enable), 2))
+                commit work;
+	}
+        }
+      dpipe_next (dp, 0);
+      dpipe_next (dp, 1);
+      if (bit_and (coalesce (log_mode, old_log_enable), 2))
+	commit work;
+    }
+  else
+    {
+      for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
+	{
+	  declare o_short any;
+	o_short := DB.DBA.RDF_OBJ_OF_LONG (triples[ctr][2]);
+          -- dbg_obj_princ ('DB.DBA.RDF_DELETE_TRIPLES_AGG: delete from DB.DBA.RDF_QUAD where G = ', graph_iid, ' and S = ', triples[ctr][0], ' and P = ', triples[ctr][1], ' and O = ', o_short);
+	  delete from DB.DBA.RDF_QUAD
+            where G = graph_iid and S = triples[ctr][0] and P = triples[ctr][1] and O = o_short;
+	}
+      log_enable (old_log_enable, 1);
+    }
 }
 ;
 
@@ -4156,6 +5629,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
   declare action_ctr integer;
   declare old_log_enable integer;
   old_log_enable := log_enable (log_mode, 1);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (', _env, graph_iri, opcodes, vars, log_mode, ctor_op, ')');
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   blank_ids := 0;
   action_ctr := 0;
@@ -4212,13 +5686,23 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
       -- dbg_obj_princ ('generated triple:', triple_vec);
       if (1 = ctor_op)
         {
-          delete from DB.DBA.RDF_QUAD
-          where G = _env[0] and S = triple_vec[0] and P = triple_vec[1] and O = DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]);
+--          delete from DB.DBA.RDF_QUAD
+--          where G = _env[0] and S = triple_vec[0] and P = triple_vec[1] and O = DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]);
+          declare dict any;
+          dict := _env[3];
+          dict_put (dict, triple_vec, 1);
+          if (80000 < dict_size (dict))
+            DB.DBA.RDF_DELETE_TRIPLES_AGG (_env[0], dict_list_keys (dict, 2), _env[5]);
         }
       else
         {
-          insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-          values (_env[0], triple_vec[0], triple_vec[1], DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]));
+--          insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+--          values (_env[0], triple_vec[0], triple_vec[1], DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]));
+          declare dict any;
+          dict := _env[4];
+          dict_put (dict, triple_vec, 1);
+          if (80000 < dict_size (dict))
+            DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
         }
       action_ctr := action_ctr + 1;
 end_of_adding_triple: ;
@@ -4232,7 +5716,7 @@ end_of_adding_triple: ;
 create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0);
+    _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), null, log_mode);
   if (not _env[1])
     __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 1);
@@ -4244,7 +5728,7 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 {
   -- dbg_obj_princ ('DB.DBA.SPARQL_INSERT_CTOR_ACC (', _env, graph_iri, opcodes, vars, uid, log_mode);
   if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0);
+    _env := vector (iri_to_id (graph_iri), 0, 0, null, dict_new (80000), log_mode);
   if (not _env[2])
     __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 2);
@@ -4255,7 +5739,7 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0);
+    _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), dict_new (80000), log_mode);
   if (not _env[1] and not _env[2])
     __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL MODIFY');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, del_opcodes, vars, log_mode, 1);
@@ -4266,6 +5750,22 @@ create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
 {
+  if (isarray (_env))
+    {
+      declare dict any;
+      dict := _env[3];
+      if (dict is not null and (0 < dict_size (dict)))
+        {
+          _env[3] := null;
+          DB.DBA.RDF_DELETE_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
+        }
+      dict := _env[4];
+      if (dict is not null and (0 < dict_size (dict)))
+        {
+          _env[4] := null;
+          DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
+        }
+    }
   return _env;
 }
 ;
@@ -4298,14 +5798,21 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
   while (dict_size (triples_dict) > 0)
     {
-      triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
+      triples := dict_destructive_list_rnd_keys (triples_dict, 80000);
       DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
       ins_count := ins_count + length (triples);
     }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (graph_iri is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (graph_iri)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   if (compose_report)
-    return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
+    {
+      if (ins_count)
+        return sprintf ('Insert into <%s>, %d (or less) triples -- done', graph_iri, ins_count);
+      else
+        return sprintf ('Insert into <%s>, 0 triples -- nothing to do', graph_iri);
+    }
   else
     return ins_count;
 }
@@ -4325,13 +5832,20 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   while (dict_size (triples_dict) > 0)
     {
       triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
-      DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
+      DB.DBA.RDF_DELETE_TRIPLES_AGG (graph_iri, triples, log_mode);
       del_count := del_count + length (triples);
     }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (graph_iri is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (graph_iri)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   if (compose_report)
-    return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
+    {
+      if (del_count)
+        return sprintf ('Delete from <%s>, %d (or less) triples -- done', graph_iri, del_count);
+      else
+        return sprintf ('Delete from <%s>, 0 triples -- nothing to do', graph_iri);
+    }
   else
     return del_count;
 }
@@ -4361,42 +5875,120 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
     }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (graph_iri is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (graph_iri)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   if (compose_report)
-    return sprintf ('Modify <%s>, delete %d and insert %d triples -- done', graph_iri, del_count, ins_count);
+    return sprintf ('Modify <%s>, delete %d (or less) and insert %d (or less) triples -- done', graph_iri, del_count, ins_count);
   else
     return del_count + ins_count;
 }
 ;
 
+-- /* delete quads */
+create procedure DB.DBA.RDF_REPL_DEL (inout rquads any)
+{
+  declare rquads_ctr, rquads_count, opcode integer;
+  declare g_iri, prev_g_iri varchar;
+  declare g_iid varchar;
+  declare ro_id_dict, app_env any;
+  rquads_count := length (rquads);
+  prev_g_iri := '';
+  for (rquads_ctr := 0; rquads_ctr < rquads_count; rquads_ctr := rquads_ctr + 1)
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_REPL_DEL(), rquad ', rquads_ctr, ' / ', rquads_count, ': ', rquads[rquads_ctr]);
+      g_iri := rquads[rquads_ctr][1];
+      if (g_iri <> prev_g_iri)
+        {
+          g_iid := iri_to_id (g_iri);
+          --DB.DBA.TTLP_EV_CL_GS_NEW_GRAPH (g_iri, g_iid, app_env);
+          prev_g_iri := g_iri;
+        }
+      opcode := rquads[rquads_ctr][0];
+      if (0 = opcode)
+	{
+          delete from DB.DBA.RDF_QUAD
+	      where G = g_iid and S = iri_to_id_repl (rquads[rquads_ctr][2]) and P = iri_to_id_repl (rquads[rquads_ctr][3])
+	      and O = DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (rquads[rquads_ctr][4]);
+	  if (__rdf_graph_is_in_enabled_repl (g_iid))
+	    __rdf_repl_quad (160 + opcode, g_iri, rquads[rquads_ctr][2], rquads[rquads_ctr][3], rquads[rquads_ctr][4]);
+	}
+      else if (1 = opcode)
+	{
+	  declare obj any;
+	  if (isgeometry (rquads[rquads_ctr][4]))
+	    {
+	      obj := rdf_box (rquads[rquads_ctr][4], 256, 257, 0, 1);
+	      rdf_geo_set_id (obj);
+	    }
+	  else
+	    obj := DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (rquads[rquads_ctr][4], iri_to_id_repl (rquads[rquads_ctr][5]), null);
+	  delete from DB.DBA.RDF_QUAD
+	      where G = g_iid and S = iri_to_id_repl (rquads[rquads_ctr][2]) and P = iri_to_id_repl (rquads[rquads_ctr][3]) and O = obj;
+	  if (__rdf_graph_is_in_enabled_repl (g_iid))
+	    __rdf_repl_quad (160 + opcode, g_iri, rquads[rquads_ctr][2], rquads[rquads_ctr][3], rquads[rquads_ctr][4], rquads[rquads_ctr][5], null);
+	}
+      else if (2 = opcode)
+	{
+	  delete from DB.DBA.RDF_QUAD
+	      where G = g_iid and S = iri_to_id_repl (rquads[rquads_ctr][2]) and P = iri_to_id_repl (rquads[rquads_ctr][3])
+	      and O = DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (rquads[rquads_ctr][4], null, rquads[rquads_ctr][5]);
+	  if (__rdf_graph_is_in_enabled_repl (g_iid))
+	    __rdf_repl_quad (160 + opcode, g_iri, rquads[rquads_ctr][2], rquads[rquads_ctr][3], rquads[rquads_ctr][4], null, rquads[rquads_ctr][5]);
+	}
+      else if (4 = opcode)
+	{
+	  delete from DB.DBA.RDF_QUAD
+	      where G = g_iid and S = iri_to_id_repl (rquads[rquads_ctr][2]) and P = iri_to_id_repl (rquads[rquads_ctr][3])
+	      and O = iri_to_id_repl (rquads[rquads_ctr][4]);
+	  if (__rdf_graph_is_in_enabled_repl (g_iid))
+	    __rdf_repl_quad (160 + opcode, g_iri, rquads[rquads_ctr][2], rquads[rquads_ctr][3], rquads[rquads_ctr][4]);
+	}
+
+
+    }
+  app_env := vector (1, null);
+  DB.DBA.TTLP_EV_COMMIT (g_iri, app_env);
+  --if (1 <> sys_stat ('cl_run_local_only'))
+  --  rdf_dpipe_flush_gs (app_env, 1);
+  connection_set ('g_dict', null);
+  commit work;
+}
+;
+
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0) returns any
 {
+  declare g any;
+  declare g_iid IRI_ID;
   declare old_log_enable integer;
-  /* 091202 commit work; */
+  g := graph_iri;
+  if (isiri_id (g))
+   g := id_to_iri (g);
+  g_iid := iri_to_id (g);
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CLEAR GRAPH');
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    {
+      repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
+      repl_text ('__rdf_repl', 'sparql define input:storage "" clear graph iri ( ?? )', g);
+    }
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  exec (sprintf ('
   delete from DB.DBA.RDF_QUAD
-  where G = iri_to_id (graph_iri) /*091202 and
-  case (gt (__trx_disk_log_length (0, S, O), 1000000))
-  when 0 then 1 else 1 + exec (coalesce ('commit work', S, O)) end */ ;
-  /*091202 commit work; */
-  delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS
-  where VT_WORD = cast (iri_to_id (graph_iri) as varchar) /*091202 and
-  case (gt (__trx_disk_log_length (0, VT_D_ID, VT_D_ID_2), 1000000))
-  when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end */;
-  /*091202commit work; */
-  if (isiri_id (graph_iri))
-    graph_iri := id_to_iri (graph_iri);
+  where G = __i2id (''%S'') ', g));
+  delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
+  where VT_WORD = rdf_graph_keyword (g_iid);
   if (not inside_sponge)
     {
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (graph_iri), '&graphMD5=%');
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g), '&graphMD5=%');
     }
   /*091202 commit work; */
   log_enable (old_log_enable, 1);
   if (compose_report)
-    return sprintf ('Clear <%s> -- done', graph_iri);
+    return sprintf ('Clear <%s> -- done', g);
   else
     return 1;
 }
@@ -4420,6 +6012,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
     'get:refresh', -1,
     'get:error-recovery', 'signal',
     -- 'flags', flags,
+    'get:strategy', 'rdfa-only',
     'grabbed', grabbed );
   commit work;
   res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
@@ -4444,9 +6037,13 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
 
 create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer) returns any
 {
+  declare g_iid IRI_ID;
   declare old_log_enable integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CREATE GRAPH');
-  if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
+  g_iid := iri_to_id (graph_iri);
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    repl_text ('__rdf_repl', 'sparql define input:storage "" create graph iri ( ?? )', graph_iri);
+  if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid))
     {
       if (silent)
         {
@@ -4490,8 +6087,15 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in ui
 
 create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer) returns any
 {
+  declare g_iid IRI_ID;
   declare old_log_enable integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DROP GRAPH');
+  g_iid := iri_to_id (graph_iri);
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    {
+      repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
+      repl_text ('__rdf_repl', 'sparql define input:storage "" drop graph iri ( ?? )', graph_iri);
+    }
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
@@ -4568,11 +6172,12 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
 }
 ;
 
-create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1, in lim integer := 2000000000)
+create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris integer := 1, in lim integer := 2000000000)
 {
-  declare specials any;
+  declare specials, specials_vec any;
   declare last_iri_id, cur_iri_id IRI_ID;
-  declare cr cursor for select G from DB.DBA.RDF_QUAD where G > last_iri_id and not (dict_get (specials, G, 0));
+  declare cr cursor for select G from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where G > last_iri_id and not (dict_get (specials, G, 0));
+  declare cr_cl cursor for select G from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)  where G > last_iri_id and 0 >= position (G, specials_vec);
   declare GRAPH_IRI varchar;
   declare GRAPH_IID IRI_ID;
   declare ctr, len integer;
@@ -4599,23 +6204,50 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1,
   if (len >= lim)
     goto done_all;
   last_iri_id := #i0;
-  whenever not found goto done_rdf_quad;
-  open cr (prefetch 1);
 
-next_fetch_cr:
-  fetch cr into cur_iri_id;
-  if (return_iris)
-    result (id_to_iri (cur_iri_id));
-  else
-    result (cur_iri_id);
-  lim := lim - 1;
-  if (len >= lim)
-    goto done_rdf_quad;
-  last_iri_id := cur_iri_id;
-  goto next_fetch_cr;
+--  if (1 <> sys_stat ('cl_run_local_only'))
+--    {
+      specials_vec := dict_list_keys (specials, 0);
+      whenever not found goto done_rdf_quad_cl;
+      open cr_cl (prefetch 1);
 
-done_rdf_quad:
-  close cr;
+next_fetch_cr_cl:
+      fetch cr_cl into cur_iri_id;
+      if (return_iris)
+        result (id_to_iri (cur_iri_id));
+      else
+        result (cur_iri_id);
+      lim := lim - 1;
+      if (len >= lim)
+        goto done_rdf_quad_cl;
+      last_iri_id := cur_iri_id;
+      close cr_cl;
+      open cr_cl (prefetch 1);
+      goto next_fetch_cr_cl;
+
+done_rdf_quad_cl:
+      close cr_cl;
+--    }
+--  else
+--    {
+--      whenever not found goto done_rdf_quad;
+--      open cr (prefetch 1);
+
+--next_fetch_cr:
+--      fetch cr into cur_iri_id;
+--      if (return_iris)
+--        result (id_to_iri (cur_iri_id));
+--      else
+--        result (cur_iri_id);
+--      lim := lim - 1;
+--      if (len >= lim)
+--        goto done_rdf_quad;
+--      last_iri_id := cur_iri_id;
+--      goto next_fetch_cr;
+
+--done_rdf_quad:
+--      close cr;
+--    }
 
 done_all:
   specials := dict_list_keys (specials, 1);
@@ -4727,14 +6359,14 @@ create aggregate DB.DBA.BEST_LANGMATCH (inout obj any, in range varchar, in dflt
 
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_CONSTRUCT_INIT (inout _env any)
-{
+		{
   _env := 0; -- No actual initialization
-}
+    }
 ;
 
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in vars any, in stats any, in use_dict_limit integer)
-{
+    {
   declare triple_ctr integer;
   declare blank_ids any;
   if (214 <> __tag(_env))
@@ -4760,22 +6392,22 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
           op := opcodes[triple_ctr][fld_ctr * 2];
           arg := opcodes[triple_ctr][fld_ctr * 2 + 1];
           if (1 = op)
-            {
+    {
               declare i any;
               i := vars[arg];
               if (i is null)
                 goto end_of_adding_triple;
               if (isiri_id (i))
-                {
+        {
                   if ((1 = fld_ctr) and is_bnode_iri_id (i))
                     signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
                 }
               else if ((isstring (i) and (1 = __box_flags (i))) or (217 = __tag(i)))
-                {
+            {
                   if ((1 = fld_ctr) and (i like 'bnode://%'))
                     signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
                   i := iri_to_id (i);
-                }
+            }
               else if (2 > fld_ctr)
                 signal ('RDF01',
                   sprintf ('Bad variable value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
@@ -4885,12 +6517,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
-  declare gs_app_callback, gs_app_uid varchar;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
   declare rdf_type_iid IRI_ID;
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
     gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -4934,7 +6567,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
-  else if ('' = storage_name)
+  else if (('' = storage_name) and (inf_ruleset is null))
     {
       for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
         {
@@ -4961,7 +6594,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
       maps_len := length (maps);
-      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
           if (isiri_id (s))
             {
@@ -4996,12 +6629,12 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, in res any', ses);
           if (graphs_listed)
             http (', inout sorted_good_graphs any', ses);
           http (')\n', ses);
@@ -5013,6 +6646,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
             {
               http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
             }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
           http ('select ?g1 ?p1 ?o1\n', ses);
           http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
@@ -5020,9 +6655,9 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
               if (map_ctr > 0) http ('              union\n', ses);
               http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
-          http ('            } } ) do { ', ses);
+          http ('            } } ) do {\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g1", sorted_good_graphs))\n', ses);
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
@@ -5152,12 +6787,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
 {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
-  declare gs_app_callback, gs_app_uid varchar;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
   declare rdf_type_iid IRI_ID;
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
     gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -5201,7 +6837,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
-  else if ('' = storage_name)
+  else if (('' = storage_name) and (inf_ruleset is null))
     {
       for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
         {
@@ -5228,7 +6864,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
       maps_len := length (maps);
-      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
           if (isiri_id (s))
             {
@@ -5263,12 +6899,12 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, in res any', ses);
           if (graphs_listed)
             http (', inout sorted_good_graphs any', ses);
           http (')\n', ses);
@@ -5280,6 +6916,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
             {
               http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
             }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
           http ('select ?g1 ?p1 ?o1\n', ses);
           http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
@@ -5287,9 +6925,9 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
               if (map_ctr > 0) http ('              union\n', ses);
               http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
-          http ('            } } ) do { ', ses);
+          http ('            } } ) do {\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g1", sorted_good_graphs))\n', ses);
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
@@ -5358,7 +6996,7 @@ describe_physical_subjects:
 ;
 
 create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
-{
+    {
   declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare gs_app_callback, gs_app_uid varchar;
@@ -5372,7 +7010,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
   if (isinteger (consts))
     return res;
   foreach (any c in consts) do
-    {
+        {
       if (isiri_id (c))
         dict_put (subj_dict, c, 0);
     }
@@ -5522,12 +7160,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT_CBD (in subj_dict any, in consts any, i
 {
   declare all_subjs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, next_iter_subjs, res any;
   declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
-  declare gs_app_callback, gs_app_uid varchar;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
   declare rdf_type_iid IRI_ID;
   uid := get_keyword ('uid', options, http_nobody_uid());
   gs_app_callback := get_keyword ('gs-app-callback', options);
   if (gs_app_callback is not null)
     gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
   if (isinteger (consts))
@@ -5576,7 +7215,7 @@ next_iteration:
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
-  else if ('' = storage_name)
+  else if (('' = storage_name) and (inf_ruleset is null))
     {
       for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
         {
@@ -5603,7 +7242,7 @@ next_iteration:
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, id_to_iri (s), ' maps = ', maps);
       maps_len := length (maps);
-      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
           if (isiri_id (s))
             {
@@ -5638,12 +7277,12 @@ next_iteration:
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_CBD_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      fname := sprintf ('SPARQL_DESC_DICT_CBD_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout subj_dict any, inout next_iter_subjs any, inout res any', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, in subj_dict any, in next_iter_subjs any, in res any', ses);
           if (graphs_listed)
             http (', inout sorted_good_graphs any', ses);
           http (')\n', ses);
@@ -5655,6 +7294,8 @@ next_iteration:
             {
               http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
             }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
           http ('select ?g1 ?p1 ?o1 ?g2 ?st2\n', ses);
           http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
@@ -5665,20 +7306,19 @@ next_iteration:
           http ('            }\n', ses);
           http ('          optional { graph ?g2 {\n', ses);
           http ('                  ?st2 a rdf:Statement ; rdf:subject ?:subj_iri ; rdf:predicate ?p1 ; rdf:object ?o1 } }\n', ses);
-          http (' } ) do { ', ses);
-          http ('            } } ) do { ', ses);
+          http ('            } ) do {\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g1", sorted_good_graphs)) {\n', ses);
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1);\n', ses);
           http ('      if (isiri_id ("o1") and "o1" > min_bnode_iri_id() and dict_get (subj_dict, "o1") is null)\n', ses);
           http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
           if (graphs_listed)
-            http ('      if (position ("g2", sorted_good_graphs)) {\n', ses);
+            http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
           http ('      if ("st2" is not null and dict_get (subj_dict, "st2") is null)\n', ses);
           http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
           if (graphs_listed)
             http ('        } }\n', ses);
-          http ('      } } }\n', ses);
+          http ('      } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
 	  saved_user := user;
@@ -5730,7 +7370,7 @@ describe_physical_subjects:
                             ?st2 a rdf:Statement ; rdf:subject ?:subj ; rdf:predicate ?:p1 ; rdf:object ?:obj1 } } ) do
                     {
                       if (position ("g2", sorted_good_graphs) and dict_get (subj_dict, "st2") is null)
-                        dict_put (next_iter_subjs, st2, 1);
+                        dict_put (next_iter_subjs, "st2", 1);
                     }
                 }
             }
@@ -5761,7 +7401,7 @@ describe_physical_subjects:
                     dict_get (subj_dict, "st2") is null and
                     __rgs_ack_cbk ("g2", uid, 1) and
                     (gs_app_callback is null or bit_and (1, call (gs_app_callback) ("g2", gs_app_uid))) )
-                    dict_put (next_iter_subjs, st2, 1);
+                    dict_put (next_iter_subjs, "st2", 1);
                 }
             }
         }
@@ -5861,7 +7501,7 @@ next_iteration:
                             ?st2 a rdf:Statement ; rdf:subject ?:subj ; rdf:predicate ?:p1 ; rdf:object ?:obj1 } } ) do
                     {
                       if (position ("g2", sorted_good_graphs) and dict_get (subj_dict, "st2") is null)
-                        dict_put (next_iter_subjs, st2, 1);
+                        dict_put (next_iter_subjs, "st2", 1);
                     }
                 }
             }
@@ -5892,7 +7532,7 @@ next_iteration:
                     dict_get (subj_dict, "st2") is null and
                     __rgs_ack_cbk ("g2", uid, 1) and
                     (gs_app_callback is null or bit_and (1, call (gs_app_callback) ("g2", gs_app_uid))) )
-                    dict_put (next_iter_subjs, st2, 1);
+                    dict_put (next_iter_subjs, "st2", 1);
                 }
             }
         }
@@ -6156,10 +7796,10 @@ create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any
 -----
 -- JSO procedures
 
-create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in rootinst varchar, in destinst varchar, in dest_iid iri_id, inout noinherits any, inout inh_stack any)
+create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in rootinst varchar, in destinst varchar, in dest_iid iri_id, inout noinherits any, inout inh_stack any)
 {
   declare base_iid iri_id;
-  declare baseinst, "pred" varchar;
+  declare baseinst varchar;
   -- dbg_obj_princ ('JSO_MAKE_INHERITANCE (', jgraph, class, rootinst, destinst, ')');
   inh_stack := vector_concat (inh_stack, vector (destinst));
   baseinst := null;
@@ -6213,23 +7853,22 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
     }
   if (position (baseinst, inh_stack))
     signal ('22023', 'JSO_MAKE_INHERITANCE has found that the object <' || baseinst || '> is recursively inherited from itself');
-/* This fails. !!!TBD: fix sparql2sql.c to preserve data about equalities, fixed values and globals when triples are moved from gp to gp
-  for (sparql
-    define input:storage ""
-    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-    select ?pred
-    where {
-        graph ?:jgraph {
-            { {
-                ?destnode rdf:type `iri(?:class)` .
-                filter (?destnode = iri(?:destinst)) }
-              union
-              {
-                ?destnode rdf:type `iri(?:class)` .
-                ?destnode rdf:name `iri(?:destinst)` } } .
-            ?destnode virtrdf:noInherit ?pred .
-          } } ) do
-*/
+-- This fails. !!!TBD: fix sparql2sql.c to preserve data about equalities, fixed values and globals when triples are moved from gp to gp
+--  for (sparql
+--    define input:storage ""
+--    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+--    select ?pred
+--    where {
+--        graph ?:jgraph {
+--            { {
+--                ?destnode rdf:type `iri(?:class)` .
+--                filter (?destnode = iri(?:destinst)) }
+--              union
+--              {
+--                ?destnode rdf:type `iri(?:class)` .
+--                ?destnode rdf:name `iri(?:destinst)` } } .
+--            ?destnode virtrdf:noInherit ?pred .
+--           } } ) do
   for (sparql
     define input:storage ""
     prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
@@ -6261,6 +7900,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
           ask where { graph ?:jgraph { ?:"t00"."pred_id" virtrdf:loadAs virtrdf:jsoTriple } } )
       ) do
     {
+      declare "pred" any;
       "pred" := id_to_iri ("pred_id");
       if (DB.DBA.RDF_LANGUAGE_OF_LONG ("predval", null) is not null)
         signal ('22023', 'JSO_MAKE_INHERITANCE does not support language marks on objects');
@@ -6278,25 +7918,24 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
           dict_put (noinherits, "pred", baseinst);
         }
     }
-  JSO_MAKE_INHERITANCE (jgraph, class, rootinst, baseinst, base_iid, noinherits, inh_stack);
+  DB.DBA.JSO_MAKE_INHERITANCE (jgraph, class, rootinst, baseinst, base_iid, noinherits, inh_stack);
 }
 ;
 
-create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delete_first integer, in make_new integer, in jsubj_iid iri_id := 0)
+create function DB.DBA.JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delete_first integer, in make_new integer, in jsubj_iid iri_id := 0)
 {
   declare jinst_iid, jgraph_iid IRI_ID;
   declare jclass varchar;
   declare noinherits, inh_stack, "p" any;
   -- dbg_obj_princ ('JSO_LOAD_INSTANCE (', jgraph, ')');
   noinherits := dict_new ();
-  jinst_iid := iri_to_id (jinst);
-  jgraph_iid := iri_to_id (jgraph);
+  jinst_iid := iri_ensure (jinst);
+  jgraph_iid := iri_ensure (jgraph);
   if (jsubj_iid is null)
     {
       jsubj_iid := (sparql
         define input:storage ""
         define output:valmode "LONG"
-        define sql:table-option "LOOP, index RDF_QUAD"
         select ?s
         where { graph ?:jgraph { ?s rdf:name ?:jinst } } );
       if (jsubj_iid is null)
@@ -6304,7 +7943,6 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     }
   jclass := (sparql
     define input:storage ""
-    define sql:table-option "LOOP, index RDF_QUAD"
     select ?t
     where {
       graph ?:jgraph { ?:jsubj_iid rdf:type ?t } } );
@@ -6312,7 +7950,6 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     {
       if (exists (sparql
           define input:storage ""
-          define sql:table-option "LOOP, index RDF_QUAD"
           select ?x
             where { graph ?:jgraph {
                 { ?:jinst ?x ?o }
@@ -6365,16 +8002,16 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
         }
     }
   inh_stack := vector ();
-  JSO_MAKE_INHERITANCE (jgraph, jclass, jinst, jinst, jsubj_iid, noinherits, inh_stack);
+  DB.DBA.JSO_MAKE_INHERITANCE (jgraph, jclass, jinst, jinst, jsubj_iid, noinherits, inh_stack);
 }
 ;
 
-create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
+create procedure DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
 {
   declare md, res, st, msg any;
   st:= '00000';
   exec (
-    sprintf ('select DB.DBA.VECTOR_AGG (
+    'select DB.DBA.VECTOR_AGG (
       vector (
         id_to_iri ("jclass"),
         id_to_iri ("jinst"),
@@ -6384,7 +8021,7 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
       define input:storage ""
       select ?jclass ?jinst ?s
       where {
-        graph <%S> {
+        graph ?? {
           { ?jinst rdf:type ?jclass .
             filter (!isBLANK (?jinst)) }
           union
@@ -6392,20 +8029,20 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
             ?s rdf:name ?jinst .
             filter (isBLANK (?s))
             } } }
-      ) as inst', jgraph),
-    st, msg, vector (), 1, md, res);
+      ) as inst',
+    st, msg, vector (jgraph), 1, md, res);
   if (st <> '00000') signal (st, msg);
  	instances := res[0][0];
 }
 ;
 
-create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
+create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
 {
   declare jgraph_iid IRI_ID;
   declare instances, chk any;
   -- dbg_obj_princ ('JSO_LOAD_GRAPH (', jgraph, ')');
-  jgraph_iid := iri_to_id (jgraph);
-  JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
+  jgraph_iid := iri_ensure (jgraph);
+  DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
 /* Pass 1. Deleting all obsolete instances. */
   foreach (any j in instances) do
     jso_delete (j[0], j[1], 1);
@@ -6414,7 +8051,7 @@ create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
     jso_new (j[0], j[1]);
 /* Pass 3. Loading all instances, including loading inherited values. */
   foreach (any j in instances) do
-    JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0, j[2]);
+    DB.DBA.JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0, j[2]);
 /* Pass 4. Validation all instances. */
   foreach (any j in instances) do
     jso_validate (j[0], j[1], 1);
@@ -6439,29 +8076,39 @@ create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
 }
 ;
 
-create function JSO_PIN_GRAPH (in jgraph varchar)
+create function DB.DBA.JSO_PIN_GRAPH (in jgraph varchar)
 {
   declare instances any;
-  JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
+  DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
   foreach (any j in instances) do
     jso_pin (j[0], j[1]);
 }
 ;
 
 --!AWK PUBLIC
-create function JSO_SYS_GRAPH () returns varchar
+create function DB.DBA.JSO_SYS_GRAPH () returns varchar
 {
   return 'http://www.openlinksw.com/schemas/virtrdf#';
 }
 ;
 
-create procedure JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
+-- same as DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH but no drop procedures
+create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO (in graphiri varchar := null)
 {
   if (graphiri is null)
-    graphiri := JSO_SYS_GRAPH();
+    graphiri := DB.DBA.JSO_SYS_GRAPH();
+  DB.DBA.JSO_LOAD_GRAPH (graphiri, 0);
+  DB.DBA.JSO_PIN_GRAPH (graphiri);
+}
+;
+
+create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
+{
+  if (graphiri is null)
+    graphiri := DB.DBA.JSO_SYS_GRAPH();
   commit work;
-  JSO_LOAD_GRAPH (graphiri, 0);
-  JSO_PIN_GRAPH (graphiri);
+  DB.DBA.JSO_LOAD_GRAPH (graphiri, 0);
+  DB.DBA.JSO_PIN_GRAPH (graphiri);
   for (select P_NAME from SYS_PROCEDURES
     where (
       (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_QMV1_%') or
@@ -6474,7 +8121,7 @@ create procedure JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
 }
 ;
 
-create function JSO_DUMP_IRI (in v varchar, inout ses any)
+create function DB.DBA.JSO_DUMP_IRI (in v varchar, inout ses any)
 {
 --            0         1         2         3      %
 --            01234567890123456789012345678901234567-
@@ -6506,14 +8153,14 @@ create function JSO_DUMP_IRI (in v varchar, inout ses any)
 }
 ;
 
-create function JSO_DUMP_FLD (in v any, inout ses any)
+create function DB.DBA.JSO_DUMP_FLD (in v any, inout ses any)
 {
   declare v_tag integer;
   v_tag := __tag(v);
   if (v_tag = 217)
-    JSO_DUMP_IRI (cast (v as varchar), ses);
+    DB.DBA.JSO_DUMP_IRI (cast (v as varchar), ses);
   else if (v_tag = 243)
-    JSO_DUMP_IRI (id_to_iri (v), ses);
+    DB.DBA.JSO_DUMP_IRI (id_to_iri (v), ses);
   else if (v_tag = 203)
     http (jso_dbg_dump_rtti (v), ses);
   else if (v_tag = __tag of varchar)
@@ -6568,12 +8215,12 @@ create function DB.DBA.JSO_VECTOR_TO_TTL (inout proplist any) returns any
           else
 	    http ('.\n', ses);
 	  prev_obj := obj;
-	  JSO_DUMP_FLD (obj, ses);
+	  DB.DBA.JSO_DUMP_FLD (obj, ses);
           http ('\n  ', ses);
 	}
-      JSO_DUMP_FLD (p, ses);
+      DB.DBA.JSO_DUMP_FLD (p, ses);
       http ('\t', ses);
-      JSO_DUMP_FLD (o, ses);
+      DB.DBA.JSO_DUMP_FLD (o, ses);
     }
   if (prev_obj is not null)
     http ('.\n', ses);
@@ -6609,7 +8256,7 @@ create function DB.DBA.JSO_FILTERED_PROPLIST (in only_custom integer := 0, in lo
       sys_dict := DB.DBA.RDF_TTL2HASH (sys_txt, '');
       sys_vect := dict_list_keys (sys_dict, 0);
       -- dbg_obj_princ ('Part of sys_dict is', subseq (sys_vect, 0, 10));
-      inh_id := iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#inheritFrom');
+      inh_id := iri_ensure ('http://www.openlinksw.com/schemas/virtrdf#inheritFrom');
       sys_inh := dict_new (127);
       foreach (any triple in sys_vect) do
         {
@@ -6628,15 +8275,15 @@ create function DB.DBA.JSO_FILTERED_PROPLIST (in only_custom integer := 0, in lo
       p := proplist[ctr][1];
       o := proplist[ctr][2];
           if (217 = __tag (obj))
-            obj_long := iri_to_id (obj);
+            obj_long := iri_ensure (obj);
           else
             obj_long := obj;
           if (217 = __tag (p))
-            p_long := iri_to_id (p);
+            p_long := iri_ensure (p);
           else
             p_long := p;
           if (217 = __tag (o))
-            o_long := iri_to_id (o);
+            o_long := iri_ensure (o);
           else
             o_long := __rdf_long_of_obj (DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o));
           -- dbg_obj_princ ('key sample: ', vector (obj_long, p_long, o_long));
@@ -6722,7 +8369,7 @@ create function DB.DBA.RDF_RESTORE_METADATA (in read_from_file integer, in backu
           select ?s ?p ?o where { graph `iri(?:backup_name)` { ?s ?p ?o } } ) as "sub"));
   if (0 = length (proplist))
     signal ('22023', sprintf ('There are no metadata in %.200 to restore', backup_name));
-  graphiri_id := iri_to_id (DB.DBA.JSO_SYS_GRAPH ());
+  graphiri_id := iri_ensure (DB.DBA.JSO_SYS_GRAPH ());
   sparql define input:storage "" clear graph ?:graphiri_id;
   commit work;
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
@@ -6733,7 +8380,7 @@ create function DB.DBA.RDF_RESTORE_METADATA (in read_from_file integer, in backu
       sl := triple[0];
       pl := triple[1];
       ol := triple[2];
-      if (pl <> iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#status'))
+      if (pl <> iri_ensure ('http://www.openlinksw.com/schemas/virtrdf#status'))
         {
           -- dbg_obj_princ ('s=', sl, ' p=', pl, ' o=', ol);
           sparql define input:storage "" insert into graph ?:graphiri_id { ?:sl ?:pl ?:ol };
@@ -7452,6 +9099,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   declare needs_arg_dtps integer;
   declare arg_dtps varchar;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (get_keyword_ucase ('DATATYPE', options) is not null or get_keyword_ucase ('LANG', options) is not null)
+    signal ('22023', 'IRI class <' || classiri || '> can not have DATATYPE or LANG options specified');
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
   sffs := get_keyword_ucase ('RETURNS', options);
@@ -7662,6 +9311,8 @@ fheaders is, say,
   declare res any;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   superformatsid := classiri || '--SuperFormats';
+  if (get_keyword_ucase ('DATATYPE', options) is not null or get_keyword_ucase ('LANG', options) is not null)
+    signal ('22023', 'IRI class <' || classiri || '> can not have DATATYPE or LANG options specified');
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
   sffs := get_keyword_ucase ('RETURNS', options);
@@ -7798,6 +9449,209 @@ fheaders is, say,
         }
     }
   return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ') using ' || uriprintname)));
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any, in options any, in origclassiri varchar := null) returns any
+{
+  declare graphiri varchar;
+  declare sprintffsid, superformatsid varchar;
+  declare basetype, basetypeiri varchar;
+  declare const_dt, dt_expn, const_lang varchar;
+  declare bij, deref integer;
+  declare sffs, res any;
+  declare argctr, arglist_len, isnotnull, sff_ctr, sff_count, bij_sff_count integer;
+  declare needs_arg_dtps integer;
+  declare arg_dtps varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  const_dt := get_keyword_ucase ('DATATYPE', options);
+  const_lang := get_keyword_ucase ('LANG', options);
+  bij := get_keyword_ucase ('BIJECTION', options, 0);
+  deref := get_keyword_ucase ('DEREF', options, 0);
+  sffs := get_keyword_ucase ('RETURNS', options);
+  if (sffs is null)
+    sffs := vector (iritmpl); -- note that this is before macroexpand
+  sff_count := length (sffs);
+  iritmpl := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (iritmpl);
+  sprintffsid := classiri || '--Sprintffs';
+  superformatsid := classiri || '--SuperFormats';
+  res := vector ();
+  foreach (any arg in arglist) do
+    if (UNAME'in' <> arg[0])
+      signal ('22023', 'Only "in" parameters are now supported in argument lists of class formats, "' || arg[0] || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
+  arglist_len := length (arglist);
+  isnotnull := 1;
+  needs_arg_dtps := 0;
+  arg_dtps := '';
+  if (arglist_len <> 1)
+    {
+      declare type_name varchar;
+      declare dtp integer;
+      if (arglist_len = 0)
+        basetype := 'zeropart-literal';
+      else
+        basetype := 'multipart-literal';
+      for (argctr := 0; (argctr < arglist_len) and isnotnull; argctr := argctr + 1)
+        {
+          if (not (coalesce (arglist[argctr][3], 0)))
+            isnotnull := 0;
+          type_name := lower (arglist[argctr][2]);
+          dtp := case (type_name)
+            when 'integer' then __tag of integer
+            when 'varchar' then __tag of varchar
+            when 'date' then __tag of date
+            when 'datetime' then __tag of datetime
+            when 'doubleprecision' then __tag of double precision
+            when 'numeric' then __tag of numeric
+            when 'nvarchar' then __tag of nvarchar
+            else 255 end;
+          if (type_name = 'nvarchar')
+            needs_arg_dtps := 1;
+          arg_dtps := arg_dtps || chr (bit_and (127, dtp));
+        }
+    }
+  else /* arglist is 1 item long */
+    {
+      basetype := lower (arglist[0][2]);
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric', 'nvarchar')))
+        signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE LITERAL CLASS <' || classiri || '>' );
+      basetype := 'sql-' || basetype || '-literal';
+      if (not (coalesce (arglist[0][3], 0)))
+        isnotnull := 0;
+      if (basetype = 'nvarchar')
+        {
+          needs_arg_dtps := 1;
+          arg_dtps := chr (bit_and (127, __tag of nvarchar));
+        }
+    }
+  if (not isnotnull)
+    basetype := basetype || '-nullable';
+  basetypeiri := 'http://www.openlinksw.com/virtrdf-data-formats#' || basetype;
+  if (const_dt is not null)
+    dt_expn := ' ' || WS.WS.STR_SQL_APOS (const_dt);
+  else
+    dt_expn := NULL;
+  if (origclassiri is null)
+    {
+      if (isnotnull and (arglist_len > 0))
+        {
+          declare arglist_copy any;
+          if (classiri like '%-nullable')
+            signal ('22023', 'The name of non-nullable literal class in CREATE LITERAL CLASS <' || classiri || '> is misleading' );
+          arglist_copy := arglist;
+          for (argctr := 0; (argctr < arglist_len); argctr := argctr + 1)
+            arglist_copy[argctr][3] := 0;
+          res := vector_concat (res,
+            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (classiri || '-nullable', iritmpl, arglist_copy, options, NULL) );
+        }
+      origclassiri := classiri;
+    }
+  if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
+    {
+      declare side_s IRI_ID;
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      if (side_s is not null)
+        {
+          declare tmpname varchar;
+          declare old_descr, new_descr any;
+          tmpname := uuid();
+          { declare exit handler for sqlstate '*' {
+              signal ('22023', 'Can not change literal class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>; moreover, the new declaration may be invalid.'); };
+            DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (tmpname, iritmpl, arglist, options, classiri);
+          }
+          old_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(classiri);
+          new_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(tmpname);
+          if (md5 (serialize (old_descr)) = md5 (serialize (new_descr)))
+            {
+              sparql define input:storage ""
+              delete from graph <http://www.openlinksw.com/schemas/virtrdf#>  { `iri(?:tmpname)` ?p ?o }
+              where { `iri(?:tmpname)` ?p ?o };
+              return vector (vector ('00000', 'Previous definition of literal class <' || classiri || '> is identical to the new one, not touched'));
+            }
+          signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
+        }
+      res := vector_concat (res, vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped')));
+    }
+  else
+    res := vector ();
+  if (bij)
+    {
+      if (__sprintff_is_proven_unparseable (iritmpl))
+        signal ('22023', 'Literal class <' || classiri || '> has OPTION (BIJECTION) but its format string can not be unambiguously parsed by sprintf_inverse()');
+    }
+  else
+    {
+      if (__sprintff_is_proven_bijection (iritmpl))
+        bij := 1;
+    }
+  bij_sff_count := 0;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:sprintffsid)) };
+  for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
+    {
+      declare sff varchar;
+      sff := sffs [sff_ctr];
+      sff := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (sff);
+      if ((not bij) and __sprintff_is_proven_bijection (sff))
+        bij_sff_count := bij_sff_count + 1;
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
+          `iri(?:sprintffsid)`
+            `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff };
+    }
+  if ((not bij) and (bij_sff_count = sff_count) and (bij_sff_count > 0))
+    bij := 1;
+  if (not needs_arg_dtps)
+    arg_dtps := NULL;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:classiri)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:superformatsid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
+    {
+      `iri(?:classiri)`
+        rdf:type virtrdf:QuadMapFormat ;
+        virtrdf:inheritFrom `iri(?:basetypeiri)`;
+        virtrdf:noInherit virtrdf:qmfName ;
+        virtrdf:noInherit virtrdf:qmfCustomString1 ;
+        virtrdf:qmfName `bif:concat (?:basetype, '-user-', ?:origclassiri)` ;
+        virtrdf:qmfCustomString1 ?:iritmpl ;
+        virtrdf:qmfDatatypeOfShortTmpl ?:dt_expn ;
+        virtrdf:qmfColumnCount ?:arglist_len ;
+        virtrdf:qmfSuperFormats `iri(?:superformatsid)` ;
+        virtrdf:qmfIsBijection ?:bij ;
+        virtrdf:qmfDerefFlags ?:deref ;
+        virtrdf:qmfArgDtps ?:arg_dtps ;
+        virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_LIT ;
+        virtrdf:qmfValRange-rvrDatatype ?:const_dt ;
+        virtrdf:qmfValRange-rvrLanguage ?:const_lang ;
+        virtrdf:qmfValRange-rvrSprintffs `iri(?:sprintffsid)` ;
+        virtrdf:qmfValRange-rvrSprintffCount ?:sff_count .
+      `iri(?:sprintffsid)`
+        rdf:type virtrdf:array-of-string .
+      `iri(?:superformatsid)`
+        rdf:type virtrdf:array-of-QuadMapFormat };
+  if (const_dt is not null)
+    {
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
+          `iri(?:classiri)`
+            virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_TYPED };
+    }
+  return vector_concat (res, vector_concat (res, vector (vector ('00000', 'Literal class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
 }
 ;
 
@@ -8670,7 +10524,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
         {
           tablename := 'DB.DBA.SYS_FAKE_1';
           if (0 < length (conds))
-            signal ('22023', 'Quad Mapping <' || qmid || '> has four constants and no one quad map value; it do not access tables so it can not have WHERE conditions');
+            signal ('22023', 'Quad Mapping <' || qmid || '> has four constants and no one quad map value; it does not access tables so it can not have WHERE conditions');
         }
     }
   if ('' = tablename)
@@ -8774,6 +10628,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
           `iri(?:qmcondsid)`
             `iri (bif:sprintf ("%s%d", str (rdf:_), ?:condctr+1))` ?:sqlcond };
     }
+  DB.DBA.RDF_ADD_qmAliasesKeyrefdByQuad (qmid);
   if (qm_is_default is not null)
     DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (storage, qmid);
   else
@@ -9011,6 +10866,80 @@ create procedure DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (in storage varchar, in qmid 
 }
 ;
 
+create procedure DB.DBA.RDF_ADD_qmAliasesKeyrefdByQuad (in qm_iri varchar)
+{
+  declare kr_iri varchar;
+  declare good_ctr, all_ctr integer;
+  kr_iri := qm_iri || '--qmAliasesKeyrefdByQuad';
+  sparql define input:storage "" delete from virtrdf: { `iri(?:kr_iri)` ?p ?o } from virtrdf: where { `iri(?:kr_iri)` ?p ?o };
+  sparql define input:storage "" insert in virtrdf: { `iri(?:qm_iri)` virtrdf:qmAliasesKeyrefdByQuad `iri(?:kr_iri)` . `iri(?:kr_iri)` a virtrdf:array-of-string };
+  good_ctr := 0;
+  all_ctr := 0;
+  for ( sparql define input:storage ""
+    select ?alias ?tbl (sql:VECTOR_AGG (str(?col))) as ?cols
+    from virtrdf:
+    where {
+        `iri(?:qm_iri)` a virtrdf:QuadMap ;
+          ?fld_p ?qmv .
+        filter (?fld_p in (virtrdf:qmGraphMap , virtrdf:qmSubjectMap , virtrdf:qmPredicateMap , virtrdf:qmObjectMap))
+        ?qmv a virtrdf:QuadMapValue ;
+          virtrdf:qmvATables [
+              ?qmvat_p [ a virtrdf:QuadMapATable ;
+                  virtrdf:qmvaAlias ?alias ;
+                  virtrdf:qmvaTableName ?tbl ] ] ;
+          virtrdf:qmvColumns [
+              ?qmvc_p [ a virtrdf:QuadMapColumn ;
+                  virtrdf:qmvcAlias ?alias ;
+                  virtrdf:qmvcColumnName ?col ] ] ;
+          virtrdf:qmvFormat [ a virtrdf:QuadMapFormat ;
+              virtrdf:qmfIsBijection ?bij ] .
+        filter (?bij != 0)
+      } ) do
+    {
+      -- dbg_obj_princ ('Quad map ', "qm_iri", ' has alias ', "alias", ' of table ', "tbl", ' with cols ', "cols");
+      all_ctr := all_ctr + 1;
+      for (select KEY_ID, KEY_N_SIGNIFICANT from DB.DBA.SYS_KEYS where KEY_TABLE = "tbl" and KEY_IS_UNIQUE) do
+        {
+          for (select "COLUMN" from DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS
+            where  KP_KEY_ID = KEY_ID and KP_NTH < KEY_N_SIGNIFICANT and COL_ID = KP_COL ) do
+            {
+              if (not position ("COLUMN", "cols"))
+                {
+                  -- dbg_obj_princ ("COLUMN", ' not in ', "cols");
+                  goto wrong_key;
+                }
+            }
+          good_ctr := good_ctr + 1;
+          -- dbg_obj_princ ('Quad map ', qm_iri, ' can identify source rows in alias ', "alias", ' of table ', "tbl");
+          sparql define input:storage "" insert in virtrdf: { `iri(?:kr_iri)` `iri(bif:sprintf("%s%d", str(rdf:_), ?:good_ctr))` ?:"alias" };
+          goto right_key;
+wrong_key: ;
+        }
+right_key: ;
+    }
+  -- dbg_obj_princ ('Quad map ', qm_iri, ' can identify source rows in ', good_ctr, ' of ', all_ctr, ' its aliases with bijections.');
+}
+;
+
+create procedure DB.DBA.RDF_UPGRADE_QUAD_MAP (in qm_iri varchar)
+{
+  declare keyrefd any;
+  if (not exists (sparql define input:storage "" select (1) from virtrdf: where { `iri(?:qm_iri)` a virtrdf:QuadMap }))
+    signal ('RDFxx', sprintf ('Quad map <%s> does not exist, nothing to upgrade', qm_iri));
+  if (not exists (sparql define input:storage "" select (1) from virtrdf: where { `iri(?:qm_iri)` virtrdf:qmAliasesKeyrefdByQuad ?keyrefs }))
+    DB.DBA.RDF_ADD_qmAliasesKeyrefdByQuad (qm_iri);
+}
+;
+
+create procedure DB.DBA.RDF_UPGRADE_METADATA ()
+{
+  for (sparql define input:storage "" select ?qm_iri from virtrdf: where { ?qm_iri a virtrdf:QuadMap }) do
+    {
+      DB.DBA.RDF_UPGRADE_QUAD_MAP ("qm_iri");
+    }
+}
+;
+
 -----
 -- RDF parallel load
 
@@ -9023,16 +10952,18 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_W (
   declare log_mode integer;
   declare s_iid, p_iid, o_iid IRI_ID;
   log_mode := env[0];
+  if (isstring (registry_get ('DB.DBA.RDF_REPL')))
+    repl_publish ('__rdf_repl', '__rdf_repl.log');
+
   if (log_mode = 1)
     {
-      whenever sqlstate '40001' goto deadlock_10;
-again_10:
+      whenever sqlstate '40001' goto deadlock_1;
+again_1:
+      log_enable (1, 1);
       s_iid := iri_to_id (s_uri);
       p_iid := iri_to_id (p_uri);
       o_iid := iri_to_id (o_uri);
       commit work;
-      whenever sqlstate '40001' goto deadlock_11;
-again_11:
       log_enable (0, 1);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, s_iid, p_iid, o_iid);
@@ -9065,15 +10996,12 @@ again_2:
   commit work;
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /2');
   return;
-deadlock_10:
-  rollback work;
-  goto again_10;
-deadlock_11:
-  rollback work;
-  goto again_11;
 deadlock_0:
   rollback work;
   goto again_0;
+deadlock_1:
+  rollback work;
+  goto again_1;
 deadlock_2:
   rollback work;
   goto again_2;
@@ -9099,15 +11027,19 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
         {
           if (__tag of rdf_box = __tag (parsed))
             {
+	      if (256 = rdf_box_type (parsed))
+		db..rdf_geo_add (parsed);
+	      else
               rdf_box_set_type (parsed,
                 DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+              parsed := DB.DBA.RDF_OBJ_ADD (257, parsed, 257, ro_id_dict);
               -- dbg_obj_princ ('rdf_box_type is set to ', rdf_box_type (parsed));
             }
           o_val := parsed;
         }
     }
-  whenever sqlstate '40001' goto deadlock_iid;
-again_iid:
+  whenever sqlstate '40001' goto deadlck;
+again:
   if (log_mode = 0)
     log_enable (0, 1);
   else
@@ -9116,8 +11048,6 @@ again_iid:
   p_iid := iri_to_id (p_uri);
   if (isstring (o_val) or (__tag of XML = __tag (o_val)))
     {
-      whenever sqlstate '40001' goto deadlock_o;
-again_o:
       if (isstring (o_type) or isstring (o_lang))
         {
           if (not isstring (o_type))
@@ -9133,16 +11063,12 @@ again_o:
     }
   else if (__tag of rdf_box = __tag (o_val))
     {
-      whenever sqlstate '40001' goto deadlock_o_box;
-again_o_box:
       if (__tag of varchar = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257, ro_id_dict);
       else if (0 < rdf_box_needs_digest (o_val))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
     }
   -- dbg_obj_princ ('final o_val = ', o_val);
-  whenever sqlstate '40001' goto deadlock_quad;
-again_quad:
   if (log_mode <= 1)
     log_enable (0, 1);
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
@@ -9150,18 +11076,9 @@ again_quad:
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_W (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, env, ') done');
   commit work;
   return;
-deadlock_iid:
+deadlck:
   rollback work;
-  goto again_iid;
-deadlock_o:
-  rollback work;
-  goto again_o;
-deadlock_o_box:
-  rollback work;
-  goto again_o_box;
-deadlock_quad:
-  rollback work;
-  goto again_quad;
+  goto again;
 }
 ;
 
@@ -9171,6 +11088,10 @@ create procedure DB.DBA.TTLP_EV_NEW_GRAPH_A (inout g varchar, inout g_iid IRI_ID
     app_env[2][1] := dict_new (app_env[3]);
   else
     app_env[2][1] := null;
+  if (__rdf_graph_is_in_enabled_repl (g_iid))
+    app_env[4] := g;
+  else
+    app_env[4] := null;
 }
 ;
 
@@ -9180,6 +11101,8 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_A (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_A (', g_iid, s_uri, p_uri, o_uri, app_env, ')');
+  if (app_env[4] is not null)
+    __rdf_repl_quad (84, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), iri_canonicalize (o_uri));
   app_env[1] := aq_request (
     app_env[0], 'DB.DBA.TTLP_EV_TRIPLE_W',
     vector (g_iid, s_uri, p_uri, o_uri, app_env[2]) );
@@ -9201,6 +11124,15 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_A (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ')');
+  if (app_env[4] is not null)
+    {
+      if (isstring (o_type))
+        __rdf_repl_quad (81, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val, iri_canonicalize (o_type), NULL);
+      else if (isstring (o_lang))
+        __rdf_repl_quad (82, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val, null, o_lang);
+      else
+        __rdf_repl_quad (80, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val);
+    }
   if (__tag of XML = __tag (o_val))
     {
       DB.DBA.TTLP_EV_TRIPLE_L_W (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2]);
@@ -9233,8 +11165,71 @@ create procedure DB.DBA.TTLP_EV_COMMIT_A (
 }
 ;
 
+-- for replication should not use AQ
+create procedure DB.DBA.TTLP_EV_TRIPLE_R (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
+  inout app_env any )
+{
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_A (', g_iid, s_uri, p_uri, o_uri, app_env, ')');
+  if (app_env[4] is not null)
+    __rdf_repl_quad (84, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), iri_canonicalize (o_uri));
+  commit work;
+  app_env[1] := coalesce (app_env[1], 0) + 1;
+  DB.DBA.TTLP_EV_TRIPLE_W (g_iid, s_uri, p_uri, o_uri, app_env[2]);
+  if (mod (app_env[1], 100000) = 0)
+    {
+      declare ro_id_dict any;
+      ro_id_dict := app_env[2][1];
+      if (ro_id_dict is not null)
+        DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
+    }
+}
+;
+
+create procedure DB.DBA.TTLP_EV_TRIPLE_L_R (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout app_env any )
+{
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_A (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ')');
+  if (app_env[4] is not null)
+    {
+      if (isstring (o_type))
+        __rdf_repl_quad (81, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val, iri_canonicalize (o_type), NULL);
+      else if (isstring (o_lang))
+        __rdf_repl_quad (82, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val, null, o_lang);
+      else
+        __rdf_repl_quad (80, app_env[4], iri_canonicalize (s_uri), iri_canonicalize (p_uri), o_val);
+    }
+  commit work;
+  if (__tag of XML = __tag (o_val))
+    {
+      DB.DBA.TTLP_EV_TRIPLE_L_W (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2]);
+      return;
+    }
+  app_env[1] := coalesce (app_env[1], 0) + 1;
+  DB.DBA.TTLP_EV_TRIPLE_L_W (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2]);
+  if (mod (app_env[1], 100000) = 0)
+    {
+      declare ro_id_dict any;
+      ro_id_dict := app_env[2][1];
+      if (ro_id_dict is not null)
+        DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
+    }
+}
+;
+
+create procedure DB.DBA.TTLP_EV_COMMIT_R (
+  inout graph_iri varchar, inout app_env any )
+{
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_COMMIT_A (', graph_iri, app_env, ')');
+  DB.DBA.TTLP_EV_COMMIT (graph_iri, app_env[2]);
+}
+;
+
 create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
-				 in log_mode integer := 2, in threads integer := 3)
+				 in log_mode integer := 2, in threads integer := 3, in transactional int := 0)
 {
   declare app_env any;
   if (graph = '')
@@ -9245,9 +11240,23 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP_MT() requires a valid IRI as a base argument if graph is not specified');
     }
+  if (transactional = 0)
+    {
+      if (log_mode = 1 or log_mode = 0)
+	log_mode := log_mode + 2;
+    }
+  if (1 <> sys_stat ('cl_run_local_only'))
+    {
+      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
+      return;
+    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
-  app_env := vector (async_queue (threads), 0, vector (log_mode, null), __max (length (strg) / 100, 100000));
+  app_env := vector ( async_queue (threads), -- #0
+    0, -- #1
+    vector (log_mode, null), -- #2
+    __max (length (strg) / 100, 100000), -- #3
+    null ); -- #4
   rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH_A',
@@ -9258,12 +11267,14 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
       'DB.DBA.TTLP_EV_COMMIT_A',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   return graph;
 }
 ;
 
 create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar, in graph varchar := null, in flags integer := 0,
-				 in log_mode integer := 2, in threads integer := 3)
+				 in log_mode integer := 2, in threads integer := 3, in transactional int := 0)
 {
   declare app_env any;
   if (graph = '')
@@ -9274,7 +11285,22 @@ create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar,
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP_MT_LOCAL_FILE() requires a valid IRI as a base argument if graph is not specified');
     }
-  app_env := vector (async_queue (threads), 0, vector (log_mode, null), 1000000);
+  if (transactional = 0)
+    {
+      if (log_mode = 1 or log_mode = 0)
+	log_mode := log_mode + 2;
+    }
+  if (1 <> sys_stat ('cl_run_local_only'))
+    {
+      DB.DBA.TTLP_CL (filename, 1, base, graph, flags);
+      return;
+    }
+  app_env := vector (
+    async_queue (threads),
+    0,
+    vector (log_mode, null),
+    1000000,
+    null );
   rdf_load_turtle_local_file (filename, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH_A',
@@ -9285,12 +11311,14 @@ create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar,
       'DB.DBA.TTLP_EV_COMMIT_A',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   return graph;
 }
 ;
 
-create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar := null,
-  in log_mode integer := 2, in threads integer := 3 )
+create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar,
+  in log_mode integer := 2, in threads integer := 3, in transactional int := 0)
 {
   declare ro_id_dict, app_env any;
   if (graph = '')
@@ -9301,11 +11329,23 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML_MT() requires a valid IRI as a base argument if graph is not specified');
     }
+  if (transactional = 0)
+    {
+      if (log_mode = 1 or log_mode = 0)
+	log_mode := log_mode + 2;
+    }
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return rdf_load_rdfxml_cl (strg, base, graph);
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new ();
   else
     ro_id_dict := null;
-  app_env := vector (async_queue (threads), 0, vector (log_mode, ro_id_dict), __max (length (strg) / 100, 100000));
+  app_env := vector (
+    async_queue (threads),
+    0,
+    vector (log_mode, ro_id_dict),
+    __max (length (strg) / 100, 100000),
+    null );
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
@@ -9318,6 +11358,8 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
     base );
+  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   return graph;
 }
 ;
@@ -9465,7 +11507,7 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_GRAPH (in phrase varchar, in gr
   graph_keyword := iri_to_id (graph_iri, 0, 0);
   if (isinteger (graph_keyword))
     goto err;
-  graph_keyword := WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar));
+  graph_keyword := WS.WS.STR_SQL_APOS (rdf_graph_keyword  (graph_keyword));
   return sprintf ('[__enc "UTF-8"] ^%s AND (%s)', graph_keyword, phrase);
 err:
   return '^"#nosuch"';
@@ -9493,7 +11535,7 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS (in phrase varchar,
             }
           else
             http (' OR ^', ses);
-          http (WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar)), ses);
+          http (WS.WS.STR_SQL_APOS (rdf_graph_keyword (graph_keyword)), ses);
         }
     }
   if (not isfirst)
@@ -9503,7 +11545,7 @@ err:
 }
 ;
 
-create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inout ro_id_dict any)
+create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inout ro_id_dict any, in daq any := 0)
 {
   declare ro_id_offset, ro_ids_count integer;
   declare new_ro_ids, vtb any;
@@ -9514,9 +11556,15 @@ next_batch:
   ro_ids_count := length (new_ro_ids);
   if (0 = ro_ids_count)
     return;
-  gwordump := ' ' || cast (graph_iid as varchar);
+  gwordump := ' ' || rdf_graph_keyword (graph_iid);
   gwordump[0] := length (gwordump) - 1;
   gvector_digit_sort (new_ro_ids, 1, 0, 1);
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+      commit work;
+      cl_g_words (new_ro_ids, gwordump, daq);
+      goto next_batch;
+    }
   vtb := vt_batch (__min (__max (ro_ids_count, 31), 500000));
   commit work;
   whenever sqlstate '40001' goto retry_add;
@@ -9526,7 +11574,24 @@ again:
       vt_batch_d_id (vtb, new_ro_ids[ro_id_offset]);
       vt_batch_feed_wordump (vtb, gwordump, 0);
     }
-  "DB"."DBA"."VT_BATCH_PROCESS_DB_DBA_RDF_OBJ" (vtb);
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+      declare is_local_daq int;
+      if (0 = daq)
+	{
+	daq := daq (1);
+	  is_local_daq := 1;
+	}
+      cl_g_text_index (vtb, daq);
+      if (is_local_daq)
+	{
+	  while (daq_next (daq));
+	  commit work;
+	  goto next_batch;
+	}
+    }
+  else
+    "DB"."DBA"."VT_BATCH_PROCESS_DB_DBA_RDF_OBJ" (vtb, null);
   commit work;
   goto next_batch;
 retry_add:
@@ -9535,7 +11600,6 @@ retry_add:
 }
 ;
 
---!AFTER
 create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH_OLD (in graph_iid IRI_ID, inout ro_id_dict any)
 {
   declare start_vt_d_id, aligned_start_vt_d_id, uncommited_ro_id_offset, ro_id_offset, ro_ids_count integer;
@@ -9545,7 +11609,7 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH_OLD (in graph_iid IRI_ID, 
   declare dbg_smallest_d_id, dbg_largest_d_id, dbg_prev_d_id, dbg_prev_d_id_2 integer;
   declare split any;
   declare cr cursor for (
-    select VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) from RDF_OBJ_RO_DIGEST_WORDS
+    select VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) from RDF_OBJ_RO_FLAGS_WORDS
     where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= aligned_start_vt_d_id) and VT_D_ID_2 >= start_vt_d_id for update);
   declare new_ro_ids any;
   -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (', graph_iid, ro_id_dict, ')');
@@ -9584,18 +11648,18 @@ next_split:
       if ((old_d_id_2 = split[split_len-1][1]) and (old_data = split[split_len-1][2]))
         { ; }
       else
-        update RDF_OBJ_RO_DIGEST_WORDS set VT_D_ID_2 = split[split_len-1][1], VT_DATA = split[split_len-1][2], VT_LONG_DATA = null
+        update RDF_OBJ_RO_FLAGS_WORDS set VT_D_ID_2 = split[split_len-1][1], VT_DATA = split[split_len-1][2], VT_LONG_DATA = null
       where current of cr;
       split_len := split_len - 1;
     }
   if (split_len > 0)
     {
-      delete from RDF_OBJ_RO_DIGEST_WORDS
+      delete from RDF_OBJ_RO_FLAGS_WORDS
         where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= split[0][0]) and (VT_D_ID_2 <= split[split_len-1][1]);
     }
   for (split_ctr := 0; split_ctr < split_len; split_ctr := split_ctr+1)
     {
-      insert replacing RDF_OBJ_RO_DIGEST_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
+      insert replacing RDF_OBJ_RO_FLAGS_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
       values (cast (graph_iid as varchar), split[split_ctr][0], split[split_ctr][1], split[split_ctr][2]);
     }
   if (carry_data = '')
@@ -9620,23 +11684,23 @@ no_more_olds:
   split_ctr := 0;
   if (split_len > 0)
     {
-      delete from RDF_OBJ_RO_DIGEST_WORDS
+      delete from RDF_OBJ_RO_FLAGS_WORDS
         where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= split[0][0]) and (VT_D_ID_2 <= split[split_len-1][1]);
     }
   for (split_ctr := 0; split_ctr < split_len; split_ctr := split_ctr+1)
     {
-      insert replacing RDF_OBJ_RO_DIGEST_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
+      insert replacing RDF_OBJ_RO_FLAGS_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
       values (cast (graph_iid as varchar), split[split_ctr][0], split[split_ctr][1], split[split_ctr][2]);
     }
   if (length (carry_data)  <> 0)
     {
-      insert replacing RDF_OBJ_RO_DIGEST_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
+      insert replacing RDF_OBJ_RO_FLAGS_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
       values (cast (graph_iid as varchar), carry_d_id, carry_d_id_2, carry_data);
     }
   commit work;
 -- debug begin
 --  for (
---    select VT_WORD, VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) as vtd from RDF_OBJ_RO_DIGEST_WORDS
+--    select VT_WORD, VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) as vtd from RDF_OBJ_RO_FLAGS_WORDS
 --    where (VT_WORD = cast (graph_iid as varchar))
 --      and (VT_D_ID >= ((dbg_smallest_d_id / 10000) * 10000))
 --      and (VT_D_ID_2 >= (((dbg_largest_d_id + 9999) / 10000) * 10000)) ) do
@@ -9667,6 +11731,8 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
 {
   declare rule_g_iid, rule_p_iid IRI_ID;
   declare ro_id_dict any;
+  if (0 = sys_stat ('cl_run_local_only'))
+    signal ('42000', 'rdf_obj_ft_rule_add not available in cluster.  Do cl_text_index (1) to enable text index on all future rdf loads on cluster.');
   if (rule_g is null)
     rule_g := '';
   if (rule_p is null)
@@ -9706,7 +11772,8 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   id := rdf_box_ro_id (obj);
                   if (0 <> id)
                     {
-                      update DB.DBA.RDF_OBJ set RO_DIGEST = obj where RO_ID = id and RO_DIGEST is null;
+                      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id and not (bit_and (RO_FLAGS, 1));
+		      --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
                       dict_put (ro_id_dict, id, 1);
                     }
                   commit work;
@@ -9732,7 +11799,8 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   id := rdf_box_ro_id (obj);
                   if (0 <> id)
                     {
-                      update DB.DBA.RDF_OBJ set RO_DIGEST = obj where RO_ID = id and RO_DIGEST is null;
+                      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id and not (bit_and (RO_FLAGS, 1));
+		      --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
                       dict_put (ro_id_dict, id, 1);
                     }
                   commit work;
@@ -9747,7 +11815,7 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
           declare old_g IRI_ID;
           ro_id_dict := dict_new (100000);
           old_g := #i0;
-          for (select O as obj, G as curr_g from DB.DBA.RDF_QUAD where ((rule_p = '') or equ (P,rule_p_iid)) and not isiri_id (O) order by G) do
+          for (select O as obj, G as curr_g from DB.DBA.RDF_QUAD where ((rule_p = '') or equ (P,rule_p_iid)) and not isiri_id (O) ) do
             {
               if (isstring (obj))
                 {
@@ -9776,7 +11844,8 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                           ro_id_dict := dict_new (100000);
                           old_g := curr_g;
                         }
-                      update DB.DBA.RDF_OBJ set RO_DIGEST = obj where RO_ID = id and RO_DIGEST is null;
+                      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id and not (bit_and (RO_FLAGS, 1));
+		      --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
                       dict_put (ro_id_dict, id, 1);
                       commit work;
                       if (dict_size (ro_id_dict) > 100000)
@@ -9860,7 +11929,8 @@ create table DB.DBA.RDF_GRAPH_GROUP (
   RGG_MEMBER_PATTERN varchar,
   RGG_COMMENT varchar
   )
-create index RDF_GRAPH_GROUP_IRI on DB.DBA.RDF_GRAPH_GROUP (RGG_IRI)
+alter index RDF_GRAPH_GROUP on DB.DBA.RDF_GRAPH_GROUP partition cluster replicated
+create index RDF_GRAPH_GROUP_IRI on DB.DBA.RDF_GRAPH_GROUP (RGG_IRI) partition cluster replicated
 ;
 
 create table DB.DBA.RDF_GRAPH_GROUP_MEMBER (
@@ -9868,6 +11938,7 @@ create table DB.DBA.RDF_GRAPH_GROUP_MEMBER (
   RGGM_MEMBER_IID IRI_ID not null,
   primary key (RGGM_GROUP_IID, RGGM_MEMBER_IID)
   )
+alter index RDF_GRAPH_GROUP_MEMBER on DB.DBA.RDF_GRAPH_GROUP_MEMBER partition cluster replicated
 ;
 
 create table DB.DBA.RDF_GRAPH_USER (
@@ -9876,6 +11947,17 @@ create table DB.DBA.RDF_GRAPH_USER (
   RGU_PERMISSIONS integer not null, -- 1 for read, 2 for write, 4 for sponge, 8 for list, 16 for admin, 256 for owner.
   primary key (RGU_GRAPH_IID, RGU_USER_ID)
   )
+alter index RDF_GRAPH_USER on DB.DBA.RDF_GRAPH_USER partition cluster replicated
+;
+
+create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (in group_iri varchar, in group_iid IRI_ID)
+{
+  group_iri := cast (group_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
+  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid, vector ());
+  jso_mark_affected (group_iri);
+}
 ;
 
 create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet integer, in member_pattern varchar := null, in comment varchar := null)
@@ -9895,9 +11977,26 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet i
   insert into DB.DBA.RDF_GRAPH_GROUP (
     RGG_IID, RGG_IRI, RGG_MEMBER_PATTERN, RGG_COMMENT )
   values (group_iid, group_iri, member_pattern, comment);
-  dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (?, ?)', vector (group_iri, group_iid));
+}
+;
+
+create procedure DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (in group_iri varchar, in group_iid IRI_ID)
+{
+  group_iri := cast (group_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
+  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid, vector ());
+  dict_remove (__rdf_graph_group_dict(), group_iid);
   jso_mark_affected (group_iri);
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
+      declare privates any;
+      privates := dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
+      foreach (IRI_ID iid in privates) do
+        jso_mark_affected (id_to_iri (iid));
+    }
 }
 ;
 
@@ -9920,15 +12019,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DROP (in group_iri varchar, in quiet int
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = group_iid;
   delete from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = group_iid;
   commit work;
-  dict_remove (__rdf_graph_group_dict(), group_iid);
-  jso_mark_affected (group_iri);
-  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
-    {
-      declare privates any;
-      privates := dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
-      foreach (IRI_ID iid in privates) do
-        jso_mark_affected (id_to_iri (iid));
-    }
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (?, ?)', vector (group_iri, group_iid));
 }
 ;
 
@@ -9960,6 +12051,27 @@ create procedure DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (in memb_iri varchar, 
 }
 ;
 
+create procedure DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (in group_iri varchar, in group_iid IRI_ID, in memb_iri varchar, in memb_iid IRI_ID)
+{
+  group_iri := cast (group_iri as varchar);
+  memb_iri := cast (memb_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
+  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  dict_put (__rdf_graph_iri2id_dict(), __uname(memb_iri), memb_iid);
+  dict_put (__rdf_graph_id2iri_dict(), memb_iid, __uname(memb_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid,
+    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+     where RGGM_GROUP_IID = group_iid
+     order by RGGM_MEMBER_IID ) );
+  jso_mark_affected (group_iri);
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
+      dict_put (__rdf_graph_group_of_privates_dict(), memb_iid, 1);
+      jso_mark_affected (memb_iri);
+    }
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri varchar)
 {
   declare group_iid, memb_iid IRI_ID;
@@ -9975,15 +12087,27 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
     DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i8192);
   insert soft DB.DBA.RDF_GRAPH_GROUP_MEMBER (RGGM_GROUP_IID, RGGM_MEMBER_IID)
   values (group_iid, memb_iid);
+  commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (?, ?, ?, ?)', vector (group_iri, group_iid, memb_iri, memb_iid));
+}
+;
+
+create procedure DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (in group_iri varchar, in group_iid IRI_ID, in memb_iri varchar, in memb_iid IRI_ID)
+{
+  group_iri := cast (group_iri as varchar);
+  memb_iri := cast (memb_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
+  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  dict_put (__rdf_graph_iri2id_dict(), __uname(memb_iri), memb_iid);
+  dict_put (__rdf_graph_id2iri_dict(), memb_iid, __uname(memb_iri));
   dict_put (__rdf_graph_group_dict(), group_iid,
     (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
      where RGGM_GROUP_IID = group_iid
      order by RGGM_MEMBER_IID ) );
-  commit work;
   jso_mark_affected (group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
-      dict_put (__rdf_graph_group_of_privates_dict(), memb_iid, 1);
+      dict_remove (__rdf_graph_group_of_privates_dict(), memb_iid);
       jso_mark_affected (memb_iri);
     }
 }
@@ -10004,16 +12128,8 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri v
     DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i0);
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER
   where RGGM_GROUP_IID = group_iid and RGGM_MEMBER_IID = memb_iid;
-  dict_put (__rdf_graph_group_dict(), group_iid,
-    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
-     where RGGM_GROUP_IID = group_iid
-     order by RGGM_MEMBER_IID ) );
   commit work;
-  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
-    {
-      dict_remove (__rdf_graph_group_of_privates_dict(), memb_iid);
-      jso_mark_affected (memb_iri);
-    }
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (?, ?, ?, ?)', vector (group_iri, group_iid, memb_iri, memb_iid));
 }
 ;
 
@@ -10136,10 +12252,21 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
 }
 ;
 
+create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET_MEMONLY (in uname varchar, in uid integer, in perms integer, in special_iid IRI_ID, in set_private integer, in affected_jso any)
+{
+  dict_put (__rdf_graph_default_perms_of_user_dict (set_private), uid, perms);
+  if (uid = http_nobody_uid())
+    dict_put (__rdf_graph_public_perms_dict(), special_iid, perms);
+  foreach (varchar jso_key in affected_jso) do
+    jso_mark_affected (jso_key);
+}
+;
+
 create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms integer, in set_private integer := 0)
 {
   declare uid integer;
   declare special_iid IRI_ID;
+  declare affected_jso any;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_DEFAULT_USER_PERMS_SET (''%s'', %d, %d);\n', uname, perms, set_private), -1);
   uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   set isolation = 'serializable';
@@ -10181,6 +12308,8 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
 --      for (select RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> uid and RGU_GRAPH_IID <> #i0 and bit_and (bit_not (RGU_PERMISSIONS), perms) <> 0)
 --        signal ('RDF99', sprintf ('Default permissions of unauthenticated user ("nobody") on RDF quad store can not become broader than permissions of user %s (UID %d) on specific graph <%s>',
 --          (select top 1 U_NAME from Db.DBA.SYS_USER where U_ID = RGU_USER_ID), RGU_USER_ID, id_to_iri (RGU_GRAPH_IID) ) );
+      if (isstring (registry_get ('DB.DBA.RDF_REPL')) and not (bit_and (perms, 1)))
+        signal ('RDF99', 'Can not disable public read while RDF replication is enabled');
     }
   if (uname <> 'dba')
     {
@@ -10192,21 +12321,32 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
   values (special_iid, uid, perms);
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS) values (%s, %d, %d);\n', cast (special_iid as varchar), uid, perms), -1);
-  dict_put (__rdf_graph_default_perms_of_user_dict(set_private), uid, perms);
-  if (uid = http_nobody_uid())
-    dict_put (__rdf_graph_public_perms_dict(), special_iid, perms);
   commit work;
   if (uname = 'nobody')
-    {
-      for (sparql
+    affected_jso := ((select DB.DBA.VECTOR_AGG (sub."jso_key")
+        from (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           select (str(?s)) as ?jso_key where {
-            graph <http://www.openlinksw.com/schemas/virtrdf#> { { ?s a virtrdf:QuadMap } union { ?s a virtrdf:QuadMap } } } ) do
-        jso_mark_affected ("jso_key");
-    }
+            graph <http://www.openlinksw.com/schemas/virtrdf#> { { ?s a virtrdf:QuadMap } union { ?s a virtrdf:QuadMap } } } ) sub
+            option (QUIETCAST) ));
   else
-    jso_mark_affected (uname);
+    affected_jso := vector (uname);
+  commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_DEFAULT_USER_PERMS_SET_MEMONLY (?,?,?,?,?,?)', vector (uname, uid, perms, special_iid, set_private, affected_jso));
+    }
+;
+
+create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET_MEMONLY (in graph_iri varchar, in graph_iid IRI_ID, in uid integer, in perms integer)
+{
+  graph_iri := cast (graph_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(graph_iri), graph_iid);
+  dict_put (__rdf_graph_id2iri_dict(), graph_iid, __uname(graph_iri));
+  if (uid = http_nobody_uid())
+    dict_put (__rdf_graph_public_perms_dict(), graph_iid, perms);
+  else
+    __rdf_graph_specific_perms_of_user (graph_iid, uid, perms);
+  jso_mark_affected (graph_iri);
 }
 ;
 
@@ -10236,7 +12376,13 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
   if (bit_and (bit_not (perms), common_perms))
     signal ('RDF99', sprintf ('Default permissions of user "%s" on RDF quad store are broader than new permissions on specific graph <%s>', uname, graph_iri));
   if (uname = 'nobody')
+    {
     jso_mark_affected (graph_iri);
+      if (isstring (registry_get ('DB.DBA.RDF_REPL')) and not (bit_and (perms, 1)) and
+        exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+          where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') and RGGM_MEMBER_IID = graph_iid) )
+        signal ('RDF99', 'Can not disable public read access to <' || id_to_iri (graph_iid) || '> while it is included in RDF replication and the replication is enabled');
+    }
   else
     {
       common_perms := coalesce (
@@ -10253,13 +12399,8 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
   insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS)
   values (graph_iid, uid, perms);
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('insert replacing DB.DBA.RDF_GRAPH_USER (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS) values (%s, %d, %d);\n', cast (graph_iid as varchar), uid, perms), -1);
-  if (uid = http_nobody_uid())
-    dict_put (__rdf_graph_public_perms_dict(), graph_iid, perms);
-  else
-    __rdf_graph_specific_perms_of_user (graph_iid, uid, perms);
   commit work;
-  jso_mark_affected (id_to_iri (graph_iid));
-  commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_USER_PERMS_SET_MEMONLY (?,?,?,?)', vector (graph_iri, graph_iid, uid, perms));
 }
 ;
 
@@ -10390,7 +12531,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2009-11-20 0001';
+  ver := '2011-05-21 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
@@ -10419,6 +12560,20 @@ virtrdf:DefaultQuadStorage
   virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
 virtrdf:DefaultQuadStorage-UserMaps
   rdf:type virtrdf:array-of-QuadMap .
+
+virtrdf:DefaultServiceStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultServiceStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultServiceMap ;
+  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
+virtrdf:DefaultServiceStorage-UserMaps
+  rdf:type virtrdf:array-of-QuadMap .
+
+virtrdf:SyncToQuads
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:SyncToQuads-UserMaps .
+virtrdf:SyncToQuads-UserMaps
+  rdf:type virtrdf:array-of-QuadMap .
       ';
       jso_sys_g_iid := iri_to_id (JSO_SYS_GRAPH ());
       dict1 := DB.DBA.RDF_TTL2HASH (txt1, '');
@@ -10433,22 +12588,22 @@ virtrdf:DefaultQuadStorage-UserMaps
             isiri_id (triple[2]) and (triple[2] = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat')))
             {
               -- dbg_obj_princ ('will delete whole ', id_to_iri (triple[0]));
-              delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0];
+              delete from DB.DBA.RDF_QUAD where G = jso_sys_g_iid and S = triple[0];
             }
           else
-            delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
- 	  if (
- 	      triple[0] = iri_to_id ('http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl')
- 	      and
- 	      triple[1] = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#version')
- 	      and
- 	      triple[2] <> ver
- 	      )
- 	    {
- 	      log_message (sprintf ('RDF metadata version: %s', ver));
- 	      triple[2] := ver;
-	      sum_lst [inx] := triple;
- 	    }
+            delete from DB.DBA.RDF_QUAD where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
+	  if (
+	      triple[0] = iri_to_id ('http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl')
+	      and
+	      triple[1] = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#version')
+	      and
+	      triple[2] <> ver
+	      )
+	    {
+	      log_message (sprintf ('RDF metadata version: %s', ver));
+	      triple[2] := ver;
+	      sum_lst[inx] := triple;
+	    }
 	  inx := inx + 1;
         }
       DB.DBA.RDF_INSERT_TRIPLES (jso_sys_g_iid, sum_lst);
@@ -10469,18 +12624,21 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
   declare cmds any;
   cmds := vector (
     'create role SPARQL_SELECT',
+    'create role SPARQL_SPONGE',
     'create role SPARQL_UPDATE',
     'grant SPARQL_SELECT to SPARQL_UPDATE',
+    'grant SPARQL_SELECT to SPARQL_SPONGE',
+    'grant SPARQL_SPONGE to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_QUAD to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_QUAD to SPARQL_UPDATE',
-    'grant select on DB.DBA.RDF_URL to SPARQL_SELECT',
-    'grant all on DB.DBA.RDF_URL to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_PREFIX to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_PREFIX to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_IRI to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_IRI to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_OBJ to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_OBJ to SPARQL_UPDATE',
+    --'grant select on DB.DBA.RDF_FT to SPARQL_SELECT',
+    --'grant all on DB.DBA.RDF_FT to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_DATATYPE to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_DATATYPE to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_LANGUAGE to SPARQL_SELECT',
@@ -10551,6 +12709,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TTL2HASH to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_RDFA11_FETCH_PROFILES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFA to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE',
@@ -10560,7 +12719,13 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_GRAPH_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_LD to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_ODATA_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN to SPARQL_SELECT',
@@ -10573,11 +12738,28 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML_QRCODE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE',
@@ -10611,6 +12793,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.TTLP_EV_NEW_GRAPH_A to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_TRIPLE_A to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_TRIPLE_L_A to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_EV_REPORT_DEFAULT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML_MT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE',
@@ -10632,12 +12815,12 @@ create procedure DB.DBA.RDF_QUAD_AUDIT ()
   declare err_dict any;
   result_names (stat, msg);
   if (exists (select top 1 1 from DB.DBA.SYS_COLS
-    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ_RO_DIGEST_WORDS')
+    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ_RO_FLAGS_WORDS')
     and "COLUMN" = fix_identifier_case ('VT_WORD') )
     and exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
-    and "COLUMN" = fix_identifier_case ('RO_DIGEST')
-    and COL_DTP = 242 ) )
+    and "COLUMN" = fix_identifier_case ('RO_FLAGS')
+    and COL_DTP = 188 ) )
     goto check_new_style;
   err_dict := dict_new ();
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
@@ -10704,8 +12887,22 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   declare fake integer;
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can alter RDF_QUAD schema or initialize RDF storage');
-  fake := (select count (__rdf_twobyte_cache (121, RDT_QNAME, RDT_TWOBYTE)) from DB.DBA.RDF_DATATYPE);
-  fake := (select count (__rdf_twobyte_cache (122, RL_ID, RL_TWOBYTE)) from DB.DBA.RDF_LANGUAGE);
+  rdf_geo_init ();
+
+  fake := (select count (rdf_cache_id ('t', RDT_QNAME, RDT_TWOBYTE)) from DB.DBA.RDF_DATATYPE);
+  fake := (select count (rdf_cache_id ('l', RL_ID, RL_TWOBYTE)) from DB.DBA.RDF_LANGUAGE);
+  fake := (select
+      count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGG_IID)), RGG_IID)) +
+      count (dict_put (__rdf_graph_id2iri_dict(), RGG_IID, __uname (id_to_iri (RGG_IID))))
+      from DB.DBA.RDF_GRAPH_GROUP );
+  fake := (select
+      count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGGM_MEMBER_IID)), RGGM_MEMBER_IID)) +
+      count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMBER_IID, __uname (id_to_iri (RGGM_MEMBER_IID))))
+      from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
+  fake := (select
+      count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGU_GRAPH_IID)), RGU_GRAPH_IID)) +
+      count (dict_put (__rdf_graph_id2iri_dict(), RGU_GRAPH_IID, __uname (id_to_iri (RGU_GRAPH_IID))))
+      from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID <> #i8192 );
   fake := (select count (dict_put (__rdf_graph_group_dict(), g.RGG_IID,
       (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER as gm
          where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) ) )
@@ -10720,12 +12917,6 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = http_nobody_uid () );
   fake := (select count (__rdf_graph_specific_perms_of_user (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> http_nobody_uid () and not (RGU_GRAPH_IID in (#i0, #i8192)) );
-
-  if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
-    {
-      __set_64bit_min_bnode_iri_id();
-      sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
-    }
   if (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'RecoveryMode'), '0') > '0')
     {
       log_message ('Switching to RecoveryMode as set in [SPARQL] section of the configuration.');
@@ -10733,190 +12924,46 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       exec ('revoke "SPARQL_UPDATE" from "SPARQL"', stat, msg);
       return;
     }
-  if (not isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2')))
+  if (1 <> sys_stat ('cl_run_local_only'))
+    goto final_qm_reload;
+  if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
     {
-      __atomic (1);
-      {
-      set isolation='uncommitted';
-        declare exit handler for sqlstate '*'
-          {
-            log_message ('Error during upgrade of RDF_OBJ:');
-            log_message (__SQL_STATE || ': ' || "LEFT" (__SQL_MESSAGE, 1000));
-            goto describe_recovery;
-          };
-        declare rolong_cur cursor for select RO_VAL, RO_LONG from DB.DBA.RDF_OBJ where RO_LONG is not null and length (RO_VAL) = 6 for update;
-        whenever not found goto rolong_cur_end;
-        open rolong_cur;
-        while (1)
-          {
-            declare rl any;
-            declare old_rv, new_rv varchar;
-            fetch rolong_cur into old_rv, rl;
-            new_rv := tridgell32 (blob_to_string (rl));
-            if (new_rv <> old_rv)
-            update DB.DBA.RDF_OBJ set RO_VAL = new_rv where current of rolong_cur;
-          }
-rolong_cur_end: ;
-        registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2', '1');
-      }
-      __atomic (0);
-      exec ('checkpoint');
+      __set_64bit_min_bnode_iri_id();
+      sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
     }
-tridgell_ok:
-  exec ('create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)', stat, msg);
+  --exec ('create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)', stat, msg);
   if (exists (select top 1 1 from DB.DBA.SYS_COLS
-    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ_RO_DIGEST_WORDS')
+    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ_RO_FLAGS_WORDS')
     and "COLUMN" = fix_identifier_case ('VT_WORD') )
     and exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
-    and "COLUMN" = fix_identifier_case ('RO_DIGEST')
-    and COL_DTP = 242 ) )
+    and "COLUMN" = fix_identifier_case ('RO_FLAGS')
+    and COL_DTP = 188 ) )
     goto final_qm_reload;
   exec ('DB.DBA.vt_create_text_index (
     fix_identifier_case (''DB.DBA.RDF_OBJ''),
-    fix_identifier_case (''RO_DIGEST''),
+    fix_identifier_case (''RO_FLAGS''),
     fix_identifier_case (''RO_ID''),
     0, 0, vector (), 1, ''*ini*'', ''UTF-8-QR'')', stat, msg);
+  __vt_index ('DB.DBA.RDF_QUAD', 'RDF_QUAD_OP', 'O', 'O', 'DB.DBA.RDF_OBJ_RO_FLAGS_WORDS');
   exec ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)', stat, msg);
-  if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
-    goto final_qm_reload;
-  __atomic (1);
-  {
-  declare exit handler for sqlstate '*'
-    {
-      log_message ('Error during upgrade of free-text index of RDF_QUAD:');
-      log_message (__SQL_STATE || ': ' || "LEFT" (__SQL_MESSAGE, 1000));
-      goto describe_recovery;
-    };
---  checkpoint;
-  log_enable (0);
-  if (exists (select top 1 1 from DB.DBA.RDF_QUAD))
-    log_message ('Upgrading RDF indices.  Can be up to an hour per GB of RDF data.');
-  registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE', '1');
-  if (exists (select top 1 1 from DB.DBA.SYS_COLS
-    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
-    and "COLUMN" = fix_identifier_case ('RO_DIGEST')
-    and COL_DTP = __tag of varchar ))
-    {
-      exec ('drop index RO_DIGEST', stat, msg);
-      exec ('alter table DB.DBA.RDF_OBJ drop RO_DIGEST', stat, msg);
-      exec ('alter table DB.DBA.RDF_OBJ add RO_DIGEST any', stat, msg);
-      exec ('create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)', stat, msg);
-      commit work;
-    }
-  set isolation='uncommitted';
-  {
-    declare longtyped_cur cursor for select G,S,P,O
-    from DB.DBA.RDF_QUAD
-    where isstring (O) and length (O) = 29;
-    declare g_old, s_old, p_old any;
-    declare o_old varchar;
-    declare val_len, o_id integeR;
-    declare o_new any;
-    whenever not found goto longtyped_cur_end;
-    open longtyped_cur;
-    while (1)
-      {
-        declare o_long any;
-        declare o_strval varchar;
-        fetch longtyped_cur into g_old, s_old, p_old, o_old;
-        -- dbg_obj_princ ('o_old (longtyped) = ', o_old);
-        if (o_old [22] <> 0)
-          {
-            log_message ('The function DB.DBA.RDF_QUAD_FT_UPGRADE() has found ill formed object literal in DB.DBA.RDF_QUAD');
-            log_message ('This means that this version of Virtuoso server can not process RDF data stored in the database.');
-            log_message ('To fix the problem, remove the transaction log and start previous version of Virtuoso.');
-            log_message (sprintf ('The example of ill literal is |%U|, if escaped like URL', o_old));
-            goto describe_recovery;
-          }
-        o_long := jso_parse_digest (o_old);
-        o_strval := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = o_long[3]);
-        o_new := DB.DBA.RDF_OBJ_ADD (o_long[0], o_strval, o_long[2]);
-        insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new);
-      }
-longtyped_cur_end: ;
-  }
-  delete from DB.DBA.RDF_QUAD where isstring (O) and length (O) = 29;
---  checkpoint;
-  {
-    declare shortobj_cur cursor for select G,S,P,O from DB.DBA.RDF_QUAD where isstring (O) and length (O) < 29;
-    declare g_old, s_old, p_old any;
-    declare o_old varchar;
-    declare val_len, o_id integeR;
-    declare o_new any;
-    whenever not found goto shortobj_cur_end;
-    open shortobj_cur;
-    while (1)
-      {
-        declare o_dt, o_lang integeR;
-        fetch shortobj_cur into g_old, s_old, p_old, o_old;
-        val_len := length (o_old) - 5;
-        if (o_old [val_len+2] <> 0)
-          {
-            log_message ('The function DB.DBA.RDF_QUAD_FT_UPGRADE() has found ill formed object literal in DB.DBA.RDF_QUAD');
-            log_message ('This means that this version of Virtuoso server can not process RDF data stored in the database.');
-            log_message ('To fix the problem, remove the transaction log and start previous version of Virtuoso.');
-            log_message (sprintf ('The example of ill literal is |%U|, if escaped like URL', o_old));
-            goto describe_recovery;
-          }
-        o_dt := o_old[0] + o_old[1]*256;
-        o_lang := o_old[val_len+3] + o_old[val_len+4]*256;
-        o_new := DB.DBA.RDF_OBJ_ADD (o_dt, subseq (o_old, 2, val_len+2), o_lang);
-        if (isstring (o_new))
-          insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new || '012345678901234567890123456789');
-        else
-          insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new);
-        commit work;
-      }
-shortobj_cur_end: ;
-  }
-  delete from DB.DBA.RDF_QUAD where isstring (O) and length (O) < 29;
---  checkpoint;
-  {
-    declare tmpval_cur cursor for select G,S,P,O
-    from DB.DBA.RDF_QUAD
-    where isstring (O) and length (O) > 29;
-    declare g_old, s_old, p_old any;
-    declare o_old varchar;
-    whenever not found goto tmpval_cur_end;
-    open tmpval_cur;
-    while (1)
-      {
-        fetch tmpval_cur into g_old, s_old, p_old, o_old;
-        -- dbg_obj_princ ('o_old (tmp) = ', o_old);
-        insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, subseq (o_old, 0, length (o_old) - 30));
-      }
-tmpval_cur_end: ;
-  }
-  delete from DB.DBA.RDF_QUAD where isstring (O) and length (O) > 29;
---  checkpoint;
-  commit work;
-  log_enable (1);
-  }
-  __atomic (0);
-  exec ('checkpoint');
 
 final_qm_reload:
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
-  return;
+  insert soft rdf_datatype (rdt_iid, rdt_twobyte, rdt_qname) values
+    (iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#Geometry'), 256, 'http://www.openlinksw.com/schemas/virtrdf#Geometry');
 
-describe_recovery:
-  log_message ('Remove the transaction log and start previous version of Virtuoso.');
-  log_message ('You may use the database with new version of Virtuoso server for');
-  log_message ('diagnostics and error recovery; to make it possible, add parameter');
-  log_message ('"RecoveryMode=1" to the [SPARQL] section of ' || virtuoso_ini_path ());
-  log_message ('and restart the server; remove the parameter and restart as soon as possible');
-  log_message ('This error is critical. The server will now exit. Sorry.');
-  -- __atomic (0);
-  raw_exit ();
+  return;
 }
 ;
 
---!AFTER __PROCEDURE__ DB.DBA.XML_URI_GET !
+--!AFTER
 DB.DBA.RDF_QUAD_FT_UPGRADE ()
 ;
 
+--#IF VER=5
 --!AFTER __PROCEDURE__ DB.DBA.USER_CREATE !
+--#ENDIF
 DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 ;
 
@@ -10931,141 +12978,248 @@ create procedure rdfs_pn (in is_class int)
 ;
 
 
-create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in visited any, inout supers any, in pos int)
+create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id, in c iri_id, in visited any, inout supers any, in pos int)
 {
-  for select o from rdf_quad where g = gr and p = rdf_sas_iri () and s = c do
+  declare txt varchar;
+  declare meta, cc, res any;
+  txt := sprintf ('sparql define output:valmode "LONG"  define input:storage ""select ?o from <%s> where { <%s> <http://www.w3.org/2002/07/owl#sameAs> ?o }',
+    id_to_iri(gr), id_to_iri(c) );
+  exec (txt, null, null,  vector (), 0, meta, null, cc);
+  while (0 = exec_next (cc, null, null, res))
     {
-      rdfs_closure_1 (gr, name, super_c, o, 0, visited, supers, pos);
+      rdfs_closure_1 (gr, name, super_c, res[0], 0, visited, supers, pos);
     }
-  for select s from rdf_quad where g = gr and p = rdf_sas_iri () and o = c do
+  exec_close (cc);
+  txt := sprintf ('sparql define output:valmode "LONG" define input:storage "" select ?s from <%s> where { ?s <http://www.w3.org/2002/07/owl#sameAs> <%s> }',
+    id_to_iri(gr), id_to_iri(c) );
+  exec (txt, null, null,  vector (), 0, meta, null, cc);
+  while (0 = exec_next (cc, null, null, res))
     {
-      rdfs_closure_1 (gr, name, super_c, s, 0, visited, supers, pos);
+      rdfs_closure_1 (gr, name, super_c, res[0], 0, visited, supers, pos);
     }
+  exec_close (cc);
 }
 ;
 
-create procedure rdf_owl_equiv_1
-(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, inout pos int)
-{
-  if (dict_get (visited, c))
-    return;
-  dict_put (visited, c, 1);
-  if (pos >= length (supers))
-    supers := vector_concat (supers, make_array (100, 'any'));
-  rdf_owl_equiv (gr, name, super_c, c, is_class, visited, supers, pos);
-  supers [pos] := c;
-  pos := pos + 1;
-  for select o from rdf_quad where g = gr and p = rdf_owl_iri (is_class) and s = c do
-    {
-      rdf_owl_equiv_1 (gr, name, super_c, o, is_class, visited, supers, pos);
-    }
-}
-;
-
-create procedure rdf_owl_equiv
-(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, inout pos int)
-{
-  for select o from rdf_quad where g = gr and p = rdf_owl_iri (is_class + 2) and s = c do
-    {
-      rdf_owl_equiv_1 (gr, name, super_c, o, is_class, visited, supers, pos);
-    }
-}
-;
-
-create procedure rdfs_closure_1
-(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, in pos int)
-{
-  declare i, save int;
-  if (dict_get (visited, c))
-    return;
-  dict_put (visited, c, 1);
-  save := pos;
-  rdf_owl_equiv (gr, name, super_c, c, is_class, dict_new (), supers, pos);
-  if (pos >= length (supers))
-    supers := vector_concat (supers, make_array (100, 'any'));
-  supers [pos] := c;
-  for (i := 0; i <= pos; i := i + 1)
-    {
-      --dbg_printf ('registered: super=[%s] sub=[%s]', id_to_iri (supers[i]), id_to_iri (c));
-      rdf_inf_super (name, supers[i], c, is_class, 1);
-    }
-  for select s from rdf_quad where g = gr and p =  rdf_owl_iri (is_class) and o = c do
-    {
-      rdfs_closure_1 (gr, name, super_c, s, is_class, visited, supers, pos + 1);
-      if (not is_class)
-	rdf_owl_sas_p (gr, name, super_c, s, visited, supers, pos + 1);
-    }
-  supers[save] := 0;
-}
+create table DB.DBA.SYS_RDF_SCHEMA (RS_NAME VARCHAR , RS_URI VARCHAR, RS_G IRI_ID,
+	PRIMARY KEY (RS_NAME, RS_URI))
+alter index SYS_RDF_SCHEMA on DB.DBA.SYS_RDF_SCHEMA partition cluster replicated
 ;
 
 
-create procedure rdfs_load_schema (in name varchar, in gn varchar)
+create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) returns integer
 {
   declare gr iri_id;
   declare visited any;
   declare supers any;
-  gr := iri_to_id (gn, 0, 0);
-  if (isinteger (gr))
-    return;
-  supers := make_array (100, 'any');
-  for select a.o as o from rdf_quad a where a.g = gr and a.p = rdf_owl_iri (1)
-    and not exists (select 1 from rdf_quad b where b.g = a.g and b.p = a.p and a.o = b.s)
-    do
+  declare eq_c, eq_p iri_id;
+  declare txt varchar;
+  declare idx integer;
+  declare cc, res, st, msg, meta  any;
+  declare v any;
+  declare inx int;
+  declare from_text varchar;
+  declare rules_count integer;
+  from_text := '';
+  res := 0;
+  if (gn is null)
     {
-      rdfs_closure_1 (gr, name, o, o, 1, dict_new (), supers, 0);
+      for (select rs_uri from sys_rdf_schema where rs_name=ri_name) do
+        {
+          from_text := from_text || sprintf (' from <%s>', rs_uri);
+        }
     }
-  supers := make_array (100, 'any');
-  for select a.o as o from rdf_quad a where a.g = gr and a.p = rdf_owl_iri (0)
-    and not exists (select 1 from rdf_quad b where b.g = a.g and b.p = a.p and a.o = b.s)
-    do
-    {
-      rdfs_closure_1 (gr, name, o, o, 0, dict_new (), supers, 0);
-    }
-}
-;
-
-create procedure rdfs_schema_boot ()
-{
-  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DeferInferenceRulesInit') = '1')
-    {
-      insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
-	  values (1, NULL, 'RDF Inference load', 'DB.DBA.RDFS_INF_LOAD ()', now()) ;
-      return;
-    }
-  DB.DBA.RDFS_INF_LOAD ();
-}
-;
-
-create procedure
-DB.DBA.RDFS_INF_LOAD ()
-{
-  declare i int;
-  i := 0;
-  for select  rs_name, rs_uri from sys_rdf_schema do
-    {
-      if (i = 0) log_message ('Loading RDF inferences');
-      rdfs_load_schema (rs_name, rs_uri);
-      i := i + 1;
-    }
-  if (i) log_message ('Finished loading RDF inferences');
-  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'RDF Inference load';
-}
-;
-
-rdfs_schema_boot ()
-;
-
-create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0)
-{
-  if (remove)
-    delete from sys_rdf_schema where rs_name = name and rs_uri = gn;
   else
-    insert replacing sys_rdf_schema (rs_name, rs_uri) values (name, gn);
+    {
+      if (isiri_id (gn))
+        from_text := from_text || sprintf (' from <%s>', id_to_iri (gn));
+      else
+        from_text := from_text || sprintf (' from <%s>', gn);
+    }
+  if ('' = from_text)
+    return 0;
 
+  for (idx := 0; idx <= 4; idx := idx + 1)
+    {
+      txt := sprintf ('sparql define output:valmode "LONG" define input:storage "" select ?s ?o %s where { ?s <%s> ?o . filter (!isLITERAL (?o)) }',
+        from_text, id_to_iri (case (idx) when 4 then rdf_sas_iri () else rdf_owl_iri (idx) end) );
+      exec (txt, null, null, vector (), 0, meta, null, cc);
+  while (0 = exec_next (cc, null, null, res))
+    {
+          declare s, o any;
+          s := res[0]; o := res[1];
+          if (idx = 4)
+	{
+	  rdf_inf_dir (ri_name, s, o, 2);
+	  rdf_inf_dir (ri_name, s, o, 3);
+              rules_count := rules_count + 2;
+	}
+      else
+            {
+            rdf_inf_dir (ri_name, o, s, idx);
+              rules_count := rules_count + 1;
+            }
+        }
+    }
+  exec_close (cc);
+-- Loading inverse functional properties
+  txt := sprintf ('select DB.DBA.VECTOR_AGG (sub."s") from
+  (sparql define output:valmode "LONG" define input:storage ""
+    select distinct ?s %s
+    where {
+          { ?s a <http://www.w3.org/2002/07/owl#InverseFunctionalProperty> }
+        union
+          { ?s a <http://www.w3.org/2002/07/owl#FunctionalProperty> , <http://www.w3.org/2002/07/owl#SymmetricProperty> }
+        union
+          { ?s1 a <http://www.w3.org/2002/07/owl#FunctionalProperty> .
+	    ?s <http://www.w3.org/2002/07/owl#inverseOf> ?s1 } }
+    ) sub option (QUIETCAST)',
+    from_text );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := res[0][0];
+  if (0 < length (v))
+    {
+      txt := sprintf ('select DB.DBA.VECTOR_AGG (sub."s") from
+      (sparql define output:valmode "LONG" define input:storage ""
+        select ?s %s
+        where {
+            ?s <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> ?sp option (TRANSITIVE, T_MIN 1) .
+            filter (?sp = iri (?::0)) } ) sub option (QUIETCAST)',
+        from_text );
+      for (inx := length (v) - 1; 0 <= inx; inx := inx - 1)
+        {
+          declare meta1, res1 any;
+          declare subprops any;
+          exec (txt, null, null, vector (v[inx]), 0, meta1, res1);
+          subprops := res1[0][0];
+          foreach (IRI_ID subp in subprops) do
+            {
+              -- dbg_obj_princ ('Handled subproperty ', id_to_iri (subp), ' of ifp ', id_to_iri (v[inx]));
+              if (0 >= position (subp, v))
+                v := vector_concat (v, vector (subp));
+            }
+        }
+      -- dbg_obj_princ ('known ifps are: '); foreach (IRI_ID i in v) do -- dbg_obj_princ (id_to_iri(i));
+      gvector_digit_sort (v, 1, 0, 1);
+      rdf_inf_set_ifp_list (ri_name, v); --- Note that this should be after all super/sub relations in order to fill ric_iid_to_rel_ifp
+      rules_count := rules_count + length (v);
+      txt := sprintf ('
+        select vector_agg (sub."o") from
+          (sparql define output:valmode "LONG" define input:storage ""
+            select distinct ?o %s where {
+                  { ?::0 <http://www.openlinksw.com/schemas/virtrdf#nullIFPValue> ?o .
+                    filter (isREF (?o)) }
+                union
+                  {
+                    ?subp <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> ?superp option (TRANSITIVE, T_MIN 1) .
+                    ?subp <http://www.openlinksw.com/schemas/virtrdf#nullIFPValue> ?o .
+                    filter (?superp = ?::0)
+                    filter (isREF (?o)) } } ) sub option (QUIETCAST)',
+        from_text );
+      for (inx := 0; inx < length (v); inx := inx + 1)
+        {
+          declare meta1, res1 any;
+          declare excl any;
+          exec (txt, null, null, vector (v[inx]), 0, meta1, res1);
+          excl := meta1[0][0];
+          if (length (excl) > 0)
+          rdf_inf_set_ifp_exclude_list (ri_name, v[inx], excl);
+        }
+    }
+-- Loading inverse functions
+  txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", sub."o", sub."o", sub."s")) from
+  (sparql define input:storage "" select ?s ?o %s where {
+    ?s <http://www.w3.org/2002/07/owl#inverseOf> ?o .
+    optional { ?o <http://www.w3.org/2002/07/owl#inverseOf> ?s2 . filter (?s2 = ?s ) }
+    filter ((str (?s) <= str (?o)) || !BOUND(?s2)) }) sub option (QUIETCAST)',
+    from_text );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := res[0][0];
+  txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", sub."s")) from
+  (sparql define input:storage "" select ?s %s where {
+    ?s a <http://www.w3.org/2002/07/owl#SymmetricProperty> }) sub option (QUIETCAST)',
+    from_text );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := vector_concat (v, res[0][0]);
+  if (0 < length (v))
+    {
+      gvector_sort (v, 2, 0, 1);
+      rdf_inf_set_inverses (ri_name, v);
+      rules_count := rules_count + length (v);
+    }
+-- Loading bitmask properties of functions
+  txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", 1)) from
+  (sparql define input:storage "" select ?s %s where {
+    ?s a <http://www.w3.org/2002/07/owl#TransitiveProperty> }) sub option (QUIETCAST)',
+    from_text );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := res[0][0];
+  if (0 < length (v))
+    {
+      gvector_sort (v, 2, 0, 1);
+      rdf_inf_set_prop_props (ri_name, v);
+      rules_count := rules_count + length (v);
+    }
+  jso_mark_affected (ri_name);
+  return rules_count + 1;
+}
+;
+
+
+create procedure rdf_schema_ld ()
+{
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return 0;
+  return (select count (*) from (select distinct s.rs_name from sys_rdf_schema s) sub where 0 = rdfs_load_schema (sub.rs_name));
+}
+;
+
+rdf_schema_ld ()
+;
+
+
+create function CL_RDF_INF_CHANGED_SRV (in name varchar) returns integer
+{
+  declare res integer;
+  set isolation = 'committed';
   rdf_inf_clear (name);
-  rdfs_load_schema (name, gn);
-  log_text ('db.dba.rdfs_load_schema (?, ?)', name, gn);
+  return case (rdfs_load_schema (name)) when 0 then 1 else 0 end;
+  return res;
+}
+;
+
+create procedure CL_RDF_INF_CHANGED (in name varchar)
+{
+  declare aq any;
+  if (2 = sys_stat ('cl_run_local_only'))
+    return;
+ aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.CL_RDF_INF_CHANGED_SRV', vector (name));
+  aq_wait_all (aq);
+}
+;
+
+create function rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0) returns integer
+{
+    delete from sys_rdf_schema where rs_name = name and rs_uri = gn;
+  if (not remove)
+    {
+      insert into sys_rdf_schema (rs_name, rs_uri) values (name, gn);
+    }
+  commit work;
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.CL_RDF_INF_CHANGED (?)', vector (name));
+      return 1;
+    }
+  else
+    {
+      declare res integer;
+      rdf_inf_clear (name);
+      res := rdfs_load_schema (name);
+      log_text ('db.dba.rdfs_load_schema (?)', name);
+      return res;
+    }
 }
 ;
 
@@ -11103,5 +13257,3 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
 }
 ;
 
-DB.DBA.EXEC_STMT ('JSO_LOAD_AND_PIN_SYS_GRAPH ()', 0)
-;

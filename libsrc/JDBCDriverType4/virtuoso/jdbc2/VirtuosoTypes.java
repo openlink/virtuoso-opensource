@@ -35,7 +35,7 @@ class VirtuosoTypes
    /**
     * The version string.
     */
-   public static final String version = "05.12.3039";
+   public static final String version = "06.00.3039";
 
    /**
     * NIL, false, the NULL pointer
@@ -239,6 +239,7 @@ class VirtuosoTypes
 
    public static final int DV_DATETIME = 211;
 
+   public static final int DV_ANY = 242;
    /*
     *  IRI
     */

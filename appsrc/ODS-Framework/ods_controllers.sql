@@ -153,14 +153,23 @@ nf:
 create procedure check_authentication_ssl (
   out uname varchar := null)
 {
-  if (isnull (server_https_port ()) or not is_https_ctx ())
+  if (not is_https_ctx ())
     return 0;
 
-  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where U_ID = WAUI_U_ID and WAUI_CERT_FINGERPRINT = get_certificate_info (6));
+  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where U_ID = UC_U_ID and UC_FINGERPRINT = get_certificate_info (6));
   if (isnull (uname))
     return 0;
 
   return SIOC..foaf_check_ssl (null);
+}
+;
+
+create procedure normalize_url_like_browser (in x varchar)
+{
+  declare h any;
+  h := rfc1808_parse_uri (x);
+  h [5] := '';
+  return DB.DBA.vspx_uri_compose (h);
 }
 ;
 
@@ -270,13 +279,29 @@ create procedure jsonObject ()
 }
 ;
 
+create procedure isJsonObject (inout o any)
+{
+  if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+    return 1;
+  return 0;
+}
+;
+
+create procedure array2obj (in V any)
+{
+  return vector_concat (jsonObject (), V);
+}
+;
+
 create procedure obj2json (
   in o any,
-  in d integer := 5)
+  in d integer := 10,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
 {
   declare N, M integer;
   declare R, T any;
-  declare retValue any;
+  declare S, retValue any;
 
 	if (d = 0)
 	  return '[maximum depth achieved]';
@@ -310,7 +335,18 @@ create procedure obj2json (
   	retValue := '{';
   	for (N := 2; N < length(o); N := N + 2)
   	{
-  	  retValue := retValue || o[N] || ':' || obj2json (o[N+1], d-1);
+  	  S := o[N];
+  	  if (chr (S[0]) = attributePrefix)
+  	    S := subseq (S, length (attributePrefix));
+  	  if (not isnull (nsArray))
+  	  {
+        for (M := 0; M < length (nsArray); M := M + 1)
+    	  {
+          if (S like nsArray[M]||':%')
+  	        S := subseq (S, length (nsArray[M])+1);
+        }
+  	  }
+  	  retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
   	  if (N <> length(o)-2)
   		  retValue := retValue || ', ';
   	}
@@ -321,7 +357,7 @@ create procedure obj2json (
 		retValue := '[';
 		for (N := 0; N < length(o); N := N + 1)
 		{
-		  retValue := retValue || obj2json (o[N], d-1);
+      retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
 		  if (N <> length(o)-1)
 			  retValue := retValue || ',\n';
 		}
@@ -331,21 +367,91 @@ create procedure obj2json (
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure obj2xml (
+  in o any,
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := '')
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, nsValue, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
+  retValue := '';
+  if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    retValue := sprintf ('%V', o);
+  }
+  else if (isJsonObject (o))
+  {
+    for (N := 2; N < length(o); N := N + 2)
+    {
+      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      {
+        retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
+      } else {
+    	  if (chr (o[N][0]) <> attributePrefix)
+    	  {
+          nsArray := null;
+          S := '';
+          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+          	  if (chr (o[N+1][M][0]) = attributePrefix)
+          	    S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
+      }
+    }
+  }
+  else if (isarray (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      if (isnull (tag))
+      {
+        retValue := retValue || obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
+      } else {
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and isJsonObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+        	  if (chr (o[N][M][0]) = attributePrefix)
+        	    S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
+      }
+    }
+  }
+  return retValue;
+}
+;
+
 create procedure params2json (in o any)
 {
-  declare N integer;
-  declare retValue any;
-
-	retValue := '{';
-	for (N := 0; N < length(o); N := N + 2)
-	{
-	  retValue := retValue || o[N] || ':' || obj2json (o[N+1]);
-	  if (N <> length(o)-2)
-		  retValue := retValue || ', ';
-	}
-	retValue := retValue || '}';
-
-	return retValue;
+  return obj2json (array2obj(o));
 }
 ;
 
@@ -380,17 +486,66 @@ create procedure dav_path_normalize (
 }
 ;
 
+-- QRCode
+create procedure ODS.ODS_API."make_curie" (
+  in url varchar) __soap_http 'text/plain'
+{
+  if (__proc_exists ('WS.CURI.curi_make_curi') is null)
+    return url;
+
+  declare curie, chost, dhost varchar;
+  declare lines any;
+
+  lines := http_request_header ();
+  curie := WS.CURI.curi_make_curi (url);
+  dhost := registry_get ('URIQADefaultHost');
+  chost := http_request_header(lines, 'Host', null, dhost);
+
+  return sprintf ('http://%s/c/%s', chost, curie);
+}
+;
+
+create procedure ODS.ODS_API."qrcode" (
+  in data any,
+  in width int := 120,
+  in height int := 120,
+  in scale int := 4) __soap_http 'text/plain'
+{
+  declare qrcode_bytes, mixed_content, content varchar;
+  declare qrcode any;
+
+  if (__proc_exists ('QRcode encodeString8bit', 2) is null)
+    return null;
+
+  declare exit handler for sqlstate '*' { return null; };
+
+  content := "IM CreateImageBlob" (width, height, 'white', 'jpg');
+  qrcode := "QRcode encodeString8bit" (data);
+  qrcode_bytes := aref_set_0 (qrcode, 0);
+  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], scale, scale, 0, 0, cast (content as varchar), length (content));
+  mixed_content := encode_base64 (cast (mixed_content as varchar));
+  mixed_content := replace (mixed_content, '\r\n', '');
+
+  return mixed_content;
+}
+;
+
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
   in ontology varchar,
-  in prefix varchar := null) __soap_http 'application/json'
+  in prefix varchar,
+  in dependentOntology varchar := null) __soap_http 'application/json'
 {
   declare S, data any;
-  declare tmp, classes, retValue any;
+  declare tmp, classes, clazz, subClasses, retValue, dependency any;
 
   set_user_id ('dba');
   -- load ontology
-  ODS.ODS_API."ontology.load" (ontology);
+  ODS.ODS_API."ontology.load" (ontology, 0);
+
+  dependency := '';
+  if (not isnull (dependentOntology))
+    dependency := sprintf (' || (str(?sc) like "%s%%")', dependentOntology);
 
   -- select classes ontology
   classes := vector ();
@@ -407,7 +562,7 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n          OPTIONAL ' ||
          '\n          { ' ||
          '\n            ?c rdfs:subClassOf ?sc .' ||
-         '\n            filter ((str(?sc) = \'\') || ((str(?sc) like "%s%%") && not (str(?sc) like "nodeID://%%"))).' ||
+         '\n              filter ((str(?sc) = \'\') || (((str(?sc) like "%s%%")%s) && not (str(?sc) like "nodeID://%%"))).' ||
          '\n          }.' ||
          '\n          filter (str(?c) like "%s%%").' ||
          '\n        }' ||
@@ -417,7 +572,7 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n            OPTIONAL ' ||
          '\n            { ' ||
          '\n              ?c rdfs:subClassOf ?sc .' ||
-         '\n              filter ((str(?sc) = \'\') || ((str(?sc) like "%s%%") && not (str(?sc) like "nodeID://%%"))).' ||
+         '\n              filter ((str(?sc) = \'\') || (((str(?sc) like "%s%%")%s) && not (str(?sc) like "nodeID://%%"))).' ||
          '\n            }.' ||
          '\n            filter (str(?c) like "%s%%").' ||
          '\n          }' ||
@@ -425,50 +580,61 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n  ORDER BY ?c ?sc',
          ontology,
          ontology,
+         dependency,
          ontology,
          ontology,
+         dependency,
          ontology);
+  clazz := '';
+  subClasses := vector ();
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0], ontology, prefix), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
+    if (clazz <> ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[0]))
+    {
+      if (clazz <> '')
+      {
+        tmp := vector_concat (jsonObject (), vector ('name', clazz, 'subClassOf', subClasses));
+        classes := vector_concat (classes, vector (tmp));
+      }
+      clazz := ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[0]);
+      subClasses := vector ();
+    }
+    subClasses := vector_concat (subClasses, vector (case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[1]) end));
+  }
+  if (clazz <> '')
+  {
+    tmp := vector_concat (jsonObject (), vector ('name', clazz, 'subClassOf', subClasses));
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
 create procedure ODS.ODS_API."ontology.classProperties" (
-  in ontologyClass varchar,
-  in ontology varchar := null,
-  in prefix varchar := null) __soap_http 'application/json'
+  in ontology varchar,
+  in prefix varchar,
+  in ontologyClass varchar) __soap_http 'application/json'
 {
   declare N integer;
   declare S, data any;
-  declare tmp, property, propertyName, propertyType, propertyRange, properties any;
+  declare tmp, property, properties any;
 
   -- select class properties ontology
   properties := vector ();
-  if (isnull (ontology))
-    ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
-  if (isnull (prefix))
-    prefix := ODS.ODS_API."ontology.prefix" (ontologyClass);
-  if (not isnull (ontology)) {
   S := sprintf(
          '\n SPARQL' ||
          '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
          '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
          '\n PREFIX %s: <%s>' ||
-           '\n SELECT ?p ?tp ?r1' ||
+         '\n SELECT ?p ?t ?r1' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
-           '\n              ?p rdf:type ?tp .' ||
-           '\n          FILTER (?tp = owl:ObjectProperty or   ' ||
-           '\n                  ?tp = owl:DatatypeProperty or ' ||
-           '\n                  ?tp = rdf:Property) .         ' ||
-         '\n            ?p rdfs:range ?r1 .' ||
+         '\n          {?p a owl:ObjectProperty} UNION {?p a owl:DatatypeProperty} UNION {?p a owl:Property} .' ||
+         '\n          ?p rdf:type ?t .' ||
+         '\n          optional {?p rdfs:range ?r1} .' ||
          '\n            {' ||
          '\n              ?p rdfs:domain %s .' ||
          '\n            }' ||
@@ -485,11 +651,20 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n              ?_b1 rdf:rest ?_b2 . '   ||
          '\n              ?_b2 rdf:first %s . '    ||
          '\n            }' ||
+         '\n            union' ||
+         '\n            {' ||
+         '\n            ?p rdfs:domain ?_b0 .'   ||
+         '\n            ?_b0 owl:unionOf ?_b1 .' ||
+         '\n            ?_b1 rdf:rest ?_b2 . '   ||
+         '\n            ?_b2 rdf:rest ?_b3 . '   ||
+         '\n            ?_b3 rdf:first %s . '    ||
          '\n          }' ||
-           '\n  ORDER BY ?p ?tp ?r1',
+         '\n        }' ||
+         '\n  ORDER BY ?p ?r1',
          prefix,
          ontology,
          ontology,
+         ontologyClass,
          ontologyClass,
          ontologyClass,
          ontologyClass);
@@ -498,50 +673,37 @@ create procedure ODS.ODS_API."ontology.classProperties" (
   property := vector ('', vector (), vector ());
   foreach (any item in data) do
   {
-      propertyName := ODS.ODS_API."ontology.normalize"(item[0], ontology, prefix);
-      propertyType := ODS.ODS_API."ontology.normalize"(item[1], ontology, prefix);
-      propertyRange := coalesce (ODS.ODS_API."ontology.normalize"(item[2], ontology, prefix), 'rdf:string');
-      if (property[0] <> propertyName)
+    if (property[0] <> item[0])
     {
       if (property[0] <> '')
-          properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-        property := vector (propertyName, vector (), vector ());
+        properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (ontology, prefix, property)));
+      property := vector (item[0], vector (), vector ());
     }
-      if (propertyType = 'owl:ObjectProperty')
+    tmp := ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[1]);
+    if (tmp = 'owl:ObjectProperty')
     {
-        if (propertyRange not like 'nodeID:%')
+      tmp := ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[2]);
+      if (tmp not like 'nodeID:%')
       {
-          property[1] := ODS.ODS_API.vector_concat (property[1], propertyRange);
+        property[1] := vector_concat (property[1], vector (tmp));
       } else {
-          tmp := ODS.ODS_API."ontology.collection" (ontology, item[2]);
-          for (N := 0; N < length (tmp); N := N + 1)
-            property[1] := ODS.ODS_API.vector_concat (property[1], tmp[N]);
+        property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
       }
     }
-      else if (propertyType = 'owl:DatatypeProperty')
-      {
-        property[2] := ODS.ODS_API.vector_concat (property[2], propertyRange);
-      }
-      else if (propertyType = 'rdf:Property')
-      {
-        if ((propertyRange like 'rdf:%') or (propertyRange like 'rdfs:%'))
+    else if (tmp = 'owl:DatatypeProperty')
     {
-          property[2] := ODS.ODS_API.vector_concat (property[2], propertyRange);
-        } else {
-          property[1] := ODS.ODS_API.vector_concat (property[1], propertyRange);
-        }
+      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize2" (ontology, prefix, coalesce (item[2], 'xsd:string'))));
     }
   }
   if (property[0] <> '')
-      properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-  }
+    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (ontology, prefix, property)));
   return obj2json (properties, 10);
 }
 ;
 
 create procedure ODS.ODS_API."ontology.objects" (
   in ontology varchar,
-  in prefix varchar := null) __soap_http 'application/json'
+  in prefix varchar) __soap_http 'application/json'
 {
   declare S, data any;
   declare tmp, objects any;
@@ -564,7 +726,7 @@ create procedure ODS.ODS_API."ontology.objects" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0], ontology, prefix), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
+    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[0]), 'class', ODS.ODS_API."ontology.normalize2" (ontology, prefix, item[1])));
     objects := vector_concat (objects , vector (tmp));
   }
   return obj2json (objects , 10);
@@ -573,14 +735,18 @@ create procedure ODS.ODS_API."ontology.objects" (
 
 create procedure ODS.ODS_API."ontology.sparql" (
   in S varchar,
+  in V any := null,
   in debug integer := 0)
 {
   declare st, msg, data, meta any;
 
   set_user_id ('dba');
+  if (isnull (V))
+    V := vector ();
   commit work;
   st := '00000';
-  exec (S, st, msg, vector (), 0, meta, data);
+  exec (S, st, msg, V, vector ('use_cache', 1), meta, data);
+  --exec (S, st, msg, V, 0, meta, data);
   if (debug)
     dbg_obj_princ (S, st, msg);
   if (st = '00000')
@@ -615,11 +781,13 @@ create procedure ODS.ODS_API."ontology.load" (
 ;
 
 create procedure ODS.ODS_API."ontology.objectProperty" (
+  in ontology varchar,
+  in prefix varchar,
   in property any)
 {
   declare retValue any;
 
-  retValue := vector_concat (jsonObject (), vector ('name', property[0]));
+  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize2" (ontology, prefix, property[0])));
   if (length (property[1]))
     retValue := vector_concat (retValue, vector ('objectProperties', property[1]));
   if (length (property[2]))
@@ -638,14 +806,18 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'book', 'http://purl.org/NET/book/vocab#',
                  'dc',   'http://purl.org/dc/elements/1.1/',
                  'foaf', 'http://xmlns.com/foaf/0.1/',
+                 'frbr', 'http://vocab.org/frbr/core#',
                  'gr',   'http://purl.org/goodrelations/v1#',
                  'ibis', 'http://purl.org/ibis#',
                  'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
+                 'like', 'http://ontologi.es/like#',
                  'mo',   'http://purl.org/ontology/mo/',
                  'movie','http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#',
                  'owl',  'http://www.w3.org/2002/07/owl#',
                  'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
                  'rdfs', 'http://www.w3.org/2000/01/rdf-schema#',
+                 'rel',  'http://purl.org/vocab/relationship/',
+                 'rev',  'http://purl.org/stuff/rev#',
                  'sioc', 'http://rdfs.org/sioc/ns#',
                  'sioct','http://rdfs.org/sioc/types#',
                  'xsd',  'http://www.w3.org/2001/XMLSchema#'
@@ -682,33 +854,47 @@ create procedure ODS.ODS_API."ontology.byPrefix" (
 
 create procedure ODS.ODS_API."ontology.normalize" (
   in inValue varchar,
-  in ontology varchar := null,
-  in prefix varchar := null)
+  in ontologies any := null)
 {
   if (not isnull (inValue))
   {
-    declare N, ontologies any;
+    declare N integer;
 
+    if (isnull (ontologies))
     ontologies := ODS.ODS_API."ontology.array" ();
     for (N := 0; N < length (ontologies); N := N + 2)
     {
       if (inValue like (ontologies[N+1] || '%'))
         return ontologies[N] || ':' || subseq (inValue, length (ontologies[N+1]));
     }
-    if (not isnull (ontology) and not isnull (prefix))
-      return prefix || ':' || replace (inValue, ontology, '');
   }
   return inValue;
 }
 ;
 
-create procedure ODS.ODS_API."ontology.denormalize" (
+create procedure ODS.ODS_API."ontology.normalize2" (
+  in ontology varchar,
+  in prefix varchar,
   in inValue varchar)
 {
   if (not isnull (inValue))
   {
-    declare N, pos, tmp, ontologies any;
+    if (inValue like (ontology || '%'))
+      return prefix || ':' || subseq (inValue, length (ontology));
+  }
+  return ODS.ODS_API."ontology.normalize" (inValue);
+}
+;
 
+create procedure ODS.ODS_API."ontology.denormalize" (
+  in inValue varchar,
+  in ontologies any := null)
+{
+  if (not isnull (inValue))
+  {
+    declare N, pos, tmp any;
+
+    if (isnull (ontologies))
     ontologies := ODS.ODS_API."ontology.array" ();
     pos := strrchr (inValue, ':');
     if (pos is not null)
@@ -722,6 +908,20 @@ create procedure ODS.ODS_API."ontology.denormalize" (
     }
   }
   return inValue;
+}
+;
+
+create procedure ODS.ODS_API."ontology.denormalize2" (
+  in ontology varchar,
+  in prefix varchar,
+  in inValue varchar)
+{
+  if (not isnull (inValue))
+  {
+    if (inValue like (prefix || ':%'))
+      return ontology || subseq (inValue, length (prefix)+1);
+  }
+  return ODS.ODS_API."ontology.denormalize" (inValue);
 }
 ;
 
@@ -776,9 +976,53 @@ _again:
 }
 ;
 
+create procedure ODS.ODS_API."objects.rdf" (
+  in items varchar,
+  in format varchar := 'TTL')  __soap_http 'text/plain'
+{
+  declare accept, graph_iri, forum_iri, user_iri varchar;
+  declare S, state, msg, accept, sStream any;
+  declare ontologies, rows, meta any;
+
+  graph_iri := ODS.ODS_API.graph_create ();
+  forum_iri := graph_iri || '/forum';
+  user_iri := graph_iri || '/user';
+
+  ontologies := json_parse (items);
+  foreach (any ontology in ontologies) do
+  {
+    SIOC..sioc_user_item_create (graph_iri, forum_iri, user_iri, get_keyword ('items', ontology, vector ()));
+  }
+
+  sStream := string_output();
+  S := sprintf ('SPARQL select * from <%s> where {?s ?p ?o}', graph_iri);
+  state := '00000';
+  set_user_id ('dba');
+  exec (S, state, msg, vector (), 0, meta, rows);
+  if (state = '00000')
+  {
+    declare dict any;
+
+    dict := dict_new (10);
+    for (select S, P, O from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)) do
+      dict_put (dict, vector (S, P, O), 1);
+
+    if (format = 'TTL')
+    {
+      sStream := DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (dict);
+    } else {
+      sStream := DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (dict);
+    }
+  }
+  ODS.ODS_API.graph_clear (graph_iri);
+  return sprintf ('%V', string_output_string (sStream));
+}
+;
+
 create procedure ODS.ODS_API."lookup.list" (
   in "key" varchar,
-  in "param" varchar := '')  __soap_http 'text/plain'
+  in "param" varchar := '',
+  in "depend" varchar := '')  __soap_http 'text/plain'
 {
   if ("key" = 'onlineAccounts')
   {
@@ -845,6 +1089,39 @@ create procedure ODS.ODS_API."lookup.list" (
       || '\n'|| 'YouTube'
       || '\n'|| 'Zooomr'
     );
+  }
+  else if ("key" = 'webIDs')
+  {
+    declare uname, S varchar;
+
+    S := '';
+    if (ods_check_auth (uname))
+    {
+      declare uid integer;
+      declare paramTest varchar;
+      declare sql, st, msg, meta, rows any;
+
+      uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+      paramTest := '';
+      if ("param" <> '')
+        paramTest := sprintf (' and lcase (x.F2) like ''%%%s%%''', lcase("param"));
+
+      if ("depend" = '' or "depend" = 'p')
+        sql := sprintf ('select x.F1, x.F2, x.F3 from DB.DBA.wa_webid_users(user_id) (F1 varchar, F2 varchar, F3 varchar) x where x.user_id = %d %s', uid, paramTest);
+
+      if ("depend" = 'g')
+        sql := sprintf ('select x.* from (select ''Group'' F1, SIOC..acl_group_iri (%d, WACL_NAME) F2, WACL_DESCRIPTION F3 from WA_GROUPS_ACL where WACL_USER_ID = %d) x where 1=1 %s', uid, uid, paramTest);
+
+      set_user_id ('dba');
+      st := '00000';
+      exec (sql, st, msg, vector (), 0, meta, rows);
+      if (st = '00000')
+      {
+        foreach (any row in rows) do
+          S := S || case when S <> '' then '\n' else '' end || row[1];
+      }
+    }
+    http (S);
   }
   else if ("key" = 'Industry')
   {
@@ -920,6 +1197,40 @@ create procedure ODS.ODS_API."lookup.list" (
 }
 ;
 
+create procedure ODS..getDefaultHttps ()
+{
+  declare host, port, tmp varchar;
+  host := null; port := null;
+  for select top 1 HP_HOST, HP_LISTEN_HOST from  DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+    where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST
+	and WD_LPATH = HP_LPATH and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
+	 {
+	    tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
+	    if (length (tmp) = 2)
+	      tmp := tmp[1];
+	    else
+	      tmp := HP_LISTEN_HOST;
+	    host := HP_HOST;
+	    port := tmp;  
+	    if (port <> '443')
+	      host := host || ':' || port;
+	 }
+  if (server_https_port () is not null and host is null)
+    {
+      host := registry_get ('URIQADefaultHost');
+      tmp := split_and_decode (host, 0, '\0\0:');
+      if (length (tmp) = 2)
+	tmp := tmp[0];
+      else
+	tmp := host;
+      port := server_https_port (); 
+      if (port <> '443')
+	host := host || ':' || port;
+    }
+  return host;
+}
+;
+
 -- Server Info
 create procedure ODS.ODS_API."server.getInfo" (
   in info varchar) __soap_http 'application/json'
@@ -947,6 +1258,36 @@ create procedure ODS.ODS_API."server.getInfo" (
     	   retValue := vector ('sslPort', tmp, 'sslHost', HP_HOST);
    	  }
     }
+  }
+  else if (info = 'regData')
+  {
+    for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_TWITTER, WS_REGISTER_LINKEDIN, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
+    {
+      declare facebookEnable, twitterEnable, linkedinEnable integer;
+      declare facebookOptions any;
+
+      facebookEnable := WS_REGISTER_FACEBOOK;
+      if ((facebookEnable = 1) and (not DB.DBA._get_ods_fb_settings (facebookOptions)))
+        facebookEnable := 0;
+
+      twitterEnable := WS_REGISTER_TWITTER;
+      if ((twitterEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'Twitter API')))
+        twitterEnable := 0;
+
+      linkedinEnable := WS_REGISTER_LINKEDIN;
+      if ((linkedinEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'LinkedIn API')))
+        linkedinEnable := 0;
+
+  	  retValue := vector (
+  	                      'register', WS_REGISTER,
+  	                      'openidEnable', WS_REGISTER_OPENID,
+  	                      'facebookEnable', facebookEnable,
+  	                      'twitterEnable', twitterEnable,
+  	                      'linkedinEnable', linkedinEnable,
+  	                      'sslEnable', WS_REGISTER_SSL,
+  	                      'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL
+  	                     );
+  	}
   }
   return params2json (retValue);
 }
@@ -976,7 +1317,7 @@ create procedure ODS.ODS_API."address.geoData" (
         lng
     ))
   {
-    retValue := vector ('lat', lat, 'lng', lng);
+    retValue := vector ('lat', sprintf ('%.6f', coalesce (lat, 0.00)), 'lng', sprintf ('%.6f', coalesce (lng, 0.00)));
   }
   return params2json (retValue);
 }
@@ -995,7 +1336,7 @@ create procedure ODS.ODS_API."user.register" (
 	in mode integer := 0,
 	in data any := null) __soap_http 'text/xml'
 {
-  declare sid, rc any;
+  declare sid, rc, name2, xmlData any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1005,13 +1346,15 @@ create procedure ODS.ODS_API."user.register" (
 	{
 	  -- OpenID
 	  data := json_parse (data);
+	  if (isnull (name))
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+	  if (isnull ("email"))
     "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}
 	else if (mode = 2)
 	{
-	  -- facebook
+	  -- Facebook
 	  data := json_parse (data);
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
     "email" := null;
@@ -1021,8 +1364,34 @@ create procedure ODS.ODS_API."user.register" (
 	{
 	  -- FOAF+SSL
 	  data := json_parse (data);
+	  if (isnull (name))
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+	  if (isnull ("email"))
     "email" := get_keyword ('mbox', data);
+    "password" := uuid ();
+	}
+	else if (mode = 4)
+	{
+	  -- Twitter
+    xmlData := xml_tree_doc (data);
+    if (xpath_eval ('string(/users/user/id)', xmlData))
+      name2 := cast (xpath_eval ('string(/users/user/screen_name)', xmlData) as varchar);
+
+    if (isnull (name))
+      name := name2;
+
+    "password" := uuid ();
+	}
+	else if (mode = 5)
+	{
+	  -- LinkedIn
+    xmlData := xml_tree_doc (data);
+    if (xpath_eval ('string(/person/first-name)', xmlData))
+      name2 := cast (xpath_eval ('string(/person/first-name)', xmlData) as varchar);
+
+    if (isnull (name))
+      name := name2;
+
     "password" := uuid ();
 	}
   if (name is null or length (name) < 1 or length (name) > 20)
@@ -1048,17 +1417,24 @@ create procedure ODS.ODS_API."user.register" (
   if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
     signal ('23023', 'This OpenID identity is already registered.');
 
-  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = get_keyword ('uid', data)))
+  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_ID = get_keyword ('uid', data)))
     signal ('23023', 'This Facebook identity is already registered.');
 
+  if ((mode = 4) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Twitter' and WUO_URL = sprintf ('http://twitter.com/%U', name2)))
+    signal ('23023', 'This Twitter identity is already registered.');
+
+  if ((mode = 5) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'LinkedIn' and WUO_URL = cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar)))
+    signal ('23023', 'This LinkedIn identity is already registered.');
+
   rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
-  -- rc := 'xxx';
   if (not isinteger (rc))
     signal ('23023', rc);
 
   if (mode = 1)
   {
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME', get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER', case get_keyword ('gender', data) when 'M' then 'male' when 'F' then 'female' else NULL end);
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HCODE', get_keyword ('homeCode', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HCOUNTRY', (select WC_NAME from DB.DBA.WA_COUNTRY where WC_ISO_CODE = upper (get_keyword ('homeCode', data))));
@@ -1073,7 +1449,7 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_LOGIN_ID', get_keyword ('uid', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_ID', get_keyword ('uid', data));
   }
   else if (mode = 3)
   {
@@ -1093,13 +1469,126 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HPHONE'       , get_keyword ('phone', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FOAF'         , get_keyword ('iri', data));
+
+    declare cert any;
+    cert := client_attr ('client_certificate');
+    insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+	values (rc, cert, get_certificate_info (6, cert, 0, ''), 1);
   }
+  else if (mode = 4)
+  {
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , xpath_eval ('string(/users/user/name)', xmlData));
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
+      values (rc, 'P', 'Twitter', sprintf ('http://twitter.com/%U', name2), '');
+  }
+  else if (mode = 5)
+  {
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'    , xpath_eval ('string(/person/first-name)', xmlData));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'     , xpath_eval ('string(/person/last-name)', xmlData));
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
+      values (rc, 'P', 'LinkedIn', cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar), '');
+  }
+
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
     values (sid, 'wa', name, now ());
   return '<sid>' || sid  || '</sid>';
+}
+;
+
+create procedure ODS.ODS_API.twitterServer (
+  in hostUrl varchar) __SOAP_HTTP 'text/plain'
+{
+  declare token, result, url, sid, oauth_token, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('Twitter API');
+  sid := md5 (datestring (now ()));
+  return_url := sprintf ('%s&sid=%U', hostUrl, sid);
+  url := OAUTH..sign_request ('GET', 'http://twitter.com/oauth/request_token', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+
+  OAUTH..set_session_data (sid, vector());
+  oauth_token := OAUTH..get_auth_token (sid);
+
+  return sprintf ('http://twitter.com/oauth/authenticate?oauth_token=%U', oauth_token);
+}
+;
+
+create procedure ODS.ODS_API.twitterVerify (
+  in sid varchar,
+  in oauth_verifier varchar,
+  in oauth_token varchar) __SOAP_HTTP 'text/xml'
+{
+  declare tmp, screen_name, header, auth any;
+  declare token, result, url, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('Twitter API');
+  url := OAUTH..sign_request (
+    'GET',
+    'http://twitter.com/oauth/access_token',
+    sprintf ('oauth_token=%U&oauth_verifier=%U', oauth_token, oauth_verifier),
+    token,
+    sid,
+    1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+  tmp := split_and_decode (result, 0);
+  screen_name := get_keyword ('screen_name', tmp);
+
+  auth := OAUTH..signed_request_header ('GET', 'http://api.twitter.com/1/users/lookup.xml', sprintf ('screen_name=%U', screen_name), token, '', sid, 0);
+  url := sprintf ('http://api.twitter.com/1/users/lookup.xml?screen_name=%U', screen_name);
+  result := http_get (url, header, 'GET', auth);
+  OAUTH..session_terminate (sid);
+
+  return result;
+}
+;
+
+create procedure ODS.ODS_API.linkedinServer (
+  in hostUrl varchar) __SOAP_HTTP 'text/plain'
+{
+  declare token, result, url, sid, oauth_token, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+  sid := md5 (datestring (now ()));
+  return_url := sprintf ('%s&sid=%U', hostUrl, sid);
+  url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+
+  OAUTH..set_session_data (sid, vector());
+  oauth_token := OAUTH..get_auth_token (sid);
+
+  return sprintf ('https://www.linkedin.com/uas/oauth/authenticate?oauth_token=%U', oauth_token);
+}
+;
+
+create procedure ODS.ODS_API.linkedinVerify (
+  in sid varchar,
+  in oauth_verifier varchar,
+  in oauth_token varchar) __SOAP_HTTP 'text/xml'
+{
+  declare tmp, header, auth any;
+  declare token, result, url, return_url any;
+
+  token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+  url := OAUTH..sign_request (
+    'GET',
+    'https://api.linkedin.com/uas/oauth/accessToken',
+    sprintf ('oauth_token=%U&oauth_verifier=%U', oauth_token, oauth_verifier),
+    token,
+    sid,
+    1);
+  result := http_get (url);
+  sid := OAUTH..parse_response (sid, token, result);
+
+  url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,public-profile-url,date-of-birth)', '', token, sid, 1);
+  result := http_get (url);
+  OAUTH..session_terminate (sid);
+
+  return result;
 }
 ;
 
@@ -1110,20 +1599,30 @@ create procedure ODS.ODS_API."user.authenticate" (
 	in password_hash varchar := null,
 	in facebookUID integer := null,
 	in openIdUrl varchar := null,
-	in openIdIdentity varchar := null) __soap_http 'text/xml'
+	in openIdIdentity varchar := null,
+  in oauthMode varchar := null,
+  in oauthSid varchar := null,
+  in oauthVerifier varchar := null,
+  in oauthToken varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare sid varchar;
+  declare sid, tmp varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+    return ods_serialize_sql_error (__SQL_STATE, substring(__SQL_MESSAGE, 1, coalesce(strstr(__SQL_MESSAGE, '<>'), length(__SQL_MESSAGE))));
   };
+
+  tmp := (select WAB_DISABLE_UNTIL from DB.DBA.WA_BLOCKED_IP where WAB_IP = http_client_ip ());
+  --if (tmp is not null and tmp > now ())
+  --  signal ('22023', 'Too many failed attempts. Try again in an hour.<>');
 
   uname := null;
     if (not isnull (facebookUID))
     {
-      uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
+    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
+    if (isnull (uname))
+      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Security/Facebook'' \nfor a successful authentication.<>');
     }
   else if (not isnull (openIdUrl))
     {
@@ -1132,10 +1631,65 @@ create procedure ODS.ODS_API."user.authenticate" (
       commit work;
       vResult := http_client (openIdUrl);
       if (vResult not like '%is_valid:%true\n%')
-        signal ('22023', 'OpenID Authentication Failed');
+      signal ('22023', 'OpenID Authentication Failed.<>');
 
-      uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity);
+    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
+    if (isnull (uname))
+      signal ('22023', 'The OpenID account is not registered.\nPlease enter your OpenID account data in ODS ''Edit Profile/Security/OpenID'' \nfor a successful authentication.<>');
     }
+  else if (not isnull (oauthMode))
+  {
+    declare tmp, url, token, result, screen_name, profile_url any;
+
+    if (oauthMode = 'twitter')
+    {
+    token := ODS.ODS_API.get_oauth_tok ('Twitter API');
+    url := OAUTH..sign_request ('GET',
+                                'http://twitter.com/oauth/access_token',
+  		                            sprintf ('oauth_token=%U&oauth_verifier=%U', oauthToken, oauthVerifier),
+		                            token,
+  		                            oauthSid,
+		                            1);
+    result := http_get (url);
+      OAUTH..parse_response (oauthSid, token, result);
+    tmp := split_and_decode (result, 0);
+    screen_name := get_keyword ('screen_name', tmp);
+
+    uname := (select U_NAME
+                from DB.DBA.SYS_USERS,
+                     DB.DBA.WA_USER_OL_ACCOUNTS
+               where WUO_U_ID = U_ID
+                 and WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
+  }
+    else if (oauthMode = 'linkedin')
+    {
+      token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
+      url := OAUTH..sign_request ('GET',
+                                  'https://api.linkedin.com/uas/oauth/accessToken',
+  		                            sprintf ('oauth_token=%U&oauth_verifier=%U', oauthToken, oauthVerifier),
+  		                            token,
+  		                            oauthSid,
+  		                            1);
+      result := http_get (url);
+      OAUTH..parse_response (oauthSid, token, result);
+      url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,public-profile-url,date-of-birth)', '', token, oauthSid, 1);
+      result := http_get (url);
+      profile_url := cast (xpath_eval ('/person/public-profile-url', xtree_doc (result)) as varchar);
+
+      uname := (select U_NAME
+                  from DB.DBA.SYS_USERS,
+                       DB.DBA.WA_USER_OL_ACCOUNTS
+                 where WUO_U_ID = U_ID
+                   and WUO_URL = profile_url);
+    }
+    OAUTH..session_terminate (oauthSid);
+
+    if (isnull (uname) and (oauthMode = 'twitter'))
+      signal ('22000', 'The Twitter account is not registered.\n Please enter your Twitter account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+
+    if (isnull (uname) and (oauthMode = 'linkedin'))
+      signal ('22000', 'The LinkedIn account is not registered.\n Please enter your LinkedIn account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+  }
   else
   {
     if (not ods_check_auth (uname))
@@ -1145,9 +1699,15 @@ create procedure ODS.ODS_API."user.authenticate" (
     return ods_auth_failed ();
 
   sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
-    values (sid, 'wa', uname, now ());
-  return '<sid>' || sid  || '</sid>';
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY)
+    values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now ());
+  return
+    '<root>' ||
+      '<sid>' || sid  || '</sid>' ||
+      '<userName>' || uname || '</userName>' ||
+      '<userId>' || cast (username2id (uname) as varchar) || '</userId>' ||
+      '<dba>' || cast (is_dba (uname) as varchar) || '</dba>' ||
+    '</root>';
 }
 ;
 
@@ -1156,6 +1716,22 @@ create procedure ODS.ODS_API."user.login" (
 	in password_hash varchar) __soap_http 'text/plain'
 {
   return ODS.ODS_API."user.authenticate" (user_name, password_hash);
+}
+;
+
+create procedure ODS.ODS_API."user.validate" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    http_rewrite();
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -1239,6 +1815,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   in mailSignature varchar := null,
   in sumary varchar := null,
   in appSetting varchar := null,
+  in spbEnable varchar := null,
+  in inSearch varchar := null,
+  in showActive varchar := null,
   in webIDs varchar := null,
   in interests varchar := null,
   in topicInterests varchar := null,
@@ -1261,7 +1840,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   in homeLatitude varchar := null,
   in homeLongitude varchar := null,
   in homePhone varchar := null,
+  in homePhoneExt varchar := null,
   in homeMobile varchar := null,
+
   in businessIndustry varchar := null,
   in businessOrganization varchar := null,
   in businessHomePage varchar := null,
@@ -1285,6 +1866,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   in businessLatitude varchar := null,
   in businessLongitude varchar := null,
   in businessPhone varchar := null,
+  in businessPhoneExt varchar := null,
   in businessMobile varchar := null,
 
   in businessIcq varchar := null,
@@ -1302,10 +1884,16 @@ create procedure ODS.ODS_API."user.update.fields" (
   in securitySecretAnswer varchar := null,
   in securitySiocLimit varchar := null,
 
-  in certificate varchar := null,
-  in certificateLogin varchar := null) __soap_http 'text/xml'
+  in photo varchar := null,
+  in photoContent varchar := null,
+
+  in audio varchar := null,
+  in audioContent varchar := null,
+
+  in mode varchar := null,
+  in onlineAccounts varchar := null) __soap_http 'text/xml'
 {
-  declare uname varchar;
+  declare rc, uid, uname any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -1336,7 +1924,12 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_WEBPAGE', homepage);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MSIGNATURE', mailSignature);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_SUMMARY', sumary);
+
   ODS.ODS_API."user.update.field" (uname, 'WAUI_APP_ENABLE', atoi(appSetting));
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SPB_ENABLE', atoi(spbEnable));
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SEARCHABLE', atoi(inSearch));
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SHOWACTIVE', atoi(showActive));
+
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FOAF', webIDs);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTERESTS', interests);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTEREST_TOPICS', topicInterests);
@@ -1349,6 +1942,8 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MSN', msn);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MESSAGING', messaging);
 
+  if (defaultMapLocation = 'on');
+    defaultMapLocation := '1';
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LATLNG_HBDEF', defaultMapLocation);
   -- Home
   ODS.ODS_API."user.update.field" (uname, 'WAUI_HCOUNTRY', homeCountry);
@@ -1361,6 +1956,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LAT', homeLatitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LNG', homeLongitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_HPHONE', homePhone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HPHONE_EXT', homePhoneExt);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_HMOBILE', homeMobile);
 
   -- Business
@@ -1378,6 +1974,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BLAT', businessLatitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BLNG', businessLongitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BPHONE', businessPhone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BPHONE_EXT', businessPhoneExt);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BMOBILE', businessMobile);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BREGNO', businessRegNo);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BCAREER', businessCareer);
@@ -1396,17 +1993,142 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BMESSAGING', businessMessaging);
 
   -- Security
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_OPENID_URL', securityOpenID);
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  rc := ODS..openid_url_set (uid, securityOpenID);
+  if (not isnull (rc))
+    signal ('23023', rc);
 
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_LOGIN_ID', securityFacebookID);
+  if (not DB.DBA.is_empty_or_null (securityFacebookID))
+  {
+    if (exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID <> uid and WAUI_FACEBOOK_ID = securityFacebookID))
+      signal ('23023', 'This Facebook identity is already registered.');
+  }
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_ID', securityFacebookID);
 
   ODS.ODS_API."user.update.field" (uname, 'SEC_QUESTION', securitySecretQuestion);
   ODS.ODS_API."user.update.field" (uname, 'SEC_ANSWER', securitySecretAnswer);
   if (not isnull (securitySiocLimit))
     DB.DBA.USER_SET_OPTION (uname, 'SIOC_POSTS_QUERY_LIMIT', atoi (securitySiocLimit));
 
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
+  -- Photo & Audio
+  ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
+
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.acl.array" ()
+{
+  return vector (
+                  'title',                0,
+                  'firstName',            1,
+                  'lastName',             2,
+                  'fullName',             3,
+                  'mail',                 4,
+                  'gender',               5,
+                  'birthday',             6,
+                  'homepage',             7,
+                  'webIDs',               8,
+                  'mailSignature',        9,
+                  'icq',                  10,
+                  'skype',                11,
+                  'yahoo',                12,
+                  'aim',                  13,
+                  'msn',                  14,
+                  'homeAddress1',         15,
+                  'homeCountry',          16,
+                  'homeTimezone',         17,
+                  'homePhone',            18,
+                  'businessIndustry',     19,
+                  'businessOrganization', 20,
+                  'businessJob',          21,
+                  'businessAddress1',     22,
+                  'businessCountry',      23,
+                  'businessTimezone',     24,
+                  'businessPhone',        25,
+                  'businessRegNo',        26,
+                  'businessCareer',       27,
+                  'businessEmployees',    28,
+                  'businessVendor',       29,
+                  'businessService',      30,
+                  'businessOther',        31,
+                  'businessNetwork',      32,
+                  'summary',              33,
+                  'businessResume',       34,
+                  'photo',                37,
+                  'homeLatitude',         39,
+                  'audio',                43,
+                  'businessLatitude',     47,
+                  'interests',            48,
+                  'topicInterests',       49,
+                  'businessIcq',          50,
+                  'businessSkype',        51,
+                  'businessYahoo',        52,
+                  'businessAim',          53,
+                  'businessMsn',          54,
+                  'homeCode',             57,
+                  'homeCity',             58,
+                  'homeState',            59,
+                  'businessCode',         60,
+                  'businessCity',         61,
+                  'businessState',        62
+                );
+}
+;
+
+create procedure ODS.ODS_API."user.acl.info" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare N, M, tmp, acl, aclArray any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  http ('<acl>');
+  aclArray := ODS.ODS_API."user.acl.array" ();
+  acl := DB.DBA.WA_USER_VISIBILITY(uname);
+  for (N := 0; N < length (aclArray); N := N + 2)
+  {
+    M := aclArray[N+1];
+    if (M < length (acl))
+      ods_xml_item (aclArray[N], acl[M]);
+  }
+  http ('</acl>');
+
+  return '';
+}
+;
+
+create procedure ODS.ODS_API."user.acl.update" (
+  in acls varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare N, tmp, acl, aclArray any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  tmp := vector ();
+  aclArray := ODS.ODS_API."user.acl.array" ();
+  acl := DB.DBA.WA_USER_VISIBILITY(uname);
+  acls := split_and_decode (acls);
+  if (length (acls))
+  {
+    for (N := 0; N < length (aclArray); N := N + 2)
+    {
+      if (not isnull (get_keyword (aclArray[N], acls)))
+        tmp := vector_concat (tmp, vector (cast (aclArray[N+1] as varchar), get_keyword (aclArray[N], acls)));
+    }
+    DB.DBA.WA_USER_VISIBILITY(uname, tmp, 2);
+  }
 
   return ods_serialize_int_res (1);
 }
@@ -1418,6 +2140,7 @@ create procedure ODS.ODS_API."user.password_change" (
 {
   declare uname, msg varchar;
   declare rc integer;
+  declare tmp, userPassword, noPassword varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1425,6 +2148,7 @@ create procedure ODS.ODS_API."user.password_change" (
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   declare exit handler for sqlstate '*' {
     msg := __SQL_MESSAGE;
     goto ret;
@@ -1432,10 +2156,138 @@ create procedure ODS.ODS_API."user.password_change" (
   rc := -1;
   msg := 'Success';
   set_user_id ('dba');
+  for (select U_NAME, U_PASSWORD from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = uname) do
+  {
+    userPassword := pwd_magic_calc (U_NAME, U_PASSWORD, 1);
+    tmp := uuid ();
+    tmp := subseq (tmp, strrchr (tmp, '-'));
+    if ((userPassword like '%'||tmp) and (regexp_match ('[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', userPassword) is not null))
+      old_password := userPassword;
+  }
   DB.DBA.USER_CHANGE_PASSWORD (uname, old_password, new_password);
   rc := 1;
-  ret:
+ret:
   return ods_serialize_int_res (rc, msg);
+}
+;
+
+create procedure ODS.ODS_API."user.upload" () __soap_http 'text/xml'
+{
+  declare params any;
+  declare photo, photoContent, audio, audioContent any;
+
+  declare uname varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  params := http_param ();
+
+  photo := get_keyword ('pf_photo', params);
+  photoContent := get_keyword ('pf_photoContent', params);
+
+  audio := get_keyword ('pf_audio', params);
+  audioContent := get_keyword ('pf_audioContent', params);
+
+  ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
+
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.upload.internal" (
+  in uname varchar,
+  in photo varchar := null,
+  in photoContent varchar := null,
+
+  in audio varchar := null,
+  in audioContent varchar := null)
+{
+  -- Photo
+  if (length(photo) and length(photoContent))
+  {
+    declare rc, uid integer;
+    declare dir, path, path_org, path_size2, dotpos any;
+    declare img, thumb, thumb_size2 any;
+    declare ext any;
+
+    ext := split_and_decode (photo, 0, '\0\0.');
+    if (ext is not null and ext[length(ext)-1] is not null and lcase(ext[length(ext)-1]) not in ('jpg', 'png', 'gif'))
+      signal ('23023', 'Invalid image type. Please use jpg, png or gif for browser compatibility.');
+
+    uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+    dir := rtrim (DB.DBA.DAV_HOME_DIR (uname), '/')||'/wa/images/';
+    path := photo;
+    if (photo not like '/%')
+      path := dir || path;
+
+    dotpos := regexp_instr (photo,'\..{3}\$')-1;
+    path_org := subseq (photo, 0, dotpos) || '_org' || subseq (photo, dotpos);
+    path_size2 := subseq (photo, 0, dotpos) || '_size2' || subseq (photo, dotpos);
+    if (photo not like '/%')
+    {
+      path_org := dir || path_org;
+      path_size2 := dir || path_size2;
+    }
+    DB.DBA.DAV_MAKE_DIR (dir, uid, http_admin_gid (), '110100100N');
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path_org, photoContent, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+    if (rc < 0)
+      signal ('23023', DB.DBA.DAV_PERROR (rc));
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, photoContent, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+    if (rc < 0)
+      signal ('23023', DB.DBA.DAV_PERROR (rc));
+
+    img := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_ID = rc);
+    thumb := null;
+    if (img is not null)
+      thumb := DB.DBA.WA_MAKE_THUMBNAIL_1 (img);
+    thumb_size2 := DB.DBA.WA_MAKE_THUMBNAIL_1 (img, 115, 160);
+
+    if (thumb is not null)
+      DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, thumb, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+
+    if (thumb_size2 is not null)
+      DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path_size2, thumb_size2, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+
+    if (path like '/DAV/%')
+      path := subseq (path, 4);
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', path);
+  }
+  else if (photo = '')
+  {
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', '');
+  }
+
+  -- Audio
+  if (length(audio) and length (audioContent))
+  {
+    declare rc, uid integer;
+    declare dir, path any;
+
+    uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+    dir := rtrim (DB.DBA.DAV_HOME_DIR (uname), '/') || '/wa/media/';
+
+    path := audio;
+    if (audio not like '/%')
+      path := dir || path;
+
+    DB.DBA.DAV_MAKE_DIR (dir, uid, http_admin_gid (), '110100100N');
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, audioContent, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+    if (rc < 0)
+      signal ('23023', DB.DBA.DAV_PERROR (rc));
+
+    if (path like '/DAV/%')
+      path := subseq (path, 4);
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_AUDIO_CLIP', path);
+  }
+  else if (audio = '')
+  {
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_AUDIO_CLIP', '');
+  }
 }
 ;
 
@@ -1540,42 +2392,59 @@ create procedure ODS.ODS_API."user.get" (
 
 create procedure ODS.ODS_API."user.info" (
   in name varchar := null,
-  in "short" varchar := null) __soap_http 'text/xml'
+  in "short" varchar := '0') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc integer;
+  declare rc, tmp, userPassword, noPassword integer;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     http_rewrite();
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  if (not ods_check_auth (uname))
-  {
+  if (not ods_check_auth (uname) and isnull (name))
     return ods_auth_failed ();
-  }
-  if (isnull (name))
+
+  if (isinteger (uname))
+    uname := null;
+
+  if (not isnull (uname) and isnull (name))
     name := uname;
+
+  if (not isnull (uname) and (uname <> name))
+    return ods_serialize_sql_error ('37000', 'Bad  user''s name paramater');
+
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   for (select * from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = name) do
   {
+    userPassword := pwd_magic_calc (U_NAME, U_PASSWORD, 1);
+    tmp := uuid ();
+    tmp := subseq (tmp, strrchr (tmp, '-'));
+    noPassword := case when (userPassword like '%'||tmp) and (regexp_match ('[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', userPassword) is not null) then '1' else '0' end;
+
     http ('<user>');
 
     -- Personal
     ods_xml_item ('uid',       U_ID);
+    ods_xml_item ('iri',        SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
     ods_xml_item ('name',      U_NAME);
     ods_xml_item ('nickName',  WAUI_NICK);
-    ods_xml_item ('iri',       SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
-    ods_xml_item ('mail',      U_E_MAIL);
-    ods_xml_item ('title',     WAUI_TITLE);
     ods_xml_item ('firstName', WAUI_FIRST_NAME);
     ods_xml_item ('lastName',  WAUI_LAST_NAME);
     ods_xml_item ('fullName',  WAUI_FULL_NAME);
-    ods_xml_item ('homepage',  WAUI_WEBPAGE);
 
-    if (not isnull ("short"))
+    if (isnull (uname))
+      goto _notLogged;
+
+    ods_xml_item ('noPassword', noPassword);
+    ods_xml_item ('mail',       U_E_MAIL);
+    ods_xml_item ('title',      WAUI_TITLE);
+    ods_xml_item ('homepage',  WAUI_WEBPAGE);
+    ods_xml_item ('qrcode',     ODS.ODS_API."qrcode"(WAUI_WEBPAGE));
+
+    if ("short" = '0')
     {
       -- Personal
       ods_xml_item ('gender',                 WAUI_GENDER);
@@ -1605,6 +2474,7 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('homeLatitude',           case when isnull (WAUI_LAT) then '' else sprintf ('%.6f', coalesce (WAUI_LAT, 0.00)) end);
       ods_xml_item ('homeLongitude',          case when isnull (WAUI_LNG) then '' else sprintf ('%.6f', coalesce (WAUI_LNG, 0.00)) end);
       ods_xml_item ('homePhone',              WAUI_HPHONE);
+      ods_xml_item ('homePhoneExt',           WAUI_HPHONE_EXT);
       ods_xml_item ('homeMobile',             WAUI_HMOBILE);
 
       -- Business
@@ -1622,6 +2492,7 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('businessLatitude',       case when isnull (WAUI_BLAT) then '' else sprintf ('%.6f', coalesce (WAUI_BLAT, 0.00)) end);
       ods_xml_item ('businessLongitude',      case when isnull (WAUI_BLNG) then '' else sprintf ('%.6f', coalesce (WAUI_BLNG, 0.00)) end);
       ods_xml_item ('businessPhone',          WAUI_BPHONE);
+      ods_xml_item ('businessPhoneExt',       WAUI_BPHONE_EXT);
       ods_xml_item ('businessMobile',         WAUI_BMOBILE);
       ods_xml_item ('businessRegNo',          WAUI_BREGNO);
       ods_xml_item ('businessCareer',         WAUI_BCAREER);
@@ -1641,26 +2512,251 @@ create procedure ODS.ODS_API."user.info" (
 
       -- Security
       ods_xml_item ('securityOpenID',         WAUI_OPENID_URL);
-      ods_xml_item ('securityFacebookID',     WAUI_FACEBOOK_LOGIN_ID);
+      ods_xml_item ('securityFacebookID',     WAUI_FACEBOOK_ID);
+      if (not isnull (WAUI_FACEBOOK_ID))
+      {
+        declare fb_options any;
+        declare fb DB.DBA.Facebook;
+
+        if (DB.DBA._get_ods_fb_settings (fb_options))
+        {
+          fb := new DB.DBA.Facebook(fb_options[0], fb_options[1], http_param (), http_request_header ());
+          rc := fb.api_client.users_getInfo(WAUI_FACEBOOK_ID, 'name');
+          ods_xml_item ('securityFacebookName', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', rc)));
+        }
+      }
       ods_xml_item ('securitySecretQuestion', WAUI_SEC_QUESTION);
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
 
-      ods_xml_item ('certificate',            WAUI_CERT);
-      if (length(WAUI_CERT))
-      {
-        ods_xml_item ('certificateSubject',   get_certificate_info (2, cast (WAUI_CERT as varchar), 0, ''));
-        ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
-      }
-      ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
       ods_xml_item ('appSetting',             cast (WAUI_APP_ENABLE as varchar));
+      ods_xml_item ('spbEnable',              cast (WAUI_SPB_ENABLE as varchar));
+      ods_xml_item ('inSearch',               cast (WAUI_SEARCHABLE as varchar));
+      ods_xml_item ('showActive',             cast (WAUI_SHOWACTIVE as varchar));
+
+      ods_xml_item ('photo',                  WAUI_PHOTO_URL);
+      ods_xml_item ('audio',                  WAUI_AUDIO_CLIP);
     }
+  _notLogged:;
     http ('</user>');
   }
   return '';
 }
 ;
 
+create procedure ODS.ODS_API."user.info.webID" (
+  in webID varchar,
+  in output varchar := 'xml') __soap_http 'text/xml'
+{
+  declare N, M, L integer;
+  declare foafGraph varchar;
+  declare S, st, msg, data, meta, cleanMeta any;
+  declare V, tmp, metaName, metaValue, _names, _values, _newValue any;
+
+  V := jsonObject ();
+  set_user_id ('dba');
+  foafGraph := SIOC..get_graph();
+  S := sprintf ('sparql
+                 define input:storage ""
+                 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                 prefix dc: <http://purl.org/dc/elements/1.1/>
+                 prefix foaf: <http://xmlns.com/foaf/0.1/>
+                 prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+                 prefix bio: <http://vocab.org/bio/0.1/>
+                 select *
+         		       from <%s>
+                  where {
+                          {?iri a foaf:Person } UNION {?iri a foaf:Organization } .
+                          ?iri rdf:type ?kind .
+                          optional { ?iri foaf:name ?name } .
+                          optional { ?iri foaf:title ?title } .
+                          optional { ?iri foaf:nick ?nick } .
+                          optional { ?iri foaf:firstName ?firstName } .
+                          optional { ?iri foaf:givenname ?givenname } .
+                          optional { ?iri foaf:family_name ?family_name } .
+                          optional { ?iri foaf:mbox ?mbox } .
+                          optional { ?iri foaf:mbox_sha1sum ?mbox_sha1sum } .
+                          optional { ?iri foaf:gender ?gender } .
+                          optional { ?iri foaf:birthday ?birthday } .
+                          optional { ?iri foaf:based_near ?t_b1 .
+                                     ?t_b1 geo:lat ?lat;
+                                           geo:long ?lng .
+                                   } .
+                          optional { ?iri foaf:icqChatID ?icqChatID } .
+                          optional { ?iri foaf:msnChatID ?msnChatID } .
+                          optional { ?iri foaf:aimChatID ?aimChatID } .
+                          optional { ?iri foaf:yahooChatID ?yahooChatID } .
+         	                optional { ?iri foaf:holdsAccount ?t_holdsAccount .
+         	                           ?t_holdsAccount foaf:accountServiceHomepage ?t_accountServiceHomepage ;
+         	                                           foaf:accountName ?skypeChatID.
+                                     filter (str(?t_accountServiceHomepage) like ''skype%%'').
+                                   } .
+                          optional { ?iri foaf:workplaceHomepage ?workplaceHomepage } .
+                          optional { ?iri foaf:homepage ?homepage } .
+                          optional { ?iri foaf:phone ?phone } .
+                          optional { ?iri foaf:depiction ?depiction } .
+                          optional { ?iri bio:keywords ?keywords } .
+                          optional { ?organization a foaf:Organization }.
+                          optional { ?organization foaf:homepage ?workplaceHomepage }.
+                          optional { ?organization dc:title ?organizationTitle }.
+                          optional { ?iri vcard:ADR ?t_address .
+                                     optional { ?t_address vcard:Country ?country } .
+                             	       optional { ?t_address vcard:Locality ?locality } .
+                              			 optional { ?t_address vcard:Region ?region } .
+                              			 optional { ?t_address vcard:Pobox ?pobox } .
+                              			 optional { ?t_address vcard:Street ?street } .
+                              			 optional { ?t_address vcard:Extadd ?extadd } .
+                          	       } .
+                          optional { ?iri foaf:interest ?x_interest_url .
+                                     ?x_interest_url rdfs:label ?xa_interest_label. } .
+                          optional { ?iri foaf:topic_interest ?x_topicInterest_url .
+                                     ?x_topicInterest_url rdfs:label ?xa_topicInterest_label. } .
+                          optional { ?iri foaf:holdsAccount ?t_oa .
+                                     ?t_oa a foaf:OnlineAccount.
+                                     ?t_oa foaf:accountServiceHomepage ?x_onlineAccount_url.
+                                     ?t_oa foaf:accountName ?xa_onlineAccount_label.
+                                     filter (!(str(?x_onlineAccount_url) like ''skype%%'')).
+                                   } .
+                          optional { ?iri owl:sameAs ?x_sameAs } .
+             	            optional { ?iri foaf:knows ?x_knows_iri .
+             	                      ?x_knows_iri rdfs:seeAlso ?xa_knows_seeAlso .
+             	                      ?x_knows_iri foaf:nick ?xa_knows_nick .
+             	                    } .
+                          optional { ?iri bio:olb ?resume } .
+                          optional { ?iri foaf:made ?x_made } .
+                          filter (?iri = iri(?::0)).
+                        }', foafGraph);
+  commit work;
+  st := '00000';
+  exec (S, st, msg, vector (webID), vector ('use_cache', 1), meta, data);
+  if (st <> '00000')
+    goto _exit;
+
+  -- clean meta
+  cleanMeta := vector ();
+  for (N := 0; N < length (meta[0]); N := N + 1)
+    cleanMeta := vector_concat (cleanMeta, vector (meta[0][N][0]));
+
+  for (N := 0; N < length (data); N := N + 1)
+  {
+    for (M := 0; M < length (cleanMeta); M := M + 1)
+    {
+      metaName := cleanMeta[M];
+      if (metaName like 't_%')
+        goto _skip;
+      if (metaName like 'xa_%')
+        goto _skip;
+      if ((N > 0) and (metaName not like 'x_%'))
+        goto _skip;
+
+      metaValue := data[N][M];
+      if (metaName like 'x_%')
+      {
+        _names := split_and_decode (metaName, 0, '\0\0_');
+        if (length (_names) = 2)
+        {
+          if (not isnull (metaValue))
+          {
+            _values := get_keyword (_names[1], V, vector ());
+            if (not ODS.ODS_API.vector_contains(_values, metaValue))
+            {
+              _values := vector_concat (_values, vector (metaValue));
+              ODS.ODS_API.set_keyword (_names[1], V, _values);
+            }
+          }
+        } else {
+          _values := get_keyword (_names[1], V, vector ());
+          _newValue := jsonObject ();
+          if (not isnull (metaValue))
+            _newValue := vector_concat (_newValue, vector (_names[2], metaValue));
+          for (L := 0; L < length (cleanMeta); L := L + 1)
+          {
+            if (cleanMeta[L] like 'xa_'||_names[1]||'_%')
+            {
+              metaName := subseq (cleanMeta[L], length ('xa_'||_names[1]||'_'));
+              metaValue := data[N][L];
+              if (not isnull (metaValue))
+                _newValue := vector_concat (_newValue, vector (metaName, metaValue));
+            }
+          }
+          if ((length (_newValue) > 2) and not ODS.ODS_API.vector_contains(_values, _newValue))
+          {
+            _values := vector_concat (_values, vector (_newValue));
+            ODS.ODS_API.set_keyword (_names[1], V, _values);
+          }
+        }
+      }
+      else if ((N = 0) and not isnull (metaValue))
+      {
+        ODS.ODS_API.set_keyword (metaName, V, metaValue);
+      }
+
+    _skip:;
+    }
+  }
+
+  if (length (V) > 2)
+  {
+    commit work;
+    S := DB.DBA.FOAF_SSL_QR (SIOC..get_graph(), webID);
+    exec (S, st, msg, vector (), 0, meta, data);
+    if (st = '00000' and length (data))
+    {
+      declare C any;
+
+      C := vector ();
+      for (N := 0; N < length (data); N := N + 1)
+        C := vector_concat (C, vector (vector_concat (jsonObject (), vector ('rsaNo', N, 'rsaPublicExponent', data[N][0], 'rsaModulus', data[N][1]))));
+
+      ODS.ODS_API.set_keyword ('rsaPublicKey', V, C);
+    }
+    tmp := get_keyword ('homepage', V);
+    if (not isnull (tmp))
+      ODS.ODS_API.set_keyword ('qrcode', V, ODS.ODS_API."qrcode"(tmp));
+  }
+
+_exit:;
+  if (output = 'xml')
+    return obj2xml(vector (V), 10, 'user');
+  return obj2json(V, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.certificateUrl" () __soap_http 'application/json'
+{
+  declare uname, rc, ua, url, webId any;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  rc := null;
+  ua := http_request_header (http_request_header (), 'User-Agent');
+  if (coalesce (strstr (ua, 'MSIE'), -1) > 0 or regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
+  {
+    declare svc_url varchar;
+
+    rc := '';
+    url := (select  top 1 WS_CERT_GEN_URL from DB.DBA.WA_SETTINGS);
+    if (length (url))
+    {
+      for (select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY
+             from DB.DBA.SYS_USERS,
+                  DB.DBA.WA_USER_INFO
+     	      where U_NAME = uname and U_ID = WAUI_U_ID) do
+      {
+        webId := sioc..person_iri (sioc..user_obj_iri (U_NAME));
+        rc := sprintf ('%s?uri=%U&name=%U&email=%U&organization=%U', url, webId, coalesce (U_FULL_NAME, U_NAME), coalesce (U_E_MAIL, ''), coalesce (WAUI_BORG, ''));
+      }
+    }
+  }
+  return obj2json(rc, 10);
+}
+;
 
 create procedure ODS.ODS_API."user.search" (
   in pattern varchar) __soap_http 'text/xml'
@@ -2117,7 +3213,7 @@ create procedure ODS.ODS_API."user.topicOfInterest.new" (
   topicURI := trim (topicURI);
   topicLabel := coalesce (trim (topicLabel), '');
   newData := '';
-  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property = topicURI)
@@ -2130,7 +3226,7 @@ create procedure ODS.ODS_API."user.topicOfInterest.new" (
   }
   if (notFound)
     newData := newData || topicURI || ';' || topicLabel || '\n';
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -2153,13 +3249,13 @@ create procedure ODS.ODS_API."user.topicOfInterest.delete" (
 
   topicURI := trim (topicURI);
   newData := '';
-  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property <> topicURI)
       newData := newData || property || ';' || label || '\n';
   }
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -2184,7 +3280,7 @@ create procedure ODS.ODS_API."user.thingOfInterest.new" (
   thingURI := trim (thingURI);
   thingLabel := coalesce (trim (thingLabel), '');
   newData := '';
-  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property = thingURI)
@@ -2197,7 +3293,7 @@ create procedure ODS.ODS_API."user.thingOfInterest.new" (
   }
   if (notFound)
     newData := newData || thingURI || ';' || thingLabel || '\n';
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -2219,13 +3315,13 @@ create procedure ODS.ODS_API."user.thingOfInterest.delete" (
 
   thingURI := trim (thingURI);
   newData := '';
-  oldData := (select WAUI_INTEREST_TOPICS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
+  oldData := (select WAUI_INTERESTS from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname);
   for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
   {
     if (property <> thingURI)
       newData := newData || property || ';' || label || '\n';
   }
-  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', newData);
+  DB.DBA.WA_USER_EDIT (uname, 'WAUI_INTERESTS', newData);
   return ods_serialize_int_res (1);
 }
 ;
@@ -2286,6 +3382,21 @@ create procedure ODS.ODS_API."user.annotation.delete" (
 }
 ;
 
+create procedure ODS.ODS_API."user.onlineAccounts.uri" (
+  in url varchar) __soap_http 'text/plain'
+{
+  declare rc varchar;
+
+  rc := null;
+  if (__proc_exists ('DB.DBA.RDF_PROXY_ENTITY_IRI'))
+    rc := DB.DBA.RDF_PROXY_ENTITY_IRI(url);
+  if (isnull (rc))
+    rc := url || '#this';
+
+  return rc;
+}
+;
+
 create procedure ODS.ODS_API."user.onlineAccounts.list" (
   in "type" varchar) __soap_http 'application/json'
 {
@@ -2301,17 +3412,18 @@ create procedure ODS.ODS_API."user.onlineAccounts.list" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   retValue := vector();
-  for (select WUO_ID, WUO_NAME, WUO_URL from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = "type" and WUO_U_ID = _u_id) do
+  for (select WUO_ID, WUO_NAME, WUO_URL, WUO_URI from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = "type" and WUO_U_ID = _u_id) do
   {
-    retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL)));
+    retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL, WUO_URI)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
 create procedure ODS.ODS_API."user.onlineAccounts.new" (
   in name varchar,
   in url varchar,
+  in uri varchar := null,
   in "type" varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2325,10 +3437,13 @@ create procedure ODS.ODS_API."user.onlineAccounts.new" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-
-  insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
-    values (_u_id, "type", name, url);
+  rc := (select WUO_ID from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = _u_id and WUO_TYPE = "type" and WUO_NAME = name and WUO_URL = url);
+  if (isnull (rc))
+  {
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
+      values (_u_id, "type", name, url, uri);
   rc := (select max (WUO_ID) from DB.DBA.WA_USER_OL_ACCOUNTS);
+  }
   return ods_serialize_int_res (rc);
 }
 ;
@@ -2337,6 +3452,7 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
   in id integer := null,
   in name varchar := null,
   in url varchar := null,
+  in uri varchar := null,
   in "type" varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2357,7 +3473,8 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
      where WUO_U_ID = _u_id
        and WUO_TYPE = "type"
        and (name is null or WUO_NAME = name)
-       and (url  is null or WUO_URL = url);
+       and (url  is null or WUO_URL = url)
+       and (uri  is null or WUO_URI = uri);
   } else {
     delete
       from DB.DBA.WA_USER_OL_ACCOUNTS
@@ -2387,7 +3504,7 @@ create procedure ODS.ODS_API."user.bioEvents.list" () __soap_http 'application/j
   {
     retValue := vector_concat (retValue, vector (vector (WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2456,8 +3573,7 @@ create procedure ODS.ODS_API."user.favorites.list" () __soap_http 'application/j
 {
   declare uname varchar;
   declare _u_id integer;
-  declare fID, fOntology, fItems any;
-  declare fItemTypes any;
+  declare retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2466,37 +3582,22 @@ create procedure ODS.ODS_API."user.favorites.list" () __soap_http 'application/j
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  fID := 0;
-  fOntology := '';
-  fItemTypes := vector ();
-  fItems := vector ();
-  for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id order by WUF_TYPE) do
+  retValue := vector();
+  for (select WUF_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id) do
   {
-    if (fOntology <> WUF_TYPE)
-    {
-      if (fOntology <> '')
-        fItemTypes := vector_concat (fItemTypes, vector (vector_concat (jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
-      fID := fID + 1;
-      fOntology := WUF_TYPE;
-      fItems := vector ();
-    }
-    fItems := vector_concat (fItems, vector (vector_concat (jsonObject(), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
+    retValue := vector_concat (retValue, vector (vector (WUF_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI)));
   }
-  if (length (fItems))
-    fItemTypes := vector_concat (fItemTypes, vector (vector_concat (jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
-  return obj2json (fItemTypes, 10);
+  return obj2json (retValue);
 }
 ;
 
-create procedure ODS.ODS_API."user.favorites.new" (
-  in favorites any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.favorites.get" (
+  in id integer) __soap_http 'application/json'
 {
   declare uname varchar;
-  declare rc, N, M, L integer;
+  declare retValue any;
   declare _u_id integer;
-  declare ontologies, ontology, ontologyItems any;
-  declare item, itemID, itemIDs any;
-  declare properties, newProperties, property, propertyType, propertyValue, newProperty any;
+  declare flag, label, uri, properties any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2505,84 +3606,47 @@ create procedure ODS.ODS_API."user.favorites.new" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-
-  itemIDs := vector ();
-  ontologies := json_parse (favorites);
-  for (N := 0; N < length (ontologies); N := N + 1)
+  flag := '1';
+  label := '';
+  uri := '';
+  properties := vector();
+  for (select WUF_ID, WUF_FLAG, WUF_LABEL, WUF_URI, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_ID = id and WUF_U_ID = _u_id) do
   {
-    ontology := ontologies[N];
-    ontologyItems := get_keyword ('items', ontology);
-    for (M := 0; M < length (ontologyItems); M := M + 1)
-    {
-      item := ontologyItems[M];
-      itemID := get_keyword ('id', item);
-      if (not exists (select 1 from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id and WUF_ID = itemID))
-      {
-      insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
-        values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize ( get_keyword ('properties', item)), _u_id);
-        itemIDs := vector_concat (itemIDs, vector (itemID, cast (identity_value () as varchar)));
-      } else {
-        itemIDs := vector_concat (itemIDs, vector (itemID, itemID));
+    flag := WUF_FLAG;
+    label := WUF_LABEL;
+    uri := WUF_URI;
+    properties := deserialize (WUF_PROPERTIES);
+  }
+  properties := vector (
+                        vector_concat (
+                                       ODS..jsonObject (),
+                                       vector (
+                                               'id', '0',
+                                               'ontology', 'http://rdfs.org/sioc/ns#',
+                                               'items', vector (
+                                                                vector_concat (
+                                                                               ODS..jsonObject (),
+                                                                               vector (
+                                                                                       'id', '0',
+                                                                                       'className', 'sioc:Item',
+                                                                                       'properties', properties
+                                                                                      )
+                                                                              )
+                                                                )
+                                              )
+                                      )
+                       );
+  retValue := vector_concat (jsonObject (), vector ('id', id, 'flag', flag, 'label', label, 'uri', uri, 'properties', properties));
+  return obj2json (retValue);
     }
-  }
-  }
-  for (N := 0; N < length (ontologies); N := N + 1)
-  {
-    ontology := ontologies[N];
-    ontologyItems := get_keyword ('items', ontology);
-    for (M := 0; M < length (ontologyItems); M := M + 1)
-    {
-      item := ontologyItems[M];
-      itemID := get_keyword ('id', item);
-      itemID := get_keyword (itemID, itemIDs, itemID);
-      properties := get_keyword ('properties', item);
-      newProperties := vector ();
-      for (L := 0; L < length (properties); L := L + 1)
-      {
-        property := properties[L];
-        newProperty := property;
-        propertyType := get_keyword('type', property);
-        propertyValue := get_keyword ('value', property);
-        if ((propertyType = 'object') and (cast (atoi (propertyValue) as varchar) = propertyValue))
-        {
-          propertyValue := get_keyword (propertyValue, itemIDs, propertyValue);
-          newProperty := vector_concat (
-                                        jsonObject (),
-                                        vector (
-                                                 'name', get_keyword ('name', property),
-                                                 'value', propertyValue,
-                                                 'type', propertyType
-                                               )
-                                       );
-        }
-        newProperties := vector_concat (newProperties, vector (newProperty));
-      }
-      update DB.DBA.WA_USER_FAVORITES
-         set WUF_TYPE = get_keyword ('ontology', ontology),
-             WUF_CLASS = get_keyword ('className', item),
-             WUF_PROPERTIES = serialize (newProperties)
-       where WUF_U_ID = _u_id
-         and WUF_ID = itemID;
-    }
-  }
-  for (select WUF_ID id from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id) do
-  {
-    for (N := 0; N < length (itemIDs); N := N + 2)
-    {
-      if (itemIDs[N+1] = cast (id as varchar))
-        goto _skip;
-    }
-    delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id and WUF_ID = id;
-  _skip:;
-  }
-  return ods_serialize_int_res (1);
-}
 ;
 
-create procedure ODS.ODS_API."user.favorites.delete" (
-  in id integer := null,
-  in "type" varchar := null,
-  in "class" varchar := null) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.favorites.update" (
+  in id integer,
+  in flag varchar := '1',
+  in label varchar,
+  in uri varchar,
+  in properties varchar)
 {
   declare uname varchar;
   declare rc integer;
@@ -2595,19 +3659,65 @@ create procedure ODS.ODS_API."user.favorites.delete" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  properties := json_parse (properties);
   if (isnull (id))
   {
-    delete
-      from DB.DBA.WA_USER_FAVORITES
-     where WUF_U_ID = _u_id
-       and ("type"  is null or WUF_TYPE  = "type")
-       and ("class" is null or WUF_CLASS = "class");
+    insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_FLAG, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
+      values (_u_id, flag, 'http://rdfs.org/sioc/ns#', 'sioc:Item', label, uri, serialize (properties));
+    rc := (select max (WUF_ID) from DB.DBA.WA_USER_FAVORITES);
   } else {
+    update DB.DBA.WA_USER_FAVORITES
+       set WUF_FLAG = flag,
+           WUF_LABEL = label,
+           WUF_URI = uri,
+           WUF_PROPERTIES = serialize (properties)
+     where WUF_ID = id;
+    rc := id;
+  }
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.new" (
+  in flag varchar := '1',
+  in label varchar,
+  in uri varchar,
+  in properties varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.favorites.update" (null, flag, label, uri, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.edit" (
+  in id integer,
+  in flag varchar := '1',
+  in label varchar,
+  in uri varchar,
+  in properties varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.favorites.update" (id, flag, label, uri, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
     delete
       from DB.DBA.WA_USER_FAVORITES
      where WUF_U_ID = _u_id
        and WUF_ID   = id;
-  }
+
   rc := row_count ();
   return ods_serialize_int_res (rc);
 }
@@ -2631,7 +3741,7 @@ create procedure ODS.ODS_API."user.mades.list" () __soap_http 'application/json'
   {
     retValue := vector_concat (retValue, vector (vector (WUP_ID, WUP_NAME, WUP_URL, WUP_DESC)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2659,7 +3769,7 @@ create procedure ODS.ODS_API."user.mades.get" (
     description := WUP_DESC;
   }
   retValue := vector_concat (jsonObject (), vector ('id', id, 'property', property, 'url', url, 'description', description));
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2785,7 +3895,7 @@ create procedure ODS.ODS_API."user.mades.edit" (
 
 create procedure ODS.ODS_API."user.mades.delete" (
   in id integer) __soap_http 'text/xml'
-{
+  {
   declare uname varchar;
   declare rc integer;
   declare _u_id integer;
@@ -2805,7 +3915,24 @@ create procedure ODS.ODS_API."user.mades.delete" (
 }
 ;
 
-create procedure ODS.ODS_API."user.offers.list" () __soap_http 'application/json'
+create procedure ODS.ODS_API."user.products.fix" (
+  in products any,
+  in ontologyURI varchar := 'http://purl.org/goodrelations/v1#')
+{
+  if (get_keyword ('version', products) = '2.0')
+  {
+    products := get_keyword ('ontologies', products, vector ());
+  }
+  else
+  {
+    products := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', ontologyURI, 'items', get_keyword ('products', products, vector ()))));
+  }
+  return products;
+}
+;
+
+create procedure ODS.ODS_API."user.offers.list" (
+  in type varchar := '1') __soap_http 'application/json'
   {
   declare uname varchar;
   declare _u_id integer;
@@ -2819,20 +3946,20 @@ create procedure ODS.ODS_API."user.offers.list" () __soap_http 'application/json
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   retValue := vector();
-  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id) do
+  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_TYPE = type) do
   {
     retValue := vector_concat (retValue, vector (vector (WUOL_ID, WUOL_OFFER, WUOL_COMMENT)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
 create procedure ODS.ODS_API."user.offers.get" (
   in id integer) __soap_http 'application/json'
-{
+    {
   declare uname varchar;
   declare _u_id integer;
-  declare name, comment, products, retValue any;
+  declare flag, name, comment, products, retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2841,11 +3968,13 @@ create procedure ODS.ODS_API."user.offers.get" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '1';
   name := '';
   comment := '';
   products := vector ();
-  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = id) do
+  for (select WUOL_ID, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = id) do
   {
+    flag := WUOL_FLAG;
     name := WUOL_OFFER;
     comment := WUOL_COMMENT;
     products := deserialize (WUOL_PROPERTIES);
@@ -2853,17 +3982,20 @@ create procedure ODS.ODS_API."user.offers.get" (
   retValue := vector_concat (jsonObject (),
                              vector (
                                      'id', id,
+                                     'flag', flag,
                                      'name', name,
                                      'comment', comment,
-                                     'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
+                                     'properties', ODS.ODS_API."user.products.fix" (products)
                                     )
                             );
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
 create procedure ODS.ODS_API."user.offers.update" (
   in id integer,
+  in type varchar := '1',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any) __soap_http 'text/xml'
@@ -2879,23 +4011,21 @@ create procedure ODS.ODS_API."user.offers.update" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  products := vector();
   ontologies := json_parse (properties);
-  if (length(ontologies))
-    products := get_keyword ('items', ontologies[0], vector());
-  properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+  products := vector_concat (ODS..jsonObject (), vector ('version', '2.0', 'ontologies', ontologies));
   if (isnull (id))
-  {
-    insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
-      values (_u_id, name, comment, serialize (properties));
+      {
+    insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
+      values (_u_id, type, flag, name, comment, serialize (products));
     id := (select max (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST);
-  }
+    }
   else
   {
     update DB.DBA.WA_USER_OFFERLIST
-       set WUOL_OFFER = name,
+       set WUOL_FLAG = flag,
+           WUOL_OFFER = name,
            WUOL_COMMENT = comment,
-           WUOL_PROPERTIES = serialize (properties)
+           WUOL_PROPERTIES = serialize (products)
      where WUOL_ID = id;
   }
   return ods_serialize_int_res (id);
@@ -2903,27 +4033,31 @@ create procedure ODS.ODS_API."user.offers.update" (
 ;
 
 create procedure ODS.ODS_API."user.offers.new" (
+  in type varchar := '1',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
-{
-  return ODS.ODS_API."user.offers.update" (null, name, comment, properties);
-}
+  {
+  return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
+  }
 ;
 
 create procedure ODS.ODS_API."user.offers.edit" (
   in id integer,
+  in type varchar := '1',
+  in flag varchar := '1',
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
-{
-  return ODS.ODS_API."user.offers.update" (id, name, comment, properties);
-}
+  {
+  return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
+  }
 ;
 
 create procedure ODS.ODS_API."user.offers.delete" (
   in id integer) __soap_http 'text/xml'
-{
+  {
   declare uname varchar;
   declare rc integer;
   declare _u_id integer;
@@ -2941,10 +4075,97 @@ create procedure ODS.ODS_API."user.offers.delete" (
   rc := row_count ();
 
   return ods_serialize_int_res (rc);
-}
+  }
 ;
 
 create procedure ODS.ODS_API."user.seeks.list" () __soap_http 'application/json'
+  {
+  return ODS.ODS_API."user.offers.list"('2');
+  }
+;
+
+create procedure ODS.ODS_API."user.seeks.get" (
+  in id integer) __soap_http 'application/json'
+{
+  return ODS.ODS_API."user.offers.get"(id);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.new" (
+  in type varchar := '2',
+  in flag varchar := '1',
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.edit" (
+  in id integer,
+  in type varchar := '2',
+  in flag varchar := '1',
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (id);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.list" (
+  in type varchar := '3') __soap_http 'application/json'
+{
+  return ODS.ODS_API."user.offers.list"(type);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.get" (
+  in id integer) __soap_http 'application/json'
+{
+  return ODS.ODS_API."user.offers.get"(id);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.new" (
+  in type varchar := '3',
+  in flag varchar := '1',
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.edit" (
+  in id integer,
+  in type varchar := '3',
+  in flag varchar := '1',
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+ return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.owns.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (id);
+}
+;
+
+create procedure ODS.ODS_API."user.likes.list" () __soap_http 'application/json'
 {
   declare uname varchar;
   declare _u_id integer;
@@ -2958,20 +4179,20 @@ create procedure ODS.ODS_API."user.seeks.list" () __soap_http 'application/json'
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   retValue := vector();
-  for (select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id) do
+  for (select WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_U_ID = _u_id) do
   {
-    retValue := vector_concat (retValue, vector (vector (WUWL_ID, WUWL_BARTER, WUWL_COMMENT)));
+    retValue := vector_concat (retValue, vector (vector (WUL_ID, WUL_URI, case when (WUL_TYPE = 'L') then 'Like' else 'DisLike' end, WUL_NAME, WUL_COMMENT)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
-create procedure ODS.ODS_API."user.seeks.get" (
+create procedure ODS.ODS_API."user.likes.get" (
   in id integer) __soap_http 'application/json'
   {
   declare uname varchar;
   declare _u_id integer;
-  declare name, comment, products, retValue any;
+  declare flag, uri, type, name, comment, products, retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2980,29 +4201,41 @@ create procedure ODS.ODS_API."user.seeks.get" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '';
+  uri := '';
+  type := '';
   name := '';
   comment := '';
   products := vector ();
-  for (select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_ID = id) do
+  for (select WUL_ID, WUL_FLAG, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_ID = id) do
     {
-    name := WUWL_BARTER;
-    comment := WUWL_COMMENT;
-    products := deserialize (WUWL_PROPERTIES);
+    flag := WUL_FLAG;
+    uri := WUL_URI;
+    type := WUL_TYPE;
+    name := WUL_NAME;
+    comment := WUL_COMMENT;
+    products := deserialize (WUL_PROPERTIES);
     }
   retValue := vector_concat (jsonObject (),
                              vector (
                                      'id', id,
+                                     'flag', flag,
+                                     'uri', uri,
+                                     'type', type,
                                      'name', name,
                                      'comment', comment,
-                                     'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
+                                     'properties', ODS.ODS_API."user.products.fix" (products, 'http://ontologi.es/like#')
                                     )
                             );
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
   }
 ;
 
-create procedure ODS.ODS_API."user.seeks.update" (
+create procedure ODS.ODS_API."user.likes.update" (
   in id integer,
+  in flag varchar := '1',
+  in uri varchar,
+  in type varchar,
   in name varchar,
   in comment varchar,
   in properties any) __soap_http 'text/xml'
@@ -3018,49 +4251,55 @@ create procedure ODS.ODS_API."user.seeks.update" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  products := vector();
   ontologies := json_parse (properties);
-  if (length(ontologies))
-    products := get_keyword ('items', ontologies[0], vector());
-  properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+  products := vector_concat (ODS..jsonObject (), vector ('version', '2.0', 'ontologies', ontologies));
   if (isnull (id))
   {
-    insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
-      values (_u_id, name, comment, serialize (properties));
-    id := (select max (WUWL_ID) from DB.DBA.WA_USER_WISHLIST);
+    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_FLAG, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
+      values (_u_id, flag, uri, type, name, comment, serialize (products));
+    id := (select max (WUL_ID) from DB.DBA.WA_USER_LIKES);
   }
   else
   {
-  update DB.DBA.WA_USER_WISHLIST
-       set WUWL_BARTER = name,
-           WUWL_COMMENT = comment,
-           WUWL_PROPERTIES = serialize (properties)
-     where WUWL_ID = id;
+    update DB.DBA.WA_USER_LIKES
+       set WUL_FLAG = flag,
+           WUL_URI = uri,
+           WUL_TYPE = type,
+           WUL_NAME = name,
+           WUL_COMMENT = comment,
+           WUL_PROPERTIES = serialize (products)
+     where WUL_ID = id;
   }
   return ods_serialize_int_res (id);
 }
 ;
 
-create procedure ODS.ODS_API."user.seeks.new" (
+create procedure ODS.ODS_API."user.likes.new" (
+  in flag varchar := '1',
+  in uri varchar,
+  in type varchar,
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.seeks.update" (null, name, comment, properties);
+  return ODS.ODS_API."user.likes.update" (null, flag, uri, type, name, comment, properties);
 }
 ;
 
-create procedure ODS.ODS_API."user.seeks.edit" (
+create procedure ODS.ODS_API."user.likes.edit" (
   in id integer,
+  in flag varchar := '1',
+  in uri varchar,
+  in type varchar,
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
 {
-  return ODS.ODS_API."user.seeks.update" (id, name, comment, properties);
+  return ODS.ODS_API."user.likes.update" (id, flag, uri, type, name, comment, properties);
 }
 ;
 
-create procedure ODS.ODS_API."user.seeks.delete" (
+create procedure ODS.ODS_API."user.likes.delete" (
   in id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -3075,10 +4314,305 @@ create procedure ODS.ODS_API."user.seeks.delete" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
-  delete from DB.DBA.WA_USER_WISHLIST where WUWL_ID = id and WUWL_U_ID = _u_id;
+  delete from DB.DBA.WA_USER_LIKES where WUL_ID = id and WUL_U_ID = _u_id;
   rc := row_count ();
 
   return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select WUK_ID, WUK_URI, WUK_LABEL from DB.DBA.WA_USER_KNOWS where WUK_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (WUK_ID, WUK_URI, WUK_LABEL)));
+  }
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare flag, uri, label, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  flag := '';
+  uri := '';
+  label := '';
+  for (select WUK_ID, WUK_FLAG, WUK_URI, WUK_LABEL from DB.DBA.WA_USER_KNOWS where WUK_ID = id) do
+  {
+    flag := WUK_FLAG;
+    uri := WUK_URI;
+    label := WUK_LABEL;
+  }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'flag', flag,
+                                     'uri', uri,
+                                     'label', label
+                                    )
+                            );
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.update" (
+  in id integer,
+  in flag varchar := '1',
+  in uri varchar,
+  in label varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare products, ontologies any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (isnull (id))
+  {
+    if (not exists (select 1 from DB.DBA.WA_USER_KNOWS where WUK_U_ID = _u_id and WUK_URI = uri))
+    {
+      insert into DB.DBA.WA_USER_KNOWS (WUK_U_ID, WUK_FLAG, WUK_URI, WUK_LABEL)
+        values (_u_id, flag, uri, label);
+      id := (select max (WUK_ID) from DB.DBA.WA_USER_KNOWS);
+    } else {
+      id := 0;
+    }
+  }
+  else
+  {
+    update DB.DBA.WA_USER_KNOWS
+       set WUK_FLAG = flag,
+           WUK_URI = uri,
+           WUK_LABEL = label
+     where WUK_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.new" (
+  in flag varchar := '1',
+  in uri varchar,
+  in label varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.knows.update" (null, flag, uri, label);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.edit" (
+  in id integer,
+  in flag varchar := '1',
+  in uri varchar,
+  in label varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.knows.update" (id, flag, uri, label);
+}
+;
+
+create procedure ODS.ODS_API."user.knows.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_KNOWS where WUK_ID = id and WUK_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select UC_ID, UC_CERT, UC_TS, UC_FINGERPRINT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_U_ID = _u_id order by UC_TS desc) do
+  {
+    retValue := vector_concat (retValue, vector (vector (UC_ID, get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), DB.DBA.wa_abs_date (UC_TS), UC_FINGERPRINT, case when UC_LOGIN = 1 then 'Yes' else 'No' end)));
+  }
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare subject, agentID, fingerPrint, certificate, enableLogin, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  subject := '';
+  agentID := '';
+  fingerPrint := '';
+  certificate := '';
+  enableLogin := 0;
+  for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id) do
+  {
+    subject := get_certificate_info (2, UC_CERT, 0, '');
+    agentID := ODS.ODS_API.SSL_WEBID_GET (UC_CERT);
+    fingerPrint := get_certificate_info (6, UC_CERT, 0, '');
+    certificate := UC_CERT;
+    enableLogin := UC_LOGIN;
+  }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'subject', subject,
+                                     'agentID', agentID,
+                                     'fingerPrint', fingerPrint,
+                                     'certificate', certificate,
+                                     'enableLogin', enableLogin
+                                    )
+                            );
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.update" (
+  in id integer,
+  in certificate varchar,
+  in enableLogin integer)
+{
+  declare uname, agent varchar;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  agent := ODS.ODS_API.SSL_WEBID_GET (certificate);
+  if ((agent is null and length (certificate)) or (0 = length (certificate)))
+	  signal ('', 'The certificate must be in PEM format and must have Alternate Name attribute.');
+
+	if (id is null)
+  {
+    insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN)
+      values (_u_id, certificate, get_certificate_info (6, certificate, 0, ''), enableLogin);
+    id := (select max (UC_ID) from DB.DBA.WA_USER_CERTS);
+	}
+	else
+	{
+	  update DB.DBA.WA_USER_CERTS
+	     set UC_CERT = certificate,
+			     UC_FINGERPRINT = get_certificate_info (6, certificate, 0, ''),
+				   UC_LOGIN = enableLogin
+		 where UC_U_ID = _u_id
+		   and UC_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.new" (
+  in certificate varchar,
+  in enableLogin integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.certificates.update" (null, certificate, enableLogin);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.edit" (
+  in id integer,
+  in certificate varchar,
+  in enableLogin integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.certificates.update" (id, certificate, enableLogin);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API.appendPropertyTitle (
+  in title varchar)
+{
+  declare M integer;
+  declare V any;
+
+  V := vector ('Mr', 'Mrs', 'Dr', 'Ms', 'Sir');
+  for (M := 0; M < length (V); M := M + 1)
+  {
+    if (lcase (title) like (lcase (V[M])|| '%'))
+      return V[M];
+  }
+  return '';
 }
 ;
 
@@ -3088,15 +4622,78 @@ create procedure ODS.ODS_API.appendProperty (
   in propertyValue any,
   in propertyNS varchar := '')
 {
-  if (not isnull (propertyValue))
+  if (not DB.DBA.is_empty_or_null (propertyValue) and isstring (propertyValue) and propertyValue not like 'nodeID:%' and isnull (get_keyword (propertyName, V)))
   {
     if (propertyNS <> '')
     {
       if (propertyValue like propertyNS || '%')
         propertyValue := substring (propertyValue, length (propertyNS) + 1, length (propertyValue));
     }
+    if (propertyValue like 'mailto:%')
+    {
+      propertyValue := replace (propertyValue, 'mailto:', '');
+    }
+    else if (propertyValue like 'tel:%')
+    {
+      propertyValue := replace (propertyValue, 'tel:', '');
+    }
+    else if (propertyName = 'title')
+    {
+      propertyValue := appendPropertyTitle (propertyValue);
+    }
     V := vector_concat (V, vector (propertyName, propertyValue));
   }
+  return V;
+}
+;
+
+create procedure ODS.ODS_API.appendPropertyArray (
+  inout V any,
+  inout N integer,
+  in propertyName varchar,
+  in propertyValue any,
+  in meta any,
+  in data any)
+{
+  declare M integer;
+  declare property varchar;
+  declare newPropertyArray, propertyArray any;
+
+  property := replace (propertyName, '_array', '');
+  N := N + 1;
+  if (not DB.DBA.is_empty_or_null (propertyValue) and isstring (propertyValue) and (propertyValue not like 'nodeID:%'))
+  {
+    newPropertyArray := vector_concat (jsonObject(), vector ('value', propertyValue));
+
+    propertyArray := get_keyword (property, V);
+    if (isnull (propertyArray))
+      propertyArray := vector ();
+
+    for (M := 0; M < length (propertyArray); M := M + 1)
+    {
+      if (get_keyword ('value', propertyArray[M]) = propertyValue)
+        goto _exit;
+    }
+
+    while ((N < length(meta)) and (meta[N] like property || '_%'))
+    {
+      if (not DB.DBA.is_empty_or_null (data[N]) and isstring (data[N]) and (data[N] not like 'nodeID:%'))
+        newPropertyArray := vector_concat (newPropertyArray, vector (replace (meta[N], property||'_', ''), data[N]));
+
+      N := N + 1;
+    }
+
+    propertyArray := vector_concat (propertyArray, vector (newPropertyArray));
+    ODS.ODS_API.set_keyword (property, V, propertyArray);
+  }
+  else
+  {
+  _exit:;
+    while ((N < length(meta)) and (meta[N] like property || '_%'))
+      N := N + 1;
+  }
+
+  N := N - 1;
   return V;
 }
 ;
@@ -3105,44 +4702,99 @@ grant execute on DB.DBA.RDF_GRAB to SPARQL_SELECT;
 grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 
 create procedure ODS.ODS_API.vector_contains(
-  in aVector any,
+  inout aVector any,
   in aValue any)
 {
-  declare N integer;
+  declare N, M, L integer;
 
   for (N := 0; N < length(aVector); N := N + 1)
+  {
+    if (isarray (aValue) and not isstring (aValue))
+    {
+      if (isarray (aVector[N]) and not isstring (aVector[N]))
+      {
+        if (length (aValue) = length (aVector[N]))
+        {
+          L := case when (isJsonObject (aValue) and isJsonObject (aVector[N])) then 2 else 0 end;
+          for (M := L; M < length(aValue); M := M + 1)
+          {
+            if (aValue[M] <> aVector[N][M])
+              goto _skip;
+          }
+          return 1;
+        }
+      }
+    _skip:;
+    } else {
     if (aValue = aVector[N])
       return 1;
+    }
+  }
   return 0;
 }
 ;
 
-create procedure ODS.ODS_API.vector_concat (
-  in aVector any,
-  in aValue any)
+create procedure ODS.ODS_API.simplifyMeta (
+  in abMeta any)
 {
-  if (ODS.ODS_API.vector_contains (aVector, aValue))
-    return aVector;
+  declare N integer;
+  declare newMeta any;
 
-  return vector_concat (aVector, vector (aValue));
+  newMeta := vector ();
+  for (N := 0; N < length (abMeta[0]); N := N + 1)
+    newMeta := vector_concat (newMeta, vector (abMeta[0][N][0]));
+
+  return newMeta;
 }
 ;
 
-create procedure ODS.ODS_API.get_foaf_data_array (
+create procedure ODS.ODS_API.set_keyword (
+  in    name   varchar,
+  inout params any,
+  in    value  any)
+{
+  declare N integer;
+
+  for (N := 0; N < length(params); N := N + 2)
+  {
+    if (params[N] = name)
+    {
+      params[N+1] := value;
+      goto _end;
+    }
+  }
+  params := vector_concat (params, vector(name, value));
+_end:
+  return params;
+}
+;
+
+create procedure ODS.ODS_API.graph_create ()
+{
+  return 'http://local.virt/ods/' || cast (rnd (1000) as varchar);
+}
+;
+
+create procedure ODS.ODS_API.graph_clear (
+  in graph varchar)
+{
+  commit work;
+  exec (sprintf ('SPARQL clear graph <%s>', graph));
+}
+;
+
+create procedure ODS.ODS_API.getFOAFDataArray (
   in foafIRI varchar,
-  in spongerMode integer := 1,
   in sslFOAFCheck integer := 0,
   in sslLoginCheck integer := 0)
 {
-  declare N, M integer;
-  declare S, IRI, foafGraph, _identity, _loc_idn varchar;
-  declare V, st, msg, data, meta any;
-  declare certLogin any;
-  declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
-  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "skypeChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "resume" any;
-  declare "interest", "topic_interest", "onlineAccounts", "sameAs" any;
-  declare "vInterest", "vTopic_interest", "vOnlineAccounts", "vSameAs" any;
+  declare N integer;
+  declare S, SQLs, IRI, foafGraph, _identity, _loc_idn varchar;
+  declare V, st, msg, rows, meta any;
+  declare certLogin, certLoginEnable any;
+  declare personUri any;
   declare host, port, arr any;
+  declare info any;
 
   set_user_id ('dba');
   _identity := trim (foafIRI);
@@ -3160,45 +4812,148 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   V := rfc1808_parse_uri (trim (foafIRI));
   V[5] := '';
   IRI := DB.DBA.vspx_uri_compose (V);
+
   V := vector ();
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  if (spongerMode)
+  foafGraph := ODS.ODS_API.graph_create ();
+  sqls := vector (sprintf ('sparql
+                            define input:storage ""
+                            prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                            prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                            prefix foaf: <http://xmlns.com/foaf/0.1/>
+                            select ?iri
+          		                from <%s>
+                             where {
+                                     ?personalProfileDocument a foaf:PersonalProfileDocument;
+                                                              foaf:primaryTopic ?iri .
+                                   }', foafGraph),
+                  sprintf ('sparql
+                            define input:storage ""
+                            prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                            prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                            prefix foaf: <http://xmlns.com/foaf/0.1/>
+                            select ?iri
+          		                from <%s>
+                             where {
+                                     ?iri a foaf:Person.
+                                   } ', foafGraph)
+                 );
+
+  personUri := ODS.ODS_API.getPersonUri (
+                 sprintf ('sparql load <%s> into graph <%s>', IRI, foafGraph),
+                 sqls,
+                 IRI,
+                 foafGraph
+               );
+  if (isnull (personUri))
   {
-    S := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, IRI);
-  } else {
-    S := sprintf ('sparql load <%s> into graph <%s>', IRI, foafGraph);
+  personUri := ODS.ODS_API.getPersonUri (
+                 sprintf ('sparql define get:soft "soft" define get:uri <%s> select * from <%s> where { ?s ?p ?o }', IRI, foafGraph),
+                 sqls,
+                 IRI,
+                 foafGraph
+               );
   }
-  st := '00000';
-  commit work;
-  exec (S, st, msg, vector (), 0);
-  if (st <> '00000')
+  if (isnull (personUri))
     goto _exit;
+
   commit work;
   set isolation='committed';
   if (sslFOAFCheck)
   {
-    declare info any;
+    if (not is_https_ctx ())
+      goto _exit;
 
     info := get_certificate_info (9);
-    st := '00000';
     S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
+
+    st := '00000';
     commit work;
-    exec (S, st, msg, vector (), 0, meta, data);
-    if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
-      goto _exit;
-  }
-  if (sslLoginCheck)
-  {
-    certLogin := null;
-    for (select WAUI_CERT_LOGIN from DB.DBA.WA_USER_INFO where WAUI_CERT_FINGERPRINT = get_certificate_info (6)) do
-    {
-      certLogin := coalesce (WAUI_CERT_LOGIN, 0);
-    }
-    if (isnull (certLogin))
+    exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
+    if (st = '00000' and length (rows))
       {
+	    foreach (any _row in rows) do
+	  {
+	    if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
+  	      goto _loginIn;
+	  }
+      }
       goto _exit;
   }
+_loginIn:
+  certLogin := 0;
+  certLoginEnable := 0;
+  if (is_https_ctx ())
+  {
+    for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
+    {
+      certLogin := 1;
+      certLoginEnable := coalesce (UC_LOGIN, 0);
   }
+  }
+  V := ODS.ODS_API.extractFOAFDataArray (personUri, foafGraph);
+
+  if (is_https_ctx () and isnull (get_keyword ('mbox', V)))
+  {
+    declare X, Y any;
+
+    X := vector ();
+    info := get_certificate_info (2);
+    Y := split_and_decode (info, 0, '\0\0/');
+    for (N := 0; N < length (Y); N := N + 1)
+      X := vector_concat (X, split_and_decode (Y[N], 0, '\0\0='));
+
+    appendProperty (V, 'mbox', get_keyword ('emailAddress', X));
+  }
+
+  if (certLogin and length (V))
+    appendProperty (V, 'certLogin', cast (certLogin as varchar));
+
+_exit:;
+  ODS.ODS_API.graph_clear (foafGraph);
+  -- dbg_obj_print ('V', V);
+  return V;
+}
+;
+
+create procedure ODS.ODS_API.getPersonUri (
+  in S varchar,
+  in SQLs any,
+  in iri varchar,
+  in graph varchar)
+{
+  declare N integer;
+  declare st, msg, rows, meta any;
+
+  ODS.ODS_API.graph_clear (graph);
+
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (), vector ('use_cache', 1));
+  if (st <> '00000')
+    return null;
+
+  for (N := 0; N < length(SQLs); n := N + 1)
+  {
+    st := '00000';
+    commit work;
+    exec (SQLs[N], st, msg, vector (), vector ('use_cache', 1), meta, rows);
+    if (st = '00000' and (length (rows) > 0))
+    {
+      return rows[0][0];
+    }
+  }
+  return null;
+}
+;
+
+create procedure ODS.ODS_API.extractFOAFDataArray (
+  in iri varchar,
+  in graph varchar)
+{
+  declare N integer;
+  declare S varchar;
+  declare V, S, st, msg, rows, meta any;
+
   S := sprintf ('sparql
                  define input:storage ""
                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -3207,7 +4962,9 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   prefix bio: <http://vocab.org/bio/0.1/>
-                 select ?person
+                 select ?iri
+                        ?type
+                        ?personalProfileDocument
                         ?title
                          ?name
                          ?nick
@@ -3231,165 +4988,93 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                          ?keywords
                          ?depiction
                         ?resume
-                         ?interest
+                        ?interest_array
                          ?interest_label
-                        ?topic_interest
+                        ?topic_interest_array
                         ?topic_interest_label
-                        ?onlineAccount
+                        ?onlineAccount_array
                         ?onlineAccount_url
-                        ?sameAs
+                        ?sameAs_array
+                        ?knows_array
+                        ?knows_nick
 		               from <%s>
                    where {
-                           {
-                             [] a foaf:PersonalProfileDocument ;
-                             foaf:primaryTopic ?person .
-                             optional { ?person foaf:name ?name } .
-                             optional { ?person foaf:title ?title } .
-                             optional { ?person foaf:nick ?nick } .
-                             optional { ?person foaf:firstName ?firstName } .
-                             optional { ?person foaf:givenname ?givenname } .
-                             optional { ?person foaf:family_name ?family_name } .
-                             optional { ?person foaf:mbox ?mbox } .
-                             optional { ?person foaf:gender ?gender } .
-                             optional { ?person foaf:birthday ?birthday } .
-                             optional { ?person foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
-                             optional { ?person foaf:icqChatID ?icqChatID } .
-                             optional { ?person foaf:msnChatID ?msnChatID } .
-                             optional { ?person foaf:aimChatID ?aimChatID } .
-                             optional { ?person foaf:yahooChatID ?yahooChatID } .
-  	                        optional { ?person foaf:holdsAccount ?holdsAccount .
+                          ?iri rdf:type ?type .
+                          optional { ?personalProfileDocument foaf:primaryTopic ?iri }.
+                            optional { ?iri foaf:name ?name } .
+                            optional { ?iri foaf:title ?title } .
+                            optional { ?iri foaf:nick ?nick } .
+                            optional { ?iri foaf:firstName ?firstName } .
+                            optional { ?iri foaf:givenname ?givenname } .
+                            optional { ?iri foaf:family_name ?family_name } .
+                            optional { ?iri foaf:mbox ?mbox } .
+                            optional { ?iri foaf:gender ?gender } .
+                            optional { ?iri foaf:birthday ?birthday } .
+                          optional { ?iri foaf:based_near ?b1 .
+                                     ?b1 geo:lat ?lat ;
+                                         geo:long ?lng . } .
+                            optional { ?iri foaf:icqChatID ?icqChatID } .
+                            optional { ?iri foaf:msnChatID ?msnChatID } .
+                            optional { ?iri foaf:aimChatID ?aimChatID } .
+                            optional { ?iri foaf:yahooChatID ?yahooChatID } .
+  	                        optional { ?iri foaf:holdsAccount ?holdsAccount .
   	                                   ?holdsAccount foaf:accountServiceHomepage ?accountServiceHomepage ;
   	                                                 foaf:accountName ?skypeChatID.
                                        filter (str(?accountServiceHomepage) like ''skype%%'').
                                      } .
-                             optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
-                             optional { ?person foaf:homepage ?homepage } .
-                             optional { ?person foaf:phone ?phone } .
-                             optional { ?person foaf:depiction ?depiction } .
-                             optional { ?person bio:keywords ?keywords } .
+                            optional { ?iri foaf:workplaceHomepage ?workplaceHomepage } .
+                            optional { ?iri foaf:homepage ?homepage } .
+                            optional { ?iri foaf:phone ?phone } .
+                            optional { ?iri foaf:depiction ?depiction } .
+                            optional { ?iri bio:keywords ?keywords } .
                              optional { ?organization a foaf:Organization }.
                              optional { ?organization foaf:homepage ?workplaceHomepage }.
                              optional { ?organization dc:title ?organizationTitle }.
-                             optional { ?person foaf:interest ?interest .
-                                        ?interest rdfs:label ?interest_label. } .
-                            optional { ?person foaf:topic_interest ?topic_interest .
-                                       ?topic_interest rdfs:label ?topic_interest_label. } .
-                            optional { ?person foaf:holdsAccount ?oa .
-                                       ?oa a foaf:OnlineAccount.
-                                       ?oa foaf:accountServiceHomepage ?onlineAccount_url.
-                                       ?oa foaf:accountName ?onlineAccount. } .
-                            optional { ?person owl:sameAs ?sameAs } .
-                            optional { ?person bio:olb ?resume } .
-                           }
-                        }', foafGraph);
+                            optional { ?iri foaf:interest ?interest_array .
+                                       ?interest_array rdfs:label ?interest_label. } .
+                            optional { ?iri foaf:topic_interest ?topic_interest_array .
+                                       ?topic_interest_array rdfs:label ?topic_interest_label. } .
+                            optional { ?iri foaf:holdsAccount ?oa .
+                                       ?oa a foaf:OnlineAccount;
+                                           foaf:accountServiceHomepage ?onlineAccount_url;
+                                           foaf:accountName ?onlineAccount_array. } .
+                            optional { ?iri owl:sameAs ?sameAs_array } .
+                            optional { ?iri bio:olb ?resume } .
+                            optional { ?iri foaf:knows ?knows_array .
+                                       optional { ?knows_array foaf:nick ?knows_nick } .
+                                       optional { ?knows_array foaf:name ?knows_name } .
+                                     } .
+                          filter (?iri = iri(?::0)).
+                        }', graph);
+  V := vector ();
+  st := '00000';
   commit work;
-  exec (S, st, msg, vector (), 0, meta, data);
-  M := 0;
-  "interest" := '';
-  "topic_interest" := '';
-  "onlineAccounts" := '';
-  "sameAs" := '';
-  "vInterest" := vector ();
-  "vTopic_interest" := vector ();
-  "vOnlineAccounts" := vector ();
-  "vSameAs" := vector ();
-  for (N := 0; N < length (data); N := N + 1)
+  exec (S, st, msg, vector (iri), vector ('use_cache', 1), meta, rows);
+  if (st = '00000')
   {
-    if (_identity = data[N][0])
+  meta := ODS.ODS_API.simplifyMeta(meta);
+  foreach (any row in rows) do
+  {
+    N := 0;
+    while (N < length(meta))
     {
-      if (M = 0)
+      if (meta[N] like '%_array')
     {
-        M := 1;
-        "title" := data[N][1];
-        "name" := data[N][2];
-        "nick" := data[N][3];
-        "firstName" := data[N][4];
-        "givenname" := data[N][5];
-        "family_name" := data[N][6];
-        "mbox" := data[N][7];
-        "gender" := lcase (data[N][8]);
-        "birthday" := data[N][9];
-        "lat" := data[N][10];
-        "lng" := data[N][11];
-        "icqChatID" := data[N][12];
-        "msnChatID" := data[N][13];
-        "aimChatID" := data[N][14];
-        "yahooChatID" := data[N][15];
-        "skypeChatID" := data[N][16];
-        "workplaceHomepage" := data[N][17];
-        "homepage" := data[N][18];
-        "phone" := data[N][19];
-        "organizationTitle" := data[N][20];
-        "keywords" := data[N][21];
-        "depiction" := data[N][22];
-        "resume" := data[N][23];
-
-        if (sslLoginCheck)
-          appendProperty (V, 'certLogin', certLogin);
-        appendProperty (V, 'iri', foafIRI);                                   -- FOAF IRI
-        appendProperty (V, 'nickName', coalesce ("nick", "name"));            -- WAUI_NICK
-    appendProperty (V, 'title', "title");		   -- WAUI_TITLE
-    appendProperty (V, 'name', "name");			   -- WAUI_FULL_NAME
-    appendProperty (V, 'firstName', coalesce ("firstName", "givenname")); -- WAUI_FIRST_NAME
-    appendProperty (V, 'family_name', "family_name");	   -- WAUI_LAST_NAME
-    appendProperty (V, 'mbox', "mbox", 'mailto:');	   -- E_MAIL
-    appendProperty (V, 'birthday', "birthday");		   -- WAUI_BIRTHDAY
-    appendProperty (V, 'gender', "gender");		   -- WAUI_GENDER
-    appendProperty (V, 'lat', "lat");			   -- WAUI_LAT
-    appendProperty (V, 'lng', "lng");			   -- WAUI_LNG
-    appendProperty (V, 'icqChatID', "icqChatID");	   -- WAUI_ICQ
-    appendProperty (V, 'msnChatID', "msnChatID");	   -- WAUI_MSN
-    appendProperty (V, 'aimChatID', "aimChatID");	   -- WAUI_AIM
-    appendProperty (V, 'yahooChatID', "yahooChatID");	   -- WAUI_YAHOO
-        appendProperty (V, 'skypeChatID', "skypeChatID");	                    -- WAUI_SKYPE
-    appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
-    appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
-    appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
-        appendProperty (V, 'organizationHomepage', "workplaceHomepage");      -- WAUI_BORG_HOMEPAGE
-      appendProperty (V, 'organizationTitle', "organizationTitle");         -- WAUI_
-      appendProperty (V, 'tags', "keywords");                               -- WAUI_
-      appendProperty (V, 'depiction', "depiction");                         -- WAUI_
+        appendPropertyArray (V, N, meta[N], row[N], meta, row);
+      } else {
+        appendProperty (V, meta[N], row[N]);
+      }
+      N := N + 1;
     }
-      if (data[N][24] is not null and data[N][24] <> '' and not ODS.ODS_API.vector_contains ("vInterest", data[N][24]))
-      {
-        "interest" := "interest" || data[N][24] || ';' || data[N][25] || '\n';
-        "vInterest" := vector_concat ("vInterest", vector (data[N][24]));
-      }
-      if (data[N][26] is not null and data[N][26] <> '' and not ODS.ODS_API.vector_contains ("vTopic_interest", data[N][26]))
-      {
-        "topic_interest" := "topic_interest" || data[N][26] || ';' || data[N][27] || '\n';
-        "vTopic_interest" := vector_concat ("vTopic_interest", vector (data[N][26]));
-      }
-      if (data[N][28] is not null and data[N][28] <> '' and not ODS.ODS_API.vector_contains ("vOnlineAccounts", data[N][28]))
-      {
-        "onlineAccounts" := "onlineAccounts" || data[N][28] || ';' || data[N][29] || '\n';
-        "vOnlineAccounts" := vector_concat ("vOnlineAccounts", vector (data[N][28]));
-      }
-      if (data[N][30] is not null and data[N][30] <> '' and not ODS.ODS_API.vector_contains ("vSameAs", data[N][30]))
-      {
-        "sameAs" := "sameAs" || data[N][30] || '\n';
-        "vSameAs" := vector_concat ("vSameAs", vector (data[N][30]));
-      }
   }
   }
-  if ("interest" <> '')
-    appendProperty (V, 'interest', "interest");
-  if ("topic_interest" <> '')
-    appendProperty (V, 'topic_interest', "topic_interest");
-  if ("onlineAccounts" <> '')
-    appendProperty (V, 'onlineAccounts', "onlineAccounts");
-  if ("sameAs" <> '')
-    appendProperty (V, 'sameAs', "sameAs");
-
-_exit:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
  return V;
   }
 ;
 
 create procedure ODS.ODS_API."user.getFOAFData" (
   in foafIRI varchar,
-  in spongerMode integer := 1,
+  in spongerMode integer := 0,
   in sslFOAFCheck integer := 0,
   in outputMode integer := 1,
   in sslLoginCheck integer := 0) __soap_http 'application/json'
@@ -3399,8 +5084,14 @@ create procedure ODS.ODS_API."user.getFOAFData" (
   {
     return case when outputMode then obj2json (null) else null end;
   };
-  V := ODS.ODS_API.get_foaf_data_array (foafIRI, spongerMode, sslFOAFCheck, sslLoginCheck);
+  V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
   return case when outputMode then params2json (V) else V end;
+}
+;
+
+create procedure ODS.ODS_API.SSL_WEBID_GET (in cert any := null)
+{
+  return DB.DBA.FOAF_SSL_WEBID_GET (cert);
 }
 ;
 
@@ -3409,15 +5100,68 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   in outputMode integer := 1,
   in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
-  declare foafIRI any;
+  declare foafIRI, alts any;
   declare V any;
+  declare certLogin, certLoginEnable any;
 
-  foafIRI := get_certificate_info (7, null, null, null, '2.5.29.17');
-  if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
+  certLogin := 0;
+  certLoginEnable := 0;
+  foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
+  if (not isnull (foafIRI))
   {
-    foafIRI := subseq (foafIRI, 4);
-    V := ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslFOAFCheck, outputMode, sslLoginCheck);
-    return V;
+    try_auth:
+    if (foafIRI like 'ldap://%')
+      {
+	declare i, arr, rc any;
+	V := vector ();
+	rc := DB.DBA.FOAF_SSL_LDAP_CHECK_INT (foafIRI, arr);
+	arr := arr[1];
+	for (i := 0; i < length (arr); i := i + 2)
+	   {
+	     if (arr[i] = 'mail')
+	       appendProperty (V, 'mbox', cast (arr[i+1][0] as varchar));
+	     else if (arr[i] = 'cn')
+	       appendProperty (V, 'name', cast (arr[i+1][0] as varchar));
+	   }
+	if (rc)
+	  {
+	    appendProperty (V, 'iri', foafIRI);
+	  }
+    	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
+  	  {
+  	    certLogin := 1;
+  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
+	  }
+      }
+    else
+    V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
+    return case when outputMode then params2json (V) else V end;
+  }
+  else if (is_https_ctx ()) -- try webfinger
+  {
+    declare agent any;
+    agent := DB.DBA.FOAF_SSL_WEBFINGER ();
+    if (agent is not null)
+      {
+	V := vector ();
+	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
+	  {
+	    certLogin := 1;
+	    certLoginEnable := coalesce (UC_LOGIN, 0);
+	    appendProperty (V, 'iri', agent);
+	    appendProperty (V, 'mbox', get_certificate_info (10, null, 0, '', 'emailAddress'));
+	    appendProperty (V, 'name', get_certificate_info (10, null, 0, '', 'CN'));
+  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
+  	    --appendProperty (V, 'certLoginEnable', certLoginEnable);
+	    return case when outputMode then params2json (V) else V end;
+	  }
+      }
+    else
+      {
+	foafIRI := ODS..FINGERPOINT_WEBID_GET ();
+	if (foafIRI is not null)
+	  goto try_auth;
+      }
   }
   return case when outputMode then obj2json (null) else null end;
 }
@@ -3469,6 +5213,103 @@ create procedure ODS.ODS_API."user.getFacebookData" (
     }
   }
   return case when outputMode then obj2json (retValue) else retValue end;
+}
+;
+
+create procedure ODS.ODS_API."user.getKnowsData" (
+  in sourceURI varchar,
+  in spongerMode integer := 0) __soap_http 'application/json'
+{
+  declare N integer;
+  declare S, sourceIRI, foafGraph varchar;
+  declare V, st, msg, data, meta any;
+  declare knows, seeAlso, nick, name, uri, label any;
+
+  set_user_id ('dba');
+
+  V := rfc1808_parse_uri (trim (sourceURI));
+  V[5] := '';
+  sourceIRI := DB.DBA.vspx_uri_compose (V);
+
+  -- V := vector (vector_concat (jsonObject (), vector ('label', 'mara', 'uri', 'http://mara.com#this')));
+  V := vector ();
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+  if (spongerMode)
+  {
+    S := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, sourceIRI);
+  } else {
+    S := sprintf ('sparql load <%s> into graph <%s>', sourceIRI, foafGraph);
+  }
+  st := '00000';
+  commit work;
+  exec (S, st, msg, vector (), 0);
+  if (st <> '00000')
+    goto _exit;
+
+  S := sprintf ('sparql
+                 define input:storage ""
+                 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                 prefix dc: <http://purl.org/dc/elements/1.1/>
+                 prefix foaf: <http://xmlns.com/foaf/0.1/>
+                 select ?knows
+                        ?nick
+                        ?name
+		               from <%s>
+                  where {
+                          [] a foaf:PersonalProfileDocument ;
+                             foaf:primaryTopic ?person .
+                          ?person foaf:knows ?knows.
+                          optional {?knows foaf:nick ?nick.}
+                          optional {?knows foaf:name ?name.}
+                        }
+                  order by ?knows', foafGraph);
+  commit work;
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st <> '00000')
+    goto _exit;
+
+  knows := '';
+  nick := '';
+  name := '';
+  for (N := 0; N < length (data); N := N + 1)
+  {
+    if (knows <> data[N][0])
+    {
+      if (knows <> '')
+      {
+        -- store data
+        uri := knows;
+        if (uri not like 'nodeID:%')
+        {
+          label := name;
+          if (label = '')
+          {
+            label := nick;
+          }
+          else if (nick <> '')
+          {
+            label := name || ' (' || nick || ')';
+          }
+          V := vector_concat (V, vector (vector_concat (jsonObject (), vector ('uri', uri, 'label', label))));
+        }
+      }
+
+      -- start new collect data
+      knows := data[N][0];
+      nick := '';
+      name := '';
+      }
+    if ((nick = '') and not DB.DBA.is_empty_or_null (data[N][1]))
+      nick := data[N][1];
+
+    if ((name = '') and not DB.DBA.is_empty_or_null (data[N][2]))
+      name := data[N][2];
+  }
+
+_exit:;
+  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  return obj2json (V);
 }
 ;
 
@@ -3885,28 +5726,42 @@ DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API
 
 grant execute on ODS.ODS_API.error_handler to ODS_API;
 
+grant execute on ODS.ODS_API."qrcode" to ODS_API;
+
 grant execute on ODS.ODS_API."ontology.classes" to ODS_API;
 grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;
 grant execute on ODS.ODS_API."ontology.objects" to ODS_API;
 
+grant execute on ODS.ODS_API."objects.rdf" to ODS_API;
 grant execute on ODS.ODS_API."lookup.list" to ODS_API;
 
 grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
-
 grant execute on ODS.ODS_API."address.geoData" to ODS_API;
+
+grant execute on ODS.ODS_API."twitterServer" to ODS_API;
+grant execute on ODS.ODS_API."twitterVerify" to ODS_API;
+
+grant execute on ODS.ODS_API."linkedinServer" to ODS_API;
+grant execute on ODS.ODS_API."linkedinVerify" to ODS_API;
 
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
 grant execute on ODS.ODS_API."user.login" to ODS_API;
+grant execute on ODS.ODS_API."user.validate" to ODS_API;
 grant execute on ODS.ODS_API."user.logout" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.update.fields" to ODS_API;
+grant execute on ODS.ODS_API."user.acl.update" to ODS_API;
+grant execute on ODS.ODS_API."user.acl.info" to ODS_API;
+grant execute on ODS.ODS_API."user.upload" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.enable" to ODS_API;
 grant execute on ODS.ODS_API."user.disable" to ODS_API;
 grant execute on ODS.ODS_API."user.get" to ODS_API;
 grant execute on ODS.ODS_API."user.info" to ODS_API;
+grant execute on ODS.ODS_API."user.info.webID" to ODS_API;
+grant execute on ODS.ODS_API."user.certificateUrl" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
 grant execute on ODS.ODS_API."user.invitation" to ODS_API;
@@ -3925,6 +5780,7 @@ grant execute on ODS.ODS_API."user.thingOfInterest.new" to ODS_API;
 grant execute on ODS.ODS_API."user.thingOfInterest.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.new" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.onlineAccounts.uri" to ODS_API;
 grant execute on ODS.ODS_API."user.onlineAccounts.list" to ODS_API;
 grant execute on ODS.ODS_API."user.onlineAccounts.new" to ODS_API;
 grant execute on ODS.ODS_API."user.onlineAccounts.delete" to ODS_API;
@@ -3932,7 +5788,9 @@ grant execute on ODS.ODS_API."user.bioEvents.list" to ODS_API;
 grant execute on ODS.ODS_API."user.bioEvents.new" to ODS_API;
 grant execute on ODS.ODS_API."user.bioEvents.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.list" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.get" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.new" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.mades.list" to ODS_API;
 grant execute on ODS.ODS_API."user.mades.get" to ODS_API;
@@ -3949,6 +5807,27 @@ grant execute on ODS.ODS_API."user.seeks.get" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.new" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.list" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.get" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.new" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.owns.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.list" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.get" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.new" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.list" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.get" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.new" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.knows.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.getKnowsData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFacebookData" to ODS_API;

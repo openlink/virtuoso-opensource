@@ -77,6 +77,8 @@ typedef struct ws_http_map_s
     caddr_t 	hm_htkey;
     caddr_t     hm_url_rewrite_rule;
     int		hm_url_rewrite_keep_lpath;
+    id_hash_t *	hm_cors;
+    int 	hm_cors_restricted;
   } ws_http_map_t;
 #endif
 
@@ -94,8 +96,8 @@ typedef struct ws_connection_s
     caddr_t *		ws_lines;
     caddr_t *		ws_path;
     caddr_t *		ws_params;
-    dk_session_t *	ws_raw_post;
     caddr_t *		ws_stream_params;
+    dk_session_t *	ws_req_body;
     int 		ws_req_len;
     int			ws_method;
     char		ws_method_name[20];
@@ -122,6 +124,7 @@ typedef struct ws_connection_s
     unsigned long 	ws_flushed;
 #endif
     caddr_t		ws_client_ip;
+    char 		ws_forward;
     wcharset_t *	ws_charset;
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
@@ -231,6 +234,7 @@ extern int32 http_thread_sz;
 extern char * dav_root;
 extern char * http_server_id_string;
 extern char * www_maintenance_page;
+extern char * http_proxy_address;
 
 void http_timeout_keep_alives (int must_kill);
 void ws_keep_alive_ready (dk_session_t * ses);
@@ -291,7 +295,7 @@ char * ws_usr_qual (ws_connection_t * ws, int is_soap);
 extern void dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_carset, wcharset_t *src_charset, int dks_esc_mode);
 extern void http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks_esc_mode);
 #if 0
-#define http_trace(a) printf a
+#define http_trace(a) do { printf ("HTTP trace: "); printf a; } while (0)
 #else
 #define http_trace(a)
 #endif
@@ -361,6 +365,7 @@ void http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t hea
 void zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret);
 
 extern caddr_t http_sys_find_best_accept_impl (caddr_t * qst, state_slot_t *ret_val_ssl, caddr_t accept_strg, caddr_t *supp, const char *fname);
+void ws_http_error (ws_connection_t * ws, const caddr_t code, const caddr_t message, const caddr_t uri, const caddr_t path);
 
 
 #ifdef _SSL
@@ -380,6 +385,7 @@ typedef struct https_ctx_info_s
 #endif
 extern char * http_cli_proxy_server;
 int http_cli_target_is_proxy_exception (char *);
+void ws_http_body_read (ws_connection_t * ws, dk_session_t **out);
 
 #define WS_CE_NONE 1
 #define WS_CE_CHUNKED 2

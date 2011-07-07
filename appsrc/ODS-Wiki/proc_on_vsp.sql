@@ -75,12 +75,6 @@ create function WV.WIKI.VSPTOPICCREATE (
   _topic.ti_fill_cluster_by_name();
   WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id, 'Owner of this cluster does not allow you to create new topics');
 
---  _topic.ti_http_debug_print('VspTopicCreate: info about current topic');
---  if (0 = WS.WS.CHECK_READ_ACCESS (_uid, _topic.ti_res_id))
---    {
---      VspReportFailedReadAccess (path, params, lines, _topic.ti_cluster_name, _topic.ti_local_name, '');
---      return;
---    }
   declare _ext_params any;
   declare _template varchar;
   if (_topic.ti_local_name like 'Category%')
@@ -91,12 +85,8 @@ create function WV.WIKI.VSPTOPICCREATE (
     {
       _template := '%META:TOPICPARENT{name="' || get_keyword('parent', params) || '"}%\n' || _template;
     }
-  WV.WIKI.SET_TEMP_TEXT (_topic.ti_cluster_name, _topic.ti_local_name, 
-	coalesce (get_keyword ('temp-text', params), _template),
-	params);
-
-  _ext_params := _topic.ti_xslt_vector (vector_concat (params,
-	 vector ('is_new', '1'))); 
+  WV.WIKI.SET_TEMP_TEXT (_topic.ti_cluster_name, _topic.ti_local_name, coalesce (get_keyword ('temp-text', params), _template), params);
+  _ext_params := _topic.ti_xslt_vector (vector_concat (params, vector ('is_new', '1')));
 
   declare _artiles any;
   
@@ -107,10 +97,7 @@ create function WV.WIKI.VSPTOPICCREATE (
 			LocalName)))
 		  from WV.WIKI.TOPIC where ClusterId = _topic.ti_cluster_id and LocalName like cast ('%' || _topic.ti_local_name || '%' as varchar)); 
 
-  http_value (
-    WV.WIKI.VSPXSLT ( 'VspTopicCreate.xslt',
-      _artiles,
-       _ext_params));
+  http_value (WV.WIKI.VSPXSLT ( 'VspTopicCreate.xslt', _artiles, _ext_params));
 }
 ;
 
@@ -128,7 +115,8 @@ create function WV.WIKI.VSPTOPICVIEW (
   _base_adjust := get_keyword ('baseadjust', params);
   _command := WV.WIKI.GET_COMMAND(params);
   declare _text, _is_hist varchar;  
-  declare exit handler for sqlstate '42WV9' {
+  declare exit handler for sqlstate '42WV9'
+  {
     --dbg_obj_princ ('WV.WIKI.VSPTOPICVIEW ', params);
     if (get_keyword ('lastop', params) is not null 
         or (get_keyword ('lastop', params) = 'Logout'))
@@ -144,13 +132,12 @@ create function WV.WIKI.VSPTOPICVIEW (
       http_rewrite();
       WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=null'));
       return;
-      --resignal;
     }
-  }
-  ;
+  };
+
   whenever sqlstate '22005' goto wrong_rev;
+
   _topic.ti_rev_id := cast (get_keyword ('rev', params, 0) as integer);
-  --dbg_obj_print ('{{{{', _topic.ti_rev_id);
   if (0)
     {
       wrong_rev: 
@@ -160,12 +147,9 @@ create function WV.WIKI.VSPTOPICVIEW (
   _topic.ti_base_adjust := _base_adjust;
   
   _is_hist := '';
-  if (0 < DB.DBA.DAV_SEARCH_ID ( DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') ||
-  	'VVC/' || _topic.ti_local_name || '.txt/', 'C' ))
+  if (0 < DB.DBA.DAV_SEARCH_ID ( DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') || 'VVC/' || _topic.ti_local_name || '.txt/', 'C' ))
     _is_hist := 't';
-  --dbg_obj_print ( 101 );
     
---  _topic.ti_http_debug_print('VspTopicView: info about current topic');
   _topic.ti_curuser_wikiname := coalesce ((select UserName from WV.WIKI.USERS where UserId=_uid), '?');
   _topic.ti_curuser_username := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=_uid), '?');
   _topic.ti_base_adjust := _base_adjust;
@@ -188,7 +172,6 @@ ins:
   		values (_topic.ti_id, 1);
     }
   whenever not found default;
-  --dbg_obj_princ (_topic.ti_get_entity (null,1));
   if (get_keyword ('selected', params, 'main') = 'talks')
     _topic.ti_text := '%COMMENTS%\n';
 
@@ -199,28 +182,24 @@ ins:
     _ext_params := vector_concat (_ext_params, vector ('qwikidisabled', '1'));
 
   declare _tree varchar;
---  _tree := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'tree', 'hide');
+
   _tree := 'hide';
   _ext_params := vector_concat (_ext_params, vector ('tree', _tree));
-
---  declare _tree_content any;
---  _tree_content := WV.WIKI.CLUSTER_TREE_BUILD (_topic.ti_cluster_id, _topic.ti_cluster_name);
---  _tree_content := xtree_doc(_tree_content, 2);
---  _ext_params := vector_concat (_ext_params, vector ('tree_content', _tree_content));
-
   _xhtml := _topic.ti_get_entity(null, 1);
-
   if (_command not in ('docbook'))
+  {
    _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml, _ext_params);
+  }
   if (_command = 'xmlraw')
     {
       http_rewrite ();
       http_value (_xhtml); 
       return 0;
     }
-  else if (_command = 'docbook')
+  if (_command = 'docbook')
 	{
-	  _xhtml:= '<html xmlns="http://www.w3.org/1999/xhtml">
+    _xhtml :=
+'<html xmlns="http://www.w3.org/1999/xhtml">
 		<head>
 	  <title>' || _topic.ti_local_name || '</title>
 	</head>
@@ -232,8 +211,6 @@ ins:
 
 	  return 0;
     }
-  declare _skin varchar;
-  _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), 'default');
 
   declare _creator varchar;
   _creator := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'creator', 'dav');  
@@ -252,10 +229,12 @@ ins:
   _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar, 'ods-app', _app_js));
   http_rewrite ();
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
-  _xhtml :=  WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml, vector_concat (_ext_params), _skin );
+  _xhtml := WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml, vector_concat (_ext_params), WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params));
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
   if (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'email-obfuscate') is not null)
+  {
   http_value (_xhtml);
+  }
   else
     {
        declare _content any;
@@ -296,10 +275,9 @@ create function WV.WIKI.VSPTOPICVIEW_TEMP (
 
       http_header ('Content-Type: text/html; charset=UTF-8\r\n');
       declare _content any;
-      _xhtml := XMLELEMENT ('html', 
-		 XMLELEMENT ('body'));
-      _content := xpath_eval ('//body', _xhtml);
             
+    _xhtml := XMLELEMENT ('html', XMLELEMENT ('body'));
+    _content := xpath_eval ('//body', _xhtml);
       foreach (any elem in xpath_eval ('//div[@class="topic-text"]/*', WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity(null, 0), _ext_params), 0)) do 
        {
 	 XMLAppendChildren (_content, elem);
@@ -334,8 +312,7 @@ create function WV.WIKI.VSPTOPICVIEW_PLAIN (
   http_rewrite();
   _xhtml := XMLELEMENT ('html', 
 		XMLELEMENT ('body', 
-		  xpath_eval ('//div[@class="topic-text"]', WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity (null,0),
-			      _ext_params))));
+      xpath_eval ('//div[@class="topic-text"]', WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity (null, 0), _ext_params))));
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
   http_value (_xhtml);
 }
@@ -354,7 +331,6 @@ create function WV.WIKI.VSPTOPICEDIT (
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
        
---  _topic.ti_http_debug_print('VspTopicView: info about current topic');
   WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   _topic.ti_curuser_wikiname := coalesce ((select UserName from WV.WIKI.USERS where UserId=_uid), '?');
@@ -415,12 +391,6 @@ create function WV.WIKI.VSPTOPICPREVIEW (
     }
   
   _topic.ti_text := _topic_text;
-   
---  if (0 = WS.WS.CHECK_READ_ACCESS (_uid, _topic.ti_res_id))
---    {
---      VspReportFailedReadAccess (path, params, lines, _topic.ti_cluster_name, _topic.ti_local_name, '');
---      return;
---    }
   _topic.ti_curuser_wikiname := coalesce ((select UserName from WV.WIKI.USERS where UserId=_uid), '?');
   _topic.ti_curuser_username := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=_uid), '?');
   _topic.ti_base_adjust := _base_adjust;
@@ -440,10 +410,13 @@ create function WV.WIKI.VSPTOPICREFERERS (
 {
   declare _uid integer;
   declare _base_adjust varchar;
-  _uid := get_keyword ('uid', params);
-  _base_adjust := get_keyword ('baseadjust', params);
   declare _report any;
   declare _text varchar;
+  declare _ext_params any;
+
+  _uid := get_keyword ('uid', params);
+  _base_adjust := get_keyword ('baseadjust', params);
+
   -- _topic.ti_http_debug_print('VspTopicReferers: info about current topic');
   if (get_keyword ('command', params) = 'refby') 
     {
@@ -452,14 +425,22 @@ create function WV.WIKI.VSPTOPICREFERERS (
 					     XMLELEMENT ('Link',
 							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
 									n.LocalName as "LOCALNAME",
+                            u.U_NAME as "CREATED_BY",
+                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED_ON",
+                            u2.U_NAME as "UPDATED_BY",
+                            WV.WIKI.DATEFORMAT (r.RES_MOD_TIME) as "UPDATED_ON",
 									n.Abstract as "ABSTRACT") ) ) )
-		  from (
-			select distinct n2.LocalName, n2.Abstract, n2.ClusterId
-			from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
+                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.RESID, n2.Abstract, n2.ClusterId
+                          from WV.WIKI.LINK as l
+                                 inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
 			 where l.DestId = _topic.ti_id
 			 and n2.ClusterId = _topic.ti_cluster_id
 			) as n
-		  inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) );
+                        inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId)
+                        inner join DB.DBA.SYS_USERS as u on (u.U_ID = n.AuthorId)
+                        inner join WS.WS.SYS_DAV_RES r on (n.RESID = r.RES_ID)
+                        inner join DB.DBA.SYS_USERS as u2 on (u2.U_ID = r.RES_OWNER)
+                 order by c.ClusterName, n.LocalName);
     }
   else
     {
@@ -468,22 +449,29 @@ create function WV.WIKI.VSPTOPICREFERERS (
 					     XMLELEMENT ('Link',
 							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
 									n.LocalName as "LOCALNAME",
+                            u.U_NAME as "CREATED_BY",
+                            WV.WIKI.DATEFORMAT (n.T_CREATE_TIME) as "CREATED_ON",
+                            u2.U_NAME as "UPDATED_BY",
+                            WV.WIKI.DATEFORMAT (r.RES_MOD_TIME) as "UPDATED_ON",
 									n.Abstract as "ABSTRACT") ) ) )
-		  from (
-			select distinct n2.LocalName, n2.Abstract, n2.ClusterId
-			from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
+                  from (select distinct n2.LocalName, n2.T_CREATE_TIME, n2.AuthorId, n2.RESID, n2.Abstract, n2.ClusterId
+                          from WV.WIKI.LINK as l
+                                 inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
 			 where l.DestId = _topic.ti_id 
 			) as n
-		  inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) );
+                        inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId)
+                        inner join DB.DBA.SYS_USERS as u on (u.U_ID = n.AuthorId)
+                        inner join WS.WS.SYS_DAV_RES r on (n.RESID = r.RES_ID)
+                        inner join DB.DBA.SYS_USERS as u2 on (u2.U_ID = r.RES_OWNER)
+                 order by c.ClusterName desc, n.LocalName desc);
     }
-  declare _ext_params any;
-  _ext_params := vector_concat (_topic.ti_xslt_vector(params),
-  	vector ('donotresolve', 1));
-  http_value (WV.WIKI.VSPXSLT ( 'PostProcess.xslt', 
-    WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
-      _ext_params),
+  _ext_params := vector_concat (_topic.ti_xslt_vector(params), vector ('donotresolve', 1));
+  http_value (
+    WV.WIKI.VSPXSLT (
+      'PostProcess.xslt',
+                               WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report, _ext_params),
    _ext_params,
-   coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
+      WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params)));
 }
 ;
 
@@ -506,17 +494,14 @@ create function WV.WIKI.VSPCLUSTERINDEX (
 	    XMLATTRIBUTES (_topic.ti_cluster_name as CLUSTERNAME, n.LocalName as LOCALNAME, n.Abstract ABSTRACT) ) ) )
       from WV.WIKI.TOPIC n where n.ClusterId = _topic.ti_cluster_id ) );
   declare _ext_params any;
-  _ext_params := vector_concat (_topic.ti_xslt_vector(params),
-  	vector ('donotresolve', 1));
+  _ext_params := vector_concat (_topic.ti_xslt_vector(params), vector ('donotresolve', 1));
 
---  dbg_obj_print (_report);
   http_value (
-    WV.WIKI.VSPXSLT ('PostProcess.xslt', 
-	   WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
-	   _ext_params),
+    WV.WIKI.VSPXSLT (
+      'PostProcess.xslt',
+      WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report, _ext_params),
 	 _ext_params,
-	 coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
-
+      WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params)));
 }
 ;
 
@@ -555,7 +540,8 @@ create function WV.WIKI.VSPCLUSTERMEMBERS (
   XMLAppendChildren(_xml, XMLELEMENT ('ul'));
   _ent := xpath_eval ('/ul', _xml);
 
-  foreach (any p in _res) do {
+  foreach (any p in _res) do
+  {
     if (_last_char <> p[0][0])
       XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name", 'noapp' as "class"), subseq (p[0],0,1))));
     _last_char := p[0][0];
@@ -563,16 +549,13 @@ create function WV.WIKI.VSPCLUSTERMEMBERS (
   }
 
   declare _ext_params any;
-  _ext_params := vector_concat (_topic.ti_xslt_vector(params),
-  	vector ('donotresolve', 1));
 
+  _ext_params := vector_concat (_topic.ti_xslt_vector(params), vector ('donotresolve', 1));
   http_value (
     WV.WIKI.VSPXSLT ('PostProcess.xslt',
-	   WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _xml,
-	   _ext_params),
+      WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _xml, _ext_params),
 	 _ext_params,
-	 coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
-
+      WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params)));
 }
 ;
 
@@ -618,29 +601,49 @@ create function WV.WIKI.VSPTOPICRESOURCE (
 }
 ;
 
-create function WV.WIKI.VSPXSLT (in _xslt_name varchar, inout _src any, inout _params any, in _skin_name varchar:=null) returns any
+create function WV.WIKI.SKIN_PARAMS (
+  in cluster_id integer,
+  in params any)
+{
+  declare skinParams any;
+
+  skinParams := vector ('skin', coalesce (get_keyword ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM (cluster_id , 'skin', 'default')));
+  skinParams := vector_concat (skinParams, vector ('skin-source', get_keyword ('skin-source', params, WV.WIKI.CLUSTERPARAM (cluster_id , 'skin-source', 'Local'))));
+
+  return skinParams;
+}
+;
+
+create function WV.WIKI.VSPXSLT (in _xslt_name varchar, inout _src any, inout _params any, in _skinParams any := null) returns any
 {
   declare _xslt_folder varchar;
-  if (_skin_name is null)
-    _xslt_folder := '/DAV/VAD/wiki/Root/';
-  else
-    _xslt_folder := '/DAV/VAD/wiki/Root/Skins/' || _skin_name || '/';
-  --dbg_obj_print (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || _xslt_folder, _xslt_name));
-  return
---    xslt ( concat ('file://', _xslt_name), _src,
     
-    xslt ( concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || _xslt_folder, _xslt_name), _src,
-      vector_concat (_params, vector ('env', _params))
-    );
+  if (_skinParams is null)
+  {
+    _xslt_folder := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/' || _xslt_name;
+  }
+  else
+  {
+    if (get_keyword ('skin-source', _skinParams) = 'WebDAV')
+    {
+      _xslt_folder := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || get_keyword ('skin', _skinParams) || '/' || _xslt_name;
+    }
+    else if (get_keyword ('skin-source', _skinParams) = 'URL')
+    {
+      _xslt_folder := get_keyword ('skin', _skinParams) || '/' || _xslt_name;
+    }
+    else
+    {
+      _xslt_folder := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/Skins/' || coalesce (get_keyword ('skin', _skinParams), 'default') || '/' || _xslt_name;
+    }
+  }
+  return xslt (_xslt_folder, _src, vector_concat (_params, vector ('env', _params)));
 }
 ;  
 
 create function WV.WIKI.VSPHTTPXSLT (in _xslt_name varchar, inout _params any) returns any
 {
-  return
-    http_xslt ( concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/', _xslt_name), 
-      vector_concat (_params, vector ('env', _params))
-    );
+  return http_xslt ( concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/', _xslt_name), vector_concat (_params, vector ('env', _params)));
 }
 ;  
 
@@ -661,21 +664,18 @@ create procedure WV.WIKI.VSPXGETUID (in web_login varchar, inout realm varchar, 
 }
 ;
   
-
 create function WV.WIKI.AUTHENTICATE (in _user varchar, in _pwd varchar)
 {
-   --dbg_obj_princ ('WV.WIKI.AUTHENTICATE ', _user, ' ', _pwd);
   declare _uid int;
   declare _e_mail varchar;
   whenever not found goto notf;
   select U_ID, U_E_MAIL into _uid, _e_mail from DB.DBA.SYS_USERS where U_NAME = _user;
-  for select (wai_inst as wa_wikiv).cluster_id as cluster_id
-    from WA_INSTANCE join WA_MEMBER 
-  	on (WAM_INST = WAI_NAME) 
+  for (select (wai_inst as wa_wikiv).cluster_id as cluster_id
+         from WA_INSTANCE
+                join WA_MEMBER on (WAM_INST = WAI_NAME)
 	where udt_instance_of (WAI_INST, fix_identifier_case ('DB.DBA.wa_wikiv')) 
-	  and WAM_USER = _uid
-  do {
-        --dbg_obj_princ ('cluster: ', cluster_id);
+          and WAM_USER = _uid) do
+  {
     if (WV.WIKI.CLUSTERPARAM (cluster_id, 'ldap_enabled', 2) = 1)
       {
         declare ldap_user varchar;
@@ -687,13 +687,12 @@ create function WV.WIKI.AUTHENTICATE (in _user varchar, in _pwd varchar)
   }
 usual:  
   return DB.DBA.web_user_password_check (_user, _pwd);
+
 notf:
-   --dbg_obj_princ ('notf');
   return 0;
 }
 ;
 
-  
 create procedure WV.WIKI.VSPCHECKWEBAUTH (
   inout path any, inout params any, inout lines any )
 {
@@ -712,7 +711,6 @@ create procedure WV.WIKI.VSPCHECKWEBAUTH (
   if (0 = auth)
     {
       _reason := '. No authorization data are provided by your browser now';
-      --dbg_obj_print ('auth', auth);
       goto auth_get;
     }
 
@@ -923,16 +921,22 @@ create procedure  WV.WIKI.GETCMDTITLE (inout params any)
   _cmd_title := get_keyword ('command', params);
   if (_cmd_title like '%attach')
    return ' | Attachments';
-  else if (_cmd_title = 'mops')
+
+  if (_cmd_title = 'mops')
    return ' | More Actions on Topic';
-  else if (_cmd_title = 'edit')
+
+  if (_cmd_title = 'edit')
    return ' | Edit';
-  else if (_cmd_title = 'preview' and get_keyword ('Cancel', params) is null)
+
+  if (_cmd_title = 'preview' and get_keyword ('Cancel', params) is null)
    return ' | Preview';
-  else if (_cmd_title = 'refby')
+
+  if (_cmd_title = 'refby')
    return ' | Ref-by';
-  else if (_cmd_title = 'index')
+
+  if (_cmd_title = 'index')
    return ' | Index';
+
   return '';
 }
 ;
@@ -951,17 +955,16 @@ create procedure WV.WIKI.VSPHEADER (
   declare _skin, _topic_title varchar;
   if (isstring (topic_or_title))
     {      
-      _skin := 'default';
       _topic_title := topic_or_title;
+    _skin := 'default';
     }
   else
     {
       _topic := topic_or_title;
-      _skin := WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default');
       _topic_title := _topic.ti_raw_title;
+    _skin := get_keyword ('skin', WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params));
     }
 
-  _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), _skin);
   http ('<html><head>');
   http ('<title>oWiki | ');
   http (_topic_title || WV.WIKI.GETCMDTITLE (params));
@@ -1004,20 +1007,10 @@ create procedure WV.WIKI.VSPHEADER (
     http ('<script type="text/javascript">\n');
     http ('  // OAT\n');
     http ('  var toolkitPath="/ods/oat";\n');
---    http ('  var featureList=["dialog"];\n');
     http ('</script>\n');
     http ('<script type="text/javascript" src="/ods/oat/loader.js"></script>\n');
     http ('<script type="text/javascript" src="js/wiki.js"></script>\n');
---    http ('<script type="text/javascript">\n');
---    http (' 	var showInfo;\n');
---    http (' 	function myInit ()\n');
---    http (' 	{\n');
---    http (' 	  showInfo = new OAT.Dialog("Secondary Skin", "infoDiv", {width:400, modal:1, buttons:0});\n');
---    http (' 	}\n');
---    http ('   OAT.MSG.attach(OAT,"OAT_LOAD",myInit);\n');
---    http ('</script>\n');
   }
-
   if (topic_or_title <> 'Settings')
     {
       http ('</head>');
@@ -1118,14 +1111,20 @@ create function WV.WIKI.VSPREPORTPAGEARGS (
 		      http (sprintf ('(%d characters were truncated)', length (_val) - 160), _ses);
 	            }
 	          else
+          {
 		    http_value (_val, 'CODE', _ses);
                 }
             }
+      }
 	  else
+      {
 	    http ('*******', _ses);
 	}
+    }
       else
+    {
         http('] = ??? }');
+    }
       idx := idx + 1;
       if (idx < length (params))
         http('] , ', _ses);
@@ -1264,10 +1263,11 @@ whenever not found goto nf;
     {
 nf:
        path := subseq (path, 1);
-         
     }
   else
+  {
     path := subseq (path, (length (split_and_decode (domain, 0, '\0\0/')) - 2));
+  }
   if (path[0] = 'Atom') 
     {
       _cluster := null;
@@ -1342,9 +1342,7 @@ nf:
            _startofs := 2;
            goto next2;
          }
-      --dbg_obj_print (_jpath);
-      if ( (_jpath not like 'wiki/main/%') and
-	   (_jpath <>  'wiki/Atom/') )
+    if ((_jpath not like 'wiki/main/%') and (_jpath <> 'wiki/Atom/'))
         WV.WIKI.APPSIGNAL (11002, 'Path &url; to resource must start from "/wiki/main/"', vector('url', http_path()));
       path := subseq (path, 2);     
     }
@@ -1385,20 +1383,19 @@ next2:
       _attach := concat (_attach, '/', aref (path, _idx));
       _idx := _idx + 1;
     }
-  declare _primary_skin, _second_skin varchar;
+  declare _skin_source, _primary_skin, _second_skin varchar;
 cont:
+  _skin_source := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin-source', 'Local' );
   if (_cluster is not null)
     _primary_skin := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin', 'default' );
   _second_skin := null;
   declare skin2_regexp varchar;
   skin2_regexp := WV.WIKI.CLUSTERPARAM ( _cluster, 'skin2-vhost-regexp', null);
 whenever sqlstate '2201B' goto next;
-  if (skin2_regexp is not null and
-      regexp_match (skin2_regexp, _host) is not null)
+  if (skin2_regexp is not null and regexp_match (skin2_regexp, _host) is not null)
     _second_skin := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin2', 'default');  
 next: 
-  return vector ('skin', _primary_skin,
-  	 	 'skin2', _second_skin);
+  return vector ('skin-source', _skin_source, 'skin', _primary_skin, 'skin2', _second_skin);
 }
 ;
 
@@ -1479,10 +1476,7 @@ create function WV.WIKI.VSPTOPICATTACH (
 
   declare _ext_params any;
   _ext_params := _topic.ti_xslt_vector (params); 
-  http_value (
-     WV.WIKI.VSPXSLT ( 'VspTopicAttach.xslt',
-      _topic.ti_report_attachments(),
-      _ext_params));
+  http_value (WV.WIKI.VSPXSLT ( 'VspTopicAttach.xslt', _topic.ti_report_attachments(), _ext_params));
 }
 ;
 
@@ -1528,8 +1522,10 @@ create procedure WV.WIKI.VSPDELETECONFIRM(
   in _xslt_params any)
 {
   http_value (
-     WV.WIKI.VSPXSLT ( 'VspAttachmentDeleteConfirm.xslt',                                                 xtree_doc ('<a/>'),
-      vector_concat (_topic.ti_xslt_vector(_xslt_params), vector ('attachment', _attachment) )));
+    WV.WIKI.VSPXSLT ( 'VspAttachmentDeleteConfirm.xslt',
+    xtree_doc ('<a/>'),
+    vector_concat (_topic.ti_xslt_vector(_xslt_params), vector ('attachment', _attachment)))
+  );
 }
 ;
 
@@ -1704,12 +1700,9 @@ create function WV.WIKI.VSPMAILVIEW (
 
   http_value (
     WV.WIKI.VSPXSLT ('PostProcess.xslt',
-    WV.WIKI.VSPXSLT ( 'VspMail.xslt',
-      _doc,
-      _ext_params),
+      WV.WIKI.VSPXSLT ('VspMail.xslt', _doc, _ext_params),
     _ext_params,
-    coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
-
+      WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params)));
 }
 ;
 
@@ -1802,42 +1795,6 @@ _exit:;
   return host ;
 }
 ;
-
---create function WV.WIKI.GET_QHOST (in hostname varchar, in portname varchar)
---{
---  if (portname <> '80')
---    return hostname || ':' || portname;
---  return hostname;
---}
---;
---
----- stolen from Blog2
---create function WV.WIKI.GET_HOST ()
---{
---  declare ret varchar;
---  if (is_http_ctx ())
---    {
---      ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
---      if (isstring (ret) and strchr (ret, ':') is null)
---        {
---          declare hp varchar;
---          declare hpa any;
---          hp := sys_connected_server_address ();
---          hpa := split_and_decode (hp, 0, '\0\0:');
---          ret := WV.WIKI.GET_QHOST (ret, hpa[1]);
---        }
---    }
---  else
---   {
---     ret := sys_connected_server_address ();
---     if (ret is null)
---       ret := WV.WIKI.GET_QHOST (sys_stat ('st_host_name'),server_http_port ());
---   }
---
---  return ret;
---}
---;
-
 
 create function WV.WIKI.MAKE_CLUSTER_PATH (in cluster_name varchar)
 {
@@ -1985,10 +1942,8 @@ create function WV.WIKI.TEXTFORMATTINGRULES (in _cluster_id int, in _base_adjust
   declare exit handler for sqlstate '*' {
   --dbg_obj_print ('4');
     return '';
-  }
-  ;
-  return  xpath_eval ('//div[@class="topic-text"]', WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity (null,1), 
-	vector_concat (vector ('baseadjust', _base_adjust),_topic.ti_xslt_vector())));
+  };
+  return xpath_eval ('//div[@class="topic-text"]', WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity (null, 1), vector_concat (vector ('baseadjust', _base_adjust), _topic.ti_xslt_vector())));
 }
 ;
 
@@ -2015,7 +1970,6 @@ create function WV.WIKI.DIFF_DAV_PATH (
 }
 ;
 
-				       
 create function WV.WIKI.VSPDIFF (
   inout path any, inout lines any,
   inout _topic WV.WIKI.TOPICINFO,
@@ -2034,27 +1988,22 @@ create function WV.WIKI.VSPDIFF (
   WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   
   declare _auth, _pwd varchar;
+
   WV.WIKI.GETDAVAUTH (_auth, _pwd);
-
-
   if (0 < DB.DBA.DAV_RES_CONTENT (WV.WIKI.DIFF_DAV_PATH (_topic, _rev), content, type, _auth, _pwd))
     {
         content := blob_to_string (content);
       declare _report, _xml_content any;
       _xml_content := xtree_doc ('<text><![CDATA[' || content || ']]></text>');
       _report := XMLELEMENT ('Diff',
-			 XMLATTRIBUTES (_rev as "from",
-					cast (_rev as int) + 1 as "to"),
-			 _xml_content);
+    XMLATTRIBUTES (_rev as "from", cast (_rev as int) + 1 as "to"), _xml_content);
       declare _ext_params any;
-      _ext_params := vector_concat (_topic.ti_xslt_vector (params), 
-      	vector ('back_to_rev', 1));
+    _ext_params := vector_concat (_topic.ti_xslt_vector (params), vector ('back_to_rev', 1));
       http_value (
 	  WV.WIKI.VSPXSLT ( 'PostProcess.xslt', 
-	    WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
-	      _ext_params),
+        WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report, _ext_params),
 	    _ext_params,
-	    coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
+        WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params)));
     }
   return NULL;
 }
@@ -2286,8 +2235,6 @@ create function WV.WIKI.VECTOR_DROP_KEYWORD (in v any, in keyword any)
 }
 ;
 
-  
-
 create procedure WV.WIKI.ADDCATEGORY_PREFIX (in vect_of_words any)
 {
   declare res any;
@@ -2451,7 +2398,6 @@ create function WV.WIKI.FUNCALL4(in procname varchar, in v1 any, in v2 any, in v
 }
 ;
 
-	
 grant execute on WV.WIKI.FUNCALL0 to public
 ;
 grant execute on WV.WIKI.FUNCALL1 to public

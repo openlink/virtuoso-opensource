@@ -160,4 +160,9 @@ int vd_dv_to_sql_type (int dv);
 void sqlc_quote_dotted (char *text, size_t tlen, int *fill, char *name);
 
 extern void dbev_dsn_login (remote_ds_t * rds, client_connection_t * cli, caddr_t * err_ret, caddr_t * puid, caddr_t * ppwd, caddr_t * pdsn);
+
+#define RTS_ERROR_QI(rts, qi) \
+  (rts->src_gen.src_query->qr_is_bunion_term ? NULL : (query_instance_t *) qi)
+
+
 #endif /* _REMOTE_H */

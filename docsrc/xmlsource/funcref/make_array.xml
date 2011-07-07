@@ -43,6 +43,25 @@
     <para>This returns an array of length elements with the content element
     type. The initial content of the array is undefined.</para>
   </refsect1>
+  <refsect1 id="params_make_array"><title>Parameters</title>
+    <refsect2>
+      <title>length</title>
+      <para>Number of elements to be allocated in the resultant array.</para>
+    </refsect2>
+    <refsect2>
+      <title>content</title>
+      <para>String that specifies the data type of the array to make.
+      Valid strings are 'float', 'double', 'long' or 'any'.
+      These correspond respectively to the C types long (32 bit signed),
+      float (IEEE 32-bit), double (IEEE 64-bit) and untyped. The untyped array
+      may hold a heterogeneous collection of any Virtuoso data types,
+      including other arrays. The initial content of the array is undefined.
+      </para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_make_array"><title>Return Values</title>
+      <para>An array of specified length and data type</para>
+  </refsect1>
   <refsect1 id="errors_make_array"><title>Errors</title>
     <para><link linkend="datatypeerror">Parameter data type checking errors</link></para>
     <table><title>Errors signalled by make_array()</title>
@@ -64,25 +83,6 @@
 	</tbody>
       </tgroup>
     </table>
-  </refsect1>
-  <refsect1 id="params_make_array"><title>Parameters</title>
-    <refsect2>
-      <title>length</title>
-      <para>Number of elements to be allocated in the resultant array.</para>
-    </refsect2>
-    <refsect2>
-      <title>content</title>
-      <para>String that specifies the data type of the array to make.
-      Valid strings are 'float', 'double', 'long' or 'any'.
-      These correspond respectively to the C types long (32 bit signed),
-      float (IEEE 32-bit), double (IEEE 64-bit) and untyped. The untyped array
-      may hold a heterogeneous collection of any Virtuoso data types,
-      including other arrays. The initial content of the array is undefined.
-      </para>
-    </refsect2>
-  </refsect1>
-  <refsect1 id="ret_make_array"><title>Return Values</title>
-      <para>An array of specified length and data type</para>
   </refsect1>
 </refentry>
 

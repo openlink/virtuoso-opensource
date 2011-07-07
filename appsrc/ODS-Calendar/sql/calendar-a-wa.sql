@@ -187,6 +187,12 @@ CAL.WA.exec_no_error (
 )
 ;
 
+CAL.WA.exec_no_error (
+  'alter type wa_Calendar add overriding method wa_dashboard () returns any'
+)
+;
+
+
 -------------------------------------------------------------------------------
 --
 -- wa_Calendar methods
@@ -211,7 +217,18 @@ create method wa_id () for wa_Calendar
 --
 create method wa_drop_instance () for wa_Calendar
 {
-  CAL.WA.domain_delete (self.wa_id ());
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/calendar/' || cast (iWaiID as varchar)) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
+  CAL.WA.domain_delete (iWaiID);
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -264,14 +281,6 @@ create method wa_new_inst (in login varchar) for wa_Calendar
 
   CAL.WA.domain_update (iWaiID, iUserID);
   retValue := (self as web_app).wa_new_inst(login);
-
-  --  SIOC service
-  declare  graph_iri, iri, c_iri varchar;
-
-  graph_iri := SIOC..get_graph ();
-	c_iri := SIOC..calendar_iri (self.wa_name);
-  iri := sprintf ('http://%s%s/%U/calendar/%U/atom-pub', SIOC..get_cname(), SIOC..get_base_path (), login, self.wa_name);
-  SIOC..ods_sioc_service (graph_iri, iri, c_iri, null, null, null, iri, 'Atom');
 
   return retValue;
 }
@@ -388,13 +397,34 @@ create method get_param (in param varchar) for wa_Calendar
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_Calendar
+{
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  return (select XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       CAL.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..calendar_event_iri (iWaiID, _id) as nvarchar), N'">', CAL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from CAL.WA.dashboard_rs(p0, p1)(_id integer, _title varchar, _time datetime) x
+           where p0 = iWaiID and p1 = 1
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_Calendar
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
-  return CAL.WA.dashboard_get (domainID, userID, 1);
+  return CAL.WA.dashboard_get (self.wa_id (), 1);
 }
 ;
 
@@ -402,11 +432,7 @@ create method wa_dashboard_last_item () for wa_Calendar
 --
 create method wa_dashboard_user_items () for wa_Calendar
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
-  return CAL.WA.dashboard_get (domainID, userID, 0);
+  return CAL.WA.dashboard_get (self.wa_id (), 0);
 }
 ;
 
@@ -416,8 +442,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_Calendar
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+  domainID := self.wa_id ();
+  userID := CAL.WA.domain_owner_id (domainID);
 
   return concat(CAL.WA.dav_url2(domainID, userID), 'Calendar.rdf');
 }
@@ -450,3 +476,40 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_Cal
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('cal_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Calendar') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/calendar/' || cast (WAI_ID as varchar) || '/home.vspx') do
+    {
+      _new_lpath := '/calendar/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('cal_path_upgrade2', '1');
+}
+;
+CAL.WA.path_upgrade ();

@@ -1,0 +1,100 @@
+<?vsp
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype any;
+  cb := {?'callback'};
+  cert := {?'certificate'};
+  if ((length (cb) = 0) or ((length (cert) = 0) and not is_http_ctx ()))
+    {
+      goto html;
+    }
+  ctype := 1;
+  if (not length (cert))
+    {
+      cert := client_attr ('client_certificate');
+      ctype := 0;
+    } else {
+  if (strstr (cert, '-----BEGIN CERTIFICATE-----') is null)
+    cert := decode_base64 (cert);
+  else
+    ctype := 0;
+    }
+  if (strchr (cb, '?') is null)
+    cb := cb || '?';
+  else
+    cb := cb || '&';
+  mod := exp := '';
+  if (not is_http_ctx ())
+    res := 'noCert';
+  else
+    { 
+      info := get_certificate_info (9, cert, ctype);
+      if (info is null)
+        res := 'noCert';
+      else if (WEBID_AUTH_GEN (cert, ctype, null, 1, 0))
+        {
+          webid := FOAF_SSL_WEBID_GET (cert, ctype);
+	  if (webid is null)
+	    {
+	      webid := FOAF_SSL_WEBFINGER (cert, 0, ctype);
+	      if (webid is null)
+		webid := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
+	    }
+	  res := 'success'; 
+        }
+      else
+	res := 'noVerified';
+      if (info is not null)
+        { 
+      	  mod := info[1];
+          exp := bin2hex (info[2]);
+	}
+    }
+   if (res = 'success')
+     {
+       ret_url := sprintf ('%swebid=%U', cb, webid);
+     }
+   else
+     {
+       ret_url := sprintf ('%serror=%U', cb, res);
+     }
+   ret_url := ret_url || sprintf ('&ts=%U', date_iso8601 (now ()));  
+   ret_url := ret_url || sprintf ('&signature=%U', xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa')));  
+   http_status_set (302);
+   http_header (sprintf ('Location: %s\r\n', ret_url));
+   return;
+html:
+?>
+<html>
+  <head>
+   <title>WebID Verification Service</title>
+  </head>
+  <body>
+    <h1>WebID Verification Service</h1>
+    <div>
+This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your X.509 Certificate's WebID  watermark. <br/>Also note this service supports ldap, http, mailto, acct scheme based WebIDs.
+    </div>
+    <br/>
+    <br/>
+    <div>
+    <form method="get">
+    Requesting service endpoint: <br/> 
+    <input type="text" value="" size="120" name="callback" /> <br/>
+    X.509 certificate (PEM or DER base64 encoded) <br />
+    <textarea name="certificate" rows="20" cols="80"></textarea><br/>
+    <input type="submit" name="go" value="Verify"/>
+    </form>
+    </div>
+    <div>
+	The return values are:
+	<ul>
+	  <li>webid: the webid have been verified</li>
+	  <li>error: error code if verification fails </li>
+	  <li>ts: timestamp in ISO 8601 format</li>
+	  <li>signature: RSA-SHA1 digest on returning URL</li>
+	</ul>
+    </div>
+    <div>
+    Server Public Key:<br/>
+    <pre><?vsp http_value (xenc_pubkey_pem_export ('id_rsa'), null); ?></pre>		 
+    </div>
+  </body>
+</html>

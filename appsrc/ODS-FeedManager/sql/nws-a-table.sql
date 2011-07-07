@@ -40,6 +40,10 @@ ENEWS.WA.exec_no_error('
     EF_UPDATE_PERIOD varchar default \'hourly\',
     EF_UPDATE_FREQ integer default 1,
     EF_STORE_DAYS integer default 30,
+    EF_PSH_SERVER varchar,
+    EF_PSH_ENABLED integer default 0,
+    EF_PSH_TOKEN varchar,
+    EF_SALMON_SERVER varchar,
     EF_TAG varchar,
     EF_LAST_UPDATE datetime,
     EF_QUEUE_FLAG integer,
@@ -70,6 +74,23 @@ ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED add EF_IMAGE_URI varchar', 'C', 'ENEWS.WA.FEED', 'EF_IMAGE_URI'
 );
 
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_PSH_SERVER varchar', 'C', 'ENEWS.WA.FEED', 'EF_PSH_SERVER'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_PSH_ENABLED integer default 0', 'C', 'ENEWS.WA.FEED', 'EF_PSH_ENABLED'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_PSH_TOKEN varchar', 'C', 'ENEWS.WA.FEED', 'EF_PSH_TOKEN'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_SALMON_SERVER varchar', 'C', 'ENEWS.WA.FEED', 'EF_SALMON_SERVER'
+);
+
+
 ENEWS.WA.exec_no_error('
   create trigger FEED_INSERT AFTER INSERT ON ENEWS.WA.FEED referencing new as N {
     ENEWS.WA.channel_trigger (N.EF_ID, N.EF_UPDATE_PERIOD, N.EF_UPDATE_FREQ);
@@ -82,7 +103,9 @@ ENEWS.WA.exec_no_error('
 
     if ((O.EF_UPDATE_PERIOD <> N.EF_UPDATE_PERIOD) or (O.EF_UPDATE_FREQ <> N.EF_UPDATE_FREQ))
       ENEWS.WA.channel_trigger (N.EF_ID, N.EF_UPDATE_PERIOD, N.EF_UPDATE_FREQ);
-    if ((isnull(O.EF_LAST_UPDATE) and not isnull(N.EF_LAST_UPDATE)) or (O.EF_LAST_UPDATE <> N.EF_LAST_UPDATE)) {
+
+    if ((isnull(O.EF_LAST_UPDATE) and not isnull(N.EF_LAST_UPDATE)) or (O.EF_LAST_UPDATE <> N.EF_LAST_UPDATE))
+    {
       id := N.EF_ID;
       for (select EFD_DOMAIN_ID from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = id) do {
         ENEWS.WA.domain_ping (EFD_DOMAIN_ID);
@@ -280,7 +303,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins directory structure
+-- Contains directory structure
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -366,8 +389,10 @@ ENEWS.WA.exec_no_error('
   	EFD_FEED_ID integer not null,
     EFD_TITLE varchar,
     EFD_TAGS varchar,
-  	EFD_FOLDER_ID integer,
+    EFD_GRAPH varchar,
     EFD_FAVOURITE integer,
+  	EFD_FOLDER_ID integer,
+    EFD_ACL long varchar,
 
     constraint FK_FEED_DOMAIN_01 FOREIGN KEY (EFD_FEED_ID) references ENEWS.WA.FEED (EF_ID),
     constraint FK_FEED_DOMAIN_02 FOREIGN KEY (EFD_DOMAIN_ID, EFD_FOLDER_ID) references ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_ID) on delete set null,
@@ -379,6 +404,14 @@ ENEWS.WA.exec_no_error('
 
 ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED_DOMAIN add EFD_FAVOURITE integer', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_FAVOURITE'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED_DOMAIN add EFD_GRAPH varchar', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_GRAPH'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED_DOMAIN add EFD_ACL long varchar', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_ACL'
 );
 
 ENEWS.WA.exec_no_error('

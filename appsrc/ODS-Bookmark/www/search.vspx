@@ -24,26 +24,6 @@
 -->
 <v:page name="search" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
-
-      if (self.v_order = columnName and self.v_direction = 'desc')
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (self.v_order = columnName and self.v_direction = 'asc') {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
-
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
       if (columnName = '')
@@ -81,11 +61,8 @@
       self.v_updatedAfter := trim (self.v_updatedAfter);
       self.v_updatedBefore := trim (self.v_updatedBefore);
 
-      if (not (self.account_role in ('public', 'guest')))
-      {
       self.v_own := self.f_own.ufl_selected;
       self.v_shared := self.f_shared.ufl_selected;
-      }
     ]]>
   </v:method>
 
@@ -156,12 +133,12 @@
       declare sql, sqlParams, state, msg, meta, result, maxRows any;
 
       state := '00000';
-      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3, rs4)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
         maxRows := self.v_max;
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
         sql := replace(sql, '<MAX>', maxRows);
-      sqlParams := vector (self.domain_id, self.account_id, data, self.v_max);
+      sqlParams := vector (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
       sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
@@ -269,7 +246,7 @@
       <v:variable name="chars" type="integer" default="60" />
 
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
-      <v:variable name="v_mode" type="varchar" default="'simple'"/>
+      <v:variable name="v_mode" param-name="mode" type="varchar" default="'simple'" />
       <v:variable name="v_step" param-name="step" type="integer" default="0"/>
 
       <v:variable name="v_keywords" type="varchar" default="''" param-name="q" />
@@ -307,7 +284,7 @@
                 action := get_keyword ('action', params, '');
                 if (action = 'search')
                 {
-                  self.vc_redirect (sprintf ('search.vspx?q=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')));
+                  self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, sprintf ('search.vspx?q=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')))));
                   return;
                 }
 
@@ -350,12 +327,10 @@
           self.v_folder_id := cast (get_keyword ('f_folder', params, get_keyword ('folder', params, self.v_folder_id)) as integer);
 
           -- options
-          if (not (self.account_role in ('public', 'guest')))
-          {
           self.v_own := self.f_own.ufl_selected;
           self.v_shared := self.f_shared.ufl_selected;
             self.v_grants := trim (get_keyword ('f_grants', params, get_keyword ('grants', params, self.v_grants)));
-          }
+
           self.v_max := trim (get_keyword ('f_max', params, self.v_max));
           self.v_order := trim (get_keyword ('f_order', params, self.v_order));
           self.v_direction := trim (get_keyword ('f_direction', params, self.v_direction));
@@ -385,18 +360,13 @@
       ?>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
-      <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
-        <div class="new-form-header" style="margin-top: 6px;">
-          <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> bookmark(s) in last search</i>
-        </div>
-      </v:template>
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
             control.vc_enabled := case when (length (self.ds_data) and (self.vc_is_valid = 1) and self.v_step) then 1 else 0 end;
           ]]>
         </v:before-render>
-        <div style="padding-bottom: 5px;">
+        <div style="padding: 3px;">
           <?vsp
             http (sprintf('<a href="export.vspx?output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.do_url('export', '')));
             if (BMK.WA.settings_atomVersion (self.settings) = '1.0')
@@ -419,26 +389,18 @@
                   control.ds_nrows := BMK.WA.settings_rows (self.settings);
                 </v:before-data-bind>
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="search" class="BMK_grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
-                    <thead class="sortHeader">
+                  <table id="search" class="ODS_grid" style="border: 0px;">
+                    <thead>
                       <tr>
                         <th width="1%" style="border-width: 0px 0px 1px 0px;">
                           <img src="image/c.gif" border="0"/>
                         </th>
-                        <th>
-                          <?vsp self.sortColumn('Name', '_NAME'); ?>
-                        </th>
+                        <?vsp http (DB.DBA.wa_show_column_header('Name', '_NAME', self.v_order, self.v_direction)); ?>
                         <vm:if test="self.v_shared = 1">
-                          <th>
-                            User
-                          </th>
+                          <th>User</th>
                        </vm:if>
-                        <th>
-                          <?vsp self.sortColumn('Folder', '_FOLDER_NAME'); ?>
-                        </th>
-                        <th>
-                          Action
-                        </th>
+                        <?vsp http (DB.DBA.wa_show_column_header('Folder', '_FOLDER_NAME', self.v_order, self.v_direction)); ?>
+                        <th class="action">Action</th>
                       </tr>
                     </thead>
                   </table>
@@ -457,12 +419,12 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td valign="top">
+                        <td>
                           <?vsp
                             http('<img src="image/web_16.png" style="padding: 0 2px 0 0;" border="0" alt="Bookmark" width="16"/>');
                           ?>
                         </td>
-                        <td valign="top">
+                        <td>
                           <?vsp
                             declare N, id, domain_id, account_id integer;
                             declare node, tags, target, uri, onclick, title, title2 varchar;
@@ -473,7 +435,7 @@
                             account_id := BMK.WA.domain_owner_id (domain_id);
                             uri := (control as vspx_row_template).te_rowset[4];
                             title := (control as vspx_row_template).te_rowset[3];
-                            title2 := BMK.WA.rdfa_value (sprintf ('%V', title), 'dc:title');
+                            title2 := BMK.WA.rdfa_value (sprintf ('%V', BMK.WA.utf2wide (title)), 'dc:title');
 
                             http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                             
@@ -493,19 +455,19 @@
                           ?>
                         </td>
                         <vm:if test="self.v_shared = 1">
-                          <td valign="top">
+                          <td>
                             <?vsp
                               http (coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER, BMK.WA.GRANTS WHERE U_ID = G_GRANTER_ID and G_ID = (control as vspx_row_template).te_rowset[10]), ''));
                             ?>
                           </td>
                         </vm:if>
-                        <td valign="top">
+                        <td>
                           <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[9], (control.vc_parent as vspx_row_template).te_rowset[10])"
                                  url="--sprintf('bookmarks.vspx?fid=%d&gid=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[10], -1))"
                                  format="%s"
                                  xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[9], (control.vc_parent as vspx_row_template).te_rowset[10])"/>
                         </td>
-                        <td valign="top">
+                        <td class="action">
                           <?vsp
                             if ((coalesce((control as vspx_row_template).te_rowset[10], -1) = -1) and length (self.sid))
                               http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&id=%d&fid=%d&gid=%d" title="%s %s">%s</a>',
@@ -516,7 +478,7 @@
                                              coalesce((control as vspx_row_template).te_rowset[10], -1),
                                              'Edit',
                                            BMK.WA.utf2wide ((control as vspx_row_template).te_rowset[3]),
-                                             'Edit'));
+                                             'edit'));
                           ?>
                         </td>
                       </tr>
@@ -527,20 +489,17 @@
 
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
+                    <tfoot>
                     <tr>
-                      <td align="center" colspan="5">
+                        <td align="right" colspan="5">
                         <vm:ds-navigation data-set="ds"/>
                       </td>
                     </tr>
+                    </tfoot>
                   </table>
                 </v:template>
 
               </v:data-set>
-              <script type="text/javascript">
-                <![CDATA[
-                  coloriseTable('search');
-                ]]>
-              </script>
             </td>
           </v:template>
           <v:template type="simple" enabled="-- case when (self.v_cloud and self.v_step and self.vc_is_valid) then 1 else 0 end;">
@@ -623,7 +582,6 @@
                     </a>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
                   <tr>
                     <th/>
                     <td>
@@ -631,7 +589,6 @@
                       <b><vm:label for="f_own" value="Search in my own bookmarks"/></b>
                     </td>
                   </tr>
-                </vm:if>
                 <tr>
                   <th>
                     <vm:label for="f_folder" value="Search in folder"/>
@@ -640,7 +597,6 @@
                     <v:data-list name="f_folder" xhtml_id="f_folder" value="--self.v_folder_id" sql="select -1 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
                 <tr>
                   <th/>
                   <td>
@@ -654,10 +610,9 @@
                     </th>
                   <td>
                       <v:text name="f_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                      <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=s&dst=m&amp;params=f_grants:s1;',520)" class="button" />
+                    <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?mode=s_bmk&dst=mc&amp;params=f_grants:s1;&nrows=<?V BMK.WA.settings_rows (self.settings) ?>')" class="button" />
                   </td>
                 </tr>
-                </vm:if>
               </table>
             </div>
             <div id="s_content_1" class="tabContent" style="display: none;">
@@ -713,18 +668,18 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Save" enabled="-- case when self.account_role in ('public', 'guest') then 0 else 1 end" xhtml_class="form-button">
+          <v:button action="simple" value="Save" enabled="-- case when self.account_rights = 'W' then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.update_params();
-                self.vc_redirect (sprintf ('bookmarks.vspx?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_')));
+                self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, sprintf ('?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_')))));
               ]]>
             </v:on-post>
           </v:button>
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('bookmarks.vspx');
+                self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id)));
               ]]>
             </v:on-post>
           </v:button>
@@ -744,9 +699,21 @@
                 <b><v:label for="" value="Search" /></b>
                 <v:text name="s_keywords" value="--self.v_keywords" fmt-function="BMK.WA.utf2wide" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60" />
                 |
-                <v:url url="search.vspx?mode=advanced" value="Advanced" xhtml_title="Advanced Search"/>
+                <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'search.vspx?mode=advanced')));
+                    ]]>
+                  </v:on-post>
+                </v:button>
                 |
-                <v:url url="bookmarks.vspx" value="Cancel" xhtml_title="Cancel"/>
+                <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id)));
+                    ]]>
+                  </v:on-post>
+                </v:button>
               </td>
             </tr>
           </table>

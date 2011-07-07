@@ -41,9 +41,8 @@
   <refsect1 id="desc_stddev_pop">
     <title>Description</title>
     <para>STDDEV_POP computes the population standard deviation and returns the square root of the
-population variance.  
-This function is the same as the square root of the VAR_POP function. When VAR_POP returns null,
-this function returns null.</para>
+population variance. This function is the same as the square root of the VAR_POP function.
+When VAR_POP returns null, returns null.</para>
   </refsect1>
   <refsect1 id="params_stddev_pop"><title>Parameters</title>
     <refsect2><title>expr</title>

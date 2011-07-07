@@ -63,7 +63,7 @@ sqlc_mark_last_ts_in_join (sql_comp_t * sc, comp_table_t * ct)
 void
 sqlc_opt_last_joins (sql_comp_t * sc)
 {
-  /* tha last table and all tables right of the
+  /* the last table and all tables right of the
      last table generating multiple rows need no
      reference counts for output cols */
   comp_table_t **cts = sc->sc_tables;
@@ -83,31 +83,35 @@ sqlc_opt_last_joins (sql_comp_t * sc)
 
 
 void
-ts_set_local_code (table_source_t * ts)
+ts_set_local_code (table_source_t * ts, int is_cluster)
 {
   key_source_t *ks = ts->ts_main_ks ? ts->ts_main_ks : ts->ts_order_ks;
   if (!ks)
     return; /* inx op that does not join main row */
   if (ts->src_gen.src_after_test
-      && cv_is_local (ts->src_gen.src_after_test))
+      && cv_is_local_1 (ts->src_gen.src_after_test, 0))
     {
       ks->ks_local_test = ts->src_gen.src_after_test;
       ts->src_gen.src_after_test = NULL;
     }
   if (ts->src_gen.src_after_code
       && !ts->src_gen.src_after_test
-      && cv_is_local (ts->src_gen.src_after_code)
+      && cv_is_local_1 (ts->src_gen.src_after_code, 0)
       && !ts->ts_is_outer)
     {
       ks->ks_local_code = ts->src_gen.src_after_code;
       ts->src_gen.src_after_code = NULL;
-      ks->ks_count = ts->src_gen.src_count;
-      ts->src_gen.src_count = 0;
+      if (ts->src_gen.src_count)
+	{
+	  ks->ks_count = ts->src_gen.src_count;
+	  ts->src_gen.src_count = 0;
+	}
     }
   if (!ts->ts_is_outer
       && ts->src_gen.src_count
       && !ts->src_gen.src_after_test
-      && !ts->src_gen.src_after_code)
+      && !ts->src_gen.src_after_code
+      && ts->src_gen.src_count)
     {
       ks->ks_count = ts->src_gen.src_count;
       ts->src_gen.src_count = 0;
@@ -122,7 +126,7 @@ qr_set_local_code_and_funref_flag (query_t * qr)
   {
     if (IS_TS_NODE (ts))
       {
-	ts_set_local_code (ts);
+	ts_set_local_code (ts, 0);
 
 	if (!ts->src_gen.src_continuations
 	    && !ts->src_gen.src_after_test
@@ -154,6 +158,9 @@ fun_ref_free (fun_ref_node_t * fref)
   dk_free_tree ((caddr_t) fref->fnr_hi_signature);
   dk_set_free (fref->fnr_distinct_ha);
   dk_set_free (fref->fnr_setps);
+  clb_free (&fref->clb);
+  dk_free_box ((box_t)fref->fnr_ssa.ssa_save);
+  dk_set_free (fref->fnr_select_nodes);
 }
 
 
@@ -617,7 +624,7 @@ sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
 		 dk_set_t * code)
 {
   ST * top = SEL_TOP (tree);
-  if (!top)
+  if (!top || SEL_IS_TRANS (tree))
     return;
   sc->sc_top = top;
 
@@ -1034,66 +1041,21 @@ sqlc_temp_tree (sql_comp_t * sc, caddr_t tree)
 void
 sc_free (sql_comp_t * sc)
 {
-/*  int inx;
-  sc_pred_list_free (sc->sc_preds);
-  DO_SET (col_ref_rec_t *, r, &sc->sc_col_ref_recs)
-  {
-    dk_free ((caddr_t) r, sizeof (col_ref_rec_t));
-  }
-  END_DO_SET ();
-  dk_set_free (sc->sc_col_ref_recs);
-  DO_SET (dk_set_t, r, &sc->sc_union_lists)
-  {
-    dk_set_free (r);
-  }
-  END_DO_SET ();
-  dk_set_free (sc->sc_union_lists);
-
-  DO_BOX (comp_table_t *, ct, inx, sc->sc_tables)
-  {
-    sc_pred_list_free (ct->ct_join_preds);
-    dk_set_free (ct->ct_derived_preds);
-    dk_set_free (ct->ct_out_crrs);
-    dk_set_free (ct->ct_out_cols);
-    dk_set_free (ct->ct_order_cols);
-    dk_free_tree (ct->ct_derived);
-    DO_SET (col_pred_t *, cp, &ct->ct_col_preds)
-    {
-      dk_free_box (cp->colp_name);
-      dk_free ((caddr_t) cp, sizeof (col_pred_t));
-    }
-    END_DO_SET ();
-    dk_set_free (ct->ct_col_preds);
-    dk_free_box (ct->ct_vdb_prefix);
-    dk_free ((caddr_t) ct, sizeof (comp_table_t));
-  }
-  END_DO_BOX;
-  dk_free_box ((caddr_t) sc->sc_tables);*/
   if (sc->sc_name_to_label)
     id_hash_free (sc->sc_name_to_label);
   if (sc->sc_decl_name_to_label)
     id_hash_free (sc->sc_decl_name_to_label);
-/*  dk_free_tree ((caddr_t) sc->sc_org_selection);*/
-/*  DO_SET (caddr_t, tree, &sc->sc_temp_trees)
-  {
-     dk_free_tree (tree);
-  }
-  END_DO_SET();
-  dk_set_free (sc->sc_temp_trees); */
-/*  DO_SET (subq_compilation_t *, sqc, &sc->sc_subq_compilations)
-  {
-    dk_free_box (sqc->sqc_scroll_params);
-    dk_free((caddr_t) sqc, sizeof (subq_compilation_t));
-  }
-  END_DO_SET();
-  dk_set_free (sc->sc_subq_compilations);*/
-/*  dk_free_tree ((caddr_t) sc->sc_select_as_list);
-  DO_SET (dk_set_t, jt_preds, &sc->sc_jt_preds)
+  if (sc->sc_qn_to_dpipe)
+    hash_table_free (sc->sc_qn_to_dpipe);
+  if (sc->sc_ssl_eqs)
     {
-      dk_set_free (jt_preds);
+      DO_HT (state_slot_t *, ssl, dk_set_t, list, sc->sc_ssl_eqs)
+	{
+	  dk_set_free (list);
+	}
+      END_DO_HT;
+      hash_table_free (sc->sc_ssl_eqs);
     }
-  END_DO_SET();
-  dk_set_free (sc->sc_jt_preds); */
   if (sc->sc_sample_cache)
     {
       id_hash_iterator_t hit;
@@ -1343,37 +1305,6 @@ sqlc_assign_unknown_dtps (query_t *qr)
 }
 
 
-int
-qr_proc_repl_check_valid (query_t *qr, caddr_t *err)
-{
-  if (qr->qr_proc_repl_acct)
-    { /* check and disable procedures with INOUT / OUT parameters */
-      int inx = 1;
-      DO_SET (state_slot_t *, ssl, &qr->qr_parms)
-	{
-	  if (ssl->ssl_type == SSL_REF_PARAMETER_OUT ||
-	      ssl->ssl_type == SSL_REF_PARAMETER)
-	    {
-	      if (err)
-		*err = srv_make_new_error ("42000", "SQ205",
-		    "Procedure %s cannot be published for transactional replication "
-		    "(in publication %s) because it has out/inout parameter %s (parameter number %d). "
-		    "Publishing the calls to the procedure is disabled. "
-		    "Please remove the procedure from the transactional publication.",
-		    qr->qr_proc_name,
-		    qr->qr_proc_repl_acct,
-		    ssl->ssl_name ? ssl->ssl_name : "",
-		    inx
-		    );
-	      qr->qr_proc_repl_acct = NULL;
-	      return 0;
-	    }
-	  inx = inx + 1;
-	}
-      END_DO_SET ();
-    }
-  return 1;
-}
 
 static int
 sql_is_ddl (sql_tree_t * tree)
@@ -1435,14 +1366,21 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   sqlc_compile_hook (cli, string2, err);
   if (!parse_sem)
     parse_sem = semaphore_allocate (1);
+  if (parse_sem->sem_entry_count > 1)
+    GPF_T1 ("compiler parse sem entry count > 1");
   if (!nested_sql_comp)
     {
       sql_warnings_clear ();
       MP_START();
     }
   string = wrap_sql_string (string2);
-  semaphore_enter (parse_sem);
-  inside_sem = 1;
+  if (SQLC_PARSE_ONLY_REC == cr_type)
+    cr_type = SQLC_PARSE_ONLY;
+  else
+    {
+      semaphore_enter (parse_sem);
+      inside_sem = 1;
+    }
   SCS_STATE_PUSH;
   sqlc_set_client (cli);
   sqlp_in_view (view_name);
@@ -1487,10 +1425,9 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  if (!parse_tree)
 	    {
 	      qr_free (qr);
-	      /*dk_free (string, -1);*/
 	      if (err && !*err)
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
-		    sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
+					   sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
 	      sqlc_set_client (old_cli);
 	      if (!nested_sql_comp)
 		{
@@ -1498,8 +1435,20 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		}
 	      sql_pop_all_buffers ();
 	      SCS_STATE_POP;
-	      semaphore_leave (parse_sem);
+	      if (inside_sem)
+	        semaphore_leave (parse_sem);
 	      POP_CATCH;
+	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
+		{
+		  if (SQLC_DO_NOT_STORE_PROC == cr_type)
+		    return NULL;
+		  dk_free_tree (*err);
+		  *err = NULL;
+		  cl_rdf_inf_init (cli, err);
+		  if (*err)
+		    return NULL;
+		  return DBG_NAME (sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, the_parse_tree, view_name);
+		}
 	      return NULL;
 	    }
 	}
@@ -1512,6 +1461,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  semaphore_leave (parse_sem);
 	  inside_sem = 0;
 	}
+      else
+	sqlc_inside_sem = 1;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
@@ -1522,8 +1473,9 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    }
 	  SCS_STATE_POP;
 	  qr_free (qr);
-	  /*dk_free (string, -1);*/
 	  POP_CATCH;
+	  if (inside_sem)
+	    semaphore_leave (parse_sem);
 	  return ((query_t*) tree1);
 	}
       if (cr_type == SQLC_TRY_SQLO)
@@ -1536,6 +1488,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    {
 	      MP_DONE();
 	    }
+	  sc_free (&sc);
 	  SCS_STATE_POP;
 	  qr_free (qr);
 	  /*dk_free (string, -1);*/
@@ -1551,6 +1504,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    {
 	      MP_DONE();
 	    }
+	  sc_free (&sc);
 	  SCS_STATE_POP;
 	  qr_free (qr);
 	  POP_CATCH;
@@ -1566,12 +1520,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	{
 	  qr->qr_brk = -1; /* set a debug flag */
 	}
-
-    SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
-    if (_SQL_CURSOR_FORWARD_ONLY < cr_type
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
+      if (_SQL_CURSOR_FORWARD_ONLY < cr_type
 	&& _SQL_CURSOR_STATIC >= cr_type
 	&& st_is_query_exp (tree))
-      sqlc_cursor (&sc, &tree, cr_type);
+	sqlc_cursor (&sc, &tree, cr_type);
     else
       {
 	if (SQLC_UNIQUE_ROWS == cr_type /*&& st_is_query_exp (tree)*/)
@@ -1592,6 +1545,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  {
 	    qr->qr_line_counts = hash_table_allocate (100);
 	    qr->qr_call_counts = id_str_hash_create (101);
+	    qr->qr_stats_mtx = mutex_allocate ();
 	  }
 #endif
       }
@@ -1669,11 +1623,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      sch_proc_def (sc.sc_cc->cc_schema, qr->qr_proc_name);
       user_t * p_user = cli->cli_user;
 
-#ifdef REPLICATION_SUPPORT2
-      if (old_place)
-	qr->qr_proc_repl_acct = old_place->qr_proc_repl_acct;
-      qr_proc_repl_check_valid (qr, err);
-#endif
       /* Only DBA can create procedures with owner different than creator */
       if (p_user && !sec_user_has_group (0, p_user->usr_g_id))
 	{
@@ -1758,7 +1707,7 @@ query_t *
 dbg_sql_compile_static (const char *file, int line, const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type)
 {
-  caddr_t *my_err = NULL;
+  caddr_t my_err = NULL;
   query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, &my_err, cr_type, NULL, NULL);
   if (NULL != err)
     err[0] = my_err;

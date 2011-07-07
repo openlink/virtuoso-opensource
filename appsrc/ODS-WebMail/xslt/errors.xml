@@ -103,8 +103,20 @@
   </error>
   <error id="1902">
     <title>Bad recipient(s) e-mail address specified</title>
-    <descr>You typed an invalid email address in one of the address fields (TO, CC or BCC).  The format for email address is </descr>
+    <descr>You typed an invalid email address in one of the address fields (TO, CC or BCC).</descr>
     <decision>Please, go <back page="write.vsp" p="wp"/>, check or correct the email address in one of the address fields and re-send..</decision>
+    <button page="write.vsp" p="wp"/>
+  </error>
+  <error id="1903">
+    <title>Bad sender certificate is used</title>
+    <descr>You tried to send an signed email with bad certificate.</descr>
+    <decision>Please, go <back page="write.vsp" p="wp"/>, check yours settings and re-send..</decision>
+    <button page="write.vsp" p="wp"/>
+  </error>
+  <error id="1904">
+    <title>Bad recipient(s) e-mail address specified</title>
+    <descr>You have typed an invalid email address in one of the address fields (TO, CC or BCC). In order to send encrypted message, create a contact (using an Addressbook instance) which should contain receiver's email and public key.</descr>
+    <decision>Please, go <back page="write.vsp" p="wp"/>, check or correct the email address in one of the address fields or update contact's data and re-send.</decision>
     <button page="write.vsp" p="wp"/>
   </error>
   <error id="3001">

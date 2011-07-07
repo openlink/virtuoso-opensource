@@ -87,18 +87,18 @@ typedef struct local_cursor_s
 
 
 typedef struct stmt_options_s {
-  ptrlong         so_concurrency;
-  ptrlong         so_is_async;
-  ptrlong         so_max_rows;
-  ptrlong         so_timeout;
-  ptrlong         so_prefetch;
-  ptrlong         so_autocommit;
-  ptrlong         so_rpc_timeout;
-  ptrlong	  so_cursor_type;
-  ptrlong	  so_keyset_size;
-  ptrlong	  so_use_bookmarks;
-  ptrlong	  so_isolation;
-  ptrlong	  so_prefetch_bytes;
+  ptrlong            so_concurrency;
+  ptrlong            so_is_async;
+  ptrlong            so_max_rows;
+  ptrlong            so_timeout;
+  ptrlong            so_prefetch;
+  ptrlong            so_autocommit;
+  ptrlong            so_rpc_timeout;
+  ptrlong		  so_cursor_type;
+  ptrlong		  so_keyset_size;
+  ptrlong		  so_use_bookmarks;
+  ptrlong		  so_isolation;
+  ptrlong		  so_prefetch_bytes;
   ptrlong		so_unique_rows;
 } stmt_options_t;
 
@@ -161,8 +161,9 @@ caddr_t bif_strict_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int n
 caddr_t bif_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 void bif_result_inside_bif (int n, ...);
 
-
-caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+#ifndef srv_make_new_error
+extern caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+#endif
 void sqlr_error (const char *code, const char *msg,...);
 void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...);
 void sqlr_resignal (caddr_t err);
@@ -381,6 +382,9 @@ struct thread_s
   void *		thr_tmp_pool;
   int                   thr_attached;
   caddr_t		thr_dbg;
+#ifndef NDEBUG
+  void *		thr_pg_dbg;
+#endif
 };
 
 #define MAX_NESTED_FUTURES      20
@@ -394,6 +398,8 @@ struct dk_thread_s
   int                 dkt_request_count;
   future_request_t *  dkt_requests[MAX_NESTED_FUTURES];
 };
+
+typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
 
 struct mutex_s
   {
@@ -409,7 +415,7 @@ struct mutex_s
     pthread_mutex_t	mtx_mtx;
 #endif
 #endif
-    void *              mtx_handle;
+    void *		mtx_handle;
 #ifdef APP_SPIN
     int			mtx_spins;
 #endif
@@ -418,7 +424,7 @@ struct mutex_s
 #endif
 
 #ifdef MTX_DEBUG
-    thread_t *          mtx_owner;
+    thread_t *		mtx_owner;
     char *	mtx_entry_file;
     int		mtx_entry_line;
     char *	mtx_leave_file;
@@ -545,12 +551,14 @@ struct dk_session_s
     caddr_t *		dks_caller_id_opts;
 
     void *		dks_dbs_data;
+    void *		dks_cluster_data; /* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol versions and cluster is all the same version */
     void *		dks_write_temp;	/* Used by Distributed Objects */
 
         /*! max msecs to block on a read */
     timeout_t		dks_read_block_timeout;
     /*! Is this a client or server initiated session */
     char		dks_is_server;
+    char		dks_cluster_flags;
     char		dks_to_close;
     char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
     char		dks_ws_status;
@@ -621,12 +629,16 @@ struct s_node_s
    s_node_t *          next;
 };
 
-
+EXE_EXPORT (caddr_t, list_to_array, (dk_set_t l));
 #ifdef MALLOC_DEBUG
 caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
 caddr_t dbg_list_to_array (char *file, int line, dk_set_t l);
 #define strses_string(S) dbg_strses_string (__FILE__, __LINE__, (S))
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define list_to_array(S)	dbg_list_to_array (__FILE__, __LINE__, (S))
+#endif
+#endif
 #else
 caddr_t strses_string (dk_session_t * ses);
 caddr_t list_to_array (dk_set_t l);

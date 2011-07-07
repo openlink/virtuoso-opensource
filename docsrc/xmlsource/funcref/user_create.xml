@@ -42,9 +42,8 @@
   </refsynopsisdiv>
   <refsect1 id="desc_USER_CREATE">
     <title>Description</title>
-    <para>This function creates a new user account.  The account is valid for SQL and/or DAV, depending n options. 
-
-</para>
+    <para>This function creates a new user account. The account is valid for SQL and/or DAV,
+depending n options.</para>
   </refsect1>
   <refsect1 id="params_USER_CREATE">
     <title>Parameters</title>
@@ -55,10 +54,9 @@
       <para>The clear text password for the user account.</para>
     </refsect2>
     <refsect2><title>options</title>
-      <para>A vector of name-value pairs for  user  options, even elements for option names, odd ones for values.  Arbitrary  
-      options can be supplied.  The Virtuoso reserved options can be found in 
-      the <link linkend="vumuseroptions">User Options</link> sub-section of the 
-      User Administration Section.</para>
+      <para>A vector of name-value pairs for user  options, even elements for option names, odd ones
+for values. Arbitrary options can be supplied. The Virtuoso reserved options can be found in the
+<link linkend="vumuseroptions">User Options</link> sub-section of the User Administration Section.</para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_USER_CREATE"><title>Return Types</title>

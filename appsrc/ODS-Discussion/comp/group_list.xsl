@@ -58,7 +58,7 @@
         ]]>
       </v:before-data-bind>
 
-      View All: <v:url name="view_mode" value="--(case when self.force_list<>1 then 'Unthread' else 'Thread' end)" url="--'nntpf_main.vspx?view='||(case when self.force_list<>1 then 'list' else 'thread' end)" />
+      View All: <v:url name="view_mode" value="--(case when self.force_list<>1 then 'Unthread' else 'Thread' end)" url="--'/dataspace/discussion/nntpf_main.vspx?view='||(case when self.force_list<>1 then 'list' else 'thread' end)" />
        <br/>
       <table width="100%"
              class="nntp_groups_listing"
@@ -120,7 +120,7 @@
                   <v:url name="nntp_groups"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -128,7 +128,7 @@
                   <v:url name="nntp_groups1"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -136,19 +136,18 @@
                   <v:url name="nntp_groups2"
                          format="%s"
                          value="--'List'"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                               cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"/> |
                   <v:url name="nntp_groups3"
                          format="%s"
                          value="--'Thread'"
-                         url="--'nntpf_thread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_thread_view.vspx?group=' ||
                               cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar) ||
                               '&amp;thr=1'"/>
                 </td>
                 <td align="left">
                   <v:url value="RSS"
-                       url="--concat ('nntpf_rss_group.vspx?group=' ||
-                                      cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"
+                       url="--concat ('/dataspace/discussion/nntpf_rss_group.vspx?group=' || cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"
                        enabled="--self.vc_authenticated"
                        xhtml_class="nntp_group_rss"/>
                 </td>
@@ -395,7 +394,7 @@
                   <v:url name="ods_groups"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -403,7 +402,7 @@
                   <v:url name="ods_groups1"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -549,7 +548,7 @@
                   <v:url name="nntp_groups"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -557,7 +556,7 @@
                   <v:url name="nntp_groups1"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -704,7 +703,7 @@
                   <v:url name="ods_allgroups"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>
@@ -712,7 +711,7 @@
                   <v:url name="ods_allgroups1"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                         url="--'nntpf_nthread_view.vspx?group=' ||
+                         url="--'/dataspace/discussion/nntpf_nthread_view.vspx?group=' ||
                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
                          xhtml_class="nntp_group"/>
                 </td>

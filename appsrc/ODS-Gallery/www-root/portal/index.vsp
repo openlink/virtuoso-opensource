@@ -47,18 +47,15 @@
   declare _owner_id integer;
   declare current_instance photo_instance;
   declare geo_data any;
+  declare wa_home_title,wa_home_link varchar;
+  declare _header, _links, _xml,_xsl_path any;
 
   user_gallery := '';
-
-  declare wa_home_title,wa_home_link varchar;
-
 	wa_home_title := case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end;
 	wa_home_link := case when registry_get ('wa_home_link') = 0 then '/wa/' else registry_get ('wa_home_link') end;
 
-
   auth_uid := PHOTO.WA._session_user(params,current_user);
 
-  declare _xml,_xsl_path any;
   if (auth_uid <> '')
   {
     _sid := current_user.sid;
@@ -78,8 +75,8 @@
   if (PHOTO.WA.frozen_check(current_instance,current_user))
   {
     declare freeze_page varchar;
-    freeze_page := PHOTO.WA.frozen_page(current_instance.name);
 
+    freeze_page := PHOTO.WA.frozen_page(current_instance.name);
     if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
     {
       http_rewrite ();
@@ -101,26 +98,34 @@
     if (my_file in ('rss.xml', 'atom.xml', 'index.rdf', 'xbel.xml', 'mrss.xml'))
     {
       _xsl := '';
-      if(my_file = 'atom.xml'){
+      if (my_file = 'atom.xml')
+      {
         _xsl := 'rss2atom.xsl';
-
-      }else if(my_file = 'index.rdf'){
+      }
+      else if (my_file = 'index.rdf')
+      {
         _xsl := 'rss2rdf.xsl';
-
-      }else if(my_file = 'xbel.xml'){
+      }
+      else if (my_file = 'xbel.xml')
+      {
         _xsl := 'rss2xbel.xsl';
-
-      }else if(my_file = 'mrss.xml'){
+      }
+      else if (my_file = 'mrss.xml')
+      {
         _xsl := 'rss2mrss.xsl';
-
       }
 
-      _xsl_path := sprintf('%sxslt/%s',PHOTO.WA.base_path(),_xsl);
+      _header := case when (my_file like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+      _links := ODS..PSH_HEADER_LINKS (current_instance.gallery_id);
+      if (length (_links))
+        _header := _header || sprintf ('Link: %s\r\n', _links);
+
       http_rewrite();
-      http_header (sprintf ('Content-type: %s\r\n', 'text/xml'));
+      http_header (_header);
       http(PHOTO.WA.rss_output(current_instance,params));
       if (_xsl <> '')
       {
+        _xsl_path := sprintf('%sxslt/%s', PHOTO.WA.base_path(), _xsl);
         http_xslt (_xsl_path);
       }
       return;
@@ -180,10 +185,7 @@
   http(sprintf('<dc_instance_description>%V</dc_instance_description>', PHOTO.WA.xml2string (current_instance.description)), _xml);
   http(sprintf('<map>%d</map>',PHOTO.WA.gallery_show_map (current_instance.gallery_id)),_xml);
   http(sprintf('<is_discussion>%d</is_discussion>', PHOTO.WA.discussion_check ()),_xml);
-
---  if(PHOTO.WA.isDav()){
     http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oGallery', params, lines)),_xml);
---  }
   http(user_gallery,_xml);
   http(PHOTO.WA.get_lastest_users(current_user),_xml);
   http('</root>',_xml);

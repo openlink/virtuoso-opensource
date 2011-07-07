@@ -38,6 +38,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_floor"><title>Description</title>
+    <para><function>floor</function> calculates the largest integer smaller than or equal to <parameter>x</parameter>.</para>
+  </refsect1>
   <refsect1 id="params_floor"><title>Parameters</title>
     <refsect2><title>x</title>
       <para><type>double precision</type></para>
@@ -46,9 +49,6 @@
   <refsect1 id="ret_floor"><title>Return Values</title>
     <para><function>floor</function> returns a 32-bit
     <type>integer</type>.</para>
-  </refsect1>
-  <refsect1 id="desc_floor"><title>Description</title>
-    <para><function>floor</function> calculates the largest integer smaller than or equal to <parameter>x</parameter>.</para>
   </refsect1>
   <refsect1 id="examples_floor"><title>Examples</title>
     <example id="ex_floor"><title>Simple Examples</title>

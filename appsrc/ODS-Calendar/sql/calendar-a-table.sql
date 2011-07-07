@@ -205,6 +205,7 @@ CAL.WA.exec_no_error ('
                                           -- 1 - Task
     E_PRIVACY integer default 0,          -- 0 - PRIVATE
                                           -- 1 - PUBLIC
+                                          -- 2 - ACL
     E_ATTENDEES integer default 0,        -- 0 - no attendees
                                           -- N - number of attendees
     E_SUBJECT varchar,
@@ -484,6 +485,7 @@ CAL.WA.exec_no_error ('
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
 
     CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
+    CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
     CAL.WA.syncml_entry_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_KIND, \'D\');
   }
 ');
@@ -523,6 +525,67 @@ create procedure CAL.WA.tags_update (
       }
   }
 }
+;
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.EVENT_GRANTS (
+    G_ID integer identity,
+    G_GRANTER_ID integer not null,
+    G_GRANTEE_ID integer not null,
+    G_EVENT_ID integer not null,
+
+    PRIMARY KEY (G_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_EVENT_GRANTS_01 on CAL.WA.EVENT_GRANTS (G_GRANTER_ID, G_EVENT_ID)
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_EVENT_GRANTS_02 on CAL.WA.EVENT_GRANTS (G_GRANTEE_ID, G_EVENT_ID)
+');
+
+CAL.WA.exec_no_error ('
+  alter table CAL.WA.EVENT_GRANTS add constraint FK_CAL_EVENT_GRANTS_01 FOREIGN KEY (G_EVENT_ID) references CAL.WA.EVENTS (E_ID) on delete cascade
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_grants_procedure (
+  in to_id integer,
+  in event_id integer := null)
+{
+  declare c0 integer;
+
+  result_names (c0);
+  for (select distinct G_EVENT_ID
+         from CAL.WA.EVENT_GRANTS
+        where G_GRANTEE_ID = to_id
+          and (G_EVENT_ID = event_id or event_id is null)
+        order by 1) do
+  {
+    result (G_EVENT_ID);
+  }
+  for (select distinct G_EVENT_ID
+         from CAL.WA.EVENT_GRANTS a,
+              DB.DBA.SYS_ROLE_GRANTS c
+        where (a.G_EVENT_ID  = event_id or event_id is null)
+          and c.GI_SUPER     = to_id
+          and c.GI_GRANT     = a.G_GRANTEE_ID
+          and c.GI_DIRECT    = '1'
+        order by 1) do
+  {
+    result (G_EVENT_ID);
+  }
+}
+;
+
+CAL.WA.exec_no_error ('
+  create procedure view CAL..EVENT_GRANTS_VIEW as CAL.WA.event_grants_procedure (to_id, event_id) (G_EVENT_ID integer)
+')
 ;
 
 -------------------------------------------------------------------------------

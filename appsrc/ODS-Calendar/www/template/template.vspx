@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
-  -  $Id$
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -41,22 +41,44 @@
       http (sprintf('\n    <link rel="alternate" type="application/atomserv+xml" title="%V" href="%s/intro" />', domainName, CAL.WA.atom_lpath2 (self.domain_id)));
       http (sprintf('\n    <link rel="alternate" type="text/calendar" title="%V" href="%s/gems/calendar.ics" />', domainName, CAL.WA.domain_sioc_url (self.domain_id)));
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
+
+      SIOC..rdf_links_header (self.rdf_iri);
+      SIOC..rdf_links_head (self.rdf_iri);
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/common.css" type="text/css" />
+    <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
     <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
       <![CDATA[
-      <script type="text/javascript">
-        // OAT
-        var toolkitPath="/ods/oat";
-        var imagePath = "/ods/images/oat/";
-        
-        var featureList=["ajax", "anchor", "dialog", "dav", "color", "calendar"];
-    </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
+        OAT.Preferences.showAjax = false;
+
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+          pathHome: '/home/',
+          path: '<?V CAL.WA.dav_logical_home (self.account_id) ?>',
+          user: '<?V CAL.WA.account_name (self.account_id) ?>',
+          connectionHeaders: {Authorization: '<?V CAL.WA.account_basicAuthorization (self.account_id) ?>'}
+        };
+        
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "color", "calendar"];
+        OAT.Loader.load(featureList);
+    </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
+      <script type="text/javascript" src="/ods/typeahead.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript" src="/ods/validate.js"></script>
       <script type="text/javascript" src="js/calendar.js"></script>
   	<script type="text/javascript">
         // publics
@@ -64,31 +86,14 @@
       	var deleteDialog2;
         var aboutDialog;
       	
-        function myInit()
-        {
+        function myInit() {
+          if (!OAT._loaded || !OAT.Dialog) {
+            setTimeout(myInit, 50);
+            return;
+          }
           CAL.weekStartDay = '<?V self.cWeekStarts ?>';
           CAL.dateFormat = '<?V self.cDateFormat ?>';
 
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-
-        	/* load stylesheets */
-        	OAT.Style.include("grid.css");
-        	OAT.Style.include("webdav.css");
-
-          // WebDAV
-          var options = { imagePath: OAT.Preferences.imagePath,
-                          pathHome: '/home/',
-                          path: '<?V CAL.WA.dav_logical_home (self.account_id) ?>',
-                          user: '<?V CAL.WA.account_name (self.account_id) ?>',
-                          connectionHeaders: {Authorization: '<?V CAL.WA.account_basicAuthorization (self.account_id) ?>'}
-                        };
-          OAT.WebDav.init(options);
-
-          // <a>++
-          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-          OAT.Anchor.zIndex = 1001;
-        
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
@@ -105,9 +110,9 @@
           }
           	
       		// init tabs
-          showTab('e', 2, 0);
-          showTab('t', 2, 0);
-          showTab('s', 2, 0);
+          showTab('e', 4, 0);
+          showTab('t', 3, 0);
+          showTab('s', 4, 0);
 
           // start reminder
           if (<?V self.owner_id ?> == <?V self.account_id ?>)
@@ -121,47 +126,11 @@
           }
         }
           setFooter();
-        }
-    		function getWindowHeight()
-    		{
-    			var windowHeight = 0;
-    			if (typeof(window.innerHeight) == 'number')
-    			{
-    				windowHeight = window.innerHeight;
-    			}
-    			else
-    			{
-    				if (document.documentElement && document.documentElement.clientHeight)
-    				{
-    					windowHeight = document.documentElement.clientHeight;
+          window.onresize = function() {setFooter();}
+          OAT.MSG.send(OAT, 'PAGE_LOADED');
     				}
-    				else
-    				{
-    					if (document.body && document.body.clientHeight)
-    					{
-    						windowHeight = document.body.clientHeight;
-    					}
-    				}
-    			}
-    			return windowHeight;
-    		}
-    		function setFooter()
-    		{
-    			if (document.getElementById)
-    			{
-    				var windowHeight = getWindowHeight();
-    				if (windowHeight > 0)
-    				{
-    					var footerElement = document.getElementById('FT');
-    					var footerHeight  = footerElement.offsetHeight;
-    					if (document.getElementById('content'))
-                document.getElementById('content').style.height = (windowHeight - footerHeight - 225) + 'px';
-    				}
-    			}
-    		}
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
-    		window.onresize = function() {setFooter();}
+        OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
   	</script>
     ]]>
     <title></title>
@@ -170,15 +139,15 @@
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'" />
         <v:variable persist="0" name="owner_id" type="integer" default="null" />
-        <v:variable persist="0" name="ownerName" type="varchar" default="null" />
-      <v:variable persist="0" name="access_role" type="varchar" default="'public'" />
+      <v:variable persist="0" name="account_rights" type="varchar" default="''" />
         <v:variable persist="0" name="settings" type="any" />
+      <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:variable persist="0" name="cWeekStarts" type="varchar" default="'m'" />
       <v:variable persist="0" name="cTimeZone" type="integer" default="0" />
       <v:variable persist="0" name="cTimeFormat" type="varchar" default="'e'" />
       <v:variable persist="0" name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
+      <v:variable persist="0" name="cDaylight" type="integer" default="0" />
       <v:on-init>
         <![CDATA[
           declare tmp any;
@@ -191,11 +160,9 @@
 
           aSessInfo := CAL.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
           self.owner_id := CAL.WA.domain_owner_id (self.domain_id);
-          self.ownerName := CAL.WA.domain_owner_name (self.domain_id);
-          self.access_role := get_keyword ('user_role', aSessInfo, '');
+          self.account_rights := get_keyword ('account_rights', aSessInfo);
 
           self.settings := CAL.WA.settings (self.domain_id);
           CAL.WA.settings_init (self.settings);
@@ -207,6 +174,7 @@
           self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
           self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
           self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
+          self.cDaylight := CAL.WA.settings_daylight (self.settings);
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
           self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');

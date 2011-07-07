@@ -38,6 +38,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_chr"><title>Description</title>
+    <para><function>chr</function> returns a new one character long string
+    containing the character with character code given as parameter.</para>
+  </refsect1>
   <refsect1 id="params_chr"><title>Parameters</title>
     <refsect2><title><parameter>chr_code</parameter></title>
       <para>The <type>LONG</type> character code value for the <type>character</type> or <type>wide character</type> to be produced.</para>
@@ -45,10 +49,6 @@
   </refsect1>
   <refsect1 id="ret_chr"><title>Return Values</title>
     <para>If the <parameter>chr_code</parameter> is smaller than or equal to 255, the returned 1 character string will be of type <type>VARCHAR</type>. Otherwise the returned type is <type>NVARCHAR</type>.</para>
-  </refsect1>
-  <refsect1 id="desc_chr"><title>Description</title>
-    <para><function>chr</function> returns a new one character long string
-    containing the character with character code given as parameter.</para>
   </refsect1>
   <refsect1 id="errors_chr"><title>Errors</title>
     <table><title>Errors signalled by chr</title>

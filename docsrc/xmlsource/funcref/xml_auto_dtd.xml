@@ -40,8 +40,7 @@
     </funcsynopsis>
  </refsynopsisdiv>
   <refsect1 id="desc_xml_auto_dtd"><title>Description</title>
-<para>
-This function returns an XML DTD for the results of a SQL query with
+<para>This function returns an XML DTD for the results of a SQL query with
 a FOR XML clause.  The returned DTD will apply to the output generated
 by xml_auto with the query in question after wrapping it into the specified root element.
 </para>

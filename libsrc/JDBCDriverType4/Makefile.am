@@ -120,10 +120,13 @@ uninstall-local:
 
 MAINTAINERCLEANFILES = *.jar
 clean-local:
-	-rm -f testsuite*.jar Documents/* doc
+	-rm -f testsuite*.jar 
+	-rm -rf Documents/* 
+	-rm -rf doc
 
 EXTRA_DIST = \
 	JDBC.release \
+	manifest*.main \
 	openlink/util/*.java \
 	termcap \
 	test2.bat \

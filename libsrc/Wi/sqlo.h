@@ -108,6 +108,7 @@ typedef struct op_table_s
 
   dk_set_t 	ot_invariant_preds;
   id_hash_t * 	ot_eq_hash; /* eq group of things, use for eq transitivity */
+  ST *		ot_trans; /* if transitive dt, trans opts */
 } op_table_t;
 
 typedef struct jt_mark_s
@@ -141,7 +142,7 @@ typedef struct df_inx_op_s
 
 
 /* markers for compile time known predicates */
-#define DFE_FALSE ((df_elt_t*) -1L)
+#define DFE_FALSE ((df_elt_t*) -1)
 #define DFE_TRUE ((df_elt_t*) NULL)
 
 #define DFE_TABLE 1
@@ -170,6 +171,24 @@ typedef struct df_inx_op_s
 #define DFE_PLACED 1	/* placed in a scenario */
 #define DFE_GEN 2	/* placed in the executable graph */
 
+#define TN_FWD 1
+#define TN_BWD 2
+
+typedef struct trans_layout_s
+{
+  /* if dfe is transitive, details of trans layout here */
+  dk_set_t	tl_params;
+  dk_set_t	tl_target;
+  df_elt_t *	tl_complement;
+  char		tl_direction;
+}trans_layout_t;
+
+/* for setp. is_distinct */
+#define DFE_S_DISTINCT 1
+#define DFE_S_SAS_DISTINCT 2
+
+
+
 struct df_elt_s
 {
   short	dfe_type;
@@ -196,6 +215,7 @@ struct df_elt_s
       op_table_t *	ot;
       dbe_key_t *	key;
       df_inx_op_t *	inx_op;
+      dk_set_t	index_path;
       dk_set_t 	col_pred_merges;
       dk_set_t	all_preds;
       dk_set_t 	inx_preds;
@@ -205,6 +225,7 @@ struct df_elt_s
       df_elt_t **	vdb_join_test; /* the part of a remote table's join test that must be done on the vdb */
       dk_set (df_elt_t*)	out_cols;
 
+      bitf_t is_being_placed; /* true while laying out preds for this */
       bitf_t is_unique:1;
       bitf_t is_arity_sure:4;  /* if unique or comes from inx sample or n distinct.  Value is no of key parts in sample */
       bitf_t is_oby_order:1;
@@ -214,6 +235,7 @@ struct df_elt_s
       bitf_t is_xcontains:1;
       bitf_t is_locus_first:1;
       bitf_t is_leaf:1;
+      bitf_t is_inf_col_given:1; /* if rdf inferred subclass/prop given and checked as after test, no itre over supers */
       bitf_t hash_role:3;
       /* XPATH & FT members */
       df_elt_t         *text_pred;
@@ -241,9 +263,12 @@ struct df_elt_s
       df_elt_t **	vdb_join_test; /* when join preds are not imported into the dt in vdb */
       df_elt_t **	invariant_test;
       ST *		org_in; /* if in subnq, this is the pred that is the left and single col select */
+      trans_layout_t *	trans;
       float 		in_arity;  /* estimate evaluation count of the dt's head node  */
       char	is_locus_first;
-      char	is_contradiction;
+      bitf_t	is_contradiction:1;
+      bitf_t	is_complete:1; /* false if join order is being decided, true after fixed */
+      bitf_t 	is_being_placed;
     } sub;
     struct {
       /* union dt head, or union coming from a table + or */
@@ -256,6 +281,8 @@ struct df_elt_s
     struct {
       dbe_column_t *	col;
       op_virt_col_t *   vc;
+      float		card; /* if from rdf quad, card is given by p stats and is not the card of the dbe_column_t */
+      bitf_t		is_fixed:1; /* col eq to param or col imported from other dt, if all group cols fixed, gb can be dropped */
     } col;
     struct {
       int 	op;
@@ -270,10 +297,12 @@ struct df_elt_s
       df_elt_t **	args;
     } call;
     struct {
-      int 	is_linear;
+      char 	is_linear;
+      char	is_distinct;
+      float	gb_card;
       ST **	specs;
+      dk_set_t *	oby_dep_cols; /* if exps laid after oby, this is the list of all cols each exp depends on.  If exps generated, these must be in oby keys or deps */
       dk_set_t 	fun_refs;
-      dk_set_t	group_cols;
       df_elt_t **	after_test;
       dk_set_t 		having_preds;
       op_table_t *ot;
@@ -290,6 +319,7 @@ struct df_elt_s
     } head;
     struct {
       int type;
+      char geo;
       ST ** args;
       dbe_column_t *col;
       state_slot_t *ssl;
@@ -343,10 +373,11 @@ struct sql_scope_s
   dk_set_t 	sco_tables;
   dk_set_t	sco_named_vars;
   sql_scope_t *	sco_super;
-  int	sco_fun_refs_allowed;
+  char	sco_fun_refs_allowed;
+  int		sco_has_jt;
   sqlo_t *	sco_so;
   dk_set_t 	sco_jts;
-  int		sco_has_jt;
+  dk_set_t	sco_scalar_subqs; /* if identical value subq many times in a scope, like in select and in oby, then rename just once, so get common subexp just once */
 };
 
 
@@ -368,6 +399,7 @@ struct sqlo_s
 
   char	so_is_top_and;
   char	so_in_cond_exp;
+  char	so_no_text_preds;
   dk_set_t	so_placed; /*accumulate new prospective placements here */
   short	so_label_ctr;
   float		so_best_score;
@@ -375,6 +407,11 @@ struct sqlo_s
   float 	so_top_best_score;
   float	so_dt_input_arity;
   float	so_cost_up_to_dt;
+  float	so_best_index_cost;
+  float	so_best_index_card;
+  char	so_best_index_card_sure;
+  dk_set_t	so_best_index_path;
+  dk_set_t	so_after_preds; /* during inx choice, the exps that are not col preds */
   locus_t *	so_target_locus;
   int		so_locus_ctr;
   remote_table_source_t * 	so_target_rts;
@@ -390,8 +427,11 @@ struct sqlo_s
   char		so_dfe_unplace_pass; /* not generate errors in sqlo_dfe_unplace if dfe != sqlo_df ()*/
 #endif
   dk_set_t	so_in_list_nodes;
+  dk_set_t	so_all_list_nodes;
   dk_set_t *	so_inx_int_tried_ret; /* ref to where dfes tried with an inx int go so that the same inx int does not get tried in all permutations */
   uint32	so_last_sample_time; /* used for stopping compilation if longer is elapsed since last sample than the best plan's time */
+  df_elt_t *	so_crossed_oby; /* If placing exp and there is an oby that is crossed, then set this to be the oby so that the exp can be added to its deps */
+  int		so_nth_select_col; /* the position in select list for which an exp is being generated.  Used for adding dependent cols to oby when adding cols to dts  when doing ref from enclosing dt */
   char		so_identity_joins;
 };
 
@@ -451,6 +491,60 @@ struct sqlo_ot_order_s
 };
 
 
+typedef struct text_count_s
+{
+  int64	tc_estimate;
+  int	tc_time;
+} text_count_t;
+
+
+typedef struct ts_action_s
+{
+  /* operation done on a row in an index after inx preds are matched.  Can eval exps, compare columns and extract column values */
+  df_elt_t *	tsa_exp;
+  df_elt_t *	tsa_test_col;
+  df_elt_t *	tsa_extract_col;
+} ts_action_t;
+
+/* for index choice being considered, for each index the below is filled in.
+ * if looping over in or rdf subclass/subpred is involved, this is mentioned as ic_n_lookups
+ * if checking indexable in or rdf subc/subp as after test is preferred, this is indicated by putting the removed col pred in ic_rm_col_preds and adding the corresponding after test in ic_after_test */
+typedef struct index_choice_s
+{
+  dbe_key_t *	ic_key;
+  float	ic_arity;
+  float	ic_unit;
+  float	ic_overhead;
+  char	ic_leading_constants; /* this many leading constants used for sampling */
+  char	ic_is_unique;
+  int	ic_op;
+  int	ic_n_lookups;
+  dk_set_t	ic_altered_col_pred;
+  dk_set_t	ic_after_test;
+  float 	ic_after_test_arity;
+  struct rdf_inf_ctx_s *	ic_ric;
+  df_elt_t *	ic_inf_dfe;
+  int		ic_inf_type;
+  dk_set_t	ic_inx_preds;
+  dk_set_t	ic_col_preds;
+  df_inx_op_t *	ic_inx_op;
+  dk_set_t	ic_ts_action; /* non key col extraction, comparison, expressions, eveld while page wired down  */
+  dk_set_t	ic_after_preds;
+  dk_set_t	ic_eliminated_after_preds; /* if an after is transformed into a col pred, mark it here */
+  df_elt_t *		ic_o_range;
+  struct index_choice_s *		ic_o_range_ref_ic;
+  df_elt_t *	ic_text_pred;
+  df_elt_t *	ic_geo_pred;
+  char		ic_text_order;
+  char		ic_geo_order;
+  char		ic_o_string_range_lit; /* 1 if o is known to be a string 2 if literal strings */
+  dk_set_t	ic_inx_sample_cols;
+} index_choice_t;
+
+#define IC_OPT_ITERS 0 /* can change in or rdf inf iters into after test */
+#define IC_AS_IS 1 /* do not change in or rdf inf iteration into after test */
+
+
 int sqlo_oby_exp_cols (sqlo_t * so, ST * dt, ST** oby);
 
 void sqlo_scope (sqlo_t * so, ST ** ptree);
@@ -488,7 +582,8 @@ df_elt_t * sqlo_key_part_best (dbe_column_t * col, dk_set_t col_preds, int upper
 state_slot_t * sqlg_dfe_ssl (sqlo_t * so, df_elt_t * col);
 code_vec_t sqlg_pred_body (sqlo_t * so, df_elt_t **  body);
 code_vec_t sqlg_pred_body_1 (sqlo_t * so, df_elt_t **  body, dk_set_t append);
-query_t * sqlg_dt_query (sqlo_t * so, df_elt_t * dt_dfe, query_t * fill_query, ST ** target_names);
+query_t * sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * fill_query, ST ** target_names, state_slot_t * set_no);
+#define sqlg_dt_query(so, dt_dfe, fill_query, target_names) sqlg_dt_subquery (so, dt_dfe, fill_query, target_names, NULL)
 void sqlg_top (sqlo_t * so, df_elt_t * top_dfe);
 void sqlg_top_1 (sqlo_t * so, df_elt_t * dfe, state_slot_t ***sel_out_ret);
 int sqlo_key_score (dbe_key_t * key, dk_set_t col_preds, int *is_unq);
@@ -516,7 +611,11 @@ col_ref_rec_t * sqlo_find_col_ref (sql_comp_t *sc, ST * tree);
 #define sqlo_col_or_param(sc,tree) sqlo_col_or_param_1 (sc, tree, 1)
 void dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float * overhead_ret);
 void dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int first_inx_only);
+void dfe_table_cost_ic (df_elt_t * dfe, index_choice_t * ic, int inx_only);
+void dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only);
 float  sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t inxes, float * arity_ret);
+void dfe_top_discount (df_elt_t * dfe, float * u1, float * a1);
+
 
 /* sqloinx.c */
 void sqlo_init_eqs (sqlo_t * so, op_table_t * ot);
@@ -572,7 +671,7 @@ ptrlong sqlo_select_top_cnt (sqlo_t *so, ST *top_exp);
    ST_P (view, INTERSECT_ALL_ST))
 
 #define DFE_IS_PARAM(dfe) \
-	(dfe->dfe_type == DFE_CONST && (SYMBOLP (dfe->dfe_tree) || ST_P (dfe->dfe_tree, COL_DOTTED)))
+	(dfe->dfe_type == DFE_CONST && (SYMBOLP (dfe->dfe_tree) || ST_COLUMN (dfe->dfe_tree, COL_DOTTED)))
 
 #define DFE_IS_CONST(dfe) \
 	(dfe->dfe_type == DFE_CONST && !DFE_IS_PARAM (dfe))
@@ -634,7 +733,7 @@ df_elt_t ** sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name);
 dbe_column_t *  cp_left_col (df_elt_t * cp);
 df_elt_t ** sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred);
 void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_before, data_source_t * new_qn);
-void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
+
 
 /* cost model constants */
 
@@ -646,12 +745,62 @@ void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
 #define NEXT_PAGE_COST 5
 #define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
 #define HASH_ROW_INS_COST 1.6 /* cost of adding a row to hash */
+#define HASH_MEM_INS_COST 0.7
 #define HASH_LOOKUP_COST 0.9
 #define HASH_ROW_COST 0.3
 #define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
 
 #define HASH_COUNT_FACTOR(n)\
   (0.05 * log(n) / log (2))
+
+
+/* cluster compiler funcs */
+int key_is_local_copy (dbe_key_t * key);
+void clb_init (comp_context_t * cc, cl_buffer_t * clb, int is_select);
+
+void  sqlg_cl_table_source (sqlo_t * so, df_elt_t * dfe, table_source_t * ts);
+void sqlg_cl_save_env (sql_comp_t * sc, query_t * qr,  data_source_t * qn, dk_set_t env);
+dpipe_node_t * sqlg_pre_code_dpipe (sqlo_t * so, dk_set_t  * code_ret, data_source_t * qn);
+void sqlg_place_dpipes (sqlo_t * so, data_source_t ** qn_ptr);
+void dk_set_ins_after (dk_set_t * s, void* point, void* new_elt);
+void dk_set_ins_before (dk_set_t * s, void* point, void* new_elt);
+void sqlg_cl_colocate (sql_comp_t * sc, data_source_t * qn, fun_ref_node_t * prev_fref);
+void  sqlg_top_max (query_t * qr);
+outer_seq_end_node_t * sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first);
+data_source_t * qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn);
+int sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val);
+void sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx);
+int sqlo_is_unq_preserving (caddr_t name);
+
+#define SINV_DV_STRINGP(x) \
+	(DV_STRINGP (x) || DV_TYPE_OF (x) == DV_SYMBOL)
+
+int box_is_subtree (caddr_t box, caddr_t subtree);
+void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
+char  sqlc_geo_op (sql_comp_t * sc, ST * op);
+int sqlo_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * cond_ret, dk_set_t * after_preds);
+
+df_inx_op_t * inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
+			   df_elt_t * org_tb_dfe, df_elt_t * tb_dfe);
+df_elt_t ** dfe_pred_body_copy (sqlo_t * so, df_elt_t ** body, df_elt_t * parent);
+void sqlo_choose_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * col_preds_ret, dk_set_t * after_preds_ret);
+void dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway);
+void sqlo_choose_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * col_preds_ret, dk_set_t * after_preds_ret);
+void sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic);
+void sqlg_xpath_node (sqlo_t * so, df_elt_t * tb_dfe);
+inx_op_t * sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * parent_iop);
+key_source_t * sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key);
+void sqlg_non_index_ins (df_elt_t * tb_dfe);
+void sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts);
+data_source_t * sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe);
+int dfe_is_eq_pred (df_elt_t * pred);
+float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret);
+data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe);
+int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);
+int sqlo_has_col_ref (ST * tree);
+
+float dfe_exp_card (sqlo_t * so, df_elt_t * dfe);
+void sqlo_rdf_col_card (sqlo_t * so, df_elt_t * td_dfe, df_elt_t * dfe);
 
 
 #endif /* _SQLO_H */

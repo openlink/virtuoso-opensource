@@ -42,6 +42,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+   <para>split_and_decode converts the escaped var=val pair inputs text to a corresponding vector of
+string elements. If the optional third argument is a string of less than three characters, then
+does only the decoding (but no splitting) and returns back a string.</para>
+   </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>coded_str</title>
       <para>Input string to be converted.</para></refsect2>
@@ -64,14 +69,6 @@
       <para>If this argument is a string of less than three characters then
       this function will only decode without splitting and will return a string.</para></refsect2>
   </refsect1>
-	<refsect1 id="desc"><title>Description</title>
-			<para>
-   split_and_decode converts the escaped var=val pair inputs text to a
-   corresponding vector of string elements. If the optional third
-   argument is a string of less than three characters, then does only
-   the decoding (but no splitting) and returns back a string.
-	</para>
-   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
 <example id="ex_split_and_decode"><title>Using split_and_decode</title>
 <programlisting>

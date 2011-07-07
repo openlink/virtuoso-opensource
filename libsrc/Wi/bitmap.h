@@ -35,7 +35,7 @@ typedef struct bm_pos_s
   short		bp_ce_offset; /* the ce offset from the start of bitmap */
   short		bp_pos_in_ce; /* if array ce, index in the array of bit numbers */
   char		bp_ce_type;
-  bitf_t        bp_is_pos_valid:1; /* true if bitmap col  was not touched since last time. Offsets inside bm string stay valud.  */
+  bitf_t        bp_is_pos_valid:1; /* true if bitmap col  was not touched since last time. Offsets inside bm string stay valid.  */
   bitf_t        bp_at_end:1; /* true if itc on a row whose bm has no matches. Next seek must get next row in search order */
   bitf_t        bp_below_start:1; /* itc found a ce with the right range but the search ended up below the first set bit */
   bitf_t        bp_new_on_row:1; /* mecy time in toc_row_check, set the out cols for leading key parts.  Need not set on every iteration */
@@ -75,12 +75,13 @@ typedef struct bm_pos_s
 #define CE_ROUND(n) \
   ((n) & 0xffffffffffffe000LL)
 
-#define CL_SET_LEN(key, cl, row_data, new_len) \
+#define CL_SET_LEN(key, cl, row, new_len) \
 { \
-  if (CL_FIRST_VAR == cl->cl_fixed_len) \
-    SHORT_SET (row_data + key->key_length_area, key->key_row_var_start + new_len); \
+  row_ver_t rv = IE_ROW_VERSION (row); \
+  if (CL_FIRST_VAR == cl->cl_pos[rv]) \
+    SHORT_SET (row + key->key_length_area[rv], key->key_row_var_start[rv] + new_len); \
   else \
-    SHORT_SET (row_data + (- cl->cl_fixed_len) + 2, new_len + SHORT_REF (row_data + (- cl->cl_fixed_len))); \
+    SHORT_SET (row + (- cl->cl_pos[rv]) + 2, new_len + (COL_VAR_LEN_MASK & SHORT_REF (row + (- cl->cl_pos[rv])))); \
 }
 
 
@@ -97,14 +98,18 @@ typedef struct bm_pos_s
   SHORT_SET_NA (((db_buf_t)sa) + ((inx)* 2), v)
 
 
-#define BIT_COL(row, key) \
-  (IS_64_DTP (key->key_bit_cl->cl_sqt.sqt_dtp) ? INT64_REF (row + key->key_bit_cl->cl_pos) : \
-    DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp ? (int64)(unsigned int32)LONG_REF (row + key->key_bit_cl->cl_pos) : \
-    LONG_REF  (row + key->key_bit_cl->cl_pos))
-
-
+#define BIT_COL(v, buf, row, key)		\
+{\
+  if (IS_64_DTP (key->key_bit_cl->cl_sqt.sqt_dtp))\
+    { ROW_INT_COL (buf, row, IE_ROW_VERSION(row), (*key->key_bit_cl), INT64_REF, v); } \
+  else  if (DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp)\
+    { ROW_INT_COL (buf, row, IE_ROW_VERSION(row), (*key->key_bit_cl), (int64)(unsigned int32)LONG_REF, v); } \
+  else \
+    ROW_INT_COL (buf, row, IE_ROW_VERSION(row), (*key->key_bit_cl), LONG_REF, v); \
+}
 #define ITC_BM_REENTER_CK(itc) \
   while (itc->itc_bp.bp_transiting) { \
     TC (tc_bm_cr_reentry_transit_wait); \
     virtuoso_sleep (0, 100); \
   }
+void bm_ck (db_buf_t bm, int len);

@@ -35,7 +35,6 @@
       tmp := POLLS.WA.vector_unique(tmp);
       self.v_tags := POLLS.WA.vector2tags(tmp);
 
-      if (not (self.account_role in ('public', 'guest')))
         self.v_own := self.f_own.ufl_selected;
       self.v_public := self.f_public.ufl_selected;
     ]]>
@@ -101,7 +100,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+      sql := POLLS.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
       {
@@ -188,6 +187,11 @@
         self.do_search (e);
     ]]>
   </v:after-data-bind>
+  <v:before-render>
+    <![CDATA[
+      self.F1.uf_action := POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, 'search.vspx'));
+    ]]>
+  </v:before-render>
   <vm:pagetitle>Search results</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -243,7 +247,6 @@
             self.v_tags := POLLS.WA.vector2tags(self.v_tags);
           }
           -- options
-          if (not (self.account_role in ('public', 'guest')))
             self.v_own := self.f_own.ufl_selected;
           self.v_public := self.f_public.ufl_selected;
 
@@ -368,11 +371,13 @@
 
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
+                    <tfoot>
                     <tr>
-                      <td align="center" colspan="1">
+                        <td align="right" colspan="1">
                         <vm:ds-navigation data-set="ds"/>
                       </td>
                     </tr>
+                    </tfoot>
                   </table>
                 </v:template>
 
@@ -444,7 +449,6 @@
                     <v:text name="f_tags" value="--self.v_tags" fmt-function="POLLS.WA.utf2wide" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
                   <tr>
                     <th/>
                     <td>
@@ -452,7 +456,6 @@
                       <b><vm:label for="f_own" value="Search in my polls"/></b>
                     </td>
                   </tr>
-                </vm:if>
                 <tr>
                   <th/>
                   <td>
@@ -518,7 +521,7 @@
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('polls.vspx');
+                self.vc_redirect (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id)));
               ]]>
             </v:on-post>
           </v:button>
@@ -535,14 +538,7 @@
                 <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_is_valid := 1;
-                      self.v_step := 0;
-                      self.v_mode := 'advanced';
-                      self.ds_data := vector();
-                      self.ds_meta := vector();
-                      self.ds_tags := vector();
-                      self.f_own.ufl_selected := 1;
-                      self.vc_data_bind(e);
+                      self.vc_redirect (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced')));
                     ]]>
                   </v:on-post>
                 </v:button>
@@ -550,7 +546,7 @@
                 <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_redirect('polls.vspx');
+                      self.vc_redirect (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id)));
                     ]]>
                   </v:on-post>
                 </v:button>

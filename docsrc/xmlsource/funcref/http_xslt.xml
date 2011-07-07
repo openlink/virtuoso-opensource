@@ -39,10 +39,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_http_xslt"><title>Parameters</title>
-    <refsect2><title>xslt_uri</title><para>Absolute URI of the XSL stylesheet</para></refsect2>
-    <refsect2><title>params</title><para>Even length array of name/value pairs.</para></refsect2>
-  </refsect1>
   <refsect1 id="desc_http_xslt"><title>Description</title>
     <para>
 This function can be called inside a VSP page to apply an XSLT
@@ -66,6 +62,10 @@ This function is only valid in a VSP context.  The
 <parameter>xsl:output</parameter> element will control the
 Content-Type sent to the user agent.
 </para>
+  </refsect1>
+  <refsect1 id="params_http_xslt"><title>Parameters</title>
+    <refsect2><title>xslt_uri</title><para>Absolute URI of the XSL stylesheet</para></refsect2>
+    <refsect2><title>params</title><para>Even length array of name/value pairs.</para></refsect2>
   </refsect1>
   <refsect1 id="examples_http_xslt"><title>Examples</title>
   <example id="ex_http_xslt"><title>Performing XSLT Transformation of VSP Output</title>

@@ -38,7 +38,7 @@
           declare sessionInfo any;
 
           sessionInfo := ENEWS.WA.session_restore (self.vc_event.ve_params);
-          if (get_keyword('user_role', sessionInfo, '') = 'expire')
+        if (isnull (get_keyword ('account_rights', sessionInfo)))
           {
             http('<script type="text/javascript">parent.document.forms[\'F1\'].submit();</script>');
             goto _end;
@@ -46,7 +46,7 @@
           sid := get_keyword('sid', self.vc_event.ve_params, '');
           realm := get_keyword('realm', self.vc_event.ve_params, '');
           domain_id := get_keyword('domain_id', sessionInfo);
-          account_id := get_keyword('user_id', sessionInfo);
+        account_id := get_keyword ('account_id', sessionInfo);
 
           item_id := atoi(get_keyword('fid', self.vc_event.ve_params));
           mode := get_keyword('m', self.vc_event.ve_params, 'channel');
@@ -65,7 +65,7 @@
           if ((mode = 'c') and (domain_id < 0))
           {
             for (select EFI_ID,
-                        ENEWS.WA.show_title(ENEWS.WA.wide2utf(EFI_TITLE)) EFI_TITLE,
+                      ENEWS.WA.show_title (EFI_TITLE) EFI_TITLE,
                         ENEWS.WA.show_description(EFI_DESCRIPTION) DESCRIPTION,
                         EFI_PUBLISH_DATE,
                         EFI_LAST_UPDATE,
@@ -77,24 +77,26 @@
                         EF_ID,
                         EF_URI,
                         EF_HOME_URI,
-                        ENEWS.WA.wide2utf(EF_TITLE) EFD_TITLE
+                      EF_TITLE EFD_TITLE
                    from ENEWS.WA.FEED_ITEM
                      join ENEWS.WA.FEED on EF_ID = EFI_FEED_ID
                        left join ENEWS.WA.FEED_ITEM_DATA on EFID_ITEM_ID = EFI_ID and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null
                   where EFI_ID = item_id) do
             {
               declare lt, ut, en, rt, ft, mt, bt, ct, tt varchar;
+
+            self.rdf_iri := SIOC..feed_item_iri (EF_ID, item_id);
               if (isnull(EFI_LINK))
               {
-                lt := sprintf('%s', EFI_TITLE);
+              lt := EFI_TITLE;
               } else {
                 lt := sprintf('<a id="v_item_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EFI_ID, EFI_LINK, EFI_TITLE, 'app', SIOC..feed_item_iri (EF_ID, EFI_ID), EFI_TITLE);
               }
               if (isnull(EF_HOME_URI))
               {
-                ut := sprintf('%s', EFD_TITLE);
+              ut := EFD_TITLE;
               } else {
-                ut := sprintf('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EF_ID, EF_URI, EFD_TITLE, 'app', SIOC..feed_iri (EF_ID), EFD_TITLE);
+              ut := sprintf ('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%V</a>', EF_ID, EF_URI, EFD_TITLE, 'app', SIOC..feed_iri (EF_ID), EFD_TITLE);
               }
               en := ENEWS.WA.feed_enclosure(EFI_ID);
               if (isnull(en))
@@ -108,7 +110,7 @@
 
               ct := '';
               if (not isnull(EFI_COMMENT_API))
-              ct := sprintf('<span onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s" class="link">| %s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment This');
+              ct := sprintf ('<span onclick="javascript: windowShow(\'blog.vspx?mode=comment&did=%d&aid=%d&fid=%d\');" title="%s" class="link">| %s</span>', domain_id, account_id, EFI_ID, 'Comment This', 'Comment This');
 
               tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
               tags := ENEWS.WA.tags2vector (tags);
@@ -171,7 +173,7 @@
             }
 
             for (select EFI_ID,
-                        ENEWS.WA.show_title(ENEWS.WA.wide2utf(EFI_TITLE)) EFI_TITLE,
+                      ENEWS.WA.show_title (EFI_TITLE) EFI_TITLE,
                         ENEWS.WA.show_description(EFI_DESCRIPTION) DESCRIPTION,
                         EFI_PUBLISH_DATE,
                         EFI_LAST_UPDATE,
@@ -183,7 +185,7 @@
                         EF_ID,
                         EF_URI,
                         EF_HOME_URI,
-                         ENEWS.WA.wide2utf(EFD_TITLE) EFD_TITLE
+                      EFD_TITLE
                      from ENEWS.WA.FEED_ITEM
                        join ENEWS.WA.FEED on EF_ID = EFI_FEED_ID
                          left join ENEWS.WA.FEED_ITEM_DATA on EFID_ITEM_ID = EFI_ID and EFID_ACCOUNT_ID = account_id
@@ -191,15 +193,17 @@
                     where EFI_ID = item_id) do
             {
               declare lt, ut, en, rt, ft, mt, bt, ct, tt, cv, an varchar;
+
+            self.rdf_iri := SIOC..feed_item_iri (EF_ID, item_id);
               if (isnull(EFI_LINK))
               {
-                lt := sprintf('%s', EFI_TITLE);
+              lt := EFI_TITLE;
               } else {
                 lt := sprintf('<a id="v_item_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EFI_ID, EFI_LINK, EFI_TITLE, 'app', SIOC..feed_item_iri (EF_ID, EFI_ID), EFI_TITLE);
               }
               if (isnull(EF_HOME_URI))
               {
-                ut := sprintf('%s', EFD_TITLE);
+              ut := EFD_TITLE;
               } else {
                 ut := sprintf('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EF_ID, EF_URI, EFD_TITLE, 'app', SIOC..feed_iri (EF_ID), EFD_TITLE);
               }
@@ -224,7 +228,7 @@
               if (mail_domain_id)
               {
                 mt := sprintf('subject=%U&body=%U', sprintf('OFM post: %s', EFI_TITLE), sprintf('OFM post:\n\nFeed: %s - %s\nPost: %s - %s', EFD_TITLE, EF_URI, EFI_TITLE, EFI_LINK));
-              mt := sprintf(' | <span onclick="javascript: window.open(\'../../oMail/%d/write.vsp?sid=%s&realm=%s&return=F1&html=0&%s\', \'\', \'width=800,height=500\'); return false;" title="%s" class="link">%s</span>', mail_domain_id, sid, realm, mt, 'Mail This', 'Mail');
+              mt := sprintf (' | <span onclick="javascript: windowShow(\'../../oMail/%d/write.vsp?return=F1&html=0&%s\');" title="%s" class="link">%s</span>', mail_domain_id, mt, 'Mail This', 'Mail');
               } else {
                 mt := sprintf('subject=%s&body=%s', sprintf('OFM post: %s', EFI_TITLE), sprintf('OFM post:\n\nChannel: %s - %s\nPost: %s - %s', EFD_TITLE, EF_URI, EFI_TITLE, EFI_LINK));
                 mt := sprintf(' | <a href="mailto:?%s" title="%s">%s</a>', mt, 'Mail This', 'Mail');
@@ -232,40 +236,39 @@
 
               -- Comment this
               if (not isnull(EFI_COMMENT_API))
-              ct := sprintf(' | <span onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s" class="link">%s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment');
+              ct := sprintf (' | <span onclick="javascript: windowShow(\'%s?mode=comment&fid=%d\');" title="%s" class="link">%s</span>', ENEWS.WA.page_url (domain_id, 'blog.vspx'), EFI_ID, 'Comment This', 'Comment');
 
               -- Annotation
               if (account_id >= 0)
-              an := sprintf(' | <span onclick="javascript: window.open(\'annotea.vspx?sid=%s&realm=%s&did=%d&aid=%d&oid=%d\', \'\', \'width=700,height=500,scrollbars=yes\'); return false;" title="%s" class="link">%s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Annotate', 'Annotate');
+              an := sprintf (' | <span onclick="javascript: windowShow(\'%s?oid=%d\');" title="%s" class="link">%s</span>', ENEWS.WA.page_url (domain_id, 'annotea.vspx'), EFI_ID, 'Annotate', 'Annotate');
 
             -- Discussion
             if ((ENEWS.WA.discussion_check ()) and (ENEWS.WA.conversation_enable(domain_id)))
-              cv := sprintf(' | <span onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s" class="link">%s</span>', sid, realm, EFI_ID, 'Discussion', 'Discuss');
+              cv := sprintf (' | <span onclick="javascript: windowShow(\'%s?id=%d\');" title="%s" class="link">%s</span>', ENEWS.WA.page_url (domain_id, 'conversation.vspx'), EFI_ID, 'Discussion', 'Discuss');
 
               if (account_id >= 0)
               {
                 if (coalesce(EFID_READ_FLAG, 0) = 1)
                 {
-                rt := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'r0', mode, 'Mark unread', 'Unread');
+                rt := sprintf (' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, mode, 'r0', 'Mark unread', 'Unread');
                 } else {
-                rt := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'r1', mode, 'Mark read', 'Read');
+                rt := sprintf (' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, mode, 'r1', 'Mark read', 'Read');
                 }
                 if (coalesce(EFID_KEEP_FLAG, 0) = 1)
                 {
-                ft := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'f0', mode, 'Unflag This', 'Unflag');
+                ft := sprintf (' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, mode, 'f0', 'Unflag This', 'Unflag');
                 } else {
-                ft := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'f1', mode, 'Flag This', 'Flag');
+                ft := sprintf (' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, mode, 'f1', 'Flag This', 'Flag');
                 }
 
                 -- Blog this
                 if (ENEWS.WA.blog_check(domain_id))
-                bt := sprintf(' | <span onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s" class="link">%s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Blog This', 'Blog');
-
-                -- Tags
+                bt := sprintf (' | <span onclick="javascript: windowShow(\'%s?fid=%d\');" title="%s" class="link">%s</span>', ENEWS.WA.page_url (domain_id, 'blog.vspx'), EFI_ID, 'Blog This', 'Blog');
               }
+            -- Tags
               tt := '';
               if (account_id >= 0)
-              tt := tt || sprintf('<span onclick="javascript: window.open(\'tags.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" class="link" title="Revise tags">(Revise)</span>: <input type="text" name="tag"/>%s <span onclick="javascript: myPost(\'F1\', \'atag\', \'+\'); parent.Feeds.loadTags(); return false" class="link"><img src="image/add_16.png" border="0" alt="Add Tag" title="Add Tag" /></span>', sid, realm, domain_id, account_id, EFI_ID, tagError);
+              tt := tt || sprintf ('<span onclick="javascript: windowShow(\'%s?fid=%d\');" class="link" title="Revise tags">(Revise)</span>: <input type="text" name="tag"/>%s <span onclick="javascript: myPost(\'F1\', \'atag\', \'+\'); parent.Feeds.loadTags(); return false" class="link"><img src="image/add_16.png" border="0" alt="Add Tag" title="Add Tag" /></span>',  ENEWS.WA.page_url (domain_id, 'tags.vspx'), EFI_ID, tagError);
 
               tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
               tags := ENEWS.WA.tags2vector (tags);
@@ -335,13 +338,13 @@
               declare lt, ut, en, rt, ft, mt, tt varchar;
               if (isnull(EFI_LINK))
               {
-                lt := sprintf('%s', EFI_TITLE);
+              lt := EFI_TITLE;
               } else {
                 lt := sprintf('<a target="_blank" href="%s" title="%s">%s</a>', EFI_LINK, EFI_TITLE, EFI_TITLE);
               }
               if (isnull(EF_HOME_URI))
               {
-                ut := sprintf('%s', EFD_TITLE);
+              ut := EFD_TITLE;
               } else {
                 ut := sprintf('<a target="_blank" href="%s" title="%s">%s</a>', EF_HOME_URI, EFD_TITLE, EFD_TITLE);
               }
@@ -354,15 +357,15 @@
               }
               if (coalesce(EFID_READ_FLAG, 0) = 1)
               {
-                rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'r0', mode, 'Mark unread', 'Unread');
+              rt := sprintf (' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, mode, 'r0', 'Mark unread', 'Unread');
               } else {
-                rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'r1', mode, 'Mark read', 'Read');
+              rt := sprintf (' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, mode, 'r1', 'Mark read', 'Read');
               }
               if (coalesce(EFID_KEEP_FLAG, 0) = 1)
               {
-                ft := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'f0', mode, 'Unflag This', 'Unflag');
+              ft := sprintf (' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, mode, 'f0', 'Unflag This', 'Unflag');
               } else {
-                ft := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'f1', mode, 'Flag This', 'Flag');
+              ft := sprintf (' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, mode, 'f1', 'Flag This', 'Flag');
               }
               http(sprintf('<div id="feed_header">&nbsp;<b>Post</b>: <i>%s</i> | <b>Author</b>: <i>%s</i> | <b>Feed</b>: <i>%s</i>%s</div>', lt, author, ut, en));
               http(sprintf('<div id="feed_subheader">&nbsp;<b>Posted on</b>: <i>%s</i>, <b>Updated on</b>: <i>%s</i>%s %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EFI_PUBLISH_DATE, EFI_LAST_UPDATE, account_name), 'dct:created'), ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EFI_LAST_UPDATE, null, account_name), 'dct:modified'), rt, ft));

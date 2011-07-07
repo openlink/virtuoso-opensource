@@ -36,8 +36,7 @@ create procedure ODRIVE.WA.uninstall ()
 ODRIVE.WA.uninstall ()
 ;
 
-VHOST_REMOVE (lpath => '/odrive');
-VHOST_REMOVE (lpath => '/odrive/SOAP');
+VHOST_REMOVE (lpath => '/briefcase');
 VHOST_REMOVE (lpath => '/dataspace/services/briefcase');
 
 ODRIVE.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'oDrive\'');
@@ -53,8 +52,7 @@ create procedure ODRIVE.WA.drop_procedures()
 ;
 
 -- dropping procedures for ODRIVE
-ODRIVE.WA.drop_procedures()
-;
+ODRIVE.WA.drop_procedures();
 
 ODRIVE.WA.exec_no_error('DROP procedure ODRIVE.WA.odrive_vhost');
 ODRIVE.WA.exec_no_error('DROP procedure ODRIVE.WA.drop_procedures');
@@ -91,11 +89,17 @@ ODRIVE.WA.exec_no_error ('DROP view DB.DBA.ODS_ODRIVE_TAGS');
 -- reinit
 ODS_RDF_VIEW_INIT ();
 
--- SOAP procs
-ODRIVE.WA.exec_no_error('DROP procedure DBA.SOAPODRIVE.Browse');
-
 -- dropping ODS procs
 ODRIVE.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_odrive_tags');
 
 -- final proc
 ODRIVE.WA.exec_no_error('DROP procedure ODRIVE.WA.exec_no_error');
+
+registry_remove ('_oDrive_path_');
+registry_remove ('_oDrive_version_');
+registry_remove ('_oDrive_build_');
+registry_remove ('__ods_briefcase_sioc_init');
+registry_remove ('odrive_items_upgrade');
+registry_remove ('odrive_path_upgrade');
+registry_remove ('odrive_path_upgrade2');
+registry_remove ('odrive_services_update');

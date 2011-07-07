@@ -64,7 +64,7 @@
               self.m_mode := 'M/add';
               self.m_name := 'foaf:made';
               self.m_url.ufl_value := null;
-              self.m_desc.ufl_value := null;
+              self.m_descr.ufl_value := null;
 
               self.vc_data_bind (e);
             ]]>
@@ -123,7 +123,7 @@
                                WUP_DESC
                           into self.m_name,
                                self.m_url.ufl_value,
-                               self.m_desc.ufl_value
+                               self.m_descr.ufl_value
                           from DB.DBA.WA_USER_PROJECTS
                          where WUP_ID = self.m_id;
 
@@ -149,10 +149,12 @@
 
     <vm:if test="self.m_mode <> 'M/browse'">
 	  <div class="fm">
-	      <fieldset>
-  		    <label for="m_name">Property (*)</label>
-		  <br />
-          <div id="if_opt">
+				<table>
+				  <tr>
+				    <th width="120px">
+		          Property (*)
+		        </th>
+		        <td id="if_opt">
             <script type="text/javascript">
               <![CDATA[
                 function p_init ()
@@ -169,18 +171,29 @@
                 ODSInitArray.push ( function () { OAT.Loader.load(["combolist"], p_init); } );
               ]]>
             </script>
-          </div>
-  		    <label for="m_url">URI</label>
-		    <br />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          URI
+		        </th>
+		        <td>
           <v:text name="m_url" value="" xhtml_id="m_url" xhtml_style="width:316px" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
-		  <br/>
-  		    <label for="m_desc">Description (*)</label>
-		    <br />
-  		    <v:textarea name="m_desc" value="" xhtml_id="m_desc" xhtml_rows="4" xhtml_cols="80"/>
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Description (*)
+		        </th>
+		        <td>
+              <v:textarea name="m_descr" value="" xhtml_id="m_descr" xhtml_rows="4" xhtml_cols="80"/>
 		  <br />
 		  <label>Note: The fields designated with '*' will be fetched from the source document if empty</label>
-		    <br />
-	      <span class="fm_ctl_btn">
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
   		      <v:button name="user_c_personal_7" value="Cancel" action="simple">
 		      <v:on-post>
                 self.m_mode := 'M/browse';
@@ -199,7 +212,7 @@ if (not self.vc_is_valid)
                   params := e.ve_params;
                   self.m_name := get_keyword ('m_name', params);
                   url := self.m_url.ufl_value;
-                  descr := self.m_desc.ufl_value;
+                    descr := self.m_descr.ufl_value;
                   name := self.m_name;
 iri := url;
 tmp := uuid ();
@@ -259,6 +272,9 @@ nexts:;
 
                   if (length (self.m_name))
                     name := self.m_name;
+
+                    name := cast (name as varchar);
+                    descr := cast (descr as varchar);
 if (not length (name))
   {
     self.vc_error_message := 'The title of item made is not specified nor can be retrieved from source URI, please specify.';
@@ -289,8 +305,9 @@ if (not length (name))
                 ]]>
               </v:on-post>
 		  </v:button>
-	      </span>
-	  </fieldset>
+            </td>
+          </tr>
+        </table>
       </div>
     </vm:if>
 	</v:form>

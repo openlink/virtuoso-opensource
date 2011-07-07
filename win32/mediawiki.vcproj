@@ -1,35 +1,60 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="9.00"
 	Name="mediawiki"
 	ProjectGUID="{408E2482-2623-11DB-9BB9-97600548391D}"
-	SccProjectName=""
-	SccLocalPath="">
+	TargetFrameworkVersion="131072"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\mediawiki"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions=""
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName="$(ConfigurationName)/mediawiki.tlb"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\Xml.new;..\libsrc\util\win32;..\libsrc;openssl;."
 				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;NDEBUG;_USRDLL;YY_NO_UNISTD_H"
-				MinimalRebuild="FALSE"
-				ExceptionHandling="FALSE"
+				MinimalRebuild="false"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\mediawiki/mediawiki.pch"
 				AssemblerListingLocation="$(ConfigurationName)\mediawiki/"
@@ -37,124 +62,160 @@
 				ProgramDataBaseFileName="$(ConfigurationName)\mediawiki/"
 				BrowseInformation="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="0"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions=""
+				Culture="1049"
+				AdditionalIncludeDirectories="..\libsrc\Wi"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
 				OutputFile="$(ConfigurationName)/mediawiki.dll"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
 				ModuleDefinitionFile="..\appsrc\ODS-Wiki\plugin\mediawiki.def"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/mediawiki.pdb"
-				ImportLibrary="$(ConfigurationName)/mediawiki.lib"/>
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="$(ConfigurationName)/mediawiki.lib"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions=""
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/mediawiki.tlb"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions=""
-				Culture="1049"
-				AdditionalIncludeDirectories="..\libsrc\Wi"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\mediawiki"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions=""
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName="$(ConfigurationName)/mediawiki.tlb"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\binsrc\driver,..\libsrc\Wi,..\libsrc\langfunc,..\libsrc\plugin,..\binsrc\driver\include..\libsrc\Dk,..\libsrc\util\win32,..\libsrc;..\libsrc\Xml.new;openssl,."
 				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;NDEBUG;_USRDLL;YY_NO_UNISTD_H"
-				MinimalRebuild="TRUE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\mediawiki/mediawiki.pch"
 				AssemblerListingLocation="$(ConfigurationName)\mediawiki/"
 				ObjectFile="$(ConfigurationName)\mediawiki/"
 				ProgramDataBaseFileName="$(ConfigurationName)\mediawiki/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions=""
+				Culture="1049"
+				AdditionalIncludeDirectories="..\libsrc\Wi"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
 				OutputFile="$(ConfigurationName)/mediawiki.dll"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
 				ModuleDefinitionFile="..\appsrc\ODS-Wiki\plugin\mediawiki.def"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/mediawiki.pdb"
-				ImportLibrary="$(ConfigurationName)/mediawiki.lib"/>
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="$(ConfigurationName)/mediawiki.lib"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions=""
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/mediawiki.tlb"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions=""
-				Culture="1049"
-				AdditionalIncludeDirectories="..\libsrc\Wi"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -162,83 +223,80 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\libsrc\plugin\import_gate_virtuoso.c">
+				RelativePath="..\libsrc\plugin\import_gate_virtuoso.c"
+				>
 			</File>
 			<File
-				RelativePath="..\appsrc\ODS-Wiki\plugin\media_maclex.c">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\media_maclex.c"
+				>
 			</File>
 			<File
-				RelativePath="..\appsrc\ODS-Wiki\plugin\media_wikilex.c">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\media_wikilex.c"
+				>
 			</File>
 			<File
-				RelativePath="..\appsrc\ODS-Wiki\plugin\mediawiki.c">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\mediawiki.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			>
 		</Filter>
 		<Filter
 			Name="LexFiles"
-			Filter="">
+			>
 			<File
-				RelativePath="..\appsrc\ODS-Wiki\plugin\media_maclex.l">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\media_maclex.l"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f media_maclex.c
-flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)\media_maclex.c"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f media_maclex.c&#x0D;&#x0A;flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\media_maclex.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f media_maclex.c
-flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)\media_maclex.c"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f media_maclex.c&#x0D;&#x0A;flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\media_maclex.c"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\appsrc\ODS-Wiki\plugin\media_wikilex.l">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\media_wikilex.l"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f media_wikilex.c
-flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)\media_wikilex.c"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f media_wikilex.c&#x0D;&#x0A;flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\media_wikilex.c"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="
-cd $(InputDir)
-rm -f media_wikilex.c
-flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)
-cd $(ProjectDir)
-"
-						Outputs="$(InputDir)\media_wikilex.c"/>
+						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f media_wikilex.c&#x0D;&#x0A;flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\media_wikilex.c"
+					/>
 				</FileConfiguration>
 			</File>
 		</Filter>

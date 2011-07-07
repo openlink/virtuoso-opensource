@@ -1,4 +1,6 @@
 --
+--  virtual_dir.sql
+--
 --  $Id$
 --
 --  Virtual Web directories support.
@@ -34,39 +36,39 @@
 
 -- Mappings table
 create table DB.DBA.HTTP_PATH (
-    HP_HOST     varchar not null, -- mapping Host in HTTP header note: *ini*, *sslini*
-    HP_LISTEN_HOST  varchar not null, -- IP address & port for mapping listening session
-    HP_LPATH        varchar not null, -- logical path
-    HP_PPATH    varchar not null, -- physical path
-    HP_STORE_AS_DAV   integer not null, -- flag for webDAV storage
-    HP_DIR_BROWSEABLE   integer not null, -- directory listing allowed
-    HP_DEFAULT    varchar,    -- default page
-    HP_SECURITY       varchar,          -- witch method allowed all/https/digest (0/1/2)
-    HP_REALM          varchar,          -- authentication realm
-    HP_AUTH_FUNC      varchar,          -- witch function authenticate this directory
-    HP_POSTPROCESS_FUNC varchar,          -- function call after request
-    HP_RUN_VSP_AS     varchar,          -- uid for VSPs REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
-    HP_RUN_SOAP_AS    varchar,          -- uid for SOAP REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
-    HP_PERSIST_SES_VARS integer not null, -- have a persistent session variables
-    HP_SOAP_OPTIONS long varchar,   -- SOAP options
-    HP_AUTH_OPTIONS varchar,    -- Authentication options
-    HP_OPTIONS    any,      -- Global options
-    HP_IS_DEFAULT_HOST  integer,    -- default host mapping
-    primary key (HP_LISTEN_HOST, HP_HOST, HP_LPATH)
+HP_HOST     varchar not null, -- mapping Host in HTTP header note: *ini*, *sslini*
+HP_LISTEN_HOST  varchar not null, -- IP address & port for mapping listening session
+HP_LPATH        varchar not null, -- logical path
+HP_PPATH    varchar not null, -- physical path
+HP_STORE_AS_DAV   integer not null, -- flag for webDAV storage
+HP_DIR_BROWSEABLE   integer not null, -- directory listing allowed
+HP_DEFAULT    varchar,    -- default page
+HP_SECURITY       varchar,          -- witch method allowed all/https/digest (0/1/2)
+HP_REALM          varchar,          -- authentication realm
+HP_AUTH_FUNC      varchar,          -- witch function authenticate this directory
+HP_POSTPROCESS_FUNC varchar,          -- function call after request
+HP_RUN_VSP_AS     varchar,          -- uid for VSPs REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
+HP_RUN_SOAP_AS    varchar,          -- uid for SOAP REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
+HP_PERSIST_SES_VARS integer not null, -- have a persistent session variables
+HP_SOAP_OPTIONS long varchar,   -- SOAP options
+HP_AUTH_OPTIONS varchar,    -- Authentication options
+HP_OPTIONS    any,      -- Global options
+HP_IS_DEFAULT_HOST  integer,    -- default host mapping
+primary key (HP_LISTEN_HOST, HP_HOST, HP_LPATH)
 )
 ;
 
 create table HTTP_ACL (
-  HA_LIST   varchar not null,   -- ACL name (group)
-  HA_ORDER  integer not null,   -- Order in the list
-  HA_OBJECT integer not NULL default -1,  -- Object ID (applicable to news groups)
-  HA_CLIENT_IP  varchar not NULL,   -- Client IP (*PATTERN*)
-  HA_FLAG   integer not NULL default 1, -- Allow/Deny flag, 0 - allow, 1 - deny
-  HA_RW   integer default 0,    -- Read/Write flag,  0 - read,  1 - post
-  HA_DEST_IP  varchar default '*',    -- Destination IP/Host
-  HA_RATE double precision,    -- Rate (hits/second)
-  HA_LIMIT  integer default 0,
-  PRIMARY KEY (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG))
+HA_LIST   varchar not null,   -- ACL name (group)
+HA_ORDER  integer not null,   -- Order in the list
+HA_OBJECT integer not NULL default -1,  -- Object ID (applicable to news groups)
+HA_CLIENT_IP  varchar not NULL,   -- Client IP (*PATTERN*)
+HA_FLAG   integer not NULL default 1, -- Allow/Deny flag, 0 - allow, 1 - deny
+HA_RW   integer default 0,    -- Read/Write flag,  0 - read,  1 - post
+HA_DEST_IP  varchar default '*',    -- Destination IP/Host
+HA_RATE double precision,    -- Rate (hits/second)
+HA_LIMIT  integer default 0,
+PRIMARY KEY (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG))
 ;
 
 --#IF VER=5
@@ -83,13 +85,14 @@ alter table HTTP_ACL add HA_ORDER integer not null
 alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 ;
 
---!AFTER
+--#ENDIF
 alter table HTTP_ACL add HA_LIMIT integer default 0
 ;
---#ENDIF
 
 -- triggers to keep in sync in-memory representation
---!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_LIMIT !
+--#IF VER=5
+--!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
+--#ENDIF
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
   declare def_rate int;
@@ -102,12 +105,14 @@ create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 ;
 
 -- triggers to keep in sync in-memory representation
---!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_LIMIT !
+--#IF VER=5
+--!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
+--#ENDIF
 create trigger HTTP_ACL_U after update on DB.DBA.HTTP_ACL referencing old as O, new as N
 {
   http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
   http_acl_set (N.HA_LIST, N.HA_ORDER, N.HA_CLIENT_IP, N.HA_FLAG, N.HA_DEST_IP, N.HA_OBJECT, N.HA_RW,
-	coalesce (N.HA_RATE, 0), N.HA_LIMIT);
+      coalesce (N.HA_RATE, 0), N.HA_LIMIT);
 }
 ;
 
@@ -118,22 +123,22 @@ create trigger HTTP_ACL_D after delete on DB.DBA.HTTP_ACL referencing old as O
 ;
 
 create view HTTP_PROXY_ACL (HP_SRC, HP_DEST, HP_FLAG)
-    as select HA_CLIENT_IP, HA_DEST_IP, HA_FLAG from DB.DBA.HTTP_ACL
-    where upper (HA_LIST) = 'PROXY'
+as select HA_CLIENT_IP, HA_DEST_IP, HA_FLAG from DB.DBA.HTTP_ACL
+where upper (HA_LIST) = 'PROXY'
 ;
 
 create view NEWS_ACL (NA_GROUP, NA_IP, NA_A_D, NA_RW)
-    as select HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW from DB.DBA.HTTP_ACL
-    where upper (HA_LIST) = 'NEWS'
+as select HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW from DB.DBA.HTTP_ACL
+where upper (HA_LIST) = 'NEWS'
 ;
 
 
 -- Default mapping for WebDAV repository
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
@@ -161,132 +166,132 @@ insert soft DB.DBA.HTTP_PATH
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*sslini*', '*sslini*', '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*sslini*', '*sslini*', '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 -- Default mapping for admin pages
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/admin', '/admin/', 0, 0, 'admin_main.vsp', NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/admin', '/admin/', 0, 0, 'admin_main.vsp', NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/install', '/install/', 0, 0, 'install.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/install', '/install/', 0, 0, 'install.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*sslini*', '*sslini*', '/admin', '/admin/', 0, 0, 'admin_main.vsp', NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*sslini*', '*sslini*', '/admin', '/admin/', 0, 0, 'admin_main.vsp', NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/mime', '/mime/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/mime', '/mime/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/images', '/images/', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/images', '/images/', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*sslini*', '*sslini*', '/mime', '/mime/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
-)
-;
-
--- Documentation directory
-insert soft DB.DBA.HTTP_PATH
-(
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/doc', '/doc/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*sslini*', '*sslini*', '/mime', '/mime/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 -- Documentation directory
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*sslini*', '*sslini*', '/doc', '/doc/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/doc', '/doc/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+)
+;
+
+-- Documentation directory
+insert soft DB.DBA.HTTP_PATH
+(
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*sslini*', '*sslini*', '/doc', '/doc/', 0, 0, NULL, NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 -- Default mapping for SOAP
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/SOAP', '/SOAP/', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'SOAP', 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/SOAP', '/SOAP/', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'SOAP', 0
 )
 ;
 
 -- Default mapping for SOAP
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*sslini*', '*sslini*', '/SOAP', '/SOAP/', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'SOAP', 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*sslini*', '*sslini*', '/SOAP', '/SOAP/', 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 'SOAP', 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*ini*', '*ini*', '/vsmx', '/vsmx/', 0, 0, 'vsmx.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*ini*', '*ini*', '/vsmx', '/vsmx/', 0, 0, 'vsmx.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 insert soft DB.DBA.HTTP_PATH
 (
-    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
-    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
-    values ( '*sslini*', '*sslini*', '/vsmx', '/vsmx/', 0, 0, 'vsmx.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
+HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+values ( '*sslini*', '*sslini*', '/vsmx', '/vsmx/', 0, 0, 'vsmx.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
 
 --#IF VER=5
 create procedure HTTP_PATH_UPGRADE ()
 {
-  declare arr, new_vhost any;
-  if (registry_get ('__http_vd_upgrade') = 'done')
-    return;
-  for select HP_HOST vhost, HP_LISTEN_HOST lhost, HP_LPATH lpath from DB.DBA.HTTP_PATH where HP_HOST not in ('*ini*', '*sslini*') do
+declare arr, new_vhost any;
+if (registry_get ('__http_vd_upgrade') = 'done')
+return;
+for select HP_HOST vhost, HP_LISTEN_HOST lhost, HP_LPATH lpath from DB.DBA.HTTP_PATH where HP_HOST not in ('*ini*', '*sslini*') do
+{
+  arr := split_and_decode (vhost, 0, ':=:');
+  if (length (arr) > 1)
     {
-      arr := split_and_decode (vhost, 0, ':=:');
-      if (length (arr) > 1)
-        {
-	  new_vhost := arr[0];
-	  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = new_vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath))
-	    log_message (sprintf ('The virtual directory at host=[%s] path=[%s] conflict with an existing, and cannot be upgraded.', vhost, lpath));
-	  else
-	    update DB.DBA.HTTP_PATH set HP_HOST = new_vhost where HP_HOST = vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath;
-	}
+      new_vhost := arr[0];
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = new_vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath))
+	log_message (sprintf ('The virtual directory at host=[%s] path=[%s] conflict with an existing, and cannot be upgraded.', vhost, lpath));
+      else
+	update DB.DBA.HTTP_PATH set HP_HOST = new_vhost where HP_HOST = vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath;
     }
-  registry_set ('__http_vd_upgrade', 'done');
+}
+registry_set ('__http_vd_upgrade', 'done');
 }
 ;
 
@@ -296,19 +301,19 @@ HTTP_PATH_UPGRADE ()
 
 create procedure HTTP_SET_DBA_ADMIN (in realm varchar)
 {
-  declare auth, _user varchar;
-  auth := vsp_auth_vec (http_request_header());
-  if (isarray (auth) and http_path () like '/admin/%' and http_path () not like '/admin/admin_dav/%'
-      and http_path () not like 'admin/admin_news/%')
-    {
-      _user := get_keyword ('username', auth, '');
-      if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = _user and U_GROUP = 0))
-  {
-    __set_user_id (_user, 0);
-    set_qualifier ('DB');
-  }
-    }
-  return 1;
+declare auth, _user varchar;
+auth := vsp_auth_vec (http_request_header());
+if (isarray (auth) and http_path () like '/admin/%' and http_path () not like '/admin/admin_dav/%'
+  and http_path () not like 'admin/admin_news/%')
+{
+  _user := get_keyword ('username', auth, '');
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = _user and U_GROUP = 0))
+{
+__set_user_id (_user, 0);
+set_qualifier ('DB');
+}
+}
+return 1;
 }
 ;
 
@@ -316,9 +321,9 @@ create procedure HTTP_SET_DBA_ADMIN (in realm varchar)
 create procedure
 DB.DBA.IS_EMPTY_OR_NULL (in x any)
 {
-  if (x is null or '' = x or 0 = x)
-    return 1;
-  return 0;
+if (x is null or '' = x or 0 = x)
+return 1;
+return 0;
 }
 ;
 
@@ -326,302 +331,303 @@ DB.DBA.IS_EMPTY_OR_NULL (in x any)
 -- Inserts new entry in map table
 create procedure INS_VIRTUAL_DIR (in lpath varchar, in ppath varchar)
 {
-  declare is_dav integer;
-  if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (ppath))
-    return NULL;
-  is_dav := 0;
-  if (aref (lpath, length (lpath) - 1) = ascii ('/') and length (lpath) > 1)
-    lpath := substring (lpath, 1, length (lpath) - 1);
-  if (aref (ppath, length (ppath) - 1) <> ascii ('/'))
-    ppath := concat (ppath, '/');
-  if (ppath like '/DAV/%')
-    is_dav := 1;
-  insert into DB.DBA.HTTP_PATH (HP_LPATH, HP_PPATH, HP_HOST, HP_LISTEN_HOST,
-      HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_PERSIST_SES_VARS)
-      values (lpath, ppath, '*ini*', '*ini*', is_dav, 0, 0);
-  return http_map_table (lpath, ppath, '*ini*', '*ini*', is_dav);
+declare is_dav integer;
+if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (ppath))
+return NULL;
+is_dav := 0;
+if (aref (lpath, length (lpath) - 1) = ascii ('/') and length (lpath) > 1)
+lpath := substring (lpath, 1, length (lpath) - 1);
+if (aref (ppath, length (ppath) - 1) <> ascii ('/'))
+ppath := concat (ppath, '/');
+if (ppath like '/DAV/%')
+is_dav := 1;
+insert into DB.DBA.HTTP_PATH (HP_LPATH, HP_PPATH, HP_HOST, HP_LISTEN_HOST,
+  HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_PERSIST_SES_VARS)
+  values (lpath, ppath, '*ini*', '*ini*', is_dav, 0, 0);
+return http_map_table (lpath, ppath, '*ini*', '*ini*', is_dav);
 }
 ;
 
 -- Remove entry from map table
 create procedure DEL_VIRTUAL_DIR (in lpath varchar)
 {
-  if (DB.DBA.IS_EMPTY_OR_NULL (lpath))
-    return NULL;
-  delete from DB.DBA.HTTP_PATH where HP_LPATH = lpath and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*';
-  return http_map_del (lpath, '*ini*', '*ini*');
+if (DB.DBA.IS_EMPTY_OR_NULL (lpath))
+return NULL;
+delete from DB.DBA.HTTP_PATH where HP_LPATH = lpath and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*';
+return http_map_del (lpath, '*ini*', '*ini*');
 }
 ;
 
 -- Add new virtual host / directory
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.HTTP_PATH HP_IS_DEFAULT_HOST !
+--#ENDIF
 create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
-                               in lhost varchar := '*ini*',
-                               in lpath varchar,
-             in ppath varchar,
-             in is_dav integer := 0,
-             in is_brws integer := 0,
-             in def_page varchar := null,
-             in auth_fn varchar := null,
-             in realm varchar := null,
-             in ppr_fn varchar := null,
-             in vsp_user varchar := null,
-             in soap_user varchar := null,
-             in sec varchar := null,
-             in ses_vars integer := 0,
-             in soap_opts any := null,
-             in auth_opts any := null,
-             in opts any := null,
-             in is_default_host integer := 0)
+			   in lhost varchar := '*ini*',
+			   in lpath varchar,
+	 in ppath varchar,
+	 in is_dav integer := 0,
+	 in is_brws integer := 0,
+	 in def_page varchar := null,
+	 in auth_fn varchar := null,
+	 in realm varchar := null,
+	 in ppr_fn varchar := null,
+	 in vsp_user varchar := null,
+	 in soap_user varchar := null,
+	 in sec varchar := null,
+	 in ses_vars integer := 0,
+	 in soap_opts any := null,
+	 in auth_opts any := null,
+	 in opts any := null,
+	 in is_default_host integer := 0)
 {
-  declare ssl_port varchar;
-  declare ssl_opts any;
-  declare varr, lport any;
-  if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
-    lpath := substring (lpath, 1, length (lpath) - 1);
+declare ssl_port varchar;
+declare ssl_opts any;
+declare varr, lport any;
+if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
+lpath := substring (lpath, 1, length (lpath) - 1);
 --  if (aref (ppath, length (ppath) - 1) <> ascii ('/'))
 --    ppath := concat (ppath, '/');
-  if (lpath not like '/%' or (ppath not like '/%' and lower(ppath) not like 'http://%'))
-    signal ('22023', 'Missing leading slash in lpath or ppath parameter.', 'HT058');
+if (lpath not like '/%' or (ppath not like '/%' and lower(ppath) not like 'http://%'))
+signal ('22023', 'Missing leading slash in lpath or ppath parameter.', 'HT058');
 
-  if (ppath like '/DAV/%' and is_dav <> 1)
-    signal ('22023', 'The physical path must points to the dav domain.', 'HT044');
+if (ppath like '/DAV/%' and is_dav <> 1)
+signal ('22023', 'The physical path must points to the dav domain.', 'HT044');
 
-  if (is_default_host and (lhost = '*ini*' or lhost = '*sslini*'))
-    signal ('22023', 'The default directory for default web site can be changed only from the INI file.', 'HT060');
+if (is_default_host and (lhost = '*ini*' or lhost = '*sslini*'))
+signal ('22023', 'The default directory for default web site can be changed only from the INI file.', 'HT060');
 
-  lhost := replace (lhost, '0.0.0.0', '');
+lhost := replace (lhost, '0.0.0.0', '');
 
-  ssl_port := coalesce (server_https_port (), '');
-  if (isstring (server_http_port ()))
-    {
-      varr := split_and_decode (
-         case
-           when vhost = '*ini*' then server_http_port ()
-           when vhost = '*sslini*' then ssl_port
-           else vhost
-         end
-       , 0, ':=:');
-      lport := split_and_decode (
-         case
-           when lhost = '*ini*' then server_http_port ()
-           when lhost = '*sslini*' then ssl_port
-           else lhost
-         end
-       , 0, ':=:');
+ssl_port := coalesce (server_https_port (), '');
+if (isstring (server_http_port ()))
+{
+  varr := split_and_decode (
+     case
+       when vhost = '*ini*' then server_http_port ()
+       when vhost = '*sslini*' then ssl_port
+       else vhost
+     end
+   , 0, ':=:');
+  lport := split_and_decode (
+     case
+       when lhost = '*ini*' then server_http_port ()
+       when lhost = '*sslini*' then ssl_port
+       else lhost
+     end
+   , 0, ':=:');
 
-      if (__tag (varr) = 193 and length (varr) > 1)
-	vhost := varr[0];
+  if (__tag (varr) = 193 and length (varr) > 1)
+    vhost := varr[0];
 
-      if (__tag (lport) = 193 and length (lport) > 1)
-	lport := aref (lport, 1);
-      else if (lhost = '*ini*')
-	lport := server_http_port ();
-      else if (lhost = '*sslini*')
-	lport := ssl_port;
-      else if (atoi (lhost))
-	lport := lhost;
-      else
-	lport := '80';
-    }
+  if (__tag (lport) = 193 and length (lport) > 1)
+    lport := aref (lport, 1);
+  else if (lhost = '*ini*')
+    lport := server_http_port ();
+  else if (lhost = '*sslini*')
+    lport := ssl_port;
+  else if (atoi (lhost))
+    lport := lhost;
   else
-    lport := null;
+    lport := '80';
+}
+else
+lport := null;
 
-  if (lport = server_http_port () and lhost <> '*ini*')
-    lhost := '*ini*';
-  else if (lport = ssl_port and lhost <> '*sslini*')
-    lhost := '*sslini*';
+if (lport = server_http_port () and lhost <> '*ini*')
+lhost := '*ini*';
+else if (lport = ssl_port and lhost <> '*sslini*')
+lhost := '*sslini*';
 
-  ssl_opts := NULL;
-  if (isstring (sec) and upper (sec) = 'SSL' and
-      not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
-    {
-      if (not isarray (auth_opts) or '' = get_keyword ('https_cert', auth_opts, '') or
-    '' = get_keyword ('https_key', auth_opts, ''))
-      signal ('22023', 'At least certificate and key files should be supplied for HTTPS listener.', 'HT046');
-      ssl_opts := auth_opts;
-    }
+ssl_opts := NULL;
+if (isstring (sec) and upper (sec) = 'SSL' and
+  not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
+{
+  if (not isarray (auth_opts) or '' = get_keyword ('https_cert', auth_opts, '') or
+'' = get_keyword ('https_key', auth_opts, ''))
+  signal ('22023', 'At least certificate and key files should be supplied for HTTPS listener.', 'HT046');
+  ssl_opts := auth_opts;
+}
 
-  if (opts is not null and mod(length (opts), 2) <> 0)
-      signal ('22023', 'The global options should be an array with even length or NULL.', 'HT056');
+if (opts is not null and mod(length (opts), 2) <> 0)
+  signal ('22023', 'The global options should be an array with even length or NULL.', 'HT056');
 
-  if (is_default_host = 1 and
-      exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_IS_DEFAULT_HOST = 1))
-      signal ('22023', sprintf ('The default directory is already specified for interface %s.', lhost), 'HT058');
+if (is_default_host = 1 and
+  exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_IS_DEFAULT_HOST = 1))
+  signal ('22023', sprintf ('The default directory is already specified for interface %s.', lhost), 'HT058');
 
-  if (is_default_host = 1 and
-      exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = lhost))
-      signal ('22023', sprintf ('The default directory for interface %s conflicts with existing directory entry for host (%s) and interface (%s).', lhost, lhost, lhost), 'HT059');
+if (is_default_host = 1 and
+  exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = lhost))
+  signal ('22023', sprintf ('The default directory for interface %s conflicts with existing directory entry for host (%s) and interface (%s).', lhost, lhost, lhost), 'HT059');
 
-  if (lhost[0] <> ascii ('*') and lport is not null and
-      lhost not like ':%' and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = ':'||lport))
-    {
-       signal ('22023', 'The specified port to listen is already occupied by another listener on all network interfaces', 'HT078');
-    }
-  if (lhost[0] <> ascii ('*') and lport is not null and
-      lhost = ':'||lport and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%_:'||lport))
-    {
-       signal ('22023', 'The specified port to listen on all interfaces is already occupied by another listener on a separate network interface', 'HT079');
-    }
+if (lhost[0] <> ascii ('*') and lport is not null and
+  lhost not like ':%' and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = ':'||lport))
+{
+   signal ('22023', 'The specified port to listen is already occupied by another listener on all network interfaces', 'HT078');
+}
+if (lhost[0] <> ascii ('*') and lport is not null and
+  lhost = ':'||lport and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%_:'||lport))
+{
+   signal ('22023', 'The specified port to listen on all interfaces is already occupied by another listener on a separate network interface', 'HT079');
+}
 
-  if (isstring (server_http_port()) and isstring (lhost) and lhost <> '*ini*' and
-      lhost <> server_http_port() and lhost <> '*sslini*' and lhost <> ssl_port and
-      not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
-    {
-      http_listen_host (lhost, 0, ssl_opts);
-    }
+if (isstring (server_http_port()) and isstring (lhost) and lhost <> '*ini*' and
+  lhost <> server_http_port() and lhost <> '*sslini*' and lhost <> ssl_port and
+  not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
+{
+  http_listen_host (lhost, 0, ssl_opts);
+}
 
-  insert into DB.DBA.HTTP_PATH (HP_LPATH, HP_PPATH, HP_HOST, HP_LISTEN_HOST,
-      HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_PERSIST_SES_VARS,
-      HP_DEFAULT, HP_SECURITY, HP_AUTH_FUNC, HP_REALM,
-      HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SOAP_OPTIONS, HP_AUTH_OPTIONS,
-      HP_OPTIONS, HP_IS_DEFAULT_HOST)
-      values (lpath, ppath, vhost, lhost, is_dav, is_brws, ses_vars,
-      def_page, sec, auth_fn, realm, ppr_fn, vsp_user, soap_user, serialize (soap_opts), serialize (auth_opts),
-      serialize (opts), is_default_host);
+insert into DB.DBA.HTTP_PATH (HP_LPATH, HP_PPATH, HP_HOST, HP_LISTEN_HOST,
+  HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_PERSIST_SES_VARS,
+  HP_DEFAULT, HP_SECURITY, HP_AUTH_FUNC, HP_REALM,
+  HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SOAP_OPTIONS, HP_AUTH_OPTIONS,
+  HP_OPTIONS, HP_IS_DEFAULT_HOST)
+  values (lpath, ppath, vhost, lhost, is_dav, is_brws, ses_vars,
+  def_page, sec, auth_fn, realm, ppr_fn, vsp_user, soap_user, serialize (soap_opts), serialize (auth_opts),
+  serialize (opts), is_default_host);
 
-  if (isstring (server_http_port ()))
-    {
-      http_map_table (lpath, ppath, vhost, lhost, is_dav, is_brws, def_page,
-    sec, realm, auth_fn, ppr_fn, vsp_user, soap_user, ses_vars, soap_opts, auth_opts, opts, is_default_host);
-    }
+if (isstring (server_http_port ()))
+{
+  http_map_table (lpath, ppath, vhost, lhost, is_dav, is_brws, def_page,
+sec, realm, auth_fn, ppr_fn, vsp_user, soap_user, ses_vars, soap_opts, auth_opts, opts, is_default_host);
+}
 
 }
 ;
 
 create procedure VHOST_MAP_RELOAD (in vhost varchar := '*ini*', in lhost varchar := '*ini*', in lpath varchar)
 {
-  declare ssl_port, varr varchar;
-  declare ret int;
+declare ssl_port, varr varchar;
+declare ret int;
 
-  if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (lhost))
-    return NULL;
-  http_map_del (lpath, vhost, lhost);
-  ret := 0;
-  for select
-	  HP_LPATH,
-	  HP_PPATH,
-	  HP_HOST,
-	  HP_LISTEN_HOST,
-	  HP_STORE_AS_DAV,
-	  HP_DIR_BROWSEABLE,
-	  HP_DEFAULT,
-	  HP_SECURITY,
-	  HP_REALM,
-	  HP_AUTH_FUNC,
-	  HP_POSTPROCESS_FUNC,
-	  HP_RUN_VSP_AS,
-	  HP_RUN_SOAP_AS,
-	  HP_PERSIST_SES_VARS,
-	  HP_SOAP_OPTIONS,
-	  HP_AUTH_OPTIONS,
-	  HP_OPTIONS,
-	  HP_IS_DEFAULT_HOST
-    from DB.DBA.HTTP_PATH where
-    HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost
-    do
-      {
-        http_map_table (
-	  HP_LPATH,
-	  HP_PPATH,
-	  HP_HOST,
-	  HP_LISTEN_HOST,
-	  HP_STORE_AS_DAV,
-	  HP_DIR_BROWSEABLE,
-	  HP_DEFAULT,
-	  HP_SECURITY,
-	  HP_REALM,
-	  HP_AUTH_FUNC,
-	  HP_POSTPROCESS_FUNC,
-	  HP_RUN_VSP_AS,
-	  HP_RUN_SOAP_AS,
-	  HP_PERSIST_SES_VARS,
-	  deserialize (HP_SOAP_OPTIONS),
-	  deserialize (HP_AUTH_OPTIONS),
-	  deserialize (HP_OPTIONS),
-	  HP_IS_DEFAULT_HOST);
-	ret := ret + 1;
-      }
-  return ret;
+if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (lhost))
+return NULL;
+http_map_del (lpath, vhost, lhost);
+ret := 0;
+for select
+      HP_LPATH,
+      HP_PPATH,
+      HP_HOST,
+      HP_LISTEN_HOST,
+      HP_STORE_AS_DAV,
+      HP_DIR_BROWSEABLE,
+      HP_DEFAULT,
+      HP_SECURITY,
+      HP_REALM,
+      HP_AUTH_FUNC,
+      HP_POSTPROCESS_FUNC,
+      HP_RUN_VSP_AS,
+      HP_RUN_SOAP_AS,
+      HP_PERSIST_SES_VARS,
+      HP_SOAP_OPTIONS,
+      HP_AUTH_OPTIONS,
+      HP_OPTIONS,
+      HP_IS_DEFAULT_HOST
+from DB.DBA.HTTP_PATH where
+HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost
+do
+  {
+    http_map_table (
+      HP_LPATH,
+      HP_PPATH,
+      HP_HOST,
+      HP_LISTEN_HOST,
+      HP_STORE_AS_DAV,
+      HP_DIR_BROWSEABLE,
+      HP_DEFAULT,
+      HP_SECURITY,
+      HP_REALM,
+      HP_AUTH_FUNC,
+      HP_POSTPROCESS_FUNC,
+      HP_RUN_VSP_AS,
+      HP_RUN_SOAP_AS,
+      HP_PERSIST_SES_VARS,
+      deserialize (HP_SOAP_OPTIONS),
+      deserialize (HP_AUTH_OPTIONS),
+      deserialize (HP_OPTIONS),
+      HP_IS_DEFAULT_HOST);
+    ret := ret + 1;
+  }
+return ret;
 }
 ;
 
 -- Remove entry from virtual hosts / directories
 create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
-             in lhost varchar := '*ini*',
-             in lpath varchar,
-             in del_vsps integer := 0)
+	 in lhost varchar := '*ini*',
+	 in lpath varchar,
+	 in del_vsps integer := 0)
 {
-  declare ssl_port, varr, lport varchar;
-  declare ppath, vsp_user, stat, msg varchar;
-  declare cr cursor for select HP_PPATH, HP_RUN_VSP_AS from DB.DBA.HTTP_PATH
-      where HP_LISTEN_HOST = lhost and HP_HOST = vhost and HP_LPATH = lpath;
-  if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (lhost))
-    return NULL;
+declare ssl_port, varr, lport varchar;
+declare ppath, vsp_user, stat, msg varchar;
+declare cr cursor for select HP_PPATH, HP_RUN_VSP_AS from DB.DBA.HTTP_PATH
+  where HP_LISTEN_HOST = lhost and HP_HOST = vhost and HP_LPATH = lpath;
+if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (lhost))
+return NULL;
 
-  if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
-    lpath := substring (lpath, 1, length (lpath) - 1);
+if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
+lpath := substring (lpath, 1, length (lpath) - 1);
 
-  lhost := replace (lhost, '0.0.0.0', '');
+lhost := replace (lhost, '0.0.0.0', '');
 
-  ssl_port := coalesce (server_https_port (), '');
-  if (isstring (server_http_port ()))
-    {
-      varr := split_and_decode (
-         case
-           when vhost = '*ini*' then server_http_port ()
-           when vhost = '*sslini*' then ssl_port
-           else vhost
-         end
-       , 0, ':=:');
-      lport := split_and_decode (
-         case
-           when lhost = '*ini*' then server_http_port ()
-           when lhost = '*sslini*' then ssl_port
-           else lhost
-         end
-       , 0, ':=:');
-
-      if (__tag (varr) = 193 and length (varr) > 1)
-	vhost := varr[0];
-      if (__tag (lport) = 193 and length (lport) > 1)
-	lport := aref (lport, 1);
-      else if (lhost = '*ini*')
-	lport := server_http_port ();
-      else if (lhost = '*sslini*')
-	lport := ssl_port;
-      else if (atoi (lhost))
-	lport := lhost;
-      else
-	lport := '80';
-    }
+ssl_port := coalesce (server_https_port (), '');
+if (isstring (server_http_port ()))
+{
+  varr := split_and_decode (
+     case
+       when vhost = '*ini*' then server_http_port ()
+       when vhost = '*sslini*' then ssl_port
+       else vhost
+     end
+   , 0, ':=:');
+  lport := split_and_decode (
+     case
+       when lhost = '*ini*' then server_http_port ()
+       when lhost = '*sslini*' then ssl_port
+       else lhost
+     end
+   , 0, ':=:');
+  if (__tag (varr) = 193 and length (varr) > 1)
+    vhost := varr[0];
+  if (__tag (lport) = 193 and length (lport) > 1)
+    lport := aref (lport, 1);
+  else if (lhost = '*ini*')
+    lport := server_http_port ();
+  else if (lhost = '*sslini*')
+    lport := ssl_port;
+  else if (atoi (lhost))
+    lport := lhost;
   else
-    lport := null;
-  if (lport = server_http_port () and lhost <> '*ini*')
-    lhost := '*ini*';
-  else if (lport = ssl_port and lhost <> '*sslini*')
-    lhost := '*sslini*';
+    lport := '80';
+}
+else
+lport := null;
+if (lport = server_http_port () and lhost <> '*ini*')
+lhost := '*ini*';
+else if (lport = ssl_port and lhost <> '*sslini*')
+lhost := '*sslini*';
 
-  whenever not found goto err_exit;
-  open cr (exclusive, prefetch 1);
-  fetch cr into ppath, vsp_user;
-  delete from DB.DBA.HTTP_PATH where current of cr;
-  http_map_del (lpath, vhost, lhost);
+whenever not found goto err_exit;
+open cr (exclusive, prefetch 1);
+fetch cr into ppath, vsp_user;
+delete from DB.DBA.HTTP_PATH where current of cr;
+http_map_del (lpath, vhost, lhost);
 
-  if (lhost <> '*ini*' and lhost <> server_http_port() and
-      lhost <> '*sslini*' and lhost <> ssl_port and
-      not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
-    {
-      http_listen_host (lhost, 1);
-    }
-  for select P_NAME from DB.DBA.SYS_PROCEDURES where del_vsps and P_NAME like concat ('WS.WS.', ppath, '%')
-    and P_OWNER = vsp_user do
-      {
-        stat := '00000'; msg := '';
-        exec (sprintf ('DROP PROCEDURE "%I"', P_NAME), stat, msg);
-      }
+if (lhost <> '*ini*' and lhost <> server_http_port() and
+  lhost <> '*sslini*' and lhost <> ssl_port and
+  not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
+{
+  http_listen_host (lhost, 1);
+}
+for select P_NAME from DB.DBA.SYS_PROCEDURES where del_vsps and P_NAME like concat ('WS.WS.', ppath, '%')
+and P_OWNER = vsp_user do
+  {
+    stat := '00000'; msg := '';
+    exec (sprintf ('DROP PROCEDURE "%I"', P_NAME), stat, msg);
+  }
 err_exit:
-  close cr;
+close cr;
 }
 ;
 
@@ -639,29 +645,29 @@ create procedure
 HTTP_PROXY_ACCESS (in dst varchar)
 returns integer
 {
-  declare client varchar;
-  declare host, ppath any;
-  declare rc, rcc int;
+declare client varchar;
+declare host, ppath any;
+declare rc, rcc int;
 
-  --** an virtual directory is mapped to proxy a host
-  ppath := http_map_get ('mounted');
-  if (lower (ppath) like 'http://%')
-    return 1;
+--** an virtual directory is mapped to proxy a host
+ppath := http_map_get ('mounted');
+if (lower (ppath) like 'http://%')
+return 1;
 
-  -- Deny by default
-  rc := 0;
+-- Deny by default
+rc := 0;
 
-  -- Requester address
-  client := http_client_ip ();
-  host := split_and_decode (dst, 0, '\0\0:');
-  -- Remove the port number if exists
-  dst := host[0];
+-- Requester address
+client := http_client_ip ();
+host := split_and_decode (dst, 0, '\0\0:');
+-- Remove the port number if exists
+dst := host[0];
 
-  rcc := http_acl_get ('PROXY', client, dst);
-  if (0 = rcc)
-    rc := 1;
+rcc := http_acl_get ('PROXY', client, dst);
+if (0 = rcc)
+rc := 1;
 
-  return rc;
+return rc;
 }
 ;
 
@@ -685,14 +691,14 @@ returns integer
 --;
 
 create table WS.WS.SYS_RC_CACHE
-	(RC_URI varchar,
-	 RC_DATA long varchar,
-    	 RC_INVALIDATE varchar,
-	 RC_DT datetime,
-	 RC_TAG varchar,
-	 RC_CHARSET varchar,
-	 primary key (RC_URI)
-	 )
+    (RC_URI varchar,
+     RC_DATA long varchar,
+     RC_INVALIDATE varchar,
+     RC_DT datetime,
+     RC_TAG varchar,
+     RC_CHARSET varchar,
+     primary key (RC_URI)
+     )
 create index RC_IN on WS.WS.SYS_RC_CACHE (RC_INVALIDATE)
 ;
 
@@ -701,119 +707,117 @@ create table WS.WS.SYS_CACHEABLE (CA_URI varchar, CA_CHECK varchar, primary key 
 
 create trigger SYS_CACHEABLE_I after insert on WS.WS.SYS_CACHEABLE
 {
-  http_url_cache_set (CA_URI, CA_CHECK);
+http_url_cache_set (CA_URI, CA_CHECK);
 }
 ;
 
 create trigger SYS_CACHEABLE_U after update on WS.WS.SYS_CACHEABLE referencing old as O, new as N
 {
-  http_url_cache_set (N.CA_URI, N.CA_CHECK);
+http_url_cache_set (N.CA_URI, N.CA_CHECK);
 }
 ;
 
 create trigger SYS_CACHEABLE_D after delete on WS.WS.SYS_CACHEABLE
 {
-  http_url_cache_remove (CA_URI);
-  delete from WS.WS.SYS_RC_CACHE where RC_URI = CA_URI;
+http_url_cache_remove (CA_URI);
+delete from WS.WS.SYS_RC_CACHE where RC_URI = CA_URI;
 }
 ;
 
 create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout check_fn any)
 {
-  declare inv, rc, cnt, tag, charset, url, qstr, sch any;
-  inv := null;
+declare inv, rc, cnt, tag, charset, url, qstr, sch any;
+inv := null;
 
-  if (is_https_ctx ())
-    sch := 'https://';
-  else
-    sch := 'http://';
+if (is_https_ctx ())
+sch := 'https://';
+else
+sch := 'http://';
 
-  qstr := http_request_get ('QUERY_STRING');
-  url := sch || http_request_header(lines, 'Host', null, '') || path;
-  if (length (qstr))
-    url := url || '?' || qstr;
-  rc := call (check_fn) (url, lines, inv);
-  --dbg_obj_print ('HTTP_CACHE_CHECK: ', url, check_fn, inv, rc);
-  if (rc)
+qstr := http_request_get ('QUERY_STRING');
+url := sch || http_request_header(lines, 'Host', null, '') || path;
+if (length (qstr))
+url := url || '?' || qstr;
+rc := call (check_fn) (url, lines, inv);
+--dbg_obj_print ('HTTP_CACHE_CHECK: ', url, check_fn, inv, rc);
+if (rc)
+{
+  whenever not found goto nf;
+  select RC_DATA, RC_TAG, RC_CHARSET into cnt, tag, charset from WS.WS.SYS_RC_CACHE where RC_URI = url;
+  commit work;
+  if (cnt is not null)
     {
-      whenever not found goto nf;
-      select RC_DATA, RC_TAG, RC_CHARSET into cnt, tag, charset from WS.WS.SYS_RC_CACHE where RC_URI = url;
-      commit work;
-      if (cnt is not null)
+      declare ses, ctag any;
+      ctag := http_request_header (lines, 'If-None-Match');
+      if (not isstring (ctag))
+	ctag := '';
+      if (ctag <> tag)
 	{
-	  declare ses, ctag any;
-	  ctag := http_request_header (lines, 'If-None-Match');
-	  if (not isstring (ctag))
-	    ctag := '';
-	  if (ctag <> tag)
+	  if (charset is not null)
 	    {
-	      if (charset is not null)
-		{
-		  set http_charset=charset;
-		}
-	      http_header (concat (http_header_get (), 'ETag: "', tag,
-		    sprintf ('"\r\nContent-Length: %d\r\n\r\n', length (cnt))));
-	      http_flush (2);
-	      ses_write (cnt);
+	      set http_charset=charset;
 	    }
-	  else
-	    {
-	      http_request_status ('HTTP/1.1 304 Not Modified');
-	    }
-        }
+	  http_header (concat (http_header_get (), sprintf ('ETag: "%s"\r\n', tag)));
+	  http (cnt);
+	}
       else
 	{
-	  http ('<HTML><HEAD><META HTTP-EQUIV="REFRESH" CONTENT="1" /></HEAD>');
-	  http ('<BODY>');
-	  http ('<P>if you see this for longer than 1 second, please <a href="">click here</a> or reload.</P>');
-	  http ('</BODY>');
-	  http ('</HTML>');
+	  http_request_status ('HTTP/1.1 304 Not Modified');
 	}
-      return 1;
-      nf:
-      insert into WS.WS.SYS_RC_CACHE (RC_URI, RC_INVALIDATE, RC_DT) values (url, inv, now ());
-      commit work;
-      --dbg_obj_print ('new entry is done');
-      return 2;
     }
-  return 0;
+  else
+    {
+      http ('<HTML><HEAD><META HTTP-EQUIV="REFRESH" CONTENT="1" /></HEAD>');
+      http ('<BODY>');
+      http ('<P>if you see this for longer than 1 second, please <a href="">click here</a> or reload.</P>');
+      http ('</BODY>');
+      http ('</HTML>');
+    }
+  return 1;
+  nf:
+  insert into WS.WS.SYS_RC_CACHE (RC_URI, RC_INVALIDATE, RC_DT) values (url, inv, now ());
+  commit work;
+  --dbg_obj_print ('new entry is done');
+  return 2;
+}
+return 0;
 }
 ;
 
 create procedure WS.WS.HTTP_CACHE_STORE (inout path any, inout store int)
 {
-  declare tag, cnt any;
-  declare url, qstr, sch any;
+declare tag, cnt any;
+declare url, qstr, sch any;
 
-  if (is_https_ctx ())
-    sch := 'https://';
-  else
-    sch := 'http://';
+if (is_https_ctx ())
+sch := 'https://';
+else
+sch := 'http://';
 
-  qstr := http_request_get ('QUERY_STRING');
-  url := sch || http_request_header(http_request_header (), 'Host', null, '') || path;
-  if (length (qstr))
-    url := url || '?' || qstr;
+qstr := http_request_get ('QUERY_STRING');
+url := sch || http_request_header(http_request_header (), 'Host', null, '') || path;
+if (length (qstr))
+url := url || '?' || qstr;
 
-  --dbg_obj_print ('to store', path, url, store);
-  --
-  -- There is an error or stream is flushed or chunked state is set
-  --
-  if (not store)
-    {
-      delete from WS.WS.SYS_RC_CACHE where RC_URI = url;
-      return;
-    }
+--dbg_obj_print ('to store', path, url, store);
+--
+-- There is an error or stream is flushed or chunked state is set
+--
+if (not store)
+{
+  delete from WS.WS.SYS_RC_CACHE where RC_URI = url;
+  return;
+}
 
-  tag := uuid ();
-  update WS.WS.SYS_RC_CACHE set RC_DATA = http_get_string_output (1000000),
-      RC_TAG = tag,
-      RC_CHARSET = http_current_charset ()
-      where RC_URI = url;
-  if (row_count ())
-    {
-      http_header (concat (http_header_get (), 'ETag: "', tag, '"\r\n'));
-    }
+tag := uuid ();
+update WS.WS.SYS_RC_CACHE set RC_DATA = http_get_string_output (1000000),
+  RC_TAG = tag,
+  RC_CHARSET = http_current_charset ()
+  where RC_URI = url;
+if (row_count ())
+{
+  http_header (concat (http_header_get (), 'ETag: "', tag, '"\r\n'));
+}
 }
 ;
 
@@ -833,10 +837,6 @@ create procedure virt_proxy_init ()
       opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
   registry_set ('DB.DBA.virt_proxy_init_state', '1.1');
 }
-;
-
---!AFTER
-virt_proxy_init ()
 ;
 
 create procedure
@@ -962,7 +962,8 @@ ext_http_proxy_exec_qry (in exec varchar, in params any)
       http_request_status ('HTTP/1.1 400 Bad request');
       proxy_sp_html_error_page ('Error: insufficient no of params',
         		        'Insufficient number of parameters',
-                                'This query takes exactly ' || _n_parms || 'parameters');
+                                'This query takes exactly ' || cast (_n_parms as varchar) || ' parameters');
+      return;
     }
 
   declare xec_str varchar;
@@ -998,13 +999,20 @@ ext_http_proxy (in url varchar := null,
                 in login varchar := '') __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
-  declare ct any;
+  declare ct, in_hdr, new_hdr varchar;
   declare stat, msg, metas, accept, rset, triples, ses, arr any;
-  declare local_qry integer; local_qry := 0;
-
+  declare local_qry integer;
   declare params, ids any;
+
+  local_qry := 0;
   params := http_param ();
-  http_header ('');
+
+  -- removal of any existing content type as sparql will add it
+  in_hdr := http_header_get ();
+  new_hdr := '';
+  if (in_hdr is not null)
+    new_hdr := regexp_replace (in_hdr, 'Content-Type:[^\r\n]+\r\n', '');
+  http_header (new_hdr);
 
   if (exec is not null)
     {
@@ -1016,6 +1024,16 @@ ext_http_proxy (in url varchar := null,
 
   if (header is not null)
     req_hdr := header;
+
+  if (0 = length (url))
+    {
+      http_rewrite();
+      http_request_status ('HTTP/1.1 400 Bad request');
+      proxy_sp_html_error_page ('Error: insufficient no of params',
+        		        'Insufficient number of parameters',
+                                'This service expects "url" input argument which is not supplied.');
+      return '';
+    }
 
   arr := rfc1808_parse_uri (url);
   arr[5] := '';
@@ -1070,6 +1088,8 @@ end_loop:;
                 accept := 'text/n3';
               else if ("output-format" = 'json')
                 accept := 'application/json';
+              else
+                accept := "output-format";
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
@@ -1083,9 +1103,9 @@ end_loop:;
 	  foreach (varchar idn in ids) do
 	    {
 	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
-	      if (url like pref || '%')
+	  if (url like pref || '%')
 		{
-		  url := subseq (url, length (pref));
+	    url := subseq (url, length (pref));
 		  if (url like 'http/%')
 		    url := 'http:/' || subseq (url, 4);
 		  else if (url like 'https/%')
@@ -1195,10 +1215,6 @@ end_loop:;
   http (content);
   return '';
 }
-;
-
---!AFTER
-grant execute on ext_http_proxy to PROXY
 ;
 
 create procedure
@@ -1387,7 +1403,7 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varch
        else
          modt := now();
        if (dirname <> '.')
-         xte_nodebld_acc (xte_list, xte_node (xte_head ('SUBDIR', 'name', dirname,
+         xte_nodebld_acc (xte_list, xte_node (xte_head ('SUBDIR', 'name', sprintf('%U',dirname),
                'modify', soap_print_box (modt, '', 2) ) ) );
        ix := ix + 1;
      }
@@ -1411,7 +1427,7 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varch
 	   mult := mult + 1;
 	   flen := flen / 1000;
 	 }
-       xte_nodebld_acc (xte_list, xte_node (xte_head ('FILE', 'name', dirname,
+       xte_nodebld_acc (xte_list, xte_node (xte_head ('FILE', 'name', sprintf('%U',dirname),
              'modify', soap_print_box (modt, '', 2), 'rs', rflen,
              'hs', sprintf ('%d %s', flen, aref (fsize, mult)) ) ) );
        ix := ix + 1;
@@ -1510,6 +1526,7 @@ create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
     xslt_sheet (ssheet_name, xtree_doc (ssheet_text));
   else
     ssheet_name := 'http://local.virt/dir_output';
+  set http_charset='UTF-8';
   return http_value (xslt (ssheet_name, _xml));
 }
 ;
@@ -1549,3 +1566,107 @@ create procedure DB.DBA.SERVICES_WSIL (in path any, in params any, in lines any)
 }
 ;
 
+-- /* host-meta */
+
+create table WS.WS.HTTP_HOST_META (
+    HM_APP 	varchar primary key,
+    HM_META	long varchar
+    )
+;
+
+create procedure WS.WS.host_meta_add (in app varchar, in meta varchar)
+{
+  -- check if it is valid xml
+  xtree_doc (meta);
+  insert replacing WS.WS.HTTP_HOST_META (HM_APP, HM_META)
+      values (app, meta);
+}
+;
+
+create procedure WS.WS.host_meta_del (in app varchar)
+{
+  delete from WS.WS.HTTP_HOST_META where HM_APP = app;
+}
+;
+
+
+create procedure WS.WS."host-meta" (in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
+{
+  declare ses, lines any;
+  declare ret, accept varchar;
+  ses := string_output ();
+  http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
+  http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0" Id="host-meta">\n', ses);
+  http (sprintf ('  <hm:Host>%{WSHost}s</hm:Host>\n'), ses);
+  for select * from WS.WS.HTTP_HOST_META do
+    {
+      HM_META := sprintf (blob_to_string (HM_META));
+      http ('  ', ses);
+      http (HM_META, ses);
+      http ('\n', ses);
+    }
+  http ('</XRD>\n', ses);
+  ret := string_output_string (ses);
+  if (xenc_key_exists ('id_rsa') and __proc_exists ('xml_sign', 2) is not null)
+    {
+      ret := xml_sign (ret, WS.WS.host_meta_dss (), 'http://docs.oasis-open.org/ns/xri/xrd-1.0:XRD');
+    }
+  lines := http_request_header ();
+  accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
+  if (format = 'json' or accept = 'application/json')
+    {
+      http_header ('Content-Type: application/json\r\n');
+    http_xslt ('http://local.virt/xrd2json');
+    }
+  return ret;
+}
+;
+
+create procedure WS.WS.host_meta_init ()
+{
+  if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'WebMeta'))
+    {
+      DB.DBA.USER_CREATE ('WebMeta', uuid(), vector ('DISABLED', 1));
+      EXEC_STMT ('grant execute on WS.WS."host-meta" to WebMeta', 0);
+    }
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
+  DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
+}
+;
+
+WS.WS.host_meta_init ()
+;
+
+create procedure WS.WS.host_meta_dss ()
+{
+  declare ses any;
+  ses := string_output ();
+  http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
+  http ('<Signature \n', ses);
+  http ('    xmlns="http://www.w3.org/2000/09/xmldsig#" \n', ses);
+  http ('    xmlns:hm="http://host-meta.net/xrd/1.0"\n', ses);
+  http ('    xmlns:xr="http://docs.oasis-open.org/ns/xri/xrd-1.0"\n', ses);
+  http ('    >\n', ses);
+  http ('    <SignedInfo>\n', ses);
+  http ('	<CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />\n', ses);
+  http ('	<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />\n', ses);
+  http ('	<Reference URI="#host-meta">\n', ses);
+  http ('	    <Transforms>\n', ses);
+  http ('		<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />\n', ses);
+  http ('	    </Transforms>\n', ses);
+  http ('	    <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />\n', ses);
+  http ('	    <DigestValue></DigestValue>\n', ses);
+  http ('	</Reference>\n', ses);
+  http ('    </SignedInfo>\n', ses);
+  http ('    <SignatureValue></SignatureValue>\n', ses);
+  http ('    <KeyInfo>\n', ses);
+  http ('	<KeyName>id_rsa</KeyName>\n', ses);
+  http ('	<KeyValue>\n', ses);
+  http ('	    <X509Data></X509Data>\n', ses);
+  http ('	</KeyValue>\n', ses);
+  http ('    </KeyInfo>\n', ses);
+  http ('</Signature>\n', ses);
+  return string_output_string (ses);
+}
+;

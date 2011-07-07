@@ -39,12 +39,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_stringdate"><title>Parameters</title>
-    <refsect2><title>str</title>
-      <para>A <type>varchar</type> date in human-readable (external)
-      format.</para>
-    </refsect2>
-  </refsect1>
   <refsect1 id="desc_stringdate"><title>Description</title>
     <para>stringdate converts dates and timestamps from text to the internal
     <type>DATETIME</type> type.</para>
@@ -54,6 +48,12 @@
     they are assumed to be zero. The three first parts are mandatory.
     Note that use of <programlisting>cast (x as datetime)</programlisting> is preferred
     over this function.</para>
+  </refsect1>
+  <refsect1 id="params_stringdate"><title>Parameters</title>
+    <refsect2><title>str</title>
+      <para>A <type>varchar</type> date in human-readable (external)
+      format.</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="errors_stringdate"><title>Errors</title>
     <table><title>Errors signalled by <function>datestring</function> and

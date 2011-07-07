@@ -64,14 +64,14 @@
       <v:variable persist="0" name="openid_name" type="varchar" default="null" param-name="openid.sreg.fullname" />
     </vm:variables>
     <vm:pagebody>
-      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params, ''))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params, ''))); ?>
       <?vsp http(sprintf('<input type="hidden" name="user_name" id="user_name" value="%s" />', CAL.WA.account_name (self.account_id))); ?>
-      <div class="new-form-header">
+      <div class="form-header">
         Discussion
       </div>
-      <div class="new-form-body">
-        <table cellspacing="0">
+      <div class="form-body">
+        <table cellspacing="0" width="100%">
           <tr>
             <td>
               <div class="comment-section">Item</div>
@@ -107,7 +107,7 @@
                   <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
                     <?vsp
                       {
-                        declare id, comment, title, u_name, last_update any;
+                        declare id, comment, title, iri, u_name, last_update any;
 
                         id := cast (control.tn_value as integer);
                         declare exit handler for not found;
@@ -115,6 +115,7 @@
                           into title, comment, u_name, last_update
                           from CAL.WA.EVENT_COMMENTS
                          where EC_ID = id;
+                        iri := CAL.WA.url_fix (SIOC..calendar_comment_iri (self.domain_id, self.v_id, id), get_keyword ('sid', self.vc_page.vc_event.ve_params), get_keyword ('realm', self.vc_page.vc_event.ve_params));
 
                         declare parsed_message any;
                         declare d_name varchar;
@@ -147,7 +148,8 @@
                     ?>
                     <div class="comment" id="msg_<?V id ?>">
                       <div class="comment-header">
-                        <span class="comment-subj"><?V CAL.WA.utf2wide (title) ?></span> <br />
+                        <?vsp http (sprintf ('<a href="%V">%s</a>', iri, title)); ?>
+                        <br />
                       </div>
                       <div class="comment-msg">
                         <?vsp
@@ -205,7 +207,7 @@
           <v:template type="simple" enabled="--case when (self.v_mode = 'reply') then 1 else 0 end">
             <tr>
               <td>
-                <table cellspacing="0">
+                <table cellspacing="0" width="100%">
                   <tr>
                     <td colspan="2">
                       <div class="comment-section">Reply</div>

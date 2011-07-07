@@ -38,4 +38,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_sync_repl"><title>Description</title>
+    <para>Synchronize all subscriptions.</para>
+  </refsect1>
 </refentry>

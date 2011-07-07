@@ -40,6 +40,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_table_set_policy"><title>Description</title>
+	<para>Sets policy function to table.</para>
+  </refsect1>
   <refsect1 id="params_table_set_policy">
     <title>Parameters</title>
     <refsect2><title>tablename</title>

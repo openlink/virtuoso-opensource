@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="virtuoso_t"
 	ProjectGUID="{F4E88BFA-FC96-439D-9E67-0A92AB541EE0}"
 	RootNamespace="virtuoso_t"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -48,7 +49,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;PACKAGE_VERSION=&quot;6.1.3&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -84,6 +85,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -102,9 +105,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -142,7 +142,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;PACKAGE_VERSION=\&quot;6.1.3\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -179,6 +179,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -198,9 +200,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -272,6 +271,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -290,9 +291,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -329,7 +327,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
+				PreprocessorDefinitions="PACKAGE_VERSION=\&quot;6.1.3\&quot;;_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -357,15 +355,17 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:AMD64"
-				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib tidy.lib"
 				OutputFile="$(ConfigurationName)/virtuoso-t.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;.\openssl;..\libsrc\openssl"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -387,9 +387,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -407,6 +404,10 @@
 			</File>
 			<File
 				RelativePath="..\binsrc\virtuoso\viconfig.c"
+				>
+			</File>
+			<File
+				RelativePath="..\win32\virtuoso_t.rc"
 				>
 			</File>
 			<File

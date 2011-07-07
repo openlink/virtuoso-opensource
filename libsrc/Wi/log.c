@@ -39,6 +39,7 @@
 #endif
 
 #ifdef VIRTTP
+#define LOG_CL_2PC_PREPARE 0x11
 #define LOG_MTS_2PC_PREPARE	0x0E
 #define LOG_VIRT_2PC_PREPARE	0x0F
 #define LOG_XA_2PC_PREPARE	0x10
@@ -80,15 +81,20 @@ err_log_error (caddr_t err)
     }
 }
 
+
+extern uint32 lt_w_counter;
+
+
 void
 log_set_compatibility_check (int in_txn, char *strg)
 {
   caddr_t * cbox;
+  caddr_t cl_2pc = NULL;
+  int64 trx_no;
   dk_session_t * ses;
   caddr_t box;
   dbe_storage_t * dbs = wi_inst.wi_master;
   caddr_t trx_string;
-
   dbs->dbs_log_session->dks_bytes_sent = 0;
   cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
 				   DV_ARRAY_OF_POINTER);
@@ -102,9 +108,18 @@ log_set_compatibility_check (int in_txn, char *strg)
       dk_free_box (box);
 
       trx_string = strses_string (ses);
-
+      if (CL_RUN_LOCAL != cl_run_local_only)
+	{
+	  uint32 w_id = lt_w_counter++;
+	  if (!w_id)
+	    w_id = lt_w_counter++;
+	  cl_2pc = dk_alloc_box (2 + sizeof (int64), DV_STRING);
+	  cl_2pc[0] = LOG_2PC_COMMIT;
+	  trx_no = (((int64)local_cll.cll_this_host) <  32) + w_id;
+	  INT64_SET_NA (cl_2pc + 1, trx_no);
+	}
       memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
-      cbox[LOGH_TIME] = 0;
+      cbox[LOGH_CL_2PC] = cl_2pc;
       cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
       cbox[LOGH_USER] = box_string ("");
       cbox[LOGH_BYTES] = box_num (strses_length (ses));
@@ -231,6 +246,8 @@ log_change_if_needed (lock_trx_t * lt, int rewrite)
 }
 
 
+extern long dbf_log_no_disk;
+
 int
 log_commit (lock_trx_t * lt)
 {
@@ -240,8 +257,11 @@ log_commit (lock_trx_t * lt)
   long bytes = strses_length (lt->lt_log);
   caddr_t *cbox;
   if (lt->lt_replicate == REPL_NO_LOG
-      || !bytes)
+      || (LT_CL_PREPARED != lt->lt_status && !bytes) || cl_non_logged_write_mode)
     return LTE_OK;
+  if (dbf_log_no_disk)
+    return LTE_LOG_FAILED;
+  ASSERT_IN_MTX (log_write_mtx);
   prev_length = dbs->dbs_log_length;
   log_ses = dbs->dbs_log_session;
   if (!dbs->dbs_log_session)
@@ -263,15 +283,26 @@ log_commit (lock_trx_t * lt)
   cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
 				   DV_ARRAY_OF_POINTER);
   memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
-  cbox[LOGH_TIME] = 0;
-  if (lt->lt_client && lt->lt_client->cli_user)
+  if (lt->lt_log_2pc)
+    {
+      caddr_t id = dk_alloc_box (10, DV_STRING);
+      id[0] = LOG_CL_2PC_PREPARE;
+      /* logging a 1pc needs only update of log if rollback */
+      lt->lt_commit_flag_offset = dbs->dbs_log_length + LOGH_COMMIT_FLAG_OFFSET;
+      INT64_SET_NA (id + 1, lt->lt_w_id);
+      cbox[LOGH_CL_2PC] = id;
+    }
+  else
+    cbox[LOGH_CL_2PC] = 0;
+  if (!lt->lt_branch_of && lt->lt_client && lt->lt_client->cli_user)
     cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
   else
     cbox[LOGH_USER] = box_string ("");
 
 
 #ifdef VIRTTP
-  if ((LT_PREPARE_PENDING == lt->lt_status) && lt->lt_2pc._2pc_log)
+  if ((LT_PREPARE_PENDING == lt->lt_status) &&
+      lt->lt_2pc._2pc_log)
     {
       log_2pc_count++;
       if (lt->lt_2pc._2pc_type == TP_VIRT_TYPE)
@@ -284,8 +315,7 @@ log_commit (lock_trx_t * lt)
 	GPF_T1 ("unknown type of distributed transaction");
       cbox[LOGH_BYTES] = box_num (bytes + box_length(lt->lt_2pc._2pc_log)+2);
       /* log_info ("box.l=%d", box_length (lt->lt_2pc._2pc_log)); */
-    }
-  else
+    } else
     {
       cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
       cbox[LOGH_BYTES] = box_num (bytes);
@@ -326,17 +356,8 @@ log_commit (lock_trx_t * lt)
   END_WRITE_FAIL (log_ses);
   if (lt->lt_blob_log)
     {
-#if 0 /*GK: unused*/
-      lt->lt_blob_log_start = log_ses->dks_bytes_sent + dbs->dbs_log_length;
-#endif
       lt_write_blob_log (lt, log_ses);
     }
-#if 0 /*GK: unused*/
-  else
-    {
-      lt->lt_blob_log_start = 0;
-    }
-#endif
 
   if (!lt->lt_backup)
     {
@@ -382,15 +403,15 @@ log_commit (lock_trx_t * lt)
 }
 
 extern dk_mutex_t * log_write_mtx;
+dk_session_t * sync_log =  NULL;
 
 int
 log_text_array_sync (lock_trx_t * lt, caddr_t box)
 {
   int rc;
-  static dk_session_t * sync_log =  NULL;
   dk_session_t * lt_log;
   dk_set_t blob_log;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return LTE_OK;
   ASSERT_IN_MTX (log_write_mtx);
   lt_log = lt->lt_log;
@@ -411,78 +432,257 @@ log_text_array_sync (lock_trx_t * lt, caddr_t box)
 }
 
 
+int
+log_insert_sync (lock_trx_t * lt, row_delta_t * rd, int flag)
+{
+  int rc;
+  dk_session_t * lt_log;
+  dk_set_t blob_log;
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
+    return LTE_OK;
+  mutex_enter (log_write_mtx);
+  lt_log = lt->lt_log;
+  blob_log = lt->lt_blob_log;
+  lt->lt_blob_log = NULL;
+  if(!sync_log)
+    sync_log = strses_allocate ();
+  lt->lt_log =sync_log;
+  log_insert (lt, rd, flag);
+  rc = log_commit (lt);
+  strses_flush (sync_log);
+  sync_log->dks_bytes_sent = 0;
+
+  lt->lt_log = lt_log;
+  lt->lt_blob_log = blob_log;
+  mutex_leave (log_write_mtx);
+  return rc;
+}
+
+
+int
+log_sequence_sync (lock_trx_t * lt, caddr_t seq, boxint count)
+{
+  int rc;
+  dk_session_t * lt_log;
+  dk_set_t blob_log;
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
+    return LTE_OK;
+  mutex_enter (log_write_mtx);
+  lt_log = lt->lt_log;
+  blob_log = lt->lt_blob_log;
+  lt->lt_blob_log = NULL;
+  if(!sync_log)
+    sync_log = strses_allocate ();
+  lt->lt_log =sync_log;
+  log_sequence (lt, seq, count);
+  rc = log_commit (lt);
+  strses_flush (sync_log);
+  sync_log->dks_bytes_sent = 0;
+
+  lt->lt_log = lt_log;
+  lt->lt_blob_log = blob_log;
+  mutex_leave (log_write_mtx);
+  return rc;
+}
+
+
+
+
 #ifdef VIRTTP
 int
 log_final_transact(lock_trx_t* lt, int is_commit)
 {
   dbe_storage_t * dbs = wi_inst.wi_master;
-  if (lt->lt_2pc._2pc_logged) {
-      struct stat st;
+  if (lt->lt_2pc._2pc_logged)
+    {
+      STAT_T st;
       int fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
-      fstat(fd,&st);
-      LSEEK(fd,lt->lt_2pc._2pc_logged,SEEK_SET);
-      write(fd,is_commit ? LOG_2PC_COMMIT_S : LOG_2PC_ABORT_S ,1);
-      LSEEK(fd,0,SEEK_END);
+      V_FSTAT (fd, &st);
+      LSEEK (fd, lt->lt_2pc._2pc_logged, SEEK_SET);
+      write (fd, is_commit ? LOG_2PC_COMMIT_S : LOG_2PC_ABORT_S ,1);
+      LSEEK (fd, 0, SEEK_END);
       lt->lt_2pc._2pc_logged = 0;
       if (!--log_2pc_count)
         return log_change_if_needed (lt, 1);
-  };
+    }
   return log_change_if_needed (lt, 1);
 }
 #endif
 
+
+
 void
-log_rollback (lock_trx_t * lt)
+log_skip_blobs (dk_session_t * ses)
 {
-  /* Free ext. storage, ie.e temp files, if any. */
+  /* when reading over log entries, may get blobs, read until there is an array for the header */
+  CATCH_READ_FAIL (ses)
+    {
+      for (;;)
+	{
+	  dtp_t dtp = session_buffered_read_char (ses);
+	  caddr_t xx;
+	  if (!DKSESSTAT_ISSET (ses, SST_OK))
+	    return;
+	  if (DV_ARRAY_OF_POINTER == dtp)
+	    {
+	      ses->dks_in_read--;
+	      return;
+	    }
+	  if (0 == dtp)
+	    continue;
+	  if (DV_BLOB == dtp || DV_BLOB_WIDE == dtp || DV_BLOB_XPER == dtp)
+	    {
+	      int bytes = read_long (ses);
+	      caddr_t x = dk_alloc (bytes);
+	      session_buffered_read (ses, x, bytes);
+	      dk_free (x, bytes);
+	      continue;
+	    }
+	  ses->dks_in_read--;
+	  xx = read_object (ses);
+	  dk_free_box (xx);
+	}
+    }
+  FAILED
+    {
+      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
+      SESSTAT_CLR (ses->dks_session, SST_OK);
+    }
+  END_READ_FAIL (ses);
+}
+
+
+int
+log_2pc_archive (int64 trx_id)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  dk_session_t * ses = dbs->dbs_2pc_log_session;
+  if (!dbs->dbs_2pc_file_name)
+    return LTE_OK;
+  if (!ses)
+    {
+      int fd;
+      file_set_rw (dbs->dbs_2pc_file_name);
+      fd = fd_open (dbs->dbs_2pc_file_name, LOG_OPEN_FLAGS);
+      if (fd < 0)
+	{
+	  int errn = errno;
+	  log_error ("Cannot open 2pc log %s, error : %s.  Exiting", dbs->dbs_2pc_file_name, virt_strerror (errn));
+	  call_exit (-1);
+	}
+      ses = dbs->dbs_2pc_log_session = dk_session_allocate (SESCLASS_TCPIP);
+      LSEEK (fd, 0, SEEK_END);
+      tcpses_set_fd (ses->dks_session, fd);
+    }
+  CATCH_WRITE_FAIL (ses)
+    {
+      int64 bs = ses->dks_bytes_sent;
+      print_int (trx_id, ses);
+      if (bs != ses->dks_bytes_sent)
+	session_flush_1 (ses);
+    }
+  FAILED
+    {
+    }
+  END_WRITE_FAIL (ses);
+  return LTE_OK;
+}
+
+
+int
+log_2pc_archive_check (int64 trx_id, int64 * max_id_ret)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  uint32 last_id = 0;
+  int fd;
+  dk_session_t * ses;
+  if (!dbs->dbs_2pc_file_name)
+    return 0;
+  file_set_rw (dbs->dbs_2pc_file_name);
+  fd  = fd_open (dbs->dbs_2pc_file_name, OPEN_FLAGS_RO);
+  if (fd < 0)
+    {
+      *max_id_ret = 0;
+      return 0;
+    }
+  ses = dk_session_allocate (SESCLASS_TCPIP);
+  tcpses_set_fd (ses->dks_session, fd);
+  CATCH_READ_FAIL (ses)
+    {
+      while (DKSESSTAT_ISSET (ses, SST_OK))
+	{
+	  caddr_t item = read_object (ses);
+	  if (DV_LONG_INT == DV_TYPE_OF (item))
+	    {
+	      int64 id = unbox (item);
+	      if (id == trx_id)
+		{
+		  close (fd);
+		  PrpcSessionFree (ses);
+		  return 1;
+		}
+	      if (QFID_HOST (id) == local_cll.cll_this_host
+		  && (uint32)id > last_id)
+		last_id = (uint32)id;
+	    }
+	  dk_free_box (item);
+	}
+    }
+  FAILED
+    {
+    }
+  END_READ_FAIL (ses);
+  close (fd);
+  PrpcSessionFree (ses);
+  *max_id_ret = (((int64)local_cll.cll_this_host) << 32) + last_id;
+  return 0;
 }
 
 
 void
-itc_log_prime_key (it_cursor_t * it, db_buf_t page, dk_session_t * log,
-		   dbe_key_t * key)
+log_cl_final(lock_trx_t* lt, int is_commit)
 {
-  db_buf_t row = page + it->itc_position;
-  db_buf_t row_data = row + IE_FIRST_KEY;
-  int end = 0, inx;
-  int len = IE_FIRST_KEY + key->key_length_area;
-  int n_vars = key->key_key_n_vars;
-  if (n_vars)
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  if (lt->lt_commit_flag_offset)
     {
-      dbe_col_loc_t * last_v;
-      last_v = &key->key_key_var[n_vars - 1];
-      len += n_vars * sizeof (short);
-      if (CL_FIRST_VAR == last_v->cl_fixed_len)
-	end = SHORT_REF (row_data + key->key_length_area);
-      else
-	end = SHORT_REF ((row_data - last_v->cl_fixed_len) + 2);
-      len += end - key->key_row_var_start;
-    }
-  if (len > 255)
-    {
-      session_buffered_write_char (DV_LONG_STRING, log);
-      print_long (len, log);
-    }
-  else
-    {
-      session_buffered_write_char (DV_SHORT_STRING_SERIAL, log);
-      session_buffered_write_char (len, log);
-    }
-  session_buffered_write (log, (const char *) row, key->key_length_area + IE_FIRST_KEY);
-
-  if (n_vars)
-    {
-      short tmp;
-      for (inx = 0; inx < n_vars; inx++)
+      STAT_T st;
+      int fd;
+      char s = SQL_COMMIT == is_commit ? LOG_2PC_COMMIT : LOG_2PC_ABORT;
+      ASSERT_OUTSIDE_MTX (wi_inst.wi_txn_mtx);
+      mutex_enter (log_write_mtx);
+      /* second check inside the log write mtx */
+      if (lt->lt_commit_flag_offset)
 	{
-	  tmp = SHORT_REF (row_data + key->key_length_area + (inx * sizeof (short)));
-	  tmp -= key->key_row_var_start - key->key_key_var_start;
-	  session_buffered_write_char (((dtp_t*)&tmp)[0], log);
-	  session_buffered_write_char (((dtp_t*)&tmp)[1], log);
+	  OFF_T end;
+	  fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
+	  V_FSTAT(fd,&st);
+	  if (lt->lt_commit_flag_offset !=  LSEEK(fd,lt->lt_commit_flag_offset,SEEK_SET))
+	    GPF_T1 ("failed lseek in cl commit final");
+	  write(fd, &s, 1);
+	  if (dbs->dbs_log_length != (end = LSEEK(fd,0,SEEK_END)))
+	    {
+	      log_error ("Logging at offset " OFF_T_PRINTF_FMT " where end of log file is " OFF_T_PRINTF_FMT ".",
+		  	(OFF_T_PRINTF_DTP) end, (OFF_T_PRINTF_DTP) dbs->dbs_log_length);
+	      GPF_T1 ("dbs_log_length and end of log file differ");
+	    }
+	  lt->lt_commit_flag_offset = 0;
+	  if (SQL_COMMIT == is_commit && QFID_HOST (lt->lt_w_id) == local_cll.cll_this_host)
+	    log_2pc_archive (lt->lt_w_id);
 	}
-      session_buffered_write (log, (const char *) (row_data + key->key_row_var_start),
-	  end - key->key_row_var_start);
+      mutex_leave (log_write_mtx);
     }
+}
+
+
+void
+lt_log_prime_key (lock_trx_t * lt, row_delta_t * rd)
+{
+  dbe_key_t * key = rd->rd_key;
+  int inx;
+  dks_array_head (lt->lt_log, 1 + key->key_n_significant, DV_ARRAY_OF_POINTER);
+  print_int (key->key_id, lt->lt_log);
+  for (inx = 0; inx < key->key_n_significant; inx++)
+    print_object (rd->rd_values[inx], lt->lt_log, NULL, NULL);
 }
 
 
@@ -495,52 +695,56 @@ long txn_after_image_limit = 50000000L;
     }
 
 void
-log_insert (lock_trx_t * lt, dbe_key_t * key, db_buf_t row, int flag)
-{  dk_session_t *log;
-  long l;
-  lt_hi_row_change (lt, key->key_super_id, LOG_INSERT, row);
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+log_insert (lock_trx_t * lt, row_delta_t * rd, int flag)
+{
+  int inx;
+  dk_session_t *log;
+  lt_hi_row_change (lt, rd->rd_key->key_super_id, LOG_INSERT, NULL);
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
+  if (LOG_SYNC & flag)
+    {
+      log_insert_sync (lt, rd, flag & ~LOG_SYNC);
+      return;
+    }
   log = lt->lt_log;
-  l = row_length (row, key);
   mutex_enter (lt->lt_log_mtx);
+  if (flag & LOG_KEY_ONLY)
+    {
+      session_buffered_write_char (LOG_KEY_INSERT, lt->lt_log);
+      flag &= ~LOG_KEY_ONLY;
+    }
   if (flag == INS_REPLACING)
     session_buffered_write_char (LOG_INSERT_REPL, lt->lt_log);
   else if (flag == INS_SOFT)
     session_buffered_write_char (LOG_INSERT_SOFT, lt->lt_log);
   else
     session_buffered_write_char (LOG_INSERT, lt->lt_log);
-
-  if (l < 256)
-    {
-      session_buffered_write_char (DV_SHORT_STRING_SERIAL, log);
-      session_buffered_write_char ((dtp_t) l, log);
-    }
-  else
-    {
-      session_buffered_write_char (DV_LONG_STRING, log);
-      print_long (l, log);
-    }
-  session_buffered_write (log, (char *) row, l);
+  dks_array_head (lt->lt_log, 1 + rd->rd_n_values, DV_ARRAY_OF_POINTER);
+  print_int (rd->rd_key->key_id, lt->lt_log);
+  for (inx = 0; inx < rd->rd_n_values; inx++)
+    print_object (rd->rd_values[inx], lt->lt_log, NULL, NULL);
 
   TXN_CHECK_LOG_IMAGE (lt);
   mutex_leave (lt->lt_log_mtx);
 }
 
 
+
+
 void
-log_delete (lock_trx_t * lt, it_cursor_t * it, db_buf_t page, int pos)
+log_delete (lock_trx_t * lt, row_delta_t * rd, int this_key_only)
 {
-  int old_pos = it->itc_position;
-  lt_hi_row_change (lt, it->itc_row_key->key_super_id, LOG_DELETE, NULL);
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  lt_hi_row_change (lt, rd->rd_key->key_super_id, LOG_DELETE, NULL);
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
 
-  session_buffered_write_char (LOG_DELETE, lt->lt_log);
-  it->itc_position = pos;
-  itc_log_prime_key (it, page, lt->lt_log, it->itc_row_key);
-  it->itc_position = old_pos;
+  if (this_key_only)
+    session_buffered_write_char (LOG_KEY_DELETE, lt->lt_log);
+  else
+    session_buffered_write_char (LOG_DELETE, lt->lt_log);
+  lt_log_prime_key (lt, rd);
   mutex_leave (lt->lt_log_mtx);
 }
 
@@ -549,7 +753,7 @@ void
 log_text (lock_trx_t * lt, char *text)
 {
   caddr_t box;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
 
@@ -565,7 +769,7 @@ log_text (lock_trx_t * lt, char *text)
 void
 log_text_array (lock_trx_t * lt, caddr_t box)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_TEXT, lt->lt_log);
@@ -577,7 +781,7 @@ log_text_array (lock_trx_t * lt, caddr_t box)
 void
 log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_USER_TEXT, lt->lt_log);
@@ -592,7 +796,7 @@ log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box)
 void
 log_sequence (lock_trx_t * lt, char *text, boxint count)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_SEQUENCE_64, lt->lt_log);
@@ -613,16 +817,15 @@ log_sequence_remove (lock_trx_t * lt, char *text)
 
 
 void
-log_update (lock_trx_t * lt, it_cursor_t * it, db_buf_t page,
+log_update (lock_trx_t * lt, row_delta_t * rd,
     update_node_t * upd, caddr_t * qst)
 {
   int inx;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_UPDATE, lt->lt_log);
-  itc_log_prime_key (it, page, lt->lt_log, it->itc_row_key);
-
+  lt_log_prime_key (lt, rd);
   if (upd->upd_cols_param)
     {
       caddr_t vals = qst_get (qst, upd->upd_values_param);
@@ -675,11 +878,13 @@ log_update (lock_trx_t * lt, it_cursor_t * it, db_buf_t page,
 }
 
 
-void log_sc_change_1 (lock_trx_t * lt)
+void
+log_sc_change_1 (lock_trx_t * lt)
 {
   session_buffered_write_char (LOG_SC_CHANGE_1, lt->lt_log);
 }
-void log_sc_change_2 (lock_trx_t * lt)
+void
+log_sc_change_2 (lock_trx_t * lt)
 {
   session_buffered_write_char (LOG_SC_CHANGE_2, lt->lt_log);
 }
@@ -687,7 +892,7 @@ void log_sc_change_2 (lock_trx_t * lt)
 void
 log_dd_change (lock_trx_t * lt, char * tb)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
 
   if (tb)
@@ -706,7 +911,7 @@ log_dd_change (lock_trx_t * lt, char * tb)
 void
 log_dd_type_change (lock_trx_t * lt, char * udt_name, caddr_t tree)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
 
   if (tree)
@@ -732,7 +937,6 @@ log_dd_type_change (lock_trx_t * lt, char * udt_name, caddr_t tree)
 
 
 /*
-   LOG REPLAY
  */
 
 
@@ -770,6 +974,30 @@ log_replay_insert (lock_trx_t * lt, dk_session_t * in, int flag)
 }
 
 
+caddr_t
+log_replay_key_insert (lock_trx_t * lt, dk_session_t * in, int flag1)
+{
+  static query_t * ins_key_replay = NULL;
+  char flag = session_buffered_read_char (in);
+  caddr_t err;
+  db_buf_t row = (db_buf_t) scan_session (in);
+
+  if (!ins_key_replay)
+    {
+      ins_key_replay = sql_compile ("key_replay_insert (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    }
+  if (flag == LOG_INSERT_SOFT)
+    flag = INS_SOFT;
+  else if (flag == LOG_INSERT_REPL)
+    flag = INS_REPLACING;
+  else
+    flag = INS_NORMAL;
+  err = qr_quick_exec (ins_key_replay, lt->lt_client, "x", NULL, 2,
+		       ":0", row, QRP_RAW,
+		       ":1", (caddr_t)(ptrlong)flag, QRP_INT);
+  return err;
+}
+
 resource_t *del_rc;
 char *del_replay_text = "(seq (row_deref :PL place P)(delete P) (end))";
 
@@ -800,6 +1028,28 @@ log_replay_delete (lock_trx_t * lt, dk_session_t * in)
   err = qr_rec_exec (qr, lt->lt_client, NULL, CALLER_LOCAL, opts, 1,
 		     ":PL", row, QRP_RAW);
   resource_store (del_rc, (void *) qr);
+
+  if (err != SQL_SUCCESS)
+    {
+      err_log_error (err);
+    }
+  return err;
+}
+
+
+char * key_del_replay_text = "key_delete_replay (?)";
+caddr_t
+log_replay_key_delete (lock_trx_t * lt, dk_session_t * in)
+{
+  db_buf_t row = (db_buf_t) scan_session (in);
+  static query_t *qr = NULL;
+  caddr_t err;
+  LOG_REPL_OPTIONS (opts);
+
+  if (!qr)
+    qr = eql_compile (key_del_replay_text, lt->lt_client);
+  err = qr_rec_exec (qr, lt->lt_client, NULL, CALLER_LOCAL, opts, 1,
+		     ":0", row, QRP_RAW);
 
   if (err != SQL_SUCCESS)
     {
@@ -842,7 +1092,7 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_st
   int n_args = 0;
   caddr_t *entry = (caddr_t *) scan_session (in);
   dtp_t dtp = DV_TYPE_OF (entry);
-  caddr_t text = DV_ARRAY_OF_POINTER == dtp ? entry[0] : (caddr_t) entry;
+  caddr_t text = DV_ARRAY_OF_POINTER == dtp && BOX_ELEMENTS (entry) > 0 ? entry[0] : (caddr_t) entry;
   caddr_t err = NULL;
   caddr_t stmt_id = box_dv_short_string ("repl_stmt");
   query_t *qr;
@@ -851,6 +1101,12 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_st
   int inx;
   caddr_t *arr = NULL;
   LOG_REPL_OPTIONS (opts);
+
+  if (!DV_STRINGP (text))
+    {
+      dk_free_box ((box_t) entry);
+      return srv_make_new_error ("42000", "TR100", "log_replay_text: invalid query text");
+    }
 
   if (!is_pushback)
     {
@@ -1262,9 +1518,12 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
     case LOG_INSERT_SOFT:
     case LOG_INSERT_REPL:
       return (log_replay_insert (lt, in, op));
-
+    case LOG_KEY_INSERT:
+      return (log_replay_key_insert (lt, in, op));
     case LOG_DELETE:
       return (log_replay_delete (lt, in));
+    case LOG_KEY_DELETE:
+      return (log_replay_key_delete (lt, in));
     case LOG_UPDATE:
       return (log_replay_update (lt, in));
     case LOG_DD_CHANGE:
@@ -1486,6 +1745,16 @@ try_again:
       cli_set_new_trx (cli);
       rc = LTE_OK;
     }
+  if (in_log_replay)
+    {
+      wi_free_old_qrs ();
+      DO_SET (dbe_schema_t *, sc, &wi_inst.wi_free_schemas)
+	{
+	  dk_set_delete (&wi_inst.wi_free_schemas, (void *) sc);
+	  dbe_schema_free (sc);
+	}
+      END_DO_SET ();
+    }
   LEAVE_TXN;
   if (LTE_LOG_FAILED == rc)
     {
@@ -1506,48 +1775,6 @@ int level_print = 0;
 void
 logh_set_level (lock_trx_t * lt, caddr_t * logh)
 {
-#if REPLICATION_SUPPORT
-  if (logh && logh[LOGH_REPLICATION])
-    {
-      caddr_t *replh = (caddr_t *) logh[LOGH_REPLICATION];
-      repl_acct_t *ra;
-      ra = ra_find (replh[REPLH_SERVER], replh[REPLH_ACCOUNT]);
-      if (level_print)
-        {
-	dbg_printf ((" Rfwd level %s %s " BOXINT_FMT "\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
-	}
-      if (!ra)
-	{
-	  ra = ra_add (replh[REPLH_SERVER], replh[REPLH_ACCOUNT], 1, 0, 0);
-	}
-
-      if (replh[REPLH_LEVEL])
-	{
-	  caddr_t log_array;
-#ifdef UNIX
-	  gettimeofday (&ra->ra_last_txn, NULL);
-#else
-	  ra->ra_last_txn.tv_sec = (long) time (NULL);
-#endif
-	  log_array = list (4, box_string ("sequence_set (?, ?, ?)"),
-		box_string (ra->ra_sequence),
-		box_num (unbox (replh[REPLH_LEVEL])), box_num (SET_ALWAYS));
-	  ASSERT_IN_TXN;
-	  sequence_set (ra->ra_sequence, (long) unbox (replh[REPLH_LEVEL]), SET_ALWAYS, INSIDE_MAP);
-	  log_text_array (lt, log_array);
-	  dk_free_tree (log_array);
-	  /* having replayed a replication record, log its level as a sequence set in the roll forward
-	   * log of this txn since the replication feed record itself will not be logged */
-	}
-      else
-	{
-	  /* A zero level on an account means the replicator is now synced */
-	  ra->ra_synced = RA_IN_SYNC;
-	  log_info ("Replication Account %s %s IN sync, level %ld.\n",
-		    ra->ra_server, ra->ra_account, sequence_set (ra->ra_sequence, 0, SEQUENCE_GET, INSIDE_MAP));
-	}
-    }
-#endif
 }
 
 
@@ -1648,11 +1875,80 @@ do { \
 	(OFF_T_PRINTF_DTP) file_in->dks_bytes_received); \
 } while (0)
 
+int
+log_check_trx (int64 trx_no)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  int fd;
+  int ret = 0;
+  volatile OFF_T log_rec_start = 0;
+  dk_session_t *file_in;
+  caddr_t trx_string;
+  int64 max;
+  ASSERT_OUTSIDE_MTX (wi_inst.wi_txn_mtx);
+  if (log_2pc_archive_check (trx_no, &max))
+    return 1;
+  fd = fd_open (dbs->dbs_log_name, OPEN_FLAGS_RO);
+  if (fd < 0)
+    return 0;
+  file_in = dk_session_allocate (SESCLASS_TCPIP);
+  tcpses_set_fd (file_in->dks_session, fd);
+  mutex_enter (log_write_mtx);
+  if (0 != LSEEK (fd, 0, SEEK_SET))
+    GPF_T1 ("failed lseek in log_check_trx");
+
+  while (DKSESSTAT_ISSET (file_in, SST_OK))
+    {
+      int bytes;
+      caddr_t *header;
+      log_rec_start = file_in->dks_bytes_received - (file_in->dks_in_fill - file_in->dks_in_read);
+      header = (caddr_t *) read_object (file_in);
+      if (!DKSESSTAT_ISSET (file_in, SST_OK))
+	{
+	  break;
+	}
+      if (!log_check_header (header))
+	{
+	  break;
+	}
+      bytes = (int) unbox (header[LOGH_BYTES]);
+      trx_string = (char *) dk_alloc (bytes + 1);
+
+      CATCH_READ_FAIL (file_in)
+	session_buffered_read (file_in, trx_string, bytes);
+      FAILED
+      {
+	END_READ_FAIL (file_in);
+	break;
+      }
+      END_READ_FAIL (file_in);
+      if (header[LOGH_CL_2PC])
+	{
+	  caddr_t id = header[LOGH_CL_2PC];
+	  int64 trx_id = INT64_REF_NA (id + 1);
+	  if (trx_id == trx_no && id[0] == LOG_2PC_COMMIT)
+	    {
+	      dk_free (trx_string, bytes + 1);
+	      dk_free_tree ((caddr_t) header);
+	      ret = 1;
+	      break;
+	    }
+	}
+      dk_free (trx_string, bytes + 1);
+      dk_free_tree ((caddr_t) header);
+      log_skip_blobs (file_in);
+    }
+  mutex_leave (log_write_mtx);
+  PrpcSessionFree (file_in);
+  return ret;
+}
+
+uint32 log_last_local_w_id = 0;
 
 void
 log_replay_file (int fd)
 {
-  int rc;
+  int rc, do_replay;
   volatile OFF_T log_rec_start = 0;
   client_connection_t *cli = client_connection_create ();
   dk_session_t *file_in = dk_session_allocate (SESCLASS_TCPIP);
@@ -1740,23 +2036,64 @@ read_again:
       str_in->dks_in_buffer = trx_string;
       str_in->dks_in_read = 0;
       str_in->dks_in_fill = bytes;
+      do_replay = 1;
 #ifdef VIRTTP
       is_2pc = is_old_log_type ? LOG_2PC_DISABLED : (int) unbox(header[LOGH_2PC]);
       if (LOG_2PC_ABORT != is_2pc)
+	do_replay = 1;
+      else
+	do_replay = 0;
+#else
+	  do_replay = 1;
 #endif
-        if (LTE_OK != (rc = log_replay_trx (str_in, cli, (caddr_t) header, 0, 0)))
-	  {
-	    log_error ("Roll forward txn error %d. Record between bytes "
-		OFF_T_PRINTF_FMT " and " OFF_T_PRINTF_FMT " in transaction log",
-	      rc,
-	      (OFF_T_PRINTF_DTP) log_rec_start,
-	      (OFF_T_PRINTF_DTP) file_in->dks_bytes_received);
-	  };
+      if (header[LOGH_CL_2PC])
+	{
+	  caddr_t id = header[LOGH_CL_2PC];
+	  int64 trx_id = INT64_REF_NA (id + 1);
+	  if (CL_RUN_LOCAL != cl_run_local_only && QFID_HOST (trx_id) == local_cll.cll_this_host)
+	    {
+	      uint32 local_id = (uint32)trx_id;
+	      /* start transaction numbering where left off, do not confuse sequence for purposes of 2pc recov */
+	      if (local_id > log_last_local_w_id)
+		log_last_local_w_id = local_id;
+	    }
+
+	  do_replay = id[0] != LOG_2PC_ABORT;
+	  if (LOG_2PC_COMMIT == id[0] && QFID_HOST (trx_id) == local_cll.cll_this_host)
+	    log_2pc_archive (trx_id);
+	  if (LOG_CL_2PC_PREPARE == id[0])
+	    {
+	      int32 host = QFID_HOST (trx_id);
+	      if (host == local_cll.cll_this_host) /* same host, not committed */
+		do_replay = 0;
+	      else
+		{
+		   GPF_T;
+		}
+
+	    }
+	}
+      if (do_replay)
+	{
+	  if (LTE_OK != (rc = log_replay_trx (str_in, cli, (caddr_t) header, 0, 0)))
+	    {
+	      log_error ("Roll forward txn error %d. Record between bytes "
+			 OFF_T_PRINTF_FMT " and " OFF_T_PRINTF_FMT " in transaction log",
+			 rc,
+			 (OFF_T_PRINTF_DTP) log_rec_start,
+			 (OFF_T_PRINTF_DTP) file_in->dks_bytes_received);
+	    }
+	}
+      else
+	log_skip_blobs (file_in);
       dk_free (trx_string, bytes + 1);
       dk_free_tree ((caddr_t) header);
 
       if (0 == rfwd_ctr % 1000)
-	REPORT_PROGRESS;
+	{
+	  REPORT_PROGRESS;
+	  clear_old_root_images ();
+	}
     }
   if (rfwd_ctr)
     REPORT_PROGRESS;
@@ -1771,10 +2108,15 @@ read_again:
 void
 log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 {
+  if ((char*) -1 == new_log)
+    return;
+  if (dbs->dbs_2pc_log_session)
+    session_flush (dbs->dbs_2pc_log_session);
   if (!new_log)
     {
       if (dbs->dbs_log_session)
 	{
+	  mutex_enter (log_write_mtx);
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
 	  dbs->dbs_log_length = 0;
@@ -1783,6 +2125,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
+	  mutex_leave (log_write_mtx);
 	  log_info ("Checkpoint finished, log reused");
 	}
       else
@@ -1797,7 +2140,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  int new_fd;
 	  file_set_rw (new_log);
 	  new_fd = fd_open (new_log, LOG_OPEN_FLAGS);
-	  if (-1 == new_fd)
+	  if (new_fd < 0)
 	    {
 	      log_error ("Cannot change to log file %s", new_log);
 	      call_exit (1);
@@ -1824,30 +2167,34 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
       mutex_leave (log_write_mtx);
       log_info ("Checkpoint finished, new log is %s", new_log);
     }
-#ifdef VIRTTP
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if ((LT_PREPARED == lt->lt_status && lt->lt_2pc._2pc_wait_commit) && strses_length (lt->lt_log))
+      if (((LT_PREPARED == lt->lt_status && lt->lt_2pc._2pc_wait_commit) || LT_2PC_PENDING == lt->lt_status)
+	  && strses_length (lt->lt_log))
 	{
-	  int rc;
 	  int status = lt->lt_status;
+	  int rc;
 	  mutex_enter (log_write_mtx);
 	  if (!dbs->dbs_log_length)
 	    {
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
-	  if (LT_PREPARED == status)
+	  if (LT_PREPARED == status && lt->lt_2pc._2pc_wait_commit)
 	    lt->lt_status = LT_PREPARE_PENDING;
 	  rc = log_commit (lt);
 	  lt->lt_status = status;
 	  if (LTE_OK != rc)
-	    log_error ("Checkpoint interrupted 2pc transaction between prepare and final.  The log of the prepared state could not be written to the post-checkpoint transaction log.  This means that, if the transaction commits and ought to be replayed from log, the transaction will be lost.");
+	    log_error ("Checkpoint interrupted 2pc transaction between prepare and final.  The log of the prepared state could not be written to the post-checkpoint transaction log.  This means that, if the transaction commits and ought to be replayed from log, the transaction will be lost. trx no %d:%d", QFID_HOST (lt->lt_w_id), (uint32)lt->lt_w_id);
 	  mutex_leave (log_write_mtx);
+	}
+      else if (lt->lt_log_2pc && lt->lt_commit_flag_offset)
+	{
+	  log_info ("2pc txn with status %d during cpt log", lt->lt_status);
+	  lt->lt_commit_flag_offset = 0;
 	}
     }
   END_DO_SET ();
-#endif
 }
 
 int in_log_replay = 0;
@@ -1862,7 +2209,7 @@ log_init (dbe_storage_t * dbs)
       int log_fd;
       file_set_rw (dbs->dbs_log_name);
       log_fd = fd_open (dbs->dbs_log_name, LOG_OPEN_FLAGS);
-      if (log_fd == -1)
+      if (log_fd < 0)
 	{
 	  log_error ("Can't open log : %m");
 	  call_exit (1);
@@ -1891,7 +2238,7 @@ log_init (dbe_storage_t * dbs)
 	  log_info ("Processing log segment %s", ls->ls_file);
 	  file_set_rw (ls->ls_file);
 	  log_fd = fd_open (ls->ls_file, LOG_OPEN_FLAGS);
-	  if (log_fd == -1)
+	  if (log_fd < 0)
 	    {
 	      log_error ("Can't open log segment : %m");
 	      call_exit (1);

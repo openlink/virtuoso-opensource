@@ -205,7 +205,7 @@ odbc_cat_init (void)
   bif_define_typed ("_sql_columns", bif_sql_columns, &bt_any);
   bif_define_typed ("_sql_tables", bif_sql_tables, &bt_any);
   bif_define_typed ("_sql_primary_keys", bif_sql_primary_keys, &bt_any);
-  bif_define_typed ("sql_foreign_keys", bif_sql_foreign_keys, &bt_any);
+  bif_define_typed ("_sql_foreign_keys", bif_sql_foreign_keys, &bt_any);
   bif_define_typed ("sql_special_columns", bif_sql_special_columns, &bt_any);
   bif_define_typed ("_sql_statistics", bif_sql_statistics, &bt_any);
   bif_define_typed ("sql_data_sources", bif_sql_data_sources, &bt_any);

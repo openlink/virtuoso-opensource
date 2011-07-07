@@ -15,7 +15,7 @@ set SQL_FILES_VDB=vdb.sql
 set SQL_FILES_PLDBG=cov_report.xsl cov_time.xsl
 set SQL_FILES_VAD=../../binsrc/vad/vad_root.sql ../../binsrc/vad/vad_misc.sql ../../binsrc/vad/oper_pars.sql ../../binsrc/vad/pars_init.sql ../../binsrc/vad/vad_make.sql
 set SQL_FILES_DBP=../../binsrc/vsp/admin/dbpump/dbpump_root.sql ../../binsrc/vsp/admin/dbpump/oper_pars.sql ../../binsrc/vsp/admin/dbpump/components.sql ../../binsrc/vsp/admin/dbpump/comp_html.sql ../../binsrc/vsp/admin/dbpump/comp_misc.sql ../../binsrc/vsp/admin/dbpump/comp_rpath.sql ../../binsrc/vsp/admin/dbpump/comp_tables.sql ../../binsrc/vsp/admin/dbpump/pars_init.sql
-set SQL_FILES_SPARQL=sparql.sql sparql_io.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql
+set SQL_FILES_SPARQL=sparql.sql sparql_io.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql
 
 rm -f sql_code.c sql_code_1.c sql_code_ws.c sql_code_repl.c sql_code_dav.c sql_code_ddk.c sql_code_sys.c sql_code_uddi.c 
 rm -f sql_code_imsg.c sql_code_auto.c sql_code_adm.c sql_code_2pc.c sql_code_vdb.c sql_code_pldbg.c 
@@ -47,6 +47,10 @@ gawk -f "jso_reformat.awk" -v "output_mode=c" -v "init_name=rdf_mapping" rdf_map
 gawk -f "jso_reformat.awk" -v "output_mode=ttl" -v "init_name=rdf_mapping" rdf_mapping.jso > rdf_mapping_jso.ttl
 
 gawk -f "jso_reformat.awk" -v "output_mode=ttl-sample" -v "init_name=rdf_mapping" rdf_mapping.jso > rdf_mapping_jso.ttl-sample
+
+cd ../../binsrc/cached_resources
+bash cache_gen.sh > cached_resources.c
+cd ../../libsrc/Wi
 
 @echo #include "sql_code_cache_impl.c" > sql_code_cache.c
 @echo #include "../../binsrc/cached_resources/cached_resources.c" >> sql_code_cache.c

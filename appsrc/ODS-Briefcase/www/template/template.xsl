@@ -100,14 +100,12 @@
   <xsl:template match="vm:popup_pagewrapper">
     <v:variable name="nav_pos_fixed" type="integer" default="1"/>
     <v:variable name="nav_top" type="integer" default="0"/>
-    <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:if test="not @clean or @clean = 'no'">
       <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-        <hr />
+        <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
       </div>
     </xsl:if>
     <div id="app_area">
@@ -124,12 +122,11 @@
   <xsl:template match="vm:pagewrapper">
     <v:variable name="nav_pos_fixed" type="int" default="0"/>
     <v:variable name="nav_top" type="int" default="0"/>
-    <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='oDrive'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
@@ -138,12 +135,32 @@
               http (sprintf ('<a alt="Briefcase Home" title="Briefcase Home" href="%s"><img src="image/drivebanner_sml.jpg" border="0" alt="Briefcase Home" /></a>', ODRIVE.WA.utf2wide (ODRIVE.WA.domain_sioc_url (self.domain_id, self.sid, self.realm))));
             ?>
         </div>
+          <?vsp
+            if (0)
+            {
+          ?>
+              <v:button name="searchHead" action="simple" style="url" value="Submit">
+                <v:on-post>
+                  <![CDATA[
+                    declare S, q, params any;
+
+                    params := e.ve_params;
+                    q := trim (get_keyword ('keywords', params, ''));
+                    S := case when q <> ''then sprintf ('&keywords=%s&step=1', q) else '' end;
+                    self.vc_redirect (ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, sprintf ('home.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S))));
+                    self.vc_data_bind(e);
+                   ]]>
+                 </v:on-post>
+              </v:button>
+          <?vsp
+            }
+          ?>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('action', '_cmd', 'search', 'mode', 'simple'); return false;" />
-          <xsl:call-template name="nbsp"/>
-            <v:url url="home.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
+            <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('searchHead', 'select', 'simple'); return false;" />
+            &amp;nbsp;
+            <a href="<?vsp http (ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'select', 'simple'); return false;" title="Simple Search">Search</a>
           |
-            <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
+            <a href="<?vsp http (ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'select', 'advanced'); return false;" title="Advanced">Advanced</a>
         </div>
       </div>
         <div style="clear: both; border: solid #935000; border-width: 0px 0px 1px 0px;">
@@ -151,11 +168,11 @@
             <?vsp http (ODRIVE.WA.utf2wide (ODRIVE.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template name="t1" type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-          <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+            <vm:if test="self.account_role not in ('public', 'guest')">
+              <a href="<?vsp http (ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm))); ?>" title="Preferences">Preferences</a>
               |
-        </v:template>
-            <a href="about" onclick="javascript: ODRIVE.aboutDialog(); return false;" title="About">About</a>
+            </vm:if>
+            <a href="<?vsp http (ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'about.vsp'))); ?>" onclick="javascript: ODRIVE.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>
@@ -163,7 +180,87 @@
     <table id="RCT">
       <tr>
           <td id="RC">
-      	    <v:vscx name="navbar" url="odrive_navigation.vspx" />
+              <v:tree show-root="0" multi-branch="0" orientation="horizontal" root="ODRIVE.WA.navigation_root" start-path="" child-function="ODRIVE.WA.navigation_child">
+                <v:before-data-bind>
+                  <![CDATA[
+                    declare page_name any;
+
+                    page_name := ODRIVE.WA.page_name ();
+                    if (page_name = 'error.vspx')
+                    {
+                      self.nav_pos_fixed := 1;
+                    }
+                    else if (not self.nav_top and page_name <> '')
+                    {
+                      self.nav_pos_fixed := 0;
+                      self.nav_pos_fixed := ODRIVE.WA.check_grants2 (self.account_role, page_name);
+                      control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
+                    }
+                  ]]>
+                </v:before-data-bind>
+
+                <v:node-template>
+                  <td nowrap="nowrap" class="<?V case when control.tn_open then 'sel' else '' end ?>">
+                    <v:button action="simple" style="url" xhtml_class="--(case when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' else '' end)" value="--(control.vc_parent as vspx_tree_node).tn_value">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if ((control.vc_parent as vspx_tree_node).tn_open = 1)
+                            control.ufl_active := 0;
+                          else
+                            control.ufl_active := ODRIVE.WA.check_grants2(self.account_role, ODRIVE.WA.page_name ());
+                        ]]>
+                      </v:after-data-bind>
+                      <v:before-render>
+                        <![CDATA[
+                          control.bt_anchor := 0;
+                          control.bt_url := ODRIVE.WA.utf2wide (replace (control.bt_url, sprintf ('/odrive/%d', self.domain_id), ODRIVE.WA.page_url (self.domain_id)));
+                        ]]>
+                      </v:before-render>
+                      <v:on-post>
+                        <![CDATA[
+                          declare node vspx_tree_node;
+                          declare tree vspx_control;
+                          self.nav_pos_fixed := 0;
+                          node := control.vc_parent;
+                          tree := node.tn_tree;
+                          node.tn_tree.vt_open_at := NULL;
+                          self.nav_top := 1;
+                          tree.vc_data_bind (e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </v:node-template>
+                <v:leaf-template>
+                  <td nowrap="nowrap" class="<?V case when control.tn_open then 'sel' else '' end ?>">
+                    <v:button action="simple" style="url" xhtml_class="--case when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' else '' end" value="--(control.vc_parent as vspx_tree_node).tn_value">
+                      <v:before-render>
+                        <![CDATA[
+                          control.bt_anchor := 0;
+                          control.bt_url := ODRIVE.WA.utf2wide (replace (control.bt_url, sprintf ('/odrive/%d', self.domain_id), ODRIVE.WA.page_url (self.domain_id)));
+                        ]]>
+                      </v:before-render>
+                    </v:button>
+                  </td>
+                </v:leaf-template>
+                <v:horizontal-template>
+                  <table class="nav_bar" cellspacing="0">
+                    <tr>
+                      <v:node-set />
+                      <?vsp
+                        if ((control as vspx_tree).vt_node <> control) {
+                      ?>
+                      <td class="filler"> </td>
+                      <?vsp } ?>
+                    </tr>
+                  </table>
+                  <?vsp
+                    if ((control as vspx_tree).vt_node = control and not length (childs)) {
+                  ?>
+                  <div class="nav_bar nav_seperator" >x</div>
+                  <?vsp } ?>
+                </v:horizontal-template>
+              </v:tree>
               <v:template name="t2" type="simple" condition="not self.vc_is_valid">
       	    <div class="error">
       		    <p><v:error-summary/></p>
@@ -175,7 +272,11 @@
       	</td>
       </tr>
     </table>
-      <div id="FT">
+        <?vsp
+          declare C any;
+          C := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+        ?>
+        <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
             <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
@@ -194,50 +295,12 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template match="vm:menu">
-    <div class="left_container">
-      <ul class="left_navigation">
-      &lt;?vsp if (self.nav_pos_fixed) { ?&gt;
-        <xsl:for-each select="vm:menuitem">
-          <li>
-            <xsl:choose>
-              <xsl:when test="@type='hot' or @url">
-                <v:url format="%s">
-                  <xsl:copy-of select="@name" />
-                  <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
-                  <xsl:attribute name="url">--'<xsl:value-of select="@url"/>'</xsl:attribute>
-                </v:url>
-              </xsl:when>
-              <xsl:when test="@ref">
-                <v:url format="%s">
-                  <xsl:copy-of select="@name" />
-                  <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
-                  <xsl:attribute name="url">--<xsl:value-of select="@ref"/></xsl:attribute>
-                </v:url>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:value-of select="@value"/>
-              </xsl:otherwise>
-            </xsl:choose>
-          </li>
-        </xsl:for-each>
-      &lt;?vsp } else { ?&gt;
-        <li>
-        &lt;?vsp http (coalesce (self.nav_tip, '')); ?&gt;
-        </li>
-      &lt;?vsp } ?&gt;
-      </ul>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
-      {
         declare n_start, n_end, n_total integer;
         declare ds vspx_data_set;
 
-        ds := self.vc_find_descendant_control ('<xsl:value-of select="@data-set" />');
+      ds := case when (udt_instance_of (control, fix_identifier_case ('vspx_data_set'))) then control else control.vc_find_parent (control, 'vspx_data_set') end;
         if (isnull (ds.ds_data_source))
         {
           n_total := ds.ds_rows_total;
@@ -252,57 +315,46 @@
           n_end := n_total;
 
         if (n_total)
-          http (sprintf ('%d - %d of %d', n_start, n_end, n_total));
+        http (sprintf ('Showing %d - %d of %d', n_start, n_end, n_total));
 
-        declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first integer;
+      declare _prev, _next vspx_button;
 
-  	    d_prev := d_next := d_last := d_first := 0;
-  	    _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
-  	    _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
   	    _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
   	    _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-
-        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
-        {
-          if (n_total)
+      if ((_next is not null and _next.vc_enabled) or (_prev is not null and _prev.vc_enabled))
             http (' | ');
-        if (_first is not null and not _first.vc_enabled)
-    	    d_first := 1;
-
-        if (_next is not null and not _next.vc_enabled)
-    	    d_next := 1;
-
-        if (_prev is not null and not _prev.vc_enabled)
-    	    d_prev := 1;
-
-        if (_last is not null and not _last.vc_enabled)
-    	    d_last := 1;
-        }
     ?&gt;
-    <?vsp
-      if (d_first)
-        http ('<img src="/ods/images/skin/pager/p_first_gr.png" alt="First Page" title="First Page" border="0" />first&nbsp;');
-    ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="/ods/images/skin/pager/p_first.png" xhtml_alt="First" text="first&amp;nbsp;" />
-    <?vsp
-      if (d_prev)
-        http ('<img src="/ods/images/skin/pager/p_prev_gr.png" alt="Previous Page" title="Previous Page" border="0" />prev&nbsp;');
-    ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="/ods/images/skin/pager/p_prev.png" xhtml_alt="Previous" text="prev&amp;nbsp;" />
-    <?vsp
-      if (d_next)
-        http ('<img src="/ods/images/skin/pager/p_next_gr.png" alt="Next Page" title="Next Page" border="0" />next&nbsp;');
-    ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="/ods/images/skin/pager/p_next.png" xhtml_alt="Next" text="next&amp;nbsp;" />
-    <?vsp
-      if (d_last)
-        http ('<img src="/ods/images/skin/pager/p_last_gr.png" alt="Last Page" title="Last Page" border="0" />last');
-    ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="/ods/images/skin/pager/p_last.png" xhtml_alt="Last" text="last" />
-    <?vsp
-      }
-    ?>
+    <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+        ]]>
+      </v:before-render>
+    </v:button>
+    &nbsp;
+    <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
+      <v:before-render>
+        <![CDATA[
+          control.ufl_value := '<img src="/ods/images/skin/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+        ]]>
+      </v:before-render>
+    </v:button>
   </xsl:template>
 
   <!--=========================================================================-->
@@ -631,16 +683,9 @@
         </tr>
       </table>
       <br />
-		  <?vsp
-		    declare I, N integer;
-		    declare S varchar;
-		    declare aCriteria, criteria any;
-        declare V, f0, f1, f2, f3, f4 any;
-
-        aCriteria := ODRIVE.WA.dc_xml_doc (self.search_dc);
-        I := xpath_eval('count(/dc/criteria/entry)', aCriteria);
-		  ?>
-      <input name="search_seqNo" id="search_seqNo" type="hidden" value="<?V I ?>" />
+      <table style="width: 100%;">
+        <tr>
+          <td>
       <table id="searchProperties" class="form-list" style="width: 100%;" cellspacing="0">
         <thead>
           <tr>
@@ -653,15 +698,18 @@
           </tr>
         </thead>
         <tbody id="search_tbody">
-          <tr id="search_tr">
-            <td colspan="6">
-              <hr />
-            </td>
-          </tr>
+                <tr id="search_tr_no"><td colspan="6"><b>No Criteria</b></td></tr>
     		  <![CDATA[
     		    <script type="text/javascript">
               OAT.MSG.attach(OAT, "PAGE_LOADED", ODRIVE.initFilter);
     		  <?vsp
+            		    declare I, N integer;
+            		    declare S varchar;
+            		    declare aCriteria, criteria any;
+                    declare V, f0, f1, f2, f3, f4 any;
+
+                    aCriteria := ODRIVE.WA.dc_xml_doc (self.search_dc);
+                    I := xpath_eval('count(/dc/criteria/entry)', aCriteria);
               for (N := 1; N <= I; N := N + 1)
               {
                 criteria := xpath_eval('/dc/criteria/entry', aCriteria, N);
@@ -670,16 +718,20 @@
                 f2 := coalesce (cast (xpath_eval ('@property', criteria) as varchar), 'null');
                 f3 := coalesce (cast (xpath_eval ('@criteria', criteria) as varchar), 'null');
                 f4 := coalesce (cast (xpath_eval ('.', criteria) as varchar), 'null');
-                S := sprintf ('field_0:\'%s\', field_1:\'%s\', field_2:\'%s\', field_3:\'%s\', field_4:\'%s\'', f0, f1, f2, f3, f4);
-                S := replace (S, '\'null\'', 'null');
+                      S := replace (sprintf ('field_0:\'%s\', field_1:\'%s\', field_2:\'%s\', field_3:\'%s\', field_4:\'%s\'', f0, f1, f2, f3, f4), '\'null\'', 'null');
 
-                http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate(\'%d\', {%s});});', N - 1, S));
+                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate({%s});});', S));
               }
-              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate(\'%d\');})', I));
     		  ?>
     		    </script>
     		  ]]>
         </tbody>
+      </table>
+          </td>
+          <td valign="top" nowrap="nowrap" width="1%">
+            <span class="button pointer" onclick="javascript: ODRIVE.searchRowCreate();"><img src="image/add_16.png" border="0" class="button" alt="Add Criteria" title="Add Criteria" /> Add</span><br /><br />
+          </td>
+        </tr>
       </table>
         </div>
   </xsl:template>

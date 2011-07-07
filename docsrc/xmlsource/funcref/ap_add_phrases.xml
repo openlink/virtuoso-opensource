@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_ap_add_phrases">
+  <refmeta>
+    <refentrytitle>AP_ADD_PHRASES</refentrytitle>
+    <refmiscinfo>phrz</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>AP_ADD_PHRASES</refname>
+    <refpurpose>Adds phrases to given set.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ap_add_phrases">
+      <funcprototype id="fproto_ap_add_phrases">
+        <funcdef><function>AP_ADD_PHRASES</function></funcdef>
+	<paramdef>in <parameter>phrase_id</parameter> integer</paramdef>
+	<paramdef>in <parameter>description_phrases</parameter> vector</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ap_add_phrases">
+    <title>Description</title>
+    <para>The function gets two arguments, the integer ID of annotation phrase set and a vector of $
+descriptions of phrases that should be edited in that phrase set.</para>
+   <para>Every item of vector of descriptions is in turn vector of one or two values; first value is
+the text of the phrase, second value is associated application specific data, the absence of second value
+indicates that the phrase should be removed. If same text of phrase appears in the vector of description
+more than once, and associated data differ then any version of data can be stored for future use; it is
+the roll of dice because the vector is reordered for faster processing.</para>
+  </refsect1>
+  <refsect1 id="params_ap_add_phrases">
+    <title>Parameters</title>
+    <refsect2><title>phrase_id</title>
+      <para>integer ID of the annotation phrase set</para>
+    </refsect2>
+    <refsect2><title>description_phrases</title>
+      <para>vector of descriptions of phrases that should be edited in that phrase set</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_ap_add_phrases">
+    <title>Examples</title>
+    <example id="ex_ap_add_phrases"><title>Simple Example</title>
+<programlisting><![CDATA[
+SQL>insert replacing DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID, APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
+values (5, 'Debug aps #5', http_dav_uid(), http_admin_gid(), 3, 'x-any', 'Debug aps #5 env', 10000, 0)
+;
+Done. -- 0 msec.
+
+SQL>ap_add_phrases (5,
+  vector (
+    vector ('Debug5', 'Debug5 env'),
+    vector ('Debug5 one', 'Debug5 one env'),
+    vector ('Debug5 two', 'Debug5 two env'),
+    vector ('Debug5 three', 'Debug5 three env'),
+    vector ('Debug5 twenty one', 'Debug5 twenty one env'),
+    vector ('Debug5 twenty two', 'Debug5 twenty two env'),
+    vector ('Debug5 twenty three', 'Debug5 twenty three env')
+    ) )
+;
+Done. -- 0 msec.
+]]></programlisting>
+    </example>
+    <para>Detailed example can be found <link linkend="sqlreffastphraseexample">here</link>.</para>
+  </refsect1>
+  <refsect1 id="seealso_ap_add_phrases">
+    <title>See Also</title>
+    <para><link linkend="fn_ann_phrase_class_add"><function>DB.DBA.ANN_PHRASE_CLASS_ADD</function></link></para>
+    <para><link linkend="fn_ann_phrase_class_del"><function>DB.DBA.ANN_PHRASE_CLASS_DEL</function></link></para>
+  </refsect1>
+</refentry>

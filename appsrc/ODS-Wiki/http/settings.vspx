@@ -47,6 +47,7 @@
   <v:variable name="_cluster" type="integer"/>
     <v:variable name="new_topic_template" type="varchar" default="''" persist="0"/>
     <v:variable name="new_category_template" type="varchar" default="''" persist="0"/>
+  <v:variable name="skin_source" type="varchar" default="'Local'" persist="0"/>
     <v:variable name="skin2_vhost_regexp" type="varchar" default="''" persist="0"/>
     <v:variable name="sync_message" type="varchar" default="''"/>
   <v:variable name="enabled" type="varchar" default="'1'"/>
@@ -82,6 +83,9 @@
       self.index_page := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'index-page', 'WelcomeVisitors');
       self.new_topic_template := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'new-topic-template', '');
       self.new_category_template := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'new-category-template', '');
+      self.skin_source := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'skin-source', '');
+      if ((self.skin_source <> 'WebDAV') and (self.skin_source <> 'URL'))
+        self.skin_source := 'Local';
       self.skin2_vhost_regexp := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', '');
 
                 if (self.delicious_enable is null)
@@ -195,15 +199,54 @@
             </td>
           </tr>
                       <tr>
+                        <th valign="top">Skin source:</th>
+                        <td>
+                          <label>
+                            <v:radio-button name="wiki_skin_source_0" xhtml_id="wiki_skin_source_0" group-name="wiki_skin_source" value="Local" xhtml_onchange="javascript: destinationChange(this, {show: [\'wiki_skin\', \'wiki_skin2\'], hide: [\'wiki_skin_text\', \'wiki_skin2_text\']});">
+                              <v:before-render>
+                                <![CDATA[
+                                  control.ufl_selected := either (equ (self.skin_source, 'Local'), 1, 0);
+                                ]]>
+                              </v:before-render>
+                            </v:radio-button>
+                            <b>Local</b>
+                          </label>
+                          <br />
+                          <label>
+                            <v:radio-button name="wiki_skin_source_1" xhtml_id="wiki_skin_source_1" group-name="wiki_skin_source" value="WebDAV" xhtml_onchange="javascript: destinationChange(this, {hide: [\'wiki_skin\', \'wiki_skin2\'], show: [\'wiki_skin_text\', \'wiki_skin2_text\']});">
+                              <v:before-render>
+                                <![CDATA[
+                                  control.ufl_selected := either (equ (self.skin_source, 'WebDAV'), 1, 0);
+                                ]]>
+                              </v:before-render>
+                            </v:radio-button>
+                            <b>WebDAV</b>
+                          </label>
+                          <br />
+                          <label>
+                            <v:radio-button name="wiki_skin_source_2" xhtml_id="wiki_skin_source_2" group-name="wiki_skin_source" value="URL" xhtml_onchange="javascript: destinationChange(this, {hide: [\'wiki_skin\', \'wiki_skin2\'], show: [\'wiki_skin_text\', \'wiki_skin2_text\']});">
+                              <v:before-render>
+                                <![CDATA[
+                                  control.ufl_selected := either (equ (self.skin_source, 'URL'), 1, 0);
+                                ]]>
+                              </v:before-render>
+                            </v:radio-button>
+                            <b>URL</b>
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
                         <th>Primary Skin:</th>
                         <td>
-                          <v:data-list name="wiki_skin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_class="save1" />
+                          <v:data-list name="wiki_skin" xhtml_id="wiki_skin" value="--WV.Wiki.ClusterParam (self.cluster_name, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_class="save1" xhtml_style="--sprintf('display: %s;', case when (self.skin_source = 'Local') then '' else 'none' end)" />
+                          <v:text name="wiki_skin_text" xhtml_id="wiki_skin_text" format="%s" value="--WV.Wiki.ClusterParam (self.cluster_name, 'skin', '')" xhtml_class="save1" xhtml_style="--sprintf('display: %s;', case when (self.skin_source = 'Local') then 'none' else '' end)" />
                         </td>
                       </tr>
                       <tr>
                         <th>Secondary Skin:</th>
                         <td>
-                          <v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_title=" used when host matches the regular expression below " xhtml_class="save1" />
+                          <v:data-list name="wiki_skin2" xhtml_id="wiki_skin2" value="--WV.Wiki.ClusterParam (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_title=" used when host matches the regular expression below " xhtml_class="save1" xhtml_style="--sprintf('display: %s;', case when (self.skin_source = 'Local') then '' else 'none' end)" />
+                          <v:text name="wiki_skin2_text" xhtml_id="wiki_skin2_text" format="%s" value="--WV.Wiki.ClusterParam (self.cluster_name, 'skin2', '')" xhtml_class="save1"  xhtml_style="--sprintf('display: %s;', case when (self.skin_source = 'Local') then 'none' else '' end)" />
                         </td>
                       </tr>
                       <tr>
@@ -230,13 +273,28 @@
                             <![CDATA[
                                 if (not self.vc_is_valid)
                                   return;
+
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'index-page', self.index_page_name.ufl_value);
+                                if (self.wiki_skin_source_0.ufl_selected)
+                                  WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin-source', 'Local');
+                                if (self.wiki_skin_source_1.ufl_selected)
+                                  WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin-source', 'WebDAV');
+                                if (self.wiki_skin_source_2.ufl_selected)
+                                  WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin-source', 'URL');
+                                if (self.wiki_skin_source_0.ufl_selected)
+                                {
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin', self.wiki_skin.ufl_value);
-                                WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2', self.wiki_skin_2.ufl_value);
+                                  WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2', self.wiki_skin2.ufl_value);
+                                } else {
+                                  WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin', self.wiki_skin_text.ufl_value);
+                                  WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2', self.wiki_skin2_text.ufl_value);
+                                }
                                 if (WV.WIKI.TRIM(self.skin2_vhost_regexp_text.ufl_value) = '')
+                                {
                                   WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', NULL);
-                                else
+                                } else {
                                   WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', WV.WIKI.TRIM (self.skin2_vhost_regexp_text.ufl_value));
+                                }
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'plugin', self.wiki_plugin.ufl_value);
 
                               self.vc_data_bind (e);
@@ -296,9 +354,8 @@
                     	  <td colspan="2">
                     	    <?vsp
                             declare S varchar;
-                            S := '';
-                            if (self.delicious_enable = 1)
-                              S := 'checked="checked"';
+
+                            S := case when (self.delicious_enable = 1) then 'checked="checked"' else '' end;
                             http(sprintf('<input type="checkbox" name="cls3_delicioustoggle" id="cls3_delicioustoggle" value="1" %s onclick="deliciousToggle (this)" class="save3" />', S));
                           ?>
                           <vm:label for="cls3_delicioustoggle" value="Toggle Integration"/>
@@ -307,19 +364,19 @@
                       <tr id="delicious1">
                         <th>User Name:</th>
                         <td align="left">
-                          <v:text name="delicious_user" format="%s" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_user', '')" xhtml_class="save3" />
+                          <v:text name="delicious_user" format="%s" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_user', '')" xhtml_class="save1" />
                         </td>
                       </tr>
                       <tr id="delicious2">
                         <th>Password: <br/>(leave it empty to keep old password)</th>
                         <td align="left">
-                          <v:text type="password" name="delicious_passwd" xhtml_class="save3" />
+                          <v:text type="password" name="delicious_passwd" xhtml_class="save1" />
                         </td>
                       </tr>
                       <tr id="delicious3">
                         <th>Minimum of update interval: <br/>(in minutes)</th>
                         <td align="left">
-                          <v:text name="delicious_update_interval" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_update_interval', 600)/60" xhtml_class="save3">
+                          <v:text name="delicious_update_interval" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_update_interval', 600)/60" xhtml_class="save1">
                             <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
                             <v:validator test="value" min="10" max="999999" empty-allowed="0" message="number greater than 10 and less than 999999 is expected" runat="client"/>
                           </v:text>
@@ -342,9 +399,8 @@
                       	  <td colspan="2">
                       	    <?vsp
                               declare S varchar;
-                              S := '';
-                              if (self.webmail_enable = 1)
-                                S := 'checked="checked"';
+
+                              S := case when (self.webmail_enable = 1) then 'checked="checked"' else '' end;
                               http(sprintf('<input type="checkbox" name="cls3_webmailtoggle" id="cls3_webmailtoggle" value="1" %s onclick="webmailToggle (this)" class="save3" />', S));
                             ?>
                             <vm:label for="cls3_webmailtoggle" value="Toggle integration"/>
@@ -353,7 +409,7 @@
                         <tr id="webmail1">
                           <th>E-mail Domain:</th>
 	    <td>
-                            <v:data-list name="webmail_domains" value="--WV.Wiki.ClusterParam (self.cluster_name, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." xhtml_class="save3" />
+                            <v:data-list name="webmail_domains" value="--WV.Wiki.ClusterParam (self.cluster_name, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." xhtml_class="save1" />
                           </td>
                         </tr>
                       </v:template>
@@ -372,7 +428,7 @@
                     <tr>
                         <th>E-mail Obfuscation:</th>
 		      <td>
-                          <v:data-list name="email_obfuscation" value="--WV.Wiki.ClusterParam (self.cluster_name, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="." xhtml_class="save3" />
+                          <v:data-list name="email_obfuscation" value="--WV.Wiki.ClusterParam (self.cluster_name, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="." xhtml_class="save1" />
 		      </td>
                     </tr>
                       <tr>
@@ -383,7 +439,7 @@
 	  <tr>
                         <th>API key (32 characters long):</th>
 	    <td>
-                          <v:text error-glyph="*" name="technorati_api_key_f" value="--self.technorati_api_key" xhtml_size="40" xhtml_class="save3">
+                          <v:text error-glyph="*" name="technorati_api_key_f" value="--self.technorati_api_key" xhtml_size="40" xhtml_class="save1">
                             <v:validator test="regexp" regexp="^[a-z0-9]{32}$|^[ ]*$" message="API key is expected" runat="client"/>
                           </v:text>
                         </td>
@@ -398,9 +454,8 @@
                     	  <td colspan="2">
                     	    <?vsp
                             declare S varchar;
-                            S := '';
-                            if (self.conv_enable = 1)
-                              S := 'checked="checked"';
+
+                            S := case when (self.conv_enable = 1) then 'checked="checked"' else '' end;
                             http (sprintf ('<input type="checkbox" name="cls3_conversationtoggle" id="cls3_conversationtoggle" value="1" %s class="save3" />', S));
                           ?>
                           <vm:label for="cls3_conversationtoggle" value="Toggle Discussion (NNTP Integration)"/>
@@ -430,10 +485,12 @@
                                 cluster_id := self._cluster;
                                 self.delicious_enable := cast (get_keyword ('cls3_delicioustoggle', e.ve_params, '2') as integer);
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_enabled', self.delicious_enable);
-                                if (self.delicious_enable = 1) {
+                                if (self.delicious_enable = 1)
+                                {
                                   WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_user', self.delicious_user.ufl_value);
                                   WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_update_interval', cast (self.delicious_update_interval.ufl_value as integer) * 60);
-                                  if (self.delicious_passwd.ufl_value is not null and self.delicious_passwd.ufl_value <> '') {
+                                  if (self.delicious_passwd.ufl_value is not null and self.delicious_passwd.ufl_value <> '')
+                                  {
                                     WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_digest', encode_base64 (self.delicious_user.ufl_value || ':' || self.delicious_passwd.ufl_value) );
                                     WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_password', self.delicious_passwd.ufl_value);
                                   }
@@ -442,8 +499,10 @@
                                 }
                                 self.webmail_enable := cast (get_keyword ('cls3_webmailtoggle', e.ve_params, '2') as integer);
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_enabled', self.webmail_enable);
-                                if (self.webmail_enable = 1) {
-                                  if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_initialized') is null) {
+                                if (self.webmail_enable = 1)
+                                {
+                                  if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_initialized') is null)
+                                  {
                                     DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/webmail.sql', 1, 'report', 1);
                                     WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_initialized', 1);
                                   }
@@ -531,25 +590,25 @@
                    <tr>
                                 <th>Name:</th>
                       <td>
-                                  <v:text name="upstream_name" value="--get_keyword ('name', self.defval, '')" xhtml_title=" if you change the name in edit mode, a new upstream will be added!" xhtml_class="save4" />
+                                  <v:text name="upstream_name" value="--get_keyword ('name', self.defval, '')" xhtml_title=" if you change the name in edit mode, a new upstream will be added!" xhtml_class="save1" />
                       </td>
                    </tr>
                               <tr>
                                 <th>URL:</th>
                                 <td>
-                                  <v:text name="upstream_url" value="--get_keyword ('uri', self.defval, '')" xhtml_class="save4" />
+                                  <v:text name="upstream_url" value="--get_keyword ('uri', self.defval, '')" xhtml_class="save1" />
                                 </td>
                               </tr>
                               <tr>
                                 <th>User:</th>
                                 <td>
-                                  <v:text name="upstream_user" value="--get_keyword ('user', self.defval, '')" xhtml_class="save4"/>
+                                  <v:text name="upstream_user" value="--get_keyword ('user', self.defval, '')" xhtml_class="save1"/>
                                 </td>
                               </tr>
                               <tr>
                                 <th>Password:</th>
                                 <td>
-                                  <v:text name="upstream_password" type="password" value="--get_keyword ('passwd', self.defval, '')" xhtml_class="save4" />
+                                  <v:text name="upstream_password" type="password" value="--get_keyword ('passwd', self.defval, '')" xhtml_class="save1" />
                                 </td>
                                   </tr>
                               <v:hidden name="id2" value="--get_keyword('id', self.defval)"/>
@@ -664,9 +723,8 @@
                     	    <br/>
                     	    <?vsp
                             declare S varchar;
-                            S := '';
-                            if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'syscalls', 2) = 1)
-                              S := 'checked="checked"';
+
+                            S := case when (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'syscalls', 2) = 1) then 'checked="checked"' else '' end;
                             http(sprintf('<input type="checkbox" name="cls5_inlinemacros" id="cls5_inlinemacros" value="1" %s class="save5" />', S));
                           ?>
                           <vm:label for="cls5_inlinemacros" value="Inline Macros"/>
@@ -676,9 +734,8 @@
                     	  <td colspan="2">
                     	    <?vsp
                             declare S varchar;
-                            S := '';
-                            if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'qwiki', 2) = 2)
-                              S := 'checked="checked"';
+
+                            S := case when (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'qwiki', 2) = 2) then 'checked="checked"' else '' end;
                             http(sprintf('<input type="checkbox" name="cls5_interlinks" id="cls5_interlinks" value="2" %s class="save5" />', S));
                           ?>
                           <vm:label for="cls5_interlinks" value="Inter Cluster Autolinks"/>

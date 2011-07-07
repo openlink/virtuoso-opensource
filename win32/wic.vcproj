@@ -1,36 +1,55 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="9.00"
 	Name="wic"
 	ProjectGUID="{A66E395B-18EE-4877-8F0D-386A7BBAB370}"
-	SccProjectName=""
-	SccLocalPath="">
+	TargetFrameworkVersion="131072"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\wic"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\langfunc,..\libsrc\plugin,."
 				PreprocessorDefinitions="_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;DLDAPI_WINDOWS;NO_IMPORT;PLDBG;YYTOKENTYPE;NDEBUG"
-				MinimalRebuild="FALSE"
-				ExceptionHandling="FALSE"
+				MinimalRebuild="false"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\wic/wic.pch"
 				AssemblerListingLocation="$(ConfigurationName)\wic/"
@@ -38,44 +57,67 @@
 				ProgramDataBaseFileName="$(ConfigurationName)\wic/"
 				BrowseInformation="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="0"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\wic.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1049"/>
+				Culture="1049"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(ConfigurationName)\wic.lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\wic"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200 "
@@ -84,8 +126,8 @@
 				PreprocessorDefinitions="_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;DLDAPI_WINDOWS;NO_IMPORT;PLDBG;YYTOKENTYPE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="TRUE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\wic/wic.pch"
 				AssemblerListingLocation="$(ConfigurationName)\wic/"
@@ -93,35 +135,41 @@
 				ProgramDataBaseFileName="$(ConfigurationName)\wic/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\wic.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1049"/>
+				Culture="1049"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(ConfigurationName)\wic.lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -129,67 +177,88 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\libsrc\Wi\blobio.c">
+				RelativePath="..\libsrc\Wi\blobio.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIcr.c">
+				RelativePath="..\libsrc\Wi\CLIcr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIodbc3.c">
+				RelativePath="..\libsrc\Wi\CLIodbc3.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIsql1.c">
+				RelativePath="..\libsrc\Wi\CLIsql1.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIsql2.c">
+				RelativePath="..\libsrc\Wi\CLIsql2.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIsql3.c">
+				RelativePath="..\libsrc\Wi\CLIsql3.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIsql3W.c">
+				RelativePath="..\libsrc\Wi\CLIsql3W.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIuti.c">
+				RelativePath="..\libsrc\Wi\CLIuti.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIw.c">
+				RelativePath="..\libsrc\Wi\CLIw.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\datesupp.c">
+				RelativePath="..\libsrc\Wi\datesupp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\plugin\dlf.c">
+				RelativePath="..\libsrc\plugin\dlf.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\mts_client.c">
+				RelativePath="..\libsrc\Wi\mts_client.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\multibyte.c">
+				RelativePath="..\libsrc\Wi\multibyte.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\numeric.c">
+				RelativePath="..\libsrc\Wi\numeric.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\pldbgcli.c">
+				RelativePath="..\libsrc\Wi\pldbgcli.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\plugin_gate.c">
+				RelativePath="..\libsrc\Wi\plugin_gate.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wi_xid.c">
+				RelativePath="..\libsrc\Wi\wi_xid.c"
+				>
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\wirpc.c">
+				RelativePath="..\libsrc\Wi\wirpc.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 			<File
-				RelativePath="..\libsrc\Wi\wirpce.h">
+				RelativePath="..\libsrc\Wi\wirpce.h"
+				>
 			</File>
 		</Filter>
 	</Files>

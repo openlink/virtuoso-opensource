@@ -41,6 +41,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_vector_concat">
+    <title>Description</title>
+      <para><function>vector_concat</function> takes a variable number of
+      vectors (heterogeneous arrays) and constructs a new vector containing
+      copies of each (top level) element in the arguments.</para>
+  </refsect1>
   <refsect1 id="params_vector_concat"><title>Parameters</title>
     <refsect2><title><parameter>vec1..n</parameter></title>
       <para>
@@ -50,12 +56,6 @@
   </refsect1>
   <refsect1 id="ret_vector_concat"><title>Return Values</title>
     <para>A vector made of copies of elements contained in vec1..n.</para>
-  </refsect1>
-  <refsect1 id="desc_vector_concat">
-    <title>Description</title>
-      <para><function>vector_concat</function> takes a variable number of 
-      vectors (heterogeneous arrays) and constructs a new vector containing 
-      copies of each (top level) element in the arguments.</para>
   </refsect1>
   <refsect1 id="examples_vector_concat"><title>Examples</title>
     <example id="ex_vector_concat"><title></title>

@@ -463,8 +463,6 @@ wa_add_col('DB.DBA.WA_MEMBER', 'WAM_HOME_PAGE', 'varchar')
  --wa_add_col('DB.DBA.WA_MEMBER', 'WAM_REQUESTED_MEMBER_TYPE', 'int')
  --;
 
---zdravko
-
 create procedure wa_member_upgrade() {
 
   if (registry_get ('__wa_member_upgrade') = 'done')
@@ -519,6 +517,90 @@ create procedure wa_member_doinstcount() {
 wa_member_doinstcount()
 ;
 
+wa_exec_no_error ('
+  create table WA_GROUPS (
+    WAG_ID integer identity,
+    WAG_USER_ID integer,
+    WAG_GROUP_ID integer,
+
+    primary key (WAG_ID)
+  )
+');
+
+wa_exec_no_error ('
+  create unique index SK_WA_GROUPS_01 on WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID)
+');
+
+create procedure wa_groups_update () {
+
+  if (registry_get ('__wa_groups_update') = 'done')
+    return;
+
+  wa_exec_no_error ('insert into DB.DBA.WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID) select USER_ID, GROUP_ID from ODRIVE.WA.GROUPS');
+  wa_exec_no_error ('delete from ODRIVE.WA.GROUPS');
+  registry_set ('__wa_groups_update', 'done');
+}
+;
+
+wa_exec_no_error ('
+  create table WA_GROUPS_ACL (
+    WACL_ID integer identity,
+    WACL_USER_ID integer not null,
+    WACL_NAME varchar not null,
+    WACL_DESCRIPTION long varchar,
+    WACL_WEBIDS long varchar,
+
+    constraint FK_WA_GROUPS_ACL_01 FOREIGN KEY (WACL_USER_ID) references DB.DBA.SYS_USERS(U_ID) on delete cascade,
+
+    primary key (WACL_ID)
+  )
+');
+
+wa_exec_no_error ('
+  create unique index SK_WA_GROUPS_ACL_01 on WA_GROUPS_ACL (WACL_USER_ID, WACL_NAME)
+');
+
+create procedure wa_groups_acl_update () {
+
+  if (registry_get ('__wa_groups_acl_update') = 'done')
+    return;
+
+  wa_exec_no_error ('insert into DB.DBA.WA_GROUPS_ACL (WACL_USER_ID, WACL_NAME, WACL_DESCRIPTION, WACL_WEBIDS) select FG_USER_ID, FG_NAME, FG_DESCRIPTION, FG_WEBIDS from ODRIVE.WA.FOAF_GROUPS');
+  wa_exec_no_error ('update DB.DBA.WA_INSTANCE set WAI_ACL = null');
+  registry_set ('__wa_groups_acl_update', 'done');
+}
+;
+
+wa_groups_acl_update()
+;
+
+create procedure wa_acl_params (
+  in params any)
+{
+  declare N, M integer;
+  declare aclNo, retValue, V any;
+
+  M := 1;
+  retValue := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if (params[N] like 's_fld_2_%')
+    {
+      aclNo := replace (params[N], 's_fld_2_', '');
+      V := vector (M,
+                   trim (params[N+1]),
+                   get_keyword ('s_fld_1_' || aclNo, params, 'person'),
+                   atoi (get_keyword ('s_fld_3_' || aclNo || '_r', params, '0')),
+                   atoi (get_keyword ('s_fld_3_' || aclNo || '_w', params, '0')),
+                   atoi (get_keyword ('s_fld_3_' || aclNo || '_x', params, '0'))
+                  );
+      retValue := vector_concat (retValue, vector (V));
+      M := M + 1;
+    }
+  }
+  return retValue;
+}
+;
 
 wa_exec_no_error_log(
 'create table WA_INVITATIONS
@@ -558,7 +640,18 @@ wa_exec_no_error(
    WS_COPYRIGHT varchar,
    WS_DISCLAIMER varchar,
    WS_DEFAULT_MAIL_DOMAIN varchar,
-   WS_HTTPS integer default 0
+   WS_HTTPS integer default 0,
+   WS_REGISTER_OPENID integer default 1,
+   WS_REGISTER_FACEBOOK integer default 1,
+   WS_REGISTER_TWITTER integer default 1,
+   WS_REGISTER_LINKEDIN integer default 1,
+   WS_REGISTER_SSL integer default 1,
+   WS_REGISTER_AUTOMATIC_SSL integer default 1,
+   WS_FEEDS_UPDATE_PERIOD varchar default \'hourly\',
+   WS_FEEDS_UPDATE_FREQ integer default 1,
+   WS_FEEDS_HUB varchar default null,
+   WS_FEEDS_HUB_CALLBACK integer default 1,
+   WS_CERT_GEN_URL varchar default null
  )
 ')
 ;
@@ -608,7 +701,7 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_DEFAULT_MAIL_DOMAIN', 'varchar')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_VERIFY_TIP', 'int')
 ;
 
-wa_add_col('DB.DBA.WA_SETTINGS', 'WS_UNIQUE_MAIL', 'int default 0')
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_UNIQUE_MAIL', 'int default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'hourly\'')
@@ -617,10 +710,37 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'ho
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
 ;
 
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB', 'varchar default null')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_CERT_GEN_URL', 'varchar default null')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB_CALLBACK', 'integer default 1')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_STORE_DAYS', 'integer default 30')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_HTTPS', 'integer default 0')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_OPENID', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_FACEBOOK', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_TWITTER', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_LINKEDIN', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_AUTOMATIC_SSL', 'integer default 1')
 ;
 
 wa_exec_no_error(
@@ -733,12 +853,37 @@ db.dba.wa_exec_ddl ('create table WA_USER_SVC (
       )'
 );
 
+create procedure wa_facebook_upgrade() {
+
+  if (registry_get ('__wa_facebook_upgrade') = 'done')
+    return;
+
+  delete from DB.DBA.WA_USER_SVC where US_U_ID <> 0 and US_SVC = 'FBKey';
+  update DB.DBA.WA_USER_SVC set US_U_ID = http_dav_uid () where US_SVC = 'FBKey';
+
+  registry_set ('__wa_facebook_upgrade', 'done');
+}
+;
+
+wa_facebook_upgrade()
+;
+
 db.dba.wa_exec_ddl ('create table WA_RELATED_APPS (
       RA_ID int identity,
       RA_WAI_ID int,
       RA_URI  varchar,
       RA_LABEL  varchar,
       primary key (RA_WAI_ID, RA_ID)
+      )'
+);
+
+db.dba.wa_exec_ddl ('create table WA_PSH_SUBSCRIPTIONS (
+      PS_INST_ID int,
+      PS_URL varchar,
+      PS_HUB varchar,
+      PS_TS timestamp,
+      PS_STATE int default 0,
+      primary key (PS_INST_ID, PS_URL)
       )'
 );
 
@@ -1553,6 +1698,23 @@ create procedure wa_check_package (in pname varchar) -- Duplicate conductor proc
 ;
 
 
+create procedure wa_check_app (
+  in app_type varchar,
+  in user_id integer)
+{
+  return coalesce ((select top 1 WAI_ID from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = user_id and WAI_TYPE_NAME = app_type order by WAI_ID), 0);
+}
+;
+
+create procedure wa_check_owner_app (
+  in wad_type varchar,
+  in app_type varchar,
+  in user_id integer)
+{
+  return case when (wa_check_package (wad_type) and exists (select 1 from DB.DBA.WA_MEMBER where WAM_APP_TYPE = app_type and WAM_MEMBER_TYPE = 1 and WAM_USER = user_id)) then 1 else 0 end;
+}
+;
+
 create procedure wa_vad_check (in pname varchar)
 {
   declare nam varchar;
@@ -1759,15 +1921,6 @@ create procedure WA_GET_HOST()
   if (is_http_ctx ())
     {
       ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
-      if (isstring (ret) and strchr (ret, ':') is null)
-        {
-          declare hp varchar;
-          declare hpa any;
-          hp := sys_connected_server_address ();
-          hpa := split_and_decode (hp, 0, '\0\0:');
-	  if (hpa[1] <> '80')
-            ret := ret || ':' || hpa[1];
-        }
     }
   else
    {
@@ -1855,7 +2008,7 @@ create procedure WA_MAIL_TEMPLATES(in templ varchar,
 }
 ;
 
-
+-- /* imitialize server settings */
 create procedure INIT_SERVER_SETTINGS ()
 {
   declare cnt integer;
@@ -1873,6 +2026,12 @@ create procedure INIT_SERVER_SETTINGS ()
     insert soft WA_SETTINGS
   	  (
   	   WS_REGISTER,
+       WS_REGISTER_OPENID,
+       WS_REGISTER_FACEBOOK,
+       WS_REGISTER_TWITTER,
+       WS_REGISTER_LINKEDIN,
+       WS_REGISTER_SSL,
+       WS_REGISTER_AUTOMATIC_SSL,
   	   WS_MAIL_VERIFY,
   	   WS_REGISTRATION_EMAIL_EXPIRY,
   	   WS_JOIN_EXPIRY,
@@ -1885,10 +2044,17 @@ create procedure INIT_SERVER_SETTINGS ()
   	   WS_WELCOME_MESSAGE2,
   	   WS_COPYRIGHT,
   	   WS_DISCLAIMER,
-  	   WS_DEFAULT_MAIL_DOMAIN
+  	   WS_DEFAULT_MAIL_DOMAIN,
+	   WS_UNIQUE_MAIL
   	  )
 	  values
 	    (
+	     1,
+	     1,
+	     1,
+	     1,
+	     1,
+	     1,
 	     1,
 	     0,
 	     24,
@@ -1897,15 +2063,16 @@ create procedure INIT_SERVER_SETTINGS ()
 	     0,
 	     'default',
 	     '',
-	     'Enter your Member ID and Password',
+	     'Enter your User ID and Password',
 	     '',
 	     '',
-	     'Copyright &copy; 1998-2010 OpenLink Software',
+	     'Copyright &copy; 1998-2011 OpenLink Software',
 	     '',
-	     sys_stat ('st_host_name')
+	     sys_stat ('st_host_name'),
+	     1
 	    );
   }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2010 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2011 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
@@ -1952,6 +2119,24 @@ Collaborate with authoring information on Wikis, and much more!
 
 INIT_SERVER_SETTINGS ();
 
+create procedure wa_register_upgrade() {
+
+  if (registry_get ('__wa_register_upgrade') = 'done')
+    return;
+
+  update WA_SETTINGS
+  	 set WS_REGISTER_OPENID = 1,
+         WS_REGISTER_FACEBOOK = 1,
+         WS_REGISTER_SSL = 1,
+         WS_REGISTER_AUTOMATIC_SSL = 1;
+
+  registry_set ('__wa_register_upgrade', 'done');
+}
+;
+
+wa_register_upgrade()
+;
+
 create procedure WA_RETRIEVE_MESSAGE (in str any)
 {
   declare pos1, pos2 any;
@@ -1966,26 +2151,19 @@ create procedure WA_RETRIEVE_MESSAGE (in str any)
 create procedure WA_STATUS_NAME(in status int)
 {
   if (status = 1)
-  {
     return 'Application owner';
-  }
-  else if (status = 2)
-  {
+
+  if (status = 2)
     return 'Approved';
-  }
-  else if (status = 3)
-  {
+
+  if (status = 3)
     return 'Owner approval pending';
-  }
-  else if (status = 4)
-  {
+
+  if (status = 4)
     return 'User approval pending';
-  }
-  else
-  {
+
     return 'Invalid status';
   }
-}
 ;
 
 create procedure WA_USER_GET_OPTION(in _name varchar,in _key varchar)
@@ -3160,9 +3338,9 @@ wa_exec_no_error_log(
     WAUI_OPENID_URL varchar,
     WAUI_OPENID_SERVER varchar,
     WAUI_FACEBOOK_ID integer,
-    WAUI_FACEBOOK_LOGIN_ID varchar,
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
+    WAUI_SPB_ENABLE	int default 0,
     WAUI_NICK		varchar,
     WAUI_BICQ VARCHAR,                  -- 50
     WAUI_BSKYPE VARCHAR,                -- 51
@@ -3171,9 +3349,11 @@ wa_exec_no_error_log(
     WAUI_BMSN VARCHAR,                  -- 54
     WAUI_MESSAGING LONG VARCHAR,        -- 55
     WAUI_BMESSAGING LONG VARCHAR,       -- 56
-    WAUI_CERT_LOGIN integer default 0,
-    WAUI_CERT_FINGERPRINT varchar,
-    WAUI_CERT long varbinary,
+    WAUI_CERT_LOGIN integer default 0,  -- XXX: obsolete, see WA_USER_CERTS
+    WAUI_CERT_FINGERPRINT varchar,	-- same as above
+    WAUI_CERT long varbinary,		-- same as above
+    WAUI_ACL LONG VARCHAR,
+    WAUI_SALMON_KEY varchar, 
 
     primary key (WAUI_U_ID)
   )'
@@ -3224,27 +3404,10 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'long varbinary');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BPHONE_EXT', 'varchar(5)');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_HPHONE_EXT', 'varchar(5)');
 
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_ACL', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SALMON_KEY', 'VARCHAR');
+
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
-
-create procedure WA_USER_INFO_WAUI_CERT_UPGRADE ()
-{
-  if (registry_get ('__WA_USER_INFO_CERT_UPGRADE') = 'done-2')
-    return;
-  registry_set ('__WA_USER_INFO_CERT_UPGRADE', 'done-2');
-
-  for select U_ID,
-             WAUI_CERT
-        from SYS_USERS,
-             WA_USER_INFO
-      where WAUI_U_ID = U_ID and WAUI_CERT is not null do
-  {
-    update WA_USER_INFO
-       set WAUI_CERT_LOGIN = 0,
-           WAUI_CERT_FINGERPRINT = get_certificate_info (6, cast (WAUI_CERT as varchar))
-     where WAUI_U_ID = U_ID;
-  }
-};
-WA_USER_INFO_WAUI_CERT_UPGRADE ();
 
 create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
 {
@@ -3260,18 +3423,100 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INTEGER');
-wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_LOGIN_ID', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 0');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SPB_ENABLE', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_NICK', 'varchar');
 
 update DB.DBA.WA_USER_INFO set WAUI_IS_ORG = 0 where WAUI_IS_ORG is null;
 alter table DB.DBA.WA_USER_INFO modify column WAUI_APP_ENABLE integer default 0;
 update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 0 where WAUI_APP_ENABLE is null;
 
+alter table DB.DBA.WA_USER_INFO modify column WAUI_SPB_ENABLE integer default 0;
+update DB.DBA.WA_USER_INFO set WAUI_SPB_ENABLE = 0 where WAUI_SPB_ENABLE is null;
+
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 wa_exec_no_error('create index WA_USER_INFO_NICK on DB.DBA.WA_USER_INFO (WAUI_NICK)');
 
+create procedure WA_FACEBOOK_UPGRADE ()
+{
+  if (registry_get ('WA_FACEBOOK_UPGRADE') = 'done')
+    return;
+
+  wa_exec_no_error ('update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID = atoi (WAUI_FACEBOOK_LOGIN_ID) where coalesce (WAUI_FACEBOOK_ID, 0) = 0');
+
+  registry_set ('WA_FACEBOOK_UPGRADE', 'done');
+}
+;
+WA_FACEBOOK_UPGRADE ()
+;
+
+DB.DBA.EXEC_STMT (
+'create table WA_USER_CERTS (
+  UC_ID   	int identity,
+  UC_U_ID 	int,
+  UC_CERT 	long varchar,
+  UC_FINGERPRINT varchar,
+  UC_LOGIN	int default 0,
+  UC_TS		datetime,
+  primary key (UC_U_ID, UC_FINGERPRINT)
+  )
+create unique index WA_USER_CERTS_FINGERPRINT on WA_USER_CERTS (UC_FINGERPRINT)
+', 
+0);
+
+wa_add_col ('DB.DBA.WA_USER_CERTS', 'UC_TS', 'datetime');
+
+create procedure WA_CERTS_UPGRADE ()
+{
+  if (registry_get ('WA_CERTS_UPGRADE') = '1')
+    return;
+  
+  for select WAUI_U_ID, WAUI_CERT, WAUI_CERT_FINGERPRINT, WAUI_CERT_LOGIN 
+    from WA_USER_INFO where WAUI_CERT is not null do
+      {
+	if (WAUI_CERT_FINGERPRINT is null)
+	  WAUI_CERT_FINGERPRINT := get_certificate_info (2, cast (WAUI_CERT as varchar), 0, '');
+	if (WAUI_CERT_FINGERPRINT is not null and not exists (select 1 from WA_USER_CERTS where UC_FINGERPRINT = WAUI_CERT_FINGERPRINT))
+	  {  
+   insert soft WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+		values (WAUI_U_ID, WAUI_CERT, WAUI_CERT_FINGERPRINT, WAUI_CERT_LOGIN);
+	  }
+	else
+	  {
+	    log_message (sprintf ('Cannot upgrade certificate for user %d', WAUI_U_ID));
+	  }
+      }
+   --update WA_USER_INFO set WAUI_CERT = null, WAUI_CERT_FINGERPRINT = null, WAUI_CERT_LOGIN = 0 
+   --    where WAUI_CERT is not null;
+  registry_set ('WA_CERTS_UPGRADE', '1');  
+}
+;
+
+WA_CERTS_UPGRADE ();
+
+create procedure ODS..cert_date_to_ts (in x varchar)
+{
+  declare a any;
+  declare exit handler for sqlstate '*'
+    {
+      return null;
+    };
+  a := sprintf_inverse (x, '%s %s %s %s %s', 0);
+  return http_string_date (sprintf ('Wdy, %s %s %s %s %s', a[1], a[0], a[3], a[2], a[4]));
+}
+;
+
+create procedure WA_CERTS_UPGRADE ()
+{
+  if (registry_get ('WA_CERTS_UPGRADE2') = '1')
+    return;
+  update WA_USER_CERTS set UC_TS = ODS..cert_date_to_ts (get_certificate_info (4,UC_CERT));
+  registry_set ('WA_CERTS_UPGRADE2', '1');
+}
+;
+
+WA_CERTS_UPGRADE ();
 
 create procedure WA_MAKE_NICK (in nick varchar)
 {
@@ -3290,7 +3535,7 @@ create procedure WA_MAKE_NICK (in nick varchar)
       i := i + 1;
       nick := nick || cast (i as varchar);
     }
-  return nick;
+  return subseq (nick, 0, 20);
 }
 ;
 
@@ -3450,23 +3695,53 @@ wa_exec_no_error_log(
       WUO_TYPE varchar,
       WUO_NAME varchar,
       WUO_URL varchar,
+      WUO_URI varchar,
       WUO_PUBLIC integer default 0,
+      WUO_OAUTH_SID varchar default null,
       primary key (WUO_U_ID, WUO_ID)
       )'
 )
 ;
 
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_TYPE', 'varchar');
+wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_URI', 'varchar');
+wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_OAUTH_SID', 'varchar');
+
+wa_exec_no_error_log('ALTER TABLE DB.DBA.WA_USER_OL_ACCOUNTS ADD FOREIGN KEY (WUO_U_ID) REFERENCES DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
 
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 {
   if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP') = 'done')
     return;
-  update WA_USER_OL_ACCOUNTS set WUO_TYPE = 'P' where WUO_TYPE is null;
   registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP', 'done');
+
+  update WA_USER_OL_ACCOUNTS set WUO_TYPE = 'P' where WUO_TYPE is null;
+};
+WA_USER_OL_ACCOUNTS_SET_UP ();
+
+create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
+{
+  if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP2') = 'done')
+    return;
+  registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP2', 'done');
+
+  update WA_USER_OL_ACCOUNTS set WUO_URI = ODS.ODS_API."user.onlineAccounts.uri"(WUO_URL) where WUO_URI is null;
 };
 
-WA_USER_OL_ACCOUNTS_SET_UP ();
+create procedure WA_USER_OL_ACCOUNTS_UPGRADE ()
+{
+  if (exists (select 1 from SYS_KEYS where KEY_NAME = 'WA_USER_OL_ACCOUNTS_URL'))
+    return;
+  if (exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS group by WUO_URL having count(*) > 1))
+    {
+      log_message ('Duplicate online account URL');
+      return;
+    }
+  wa_exec_no_error_log ('create unique index WA_USER_OL_ACCOUNTS_URL on DB.DBA.WA_USER_OL_ACCOUNTS (WUO_URL)');
+}
+;
+
+WA_USER_OL_ACCOUNTS_UPGRADE ();
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_RELATED_RES (
@@ -3569,7 +3844,9 @@ wa_exec_no_error_log(
     'CREATE TABLE WA_USER_OFFERLIST
      (
       WUOL_ID integer identity,
-      WUOL_U_ID int,
+      WUOL_U_ID integer,
+      WUOL_TYPE char(1) default \'1\',
+      WUOL_FLAG char(1) default \'1\',
       WUOL_OFFER varchar,
       WUOL_COMMENT long varchar,
       WUOL_PROPERTIES long varchar,
@@ -3577,7 +3854,20 @@ wa_exec_no_error_log(
       primary key (WUOL_ID)
      )'
 );
-wa_exec_no_error('create unique index WA_USER_OFFERLIST_USER on WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER)');
+wa_add_col('DB.DBA.WA_USER_OFFERLIST', 'WUOL_FLAG', 'char(1) default \'1\'');
+wa_add_col('DB.DBA.WA_USER_OFFERLIST', 'WUOL_TYPE', 'char(1) default \'1\'');
+wa_exec_no_error('drop index WA_USER_OFFERLIST_USER');
+wa_exec_no_error('create unique index WA_USER_OFFERLIST_USER on WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_OFFER)');
+
+alter table DB.DBA.WA_USER_OFFERLIST modify column WUOL_FLAG char(1) default '1';
+alter table DB.DBA.WA_USER_OFFERLIST modify column WUOL_TYPE char(1) default '1';
+update DB.DBA.WA_USER_OFFERLIST set WUOL_FLAG = '1' where WUOL_FLAG is null;
+update DB.DBA.WA_USER_OFFERLIST set WUOL_TYPE = '1' where WUOL_TYPE is null;
+
+wa_exec_no_error('DROP TRIGGER DB.DBA.WA_USER_WISHLIST_SIOC_I');
+wa_exec_no_error('DROP TRIGGER DB.DBA.WA_USER_WISHLIST_SIOC_U');
+wa_exec_no_error('DROP TRIGGER DB.DBA.WA_USER_WISHLIST_SIOC_D');
+
 
 create procedure wa_offerlist_upgrade()
 {
@@ -3599,41 +3889,47 @@ create procedure wa_offerlist_upgrade()
 ;
 wa_offerlist_upgrade();
 
-wa_exec_no_error_log (
-    'CREATE TABLE WA_USER_WISHLIST
-     (
-      WUWL_ID integer identity,
-      WUWL_U_ID int,
-      WUWL_BARTER varchar,
-      WUWL_PROPERTY varchar,
-      WUWL_COMMENT long varchar,
-      WUWL_PROPERTIES long varchar,
-
-      primary key (WUWL_ID)
-     )'
-);
-wa_add_col ('DB.DBA.WA_USER_WISHLIST', 'WUWL_PROPERTIES', 'long varchar');
-wa_exec_no_error('create unique index WA_USER_WISHLIST_USER on WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER)');
-
-create procedure wa_wishlist_upgrade()
+create procedure wa_offerlist_upgrade()
 {
-  declare id integer;
-  declare obj any;
-
-  if (registry_get ('__wa_wishlist_upgrade') = 'done')
+  if (registry_get ('__wa_offerlist_upgrade2') = 'done')
     return;
-  registry_set ('__wa_wishlist_upgrade', 'done');
+  registry_set ('__wa_offerlist_upgrade2', 'done');
 
-  for (select WUWL_ID, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST) do
-  {
-    id := WUWL_ID;
-    obj := grUpdate (WUWL_PROPERTIES);
-    obj := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('version', '1.0', 'products', obj));
-    update DB.DBA.WA_USER_WISHLIST set WUWL_PROPERTIES = serialize (obj) where WUWL_ID = id;
-  }
+  wa_exec_no_error('insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES) select WUWL_U_ID, \'2\', WUWL_FLAG, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST');
 }
 ;
-wa_wishlist_upgrade();
+wa_offerlist_upgrade();
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_LIKES (
+      WUL_ID integer identity,
+      WUL_U_ID integer,
+      WUL_FLAG char(1),
+      WUL_TYPE varchar,
+      WUL_URI varchar,
+      WUL_NAME varchar,
+      WUL_COMMENT long varchar,
+      WUL_PROPERTIES long varchar,
+
+      primary key (WUL_ID)
+     )'
+);
+wa_add_col ('DB.DBA.WA_USER_LIKES', 'WUL_FLAG', 'char(1)');
+wa_exec_no_error('create unique index WA_USER_LIKES_USER on WA_USER_LIKES (WUL_U_ID, WUL_NAME)');
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_KNOWS (
+      WUK_ID int identity,
+      WUK_U_ID integer NOT NULL,
+      WUK_FLAG char(1) default \'1\',
+      WUK_LABEL varchar,
+      WUK_URI varchar NOT NULL,
+      primary key (WUK_ID)
+     )'
+)
+;
+wa_exec_no_error_log ('create unique index WA_USER_KNOWS_USER on DB.DBA.WA_USER_KNOWS (WUK_U_ID, WUK_URI)');
+
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_BIOEVENTS (
@@ -3652,6 +3948,7 @@ wa_exec_no_error_log(
     'CREATE TABLE WA_USER_FAVORITES (
       WUF_ID integer identity,
       WUF_U_ID integer,
+      WUF_FLAG char(1),
       WUF_TYPE varchar,
       WUF_CLASS varchar,
       WUF_PROPERTIES long varchar,
@@ -3664,6 +3961,7 @@ wa_exec_no_error_log(
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_TYPE', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_CLASS', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_PROPERTIES', 'long varchar');
+wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_FLAG', 'char(1)');
 wa_exec_no_error('create index WA_USER_FAVORITES_USER on WA_USER_FAVORITES (WUF_U_ID)');
 
 create procedure wa_favorites_upgrade()
@@ -3729,6 +4027,20 @@ create procedure wa_favorites_upgrade2()
 }
 ;
 wa_favorites_upgrade2();
+
+create procedure wa_favorites_upgrade3()
+{
+  if (registry_get ('__wa_favorites_upgrade3') = 'done')
+    return;
+  registry_set ('__wa_favorites_upgrade3', 'done');
+
+  delete
+    from DB.DBA.WA_USER_FAVORITES
+   where WUF_TYPE <> 'http://rdfs.org/sioc/ns#'
+     and WUF_CLASS <> 'sioc:Item';
+}
+;
+wa_favorites_upgrade3();
 
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
 {
@@ -3956,14 +4268,17 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_OPENID_SERVER = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_FACEBOOK_ID')
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
-  else if (_key = 'WAUI_FACEBOOK_LOGIN_ID')
-    UPDATE WA_USER_INFO SET WAUI_FACEBOOK_LOGIN_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_SPB_ENABLE')
+    UPDATE WA_USER_INFO SET WAUI_SPB_ENABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT_LOGIN')
     UPDATE WA_USER_INFO SET WAUI_CERT_LOGIN = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT')
     UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
+
+  else if (_key = 'WAUI_ACL')
+    UPDATE WA_USER_INFO SET WAUI_ACL = _data WHERE WAUI_U_ID = _uid;
 
   return row_count ();
 
@@ -4265,6 +4580,12 @@ create procedure WA_USER_APP_ENABLE (in user_id integer)
 }
 ;
 
+create procedure WA_USER_SPB_ENABLE (in user_id integer)
+{
+  return coalesce ((select WAUI_SPB_ENABLE from WA_USER_INFO WHERE WAUI_U_ID = user_id), 0);
+}
+;
+
 create procedure WA_USER_TAG_SET (in owner_uid any, in tagee_uid integer, in tags varchar)
 {
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_ID = owner_uid))
@@ -4423,6 +4744,168 @@ create procedure WA_USER_IS_TAGGED (in uid integer, in tagee integer)
 
 }
 ;
+
+create procedure WA_CLEAR (
+  in S any)
+{
+  return substring(S, 1, coalesce (strstr(S, '<>'), length (S)));
+}
+;
+
+create procedure WA_VALIDATE (
+  in value any,
+  in params any := null)
+{
+  declare valueType, valueClass, valueName, valueMessage, tmp any;
+
+  declare exit handler for SQLSTATE '*' {
+    if (not is_empty_or_null(valueMessage))
+      signal ('TEST', valueMessage);
+    if (__SQL_STATE = 'EMPTY')
+      signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
+    if (__SQL_STATE = 'CLASS') {
+      if (valueType in ('free-text', 'tags')) {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
+      } else {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
+      }
+    }
+    if (__SQL_STATE = 'TYPE')
+      signal ('TEST', sprintf('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
+    if (__SQL_STATE = 'MIN')
+      signal ('TEST', sprintf('''%s'' value should be greater than %s!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MAX')
+      signal ('TEST', sprintf('''%s'' value should be less than %s!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MINLENGTH')
+      signal ('TEST', sprintf('The length of field ''%s'' should be greater than %s characters!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MAXLENGTH')
+      signal ('TEST', sprintf('The length of field ''%s'' should be less than %s characters!<>', valueName, cast (tmp as varchar)));
+    signal ('TEST', 'Unknown validation error!<>');
+    --resignal;
+  };
+
+  value := trim(value);
+  if (is_empty_or_null(params))
+    return value;
+
+  valueClass := coalesce (get_keyword ('class', params), get_keyword ('type', params));
+  valueType := coalesce (get_keyword ('type', params), get_keyword ('class', params));
+  valueName := get_keyword ('name', params, 'Field');
+  valueMessage := get_keyword ('message', params, '');
+  tmp := get_keyword ('canEmpty', params);
+  if (isnull (tmp))
+  {
+    if (not isnull (get_keyword ('minValue', params))) {
+      tmp := 0;
+    } else if (get_keyword ('minLength', params, 0) <> 0) {
+      tmp := 0;
+    }
+  }
+  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null(value)) {
+    signal('EMPTY', '');
+  } else if (is_empty_or_null(value)) {
+    return value;
+  }
+
+  value := WA_VALIDATE2 (valueClass, value);
+
+  if (valueType = 'integer') {
+    tmp := get_keyword ('minValue', params);
+    if ((not isnull (tmp)) and (value < tmp))
+      signal('MIN', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxValue', params);
+    if (not isnull (tmp) and (value > tmp))
+      signal('MAX', cast (tmp as varchar));
+
+  } else if (valueType = 'float') {
+    tmp := get_keyword ('minValue', params);
+    if (not isnull (tmp) and (value < tmp))
+      signal('MIN', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxValue', params);
+    if (not isnull (tmp) and (value > tmp))
+      signal('MAX', cast (tmp as varchar));
+
+  } else if (valueType = 'varchar') {
+    tmp := get_keyword ('minLength', params);
+    if (not isnull (tmp) and (length (value) < tmp))
+      signal('MINLENGTH', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxLength', params);
+    if (not isnull (tmp) and (length (value) > tmp))
+      signal('MAXLENGTH', cast (tmp as varchar));
+  }
+  return value;
+}
+;
+
+create procedure WA_VALIDATE2 (
+  in propertyType varchar,
+  in propertyValue varchar)
+{
+  declare exit handler for SQLSTATE '*' {
+    if (__SQL_STATE = 'CLASS')
+      resignal;
+    signal('TYPE', propertyType);
+    return;
+  };
+
+  if (propertyType = 'boolean') {
+    if (propertyValue not in ('Yes', 'No'))
+      goto _error;
+  } else if (propertyType = 'integer') {
+    if (isnull (regexp_match('^[0-9]+\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as integer);
+  } else if (propertyType = 'float') {
+    if (isnull (regexp_match('^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as float);
+  } else if (propertyType = 'dateTime') {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+      if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+        goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'dateTime2') {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'date') {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'date2') {
+    if (isnull (regexp_match('^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'time') {
+    if (isnull (regexp_match('^([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as time);
+  } else if (propertyType = 'folder') {
+    if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
+      goto _error;
+  } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+      goto _error;
+  } else if (propertyType = 'email') {
+    if (isnull (regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
+      goto _error;
+  } else if (propertyType = 'free-text') {
+    if (length (propertyValue))
+      vt_parse(propertyValue);
+  } else if (propertyType = 'tags') {
+    -- if (not ODRIVE.WA.validate_tags(propertyValue))
+      goto _error;
+  }
+  return propertyValue;
+
+_error:
+  signal('CLASS', propertyType);
+}
+;
+
 
 create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any, in own integer, in umode integer default 0)
 {
@@ -5242,7 +5725,32 @@ create procedure wa_wa_member_upgrade ()
 }
 ;
 
+create procedure WA_FOAF_UPGRADE ()
+{
+  declare tmp, access, uname, visibility any;
 
+  if (registry_get ('WA_FOAF_UPGRADE') = 'done')
+    return;
+
+  for (select WAUI_U_ID, WAUI_FOAF from DB.DBA.WA_USER_INFO) do
+  {
+
+  	 uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
+     visibility := WA_USER_VISIBILITY (uname);
+     access := visibility[8];
+     tmp := '';
+     for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = WAUI_FOAF) do
+     {
+        tmp := tmp || interest || ';' || cast (access as varchar) || '\n';
+     }
+     WA_USER_EDIT (uname, 'WAUI_FOAF', tmp);
+  }
+
+  registry_set ('WA_FOAF_UPGRADE', 'done');
+}
+;
+WA_FOAF_UPGRADE ()
+;
 
 create procedure wa_get_new_url (in app_type varchar, in asid varchar, in arealm varchar)
 {
@@ -5310,8 +5818,8 @@ create procedure wa_get_type_from_name (in _name varchar)
   return 0;
 }
 ;
-
-wa_wa_member_upgrade ();
+wa_wa_member_upgrade ()
+;
 
 create procedure wa_keywords_sift (inout pKW any, in pSiftList any,in pPrefix any,in pOut integer := 0)
 {
@@ -6392,7 +6900,7 @@ create procedure wa_make_url_from_vd (in host varchar, in lhost varchar, in path
 
 -- NEW version of this procedure is stored in ods_api.sql and is called ODS_CREATE_NEW_APP_INST. The new version is exposed to SOAP.
 create procedure
-WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 0, in pub int := 1)
+WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 1, in pub int := 0)
 {
   declare inst web_app;
   declare ty, h, id any;
@@ -6836,12 +7344,7 @@ WA_UPGRADE_USER_SVC ()
 
 create procedure http_s ()
 {
-
-  if(is_https_ctx ())
-     return 'https://';
-  else
-     return 'http://';
-
+  return case when (is_https_ctx ()) then 'https://' else 'http://' end;
 }
 ;
 
@@ -6884,7 +7387,7 @@ create procedure  ods_bar_css (in img_path varchar) {
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
     1,
-    '/~(.*)',
+    '^/~(.*)',
     vector('uname'),
     1,
     '/home/%s',
@@ -6902,7 +7405,20 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_public_home_rule',
     null, null, 2, null, 'MS-Author-Via: DAV'
     );
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_root_rule', 1,
+      '/\x24',
+      vector (),
+      0,
+      '/index.html',
+      vector (),
+      NULL, NULL, 2, 0,
+      'Link: <^{DynamicLocalFormat}^/sparql?default-graph-uri=^{DynamicLocalFormat}^/dataspace>;'||
+      ' title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint"'
+      );
+
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule', 'ods_root_rule'));
 
 
 create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)
@@ -6928,25 +7444,145 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users',
       ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
 
+  -- JS & HTML
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_javascript_users_rule',
+      1,
+      '/javascript/users',
+      vector('dummy'),
+      0,
+      '/javascript/users/users.html',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_javascript_users_rule2',
+      1,
+      '/javascript/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/javascript/users/users.html?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_javascript_users_list', 1, vector('ods_javascript_users_rule', 'ods_javascript_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/javascript/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/javascript/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.html', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_javascript_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- PHP
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_php_users_rule',
+      1,
+      '/php/users',
+      vector('dummy'),
+      0,
+      '/php/users/users.php',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_php_users_rule2',
+      1,
+      '/php/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/php/users/users.php?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_php_users_list', 1, vector('ods_php_users_rule', 'ods_php_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/php/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/php/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.php', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_php_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- JSP
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_jsp_users_rule',
+      1,
+      '/jsp/users',
+      vector('dummy'),
+      0,
+      '/jsp/users/users.jsp',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_jsp_users_rule2',
+      1,
+      '/jsp/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/jsp/users/users.jsp?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_jsp_users_list', 1, vector('ods_jsp_users_rule', 'ods_jsp_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/jsp/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/jsp/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'http://localhost:8080/users/jsp', def_page=>'users.jsp', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_jsp_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- Ruby
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_ruby_users_rule',
+      1,
+      '/ruby/users',
+      vector('dummy'),
+      0,
+      '/ruby/users/users.rb',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_ruby_users_rule2',
+      1,
+      '/ruby/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/ruby/users/users.rb?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_ruby_users_list', 1, vector('ods_ruby_users_rule', 'ods_ruby_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ruby/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ruby/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.rb', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_ruby_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- VSP
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_vsp_users_rule',
+      1,
+      '/vsp/users',
+      vector('dummy'),
+      0,
+      '/vsp/users/users.vsp',
+      vector(),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+      'ods_vsp_users_rule2',
+      1,
+      '/vsp/users/~([^/#\\?]*)',
+      vector('user'),
+      1,
+      '/vsp/users/users.vsp?userName=%U',
+      vector('user'),
+      NULL,
+      NULL,
+      2);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_vsp_users_list', 1, vector('ods_vsp_users_rule', 'ods_vsp_users_rule2'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users',
-      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', def_page=>'users.vsp', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_vsp_users_list'), sec=>_sec, auth_opts=>_opts);
 
   -- RDF folder
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf');
@@ -6988,6 +7624,10 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/ods/api');
   DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/ods/api', 
       ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'), sec=>_sec, auth_opts=>_opts);
+
+  DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/about');
+  DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'), sec=>_sec, auth_opts=>_opts);
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {
@@ -7385,4 +8025,158 @@ create procedure virt_proxy_init_about_1 ()
 ;
 
 virt_proxy_init_about_1 ()
+;
+
+create procedure PSH.DBA.odscb (
+    in mode varchar,
+    in topic varchar, 		-- feed URI
+    in challenge varchar,
+    in lease_seconds int, 	--
+    in verify_token varchar := null,
+    in inst varchar := null
+    )
+{
+  declare cbk, tp varchar;
+  tp := (select WAI_TYPE_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst); 
+  cbk := sprintf ('PSH.DBA.ods_%s_psh_cbk', DB.DBA.wa_type_to_app (tp));
+  return PSH..callback (mode, topic, challenge, lease_seconds, verify_token, cbk, inst);
+}
+;
+
+create procedure PSH.DBA.ods_cli_subscribe (in inst_id int, in hub varchar, in mode varchar, in topic varchar)
+{
+  declare token, subsu, callback, head, ret varchar;
+  if (__proc_exists ('PSH.DBA.cli_subscribe') is null)
+    signal ('42000', 'The PubSubHub package is not installed');
+
+  if (hub is not null)
+    {
+      token := md5 (uuid ());
+      callback := sprintf ('http://%s/psh/odscb.vsp?inst=%d', WA_GET_HOST (), inst_id);
+      PSH..cli_subscribe ('dba', mode, topic, 'feed', null, token);
+      subsu := sprintf ('%s?hub.callback=%U&hub.mode=%U&hub.topic=%U&hub.verify=sync&hub.verify_token=%U', hub, callback, mode, topic, token);
+      commit work;	     
+      ret := http_get (subsu, head);
+      if (head[0] not like 'HTTP/1._ 20_ %')
+	{
+	  signal ('39000', 'The Hub rejects subscription request, please verify you are allowed to use it.');
+	}
+    }
+  if (mode = 'subscribe')
+    insert replacing DB.DBA.WA_PSH_SUBSCRIPTIONS (PS_INST_ID, PS_HUB, PS_URL) values (inst_id, hub, topic);
+  else
+    delete from DB.DBA.WA_PSH_SUBSCRIPTIONS where PS_INST_ID = inst_id and PS_URL = topic;
+  commit work;	     
+}
+;
+
+create procedure ods_uri_curie (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch, nsPrefix, ret varchar;
+
+  delim := -1;
+  uriSearch := uri;
+  nsPrefix := null;
+  ret := uri;  
+  while (nsPrefix is null and delim <> 0)
+    {
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
+      			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
+      uriSearch := subseq (uriSearch, 0, delim);
+    }
+  if (nsPrefix is not null)
+    {
+      declare rhs varchar;
+      rhs := subseq(uri, length (uriSearch) + 1, null);
+      if (not length (rhs))
+	ret := uri;
+      else
+	ret := nsPrefix || ':' || rhs;
+    }
+  declare _s varchar;
+  declare _h int; 
+
+  _s := trim(ret);
+
+  if (length(_s) <= 80) return _s;
+  _h := floor ((80-3) / 2);
+  _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+
+  return _s;
+}
+;
+
+create procedure ods_user_keys (in username varchar)
+{
+  declare xenc_name, xenc_type varchar;
+  declare arr any;
+  result_names (xenc_name, xenc_type);
+  if (not exists (select 1 from SYS_USERS where U_NAME = username))
+    return;
+  arr := USER_GET_OPTION (username, 'KEYS');
+  for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
+    {
+      if (length (arr[i]))
+        result (arr[i], arr[i+1][0]);
+    }
+}
+;
+
+create procedure wa_show_column_header (
+  in columnLabel varchar,
+  in columnName varchar,
+  in sortOrder varchar,
+  in sortDirection varchar := 'asc',
+  in columnProperties varchar := '')
+{
+  declare class, image, onclick any;
+
+  image := '';
+  onclick := sprintf ('onclick="javascript: odsPost(this, [\'sortColumn\', \'%s\']);"', columnName);
+  if (sortOrder = columnName)
+  {
+    if (sortDirection = 'desc')
+    {
+      image := '&nbsp;<img src="/ods/images/icons/orderdown_16.png" border="0" alt="Down"/>';
+    }
+    else if (sortDirection = 'asc')
+    {
+      image := '&nbsp;<img src="/ods/images/icons/orderup_16.png" border="0" alt="Up"/>';
+    }
+  }
+  return sprintf ('<th %s %s>%s%s</th>', columnProperties, onclick, columnLabel, image);
+}
+;
+
+create procedure wa_webid_users (
+  in user_id integer)
+{
+  declare S, st, msg, meta, rows any;
+  declare c1, c2, c3 varchar;
+
+  result_names (c1, c2, c3);
+  for (select 'Person' F1, SIOC..person_iri (SIOC..user_iri (U_ID)) F2, '' F3
+         from DB.DBA.SYS_USERS
+        where U_IS_ROLE = 0 and U_DAV_ENABLE = 1 and U_ACCOUNT_DISABLED = 0) do
+  {
+    result (F1, F2, F3);
+  }
+  if (DB.DBA.wa_check_app ('AddressBook', user_id))
+  {
+    S := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1', user_id);
+    st := '00000';
+    exec (S, st, msg, vector(), 0, meta, rows);
+    if (st = '00000')
+    {
+      foreach (any row in rows) do
+      {
+        result (row[0], row[1], row[2]);
+      }
+    }
+  }
+}
 ;

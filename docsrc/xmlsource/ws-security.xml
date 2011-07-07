@@ -148,8 +148,8 @@ a secure SSL/TLS connection to minimize the risk of vulnerability. </para></note
 
 <sect3 id="vwsskeydefpersist"><title>Key Definition &amp; Persistence</title>
 
-<link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3DES_rand_create()</function></link>
-<link linkend="fn_USER_KEY_LOAD"><function>USER_KEY_LOAD()</function></link>
+<para><link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3DES_rand_create()</function></link></para>
+<para><link linkend="fn_USER_KEY_LOAD"><function>USER_KEY_LOAD()</function></link></para>
 </sect3>
 
 <sect3 id="vwsskeyenc"><title>Key Encryption</title>

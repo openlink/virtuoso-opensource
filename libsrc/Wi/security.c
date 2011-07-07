@@ -101,7 +101,7 @@ bif_user_t_arg_int (caddr_t uid_or_uname, int nth, const char *func, int flags, 
     u = sec_name_to_user (uid_or_uname);
   else
     u = sec_id_to_user ((oid_t) unbox(uid_or_uname));
-  if (0 == (flags & (USER_SHOULD_EXIST | USER_SHOULD_BE_SQL_ENABLED | USER_SHOULD_BE_DAV_ENABLED)))
+  if (0 == (flags & (USER_SHOULD_EXIST | USER_SHOULD_BE_LOGIN_ENABLED | USER_SHOULD_BE_SQL_ENABLED | USER_SHOULD_BE_DAV_ENABLED)))
     return u;
   if (NULL == u)
     {
@@ -129,14 +129,14 @@ bif_user_t_arg_int (caddr_t uid_or_uname, int nth, const char *func, int flags, 
     }
   if ((USER_NOBODY_IS_PERMITTED & flags) && (U_ID_NOBODY == uid))
     return u;
-  if (u->usr_disabled)
-    {
      if ((USER_SPARQL_IS_PERMITTED & flags) && !strcmp (u->usr_name, "SPARQL"))
        return u;
+  if ((USER_SHOULD_BE_LOGIN_ENABLED & flags) && u->usr_disabled)
+    {
       switch (error_level) { case 0: goto ret_null; case 1: goto generic_error; }
       sqlr_new_error ("22023", "SR614",
-          "Function %s needs a valid user ID in argument %d, "
-          "but the passed UID %ld (\"%.200s\") belongs to a disabled user",
+          "Function %s needs an ID of a user with enabled login in argument %d, "
+          "but the passed UID %ld (\"%.200s\") belongs to a user with the login disabled",
       func, nth + 1, (long)uid, u->usr_name);
     }
   if ((USER_SHOULD_BE_SQL_ENABLED & flags) && !(u->usr_is_sql))
@@ -1783,8 +1783,8 @@ sec_read_users (void)
       sec_user_by_id = hash_table_allocate (101);
 
       read_users_qr = sql_compile_static (
-	  "select U_NAME, U_PASSWORD, U_GROUP, U_ID, U_DATA, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_IS_ROLE "
-	  "from SYS_USERS where U_SQL_ENABLE = 1", cli, &err, 0);
+	  "select U_NAME, U_PASSWORD, U_GROUP, U_ID, U_DATA, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_IS_ROLE, U_DAV_ENABLE "
+	  "from SYS_USERS", cli, &err, 0);
       PRINT_ERR(err);
 
       read_grants_qr = sql_compile_static (
@@ -1877,6 +1877,11 @@ sec_read_users (void)
       caddr_t name = lc_nth_col (lc, 0);
       caddr_t pass = lc_nth_col (lc, 1);
       int disabled = (int) unbox (lc_nth_col (lc, 5));
+      int is_sql = (int) unbox (lc_nth_col (lc, 6));
+      int is_role = (int) unbox (lc_nth_col (lc, 7));
+      int is_dav = (int) unbox (lc_nth_col (lc, 8));
+      if (is_dav && !is_sql) /* disable web accounts for SQL/ODBC login */
+	disabled = 1;
       if (!DV_STRINGP (pass))
 	{
 	  pass = box_string ("");
@@ -1903,8 +1908,8 @@ sec_read_users (void)
 	  (oid_t) unbox (lc_nth_col (lc, 2)),
 	  (oid_t) unbox (lc_nth_col (lc, 3)),
 	  disabled,
-	  (int) unbox (lc_nth_col (lc, 6)),
-	  (int) unbox (lc_nth_col (lc, 7)));
+	  is_sql,
+	  is_role);
       sec_set_user_data (name, lc_nth_col (lc, 4));
       sec_user_read_groups (name);
     }

@@ -601,28 +601,20 @@ create function WV.WIKI.MACRO_SEARCH (inout _data varchar, inout _context any, i
       vt_batch_feed (vt, exp, 0, 0, 'x-ViDoc');
       war := vt_batch_strings_array (vt);
       m := length (war);
-      n := 0;
-      while (n < m)
+    for (n := 0; n < m; n := n + 2)
         {
-	  declare word1 varchar;
 	  if (war[n] <> 'AND' and war[n] <> 'NOT' and war[n] <> 'NEAR' and war[n] <> 'OR' and length (war[n]) > 1 and not vt_is_noise (war[n], 'utf-8', 'x-ViDoc'))
-	    {
-	      word1 := war[n];
-	      hit_words := vector_concat (hit_words, vector (word1));
-	    }
-	  n := n + 2;
+        hit_words := vector_concat (hit_words, vector (war[n]));
 	}
 end_parse:
       declare site_cr cursor for select RES_ID, U_NAME, RES_NAME, length (RES_CONTENT) as RES_LEN, WV.WIKI.DATEFORMAT(RES_CR_TIME) as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH
                             from WS.WS.SYS_DAV_RES, DB.DBA.SYS_USERS
-                            where
-                             contains (RES_CONTENT, concat ('[__lang ''x-ViDoc''] ',exp1))
+                                where contains (RES_CONTENT, concat ('[__lang ''x-ViDoc''] ',exp1))
                              and RES_FULL_PATH like searchPath || '%.txt'
 			     and U_ID = RES_OWNER;
       declare cluster_cr cursor for select RES_ID, U_NAME, RES_NAME, length (RES_CONTENT) as RES_LEN, WV.WIKI.DATEFORMAT(RES_CR_TIME) as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH
                             from WS.WS.SYS_DAV_RES, DB.DBA.SYS_USERS
-                            where
-                             contains (RES_CONTENT, concat ('[__lang ''x-ViDoc''] ',exp1))
+                                   where contains (RES_CONTENT, concat ('[__lang ''x-ViDoc''] ',exp1))
                              and RES_FULL_PATH like searchPath || '%.txt'
 			     and U_ID = RES_OWNER
 			     and RES_COL = _cluster_col_id;
@@ -644,7 +636,7 @@ whenever sqlstate '37000' goto failed;
 			<th align="left" width="10%">Size</th>
 			<th align="left" width="10%">Owner</th>
 			<th align="left" width="10%">Date</th></tr>', _ctx);
- 	while (1=1) {
+    while (1) {
 	  if (_cluster_search = 1)
 		fetch cluster_cr into _res_id, _u_name, _res_name, _res_len, _cr_time, _perms, _full_path;
 	  else

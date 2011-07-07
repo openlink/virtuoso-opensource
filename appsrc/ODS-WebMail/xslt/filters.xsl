@@ -28,7 +28,8 @@
 
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="filters.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/filters.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:apply-templates select="filters"/>
       <xsl:apply-templates select="filter[@type='edit']"/>
@@ -173,10 +174,10 @@
 	    </tr>
 	    <tr>
 	      <td colspan="2">
-		      <input name="search_seqNo" id="search_seqNo" type="hidden">
-		      	<xsl:attribute name="value"><xsl:value-of select="count(criteria/entry)" /></xsl:attribute>
-     		  </input>
-		      <table id="searchProperties" class="form-list" style="width: 100%;" cellspacing="0">
+		      <table style="width: 100%;" cellspacing="0">
+		        <tr>
+		          <td width="100%">
+      		      <table id="search_tbl" class="form-list" style="width: 100%;" cellspacing="0">
 		        <thead>
 		          <tr>
 		            <th id="search_th_0" width="33%">Field</th>
@@ -186,30 +187,36 @@
 		          </tr>
 		        </thead>
 		        <tbody id="search_tbody">
-		          <tr id="search_tr">
-		            <td colspan="4">
-		              <hr />
-		            </td>
+      		          <tr id="search_tr_no">
+      		            <td colspan="3">No Criteria</td>
 		          </tr>
 		    		    <script type="text/javascript">
 						      <xsl:for-each select="criteria/entry">
-		                OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.searchRowCreate('<xsl:value-of select="@ID" />', {field_0:'<xsl:value-of select="@field" />', field_1:'<xsl:value-of select="@criteria" />', field_2:'<xsl:value-of select="." />'});});
+      					        OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("search", null, {fld_1: {mode: 40, value: "<xsl:value-of select="@field" />"}, fld_2: {mode: 41, value: "<xsl:value-of select="@criteria" />"}, fld_3: {mode: 42, value: "<xsl:value-of select="." />"}});});
 		    		      </xsl:for-each>
-                  OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.searchRowCreate('<xsl:value-of select="count(criteria/entry)" />');});
 		    		    </script>
 		        </tbody>
 		      </table>
 	      </td>
+      	      <td nowrap="nowrap" valign="top">
+    	          <span class="button pointer">
+    	            <xsl:attribute name="onclick">javascript: TBL.createRow('search', null, {fld_1: {mode: 40}, fld_2: {mode: 41}, fld_3: {mode: 42}});</xsl:attribute>
+                  <img border="0" title="Add Criteria" alt="Add Criteria" class="button" src="/ods/images/icons/add_16.png" /> Add
+    	          </span>
+      	      </td>
+     	      </tr>
+     	    </table>
+     	  </td>
 	    </tr>
 	    <tr>
         <th colspan="2" style="background-color: #EAEAEE; text-align: center;">Actions</th>
 	    </tr>
 	    <tr>
 	      <td colspan="2">
-		      <input name="action_seqNo" id="action_seqNo" type="hidden">
-		      	<xsl:attribute name="value"><xsl:value-of select="count(actions/entry)" /></xsl:attribute>
-     		  </input>
-		      <table id="actionProperties" class="form-list" style="width: 100%;" cellspacing="0">
+		      <table style="width: 100%;" cellspacing="0">
+		        <tr>
+		          <td width="100%">
+      		      <table id="action_tbl" class="form-list" style="width: 100%;" cellspacing="0">
 		        <thead>
 		          <tr>
 		            <th id="action_th_0" width="50%">Action</th>
@@ -218,20 +225,26 @@
 		          </tr>
 		        </thead>
 		        <tbody id="action_tbody">
-		          <tr id="action_tr">
-		            <td colspan="3">
-		              <hr />
-		            </td>
+      		          <tr id="action_tr_no">
+      		            <td colspan="3">No Actions</td>
 		          </tr>
 		    		    <script type="text/javascript">
 						      <xsl:for-each select="actions/entry">
-		                OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.actionRowCreate('<xsl:value-of select="@ID" />', {field_0:'<xsl:value-of select="@action" />', field_1:'<xsl:value-of select="." />'});});
+      	                OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow('action', null, {fld_1: {mode: 45, value: '<xsl:value-of select="@action" />'}, fld_2: {mode:46, value: '<xsl:value-of select="." />'}});});
 		    		      </xsl:for-each>
-                  OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.actionRowCreate('<xsl:value-of select="count(actions/entry)" />');});
 		    		    </script>
 		        </tbody>
 		      </table>
 	      </td>
+      	      <td nowrap="nowrap" valign="top">
+    	          <span class="button pointer">
+    	            <xsl:attribute name="onclick">javascript: TBL.createRow('action', null, {fld_1: {mode: 45}, fld_2: {mode: 46}});</xsl:attribute>
+                  <img border="0" title="Add Action" alt="Add Action" class="button" src="/ods/images/icons/add_16.png" /> Add
+    	          </span>
+      	      </td>
+     	      </tr>
+     	    </table>
+     	  </td>
 	    </tr>
       <tfoot>
         <tr>

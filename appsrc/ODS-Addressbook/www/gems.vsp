@@ -25,8 +25,7 @@
   set http_charset = 'utf-8';
 
   declare _domain_id, _user_id, _authorized integer;
-  declare _params, _gems, _user, _password, _role varchar;
-  declare _authorizeVector any;
+  declare _params, _gems, _user varchar;
 
   _domain_id := AB.WA.session_domain (params);
   if (_domain_id > 0)
@@ -35,31 +34,9 @@
     if (not _authorized)
     {
       _authorized := 1;
-      _authorizeVector := DB.DBA.vsp_auth_vec (http_request_header());
-      if (_authorizeVector = 0)
-      {
-        _authorized := 0;
-      } else {
-        if (get_keyword ('authtype', _authorizeVector) <> 'basic')
-        {
-          _authorized := 0;
-        } else {
-          _user := get_keyword ('username', _authorizeVector, '');
-          _password := get_keyword ('pass', _authorizeVector, '');
-          if (not DB.DBA.web_user_password_check (_user, _password))
-          {
-            _authorized := 0;
-          } else {
-            _user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
-            _role := AB.WA.access_role (_domain_id, _user_id);
-            if (_role not in ('admin', 'owner'))
-            {
+      if (not ODS..ods_check_auth (_user, _domain_id, 'reader'))
               _authorized := 0;
             }
-          }
-        }
-      }
-    }
     http_rewrite ();
     if (not _authorized)
     {
@@ -69,9 +46,7 @@
     }
     else
     {
-      declare exit handler for sqlstate '*' {
-        return;
-      };
+      declare exit handler for sqlstate '*' { return;};
 
       _gems := get_keyword('type', params);
       if (_gems = 'AddressBook.ics')
@@ -80,9 +55,9 @@
         http_header ('Content-Type: application/x-download\r\nContent-Disposition: inline; filename="AddressBook.ics"\r\n');
         http (AB.WA.export_vcal (_domain_id));
       }
-      if (_gems in ('AddressBook.rss', 'AddressBook.atom', 'AddressBook.rdf', 'AddressBook.comment'))
+      else if (_gems in ('AddressBook.rss', 'AddressBook.atom', 'AddressBook.rdf', 'AddressBook.comment'))
       {
-        declare _result, _path, _content, _type, _xslt any;
+        declare _header, _links, _result, _path, _content, _type, _xslt any;
 
         _user_id := AB.WA.domain_owner_id (_domain_id);
         _path := AB.WA.dav_home (_user_id) || 'Gems/' || AB.WA.domain_name (_domain_id) || '/' || _gems;
@@ -91,9 +66,8 @@
         DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (_path, 'R'), _content, _type, 0, 0);
         _params := null;
         if (get_keyword (':id', params, '') <> '')
-        {
           _params := vector (':id', get_keyword (':id', params));
-        }
+
         xml_template (xml_tree_doc (xml_tree (_content)), _params, _result);
         _result := xml_tree_doc (xml_tree (string_output_string (_result)));
         if (_gems in ('AddressBook.atom', 'AddressBook.rdf'))
@@ -112,9 +86,15 @@
           }
           _result := xslt (_xslt, _result);
         }
-
+        _header := case when (_gems like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        if (_gems in ('AddressBook.rss', 'AddressBook.atom'))
+        {
+          _links := ODS..PSH_HEADER_LINKS (_domain_id);
+          if (length (_links))
+            _header := _header || sprintf ('Link: %s\r\n', _links);
+        }
         http_request_status ('HTTP/1.1 200 OK');
-        http_header ('Content-Type: text/xml\r\n');
+        http_header (_header);
         http_value (_result);
       }
     }

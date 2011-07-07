@@ -708,13 +708,122 @@ create aggregate DB.DBA.XMLAGG (in _child any) returns any
 
 create aggregate DB.DBA.VECTOR_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
+order
+;
+
+create aggregate DB.DBA.VECTOR_OF_NONNULLS_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vectorbld_agg_final
+order
+;
+
+create aggregate DB.DBA.VECTOR_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vector_or_null_bld_agg_final
+order
+;
+
+create aggregate DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vector_or_null_bld_agg_final
+order
 ;
 
 create aggregate DB.DBA.VECTOR_CONCAT_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_concat_agg_acc, vectorbld_agg_final
+order
 ;
 
 create aggregate DB.DBA.XQ_SEQUENCE_AGG (in _child any) returns any
   from xq_sequencebld_init, xq_sequencebld_agg_acc, xq_sequencebld_agg_final
+order
 ;
 
+-- same as vector aggregates but they do not force query to produce deterministic result order
+create aggregate DB.DBA.BAG_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
+;
+
+create aggregate DB.DBA.BAG_OF_NONNULLS_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vectorbld_agg_final
+;
+
+create aggregate DB.DBA.BAG_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vector_or_null_bld_agg_final
+;
+
+create aggregate DB.DBA.BAG_OF_NONNULLS_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vector_or_null_bld_agg_final
+;
+
+create aggregate DB.DBA.BAG_CONCAT_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_concat_agg_acc, vectorbld_agg_final
+;
+
+
+--!AWK PUBLIC
+create procedure GROUP_CONCAT_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
+{
+--  if (185 <> __tag (_env))
+--    _env := string_output();
+--  else if (delim is not null)
+--    http (cast (delim as varchar), _env);
+--  http (cast (token as varchar), _env);
+  if (__tag of varchar <> __tag (_env))
+    _env := cast (token as varchar);
+  else if (delim is not null)
+    _env := concat (_env, cast (delim as varchar), cast (token as varchar));
+  else
+    _env := concat (_env, cast (token as varchar));
+}
+;
+
+--!AWK PUBLIC
+create procedure GROUP_CONCAT_FIN (inout _env any)
+{
+--  if (185 <> __tag (_env))
+--    return '';
+--  return string_output_string (_env);
+  if (__tag of varchar <> __tag (_env))
+    return '';
+  return _env;
+}
+;
+
+create aggregate DB.DBA.GROUP_CONCAT (in token varchar, in delim varchar) returns varchar
+  from DB.DBA.GROUP_CONCAT_INIT, DB.DBA.GROUP_CONCAT_ACC, DB.DBA.GROUP_CONCAT_FIN
+order
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.SAMPLE_INIT (inout _env any)
+{
+  _env := null;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SAMPLE_ACC (inout _env any, in sample any)
+{
+  if (_env is not null)
+    return;
+  _env := sample;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SAMPLE_FIN (inout _env any)
+{
+  return _env;
+}
+;
+
+create aggregate DB.DBA.SAMPLE (in sample any) returns any
+  from DB.DBA.SAMPLE_INIT, DB.DBA.SAMPLE_ACC, DB.DBA.SAMPLE_FIN
+order
+;

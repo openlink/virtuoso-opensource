@@ -62,13 +62,6 @@ static struct numeric_s _num_10	= { 2, 0, 0, 0, { 1, 0	}};	/* 10 */
 #define NUM_SET_1(N)		memcpy (N, &_num_1, sizeof (_num_1))
 #define NUM_SET_10(N)		memcpy (N, &_num_10, sizeof (_num_10))
 
-#define num_is_zero(N)		((N)->n_len + (N)->n_scale == 0)
-#define num_is_invalid(N)	((N)->n_invalid)
-#define num_is_nan(N)		((N)->n_invalid & NDF_NAN)
-#define num_is_inf(N)		((N)->n_invalid & NDF_INF)
-#define num_is_plus_inf(N)	(num_is_inf (N) && (N)->n_neg == 0)
-#define num_is_minus_inf(N)	(num_is_inf (N) && (N)->n_neg == 1)
-
 #ifdef NUMERIC_DEBUG
 # define num_warn(X)	puts(X)
 #else
@@ -81,15 +74,6 @@ static struct numeric_s _num_10	= { 2, 0, 0, 0, { 1, 0	}};	/* 10 */
 #define NDV_FLAGS	2	/* flags, see below */
 #define NDV_L		3	/* #bytes encoding number before . */
 #define NDV_DATA	4	/* bcd */
-
-/* flags in marshalled number */
-#define NDF_INF		0x10	/* Inf */
-#define NDF_NAN		0x08	/* NaN */
-#define NDF_LEAD0	0x04	/* Leading 0 */
-#define NDF_TRAIL0	0x02	/* Trailing 0 */
-#define NDF_NEG		0x01	/* Negative */
-
-#define is_dv_negative(X)	((X)[NDV_FLAGS] & NDF_NEG)
 
 #ifndef TRUE
 # define TRUE		1
@@ -1270,6 +1254,14 @@ DBG_NAME(t_numeric_allocate) (DBG_PARAMS_0)
 }
 
 
+numeric_t
+mp_numeric_allocate (mem_pool_t * mp)
+{
+  return (numeric_t) mp_alloc_box (mp, sizeof (struct numeric_s)
+				    + NUMERIC_MAX_DATA_BYTES - NUMERIC_PADDING, DV_NUMERIC);
+}
+
+
 /*
  *  Destructor for a number
  */
@@ -1494,7 +1486,7 @@ numeric_error (int code, char *sqlstate, int state_len, char *sqlerror, int erro
 int
 numeric_from_string (numeric_t n, const char *s)
 {
-  const char *cp;
+  const char *cp=s;
   const char *dot;
   char *dp;
   int error;
@@ -1505,8 +1497,12 @@ numeric_from_string (numeric_t n, const char *s)
   int rc;
 
   /* strip leading whitespace */
-  for (cp = s; isspace (*cp) || *cp == '$'; cp++)
-    ;
+  while (isspace (*cp)) cp++;
+  if ('$' == *cp)
+    {
+      cp++;
+      while (isspace (*cp)) cp++;
+    }
 
   /* get sign */
   if (*cp == '-')
@@ -1522,7 +1518,7 @@ numeric_from_string (numeric_t n, const char *s)
     }
 
   /* accept space between the sign & the digits - as M$ SQL does */
-  while (*cp && isspace (*cp))
+  while (isspace (*cp))
     cp++;
 
   /* handles cases for numeric_from_double */
@@ -1654,6 +1650,57 @@ numeric_from_string (numeric_t n, const char *s)
     }
 
   return (error == NUMERIC_STS_SUCCESS) ? rc : error;
+}
+
+
+/*
+ *  Returns NULL if numeric_from_string would return an error, first significant char of the string otherwise
+ */
+const char *
+numeric_from_string_is_ok (const char *s)
+{
+  const char *cp = s;
+  const char *first_significant_char;
+  int plain_digits = 0;
+  /* strip leading whitespace */
+  while (isspace (cp[0])) cp++;
+  if ('$' == cp[0])
+    {
+      cp++;
+      while (isspace (cp[0])) cp++;
+    }
+  first_significant_char = cp;
+  /* get sign */
+  if ((cp[0] == '-')|| (cp[0] == '+'))
+    cp++;
+  /* accept space between the sign & the digits - as M$ SQL does */
+  while (isspace (cp[0]))
+    cp++;
+  /* handles cases for numeric_from_double */
+  if (!isdigit (cp[0]) && (!strcmp (cp, "Inf") || !strcmp (cp, "Infinity") || !strcmp (cp, "NaN")))
+    return first_significant_char;
+  while (isdigit (cp[0])) { plain_digits++; cp++; }
+  if (cp[0] == '.')
+    {
+      cp++;
+      while (isdigit (cp[0])) { plain_digits++; cp++; }
+    }
+  if (0 == plain_digits)
+    return NULL;
+  if (('E' == cp[0]) || ('e' == cp[0]))
+    {
+      int exp_digits = 0;
+      cp++;
+      if ((cp[0] == '-')|| (cp[0] == '+'))
+        cp++;
+      while (isdigit (cp[0])) { exp_digits++; cp++; }
+      if (!exp_digits)
+        return NULL;
+    }
+  while (isspace (cp[0])) cp++;
+  if (cp[0])
+    return NULL;
+  return first_significant_char;
 }
 
 

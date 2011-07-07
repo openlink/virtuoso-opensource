@@ -20,10 +20,25 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function AddAdr(obj,addr)
 {
 	fld = eval('document.f1.'+ obj.name);
-	if (obj.checked == true) {
+  if (obj.checked) {
 		if (fld.value.indexOf('~no name~') != -1)
 			fld.value = '';
   	if (fld.value.length != 0)
@@ -346,14 +361,17 @@ function coloriseRow(obj, checked) {
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
-function windowShow(sPage, width, height)
-{
+function windowShow(sPage, sPageName, width, height) {
   if (width == null)
-    width = 500;
+		width = 700;
   if (height == null)
-    height = 420;
-  sPage = sPage + '&return=F1&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+		height = 500;
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  sPage += '&return=F1' + urlParam('sid') + urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
 
@@ -430,14 +448,44 @@ function addChecked (objForm, objName, selectionMsq)
 
 function davBrowse (fld)
 {
-  var options = { mode: 'browser',
-                  onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
+  var options = {
+    mode: 'browser',
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
   OAT.WebDav.open(options);
 }
 
-var OMAIL = new Object();
+function accountChange (obj)
+{
+  if (obj.name == 'type') {
+    if (obj.value == 'pop3') {
+      $('connect_type').value = 'none';
+      $('port').value = '110';
+      $('folder_id').value = '100';
 
+      $('connect_type').disabled = false;
+      $('folder_id').disabled = false;
+    }
+    if (obj.value == 'imap') {
+      $('connect_type').value = 'none';
+      $('port').value = '143';
+      $('folder_id').value = '0';
+
+      $('connect_type').disabled = true;
+      $('folder_id').disabled = true;
+    }
+  }
+  if (obj.name == 'connect_type') {
+    if (obj.value == 'ssl') {
+      $('port').value = '995';
+    }
+    if (obj.value == 'none') {
+      $('port').value = '110';
+    }
+  }
+}
+
+var OMAIL = new Object();
 OMAIL.forms = new Object();
 
 OMAIL.trim = function (sString, sChar)
@@ -446,17 +494,14 @@ OMAIL.trim = function (sString, sChar)
   if (sString)
 {
   if (sChar == null)
-    {
     sChar = ' ';
-    }
+
   while (sString.substring(0,1) == sChar)
-    {
     sString = sString.substring(1, sString.length);
-    }
+
   while (sString.substring(sString.length-1, sString.length) == sChar)
-    {
     sString = sString.substring(0,sString.length-1);
-    }
+
   }
   return sString;
 }
@@ -466,10 +511,8 @@ OMAIL.enableRadioGroup = function (cell)
   var c = $(cell);
   var r = document.forms['f1'].elements[cell+'_radio'];
   for (var i = 0; i < r.length; i = i + 1)
-  {
     r[i].disabled = !c.checked;
   }
-}
 
 OMAIL.toggleCell = function (cell)
 {
@@ -614,454 +657,26 @@ OMAIL.formParams = function (doc)
   return S;
 }
 
-OMAIL.searchRowAction = function (rowID)
-{
-  var tbody = $('search_tbody');
-  if (tbody)
-  {
-    var seqNo = parseInt($v('search_seqNo'));
-    if (seqNo == rowID)
-    {
-      var img = $('search_img_3_' + seqNo);
-      if (img)
-        img.src = '/oMail/i/del_16.png';
-      OAT.Dom.unlink('search_tr');
-      var tr = OAT.Dom.create('tr');
-      tr.id = 'search_tr';
-      var td = OAT.Dom.create('td');
-      td.colSpan = '6';
-      td.appendChild(OAT.Dom.create('hr'));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-
-      seqNo++;
-      $('search_seqNo').value = seqNo;
-      OMAIL.searchRowCreate(seqNo);
-    }
-    else
-    {
-      OAT.Dom.unlink('search_tr_'+rowID);
-    }
-  }
-}
-
-OMAIL.searchRowCreate = function (rowID, values)
-{
-  var tbody = $('search_tbody');
-  if (tbody)
-  {
-    var seqNo = parseInt($v('search_seqNo'));
-    var tr = OAT.Dom.create('tr');
-    tr.id = 'search_tr_' + rowID;
-    if (seqNo != rowID)
-    {
-      tr_line = $('search_tr');
-      tbody.insertBefore(tr, tr_line);
-    }
-    else
-    {
-      tbody.appendChild(tr);
-    }
-    if (!values)
-      values = new Object();
-
-    var td = OAT.Dom.create('td');
-    td.id = 'search_td_0_' + rowID;
-    tr.appendChild(td);
-    OMAIL.searchColumnCreate(rowID, 0, values['field_0']);
-
-    var td = OAT.Dom.create('td');
-    td.id = 'search_td_1_' + rowID;
-    tr.appendChild(td);
-    if (values['field_1'])
-      OMAIL.searchColumnCreate(rowID, 1, values['field_1']);
-
-    var td = OAT.Dom.create('td');
-    td.id = 'search_td_2_' + rowID;
-    tr.appendChild(td);
-    if (values['field_2'])
-      OMAIL.searchColumnCreate(rowID, 2, values['field_2']);
-
-    var td = OAT.Dom.create('td');
-    td.id = 'search_td_3_' + rowID;
-    var imgSrc = (seqNo != rowID)? '/oMail/i/del_16.png': '/oMail/i/add_16.png';
-    var img = OAT.Dom.image(imgSrc);
-    img.id = 'search_img_3_' + rowID;
-    img.onclick = function (){OMAIL.searchRowAction(rowID)};
-    td.appendChild(img);
-    tr.appendChild(td);
-  }
-}
-
-OMAIL.searchColumnsInit = function (rowID, columnNo)
-{
-  var tr = $('search_tr_' + rowID);
-  if (tr)
-  {
-    var tds = tr.getElementsByTagName("td");
-    for (var i = columnNo; i < tds.length-1; i++)
-    {
-      tds[i].innerHTML = '';
-    }
-    if (columnNo == 0)
-    {
-      OMAIL.searchColumnCreate(rowID, columnNo)
-    }
-  }
-}
-
-OMAIL.searchColumnCreate = function (rowID, columnNo, columnValue)
-{
-  var tr = $('search_tr_' + rowID);
-  if (tr)
-  {
-    var td = $('search_td_' + columnNo + '_' + rowID);
-    if (td)
-    {
-      var predicate = OMAIL.searchGetPredicate(rowID);
-      if (columnNo == 0)
+OMAIL.searchGetPredicate = function (No)
       {
-        var field = OAT.Dom.create('select');
-        field.id = 'search_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '95%';
-        OAT.Dom.option('', '', field);
-        for (var i = 0; i < OMAIL.searchPredicates.length; i = i + 2)
-        {
-          if (OMAIL.searchPredicates[i+1][0] == 1)
-          {
-            OAT.Dom.option(OMAIL.searchPredicates[i+1][1], OMAIL.searchPredicates[i], field);
-          }
-        }
-        if (columnValue)
-          field.value = columnValue;
-        field.onchange = function(){OMAIL.searchColumnChange(this)};
-        td.appendChild(field);
-      }
-      if (predicate && (columnNo == 1))
-      {
-        var field = OAT.Dom.create('select');
-        field.id = 'search_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '95%';
-        OAT.Dom.option('', '', field);
-        var predicateType = predicate[2];
-        for (var i = 0; i < OMAIL.searchCompares.length; i = i + 2)
-        {
-          var compareTypes = OMAIL.searchCompares[i+1][1];
-          for (var j = 0; j < compareTypes.length; j++)
-          {
-            if (compareTypes[j] == predicateType)
-            {
-              OAT.Dom.option(OMAIL.searchCompares[i+1][0], OMAIL.searchCompares[i], field);
-            }
-          }
-        }
-        if (columnValue)
-          field.value = columnValue;
-        field.onchange = function(){OMAIL.searchColumnChange(this)};
-        td.appendChild(field);
-      }
-      if (predicate && (columnNo == 2))
-      {
-        var fieldCompare = $('search_field_1_' + rowID);
-        if (!fieldCompare) {return;}
-        var compare;
-        for (var i = 0; i < OMAIL.searchCompares.length; i = i + 2)
-        {
-          if (OMAIL.searchCompares[i] == fieldCompare.value)
-          {
-            compare = OMAIL.searchCompares[i+1];
-          }
-        }
-        if (!compare) {return;}
-        if (compare[2] == 0) {return;}
-        if (predicate[2] == 'priority')
-        {
-          var field = OAT.Dom.create("select");
-          OAT.Dom.option('Normal', '3', field);
-          OAT.Dom.option('Lowest', '5', field);
-          OAT.Dom.option('Low', '4', field);
-          OAT.Dom.option('High', '2', field);
-          OAT.Dom.option('Highest', '1', field);
-        }
-        else
-        {
-          var field = OAT.Dom.create("input");
-          field.type = 'text';
-        }
-        field.id = 'search_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '93%';
-        if (columnValue)
-          field.value = columnValue;
-        td.appendChild(field);
-
-        for (var i = 0; i < predicate[4].length; i = i + 2)
-        {
-          if (predicate[4][i] == 'size')
-          {
-            field['size'] = predicate[4][i+1];
-            field.style.width = null;
-          }
-          if (predicate[4][i] == 'onclick')
-          {
-            OAT.Event.attach(field, "click", new Function((predicate[4][i+1]).replace(/-FIELD-/g, field.id)));
-          }
-          if (predicate[4][i] == 'button')
-          {
-            var span = OAT.Dom.create("span");
-            span.innerHTML = ' ' + (predicate[4][i+1]).replace(/-FIELD-/g, field.id);
-            td.appendChild(span);
-          }
-        }
-      }
-    }
-  }
-}
-
-OMAIL.searchColumnChange = function (obj)
-{
-  var parts = obj.id.split('_');
-  var columnNo = parseInt(parts[2]);
-  var rowID = parts[3];
-  var predicate = OMAIL.searchGetPredicate(rowID);
-  if (columnNo == 0)
-  {
-    OMAIL.searchColumnsInit(rowID, 1);
-    if (obj.value == '') {return;}
-    if (predicate) {OMAIL.searchColumnCreate(rowID, 1);}
-  }
-  if (columnNo == 1)
-  {
-    OMAIL.searchColumnsInit(rowID, 2);
-    if (obj.value == '') {return;}
-    if (predicate) {OMAIL.searchColumnCreate(rowID, 2);}
-  }
-}
-
-OMAIL.searchGetPredicate = function (rowID)
-{
-  var field = $('search_field_0_' + rowID)
-  if (field)
-  {
-    for (var i = 0; i < OMAIL.searchPredicates.length; i = i + 2)
-    {
-      if (OMAIL.searchPredicates[i] == field.value)
-      {
+  var fld = $('search_fld_1_' + No)
+  if (fld) {
+    for (var i = 0; i < OMAIL.searchPredicates.length; i += 2) {
+      if (OMAIL.searchPredicates[i] == fld.value)
         return OMAIL.searchPredicates[i+1];
       }
     }
-  }
   return null;
 }
 
-OMAIL.searchGetCompares = function (predicate)
+OMAIL.actionGetPredicate = function (No)
 {
-  if (predicate)
-  {
-  }
-  return null;
-}
-
-OMAIL.actionRowAction = function (rowID)
-{
-  var tbody = $('action_tbody');
-  if (tbody)
-  {
-    var seqNo = parseInt($v('action_seqNo'));
-    if (seqNo == rowID)
-    {
-      var img = $('action_img_2_' + seqNo);
-      if (img)
-        img.src = '/oMail/i/del_16.png';
-      OAT.Dom.unlink('action_tr');
-      var tr = OAT.Dom.create('tr');
-      tr.id = 'action_tr';
-      var td = OAT.Dom.create('td');
-      td.colSpan = '6';
-      td.appendChild(OAT.Dom.create('hr'));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-
-      seqNo++;
-      $('action_seqNo').value = seqNo;
-      OMAIL.actionRowCreate(seqNo);
-    }
-    else
-    {
-      OAT.Dom.unlink('action_tr_'+rowID);
-    }
-  }
-}
-
-OMAIL.actionRowCreate = function (rowID, values)
-{
-  var tbody = $('action_tbody');
-  if (tbody)
-  {
-    var seqNo = parseInt($v('action_seqNo'));
-    var tr = OAT.Dom.create('tr');
-    tr.id = 'action_tr_' + rowID;
-    if (seqNo != rowID)
-    {
-      tr_line = $('action_tr');
-      tbody.insertBefore(tr, tr_line);
-    }
-    else
-    {
-      tbody.appendChild(tr);
-    }
-    if (!values)
-      values = new Object();
-
-    var td = OAT.Dom.create('td');
-    td.id = 'action_td_0_' + rowID;
-    tr.appendChild(td);
-    OMAIL.actionColumnCreate(rowID, 0, values['field_0']);
-
-    var td = OAT.Dom.create('td');
-    td.id = 'action_td_1_' + rowID;
-    tr.appendChild(td);
-    if (values['field_1'])
-      OMAIL.actionColumnCreate(rowID, 1, values['field_1']);
-
-    var td = OAT.Dom.create('td');
-    td.id = 'action_td_2_' + rowID;
-    var imgSrc = (seqNo != rowID)? '/oMail/i/del_16.png': '/oMail/i/add_16.png';
-    var img = OAT.Dom.image(imgSrc);
-    img.id = 'action_img_2_' + rowID;
-    img.onclick = function (){OMAIL.actionRowAction(rowID)};
-    td.appendChild(img);
-    tr.appendChild(td);
-  }
-}
-
-OMAIL.actionColumnsInit = function (rowID, columnNo)
-{
-  var tr = $('action_tr_' + rowID);
-  if (tr)
-  {
-    var tds = tr.getElementsByTagName("td");
-    for (var i = columnNo; i < tds.length-1; i++)
-    {
-      tds[i].innerHTML = '';
-    }
-    if (columnNo == 0)
-    {
-      OMAIL.actionColumnCreate(rowID, columnNo)
-    }
-  }
-}
-
-OMAIL.actionColumnCreate = function (rowID, columnNo, columnValue)
-{
-  var tr = $('action_tr_' + rowID);
-  if (tr)
-  {
-    var td = $('action_td_' + columnNo + '_' + rowID);
-    if (td)
-    {
-      var predicate = OMAIL.actionGetPredicate(rowID);
-      if (columnNo == 0)
-      {
-        var field = OAT.Dom.create('select');
-        field.id = 'action_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '95%';
-        OAT.Dom.option('', '', field);
-        for (var i = 0; i < OMAIL.searchActions.length; i = i + 2)
-        {
-          if (OMAIL.searchActions[i+1][0] == 1)
-          {
-            OAT.Dom.option(OMAIL.searchActions[i+1][1], OMAIL.searchActions[i], field);
-          }
-        }
-        if (columnValue)
-          field.value = columnValue;
-        field.onchange = function(){OMAIL.actionColumnChange(this)};
-        td.appendChild(field);
-      }
-      if (columnNo == 1)
-      {
-        var value_0 = $v('action_field_0_' + rowID);
-        if (value_0 && (value_0 != ''))
-        {
-          var fieldParams;
-          for (var i = 0; i < OMAIL.searchActions.length; i = i + 2)
-          {
-            if ((OMAIL.searchActions[i] == value_0) && (OMAIL.searchActions[i+1][0] == 1))
-            {
-              fieldParams = OMAIL.searchActions[i+1];
-            }
-          }
-          if (fieldParams)
-          {
-            if (fieldParams[2])
-            {
-              if (fieldParams[2] == 'input')
-              {
-                var field = OAT.Dom.create("input");
-                field.type = 'text';
-              }
-              else if (fieldParams[2] == 'select')
-              {
-                var field = OAT.Dom.create("select");
-                if (fieldParams[3] == 'folder')
-                {
-                  for (var i = 0; i < OMAIL.searchFolders.length; i = i + 2)
-                  {
-                    OAT.Dom.option(OMAIL.searchFolders[i+1], OMAIL.searchFolders[i], field);
-                  }
-                }
-                else if (fieldParams[3] == 'priority')
-                {
-                  OAT.Dom.option('Normal', '3', field);
-                  OAT.Dom.option('Lowest', '5', field);
-                  OAT.Dom.option('Low', '4', field);
-                  OAT.Dom.option('High', '2', field);
-                  OAT.Dom.option('Highest', '1', field);
-                }
-              }
-              field.id = 'action_field_' + columnNo + '_' + rowID;
-              field.name = field.id;
-              field.style.width = '93%';
-              if (columnValue)
-                field.value = columnValue;
-              td.appendChild(field);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-OMAIL.actionColumnChange = function (obj)
-{
-  var parts = obj.id.split('_');
-  var columnNo = parseInt(parts[2]);
-  var rowID = parts[3];
-  var predicate = OMAIL.actionGetPredicate(rowID);
-  if (columnNo == 0)
-  {
-    OMAIL.actionColumnsInit(rowID, 1);
-    if (obj.value == '') {return;}
-  }
-  if (predicate)
-  {
-    OMAIL.actionColumnCreate(rowID, 1)
-  }
-}
-
-OMAIL.actionGetPredicate = function (rowID)
-{
-  var field = $('action_field_0_' + rowID)
-  if (field)
+  var fld = $('action_fld_1_' + No)
+  if (fld)
   {
     for (var i = 0; i < OMAIL.searchActions.length; i = i + 2)
     {
-      if (OMAIL.searchActions[i] == field.value)
+      if (OMAIL.searchActions[i] == fld.value)
       {
         return OMAIL.searchActions[i+1];
       }
@@ -1074,9 +689,13 @@ OMAIL.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
   if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
-  aboutDialog = new OAT.Dialog('About ODS Webmail', aboutDiv, {width:430, buttons: 0, resize:0, modal:1});
+  aboutDialog = new OAT.Dialog('About ODS Webmail', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {

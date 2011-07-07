@@ -79,6 +79,21 @@ create procedure ODS.ODS_API.addressbook_type_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API.addressbook_edit_update (
+  in id integer,
+  in domain_id integer,
+  in pName varchar,
+  in pValue any)
+{
+  if (isnull (pValue))
+    return;
+
+  AB.WA.contact_update2 (id, domain_id, pName, pValue);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."addressbook.search" (
   in inst_id integer,
 	in keywords any := null,
@@ -99,6 +114,10 @@ create procedure ODS.ODS_API."addressbook.search" (
 
 	if (not ods_check_auth (uname, inst_id, 'author'))
 		return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
 	account_id := AB.WA.domain_owner_id (inst_id);
 
   data := vector ();
@@ -155,6 +174,9 @@ create procedure ODS.ODS_API."addressbook.get" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
 	ods_describe_iri (SIOC..addressbook_contact_iri (inst_id, contact_id));
 	return '';
 }
@@ -178,6 +200,7 @@ create procedure ODS.ODS_API."addressbook.new" (
   in foaf varchar := null,
 	in photo varchar := null,
 	in interests varchar := null,
+  in relationships varchar := null,
   in mail varchar := null,
   in web varchar := null,
   in icq varchar := null,
@@ -231,6 +254,10 @@ create procedure ODS.ODS_API."addressbook.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
+  tags := coalesce (tags, '');
   rc := AB.WA.contact_update (
           -1,
           inst_id,
@@ -248,6 +275,7 @@ create procedure ODS.ODS_API."addressbook.new" (
           foaf,
 					photo,
 					interests,
+          relationships,
           mail,
           web,
           icq,
@@ -311,6 +339,7 @@ create procedure ODS.ODS_API."addressbook.edit" (
   in foaf varchar := null,
 	in photo varchar := null,
 	in interests varchar := null,
+  in relationships varchar := null,
   in mail varchar := null,
   in web varchar := null,
   in icq varchar := null,
@@ -368,65 +397,63 @@ create procedure ODS.ODS_API."addressbook.edit" (
 
   if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  rc := AB.WA.contact_update (
-          contact_id,
-          inst_id,
-          category_id,
-          kind,
-          name,
-          title,
-          fName,
-          mName,
-          lName,
-          fullName,
-          gender,
-          birthday,
-          iri,
-          foaf,
-					photo,
-					interests,
-          mail,
-          web,
-          icq,
-          skype,
-          aim,
-          yahoo,
-          msn,
-          hCountry,
-          hState,
-          hCity,
-          hCode,
-          hAddress1,
-          hAddress2,
-          hTzone,
-          hLat,
-          hLng,
-          hPhone,
-          hMobile,
-          hFax,
-          hMail,
-          hWeb,
-          bCountry,
-          bState,
-          bCity,
-          bCode,
-          bAddress1,
-          bAddress2,
-          bTzone,
-          bLat,
-          bLng,
-          bPhone,
-          bMobile,
-          bFax,
-          bIndustry,
-          bOrganization,
-          bDepartment,
-          bJob,
-          bMail,
-          bWeb,
-          tags);
 
-  return ods_serialize_int_res (rc);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_KIND', kind);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_NAME', name);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_TITLE', title);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_FIRST_NAME', fName);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_MIDDLE_NAME', mName);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_LAST_NAME', lName);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_FULL_NAME', fullName);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_GENDER', gender);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_BIRTHDAY', birthday);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_IRI', iri);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_FOAF', foaf);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_PHOTO', photo);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_INTERESTS', interests);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_RELATIONSHIPS', relationships);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_MAIL', mail);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_WEB', web);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_ICQ', icq);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_SKYPE', skype);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_AIM', aim);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_YAHOO', yahoo);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_MSN', msn);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_ADDRESS1', hAddress1);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_ADDRESS2', hAddress2);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_CODE', hCode);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_CITY', hCity);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_STATE', hState);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_COUNTRY', hCountry);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_TZONE', hTzone);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_LAT', hLat);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_LNG', hLng);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_PHONE', hPhone);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_MOBILE', hMobile);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_FAX', hFax);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_MAIL', hMail);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_H_WEB', hWeb);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_ADDRESS1', bAddress1);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_ADDRESS2', bAddress2);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_CODE', bCode);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_CITY', bCity);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_STATE', bState);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_COUNTRY', bCountry);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_TZONE', bTzone);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_LAT', bLat);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_LNG', bLng);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_PHONE', bPhone);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_MOBILE', bMobile);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_FAX', bFax);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_INDUSTRY', bIndustry);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_ORGANIZATION', bOrganization);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_DEPARTMENT', bDepartment);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_JOB', bJob);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_MAIL', bMail);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_B_WEB', bWeb);
+  ODS.ODS_API.addressbook_edit_update (contact_id, inst_id, 'P_TAGS', tags);
+
+	return ods_serialize_int_res (contact_id);
 }
 ;
 
@@ -578,16 +605,21 @@ create procedure ODS.ODS_API."addressbook.import" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (lcase(sourceType) = 'string')
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
+  dbg_obj_print ('', now());
+	sourceType := lcase(sourceType);
+	if (sourceType = 'string')
   {
     content := source;
   }
-  else if (lcase(sourceType) = 'webdav')
+	else if (sourceType = 'webdav')
   {
     passwd := __user_password (uname);
     content := AB.WA.dav_content (AB.WA.host_url () || http_physical_path_resolve (replace (source, ' ', '%20')), uname, passwd);
   }
-  else if (lcase(sourceType) = 'url')
+	else if (sourceType = 'url')
   {
     content := source;
   }
@@ -606,13 +638,17 @@ create procedure ODS.ODS_API."addressbook.import" (
   if (DB.DBA.is_empty_or_null (content))
     signal ('AB107', 'Bad import source!');
 
-  if (lcase(contentType) = 'vcard')
+  set_user_id ('dba');
+	contentType := lcase(contentType);
+	dbg_obj_print ('contentType', contentType);
+	if (contentType = 'vcard')
   {
     AB.WA.import_vcard (inst_id, content, vector ('tags', tags));
   }
-  else if (lcase(contentType) = 'foaf')
+	else if (contentType = 'foaf')
   {
-    AB.WA.import_foaf (inst_id, content, tags, vector (), case when (lcase (sourceType) = 'url') then 1 else 0 end);
+	  dbg_obj_princ ('', inst_id, content, vector ('tags', tags, 'contentType', case when (sourceType = 'url') then 1 else 0 end));
+		AB.WA.import_foaf (inst_id, content, vector ('tags', tags, 'contentType', case when (sourceType = 'url') then 1 else 0 end));
   }
   else
   {
@@ -638,6 +674,9 @@ create procedure ODS.ODS_API."addressbook.export" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   if (lcase (contentType) = 'vcard')
   {
@@ -723,7 +762,6 @@ create procedure ODS.ODS_API."addressbook.annotation.new" (
 --
 create procedure ODS.ODS_API."addressbook.annotation.claim" (
   in annotation_id integer,
-  in claimIri varchar,
   in claimRelation varchar,
   in claimValue varchar) __soap_http 'text/xml'
 {
@@ -745,7 +783,7 @@ create procedure ODS.ODS_API."addressbook.annotation.claim" (
   if (not exists (select 1 from AB.WA.ANNOTATIONS where A_ID = annotation_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
   claims := (select deserialize (A_CLAIMS) from AB.WA.ANNOTATIONS where A_ID = annotation_id);
-  claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
+	claims := vector_concat (claims, vector (vector (null, claimRelation, claimValue)));
   update AB.WA.ANNOTATIONS
      set A_CLAIMS = serialize (claims),
          A_UPDATED = now ()
@@ -917,6 +955,9 @@ create procedure ODS.ODS_API."addressbook.publication.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.addressbook_type_check (destinationType, destination);
 	options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
@@ -1121,6 +1162,9 @@ create procedure ODS.ODS_API."addressbook.subscription.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'AddressBook'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.addressbook_type_check (sourceType, source);
 	options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
@@ -1410,11 +1454,16 @@ grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.delete" to ODS_API;
 
+grant execute on ODS.ODS_API."addressbook.publication.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.publication.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.publication.edit" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.publication.sync" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.publication.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."addressbook.subscription.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.subscription.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.subscription.edit" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.subscription.sync" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.subscription.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."addressbook.options.get" to ODS_API;

@@ -89,6 +89,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _COMMA		/*:: PUNCT_TTL_LAST(",") ::*/
 %token _DOT_WS		/*:: PUNCT("."), TTL, LAST(". "), LAST(".\n"), LAST(".") ::*/
 %token _LBRA		/*:: PUNCT_TTL_LAST("{") ::*/
+%token _LBRA_TOP_TRIG	/*:: PUNCT_TRIG_LAST("{") ::*/
 %token _LPAR		/*:: PUNCT_TTL_LAST("(") ::*/
 %token _LSQBRA		/*:: PUNCT_TTL_LAST("[") ::*/
 %token _LSQBRA_RSQBRA	/*:: PUNCT_TTL_LAST("[]") ::*/
@@ -97,6 +98,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _RSQBRA		/*:: PUNCT_TTL_LAST("[ ]") ::*/
 %token _SEMI		/*:: PUNCT_TTL_LAST(";") ::*/
 %token _EQ		/*:: PUNCT_TTL_LAST("=") ::*/
+%token _EQ_TOP_TRIG	/*:: PUNCT_TRIG_LAST("=") ::*/
 %token _EQ_GT		/*:: PUNCT_TTL_LAST("=>") ::*/
 %token _LT_EQ		/*:: PUNCT_TTL_LAST("<=") ::*/
 %token _BANG		/*:: PUNCT_TTL_LAST("!") ::*/
@@ -153,8 +155,24 @@ clause
         : _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
 	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_tf->tf_base_uri); ttlp_arg->ttlp_tf->tf_base_uri = $2; }
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
-		dk_set_push (&(ttlp_arg->ttlp_namespaces), $3);
-		dk_set_push (&(ttlp_arg->ttlp_namespaces), $2); }
+		caddr_t *old_uri_ptr;
+		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)
+		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, &($2));
+		else
+		  {
+		    ttlp_arg->ttlp_namespaces_prefix2iri = (id_hash_t *)box_dv_dict_hashtable (31);
+		    old_uri_ptr = NULL;
+		  }
+		if (NULL != old_uri_ptr)
+		  {
+		    int err = strcmp (old_uri_ptr[0], $3);
+		    dk_free_box ($2);
+		    dk_free_box ($3);
+		    if (err)
+		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
+		  }
+		else
+		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, &($2), &($3)); }
 	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
 		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }

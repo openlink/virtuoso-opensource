@@ -459,43 +459,41 @@ create procedure BLOG2_GET_PPATH_URL (in f any)
 ;
 
 
-create procedure BLOG2_RSS2WML_PP() {
+create procedure BLOG2_RSS2WML_PP () 
+{
   declare accept, upar, pars any;
   declare lines any;
+  declare bid, rss, modif, match, stag, ohdr varchar;
+  declare xt, xp, ss, psh any;
+  declare xsl any;
+
+  set isolation='committed';
   lines := http_request_header ();
   accept := http_request_header (lines, 'Accept');
-  if (not isstring (accept)) accept := '';
+  if (not isstring (accept)) 
+    accept := '';
   upar := http_request_get ('QUERY_STRING');
-  if(regexp_match ('text/vnd\.wap\.wml', accept) is not null) {
-    if (http_path () like '%/rss.xml') {
-      declare opts, filt, bid any;
+  if (regexp_match ('text/vnd\.wap\.wml', accept) is not null) 
+    {
+      if (http_path () like '%/rss.xml') 
+	{
+	  declare opts, filt any;
       whenever not found goto exitp;
-      select top 1
-        BI_BLOG_ID
-      into
-        bid
-      from
-        BLOG..SYS_BLOG_INFO
-      where
-        http_path () like BI_HOME || '%'
-      order by
-        length(BI_HOME) desc;
-      select
-        deserialize (blob_to_string (BI_OPTIONS))
-      into
-        opts
-      from
-        BLOG..SYS_BLOG_INFO where BI_BLOG_ID = bid;
+	  select top 1 BI_BLOG_ID into bid from BLOG..SYS_BLOG_INFO where http_path () like BI_HOME || '%' order by length(BI_HOME) desc;
+	  select deserialize (blob_to_string (BI_OPTIONS)) into opts from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = bid;
 
       if (not isarray(opts)) opts := vector ();
       filt := get_keyword ('RSSFilter', opts, '');
-      if (filt = '*wml-default*') filt := BLOG2_GET_PPATH_URL ('widgets/rss2wml.xsl');
-      if (not isstring (filt) or not xslt_is_sheet (filt)) goto exitp;
-      if(length(upar) = 0) {
+	  if (filt = '*wml-default*') 
+	    filt := BLOG2_GET_PPATH_URL ('widgets/rss2wml.xsl');
+	  if (not isstring (filt) or not xslt_is_sheet (filt)) 
+	    goto exitp;
+	  if (length(upar) = 0) 
+	    {
         http_xslt (filt);
       }
-      else {
-        declare rss, xt, xsl any;
+	  else 
+	    {
         rss := http_get_string_output ();
         xt := xml_tree_doc (rss);
         http_rewrite ();
@@ -507,20 +505,39 @@ create procedure BLOG2_RSS2WML_PP() {
       exitp:;
     }
   }
-  else if (http_path () like '%/rss%.xml') {
-    declare bid, rss, modif, match, stag, ohdr varchar;
-    declare xt, xp, ss any;
-
+  else if (http_path () like '%/rss%.xml' or http_path () like '%/atom%.xml') 
+    {
     -- Get the body and calculate md5 over the 1-st item
     rss := http_get_string_output ();
     xt := xml_tree_doc (rss);
     xp := xpath_eval ('//item[1]', xt);
+      if (xp is null)
+        xp := xpath_eval ('//entry[1]', xt);	
     ss := string_output ();
     http_value (xp, null, ss);
     stag := md5(ss);
 
     -- prepare standard header
     ohdr := http_header_get ();
+      --psh := (select WS_FEEDS_HUB from DB.DBA.WA_SETTINGS);
+      declare links varchar;
+      links := '';
+      for select SH_URL from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER 
+	where SH_PROTO = 'PubSubHub' and SH_ID = AP_HOST_ID and AP_WAI_ID = WAI_ID 
+	    and WAI_NAME = WAM_INST and http_path () like WAM_HOME_PAGE || '%' do
+	{ 
+	  psh := SH_URL;
+      if (length (psh))
+	{
+	      links := links || sprintf (' <%s>; rel="hub"; title="PubSubHub",\r\n', psh);
+	    }
+	}
+      links := rtrim (links, ',\r\n');
+      if (links <> '')
+	{
+	  http_header (ohdr || sprintf ('Link:%s\r\n', links));
+	  ohdr := http_header_get ();
+	}
     if (strcasestr (ohdr, 'Content-Type:') is not null)
       {
 	http_header (ohdr || sprintf ('ETag: %s\r\nLast-Modified: %s\r\n',
@@ -531,25 +548,27 @@ create procedure BLOG2_RSS2WML_PP() {
 	http_header (sprintf ('Content-Type: text/xml\r\nETag: %s\r\nLast-Modified: %s\r\n',
                           stag, BLOG.DBA.date_rfc1123 (now ())));
       }
-    match := http_request_header (lines, 'If-None-Match');
-    modif := http_request_header (lines, 'If-Modified-Since');
+      match := http_request_header (lines, 'If-None-Match', null, null);
+      modif := http_request_header (lines, 'If-Modified-Since', null, null);
 
     -- if Etag is same; do nothing
-    if (match = stag) {
+      if (match = stag) 
+	{
+	  http_xslt (null);
       http_request_status ('HTTP/1.1 304 Not Modified');
-      http_header ('Content-Type: text/xml\r\n');
       http_rewrite ();
     }
-    else if (match is null and isstring (modif)) {
+      else if (match is null and isstring (modif)) 
+	{
       declare modifd datetime;
       modifd := http_string_date (modif);
       whenever not found goto exitp1;
-      select top 1 BI_BLOG_ID into bid from BLOG..SYS_BLOG_INFO where
-      http_path () like BI_HOME || '%' order by length (BI_HOME) desc;
+	  select top 1 BI_BLOG_ID into bid from BLOG..SYS_BLOG_INFO where http_path () like BI_HOME || '%' order by length (BI_HOME) desc;
       -- if no newest items; do nothing
-      if (not exists (select 1 from BLOG..SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = bid and B_MODIFIED > modifd)) {
+	  if (not exists (select 1 from BLOG..SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = bid and B_MODIFIED > modifd)) 
+	    {
+	      http_xslt (null);
         http_request_status ('HTTP/1.1 304 Not Modified');
-        http_header ('Content-Type: text/xml\r\n');
         http_rewrite ();
       }
       exitp1:;
@@ -1096,6 +1115,8 @@ http ('XMLELEMENT(\'generator\', \'Virtuoso Universal Server \' || sys_stat(\'st
 http ('XMLELEMENT(\'webMaster\', BI_E_MAIL), \n', ses);
 http ('XMLELEMENT(\'copyright\', BLOG..blog_utf2wide (BI_COPYRIGHTS)), \n', ses);
 http ('XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (\'http://\' || BLOG.DBA.BLOG2_GET_HOST () || http_path() as "href", \'self\' as "rel", \'application/rss+xml\' as "type", BLOG..blog_utf2wide (BI_TITLE) as "title")), \n', ses);
+http ('(select XMLAGG (XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (SH_URL as "href", \'hub\' as "rel", \'PubSubHub\' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG, DB.DBA.WA_INSTANCE where SH_PROTO = \'PubSubHub\' and SH_ID = AP_HOST_ID and AP_WAI_ID = WAI_ID and WAI_NAME = BI_WAI_NAME), \n', ses);
+http ('XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (sprintf (\'http://%{WSHost}s/ods/salmon\') as "href", \'salmon\' as "rel")), \n', ses);
 http ('(select XMLAGG (XMLELEMENT (\'category\', BI_KWD)) from BLOG.DBA.BLOG_GET_BLOG_KWDS where kwds = BI_KEYWORDS) ,\n', ses);
 http ('\n', ses);
 http ('XMLELEMENT(\'language\', \'en-us\'), \n', ses);
@@ -2749,6 +2770,7 @@ create procedure BLOG_SET_SQLX_GEMS (in blogid any, in folder any, in uid int, i
   DB.DBA.BLOG2_DAV_PROP_SET (path, 'xml-sql-encoding', 'utf-8', null, null, 0);
   DB.DBA.BLOG2_DAV_PROP_SET(path, 'xml-sql-description',
   'ATOM based XML document generated By OpenLink Virtuoso', 'dav', null, 0);
+  DB.DBA.BLOG2_DAV_PROP_SET (path, 'xml-sql-mime-type', 'application/atom+xml', null, null, 0);
 
   -- OCS
   path := folder || 'gems/index.ocs';
@@ -3501,7 +3523,7 @@ create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varcha
 	    {
 	      arr := m_app[this_apa_id];
 	      dta := arr [3];
-	      http (sprintf ('<a href="%V">', dta), res_out);
+	      http (sprintf ('<a class="auto-href" href="%V">', dta), res_out);
 	      --http ('[', res_out);
 	    }
 
@@ -3573,7 +3595,6 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
     auto_href := 0;
 
   RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
-  BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
   xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
   xml_tree_doc_set_output (xt, 'xhtml');
@@ -3590,6 +3611,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   ss := string_output_string (ss);
   if (auto_href)
   ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
+  BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xml_tree_doc (xml_tree (ss, 2, '', 'UTF-8')));
 
   title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
   enc_type := null;
@@ -3643,7 +3665,8 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 	}
     }
 
-  ODS..APP_PING (_wai_name, title, home);
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/rss.xml');
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/atom.xml');
 
   -- WA widgets
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
@@ -3680,7 +3703,6 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       graph_iri := sioc..get_graph ();
       sioc.DBA.delete_quad_s_or_o (graph_iri, post_iri, post_iri);
       RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
-      BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
       xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
       xml_tree_doc_set_output (xt, 'xhtml');
@@ -3696,6 +3718,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       ss := string_output_string (ss);
       if (auto_href)
       ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
+      BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xml_tree_doc (xml_tree (ss, 2, '', 'UTF-8')));
 
       title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
       enc_type := null;
@@ -3748,7 +3771,8 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 	    make_dasboard_item ('post', N.B_TS, N.B_TITLE, author, post_iri, '', BI_DASHBOARD, N.B_POST_ID, 'update', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
 
-  ODS..APP_PING (_wai_name, title, home);
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/rss.xml');
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/atom.xml');
 
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
     {

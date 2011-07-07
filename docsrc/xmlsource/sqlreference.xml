@@ -3275,6 +3275,70 @@ The default value comes from the ArrayParameters configuration parameter.
 </para>
 		</sect2>
 	</sect1>
+<sect1 id="anytimequeries">
+		<title>Anytime Queries</title>
+     <para>Starting with version 6, Virtuoso offers a partial query evaluation feature that guarantees
+answers to arbitrary queries within a fixed time. This is intended for use in  publicly available SPARQL
+or SQL end points on large databases. This enforces a finite duration to all queries and will strive to
+return meaningful partial results. Thus this provides the same security as a transaction timeout but will
+be more user friendly since results will generally be returned, also for aggregate queries. Outside of a
+public query service, this may also be handy when exploring a large data set with unknown properties.
+</para>
+<para>The feature is activated with the statement</para>
+<programlisting><![CDATA[
+set result_timeout == <expression>;
+]]></programlisting>
+     <para>The expression should be a count of milliseconds. The scope of the setting is the connection,
+thus it remains in effect past the return of the calling procedure. Setting the timeout to 0 returns to the
+default state of having no limit on query run time and always returning complete results. The initial value
+of the timeout is 0. On a web server thread, the timeout is reset to 0 at the start of processing each
+new request header.
+</para>
+<para>After a query or cursor has exceeded the running time, it is reset.
+In the event of the reset occurring inside an aggregation, the part
+of the query that produces rows for the aggregation is terminated, the
+timeout is reset and the query continues by using the aggregated
+results that were obtained before the first timeout. If there is
+again a timeout, the present aggregation is reset and the query gets
+another lease on life for processing the results accumulated so far.
+Thus, a query which has a select, a group by and an order by can
+consume at most three timeouts. One for producing the aggregated
+rows, another for sorting them and finally a third for returning them
+to a client or iterating over them in a stored procedure.
+</para>
+<para>If the timeout occurs outside an aggregation, the result set is simply truncated.</para>
+<para>The fact of a query returning partial results is indicated by the
+result set ending with a S1TAT SQL state. If the result set is read
+to end without this state being signalled, the results are complete
+and the query was not interrupted. If the result set is not consumed
+to end, the client cannot be sure of its completeness.
+</para>
+<para>The error message associated with the S1TAT state contains the human
+readable version of the output of db_activity () for the query. If
+result_timeout is non-zero, the opening of a cursor or execution of a
+query on a client connection or with the exec () function will reset
+the client resource consumption counters automatically. This is done
+so as to have the resource consumption statistics for the error
+message scoped to the query. To get the exact counts, the application
+may call db_activity (1) in the same procedure. If this is called on
+a client server connection with the timeout on, the counts will be
+reset before db_activity () is called.
+</para>
+     <para>The resolution of the timeout is fairly low, timeouts are checked every two seconds with default
+settings.</para>
+     <para>A query cannot set a timeout from inside itself. Only a stored procedure or a top level statement
+on a client connection can do this.</para>
+     <para>A request to SPARQL web service endpoint may specify the timeout as an additoional <emphasis>&amp;timeout=&lt;milliseconds&gt;</emphasis> parameter.
+The parameter value should be equal to or greater than 1000, otherwise it will be ignored.
+If <emphasis>SPARQL</emphasis> Virtuoso configuration file contains
+<emphasis>MaxQueryExecutionTime</emphasis> parameter and its value is greater than or equal to 1000
+then the actual &quot;anytime&quot; timeout is the minimum of the requested value and the value in the configuration file.
+</para>
+     <para>The current standard of SPARQL protocol does not provide any support for partial results.
+When a SPARQL query ends with S1TAT state, the returned HTTP header contains four additional rows,
+<emphasis>X-SQL-State:</emphasis>, <emphasis>X-SQL-Message:</emphasis>, <emphasis>X-Exec-Milliseconds:</emphasis> and
+<emphasis>X-Exec-DB-Activity:</emphasis>; the returned document is formatted according to the requested MIME type as if the result is complete.</para>
+ 	</sect1>
 <sect1 id="besteffortunion">
 	<title>Best Effort Union</title>
 	<para>
@@ -4339,7 +4403,906 @@ Bitmap Indices
 </para>
 </sect2>
 </sect1>
+<!-- Uncommented for Virtuoso 6 Release-->
+<sect1 id="transitivityinsQL">
+		<title>Transitivity in SQL</title>
+<para>Virtuoso SQL supports tree and graph data structures represented with SQL relations through the use of transitive subqueries.</para>
+<para>A derived table, i..e. a select inside a from clause, can be declared to be transitive. This is done by putting the TRANSITIVE modifier after the SELECT keyword, at the place where a DISTINCT or TOP modifier would go.</para>
+<para>The syntax of this is:</para>
+<programlisting><![CDATA[
+transitive_decl ::= TRANSITIVE <trans_option>[, ...]
 
+trans_opt :: =
+        | T_MIN (INTNUM)
+        | T_MAX (INTNUM)
+        | T_DISTINCT
+        | T_EXISTS
+| T_NO_CYCLES
+| T_CYCLES_ONLY
+        | T_NO_ORDER
+        | T_SHORTEST_ONLY
+        | T_IN <position_list>
+| T_OUT ( <position_list )
+        | T_END_FLAG  (INTNUM)
+        | T_FINAL_AS NAME
+        | T_STEP ( <position_or_path_spec> )
+        | T_DIRECTION (INTNUM)
+
+
+position_list ::=  INTNUM [,...]
+
+position_or_path_spec ::= INTNUM | 'step_no' | 'path_id'
+]]></programlisting>
+<para>A transitive derived table has a selection that may consist of four different types of columns. These are input, output, step data and special columns.
+When a transitive derived table occurs in a query, the enclosing query must specify an equality condition for either all input, all output columns or both.
+The designation of input and output columns is for convenience only. The order of query execution will be generally decided by the optimizer, unless overridden with the T_DIRECTION option.
+</para>
+<para>Consider a simplified social network application:</para>
+<programlisting><![CDATA[
+create table knows (p1 int, p2 int, primary key (p1, p2))
+alter index knows on knows partition (p1 int);
+create index knows2 on knows (p2, p1) partition (p2 int);
+
+insert into knows values (1, 2);
+insert into knows values (1, 3);
+insert into knows values (2, 4);
+
+]]></programlisting>
+<para>All persons have single integer identifiers. There is a row in the knows table if person p1 claims to know person p2.</para>
+<para>The most basic query is to find all the people that a given person knows either directly or indirectly.</para>
+<programlisting><![CDATA[
+select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from knows) k where k.p1 = 1;
+]]></programlisting>
+<para>The transitive derived table simply selects from the knows table. The
+enclosing top level query gives an initial value for the input column
+of the transitive select. This leaves the output column P2 unbound,
+so the query will iterate over the possible values of P2. Initially,
+the query loops over the people directly known by 1. In the next
+stage, it takes the binding of P2 and uses it as a new value of the
+input column P1 to look for people the first degree contact knows and
+so on, until no new values are found.</para>
+<para>The basic meaning of the transitive modifier is that given initial
+values for input column(s), the subquery is evaluated to produce
+values for the output columns. Then these values are fed back as
+values of input columns and so forth, until some termination condition
+is reached. If there are equality conditions for columns designated as output
+but no conditions for columns designated as input, then the same
+process runs from output to input. The terms input and output do not
+imply execution order. If there are bindings for both input and
+output columns in the enclosing query, then the transitive derived
+table looks for ways of connecting the input and output bindings. If
+no such way is found, the subquery is empty and causes the whole
+enclosing query to also have no result. A transitive derived table
+cannot be the right side of an outer join directly but can be wrapped
+in a derived table that is. In this way, an outer join usage is also
+possible, whether finding a path is optional.</para>
+<para>The result set of a transitive subquery can be thought of as a set of
+paths. A path consists of one or more consecutive bindings for the
+input columns and is ordered. In our example, a path is p1=1, p1=2,
+p1=4. This is the path connecting persons 1 and 4. If there are
+columns in the select that are neither input or output, they too are
+recorded for each step of the path. The result set may include just
+the ends of a path, i.e. one row where the input columns have the
+beginning and the output columns the end of the path. This means there is one row per distinct path. The result set may also include a row for each step on each path.
+</para>
+<para>In this example, we bind both ends of the transitive subquery and ask how person 1 and 4 are connected.
+Since the columns p1 and p2 have an equality condition, each row of the result set has these at values 1 and 4 respectively.
+</para>
+<programlisting><![CDATA[
+select * from (select transitive t_in (1) t_out (2) t_direction 3 t_distinct t_shortest_only  p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
+
+P1       P2       VIA                                                                               PATH                                                                              STEP
+
+1        4        1                                                                                 0                                                                                 0
+1        4        2                                                                                 0                                                                                 1
+1        4        4                                                                                 0                                                                                 2
+]]></programlisting>
+<para>The three rightmost columns allow returning information in the intermediate steps of the transitive evaluation. t_step (1) means the value of the column at position 1 at the intermediate step. The t_step ('step_no) is the sequence number of the step returned. The t_step ('path_id') is a number identifying the connection path, since there may be many paths joining persons 1 and 4.</para>
+<para>In this situation, the result set has one row per step, including a
+row for the initial and final steps. While the evaluation order may
+vary internally, the result set is presented as if the query were
+evaluated from input to output, i.e. looking for people known by 1,
+finding 2 and 3, then looking for people they know, finding that 2
+knows 4, which is a  solution, since p2 = 4 was specified in the outer select.
+If the outere query had p1 = 4 and p2 = 1, there would be an empty result set
+since there is no path from 4 to 1.
+</para>
+<para>For example, if tables have multipart keys, there can be many input and output columns but there must be an equal number of both, since the engine internally feeds the output back into the input or vice versa. The transitive derived table may be arbitrarily complex.</para>
+<para>We may have an application that returns extra information about a
+step. This could for example be a metric of distance. In such a
+case, a column which is neither designated as input nor output and is
+not a t_step () function call, will simply be returned as is.
+</para>
+<para>The result set of a transitive subquery will either have one row for each state reached, or it may have one row for each step on the path to each state reached.</para>
+<para>The first example returns only the ends of the paths, i.e. directly and indirectly known person id's. It does not return for each returned id how this person is known, through which set of connections.
+The second example returns a row for each step on each path.
+Steps will be returned if the selection has t_step () calls or columns that are neither input or output.
+</para>
+<para>The forms of t_step are:</para>
+<programlisting><![CDATA[
+t_step (<column number>)
+]]></programlisting>
+<para>This returns the value that the column, one of the columns designated
+as input, has at this step. The input or output columns themselves, if
+there is a condition on them, look equal to the condition. This
+allows seeing intermediate values of input columns on a path.
+</para>
+<programlisting><![CDATA[
+]]></programlisting>
+<para>t_step ('step_no')</para>
+<para>This returns the ordinal number of the step on the path. Step -0 corresponds to the input variables being at the value seen in the enclosing query. Step 1 is one removed from this. Step numbering is assigned as if evaluating from input to output.</para>
+<para>Consider this:</para>
+<programlisting><![CDATA[
+select * from (select transitive t_in (1) t_out (2) t_min (0) t_distinct   p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 ;
+P1       P2       VIA                                                                               PATH                                                                              STEP
+
+1        1        1                                                                                 0                                                                                 0
+1        3        1                                                                                 1                                                                                 0
+1        3        3                                                                                 1                                                                                 1
+1        2        1                                                                                 2                                                                                 0
+1        2        2                                                                                 2                                                                                 1
+1        4        1                                                                                 3                                                                                 0
+1        4        2                                                                                 3                                                                                 1
+1        4        4                                                                                 3                                                                                 2
+
+]]></programlisting>
+<para>This returns four paths, all starting at 1: the paths. The path from
+1 to 1, the path from 1 to 2, the path from 1 to 3 and the path from 1
+to 2 to 4. The path_id column has values from 0 to 3, distinguishing
+the four different paths returned. The p1 column is the start of the
+path, thus always 1 since this is given in the outer query. The p2
+column is the end of the path. The via column is the value of p1 at
+the intermediate step. The step number where via is equal to p1 is 0.
+The next step number is 1. At the highest step number of each path,
+p2 and via are the same.</para>
+<para>Now, let us do this in reverse:</para>
+<programlisting><![CDATA[
+select * from (select transitive t_in (1) t_out (2) t_min (0) t_distinct   p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p2 = 4 ;
+P1       P2       VIA                                                                               PATH                                                                              STEP
+
+
+4        4        4                                                                                 0                                                                                 0
+2        4        2                                                                                 1                                                                                 0
+2        4        4                                                                                 1                                                                                 1
+1        4        1                                                                                 2                                                                                 0
+1        4        2                                                                                 2                                                                                 1
+1        4        4                                                                                 2                                                                                 2
+
+]]></programlisting>
+<para>We give an initial value to p2 and leave p1 free. Now we get three
+paths, the path from 4 to 4, from 2 to 4 and from 1 to 2 to 4. We
+enumerate the steps as if counting from input to output, albeit
+internally the evaluation order is the reverse. Again, step number 0
+has the via column equal to p1 and the highest numbered step has via
+equal to p2.</para>
+<para>Now we may look more formally at the meaning of the transitive options:</para>
+<itemizedlist>
+<listitem>T_MIN (INTNUM) - This means that paths shorter than the number are not returned. In the examples above, we had min at 0, so that a path of zero length was also returned, i.e. where the first output equals the outer conditions for the inputs.</listitem>
+<listitem>T_MAX (INTNUM) - This gives a maximum length of path. Paths longer than this many steps are not returned. A value of 1 means that the subquery is evaluated once, i.e. the outputs of the first evalyuation are not fed back into the inputs. Specifying a minimum of 0 and a maximum of one means an optional join. Specifying min and max both to 1 means an ordinary derived table.</listitem>
+<listitem>T_DISTINCT - This means that if a binding of input columns is produced more than once, only the first is used. Id est, the same point is not traversed twice even if many paths lead to it.</listitem>
+<listitem>T_EXISTS - Only one path is generated and returned.</listitem>
+<listitem>T_NO_CYCLES - If a path is found that loops over itself, i.e. a next step has the input values equal to the input values of a previous step on the path, the binding is ignored.</listitem>
+<listitem>T_CYCLES_ONLY - Only paths that have a cycle, i.e. input values of a subsequent step equal the input values of a previous step on the same path, are returned.</listitem>
+<!-- listitem>T_NO_ORDER</listitem-->
+<listitem>T_SHORTEST_ONLY -  If both ends of the path are given, the evaluation stops at the length of path where the first solution is found. If many paths of equal length are found, they are returned but longer paths are not sought.</listitem>
+<listitem>T_IN (column_positions) - This specifies which columns are called input.</listitem>
+<listitem>T_OUT (column_positions) - This specifies which columns are called output.</listitem>
+<!-- listitem>T_END_FLAG</listitem-->
+<!-- listitem>T_FINAL_AS</listitem-->
+<!-- listitem>T_STEP</listitem-->
+<listitem>T_DIRECTION INTNUM - A value of 0 (default) means that the SQL
+optimizer decides which way the transitive subquery is evaluated. 1
+means from input to output, 2 from output to input, 3 from both ends. Supposing we are looking at how two points are related, it makes sense to start expanding the transitive closure at both ends. in the above example, this would be going from p1 to p2 on one side and from p2 to p1 on the other.
+</listitem>
+
+<!-- listitem>neither in nor out. If this column has a non-0 value, this is considered as end of a path. This allows application logic other than column equality to decide when a solution has been reached.</listitem -->
+
+</itemizedlist>
+ <tip><title>See Also:</title>
+    <link linkend="rdfsparqlimplementatiotransexamples">Collection of Transitivity Option Demo Queries for SPARQL.</link>
+  </tip>
+</sect1>
+<sect1 id="sqlreffastphrasematch"><title>Fast Phrase Match Processor</title>
+  <para>An "annotation phrase" is a keyword or key phrase associated with some application specific data
+and a uniform "annotation phrase set" may map dictionary words to their descriptions or ICAO codes
+to airport names and co-ordinates or geographical names to maps or Wikipedia topics to links to
+Wikipedia pages. An application may need to scan a given text and find all occurrences of phrases
+from given phrase set, for various purposes, e.g., to improve the resource with additional hyperlinks,
+to replace technical codes with user-friendly names, or to suggest appropriate tags and keywords.
+Virtuoso has built-in phrase match processor that is fast enough to deal with long documents and big
+phrase sets in interactive applications.</para>
+  <sect2 id="sqlreffastphrasematchscl"><title>Phrases, Phrase Sets and Phrase Classes</title>
+  <para>An annotation phrase is a pair of a key (a string that is supposed to be a word or phrase of some
+natural language) and a value (of any type if its serialization is shorter than 2 kilobytes or a
+string shorter than 10 megabytes). The key phrase will be divided into words and normalized by
+language-specific functions used by free text search; after normalization it should contain from one
+to four words. The associated value may be very long in principle, but it will add noticeable
+overheads related to memory allocation and copying so it is recommended to keep it short if
+performance is somehow important. It is usual to make the value as short as an ID in some external
+"detailed" table, not only for speed but to support multiple synonyms for one thing or names of a
+thing in different languages.</para>
+  <para>Annotation phrases are grouped in "phrase sets" and every "phrase set" belongs to
+some "phrase class".</para>
+  <para>Phrase classes are enumerated in a DB.DBA.SYS_ANN_PHRASE_CLASS table.</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_ANN_PHRASE_CLASS
+(
+  APC_ID integer not null primary key,
+  APC_NAME varchar(255) unique,		-- unique name for use in API/UI
+  APC_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writable for any reader
+  APC_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
+  APC_CALLBACK varchar,
+  APC_APP_ENV any
+  )
+;
+]]></programlisting>
+  <para>Phrase sets and phrase classes may contain confidential information. E.g., a phrase set may be used
+to check that a given outgoing document does not mention titles of confidential projects or names of
+persons that should act anonymously for public. So any application may specify access restrictions
+when a phrase class is created. The application usually sets APC_CALLBACK to name of some of its
+functions (but it may be any string) and APC_APP_ENV to value of any type (application may pass it
+to the APC_CALLBACK function as one of arguments). Phrase match processor only keeps these data in
+memory, unchanged, and returns to the application as a part of text processing report, so they can
+be used for any purpose.
+</para>
+  <para>Phrase class describes an access to some application-specific callback, but it does not mention any
+phrases at all. Individual phrases are grouped into phrase sets. Each phrase set belongs to exactly
+one phrase class and is restricted to one language handler. It does not necessarily mean that it should
+consist of phrases of one natural language, because many language handlers support mix of languages,
+but it may apply some restrictions.</para>
+  <para>Phrase sets are enumerated in a DB.DBA.SYS_ANN_PHRASE_SET table.</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_ANN_PHRASE_SET
+(
+  APS_ID integer not null primary key,
+  APS_NAME varchar(255) unique,		-- unique name for use in API/UI
+  APS_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writable for any reader
+  APS_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
+  APS_APC_ID integer not null,		-- references SYS_ANN_PHRASE_CLASS (APC_ID)
+  APS_LANG_NAME varchar not null,	-- name of language handler that is used to split texts of phrases
+  APS_APP_ENV any,
+  APS_SIZE any,				-- approximate number of phrases inserted in the set (actual or estimate for future)
+  APS_LOAD_AT_BOOT integer not null	-- flags whether phrases should be loaded at boot time.
+  )
+;
+]]></programlisting>
+  <para>APS_APP_ENV can be of any type (application may pass it to the APC_CALLBACK function as one
+of arguments). Like APC_APP_ENV, phrase match processor only keeps it in memory and returns in a text
+processing report.</para>
+  <para>The APS_SIZE tweaks the amount of memory consumed by a phrase set when it's loaded. The average "price"
+of placing a phrase to a set is 2 bytes per phrase. Memory amounts are less than a kilobyte while APS_SIZE
+is below 256, less than 64 kilobytes while APS_SIZE grow up to 32 thousands of phrases and reaches its
+maximum of 64 megabytes when APS_SIZE reaches its practical limit of 32 million phrases. Only rough
+similarity to the actual number of inserts is needed, say, same order of magnitude. The exaggerated value
+of APS_SIZE will allocate a bit more memory and may slightly improve the speed. It is not practical to
+set APS_SIZE much smaller than it should be because it will cause frequent table lookups and disk buffers
+in use will overweight any memory savings in the phrase match processor. If there are numerous phrase sets
+that are used only occasionally, do not decrease APS_SIZE, instead set APS_LOAD_AT_BOOT to zero for them.</para>
+  <para>Note that if phrase set is edited intensively during server run then the number of inserted phrases is
+important, an effect of phrase removal is visible only after server restart. E.g. if a phrase set is
+frequently cleaned and refilled with new phrases then it is much better to delete an obsolete set and
+create a new one.</para>
+  <para>Individual annotation phrases are stored in a table DB.DBA.SYS_ANN_PHRASE, that should not be modified
+by applications directly by data manipulation statements. The content of the table is used to build
+special search structures in memory and SQL operations like INSERT and DELETE can not keep in-memory
+structures in sync with the content of the table. DBA may read the table but should not update; in
+case of occasional update all phrase sets that contain edited phrases may become unusable until server
+restart.</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_ANN_PHRASE
+(
+  AP_APS_ID integer not null,		-- references SYS_ANN_PHRASE_SET (APS_ID),
+  AP_CHKSUM integer,			-- phrase check-sum
+  AP_TEXT varchar,			-- original text
+  AP_LINK_DATA any,			-- Associated data about links etc.
+  AP_LINK_DATA_LONG long varchar,	-- Same as AP_LINK_DATA but for long content, one of two is always NULL
+  primary key (AP_APS_ID, AP_CHKSUM, AP_TEXT)
+  )
+;
+]]></programlisting>
+  <para>The "almost direct" way of writing to the table is via BIF
+<link linkend="fn_ann_phrase_class_add"><function>ap_add_phrases</function></link>.
+It gets two arguments, the
+integer ID of annotation phrase set and a vector of descriptions of phrases that should be edited in that
+phrase set. Every item of vector of descriptions is in turn vector of one or two values; first value is
+the text of the phrase, second value is associated application specific data, the absence of second value
+indicates that the phrase should be removed. If same text of phrase appears in the vector of description
+more than once, and associated data differ then any version of data can be stored for future use; it is
+the roll of dice because the vector is reordered for faster processing.</para>
+  </sect2>
+  <sect2 id="sqlreffastphrasematchapi"><title>Phrase Set Configuration API</title>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="fn_ann_phrase_class_add"><function>DB.DBA.ANN_PHRASE_CLASS_ADD</function></link></listitem>
+  <listitem><link linkend="fn_ann_phrase_class_del"><function>DB.DBA.ANN_PHRASE_CLASS_DEL</function></link></listitem>
+  <listitem><link linkend="fn_ap_build_match_list"><function>AP_BUILD_MATCH_LIST</function></link>:
+The report R is a vector of 6 elements:
+<orderedlist>
+  <listitem>R[0] vector of all distinct phrase classes for phrase sets of found phrases; every pair of
+items represents one phrase class: first item is an integer APC_ID of a class, second item is a description
+of phrase class as vector of APC_NAME, APC_CALLBACK and APC_APP_ENV;</listitem>
+  <listitem>R[1] vector of all distinct phrase sets of found phrases; every pair of items represents
+one phrase set: first item is an integer APS_ID of a class, second item is a vector of APS_NAME, APS_APC_ID,
+index of phrase class description in R[0] and APS_APP_ENV;</listitem>
+  <listitem>R[2] vector of all distinct found phrases; every item represents a phrase as a vector of
+AP_APS_ID, index of phrase set description in R[1], AP_TEXT and application-specific data from
+AP_LINK_DATA or AP_LINK_DATA_LONG;</listitem>
+  <listitem>R[3] vector of all composed arrows for the text; every item represents one place in a text, as an "arrow" described below;</listitem>
+  <listitem>R[4] vector of indexes of arrows that point to words in the text; every item is an integer that is index in R[3];</listitem>
+  <listitem>R[5] vector of descriptions of occurrences of annotation phrases in text; every item
+represents one occurrence as vector of index of first word in R[3], index of last word in R[3], index of
+found phrase in R[2], index of previous occurrence of same phrase in R[5].</listitem>
+<para>Every "arrow" A is vector of length 5 or 6, it is longer when arrow points inside occurrence of some
+annotation phrase.
+</para>
+<orderedlist>
+  <listitem>A[0] integer that indicates type of text fragment:
+<itemizedlist mark="bullet">
+  <listitem>0 is for plain word (only this type occurs in reports for plain text),</listitem>
+  <listitem>1 is for text of opening tag,</listitem>
+  <listitem>2 is for text of closing tag,</listitem>
+  <listitem>3 is something exceptional like unrecoverable HTML syntax error</listitem>
+</itemizedlist>
+</listitem>
+  <listitem>A[1] integer offset of the first byte of a fragment in the text</listitem>
+  <listitem>A[2] integer offset of the first byte after the end of a fragment</listitem>
+  <listitem>A[3] integer that is a bit-mask of opened but not yet closed tags</listitem>
+  <listitem>A[4] integer index of the arrow of the innermost tag that is opened but
+not yet closed where the arrow begins</listitem>
+  <listitem>A[5] may absent, if presents then it is a vector of indexes in R[2] of all containing phrases.</listitem>
+</orderedlist>
+<para>Bit mask of opened but not yet closed tags consists of the following bits:
+</para>
+<programlisting><![CDATA[
+0x00000001	PCDATA containers (such as OPTION, TEXTAREA, XBODY, XHEAD)
+0x00000002	Inlined highlight tags (such as ABBR, ACRONYM, B, BDO, BIG, CITE, CODE, DFN, EM, FONT, I, KBD, Q, S, SAMP, SMALL, SPAN, STRIKE, STRONG, SUB, SUP, TT, U)
+0x00000004	Tag A
+0x00000008	Tag LABEL
+
+0x00000010	Inlined content (such as ADDRESS, APPLET, H1-H6, LABEL, LEGEND, P, PRE, and all blocks of content except MAP)
+0x00000020	Blocks (such as BLOCKQUOTE, BUTTON, DD, DIV, DL, DT, FIELDSET, FORM, IFRAME, LI, NOFRAMES, NOSCRIPT, OBJECT, TABLE, TBODY, TD, TFOOT, TH, THEAD, TR, XBODY, XHEAD)
+
+0x00000100	Tags of list and ordered list (MENU, OL, UL)
+0x00000200	Tag LI
+0x00000400	Tag DL
+0x00000800	Tags DD and DT
+
+0x00001000	Tag FORM
+0x00002000	Tag SELECT
+0x00004000	Tag OPTGROUP
+0x00008000	Tag BUTTON
+
+0x00010000	Tag TABLE
+0x00020000	Tags inside TABLE but outside table rows (such as TBODY, TFOOT, THEAD)
+0x00040000	Tag TR
+0x00080000	Tags TH and TD
+
+0x00FFFFFF	Tags XBODY and XHEAD
+
+0x01000000	Tag HEAD
+0x02000000	Tag FRAMESET
+0x04000000	Tag NOFRAMES
+
+0x10000000	Tag HTML
+0x20000000	Tag BODY
+0x40000000	Tags INS and DEL
+0x80000000	Tag XMP
+]]></programlisting>
+<para>For long document, the report may be too long, esp. vectors R[3] and R[4].
+A simple application may not need locations of every tag and every word of the document.
+The report_flags argument is a bitmask, and some bits control the size of the report.
+If bit 1 is set then closing tags are excluded from report.
+If bit 2 is set then only words in found phrase are placed to the report, the rest of phrases is excluded.
+</para>
+</orderedlist>
+</listitem>
+</itemizedlist>
+  </sect2>
+  <sect2 id="sqlreffastphrasematchsadv"><title>Advertisers and Advertisement Rules</title>
+  <para>Phrase sets are sufficient for many purposes but advertisement-specific applications need more built-in
+functionality for maximum speed. This functionality can be reused by any application that adds hyperlinks
+to texts depending on content of the text.</para>
+  <para>Consider advertisers that want to show links to their resources near phrases they choose as relevant, and
+one phrase can be chosen by many advertisers. To make the processing easier, there exists special support
+for phrase sets that store lists of links for phrases.</para>
+  <para>An advertiser is some very abstract "source" of annotation phrases.
+The exact nature of an advertiser is application-specific, but each advertiser has an identifiable account.
+All accounts are in one table:</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_ANN_AD_ACCOUNT (
+  AAA_ID integer not null primary key,
+  AAA_NAME varchar(255) unique,		-- unique name for use in API/UI
+  AAA_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writable for any reader
+  AAA_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
+  AAA_DETAILS long xml,			-- any details, e.g., in RDF
+  AAA_APP_ENV any
+  )
+;
+]]></programlisting>
+  <para>Advertisement links are stored in a separate table:</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_ANN_LINK (
+  AL_ID integer primary key,
+  AL_OWNER_UID integer,			-- references SYS_USERS (U_ID), NULL if the record writable for any reader; always readable for public
+  AL_URI varchar,			-- URI template for A HREF
+  AL_TEXT varchar,			-- text template for body of <A>
+  AL_NOTE varchar,			-- text after the link (or around it)
+  AL_TAGS any,				-- tags to add or remove
+  AL_CALLBACK varchar,
+  AL_APP_ENV any
+  )
+;
+]]></programlisting>
+  <para>Advertisers, links and phrases are linked together by advertisement rules.
+Each rule says that if a given phrase is found in some text then a given link should be shown and a
+specified advertiser's account should be charged.
+</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_ANN_AD_RULE (
+  AAR_AAA_ID integer not null,		-- advertiser who pays for the ad
+  AAR_APS_ID integer not null,		-- phrase set
+  AAR_AP_CHKSUM integer not null,	-- phrase check-sum
+  AAR_TEXT varchar not null,		-- original text
+  AAR_AL_ID integer not null,		-- references SYS_ANN_LINK (AL_ID)
+  AAR_APP_ENV any,
+  primary key (AAR_AAA_ID, AAR_APS_ID, AAR_AP_CHKSUM, AAR_TEXT, AAR_AL_ID)
+  )
+;
+]]></programlisting>
+  <para>When an annotation phrase is stored in its phrase set via advertisement API, its application-specific data
+is always a vector, and vector's length is divisible by three. When a new ad rule is added to the vector, it
+gets three new items: value of AL_ID of a link, value of advertiser's AAA_ID and AAR_APP_ENV of the ad rule.
+</para>
+  <para>Anyone can describe a link but can not edit other's descriptions:</para>
+<programlisting><![CDATA[
+create function DB.DBA.ANN_LINK_ADD (
+  in _owner_uid integer,
+  in _uri varchar,		-- value for AL_URI
+  in _text varchar,		-- value for AL_TEXT
+  in _note varchar,		-- value for AL_NOTE
+  in _tags any,			-- value for AL_TAGS
+  in _callback varchar,
+  in _app_env any) returns integer
+]]></programlisting>
+  <para>So one user may create links in favor of other user even without permission, but can not edit other's links.
+To edit or delete, one should be an owner and pass authentication:</para>
+<programlisting><![CDATA[
+create function DB.DBA.ANN_LINK_MODIFY (
+  in _id integer,
+  in _owner_uid integer,
+  in _uri varchar,
+  in _text varchar,
+  in _note varchar,
+  in _tags any,
+  in _callback varchar,
+  in _app_env any,
+  in auth_uname varchar,
+  in auth_pwd varchar) returns integer
+
+create function DB.DBA.ANN_LINK_DEL (
+  in _id integer,
+  in auth_uname varchar,
+  in auth_pwd varchar) returns integer
+]]></programlisting>
+  <para>A link can not be dropped even by its owner if it is used by some advertiser.
+</para>
+<programlisting><![CDATA[
+create function DB.DBA.ANN_AD_RULE_ADD (
+  in aaa_name varchar,		-- Advertiser's name (or its integer AAA_ID key), to store as AAR_AAA_ID
+  in aps_name varchar,		-- Name of a phrase set (or its integer APS_ID key), to store as AAR_APS_ID
+  in _text varchar,		-- Text of the phrase, will be stored as AAR_TEXT and duplicated in an AP_TEXT if the phrase is new
+  in _al_id integer,		-- ID of a link (AL_ID in DB.DBA.SYS_ANN_LINK), to store as AAR_AL_ID
+  in _app_env any,		-- Application-specific data, will be stored in AAR_APP_ENV and become a part of AP_LINK_DATA of the phrase
+  in _lang_name varchar,	-- Language name, for verification only; an error will be signalled if the value of argument is not equal to language name of the phrase set
+  in auth_uname varchar,
+  in auth_pwd varchar) returns integer
+]]></programlisting>
+  <para>Application-specific data should be short, because for any given phrase, sum of data from all advertisers
+should not exceed 2 kilobytes. Fortunately, most of needed data are in DB.DBA.SYS_ANN_LINK row already so
+AAR_APP_ENV is frequently a NULL.</para>
+<programlisting><![CDATA[
+create function DB.DBA.ANN_AD_RULE_DEL (
+  in aaa_name varchar,
+  in aps_name varchar,
+  in _text varchar,
+  in _al_id integer,
+  in _lang_name varchar,
+  in auth_uname varchar,
+  in auth_pwd varchar) returns integer
+]]></programlisting>
+  <para>If a phrase set is edited by DB.DBA.ANN_AD_RULE_ADD / DB.DBA.ANN_AD_RULE_DEL and by ap_add_phrases() then
+errors are almost guaranteed (and not detected or recovered automatically in current version). The function
+ap_build_match_list() works fine with mix of phrase sets managed by both methods because it is not sensitive
+to the format of data in phrases.</para>
+  </sect2>
+  <sect2 id="sqlreffastphraseexample"><title>Example</title>
+<para>The following example demonstrates managing phrases sets and data associated with them:</para>
+<programlisting><![CDATA[
+SQL>insert replacing DB.DBA.SYS_ANN_PHRASE_CLASS (APC_ID, APC_NAME, APC_OWNER_UID, APC_READER_GID, APC_CALLBACK, APC_APP_ENV)
+values (3, 'Debug apc #3', http_dav_uid(), http_admin_gid(), 'DB.DBA.AP_DEBUG_CALLBACK', 'Debug apc #3 env')
+;
+
+Done. -- 0 msec.
+
+SQL>insert replacing DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID, APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
+values (5, 'Debug aps #5', http_dav_uid(), http_admin_gid(), 3, 'x-any', 'Debug aps #5 env', 10000, 0)
+;
+
+Done. -- 0 msec.
+
+SQL>insert replacing DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID, APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
+values (7, 'Debug aps #7', http_dav_uid(), http_admin_gid(), 3, 'x-any', 'Debug aps #7 env', 10000, 0)
+;
+
+Done. -- 0 msec.
+
+SQL>ap_add_phrases (5,
+  vector (
+    vector ('Debug5', 'Debug5 env'),
+    vector ('Debug5 one', 'Debug5 one env'),
+    vector ('Debug5 two', 'Debug5 two env'),
+    vector ('Debug5 three', 'Debug5 three env'),
+    vector ('Debug5 twenty one', 'Debug5 twenty one env'),
+    vector ('Debug5 twenty two', 'Debug5 twenty two env'),
+    vector ('Debug5 twenty three', 'Debug5 twenty three env')
+    ) )
+;
+Done. -- 0 msec.
+
+SQL>ap_add_phrases (7,
+  vector (
+    vector ('Debug7', 'Debug7 env'),
+    vector ('Debug7 one', 'Debug7 one env'),
+    vector ('Debug7 two', 'Debug7 two env'),
+    vector ('Debug7 three', 'Debug7 three env'),
+    vector ('Debug7 twenty one', 'Debug7 twenty one env'),
+    vector ('Debug7 twenty two', 'Debug7 twenty two env'),
+    vector ('Debug7 twenty three', 'Debug7 twenty three env')
+    ) )
+;
+
+Done. -- 0 msec.
+
+SQL>ap_add_phrases (5,
+  vector (
+    vector ('Debug5 thirty one', 'Debug5 thirty one BAD env'),
+    vector ('Debug5 thirty two', 'Debug5 thirty two BAD env'),
+    vector ('Debug5 thirty three', 'Debug5 thirty three BAD env'),
+    vector ('Debug5 one hundred', 'Debug5 one hundred BAD env')
+    ) )
+;
+
+Done. -- 0 msec.
+
+SQL>ap_add_phrases (5,
+  vector (
+    vector ('Debug5', 'Debug5 UPDATED env'),
+    vector ('Debug5 thirty one', 'Debug5 thirty one NEW env'),
+    vector ('Debug5 thirty two', 'Debug5 thirty two NEW env'),
+    vector ('Debug5 thirty three', 'Debug5 thirty three NEW env'),
+    vector ('Debug5 one hundred')
+    ) )
+;
+Done. -- 0 msec.
+
+SQL>create function ptext_1 ()
+{
+  return '
+    vector ''Debug5'', ''Debug5 env'',
+    vector ''Debug5 one'', ''Debug5 one env'',
+    vector ''Debug5 two'', ''Debug5 two env'',
+    vector ''Debug5 three'', ''Debug5 three env'',
+    vector ''Debug5 twenty one'', ''Debug5 twenty one env'',
+    vector ''Debug5 twenty two'', ''Debug5 twenty two env'',
+    vector ''Debug5 twenty three'', ''Debug5 twenty three env''
+ap_add_phrases 7,
+  vector
+    vector ''Debug7'', ''Debug7 env'',
+    vector ''Debug7 one'', ''Debug7 one env'',
+    vector ''Debug7 two'', ''Debug7 two env'',
+    vector ''Debug7 three'', ''Debug7 three env'',
+    vector ''Debug7 twenty one'', ''Debug7 twenty one env'',
+    vector ''Debug7 twenty two'', ''Debug7 twenty two env'',
+    vector ''Debug7 twenty three'', ''Debug7 twenty three env''
+ap_add_phrases 5,
+  vector
+    vector ''Debug5 thirty one'', ''Debug5 thirty one BAD env'',
+    vector ''Debug5 thirty two'', ''Debug5 thirty two BAD env'',
+    vector ''Debug5 thirty three'', ''Debug5 thirty three BAD env'',
+    vector ''Debug5 one hundred'', ''Debug5 one hundred BAD env''
+ap_add_phrases 5,
+  vector
+    vector ''Debug5'', ''Debug5 UPDATED env'',
+    vector ''Debug5 thirty one'', ''Debug5 thirty one NEW env'',
+    vector ''Debug5 thirty two'', ''Debug5 thirty two NEW env'',
+    vector ''Debug5 thirty three'', ''Debug5 thirty three NEW env'',
+    vector ''Debug5 one hundred''
+    ';
+}
+;
+
+Done. -- 20 msec.
+
+SQL>create function ptext_2 ()
+{
+  return '
+    vector ''Debug5 twenty one''
+    vector ''Debug7 twenty one''
+    vector ''Debug5 thirty one''
+    vector ''Debug5 thirty one''
+    vector ''Debug5 one hundred''
+    ';
+}
+;
+Done. -- 10 msec.
+
+
+SQL>create function test_ptext_1()
+{
+  declare ses any;
+  ses := string_output();
+  ap_debug_langhandler (ptext_1 (), 'x-any', vector (5, 7), ses );
+  return string_output_string (ses);
+}
+;
+Done. -- 10 msec.
+
+
+SQL>create procedure dump_match_list (in vect any, in path varchar := null)
+{
+  declare VDATA varchar;
+  if (path is null)
+    {
+      result_names (VDATA);
+      path := '';
+    }
+  if (vect is null)
+    {
+      result (path || ' NULL');
+      return;
+    }
+  if (193 <> __tag (vect))
+    {
+      result (path || ' ' || (cast (vect as varchar)));
+      return;
+    }
+  declare l, ctr integer;
+  l := length (vect);
+  if (0 = l)
+    {
+      result (path || ' (empty vector)');
+      return;
+    }
+  if (isinteger (vect [l - 1]))
+    {
+      declare ses any;
+      ses := string_output ();
+      for (ctr := 0; ctr < l; ctr := ctr + 1)
+        {
+	  http (sprintf (' [%d]=%s', ctr, cast (vect[ctr] as varchar)), ses);
+	}
+      result (path || string_output_string (ses));
+      return;
+    }
+  for (ctr := 0; ctr < l; ctr := ctr + 1)
+    {
+      dump_match_list (vect[ctr], sprintf ('%s[%d]', path, ctr));
+    }
+}
+;
+
+
+Done. -- 10 msec.
+
+SQL>select test_ptext_1();
+callret
+VARCHAR
+_______________________________________________________________________________
+
+    (vector) '[[Debug5 UPDATED env]Debug5]]', '[[Debug5 UPDATED env]Debug5]] (env)', (vector) '[[Debug5 UPDATED env ; Debug5 one env]Debug5]] [[Debug5 one env]one]]', '[[Debug5 UPDATED env ; Debug5 one env]Debug5]] [[Debug5 one env ]one]] (env)',
+    (vector) '[[Debug5 UPDATED env ; Debug5 two env]Debug5]] [[Debug5 two env]two]]', '[[Debug5 UPDATED env ; Debug5 two env]Debug5]] [[Debug5 two env ]two]] (env)', (vector) '[[Debug5 UPDATED env ; Debug5 three env]Debug5]] [[Debug5 three env]three]]', '[[Debug5 UPDATED env ; Debug5 three env]Debug5]] [[Debug5 three env]three]] (env)',
+    (vector) '[[Debug5 UPDATED env ; Debug5 twenty one env]Debug5]] [[Debug5 twenty one env]twenty]] [[Debug5 twenty one env]one]]', '[[Debug5 UPDATED env ; Debug5 twenty one env]Debug5]] [[Debug5 twenty one env]twenty]] [[Debug5 twenty one env]one]] (env)',
+    (vector) '[[Debug5 UPDATED env ; Debug5 twenty two env]Debug5]] [[Debug5 twenty two env]twenty]] [[Debug5 twenty two env]two]]', '[[Debug5 UPDATED env ; Debug5 twenty two env]Debug5]] [[Debug5 twenty two env]twenty]] [[Debug5 twenty two env]two]] (env)',
+    (vector) '[[Debug5 UPDATED env ; Debug5 twenty three env]Debug5]] [[Debug5 twenty three env]twenty]] [[Debug5 twenty three env]three]]', '[[Debug5 UPDATED env ; Debug5 twenty three env]Debug5]] [[Debug5 twenty three env]twenty]] [[Debug5 twenty three env]three]] (env)' (ap)_(add)_(phrases) (7), (vector)
+    (vector) '[[Debug7 env]Debug7]]', '[[Debug7 env]Debug7]] (env)', (vector) '[[Debug7 one env ; Debug7 env]Debug7]] [[Debug7 one env]one]]', '[[Debug7 one env ; Debug7 env]Debug7]] [[Debug7 one env]one]] (env)',
+    (vector) '[[Debug7 two env ; Debug7 env]Debug7]] [[Debug7 two env]two]]', '[[Debug7 two env ; Debug7 env]Debug7]] [[Debug7 two env]two]] (env)',
+    (vector) '[[Debug7 three env ; Debug7 env]Debug7]] [[Debug7 three env]three]]', '[[Debug7 three env ; Debug7 env]Debug7]] [[Debug7 three env]three ]] (env)',
+    (vector) '[[Debug7 twenty one env ; Debug7 env
+
+1 Rows. -- 50 msec.
+
+
+SQL>dump_match_list (ap_build_match_list (vector (5, 7), ptext_2 (), 'x-any', 0, 0 ) );
+VDATA
+VARCHAR
+_______________________________________________________________________________
+
+[0][0] 3
+[0][1][0] Debug apc #3
+[0][1][1] DB.DBA.AP_DEBUG_CALLBACK
+[0][1][2] Debug apc #3 env
+[1][0] 5
+[1][1][0] Debug aps #5
+[1][1][1] 3
+[1][1][2] 1
+[1][1][3] Debug aps #5 env
+[1][2] 7
+.....
+139 Rows. -- 231 msec.
+
+SQL>dump_match_list (ap_build_match_list (vector (5, 7), ptext_2 (), 'x-any', 0, 3 ) );
+VDATA
+VARCHAR
+_______________________________________________________________________________
+
+[0][0] 3
+[0][1][0] Debug apc #3
+[0][1][1] DB.DBA.AP_DEBUG_CALLBACK
+[0][1][2] Debug apc #3 env
+[1][0] 5
+[1][1][0] Debug aps #5
+[1][1][1] 3
+[1][1][2] 1
+.....
+133 Rows. -- 231 msec.
+
+SQL>create procedure ap_make_js_menus (
+  in ap_set_ids any, in source_UTF8 varchar, in lang_name varchar, in is_html integer)
+{
+  declare res_out, script_out, match_list any;
+  declare m_apc, m_aps, m_app, m_apa, m_apa_w, m_aph any;
+  declare apa_w_ctr, apa_w_count integer;
+  declare app_ctr, app_count integer;
+  declare prev_end integer;
+
+  match_list := ap_build_match_list ( ap_set_ids, source_UTF8, lang_name, is_html, 3); -- 3 is to have less garbage, hence better speed.
+  m_apc := aref_set_0 (match_list, 0);
+  m_aps := aref_set_0 (match_list, 1);
+  m_app := aref_set_0 (match_list, 2);
+  m_apa := aref_set_0 (match_list, 3);
+  m_apa_w := aref_set_0 (match_list, 4);
+  m_aph := aref_set_0 (match_list, 5);
+  apa_w_count := length (m_apa_w);
+  app_count := length (m_app);
+  if (0 = app_count)
+    {
+      return source_UTF8;
+    }
+  res_out := string_output ();
+  script_out := string_output ();
+  http ('<script DEFER language="javescript"><!--', script_out);
+  http ('\n  var v_descs = [', script_out);
+  for (apa_w_ctr := 0; apa_w_ctr < apa_w_count; apa_w_ctr := apa_w_ctr + 1)
+    {
+      declare apa_idx integer;
+      declare apa any;
+      apa_idx := m_apa_w [apa_w_ctr];
+      apa := aref_set_0 (m_apa, apa_idx);
+      if (5 = length (apa))
+        {
+          declare apa_beg, apa_end, apa_hpctr, apa_hpcount integer;
+          apa_beg := apa [1];
+	  apa_end := apa [2];
+	  apa_hpcount := length (apa[4]);
+	  http (subseq (source_UTF8, prev_end, apa_beg), res_out);
+	  http (sprintf ('<span id="apjsm%d">', apa_idx), res_out);
+	  http (subseq (source_UTF8, apa_beg, apa_end), res_out);
+	  http ('</span>', res_out);
+          prev_end := apa_end;
+	  if (apa_w_ctr > 0)
+	    http(',', script_out);
+	  http (sprintf ('\n\t["apjsm%d"\t, [', apa_idx), script_out);
+	  for (apa_hpctr := 0; apa_hpctr < apa_hpcount; apa_hpctr := apa_hpctr + 1)
+            {
+              if (apa_hpctr > 0)
+	        http (',', script_out);
+	      http (cast (apa[4][apa_hpctr] as varchar), script_out);
+            }
+	  http (']\t, [', script_out);
+	-- todo: list service indexes. Do we need this in such a form?
+	  http ('\t]', script_out);
+        }
+    }
+  http (subseq (source_UTF8, prev_end), res_out);
+  http (' ];', script_out);
+  http ('\n  var v_descs = [', script_out);
+  -- todo list services. Do we need this in such a form?
+  http (' ];', script_out);
+  http ('\n  var v_links = [', script_out);
+  for (app_ctr := 0; app_ctr < app_count; app_ctr := app_ctr + 1)
+    {
+      declare app any;
+      app := m_app [app_ctr];
+      if (app_ctr > 0)
+        http(',', script_out);
+      http (sprintf ('\n\t["%s"\t, "%s"\t, "%s"\t, "%s"\t]', app[3][0], app[3][1], app[3][2], app[3][3]), script_out);
+    }
+  http (' ];', script_out);
+  http ('\n--></script><script DEFER language="javascript" src="lookup.js"></script>', script_out);
+  return
+    replace (
+      replace (
+        string_output_string (res_out),
+        '<body', '<body onload="makePopupDivs (v_descs, v_services, v_links)"' ),
+      '</html>', string_output_string (script_out) || '</html>' );
+}
+;
+
+
+Done. -- 0 msec.
+
+SQL>create function ptext_3 ()
+{
+  return '<html>
+  <head>
+  <link href="gogo.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+  <p>The OpenLink Virtuoso team has developers based in Bulgaria</p>
+  </body>
+</html>';
+}
+;
+
+Done. -- 10 msec.
+
+SQL>create function ptext_3 ()
+{
+  return '<html>
+  <head>
+  <link href="gogo.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+  <p>The OpenLink <strong>Virtuoso</strong> team has developers based in Bulgaria</p>
+  </body>
+</html>';
+}
+;
+
+Done. -- 0 msec.
+
+
+SQL>insert replacing DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID, APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
+values (9, 'Gogo aps', http_dav_uid(), http_admin_gid(), 3, 'x-any', 'Gogo aps env', 10000, 0);
+
+Done. -- 0 msec.
+
+SQL>ap_add_phrases (9,
+    vector (
+      vector ('OpenLink'		, vector ('OpenLink'		, 'http://www.openlinksw.com'		, 'OpenLink Software'	, ' The industry leading provider of High Performance drivers'	)),
+      vector ('OpenLink Virtuoso'	, vector ('OpenLink Virtuoso'	, 'http://www.openlinksw.com/virtuoso'	, 'OpenLink Virtuoso'	, ' OpenLink Universal Integration Middleware'			)),
+      vector ('Bulgaria'		, vector ('Bulgaria'		, 'http://www.government.bg/English/'	, 'Bulgaria'		, ' Republic of Bulgaria'					))
+    ) )
+;
+
+Done. -- 0 msec.
+
+SQL>select ap_make_js_menus (vector (9), ptext_3(), 'x-any', 1);
+
+callret
+VARCHAR
+_______________________________________________________________________________
+
+<html>
+  <head>
+  <link href="gogo.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body onload="makePopupDivs (v_descs, v_services, v_links)">
+  <p>The OpenLink <strong>Virtuoso</strong> team has developers based in Bulgaria</p>
+  </body>
+<script DEFER language="javescript"><!--
+  var v_descs = [ ];
+  var v_descs = [ ];
+  var v_links = [
+        ["Bulgaria"     , "http://www.government.bg/English/"   , "Bulgaria"    , " Republic of Bulgaria"       ],
+        ["OpenLink Virtuoso"    , "http://www.openlinksw.com/virtuoso"  , "OpenLink Virtuoso"   , " OpenLink Universal Integration Middleware"  ],
+        ["OpenLink"     , "http://www.openlinksw.com"   , "OpenLink Software"   , " The industry leading provider of High Performance drivers"  ] ];
+--></script><script DEFER language="javascript" src="lookup.js"></script></html>
+
+1 Rows. -- 0 msec.
+
+]]></programlisting>
+  </sect2>
+</sect1>
 	<!-- ======================================== -->
 </chapter>
 

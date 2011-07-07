@@ -39,7 +39,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc"><title>Description</title>
+  <refsect1 id="desc_mts_connect"><title>Description</title>
    <para> If reconnect flag is set to non-zero value then forces Virtuoso to connect even it have been connected already. Returns zero if succeeds. If MS DTC service is not available (W2K) or MTS is not running (NT4.0) signals error with code "MX000". </para>
   </refsect1>
 </refentry>

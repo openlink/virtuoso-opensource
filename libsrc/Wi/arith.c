@@ -456,7 +456,7 @@ cmp_dv_box (caddr_t dv, caddr_t box)
 
 
 int
-cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
 {
   int inx, n1, n2;
   NUMERIC_VAR (dn1);
@@ -655,10 +655,10 @@ cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t
 
 #ifdef CMP_MOREDEBUG
 int
-cmp_boxes_old (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes_old (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
 #else
 int
-cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
 #endif
 {
   NUMERIC_VAR (dn1);
@@ -710,6 +710,11 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
 	case DV_STRING:
 	  n1--;
 	  break;
+	case DV_UNAME:
+	  n1--;
+	  dtp1 = DV_STRING;
+	  collation1 = collation2 = NULL;
+	  break;
 	case DV_LONG_WIDE:
 	  dtp1 = DV_WIDE;
 	case DV_WIDE:
@@ -738,6 +743,11 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
 	    }
 	  else
 	    collation1 = collation2;
+	  break;
+	case DV_UNAME:
+	  n2--;
+	  dtp2 = DV_STRING;
+	  collation1 = NULL;
 	  break;
 	case DV_LONG_BIN:
 	  dtp2 = DV_BIN;
@@ -847,7 +857,7 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
 
 #ifdef CMP_MOREDEBUG
 int
-cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
 {
   int res_safe = cmp_boxes_safe (box1, box2, collation1, collation2);
   int res_old = cmp_boxes_old (box1, box2, collation1, collation2);
@@ -905,7 +915,7 @@ numeric_bin_op (numeric_bop_t num_op, numeric_t x, numeric_t y, caddr_t * qst,
 
 #define ARTM_BIN_FUNC(name, op, num_op, isdiv) \
 caddr_t \
-name (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target) \
+name (ccaddr_t box1, ccaddr_t box2, caddr_t * qst, state_slot_t * target) \
 { \
   NUMERIC_VAR (dn1); \
   NUMERIC_VAR (dn2); \
@@ -972,7 +982,7 @@ null_result: \
 
 /* equal to ARTM_BIN_FUNC (box_mod, %, numeric_modulo, 1) with some extensions */
 caddr_t
-box_mod (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target)
+box_mod (ccaddr_t box1, ccaddr_t box2, caddr_t * qst, state_slot_t * target)
 {
   NUMERIC_VAR (dn1);
   NUMERIC_VAR (dn2);
@@ -1041,7 +1051,7 @@ ARTM_BIN_FUNC (box_div, /, numeric_divide, 1)
 
 
 caddr_t
-box_identity (caddr_t arg, caddr_t ignore, caddr_t * qst, state_slot_t * target)
+box_identity (ccaddr_t arg, ccaddr_t ignore, caddr_t * qst, state_slot_t * target)
 {
   if (target)
     {

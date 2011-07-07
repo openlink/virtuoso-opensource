@@ -45,9 +45,12 @@
 #define LOG_TEXT	10 /* SQL string follows */
 #define LOG_SEQUENCE	11 /* series name, count */
 #define LOG_SEQUENCE_64	12 /* series name, count */
-#define LOG_USER_TEXT   14 /* SQL string log'd by an user */
+#define LOG_KEY_INSERT 13
+#define LOG_KEY_DELETE 14
+#define LOG_USER_TEXT   15 /* SQL string log'd by an user */
 
-#define LOGH_TIME		0
+
+#define LOGH_CL_2PC		0 /* string with commit flag and 8 byte lt_trx_no.  If not cluster pc, then null pointer. */
 #define LOGH_USER		1
 #define LOGH_REPLICATION 	2
 #define LOGH_BYTES		3
@@ -58,6 +61,7 @@
 #define LOG_HEADER_LENGTH	5
 #define LOG_HEADER_LENGTH_OLD	4
 #endif
+#define LOGH_COMMIT_FLAG_OFFSET 5 /* 3 bytes of array head, 2 bytes of logh_cl_2pc string header, first byte of string */
 
 #define REPLH_ACCOUNT		0
 #define REPLH_SERVER		1
@@ -85,5 +89,6 @@ int log_write_replication (caddr_t * header, char * string, long bytes);
 void tcpses_set_fd (session_t * ses, int fd);
 int tcpses_get_fd (session_t * ses);
 void dbs_sys_db_check (caddr_t file);
+extern int32 cl_non_logged_write_mode;
 
 #endif /* _WI_LOG_H */

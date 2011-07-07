@@ -84,6 +84,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 //]]>
     </script>
     <script type="text/javascript" src="oat/loader.js"></script>
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="login.js"></script>
     <script type="text/javascript" src="nav_framework.js"></script>
   </head>
   <body>
@@ -207,13 +209,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
       	        <h3></h3>
       	      </div>
   	      <div class="w_content">
-                <div class="user_img_ctr">
-                  <a href="javascript:void(0)">
-		  <img alt="Profile image"
-		  id="userProfilePhotoImg"
-		  rel="foaf:depiction"
-		  class="prof_photo" src="images/profile.png"/>
-                  </a>
+                <div class="user_img_ctr" id="userProfilePhoto">
                 </div> <!-- user_img_ctr -->
                 <div class="gems_ctr">
                   <div class="prof_user_gems" id="profileUserGems">
@@ -320,13 +316,17 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   <div id="ciPCtr" class="tab_page">
                   </div>
                   <div id="ciP1" class="tab_page">
+                  <table width="100%">
+                    <tr>
+                      <td width="100%" valign="top">
                     <div  class="vcard">
-		      <div class="vcard_l">
-			<img id="ciP1photo" rel="foaf:depiction"
-			     src="images/profile_small.png"
-			     alt="photo" class="photo"/>
+            	      <div class="vcard_l" id="ciP1photo">
 		      </div>
                       <div class="vcard_r">
+            	        <span>
+            	          <a href="#" class="personal_uri" id="ciP1uri">Personal URI</a>
+            	          <br />
+                  	        </span>
                         <span class="fn" id="ciP1fn"></span>
                         <div class="org" id="ciP1org"></div>
                         <a class="email" id="ciP1email" rel="foaf:mbox" href=""></a>
@@ -341,6 +341,12 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       </div>
                       </div>
                     </div>
+                      </td>
+                      <td valign="top">
+                        <img id="ciP1qrcode" src=""/>
+                      </td>
+                    </tr>
+                </table>
                   </div> <!-- tab_page -->
                   <div id="ciP2" class="tab_page">
                     <div class="vcard">
@@ -362,6 +368,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		    <ul class="im_contacts"></ul>
                   </div>
                   <div id="ciP4" class="tab_page ci_personal">
+                  <div class="sect ci_p_topicInterests">
+                    <h4>Interest topics</h4>
+                    <p id="interestTopicsCtr"></p>
+                  </div>
                     <div class="sect ci_p_interests">
                       <h4>Interests</h4>
                       <p id="interestsCtr"></p>
@@ -409,62 +419,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		</div> <!-- w_title_bar_btns -->
               </div>
               <div class="w_content" id="notify_content">
-<!--
-		<h3 class="date" >Today</h3>
-                <ul class="msgs" >
-                  <li>
-                    <img class="msg_icon person_tnail"
-                         alt="Dipsy"
-                         src="images/people/dipsy.jpg"/>
-                    <div class="msg">
-                      <span class="time">20:30</span>
-                      LaaLaa and <a href="#">Dipsy</a> are now connected.
-                    </div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
-                  </li>
-                  <li>
-                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/>
-                    <div class="msg"><span class="time">22:20</span> LaaLaa wrote a weblog article titled <a href="#">Eh Oh!</a></div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
-                  </li>
-                  <li>
-                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/>
-                    <div class="msg"><span class="time">22:20</span> LaaLaa published a feed <a href="#">Raw!</a></div>
-                    <div class="msg_r">
-                      <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                    </div>
-                  </li>
-                </ul>
--->
               </div> <!-- w_content -->
             </div> <!-- widget -->
-
-	    <!-- Locator -->
-            <!-- div class="widget w_contact">
-              <div class="w_title">
-                <h3>Locator</h3>
-		<div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png"
-		       alt="settings" />
-		  <img src="images/skin/default/menu_dd_handle_close.png"
-		       alt="Minimize"
-		       class="w_toggle"
-		       onclick="widgetToggle(this);"/>
-		</div--> <!-- w_title_bar_btns -->
-              <!--</div>--> <!-- w_title -->
-              <!-- div class="w_content">
-                <div id="locatorMap" style="height:300px;"></div>
-              </div>
-            </div-->
-          </div> <!-- #u_home_r -->
-
    	  <!-- Profile Page end-->
           <!-- Connections Page start-->
-
           <div id="contacts_interface" style="display:none;">
             <div class="widget w_contact">
               <div class="w_content">
@@ -490,10 +448,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <table border="0" cellspacing="0" width="98%">
                         <tr>
 			  <td class="image" style="width:150px;">
-			    <img src="{connImgSRC}"
-				 alt=""
-				 class=""
-				 style="width:40px;cursor:pointer"/><br/>
+                  			    <img src="{connImgSRC}" style="width:40px;cursor:pointer"/>
+                  			    <br/>
 			    <span style="cursor:pointer;text-decoration: underline;">{connProfileFullName}</span>
 			  </td>
                           <td class="info">
@@ -514,13 +470,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               </div>
             </div>
           </div>
-
 	  <!-- Connections Page end-->
           <!-- Invitation Page start-->
-
           <div id="invitations_C" style="display:none;">
             <h1>
-	      <img alt="Openlink Data Spaces" src="images/odslogo_200x25.png" style="padding-top:5px" /><br/>Welcome to
+	      <img alt="OpenLink Data Spaces" src="images/odslogo_200x25.png" style="padding-top:5px" /><br/>Welcome to
 	      <span id="invitations_connection_full_name_1"></span>'s network</h1>
             <div class="profile">
               <img src="images/profile_small.png" width="105px" alt="" id="invitations_connection_photo" />
@@ -654,37 +608,43 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			     tabindex="4"
 			     checked="checked"
 			     value="on_people"
-			     name="cb_people"/><label for="cb_people">People</label>
+                  			     name="cb_people"/>
+                  		<label for="cb_people">People</label>
                       <input id="cb_apps"
 			     type="checkbox"
 			     tabindex="9"
 			     checked="checked"
 			     value="on_apps"
-			     name="cb_apps"/><label for="cb_apps">Application descriptions</label>
+                  			     name="cb_apps"/>
+                  	  <label for="cb_apps">Application descriptions</label>
                       <input id="cb_dav"
 			     type="checkbox"
 			     tabindex="8"
 			     checked="checked"
 			     value="on_dav"
-			     name="cb_dav"/><label for="cb_dav">DAV</label>
+                  			     name="cb_dav"/>
+                  		<label for="cb_dav">DAV</label>
                       <input id="cb_blogs"
 			     type="checkbox"
 			     tabindex="6"
 			     checked="checked"
 			     value="on_blogs"
-			     name="cb_blogs"/><label for="cb_blogs">Weblog</label>
+                  			     name="cb_blogs"/>
+                  	  <label for="cb_blogs">Weblog</label>
                       <input id="cb_news"
 			     type="checkbox"
 			     tabindex="5"
 			     checked="checked"
 			     value="on_news"
-			     name="cb_news"/><label for="cb_news">Feeds</label>
+                  			     name="cb_news"/>
+                  		<label for="cb_news">Feeds</label>
                       <input id="cb_wikis"
 			     type="checkbox"
 			     tabindex="7"
 			     checked="checked"
 			     value="on_wikis"
-			     name="cb_wikis"/><label for="cb_wikis">Wiki</label>
+                  			     name="cb_wikis"/>
+                  		<label for="cb_wikis">Wiki</label>
                       <input id="cb_omail"
 			     type="checkbox"
 			     tabindex="10"
@@ -696,19 +656,22 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			     tabindex="11"
 			     checked="checked"
 			     value="on_bookmark"
-			     name="cb_bookmark"/><label for="cb_bookmark">Bookmarks</label>
+                  			     name="cb_bookmark"/>
+                  		<label for="cb_bookmark">Bookmarks</label>
                       <input id="cb_polls"
 			     type="checkbox"
 			     tabindex="13"
 			     checked="checked"
 			     value="on_polls"
-			     name="cb_polls"/><label for="cb_polls">Polls</label>
+                  			     name="cb_polls"/>
+                  	  <label for="cb_polls">Polls</label>
                       <input id="cb_addressbook"
 			     type="checkbox"
 			     tabindex="14"
 			     checked="checked"
 			     value="on_addressbook"
-			     name="cb_addressbook"/><label for="cb_addressbook">AddressBook</label>
+                  			     name="cb_addressbook"/>
+                  		<label for="cb_addressbook">AddressBook</label>
                       <input id="cb_calendar"
 			     type="checkbox"
 			     tabindex="15"
@@ -720,7 +683,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			     tabindex="12"
 			     checked="checked"
 			     value="on_nntp"
-			     name="cb_nntp"/><label for="cb_nntp">Discussion</label>
+                  			     name="cb_nntp"/>
+                  		<label for="cb_nntp">Discussion</label>
                     </div>
                     <div class="pager" style="text-align:left;display:none;" id="do_tag_block">
                       <input id="tagsInput"
@@ -782,55 +746,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <li>
 			<div class="hit person"></div>
 		      </li>
-
-<!--
-                            <li>
-                              <div class="hit person">
-                                <input type="checkbox" class="sel_ckb"/>
-                                <div class="person_box">
-                                  <img alt="Kingsley" src="i/people/kingsley_t.png" class="person_tnail"/><br/>
-                                  <div class="conn_info"><a href="#">Kingsley</a></div>
-                                </div>
-                                <div class="person_summary_ctr vcard">
-                                  <h4 class="fn">Kingsley <span class="n">Idehen</span></h4>
-                                  <div class="adr">
-                                    <span class="locality">Lexington</span>, <span class="state">MA</span>, <span class="country">USA</span>
-                                  </div>
-                                </div>
-                                <div class="cmds"><button>Write Message</button><button>Delete Connection</button></div>
-                              </div>
-                            </li>
-                            <li>
-                              <div class="hit wiki_article">
-                                <input type="checkbox" class="sel_ckb"/>
-                                <div class="hit_ctr">
-                                  <img src="images/icons/ods_wiki_16.png" class="app_icon"/>
-                                  <h4><a href="#">ODS Menu Spec Revision 0.9</a></h4>
-                                  <p class="excerpt">"ODS Menu system revision was needed to improve control flow and accessibility of the ODS system and to facilitate modern interface using AJAX techniques and the OpenLink Ajax Toolkit. The aims..." <a href="="#"">More...</a></p>
-                                  <div class="props">
-                                    Updated <span class="date">Yesterday</span> by <a href="#">Yrjänä Rankka</a><br/>
-                                  </div>
-                                </div>
-                              </div>
-                            </li>
-                            <li>
-                              <div class="hit message">
-                                <input type="checkbox" class="sel_ckb"/>
-                                <div class="person_box">
-                                  <img alt="Dipsy" src="i/people/dipsy.jpg" class="person_tnail"/><br/>
-                                  <div class="conn_info"><a href="#">Dipsy</a></div>
-                                </div>
-                                <div class="msg_summary">
-                                  <h4><a href="#">New OAT demo page</a></h4>
-                                  <p class="excerpt">"All, See <a href="http://oat.openlinksw.com">OAT demo</a> and tell me what to do with it? I'm Uh-Ohing all over the place but it won't do me any..." <a href="="#"">More...</a></p>
-                                  <div class="props">
-                                    Received <span class="date">Yesterday at 12:32</span>
-                                  </div>
-                                  <div class="cmds"><button>Reply</button><button>Forward</button></div>
-                                </div>
-                              </div>
-                            </li>
--->
                     </ul>
                     <div class="pager" id="bottom_pager">Results 0:
                       <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
@@ -971,27 +886,12 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
         <div id="FT">
           <img alt="Powered by OpenLink Virtuoso" src="images/skin/default/virt_power_no_border.png"/>
           <div id="FT_RC">
-            Copyright &copy; 1998-2010 OpenLink Software<br/>
+            Copyright &copy; 1998-2011 OpenLink Software<br/>
             <a href="#">About</a> <a href="#">Privacy</a> <a href="#">FAQ</a> <a href="#">Developers</a>
           </div><!-- #FT_RC -->
         </div> <!-- #FT -->
       </div> <!-- #RT -->
     </div> <!-- #PG -->
-
-<!-- templates
-    
-    span prof_user_full_name
-    span prof_user_first_name
-    span prof_user_last_name
-    span prof_user_id
-    span prof_user_dataspace_lnk
-    img user_depiction
-    img user_depiction_thumbnail
-    a user_dataspace_lnk
-    a user_vcard_lnk
-    a user_personal_uri_lnk
-
--->
     <div id="connect_box_tpl" class="widget" style="display: none">
       <div class="w_title">
 	<h3 class="w_title"><span class="u_full_name">Full Name</span> is not in your network</h3>
@@ -1114,75 +1014,126 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
       </div> <!-- .oat_anchor_footer -->
     </div> <!-- #a_tmpl_1 -->
 
-    <div id="login_page" style="display:none">
-      <span id="loginCloseBtn">X</span>
-      <h1 class="page_title"><!--balek.zonk.net--></h1>
-      <div id="id_col">
-	<div id="site_id">
-          <img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" />
-	</div>
-      </div> <!-- id_col -->
-      <div id="form_col">
-	<div id="login_form_ctr">
-          <h2>Please identify yourself</h2>
-          <div id="login_form" style="padding: 10px 0px 0px 0px;">
-            <ul class="tab_bar">
-              <li id="loginT1" class="tab_selected">
-		<a href="javascript:void(0)">ODS</a>
-	      </li>
-              <li id="loginT2" >
-		<a href="javascript:void(0)">OpenID</a>
-	      </li>
-              <li id="loginT3" style="display:none">
-		            <a href="javascript: void(0)">Facebook</a>
-	            </li>
-              <li id="loginT4" style="display:none">
-		            <a href="javascript: void(0)">WebID</a>
-	            </li>
-            </ul>
-            <div class="tab_deck">
-              <div id="loginPCtr"></div>
-              <div id="loginP1" class="tab_page" style="min-height: 70px;">
-		<label for="loginUserName">Member ID</label>
-            		<input type="text" name="loginUserName" value="" id="loginUserName"/>
-            		<br />
-		<label for="loginUserPass">Password</label>
-            		<input type="password" name="loginUserPass" value="" id="loginUserPass" />
+    <div id="login_page" style="display: none;">
+      <span id="lf_close"><b>X</b></span>
      		        <br />
+      <table cellspacing="0">
+        <tr>
+          <td valign="top">
+            <img class="id_logo" src="/ods/images/odslogo_200.png" />
+          </td>
+          <td valign="top">
+            <div id="lf" class="form">
+              <div class="header">
+                Identify Yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
               </div>
-              <div id="loginP2" class="tab_page" style="display:none; min-height: 70px;">
-		<label for="loginOpenIdUrl">OpenID URL
-            		  <img alt="OpenID" src="images/login-bg.gif" style="vertical-align:bottom;margin-left:5px;"/>
-		</label>
-  		          <input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" />
-  		          <br />
+              <ul id="lf_tabs" class="tabs">
+                <li id="lf_tab_0" title="Digest">Digest</li>
+                <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
+                <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+                <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
+                <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
+                <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+              </ul>
+              <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                <div id="lf_content">&nbsp;
               </div>
-              <div id="loginP3" class="tab_page" style="display:none; min-height: 70px; padding-left: 100px;">
-                <span id="loginFBData" style="min-height: 20px;"></span>
+                <div id="lf_page_0" class="tabContent" >
+                  <table class="form" cellspacing="5" style="inherit: none;">
+                    <tr>
+                      <th width="20%">
+                        <label for="lf_uid">User ID</label>
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="text" name="lf_uid" value="" id="lf_uid" style="width: 150px;" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <label for="lf_password">Password</label>
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="password" name="lf_password" value="" id="lf_password" style="width: 150px;" />
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div id="lf_page_1" class="tabContent" style="display: none;">
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="20%">
+                        <label for="lf_openId">OpenID URL</label>
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="text" name="lf_openId" value="" id="lf_openId" style="width: 300px;" />
+                      </td>
+                    </tr>
+                  </table>
+              </div>
+
+                <div id="lf_page_2" class="tabContent" style="display: none;">
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="20%">&nbsp;</th>
+                      <td nowrap="nowrap">
+                        <span id="lf_facebookData" style="min-height: 20px;">&nbsp;</span>
                 <br />
                 <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                <fb:login-button autologoutlink="true"></fb:login-button>
+                        <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
+                      </td>
+                    </tr>
+                  </table>
               </div>
-              <div id="loginP4" class="tab_page" style="display:none; min-height: 70px; ">
+
+                <div id="lf_page_3" class="tabContent" style="display: none;">
+                  <table id="lf_table_3" class="form" cellspacing="5">
+                    <tr>
+                      <td>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div id="lf_page_4" class="tabContent" style="display: none;">
+                  <table id="lf_table_4" class="form" cellspacing="5">
+                    <tr>
+                      <th width="20%">
+                      </th>
+                      <td>
+                        <span id="lf_twitter" style="min-height: 20px;"></span>
+                        <br />
+                        <img id="lf_twitterButton" src="/ods/images/sign-in-with-twitter-d.png" border="0"/>
+                      </td>
+                    </tr>
+                  </table>
+
+                  </div>
+                    <div id="lf_page_5" class="tabContent" style="display: none;">
+                      <table id="lf_table_5" class="form" cellspacing="5">
+                        <tr>
+                          <th width="20%">
+                          </th>
+                          <td>
+                            <span id="lf_linkedin" style="min-height: 20px;"></span>
+                            <br />
+                            <img id="lf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                          </td>
+                        </tr>
+                      </table>
+                </div>
               </div>
-            </div> <!-- tab_deck -->
-            <div id="login_ctrls">
-              <input type="hidden" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="checked" />
-              <input type="checkbox" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="checked" />
-          	  <label for="login_frm_cb_remember_me">Remember me</label>
-          	  <br />
-              <input type="button" name="loginBtn" value="Login" id="loginBtn" />
-              <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" />
-              <span id="loginThrobber" style="display:none">Logging in ...
-		<img alt="Please wait..." src="images/oat/throbber.gif"/>
-	      </span>
-              <br/>
-              <a id="loginForgot" style="display:none">Forgot your password?</a>
+              <div id="lf_forget" class="footer" style="background-color: #FFF; display: none;">
+                <a href="pass_recovery.vspx">Forgot your password?</a>
+              </div>
+              <div class="footer">
+                <input type="button" name="lf_login" value="Login" id="lf_login" />
+                <input type="button" name="lf_register" value="Sign Up" id="lf_register" />
+              </div>
             </div>
-          </div> <!-- login_form -->
-	</div> <!-- login_form_ctr -->
-	<div id="loginErrDiv"></div>
-      </div> <!-- form_col -->
+          </td>
+        </tr>
+      </table>
     </div> <!-- login_page -->
   </body>
 </html>

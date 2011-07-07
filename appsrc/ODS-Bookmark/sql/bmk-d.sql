@@ -21,7 +21,7 @@
 --
 ------------------------------------------------------------------------------
 -- bmk-d.sql
--- script for cleaning wa instalation.
+-- script for cleaning wa installation.
 -- Copyright (C) 2004 OpenLink Software
 ------------------------------------------------------------------------------
 
@@ -37,6 +37,17 @@ create procedure BMK.WA.uninstall ()
 BMK.WA.uninstall ()
 ;
 
+create procedure BMK.WA.uninstall ()
+{
+  for select DB.DBA.DAV_SEARCH_PATH (COL_ID, 'C') path from WS.WS.SYS_DAV_COL where COL_DET = 'Bookmark' do
+  {
+    DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+    commit work;
+  }
+}
+;
+BMK.WA.uninstall ()
+;
 -- Scheduler
 BMK.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Bookmark Exchange Scheduler\'');
 
@@ -75,6 +86,8 @@ BMK.WA.exec_no_error('drop type wa_bookmark');
 
 -- Views
 BMK.WA.exec_no_error('drop view BMK..TAGS_VIEW');
+BMK.WA.exec_no_error('drop view BMK..GRANTS_VIEW');
+BMK.WA.exec_no_error('drop view BMK..GRANTS_OBJECT_VIEW');
 
 -- Registry
 registry_remove ('_bookmark_path_');
@@ -85,6 +98,8 @@ registry_remove ('__ods_bookmark_sioc_init');
 registry_remove ('bmk_table_update');
 registry_remove ('bmk_index_version');
 registry_remove ('bmk_path_update');
+registry_remove ('bmk_path_upgrade2');
+registry_remove ('bmk_services_update');
 
 -- Procedures
 create procedure BMK.WA.drop_procedures()
@@ -164,6 +179,43 @@ BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.subscription.edit"');
 BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.subscription.delete"');
 BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.options.set"');
 BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.options.get"');
+
+-- dropping DET procs
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_FIXNAME"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_COMPOSE_XBEL_NAME"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_COMPOSE_FOLDERS_PATH"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_ACCESS_PARAMS"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_AUTHENTICATE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_AUTHENTICATE_HTTP"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_GET_PARENT"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_COL_CREATE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_COL_MOUNT"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_COL_MOUNT_HERE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_DELETE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_RES_UPLOAD"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_PROP_REMOVE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_PROP_SET"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_PROP_GET"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_PROP_LIST"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_DIR_SINGLE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_DIR_LIST"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_FC_PRED_METAS"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_FC_TABLE_METAS"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_FC_PRINT_WHERE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_DIR_FILTER"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_SEARCH_ID_IMPL"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_SEARCH_ID"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_SEARCH_PATH"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_RES_UPLOAD_COPY"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_RES_UPLOAD_MOVE"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_RES_CONTENT"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_SYMLINK"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_DEREFERENCE_LIST"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_RESOLVE_PATH"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_LOCK"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_UNLOCK"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_IS_LOCKED"');
+BMK.WA.exec_no_error('DROP procedure DB.DBA."bookmark_DAV_LIST_LOCKS"');
 
 -- final proc
 BMK.WA.exec_no_error('DROP procedure BMK.WA.exec_no_error');

@@ -27,9 +27,6 @@
   <vm:pagetitle>Error</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header caption="Error"/>
-    <vm:menu>
-      <vm:menuitem value="Error"/>
-    </vm:menu>
     <vm:variables>
       <v:variable name="page_name" type="varchar" default="''" param-name="__PAGE" persist="0"/>
       <v:variable name="code" type="varchar" default="''" param-name="__SQL_STATE" persist="temp"/>

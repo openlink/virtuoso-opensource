@@ -65,19 +65,6 @@ create procedure POLLS.WA.exec_no_error(in expr varchar, in execType varchar := 
 --
 create procedure POLLS.WA.vhost()
 {
-  declare
-    iIsDav integer;
-  declare
-    sHost varchar;
-
-  -- Add a virtual directory for Polls - public www -------------------------
-  sHost := registry_get('_polls_path_');
-  if (cast(sHost as varchar) = '0')
-    sHost := '/apps/polls/';
-  iIsDav := 1;
-  if (isnull(strstr(sHost, '/DAV')))
-    iIsDav := 0;
-
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'ods_rule_polls',
     1,
@@ -159,6 +146,12 @@ POLLS.WA.exec_no_error (
 )
 ;
 
+POLLS.WA.exec_no_error (
+  'alter type wa_polls add overriding method wa_dashboard () returns any'
+)
+;
+
+
 -------------------------------------------------------------------------------
 --
 -- wa_polls methods
@@ -183,8 +176,15 @@ create method wa_id_string() for wa_polls
 --
 create method wa_drop_instance () for wa_polls
 {
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/polls/' || self.PollsID) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
   POLLS.WA.domain_delete (self.PollsID);
-  VHOST_REMOVE(lpath => concat ('/polls/', self.PollsID));
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -205,9 +205,7 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 --
 create method wa_new_inst (in login varchar) for wa_polls
 {
-  declare
-    iUserID,
-    iWaiID integer;
+  declare iUserID, iWaiID integer;
 
   iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (isnull(iUserID))
@@ -226,9 +224,9 @@ create method wa_new_inst (in login varchar) for wa_polls
   update WA_INSTANCE set WAI_INST = self where WAI_ID = iWaiID;
 
   -- Add a virtual directory for Polls - public www -------------------------
-  VHOST_REMOVE(lpath    => concat('/polls/', self.PollsID));
-  VHOST_DEFINE(lpath    => concat('/polls/', self.PollsID),
-               ppath    => concat(self.get_param('host'), 'www/'),
+  VHOST_REMOVE(lpath    => '/polls/' || self.PollsID);
+  VHOST_DEFINE(lpath    => '/polls/' || self.PollsID,
+               ppath    => self.get_param('host') || 'www/',
                ses_vars => 1,
                is_dav   => self.get_param('isDAV'),
                is_brws  => 0,
@@ -351,13 +349,34 @@ create method get_param (in param varchar) for wa_polls
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_polls
+{
+  declare iWaiID integer;
+
+  iWaiID := self.PollsID;
+  return (select XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       POLLS.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..poll_post_iri (iWaiID, _id) as nvarchar), N'">', POLLS.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from POLLS.WA.dashboard_rs(p0)(_id integer, _title varchar, _time datetime) x
+           where p0 = iWaiID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_polls
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
-  return POLLS.WA.dashboard_get (domainID, userID);
+  return POLLS.WA.dashboard_get (self.PollsID);
 }
 ;
 
@@ -367,10 +386,9 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_polls
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
-  return concat(POLLS.WA.dav_url2(domainID, userID), 'Polls.rdf');
+  domainID := self.PollsID;
+  userID := POLLS.WA.domain_owner_id (domainID);
+  return POLLS.WA.dav_url2(domainID, userID) || 'Polls.rdf';
 }
 ;
 
@@ -400,3 +418,40 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_pol
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('polls_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Polls') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/polls/' || cast (WAI_ID as varchar) || '/polls.vspx') do
+    {
+      _new_lpath := '/polls/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('polls_path_upgrade2', '1');
+}
+;
+POLLS.WA.path_upgrade ();

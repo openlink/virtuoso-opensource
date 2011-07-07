@@ -1,0 +1,235 @@
+<?vsp 
+  declare open_id_url, oid_sig, oid_srv, oid_assoc_handle, oid_sig, oid_signed, error_message, tok, akey, sid, resp varchar;
+  declare step int;
+
+  error_message := ''; akey := '';
+  oid_sig := get_keyword ('openid.sig', params);
+  --oid_identity := get_keyword ('openid.identity', params);
+  oid_assoc_handle := get_keyword ('openid.assoc_handle', params);
+  oid_signed := get_keyword ('openid.signed', params);
+  oid_srv := get_keyword ('oid-srv', params);
+  open_id_url := get_keyword ('open_id_url', params, null);
+  tok := get_keyword ('okey', params, '');
+  akey := get_keyword ('openid.oauth.request_token', params, get_keyword ('akey', params, ''));
+  step := 0;
+--  dbg_obj_print_vars (params);
+  if ({?'back'})
+    OAUTH..session_terminate (get_keyword ('sid', params));
+  sid := get_keyword ('sid', params, xenc_rand_bytes (10, 1));
+  if (length (oid_sig))
+    {
+      declare url, pars, sig varchar;
+
+      url := sprintf ('%s?openid.mode=check_authentication&openid.assoc_handle=%U&openid.sig=%U&openid.signed=%U',
+      oid_srv, oid_assoc_handle, oid_sig, oid_signed);
+
+      pars := params;
+
+      sig := split_and_decode (oid_signed, 0, '\0\0,');
+      foreach (any el in sig) do
+        {
+          el := trim (el);
+          if (el not in ('mode', 'signed', 'assoc_handle'))
+          {
+            declare val any;
+            val := get_keyword ('openid.'||el, pars, '');
+            if (val <> '')
+              url := url || sprintf ('&openid.'||el||'=%U', val);
+          }
+        }
+	error_message := 'Login failed';
+        {
+          declare resp any;
+          declare exit handler for sqlstate '*'
+          {
+            goto auth_failed1;
+          };
+          resp := HTTP_CLIENT (url);
+          if (resp not like '%is_valid:%true\n%')
+            goto auth_failed1;
+        }
+        error_message := 'Login successful';
+        step := 1;
+      }
+    else if (get_keyword ('exec', params, '') <> '' and length (open_id_url))
+      {
+        declare hdr, xt, uoid, is_agreed any;
+        declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+        declare oi2_srv varchar;
+
+        host := http_request_header (lines, 'Host');
+
+        this_page := 'http://' || host || http_path ();
+        trust_root := 'http://' || host;
+
+        declare exit handler for sqlstate '*'
+        {
+          error_message := 'Invalid OpenID URL';
+          goto auth_failed1;
+        };
+
+        url := open_id_url;
+        oi_ident := url;
+        hdr := null;
+        cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr, n_redirects=>15);
+        xt := xtree_doc (cnt, 2);
+        oi_srv := null; --cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
+        oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
+        oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
+
+        if (oi2_srv is not null)
+          oi_srv := oi2_srv;
+
+        if (oi_srv is null)
+          signal ('22023', 'Cannot locate OpenID server');
+
+        if (oi_delegate is not null)
+          oi_ident := oi_delegate;
+
+        this_page := this_page || sprintf ('?oid-srv=%U&okey=%U&sid=%U', oi_srv, tok, sid);
+
+        --dbg_obj_print_vars (oi2_srv);
+	check_immediate :=
+           sprintf 
+	     ('%s?openid.ns=%U&openid.ns.sreg=%U&openid.mode=checkid_setup&openid.identity=%U&openid.claimed_id=%U&openid.return_to=%U&openid.realm=%U',
+              oi_srv, OPENID..ns_v2 (), OPENID..sreg_ns_v1 (), oi_ident, oi_ident, this_page, trust_root);
+           if (length (tok))
+	     check_immediate := check_immediate || 
+		sprintf ('&openid.ns.oauth=%U&openid.oauth.consumer=%U', OPENID..oauth_ns (), tok);
+        http_status_set (302);
+        http_header (sprintf ('Location: %s\r\n', check_immediate));
+        return;
+      }
+    else if (get_keyword ('atok', params, '') <> '')    	
+      {
+        declare access_token, url varchar;
+	declare tmp any;
+	insert into OAUTH..CLI_SESSIONS (cs_sid, cs_token, cs_secret) values (sid, akey, '');
+	commit work;
+	url :=  OAUTH..sign_request ('GET', sprintf ('http://%{WSHost}s/OAuth/access_token'), '', tok, sid);
+	--dbg_obj_print_vars (url);
+	tmp := http_get (url);
+	--dbg_obj_print (tmp);
+	sid := OAUTH..parse_response (sid, tok, tmp);
+        step := 2;
+      }
+   else if (get_keyword ('run', params, '') <> '')
+      {
+        declare ep, pars, meth, url, req_url varchar;
+        ep := {?'ep'};
+        meth := {?'meth'};
+        pars := {?'pars'};
+        tok := OAUTH..get_consumer_key (sid);
+        url := sprintf ('%s%s', ep, meth);
+        req_url := OAUTH..sign_request ('GET', url, pars, tok, sid);
+        resp := http_client (req_url);
+        step := 3;
+      } 
+  auth_failed1:;
+?>
+<html>
+  <head>
+    <title>OpenID OAuth Extension test client</title>
+    <link rel="stylesheet" href="/ods/default.css" type="text/css" />
+  <style type="text/css">
+    html {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: gill sans, sans-serif;
+      font-size: 80%;
+      margin: 0;
+      padding: 1.2em 2em;
+    }
+
+    #header {
+      width: 100%;
+      float: left;
+      clear: left;
+      border-bottom: 2px solid #696;
+      margin: 0 0 1.2em;
+      padding: 0 0 0.3em;
+    }
+
+    #main-content
+    {
+     margin-left: 5px;
+     color: #000033;
+     padding-bottom: 5px;
+     padding-top: 0px;
+    }
+
+    h3.section {
+      color: #005395;
+      font-size: small;
+      margin-bottom: 0;
+      padding-bottom: 3px;
+      padding-top: 7px;
+    }
+    textarea
+    {
+     width: 500px;
+     font-size: 12px;
+     font-family: "Courier New", Courier, monospace;
+     overflow: visible;
+     /*overflow-y: hidden;*/
+     border: 1px solid #000;
+     padding: 3px;
+    }
+
+
+    label
+    {
+      font-weight: bold;
+    }
+
+    #footer {
+      width: 100%;
+      float: left;
+      clear: left;
+      border-top: 2px solid #696;
+      margin: 1.2em 0 0;
+      padding: 0.3em;
+      background-color: #fff;
+    }
+  </style>
+  <head>
+  <body>
+    <div>
+      <div style="padding: 10px; background-color: #D9E9F2;">
+        <img src="/ods/images/odslogo_200.png" alt="ODS logo icon" />
+      </div>
+      <div id="main-content">
+     <h1>OpenID OAuth Extension test client</h1>
+     <p><?V error_message ?></p>
+     <form method="get" action="<?V http_path () ?>">
+     <input type="hidden" value="<?V sid ?>" name="sid" />
+     <fieldset>
+     <?vsp if (step = 0) { ?> 
+     <label>OpenID URL</label> <input type="text" size="70" name="open_id_url" /><br/>
+     <label>Consumer Key (token)</label> <input type="text" size="70" name="okey" value="<?V tok ?>"/><br/>
+     <input type="submit" name="exec" value="Submit" /><br/>
+     <?vsp } ?>
+     <?vsp if (step = 1) { ?> 
+     <label>Consumer Key (token)</label> <input type="text" size="70" name="okey" value="<?V tok ?>"/><br/>
+     <label>Authorized Key (token)</label> <input type="text" size="70" name="akey" value="<?V akey ?>"/><br/>
+     <input type="submit" value="Get Access token" name="atok" />
+     <?vsp } ?>
+     <?vsp if (step = 2) { ?> 
+     <label>API Endpoint</label> <input type="text" size="70" name="ep" value="<?V sprintf ('http://localhost:%s/ods/api/', server_http_port ())  ?>"/><br/>
+     <label>Method</label> <input type="text" size="70" name="meth" value=""/><br/>
+     <label>Paremeters</label> <input type="text" size="70" name="pars" value=""/><br/>
+     <input type="submit" value="Execute" name="run" />
+     <?vsp } ?>
+     <?vsp if (step = 3) { ?>
+     <textarea name="resp" rows="20" cols="80"><?V resp ?></textarea><br/> 
+     <input type="submit" value="Start Over" name="back" />
+     <?vsp } ?>
+     </fieldset>
+     </form>
+     </div>
+    </div>
+  </body>
+</html>

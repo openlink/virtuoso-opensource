@@ -292,6 +292,21 @@ we will discuss in the Virtual hosting and Multihosting section of this document
 -->
 
 </sect3>
+<sect3 id="virtmetahost"><title>Managing Host Metadata</title>
+<para>To add metadata in /.well-known/host-meta, execute:</para>
+<programlisting><![CDATA[
+WS.WS.host_meta_add ([app-name], [xrd-xml-fragment])	
+]]></programlisting>
+<para>For example:</para>
+<programlisting><![CDATA[
+WS.WS.host_meta_add 
+  ( 
+    'dbpedia.page-descriptor', 
+    '<Link rel="http://dbpedia.org/resource-descriptor" template="http://dbpedia.org/page/{uri}"/>'
+  )
+  ;	
+]]></programlisting>
+</sect3>
 
 <sect3 id="virtproxy"><title>Virtuoso As A Proxy</title>
 
@@ -381,12 +396,169 @@ AddModule mod_proxy.c
 ...
 </screen>
 
-  <para>You will then need to add a configuration line to the httpd.conf file
+  <!--para>You will then need to add a configuration line to the httpd.conf file
   to let Apache know how to proxy requests Virtuoso:</para>
 
     <screen>
 ProxyPass /virtserver   http://MyVirtuosoServer:8890/
-</screen>
+</screen-->
+<sect5 id="apachedoingproxyconf"><title>Configuration steps</title>
+
+<para>Below we will use the &lt;Location&gt; directive to simplify the configuration:</para>
+
+<programlisting><![CDATA[
+<Location /virtuoso/>
+   ProxyPass               http://localhost:8890/
+   ProxyPassReverse        /
+</Location>
+]]></programlisting>
+
+<orderedlist>
+  <listitem>Set the ProxyPass directive:
+
+<para>The ProxyPass directive makes Apache to change all incoming URLs and map 
+it to the internal http endpoint.</para>
+<para>So when the browser makes a request for:</para>
+
+<programlisting><![CDATA[
+http://localhost/virtuoso/conductor/login.vsp
+]]></programlisting>
+
+<para>it is rewritten to use:</para>
+
+<programlisting><![CDATA[
+http://localhost:8890/conductor/login.vsp
+]]></programlisting>
+
+<para>before sending the request over to the Virtuoso server.</para>
+</listitem>  
+  <listitem>Set the ProxyPassReverse directive:
+  <para>The ProxyPassReverse directive rewrites the HTTP Headers that come back 
+from Virtuoso to map back to the external URL. This is needed for e.g. 303 Location 
+redirects where Virtuoso will use:</para>
+<programlisting><![CDATA[
+Location: http://localhost:8890/conductor/pageXXX.vsp
+]]></programlisting>
+<para>which Apache needs to rewrite to:</para>
+<programlisting><![CDATA[
+Location: http://localhost/virtuoso/conductor/pageXXX.vsp
+]]></programlisting>
+<para>before sending the reply back to the browser.</para>
+</listitem>
+  <listitem><para>If the mapping is / ---&gt; / instead of /virtuoso/ ---&gt; / then the settings should be done, 
+since ProxyPass and ProxyPassReverse only deal with rewriting urls and http headers.</para>
+<para>When however there is a path mapping, there is a third step to take:</para>
+<para>Pages can contain clickable links like:</para>
+<programlisting><![CDATA[
+<a href="/conductor/mypage.vsp">Click Here</a>
+]]></programlisting>
+<para>If you click on this link in your browser, it would use:</para>
+<programlisting><![CDATA[
+http://localhost/conductor/mypage.vsp
+]]></programlisting>
+<para>which does not map back to your /virtuoso/ vpath in apache.</para>
+<para>As phpBB3 has been written from outset to cater for this 
+situation, it will always need to recalculate fully qualified 
+host/path names everywhere in its pages, which is not always very practical.</para>
+<para>Thus Apache needs to be configured to do page rewriting as well as in:</para>
+<programlisting><![CDATA[
+     ProxyHTMLEnable         On
+     ProxyHTMLURLMap         / /virtuoso/
+     ProxyHTMLURLMap         http://localhost:8890/ /virtuoso/
+]]></programlisting>
+<para>This will rewrite the content of every page to make sure that links 
+inside the page are rewritten to use the external mapping of this instance.</para>
+
+<para>If you have set Virtuoso to use <code>EnabledGzipContent=1</code>, then you need to 
+tell apache it may need to gunzip the content before doing this rewrite 
+with the following line:</para>
+<programlisting><![CDATA[
+     SetOutputFilter         INFLATE;DEFLATE
+]]></programlisting>
+
+<para>Although this takes a bit extra CPU power etc, it is still practical to 
+setup a virtual path on user's own system that points to some external system.</para>
+
+<para>For example, add this to your httpd.conf to get a mapping to dbpedia-live instance:</para>
+<programlisting><![CDATA[
+<Location /dbp/>
+     ProxyPass               http://dbpedia-live.openlinksw.com/
+     ProxyPassReverse        /
+     ProxyHTMLURLMap         / /dbp/
+     ProxyHTMLURLMap         http://dbpedia-live.openlinksw.com/ /dbp/
+     SetOutputFilter         INFLATE;DEFLATE
+</Location>
+]]></programlisting>
+
+
+<para>Now you should be able to use for ex.:</para>
+<programlisting><![CDATA[
+http://localhost/dbp/page/London
+]]></programlisting>
+</listitem>
+</orderedlist>
+</sect5>
+<sect5 id="apachedoingproxyconfexample"><title>Usage Example</title>
+<programlisting><![CDATA[
+NameVirtualHost 82.191.21.32
+
+<VirtualHost 82.191.21.32>
+ServerName www.mysite.net <http://www.mysite.net>
+...
+
+     #  Disable global proxy
+     ProxyRequests       Off
+
+     #  Pass original host to Virtuoso
+     ProxyPreserveHost   On
+
+     #  Timeout waiting for Virtuoso
+     ProxyTimeout        300
+
+     #  Set permission
+     <Proxy *>
+         Order deny,allow
+         Allow from all
+     </Proxy>
+
+     #
+     #  Map /virtuoso/ to a local Virtuoso instance.
+     #
+     #  Since ProxyPass and ProxyPassReverse only fix the Headers
+     #  of the request, we need to use ProxyHTMLURLMap to rewrite
+     #  content.
+     #
+     <Location /virtuoso/>
+         ProxyPass               http://localhost:8890/
+         ProxyPassReverse        /
+
+         #  Enable rewrite rules
+         ProxyHTMLEnable         On
+         ProxyHTMLURLMap         / /virtuoso/
+         ProxyHTMLURLMap         http://localhost:8890/ /virtuoso/
+
+# Uncomment this when EnabledGzipContent=1 in virtuoso.ini
+         #SetOutputFilter         INFLATE;DEFLATE
+     </Location>
+</VirtualHost>
+]]></programlisting>
+
+<para>If we map the virtual host straight through to Virtuoso, we only need header rewriting and save the time/cpu power to rewrite the content: </para>
+
+<programlisting><![CDATA[
+     #
+     #  Map / to a local Virtuoso instance
+     #
+     #  Since paths are mapped straight through, we do not have to
+     #  rewrite the content.
+     #
+     <Location />
+         ProxyPass               http://localhost:8890/
+         ProxyPassReverse        /
+     </Location>
+]]></programlisting>
+</sect5>
+
 
 <tip><title>See Also:</title>
 <para><ulink url="http://www.apache.org/docs/">Apache Online Documentation</ulink></para>
@@ -1036,7 +1208,7 @@ No-Operation.</para>
     <para>
 	In some situations  Virtuoso services like WebDAV, JSP, PHP etc.
         may need to be accessed via an Apache Web Server. All this can be done
-        through  apache’s mod_proxy to Virtuoso HTTP server and the Virtuoso HTTP
+        through  apache's mod_proxy to Virtuoso HTTP server and the Virtuoso HTTP
         server can be configured to take requests coming only from localhost.
     </para>
     <para>
@@ -1064,7 +1236,173 @@ No-Operation.</para>
 	...
 	]]></programlisting>
 </sect2>
+<sect2 id="webserverhttpslistenerset"><title>Setting Up the Virtuoso HTTPS Listener</title>
+<para>The Setting up of the Virtuoso HTTPS Listener can be done by using the file system or using the Virtuoso conductor.</para>
+<para>Note that when you want to change from Virtuoso hosted Cert and Public Key to File System and vice versa, first should
+be stopped the listener for either setup.</para>
+<sect3 id="webserverhttpslistenersetfs"><title>Setting Up the Virtuoso HTTPS Listener to host Certificate and Public Key using File System</title>
+<orderedlist>
+  <listitem>X.509 certificate Generation
+<para>The WebID Protocol consumer needs an x509 certificate with v3 extension "Subject Alternate Name". 
+This attribute is used for the owner's Web ID. For testing purposes we used OpenSSL demo CA 
+to generate such certificates. If you are not using the OpenSSL demo CA, you must first setup  
+a self-signed CA; read OpenSSL documents on how to do this.</para> 
+<orderedlist>
+  <listitem>Add the following line to the <code>[usr_cert]</code> section of the <code>openssl.cnf</code> 
+file:
+<programlisting><![CDATA[
+subjectAltName=$ENV::ALTNAME	
+]]></programlisting>
+</listitem>
+  <listitem>Set the environment variable <code>ALTNAME</code> to the owner's Web ID, e.g., 
+<programlisting><![CDATA[
+export ALTNAME=URI:http://localhost/dataspace/person/myname#this	
+]]></programlisting>
+</listitem>
+  <listitem>Make a self-signed certificate, e.g., 
+<programlisting><![CDATA[
+$ CA.pl -newreq (follow the dialog) 
+$ CA.pl -sign	
+]]></programlisting>
+</listitem>
+  <listitem>When asked to commit the certificate, make sure you see several lines above, like
+<programlisting><![CDATA[
+X509v3 Subject Alternative Name: 
+    URI:http://localhost/dataspace/person/myname#this 	
+]]></programlisting>
+</listitem>
+  <listitem>If your browser wants a <code>PKCS#12</code> bundle, you must make one
+<programlisting><![CDATA[
+$ openssl pkcs12 -export -in newcert.pem -inkey newkey.pem -out mycert.p12 	
+]]></programlisting>
+</listitem>
+  <listitem>Rename <code>newcert.pem</code> and <code>newkey.pem</code>, to <code>mycert.pem</code> 
+and <code>mykey.pem</code> for example.  
+</listitem>
+</orderedlist>  	
+</listitem>
+  <listitem>Move <code>newcert.pem</code>, <code>newkey.pem</code>, and <code>cacert.pem</code> 
+into the server's working directory.  In our test case, we put the keys in a '<code>keys</code>' 
+sub-directory, and added the following lines to the <code>[HTTPServer]</code> section of the Virtuoso 
+INI file, <code>virtuoso.ini</code>:
+<programlisting><![CDATA[
+SSLPort                     = 4443
+SSLCertificate              = ./keys/localhost.cert.pem
+SSLPrivateKey               = ./keys/localhost.key.pem
+X509ClientVerifyCAFile      = ./keys/localhost.ca.pem
+X509ClientVerify            = 1
+X509ClientVerifyDepth       = 15	
+]]></programlisting>
+</listitem>
+  <listitem>Also in the Virtuoso INI file, in the <code>[URIQA]</code> section, <code>DefaultHost</code>
+(<code>localhost:8890</code> below) must be edited to correspond to the DNS-resolvable host name 
+("CNAME") of the Virtuoso host, combined with the <code>ServerPort</code> as set in the 
+<code>[HTTPServer]</code> section of the same INI file. 
+<programlisting><![CDATA[
+[URIQA]
+DynamicLocal = 1
+DefaultHost  = localhost:8890	
+]]></programlisting>
+<para>For example, if the CNAME of the host is <code>virtuoso.example.com</code>, and the 
+<code>ServerPort</code> is <code>4321</code>, the <code>DefaultHost</code> should be set to 
+<code>virtuoso.example.com:4321</code></para>
+<programlisting><![CDATA[
+[URIQA]
+DynamicLocal = 1
+DefaultHost  = virtuoso.example.com:4321	
+]]></programlisting>
+</listitem>
+  <listitem>Start the Virtuoso server, and look at the log file.  Once HTTPS is up, you should see 
+something like:
+<programlisting><![CDATA[
+HTTPS Using X509 Client CA ....
+HTTPS/X509 server online at 4443	
+]]></programlisting>
+</listitem>
+  <listitem>Setting Up Firefox:
+<orderedlist>
+  <listitem>In the Preferences dialog, open the Advanced tab, and click the "View certificates" button. 
+    <figure id="sphttps1" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps1.png"/>
+    </figure>  	
+</listitem>
+  <listitem>Click the "Add exception" button ,and enter the address of the HTTPS server you've just
+configured, i.e. https://virtuoso.example.com:4443/</listitem>
+  <listitem>Click OK, and confirm the exception.
+    <figure id="sphttps2" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps2.png"/>
+    </figure>   	
+</listitem>
+  <listitem>Click to the "Your Certificates" tab, and import <code>mycert.p12</code>. </listitem>  
+</orderedlist>  	
+</listitem>
+</orderedlist>
+</sect3>
+<sect3 id="webserverhttpslistenersetvt"><title>Setting Up the Virtuoso HTTPS Listener to host Certificate and Public Key using Virtuoso Conductor</title>
+<orderedlist>
+  <listitem>Go to the <code>http://cname:port/conductor</code> URL, enter the DBA user credentials.
+  	<figure id="sphttps3" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps3.png"/>
+    </figure>  
+</listitem>
+<listitem>Go to System Admin-&gt;Security
+  	<figure id="sphttps4" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps4.png"/>
+    </figure>  
+</listitem>
+<listitem>Enter the Issuer details:
+  	<figure id="sphttps5" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps5.png"/>
+    </figure>  
+</listitem>
+<listitem>Click Generate
+  	<figure id="sphttps6" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps6.png"/>
+    </figure>  
+</listitem>
+<listitem>Click Configure HTTPS Listeners
+  	<figure id="sphttps7" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps7.png"/>
+    </figure>  
+</listitem>
+<listitem>Edit the new listener, and click "Generate New" key.
+  	<figure id="sphttps8" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps8.png"/>
+    </figure>  
+</listitem>
+<listitem>Click Save
+  	<figure id="sphttps9" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps9.png"/>
+    </figure>  
+</listitem>
+<listitem>Setting Up Firefox:
+	<orderedlist>
+		<listitem>In the Preferences dialog, open the Advanced tab, and click the "View certificates" button.</listitem> 
+		<listitem>Click the "Add exception" button and enter the address of the HTTPS server you've just
+configured, i.e. https://virtuoso.example.com:4433/
+</listitem>
+<listitem>Click OK, and confirm the exception.
+  	<figure id="sphttps10" float="1">
+      <title>HTTPS Listener</title>
+      <graphic fileref="ui/htps10.png"/>
+    </figure>  
+</listitem>
+  </orderedlist>
+</listitem>
+</orderedlist>
 
+</sect3>
+
+</sect2>
 </sect1>
 
 

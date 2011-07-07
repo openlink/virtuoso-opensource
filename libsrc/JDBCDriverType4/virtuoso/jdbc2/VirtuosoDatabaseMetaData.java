@@ -4409,7 +4409,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
        "ORDER BY 1, 2";
 
    private static final String getSchemasCaseMode0 =
-       "SELECT " +
+       "SELECT DISTINCT " +
          "name_part(\\KEY_TABLE,1) AS \\TABLE_SCHEM VARCHAR(128)," +
 	 "name_part(\\KEY_TABLE,0) AS \\TABLE_CAT VARCHAR(128) " +
        "FROM DB.DBA.SYS_KEYS " +
@@ -4419,7 +4419,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
        "ORDER BY 1, 2";
 
    private static final String getSchemasCaseMode2 =
-       "SELECT " +
+       "SELECT DISTINCT " +
          "name_part(\\KEY_TABLE,1) AS \\TABLE_SCHEM VARCHAR(128)," +
 	 "name_part(\\KEY_TABLE,0) AS \\TABLE_CAT VARCHAR(128) " +
        "FROM DB.DBA.SYS_KEYS " +

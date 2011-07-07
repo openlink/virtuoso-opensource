@@ -40,6 +40,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_charset_recode">
+    <title>Description</title>
+    <para>This function translates a string from a given source charset to a destination charset.  It provides a generic way of recoding string entities.</para>
+    <para>The <parameter>src_charset</parameter> may be a narrow or a wide <type>string</type>. If it's a <type>narrow string</type> (<type>VARCHAR</type>) then the <parameter>src_charset</parameter> is taken into account and defines the current encoding of the <parameter>src_string</parameter>.  In any other case <parameter>src_charset</parameter> is ignored.</para>
+    <para><parameter>src_charset</parameter> and <parameter>dst_charset</parameter> are names of system-defined 8 bit charset tables. Use <function>charsets_list</function> to obtain a list of currently defined character sets and aliases. If either of these is null, then the charset in effect is used. There are two special character set names - "UTF-8" and "_WIDE_" - that are recognized by this function. These represent UTF-8 encoding of characters and <type>wide string</type> (<type>NVARCHAR</type>).</para>
+  </refsect1>
   <refsect1 id="params_charset_recode"><title>Parameters</title>
     <refsect2><title><parameter>src_string</parameter></title>
       <para>The input data to be converted. <type>String</type> or <type>wide string.</type></para>
@@ -50,12 +56,6 @@
     <refsect2><title>dst_charset</title>
       <para>The charset to convert to, <type>string</type>.</para>
     </refsect2>
-  </refsect1>
-  <refsect1 id="desc_charset_recode">
-    <title>Description</title>
-    <para>This function translates a string from a given source charset to a destination charset.  It provides a generic way of recoding string entities.</para>
-    <para>The <parameter>src_charset</parameter> may be a narrow or a wide <type>string</type>. If it's a <type>narrow string</type> (<type>VARCHAR</type>) then the <parameter>src_charset</parameter> is taken into account and defines the current encoding of the <parameter>src_string</parameter>.  In any other case <parameter>src_charset</parameter> is ignored.</para>
-    <para><parameter>src_charset</parameter> and <parameter>dst_charset</parameter> are names of system-defined 8 bit charset tables. Use <function>charsets_list</function> to obtain a list of currently defined character sets and aliases. If either of these is null, then the charset in effect is used. There are two special character set names - "UTF-8" and "_WIDE_" - that are recognized by this function. These represent UTF-8 encoding of characters and <type>wide string</type> (<type>NVARCHAR</type>).</para>
   </refsect1>
   <refsect1 id="examples_charset_recode"><title>Examples</title>
     <example id="ex_charset_define_01">

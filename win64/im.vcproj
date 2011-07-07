@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="im"
 	ProjectGUID="{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}"
+	RootNamespace="im"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -88,6 +90,8 @@
 				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/im.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/im.lib"
 			/>
 			<Tool
@@ -107,9 +111,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -148,7 +149,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\Xml.new;..\libsrc\util\win32;..\libsrc;openssl;.;$(IM_PATH)"
+				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\util\win32;..\libsrc;openssl;.;&quot;$(ProjectDir)ImageMagick&quot;"
 				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;NDEBUG;_USRDLL"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
@@ -181,11 +182,13 @@
 				OutputFile="$(ConfigurationName)/im.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl,$(IM_PATH)"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;.\openssl;&quot;$(ProjectDir)ImageMagick&quot;"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
 				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/im.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/im.lib"
 				TargetMachine="17"
 			/>
@@ -206,9 +209,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -285,6 +285,8 @@
 				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/im.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/im.lib"
 			/>
 			<Tool
@@ -304,9 +306,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -382,6 +381,8 @@
 				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/im.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/im.lib"
 				TargetMachine="17"
 			/>
@@ -402,9 +403,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

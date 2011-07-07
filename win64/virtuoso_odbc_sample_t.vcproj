@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="virtuoso_sample_t"
 	ProjectGUID="{0E838FA8-CF7B-11DA-85E2-A4E5714C712A}"
+	RootNamespace="virtuoso_sample_t"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -72,6 +74,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -91,9 +95,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -156,6 +157,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -175,9 +178,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -240,6 +240,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -259,9 +261,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -326,6 +325,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -347,9 +348,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -364,6 +362,10 @@
 			>
 			<File
 				RelativePath="..\binsrc\tests\biftest\bif_sample.c"
+				>
+			</File>
+			<File
+				RelativePath="..\win32\virtuoso_t.rc"
 				>
 			</File>
 		</Filter>

@@ -72,113 +72,6 @@ unsigned char ins_lengths[INS_MAX + 1] = {
   ALIGN_INSTR(sizeof (dummy_ins_t._.bret))
 };
 
-#ifdef REPLICATION_SUPPORT2
-/* log call to replication */
-static void
-repl_proc_call (instruction_t * ins, caddr_t * qst, query_t *proc, caddr_t *pars)
-{
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
-  char * replic_acct;
-  int nel = 0, skip_repl = 0;
-  int inx = 0;
-  query_instance_t *cb = NULL;
-
-  replic_acct = proc->qr_proc_repl_acct;
-  cb = qi->qi_caller;
-  /* First check inside replicated proc call */
-  if (IS_POINTER (qi->qi_query))
-    {
-      if (qi->qi_query->qr_proc_repl_acct && 0 == strcmp (replic_acct, qi->qi_query->qr_proc_repl_acct))
-	skip_repl = 1;
-    }
-  while (IS_POINTER (cb) && !skip_repl)
-    {
-      if (cb->qi_query)
-	{
-	  /* if (cb->qi_query->qr_proc_repl_acct)
-	     fprintf (stdout, "Caller: %s\n", cb->qi_query->qr_proc_repl_acct); */
-	  if (cb->qi_query->qr_proc_repl_acct && 0 == strcmp (replic_acct, cb->qi_query->qr_proc_repl_acct))
-	    {
-	      skip_repl = 1;
-	      break;
-	    }
-	  cb = cb->qi_caller;
-	}
-    }
-  /* Do replication log */
-  if (!skip_repl)
-    {
-      /*state_slot_t *aparm;*/
-      dk_session_t *ses = strses_allocate (); /* the procedure's quoted name can have many quotes */
-      caddr_t * arr = NULL;
-      caddr_t proc_call;
-      s_node_t * iter = proc->qr_parms;
-      /*caddr_t * kwds = ins->_.call.kwds;*/
-
-#if 0
-      if (kwds)
-	inx = BOX_ELEMENTS (kwds);
-      else
-#endif
-        inx = dk_set_length (proc->qr_parms);
-
-      arr = (caddr_t *) dk_alloc_box ((inx + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-
-      session_buffered_write_char ('\"', ses);
-      sprintf_escaped_id (proc->qr_proc_name, NULL, ses);
-      session_buffered_write_char ('\"', ses);
-      session_buffered_write (ses, " (", 2);
-      for (nel = 0, iter = proc->qr_parms; nel < inx; nel++, iter = iter->next)
-	{
-	  state_slot_t *ssl = (state_slot_t *) iter->data;
-#if 0
-	  if (kwds)
-	    {
-	      session_buffered_write_char ('\"', ses);
-	      sprintf_escaped_id (kwds [nel], NULL, ses);
-	      session_buffered_write (ses, "\"=> ", 3);
-	    }
-#endif
-	  if (nel == inx-1)
-	    session_buffered_write (ses, "? ", 2);
-	  else
-	    session_buffered_write (ses, "?,", 2);
-	  if (ssl->ssl_type == SSL_REF_PARAMETER_OUT ||
-	      ssl->ssl_type == SSL_REF_PARAMETER)
-	    {
-		sqlr_new_error ("42000", "SQ206",
-		    "Procedure %s cannot be transactionally replicated "
-		    "(in publication %s) because it has out/inout parameter %s (parameter number %d). "
-		    "Publishing the calls to the procedure is disabled. "
-		    "Please remove the procedure from the transactional publication.",
-		    proc->qr_proc_name,
-		    proc->qr_proc_repl_acct,
-		    ssl->ssl_name ? ssl->ssl_name : "",
-		    nel + 1
-		    );
-	    }
-
-	}
-      session_buffered_write_char (')', ses);
-      proc_call = strses_string (ses);
-      strses_free (ses);
-      arr [0] = proc_call;
-#if 0
-      for (nel = 1; nel <= inx; nel++)
-	{
-	  aparm = ins->_.call.params[nel-1];
-          arr [nel] = qst_get (qst, aparm);
-	}
-#else
-      memcpy (&arr[1], pars, inx * sizeof (caddr_t));
-#endif
-      log_repl_text_array (qi->qi_trx, NULL, replic_acct, (caddr_t) arr);
-      dk_free_box ((caddr_t) arr);
-      dk_free_box (proc_call);
-    }
-}
-/* end replication log */
-#endif
 
 
 void
@@ -510,7 +403,7 @@ report_error:
 	eff_g_id = eff_u_id;
     }
   if (!sec_proc_check (proc, eff_g_id, eff_u_id))
-    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s.", proc_name);
+    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s with user ID %d, group ID %d", proc_name, (int)eff_g_id, (int)eff_u_id);
   if (1 || ins->_.call.kwds || 0 == param_len)
     {
       int formal_len = dk_set_length (proc->qr_parms);
@@ -551,10 +444,6 @@ report_error:
 #endif
   qi->qi_thread->thr_func_value = NULL;
   /* Procedure's call is published */
-#ifdef REPLICATION_SUPPORT2
-  if ((proc != NULL) && (proc->qr_proc_repl_acct != NULL))
-      repl_proc_call (ins, qst, proc, pars);
-#endif
   if (CV_CALL_PROC_TABLE == ins->_.call.ret)
     {
       PROC_SAVE_PARENT;
@@ -650,17 +539,85 @@ report_error:
 #endif
 }
 
+int
+qn_is_flushable (data_source_t * qn)
+{
+  if (IS_RTS (((remote_table_source_t *)qn))
+      || (qn_input_fn)insert_node_input == qn->src_input
+      || (qn_input_fn)query_frag_input == qn->src_input)
+    return 1;
+  return 0;
+}
+
 
 void
 ins_qnode_resume (data_source_t * qn, caddr_t * qst)
 {
   /* if it's a remote ts with array params flush the  rows */
-  if (IS_RTS (((remote_table_source_t *) qn)))
+  if (qn_is_flushable (qn))
     {
       if (qst[qn->src_in_state])
 	qn->src_input (qn, qst, NULL);
     }
 }
+
+void
+qn_init (table_source_t * ts, caddr_t * inst)
+{
+  /* Reset a single state query node in a qr */
+#if 0
+  query_t * subq = ts->src_gen.src_query;
+#endif
+#if 0 /* if needed, it is reset by itself */
+  if (subq->qr_remote_mode != QR_LOCAL)
+    remote_subq_close (subq, inst);
+#endif
+
+  if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
+       ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
+      && ts->ts_order_ks  /* not set if inx op */
+      && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
+    {
+      /* if there is a read from sort temp and there is a cursor for the space, delete it here, so as not to reuse the cursor on a different temp space later */
+      it_cursor_t *volatile order_itc = NULL;
+      if (ts->ts_order_cursor)
+	{
+	  order_itc = TS_ORDER_ITC (ts, inst);
+	  TS_ORDER_ITC (ts, inst) = NULL;
+	  if (order_itc)
+	    itc_free (order_itc);
+	}
+    }
+
+
+  qn_record_in_state ((data_source_t*) ts, inst, NULL);
+  /* no subq nodes continuable after init */
+  if (ts->src_gen.src_input == (qn_input_fn) setp_node_input)
+    setp_temp_clear ((setp_node_t *) ts, ((setp_node_t*)ts)->setp_ha, inst);
+  if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
+    {
+      fun_ref_node_t * fref = (fun_ref_node_t*) ts;
+      DO_SET (hash_area_t *, ha, &fref->fnr_distinct_ha)
+	{
+	  setp_temp_clear (NULL, ha, inst);
+	}
+      END_DO_SET();
+    }
+  if (ts->src_gen.src_input == (qn_input_fn) skip_node_input)
+    {
+      qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
+    }
+  if ((qn_input_fn) select_node_input == ts->src_gen.src_input
+      || (qn_input_fn) select_node_input_subq == ts->src_gen.src_input)
+    {
+      QNCAST (select_node_t, sel, ts);
+      if (sel->sel_row_ctr)
+	qst_set_long (inst, sel->sel_row_ctr, 0);
+      if (sel->sel_row_ctr_array)
+	qst_set_long (inst, sel->sel_row_ctr_array, 0);
+    }
+}
+
 
 
 void
@@ -668,13 +625,21 @@ subq_init (query_t * subq, caddr_t * inst)
 {
   dk_set_t nodes = subq->qr_bunion_reset_nodes ? subq->qr_bunion_reset_nodes : subq->qr_nodes;
   /* nodes to reset - a bunion term's nodes are owned by the enclosing qr, hence the different list */
+  if (subq->qr_cl_run_started)
+    inst[subq->qr_cl_run_started] = NULL;
 
   DO_SET (table_source_t *, ts, &nodes)
     {
-      if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
+      if (ts->src_gen.src_input == (qn_input_fn) subq_node_input)
+	{
+	  QNCAST (subq_source_t, sqs, ts);
+	  subq_init (sqs->sqs_query, inst);
+	}
+	   else if ((ts->src_gen.src_input == (qn_input_fn) table_source_input ||
 	  ts->src_gen.src_input == (qn_input_fn) table_source_input_unique)
 	  && ts->ts_order_ks  /* not set if inx op */
-	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP)
+	  && ts->ts_order_ks->ks_key->key_id == KI_TEMP
+		    && ts->ts_order_cursor)
 	{
 	  /* if there is a read from sort temp and there is a cursor for the space, delete it here, so as not to reuse the cursor on a different temp space later */
 	  it_cursor_t *volatile order_itc = TS_ORDER_ITC (ts, inst);
@@ -704,10 +669,13 @@ subq_init (query_t * subq, caddr_t * inst)
 	{
 	  qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
 	}
+      qn_init (ts, inst);
     }
   END_DO_SET ();
   if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr)
     qst_set_long (inst, subq->qr_select_node->sel_row_ctr, 0);
+  if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr_array)
+    qst_set (inst, subq->qr_select_node->sel_row_ctr_array, NULL);
 }
 
 caddr_t
@@ -716,6 +684,7 @@ subq_handle_reset (query_instance_t * qi, int reset)
   /* Handle a reset into qr_exec or qr_more. Prime thread only */
   query_instance_t *caller = qi->qi_caller;
   caddr_t err = NULL;
+  QI_CHECK_ANYTIME_RST (qi, reset);
   switch (reset)
     {
     case RST_KILLED:
@@ -835,11 +804,29 @@ cont_innermost_loop:
   {
     if (inst[src->src_in_state])
       {
+	if (src->src_local_save)
+	  qn_restore_local_save (src, inst);
 	src->src_input (src, inst, NULL);
 	goto cont_innermost_loop;
       }
   }
   END_DO_SET ();
+  if (subq->qr_cl_run_started)
+    inst[subq->qr_cl_run_started] = NULL;
+  {
+    query_instance_t * qi = (query_instance_t *)inst;
+    client_connection_t * cli = qi->qi_client;
+    if ((qi->qi_caller == CALLER_CLIENT || qi->qi_caller == CALLER_LOCAL)
+	&& cli->cli_row_autocommit && cli->cli_n_to_autocommit && !cli->cli_clt && !cli->cli_in_daq)
+      {
+	/* at the end of a top level dml or other stmt, transact if in autocommit mode and not cluster server thread */
+	caddr_t err = NULL;
+	cli->cli_n_to_autocommit = 0;
+	bif_commit ((caddr_t*) qi, &err, NULL);
+	if (err)
+	  sqlr_resignal (err);
+      }
+  }
 }
 
 
@@ -874,16 +861,20 @@ subq_next (query_t * subq, caddr_t * inst, int cr_state)
 
 
 
-void
+int
 ins_subq (instruction_t * ins, caddr_t * qst)
 {
   caddr_t err;
   query_instance_t * qi = (query_instance_t *) qst;
+  client_connection_t * cli = qi->qi_client;
+  int at_start = cli->cli_anytime_started;
+  if (!ins->_.subq.query->qr_select_node)
+    cli->cli_anytime_started = 0;
   qi->qi_n_affected = 0;
-
   subq_init (ins->_.subq.query, qst);
   err = subq_next (ins->_.subq.query, qst, CR_INITIAL);
 
+  cli->cli_anytime_started = at_start;
   if (err == (caddr_t) SQL_NO_DATA_FOUND
       && ins->_.subq.query->qr_select_node
       && BOX_ELEMENTS (ins->_.subq.query->qr_select_node->sel_out_slots) > 0
@@ -912,6 +903,7 @@ ins_subq (instruction_t * ins, caddr_t * qst)
       qst_set (qst, ins->_.subq.query->qr_select_node->sel_out_slots[0], val);
     }
 #endif
+  return DVC_MATCH;
 }
 
 void
@@ -955,7 +947,7 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
       dk_set_t nodes = qr->qr_bunion_reset_nodes ? qr->qr_bunion_reset_nodes : qr->qr_nodes;
       DO_SET (table_source_t *, ts, &nodes)
 	{
-	  if (ts->src_gen.src_input == (qn_input_fn) table_source_input && ts->ts_order_ks)
+	  if (ts->src_gen.src_input == (qn_input_fn) table_source_input && ts->ts_order_ks && ts->ts_order_cursor)
 	    {
 	      it_cursor_t *volatile order_itc = TS_ORDER_ITC (ts, qst);
 	      if (order_itc && order_itc->itc_type == ITC_CURSOR)
@@ -1048,6 +1040,7 @@ do_pl_stats (query_instance_t *qi, int32 lineno)
       qr_caller = caller->qi_query;
       caller_name = caller->qi_query->qr_proc_name;
     }
+  mutex_enter (qr->qr_stats_mtx);
   thisct = (int32) (ptrlong) gethash ((void *) (ptrlong) lineno, qr->qr_line_counts);
   sethash ((void *) (ptrlong) lineno,  qr->qr_line_counts, (void *) (ptrlong) (++thisct));
   if (!caller_name)
@@ -1065,6 +1058,7 @@ do_pl_stats (query_instance_t *qi, int32 lineno)
 	}
       qr->qr_calls++;
     }
+  mutex_leave (qr->qr_stats_mtx);
 }
 
 void pldbg_make_answer (client_connection_t * cli);
@@ -1399,7 +1393,9 @@ void
 ins_qnode (instruction_t * ins, caddr_t * qst)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-
+  client_connection_t * cli = qi->qi_client;
+  int at_start = cli->cli_anytime_started;
+  cli->cli_anytime_started = 0;
   QR_RESET_CTX_T (qi->qi_thread)
     {
       qi->qi_n_affected = 0;
@@ -1409,17 +1405,19 @@ ins_qnode (instruction_t * ins, caddr_t * qst)
   QR_RESET_CODE
     {
       POP_QR_RESET;
+      cli->cli_anytime_started = at_start;
       sqlr_resignal (subq_handle_reset (qi, reset_code));
     }
   END_QR_RESET;
+  cli->cli_anytime_started = at_start;
 }
 
 
-
 void
-vdb_enter (query_instance_t * qi)
+vdb_enter_lt (lock_trx_t * lt)
 {
-  lock_trx_t * lt = qi->qi_trx;
+  caddr_t err, detail;
+  int lte = LTE_OK;
   IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
   if (LT_PENDING != lt->lt_status)
@@ -1427,44 +1425,54 @@ vdb_enter (query_instance_t * qi)
       if (LT_FREEZE == lt->lt_status)
 	{
 	  lt_ack_freeze_inner (lt);
+	  if (LT_PENDING != lt->lt_status)
+	    {
+	      lte = lt->lt_error != LTE_OK ? lt->lt_error : LTE_UNSPECIFIED;
+	      detail = lt->lt_error_detail;
+	      lt->lt_error_detail = NULL;
+	      lt_rollback (lt, TRX_CONT);
+	      LEAVE_TXN;
+	      MAKE_TRX_ERROR (lte, err, detail);
+	      sqlr_resignal (err);
+	    }
 	}
       else
 	{
+	  lte = lt->lt_error != LTE_OK ? lt->lt_error : LTE_UNSPECIFIED;
+	  detail = lt->lt_error_detail;
+	  lt->lt_error_detail = NULL;
 	  lt_rollback (lt, TRX_CONT);
 	  LEAVE_TXN;
-	  sqlr_new_error ("40001", "VD047", "Transaction killed during VDB call");
+	  MAKE_TRX_ERROR (lte, err, detail);
+	  sqlr_resignal (err);
 	}
     }
   lt->lt_vdb_threads++;
   LEAVE_TXN;
 }
 
-
 void
-vdb_leave_1 (query_instance_t * qi, caddr_t *err_ret)
+vdb_leave_lt (lock_trx_t * lt, caddr_t *err_ret)
 {
-  lock_trx_t * lt = qi->qi_trx;
   IN_TXN;
-#ifndef NDEBUG
   if (lt->lt_vdb_threads <= 0)
     GPF_T1 ("lt_vdb_threads negative");
-#endif
   lt->lt_vdb_threads--;
   CHECK_DK_MEM_RESERVE (lt);
   if (LT_FREEZE == lt->lt_status)
     {
       lt_ack_freeze_inner (lt);
-      lt->lt_status = LT_PENDING;
     }
   if (LT_PENDING != lt->lt_status)
     {
-      caddr_t err;
+      int lte = lt->lt_error;
+      caddr_t err, detail = lt->lt_error_detail;
+      lt->lt_error_detail = NULL;
       lt_ack_close (lt);
       lt->lt_status = LT_BLOWN_OFF;
       lt_rollback (lt, TRX_CONT);
       LEAVE_TXN;
-      err = srv_make_new_error ("40001", "VD048",
-	  "Transaction killed during VDB or other external code operation");
+      MAKE_TRX_ERROR (lte, err, detail);
       if (err_ret)
 	{
 	  if (*err_ret)
@@ -1480,6 +1488,17 @@ vdb_leave_1 (query_instance_t * qi, caddr_t *err_ret)
     }
 }
 
+void
+vdb_enter (query_instance_t * qi)
+{
+  vdb_enter_lt (qi->qi_trx);
+}
+
+void
+vdb_leave_1 (query_instance_t * qi, caddr_t *err_ret)
+{
+  vdb_leave_lt (qi->qi_trx, err_ret);
+}
 
 void
 vdb_leave (query_instance_t * qi)
@@ -1488,17 +1507,12 @@ vdb_leave (query_instance_t * qi)
 }
 
 
-
 void
-qi_check_trx_error (query_instance_t * qi, int flags)
+lt_check_error (lock_trx_t * lt)
 {
-  caddr_t err = NULL;
-  client_connection_t * cli = qi->qi_client;
-  CHECK_SESSION_DEAD (qi->qi_trx);
-  CHECK_DK_MEM_RESERVE (qi->qi_trx);
-  if (qi->qi_trx->lt_status != LT_PENDING)
+  if (lt->lt_status != LT_PENDING)
     {
-      lock_trx_t * lt = qi->qi_trx;
+      caddr_t err = NULL;
       int lt_err = lt->lt_error;
       IN_TXN;
       if (LT_FREEZE == lt->lt_status)
@@ -1508,9 +1522,56 @@ qi_check_trx_error (query_instance_t * qi, int flags)
 	  LEAVE_TXN;
 	  return;
 	}
-      lt_rollback (lt, TRX_CONT);
+      if (lt->lt_client->cli_clt && lt->lt_client->cli_in_daq != CLI_IN_DAQ_AC)
+	{
+	  /* a cluster server thread must rb and signal and leave the final rb for the master, unless inside an autocommit, non enlisted ddaq */
+	  lt->lt_close_ack_threads = 1;
+	  lt_transact (lt, SQL_ROLLBACK);
+	}
+      else
+	{
+	  lt_rollback (lt, TRX_CONT);
+	}
       LEAVE_TXN;
-      if (NO_TRX_SIGNAL & flags)
+      MAKE_TRX_ERROR (lt_err, err, LT_ERROR_DETAIL (lt));
+      sqlr_resignal (err);
+    }
+}
+
+
+void
+qi_check_trx_error (query_instance_t * qi, int flags)
+{
+  caddr_t err = NULL;
+  client_connection_t * cli = qi->qi_client;
+  CHECK_SESSION_DEAD (qi->qi_trx, NULL, NULL);
+  CHECK_DK_MEM_RESERVE (qi->qi_trx);
+  if (qi->qi_trx->lt_status != LT_PENDING)
+    {
+      lock_trx_t * lt = qi->qi_trx;
+      int lt_err = lt->lt_error, must_signal;
+      IN_TXN;
+      if (LT_FREEZE == lt->lt_status)
+	{
+	  lt_ack_freeze_inner (lt);
+	  lt->lt_status = LT_PENDING;
+	  LEAVE_TXN;
+	  return;
+	}
+      if (lt->lt_client->cli_clt && lt->lt_client->cli_in_daq != CLI_IN_DAQ_AC)
+	{
+	  /* a cluster server thread must rb and signal and leave the final rb for the master, unless inside an autocommit, non enlisted ddaq */
+	  lt->lt_close_ack_threads = 1;
+	  lt_transact (lt, SQL_ROLLBACK);
+	  must_signal = 1;
+	}
+      else
+	{
+	  lt_rollback (lt, TRX_CONT);
+	  must_signal = CLI_IN_DAQ == lt->lt_client->cli_in_daq; /* if transactional daq call in coord node, must still signal regardless of handler */
+	}
+      LEAVE_TXN;
+      if (!must_signal && (NO_TRX_SIGNAL & flags))
 	return;
       MAKE_TRX_ERROR (lt_err, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
@@ -1539,7 +1600,7 @@ void
 qi_signal_if_trx_error (query_instance_t * qi)
 {
   caddr_t err = NULL;
-  CHECK_SESSION_DEAD (qi->qi_trx);
+  CHECK_SESSION_DEAD (qi->qi_trx, NULL, NULL);
   CHECK_DK_MEM_RESERVE (qi->qi_trx);
   if (qi->qi_trx->lt_status != LT_PENDING)
     {
@@ -1737,17 +1798,16 @@ qi_check_buf_writers (void)
 
 
 caddr_t
-code_vec_run (code_vec_t code_vec, caddr_t * qst)
+code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset)
 {
-  /*volatile int pc = 0;*/
   volatile int nesting_level = 0;
-  instruction_t * volatile ins = code_vec;
+  instruction_t * volatile ins;
   instruction_t * volatile prev_ins = NULL;
 #ifdef PLDBG
   instruction_t * volatile prev_breakpoint_ins = NULL;
 #endif
   query_instance_t *qi = (query_instance_t *)qst;
-
+  ins = INSTR_ADD_OFS (code_vec, offset);
   qi_check_trx_error (qi, 0);
   qi_check_buf_writers ();
 again:
@@ -1764,27 +1824,32 @@ again:
 	    }
 	  switch (ins->ins_type)
 	    {
-	      case IN_ARTM_PLUS:	HANDLE_ARTM(box_add);
-	      case IN_ARTM_MINUS:	HANDLE_ARTM(box_sub);
-	      case IN_ARTM_TIMES:	HANDLE_ARTM(box_mpy);
-	      case IN_ARTM_DIV:		HANDLE_ARTM(box_div);
-	      case IN_ARTM_IDENTITY:	HANDLE_ARTM(box_identity);
-	      case IN_ARTM_FPTR:	HANDLE_ARTM_FPTR(ins->_.artm_fptr.func);
+	    case IN_ARTM_PLUS:	HANDLE_ARTM(box_add);
+	    case IN_ARTM_MINUS:	HANDLE_ARTM(box_sub);
+	    case IN_ARTM_TIMES:	HANDLE_ARTM(box_mpy);
+	    case IN_ARTM_DIV:		HANDLE_ARTM(box_div);
+	    case IN_ARTM_IDENTITY:	HANDLE_ARTM(box_identity);
+	    case IN_ARTM_FPTR:	HANDLE_ARTM_FPTR(ins->_.artm_fptr.func);
 
-	      case IN_PRED:
-		    {
-		      int flag;
-		      qi_check_trx_error (qi, 0);
-		      flag = ins->_.pred.func (qst, ins->_.pred.cmp);
-		      if (flag == DVC_UNKNOWN)
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.unkn);
-		      else if (flag)
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.succ);
-		      else
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.fail);
-		      break;
-		    }
-	      case IN_COMPARE:
+	    case IN_PRED:
+	      {
+		int flag;
+		qi_check_trx_error (qi, 0);
+		flag = ins->_.pred.func (qst, ins->_.pred.cmp);
+		if (flag == DVC_QUEUED)
+		  {
+		    POP_QR_RESET;
+		    return (caddr_t)DVC_QUEUED;
+		  }
+		if (flag == DVC_UNKNOWN)
+		  ins = INSTR_ADD_OFS (code_vec, ins->_.pred.unkn);
+		else if (flag)
+		  ins = INSTR_ADD_OFS (code_vec, ins->_.pred.succ);
+		else
+		  ins = INSTR_ADD_OFS (code_vec, ins->_.pred.fail);
+		break;
+	      }
+	    case IN_COMPARE:
 		    {
 		      int flag = cmp_boxes_safe (QST_GET (qst, ins->_.cmp.left), QST_GET (qst, ins->_.cmp.right),
 			  ins->_.cmp.left->ssl_sqt.sqt_collation, ins->_.cmp.right->ssl_sqt.sqt_collation);
@@ -1830,11 +1895,15 @@ again:
 		  ins_call_bif ((instruction_t *) ins, qst, code_vec);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.bif)));
 		  break;
-	      case INS_SUBQ:
-		  ins_subq ((instruction_t *) ins, qst);
-		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
-		  break;
-	      case INS_QNODE:
+  	    case INS_SUBQ:
+		if (DVC_QUEUED == ins_subq ((instruction_t *) ins, qst))
+		  {
+		    POP_QR_RESET;
+		    return (caddr_t)DVC_QUEUED;
+		  }
+		ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
+		break;
+	    case INS_QNODE:
 		  ins_qnode ((instruction_t *) ins, qst);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.qnode)));
 		  break;
@@ -1922,7 +1991,7 @@ again:
 	  caddr_t err = RST_ERROR == reset_code ? thr_get_error_code (qi->qi_thread)
 	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.");
 	  CHECK_DK_MEM_RESERVE (qi->qi_trx);
-	  CHECK_SESSION_DEAD(qi->qi_trx);
+	  CHECK_SESSION_DEAD(qi->qi_trx, NULL, NULL);
 	  if (qi->qi_trx->lt_status != LT_PENDING && (
 		qi->qi_trx->lt_error == LTE_TIMEOUT ||
 		qi->qi_trx->lt_error == LTE_OUT_OF_MEM))
@@ -1968,6 +2037,8 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
   instruction_t * ins = code_vec;
   caddr_t *qst = itc->itc_out_state;
   query_instance_t *qi = (query_instance_t *)qst;
+  if (CLI_RESULT == qi->qi_client->cli_terminate_requested)
+    cli_anytime_timeout (qi->qi_client);
   for (;;)
     {
       switch (ins->ins_type)

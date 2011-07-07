@@ -93,7 +93,8 @@
 
       ]]>
     </script>
-    <form name="f1" action="write.vsp" method="post" enctype="multipart/form-data" onSubmit="javascript: returnValue(document.forms['f1'].elements['mt']); return true;">
+    <form name="f1" method="post" enctype="multipart/form-data" onSubmit="javascript: returnValue(document.forms['f1'].elements['mt']); return true;">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/write.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="wp">
         <xsl:attribute name="value"><xsl:value-of select="wp"/></xsl:attribute>
@@ -254,16 +255,17 @@
           <xsl:call-template name="nbsp"/>
         </th>
         <td>
-          <input type="checkbox" name="mt" value="html" id="addr_mt" onClick="javascript: toggleTab(this);">
+          <label>
+            <input type="checkbox" name="mt" value="html" onclick="javascript: toggleTab(this);">
             <xsl:if test="message/type_id = 10110">
               <xsl:attribute name="checked">checked</xsl:attribute>
             </xsl:if>
           </input>
-          <label for="addr_mt">HTML format</label>
-          <xsl:call-template name="nbsp">
-            <xsl:with-param name="count" select="4"/>
-          </xsl:call-template>
-          <select name="priority" id="addr_pr">
+            HTML format
+          </label>
+          |
+          <label>
+            <select name="priority">
             <option value="3">
               <xsl:if test="message/priority = 3">
                 <xsl:attribute name="selected">1</xsl:attribute>
@@ -285,18 +287,53 @@
                 <xsl:attribute name="selected">1</xsl:attribute>
               </xsl:if>Highest</option>
           </select>
-          <xsl:call-template name="nbsp"/>
-          <label for="addr_pr">Priority</label>
-          <xsl:call-template name="nbsp">
-            <xsl:with-param name="count" select="4"/>
-          </xsl:call-template>
+            Priority
+          </label>
+          |
+          <label>
           <input type="checkbox" name="scopy" value="1">
             <xsl:if test="//save_copy = 1">
               <xsl:attribute name="checked">checked</xsl:attribute>
             </xsl:if>
           </input>
-          <label for="scopy">Save copy in "Sent" folder</label>
-          <xsl:call-template name="nbsp"/>
+            Save copy in "Sent" folder
+          </label>
+          <xsl:if test="//security_sign_mode = 1">
+            |
+            <label>
+              <input type="checkbox" name="ssign" value="1">
+                <xsl:choose>
+                  <xsl:when test="message/options/securitySign">
+                    <xsl:if test="message/options/securitySign = 1">
+                      <xsl:attribute name="checked">checked</xsl:attribute>
+                    </xsl:if>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <xsl:attribute name="checked">checked</xsl:attribute>
+                  </xsl:otherwise>
+                </xsl:choose>
+              </input>
+              Digitally sign
+            </label>
+          </xsl:if>
+          <xsl:if test="//security_encrypt_mode = 1">
+            |
+            <label>
+              <input type="checkbox" name="sencrypt" value="1">
+                <xsl:choose>
+                  <xsl:when test="message/options/securityEncrypt">
+                    <xsl:if test="message/options/securityEncrypt = 1">
+                      <xsl:attribute name="checked">checked</xsl:attribute>
+                    </xsl:if>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <xsl:attribute name="checked">checked</xsl:attribute>
+                  </xsl:otherwise>
+                </xsl:choose>
+              </input>
+              Encrypt
+            </label>
+          </xsl:if>
         </td>
       </tr>
       <tr>

@@ -141,6 +141,7 @@ typedef enum {
 #define DSIG_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#sha256"
 
 #define DSIG_RSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+#define DSIG_RSA_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#rsa-sha256"
 #define DSIG_DSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dsa-sha1"
 #define DSIG_DH_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha1"
 #define DSIG_DH_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha256"
@@ -429,6 +430,11 @@ typedef struct dsig_reference_s
   char *		dsr_text; /* result of reference */
 } dsig_reference_t;
 
+typedef enum {
+  XENC_T_DEFAULT = 0,
+  XENC_T_X509_CERT = 1
+} XENC_VALUE_TYPE_T;
+
 typedef struct dsig_signature_s
 {
   char *	dss_canon_method;
@@ -438,6 +444,7 @@ typedef struct dsig_signature_s
   char *	dss_signature_1;
 
   xenc_key_t *	dss_key;
+  XENC_VALUE_TYPE_T dss_key_value_type;
 } dsig_signature_t;
 
 typedef struct dsig_compare_s
@@ -605,8 +612,8 @@ int xenc_algorithms_create (const char * ns0, const char * name,
 			    xenc_encryptor_f enc,
 			    xenc_decryptor_f dect,
 			    DSIG_KEY_TYPE key_type);
-caddr_t * xml_find_signedinfo (caddr_t * root);
-caddr_t * xml_find_signature (caddr_t * root);
+caddr_t * xml_find_signedinfo (caddr_t * root, int is_wsse);
+caddr_t * xml_find_signature (caddr_t * root, int is_wsse);
 wsse_ctx_t * wsse_ctx_allocate (void);
 void wsse_ctx_free (wsse_ctx_t * ctx);
 caddr_t dsig_sign_signature (dsig_signature_t * dsig, xml_tree_ent_t * xte, id_hash_t * nss, wsse_ctx_t * ctx);
@@ -617,6 +624,8 @@ void xenc_set_serialization_ctx (caddr_t try_ns_spec, wsse_ser_ctx_t * sctx);
 caddr_t bif_xmlenc_decrypt_soap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_dsig_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t xenc_get_option (caddr_t *options, const char * opt, char * def);
+caddr_t certificate_encode (BIO * b, const char * encoding_type);
+caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * uri);
 
 extern dk_mutex_t * xenc_keys_mtx;
 

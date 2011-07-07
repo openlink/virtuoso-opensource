@@ -37,6 +37,7 @@
 #include "security.h"
 #include "sqlintrp.h"
 #include "sqlo.h"
+#include "strlike.h"
 
 
 
@@ -153,7 +154,7 @@ int
 sqlo_remote_hash_filler (sqlo_t * so, df_elt_t * filler, df_elt_t * tb_dfe)
 {
   NO_VDB;
-  return 0;
+  return 1;
 }
 
 

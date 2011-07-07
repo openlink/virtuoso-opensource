@@ -63,50 +63,7 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
 
     case SQL_HANDLE_STMT:
       cli_dbg_printf (("SQLAllocHandle(STMT, ...) called\n"));
-      rc = virtodbc__SQLAllocStmt ((SQLHDBC) inputHandle, (SQLHSTMT *) outputHandlePtr);
-      if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
-	{
-	  STMT (stmt, *outputHandlePtr);
-	  CON (con, inputHandle);
-	  if (stmt)
-	    {
-	      NEW_VAR (stmt_descriptor_t, desc1);
-	      NEW_VAR (stmt_descriptor_t, desc2);
-	      NEW_VAR (stmt_descriptor_t, desc3);
-	      NEW_VAR (stmt_descriptor_t, desc4);
-
-	      stmt->stmt_app_row_descriptor = desc1;
-	      stmt->stmt_app_row_descriptor->d_type = ROW_APP_DESCRIPTOR;
-	      stmt->stmt_app_row_descriptor->d_stmt = stmt;
-	      stmt->stmt_app_row_descriptor->d_bind_offset_ptr = NULL;
-	      stmt->stmt_app_row_descriptor->d_max_recs = 0;
-
-	      stmt->stmt_imp_row_descriptor = desc2;
-	      stmt->stmt_imp_row_descriptor->d_type = ROW_IMP_DESCRIPTOR;
-	      stmt->stmt_imp_row_descriptor->d_stmt = stmt;
-	      stmt->stmt_imp_row_descriptor->d_bind_offset_ptr = NULL;
-	      stmt->stmt_imp_row_descriptor->d_max_recs = 0;
-
-	      stmt->stmt_app_param_descriptor = desc3;
-	      stmt->stmt_app_param_descriptor->d_type = PARAM_APP_DESCRIPTOR;
-	      stmt->stmt_app_param_descriptor->d_stmt = stmt;
-	      stmt->stmt_app_param_descriptor->d_bind_offset_ptr = NULL;
-	      stmt->stmt_app_param_descriptor->d_max_recs = 0;
-
-	      stmt->stmt_imp_param_descriptor = desc4;
-	      stmt->stmt_imp_param_descriptor->d_type = PARAM_IMP_DESCRIPTOR;
-	      stmt->stmt_imp_param_descriptor->d_stmt = stmt;
-	      stmt->stmt_imp_param_descriptor->d_bind_offset_ptr = NULL;
-	      stmt->stmt_imp_param_descriptor->d_max_recs = 0;
-
-	      if (con)
-		{
-		  stmt->stmt_opts->so_is_async = con->con_async_mode;
-		  stmt->stmt_opts->so_timeout = STMT_MSEC_OPTION (con->con_defs.cdef_txn_timeout);
-		}
-	    }
-	}
-      return rc;
+      return virtodbc__SQLAllocStmt ((SQLHDBC) inputHandle, (SQLHSTMT *) outputHandlePtr);
 
     case SQL_HANDLE_DESC:
       cli_dbg_printf (("SQLAllocHandle(DESC, ...) called\n"));
@@ -151,13 +108,6 @@ virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
 
     case SQL_HANDLE_STMT:
       cli_dbg_printf (("SQLFreeHandle(STMT, ...) called\n"));
-      if (stmt->stmt_app_row_descriptor)
-	{
-	  dk_free ((caddr_t) stmt->stmt_app_row_descriptor, sizeof (stmt_descriptor_t));
-	  dk_free ((caddr_t) stmt->stmt_imp_row_descriptor, sizeof (stmt_descriptor_t));
-	  dk_free ((caddr_t) stmt->stmt_app_param_descriptor, sizeof (stmt_descriptor_t));
-	  dk_free ((caddr_t) stmt->stmt_imp_param_descriptor, sizeof (stmt_descriptor_t));
-	}
       return virtodbc__SQLFreeStmt ((SQLHSTMT) handle, SQL_DROP);
 
     case SQL_HANDLE_DESC:
@@ -767,12 +717,10 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr)
 {
-  SQLINTEGER dummy;
+  SQLLEN dummy = 0;
   STMT (stmt, statementHandle);
-
   if (!stmt)
     return (SQL_INVALID_HANDLE);
-
   if (!ValuePtr)
     ValuePtr = &dummy;
 
@@ -1386,6 +1334,7 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
     }
   else
     ret = gethash ((void *)(ptrlong) key, ht);
+  LEAVE_CON (con);
 
   if (!ret) /* not in cache */
     {
@@ -1401,7 +1350,6 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
       rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, con, &hstmt);
       if (rc != SQL_SUCCESS)
 	{
-	  LEAVE_CON (con);
 	  return NULL;
 	}
       rc = virtodbc__SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_C_SSHORT,
@@ -1420,12 +1368,13 @@ get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
       if (SQL_SUCCESS != rc)
 	goto err_cleanup;
       ret = box_dv_short_string (buf);
+      IN_CON (con);
       sethash ((void*)(ptrlong)key, ht, (void*) ret);
+      LEAVE_CON (con);
 err_cleanup:
       virtodbc__SQLFreeStmt (hstmt, SQL_CLOSE);
       virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) hstmt);
     }
-  LEAVE_CON (con);
   return ret;
 }
 

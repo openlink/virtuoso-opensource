@@ -22,7 +22,7 @@
  */
 
 %{
-#include "Dk.h"
+#include <Dk.h>
 #include "sqlparext.h"
 #include "sqlfn.h"
 

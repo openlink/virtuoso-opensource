@@ -147,6 +147,14 @@
         if (state <> '00000')
           goto _error;
 
+        declare _header, _links varchar;
+
+        _header := case when (self.v_output like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        _links := ODS..PSH_HEADER_LINKS (self.domain_id);
+        if (length (_links))
+          _header := _header || sprintf ('Link: %s\r\n', _links);
+        http_header (_header);
+
         http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
           http ('<rss version="2.0">\n');
         http ('<channel>\n');
@@ -173,6 +181,12 @@
           http ('<link>');
             http_value (ODRIVE.WA.odrive_url (self.domain_id));
           http ('</link>\n');
+          if (self.v_output like '%atom%')
+          {
+            _links := ODS..PSH_ATOM_LINKS (self.domain_id);
+            if (length (_links))
+              http (_links);
+          }
         }
         foreach (any row in result) do
         {

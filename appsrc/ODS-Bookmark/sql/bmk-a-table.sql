@@ -237,7 +237,7 @@ create procedure BMK.WA.tags_update (
 
 -------------------------------------------------------------------------------
 --
--- Conatins domain bookmarks
+-- Contains domain bookmarks
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -613,6 +613,82 @@ BMK.WA.exec_no_error('
 BMK.WA.exec_no_error('
   create index SK_GRANTS_02 on BMK.WA.GRANTS (G_GRANTEE_ID, G_OBJECT_TYPE, G_OBJECT_ID)
 ');
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.grants_procedure (
+  in gw_id integer)
+{
+  declare c0 integer;
+  declare c1 varchar;
+
+  result_names (c0, c1);
+  for (select distinct b.U_ID, b.U_NAME
+         from BMK.WA.GRANTS a,
+              DB.DBA.SYS_USERS b
+        where a.G_GRANTEE_ID = gw_id
+          and a.G_GRANTER_ID = b.U_ID
+        order by 2) do
+  {
+    result (U_ID, U_NAME);
+  }
+  for (select distinct b.U_ID, b.U_NAME
+         from BMK.WA.GRANTS a,
+              DB.DBA.SYS_USERS b,
+              DB.DBA.SYS_ROLE_GRANTS c
+        where a.G_GRANTER_ID = b.U_ID
+          and c.GI_SUPER     = gw_id
+          and c.GI_GRANT     = a.G_GRANTEE_ID
+          and c.GI_DIRECT    = '1'
+        order by 2) do
+  {
+    result (U_ID, U_NAME);
+  }
+}
+;
+
+BMK.WA.exec_no_error ('
+  create procedure view BMK..GRANTS_VIEW as BMK.WA.grants_procedure (gw_id) (U_ID integer, U_NAME varchar)
+')
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.grants_object_procedure (
+  in gow_type varchar := null,
+  in gow_to integer,
+  in gow_from integer := null)
+{
+  declare c0 integer;
+
+  result_names (c0, c0);
+  for (select distinct G_ID, G_OBJECT_ID
+         from BMK.WA.GRANTS
+        where (G_OBJECT_TYPE = gow_type or gow_type is null)
+          and G_GRANTEE_ID  = gow_to
+          and (G_GRANTER_ID = gow_from or gow_from is null) order by 1) do
+  {
+    result (G_ID, G_OBJECT_ID);
+  }
+  for (select distinct G_ID, G_OBJECT_ID
+         from BMK.WA.GRANTS a,
+              DB.DBA.SYS_ROLE_GRANTS c
+        where (a.G_OBJECT_TYPE = gow_type or gow_type is null)
+          and c.GI_SUPER      = gow_to
+          and (a.G_GRANTER_ID = gow_from or gow_from is null)
+          and c.GI_GRANT      = a.G_GRANTEE_ID
+          and c.GI_DIRECT     = '1'
+        order by 1) do
+  {
+    result (G_ID, G_OBJECT_ID);
+  }
+}
+;
+
+BMK.WA.exec_no_error ('
+  create procedure view BMK..GRANTS_OBJECT_VIEW as BMK.WA.grants_object_procedure (gow_type, gow_to, gow_from) (G_ID integer, G_OBJECT_ID integer)
+')
+;
 
 -------------------------------------------------------------------------------
 --

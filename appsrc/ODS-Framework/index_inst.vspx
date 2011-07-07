@@ -34,10 +34,7 @@
     </vm:header>
     <vm:pagewrapper>
       <vm:body>
-        <table>
-        <tr><td><vm:login inst="yes"/></td></tr>
-        <!--tr><td><vm:register-form/></td></tr-->
-        </table>
+        <vm:login />
       </vm:body>
     </vm:pagewrapper>
   </vm:page>

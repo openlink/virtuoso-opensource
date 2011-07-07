@@ -647,7 +647,7 @@ dtd_normalize_attr_val (vxml_parser_t* parser, const char* value, int level)
 	    unichar c = dtd_char_ref (parser, tmp_buf.lm_memblock + (i + 1), tmp_buf.lm_length - (i + 1));
 	    if (c >= 0)
 	      {
-		while (';' != tmp_buf.lm_memblock[++i]) {}
+		while (';' != tmp_buf.lm_memblock[++i] && (i < tmp_buf.lm_length)) {}
 /* Trick! The fact is used that &..; notation is longer than UTF8 encoding for all standard charrefs,
 thus the length of output is no larger than the length if input. */
 		buf_tail = eh_encode_char__UTF8 (c, buf_tail, buf_tail+MAX_UTF8_CHAR /* no need to pass the handler here */);
@@ -784,6 +784,7 @@ int get_include (vxml_parser_t *parser, const char *base, const char *ref, lenme
   ptrlong mode = parser->validator.dv_curr_config.dc_include;
   ptrlong trace = parser->validator.dv_curr_config.dc_trace_loading;
   char *err = NULL, *path, *newtext = &(default_get_include[0]);
+  lenmem_t **cached_text_ptr;
   lenmem_t *cached_text;
   dtp_t text_dtp;
   res_text->lm_memblock = newtext;
@@ -806,15 +807,16 @@ int get_include (vxml_parser_t *parser, const char *base, const char *ref, lenme
         xmlparser_logprintf (parser, XCFG_DETAILS, strlen(((char **)err)[1])+strlen(((char **)err)[2]), "[%s]: %s", ((char **)err)[1], ((char **)err)[2] );
       return 0;
     }
-  cached_text = (lenmem_t *)id_hash_get (parser->includes, (caddr_t)(&path));
-  if (NULL != cached_text)
+  cached_text_ptr = (lenmem_t **)id_hash_get (parser->includes, (caddr_t)(&path));
+  if (NULL != cached_text_ptr)
     {
       caddr_t key_ptr;
+      cached_text = cached_text_ptr[0];
       res_text->lm_memblock = cached_text->lm_memblock;
       res_text->lm_length = cached_text->lm_length;
       res_pos->line_num = res_pos->col_b_num = res_pos->col_c_num = 1;
       res_pos->origin_ent = NULL;
-      key_ptr = id_hash_get_key (parser->includes, (caddr_t)(&path));
+      key_ptr = id_hash_get_key_by_place (parser->includes, cached_text_ptr);
       res_pos->origin_uri = ((caddr_t *)key_ptr)[0];
       dk_free_box (path);
       return 1;
@@ -1164,7 +1166,10 @@ int replace_entity_common (vxml_parser_t* parser, int is_ge, xml_def_4_entity_t*
   if ((is_ge && test_char (parser, '#')) ||
       (test_class_str(parser, XML_CLASS_NMSTART)))
     {
-      test_class_str(parser, XML_CLASS_NMCHAR) ;
+      if (FINE_XML == parser->cfg.input_is_html)
+        test_class_str(parser, XML_CLASS_NMCHAR) ;
+      else
+        test_class_str_noentity (parser, XML_CLASS_NMCHAR);
       if ( test_char (parser, ';') )
 	{
 	  lenmem_t name_buf;
@@ -1218,6 +1223,8 @@ thus the length of output is no larger than the length if input. */
 	}
 
     }
+  if ((NULL != parser->inner_tag) && (NULL != parser->inner_tag->ot_descr) && parser->inner_tag->ot_descr->htmltd_is_script)
+    return 0;
   if (log_syntax_error)
     xmlparser_logprintf (parser, XCFG_FATAL, ECM_MESSAGE_LEN, "Invalid reference"); /* unexpected input */
   return 0;

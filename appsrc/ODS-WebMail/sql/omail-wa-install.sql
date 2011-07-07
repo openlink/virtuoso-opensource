@@ -113,6 +113,7 @@ create procedure OMAIL.WA.omail_install()
                ses_vars   => 1
               );
 
+  if ((select count(*) from DB.DBA.WA_DOMAINS) = 0)
   insert replacing DB.DBA.WA_DOMAINS(WD_DOMAIN) values('domain.com');
 }
 ;
@@ -161,6 +162,11 @@ OMAIL.WA.exec_no_error(
 
 OMAIL.WA.exec_no_error(
   'alter type wa_mail add method get_param (in param varchar) returns any'
+)
+;
+
+OMAIL.WA.exec_no_error(
+  'alter type wa_mail add overriding method wa_dashboard () returns any'
 )
 ;
 
@@ -295,10 +301,9 @@ create method wa_state_edit_form(inout stream any) for wa_mail
     sSid := (select VS_SID from VSPX_SESSION where VS_REALM = 'wa' and VS_UID = connection_get('vspx_user'));
     http_request_status ('HTTP/1.1 302 Found');
     http_header(sprintf('Location: %s?sid=%s&realm=%s\r\n', WS.WS.EXPAND_URL(self.wa_home_url(), 'set_mail.vsp'), sSid, 'wa'));
-  } else {
-    signal('42001', 'Not a owner');
-  }
   return;
+}
+  signal('42001', 'Not a owner');
 }
 ;
 
@@ -377,11 +382,14 @@ create method get_param (in param varchar) for wa_mail
   declare retValue any;
 
   retValue := null;
-  if (param = 'host') {
+  if (param = 'host')
+  {
     retValue := registry_get('_oMail_path_');
     if (cast(retValue as varchar) = '0')
       retValue := '/apps/oMail/';
-  } if (param = 'isDAV') {
+  }
+  else if (param = 'isDAV')
+  {
     retValue := 1;
     if (isnull(strstr(self.get_param('host'), '/DAV/VAD')))
       retValue := 0;
@@ -392,12 +400,39 @@ create method get_param (in param varchar) for wa_mail
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_mail
+{
+  declare domainID, userID integer;
+
+  domainID := self.wa_id ();
+  userID := OMAIL.WA.domain_owner_id (domainID);
+  return (select XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       OMAIL.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..mail_post_iri (domainID, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from OMAIL.WA.dashboard_rs(p0, p1)(_id integer, _title varchar, _time datetime) x
+           where p0 = 1
+             and p1 = userID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_mail
 {
   declare waID, domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+  domainID := self.wa_id ();
+  userID := OMAIL.WA.domain_owner_id (domainID);
   waID := coalesce((select top 1 WAI_ID from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = userID and WAI_TYPE_NAME = 'oMail' order by WAI_ID), 0);
   if (waID = domainID)
     domainID := 1;
@@ -411,9 +446,31 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_mail
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
+  domainID := self.wa_id ();
+  userID := OMAIL.WA.domain_owner_id (domainID);
   return sprintf('http://' || DB.DBA.http_get_host () || '/oMail/res/export.vsp?output=about&did=%d&uid=%d', domainID, userID);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.path_upgrade ()
+{
+  if (registry_get ('omail_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oMail') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/oMail/' || cast (WAI_ID as varchar) || '/box.vsp') do
+    {
+      VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+    }
+  }
+  registry_set ('omail_path_upgrade2', '1');
+}
+;
+OMAIL.WA.path_upgrade ();

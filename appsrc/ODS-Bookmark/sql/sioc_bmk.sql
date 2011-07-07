@@ -105,7 +105,30 @@ create procedure fill_ods_bookmark_sioc2 (
   declare id, deadl, cnt integer;
   declare domain_id, bookmark_id integer;
   declare graph_iri, forum_iri, creator_iri, bookmark_iri, iri varchar;
+
  {
+    -- init services
+    SIOC..fill_ods_bookmark_services ();
+
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'Bookmark') do
+    {
+      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select BD_DOMAIN_ID, BD_ID, BD_ACL
+             from BMK..BOOKMARK_DOMAIN
+            where BD_DOMAIN_ID = WAI_ID and BD_ACL is not null) do
+      {
+        bookmark_acl_insert (BD_DOMAIN_ID, BD_ID, BD_ACL);
+      }
+    }
+
     id := -1;
     deadl := 3;
     cnt := 0;
@@ -117,8 +140,8 @@ create procedure fill_ods_bookmark_sioc2 (
       deadl := deadl - 1;
       goto l0;
     };
-    l0:
 
+  l0:
     for (select WAI_NAME,
                 WAM_USER,
                 WAI_IS_PUBLIC,
@@ -129,7 +152,8 @@ create procedure fill_ods_bookmark_sioc2 (
                 BD_DESCRIPTION,
                 BD_TAGS,
                 BD_UPDATED,
-                BD_CREATED
+                BD_CREATED,
+                BD_ACL
         from DB.DBA.WA_INSTANCE,
              BMK..BOOKMARK_DOMAIN,
              DB.DBA.WA_MEMBER
@@ -165,43 +189,35 @@ create procedure fill_ods_bookmark_sioc2 (
       }
   }
   commit work;
-
-		id := -1;
-		deadl := 3;
-		cnt := 0;
-		declare exit handler for sqlstate '40001'
-		{
-			if (deadl <= 0)
-				resignal;
-			rollback work;
-			deadl := deadl - 1;
-			goto l1;
-		};
-	l1:
-		for (select WAI_ID,
-                WAI_IS_PUBLIC,
-								WAI_NAME
-					 from DB.DBA.WA_INSTANCE
-          where ((WAI_IS_PUBLIC > 0 and _wai_name is null) or WAI_NAME = _wai_name)
-					  and WAI_TYPE_NAME = 'Bookmark'
-					  and WAI_ID > id
-					order by WAI_ID) do
-		{
-      forum_iri := SIOC..bmk_iri (WAI_NAME);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), forum_iri);
-      iri := sprintf ('http://%s%s/services/bookmark', get_cname(), get_base_path ());
-      ods_sioc_service (graph_iri, iri, forum_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
-
-			cnt := cnt + 1;
-			if (mod (cnt, 500) = 0)
-			{
-				commit work;
-				id := WAI_ID;
-			}
-    }
-		commit work;
         }
     }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure fill_ods_bookmark_services ()
+{
+  declare graph_iri, services_iri, service_iri, service_url varchar;
+  declare svc_functions any;
+
+  graph_iri := get_graph ();
+
+  -- instance
+  svc_functions := vector ('bookmark.new', 'bookmark.import', 'bookmark.export', 'bookmark.publication.new', 'bookmark.subscription.new', 'bookmark.options.set',  'bookmark.options.get');
+  ods_object_services (graph_iri, 'bookmark', 'ODS Bookmark instance services', svc_functions);
+
+  -- item
+  svc_functions := vector ('bookmark.get', 'bookmark.edit', 'bookmark.delete', 'bookmark.comment.new', 'bookmark.annotation.new');
+  ods_object_services (graph_iri, 'bookmark/item', 'ODS Bookmark item services', svc_functions);
+
+  -- item comment
+  svc_functions := vector ('bookmark.comment.get', 'bookmark.comment.delete');
+  ods_object_services (graph_iri, 'bookmark/item/comment', 'ODS Bookmark comment services', svc_functions);
+
+  -- item annotation
+  svc_functions := vector ('bookmark.annotation.get', 'bookmark.annotation.claim', 'bookmark.annotation.delete');
+  ods_object_services (graph_iri, 'bookmark/item/annotation', 'ODS Bookmark annotation services', svc_functions);
+}
 ;
 
 -------------------------------------------------------------------------------
@@ -225,8 +241,8 @@ create procedure clean_ods_bookmark_sioc2 (
       deadl := deadl - 1;
       goto l0;
     };
-  l0:
 
+  l0:
     for (select WAI_NAME,
                 WAM_USER,
                 WAI_ID,
@@ -315,6 +331,9 @@ create procedure bookmark_domain_insert (
   SIOC..ods_sioc_post (graph_iri, bookmark_iri, forum_iri, creator_iri, name, created, updated, uri, description, null, linksTo);
   SIOC..scot_tags_insert (domain_id, bookmark_iri, tags);
 
+  -- bookmark services
+  SIOC..ods_object_services_dettach (graph_iri, bookmark_iri, 'bookmark/item');
+
   SIOC..bookmark_comments_insert (graph_iri, forum_iri, domain_id, bookmark_id);
   SIOC..bookmark_annotations_insert (graph_iri, domain_id, bookmark_id);
 }
@@ -341,6 +360,7 @@ create procedure bookmark_domain_delete (
       return;
   }
   SIOC..delete_quad_s_or_o (graph_iri, bookmark_iri, bookmark_iri);
+  SIOC..ods_object_services_attach (graph_iri, bookmark_iri, 'bookmark/item');
   SIOC..bookmark_comments_delete (graph_iri, domain_id, bookmark_id);
   SIOC..bookmark_annotations_delete (graph_iri, domain_id, bookmark_id);
 }
@@ -393,6 +413,96 @@ create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN re
                           O.BD_DOMAIN_ID,
                           O.BD_ID);
     }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bookmark_acl_insert (
+  inout domain_id integer,
+  inout bookmark_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..bmk_post_iri (domain_id, bookmark_id);
+  graph_iri := BMK.WA.acl_graph (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bookmark_acl_delete (
+  inout domain_id integer,
+  inout bookmark_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..bmk_post_iri (domain_id, bookmark_id);
+  graph_iri := BMK.WA.acl_graph (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_I after insert on BMK.WA.BOOKMARK_DOMAIN order 100 referencing new as N
+{
+  if (coalesce (N.BD_ACL, '') <> '')
+  {
+    bookmark_acl_insert (N.BD_DOMAIN_ID,
+                         N.BD_ID,
+                         N.BD_ACL);
+
+    SIOC..acl_ping (N.BD_DOMAIN_ID,
+                    SIOC..bmk_post_iri (N.BD_DOMAIN_ID, N.BD_ID),
+                    null,
+                    N.BD_ACL);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_U after update (BD_ACL) on BMK.WA.BOOKMARK_DOMAIN order 100 referencing old as O, new as N
+{
+  if (coalesce (O.BD_ACL, '') <> '')
+    bookmark_acl_delete (O.BD_DOMAIN_ID,
+                         O.BD_ID,
+                         O.BD_ACL);
+
+  if (coalesce (N.BD_ACL, '') <> '')
+    bookmark_acl_insert (N.BD_DOMAIN_ID,
+                         N.BD_ID,
+                         N.BD_ACL);
+
+  SIOC..acl_ping (N.BD_DOMAIN_ID,
+                  SIOC..bmk_post_iri (N.BD_DOMAIN_ID, N.BD_ID),
+                  O.BD_ACL,
+                  N.BD_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_D before delete on BMK.WA.BOOKMARK_DOMAIN order 100 referencing old as O
+{
+  if (coalesce (O.BD_ACL, '') <> '')
+    bookmark_acl_delete (O.BD_DOMAIN_ID,
+                        O.BD_ID,
+                        O.BD_ACL);
+}
 ;
 
 -------------------------------------------------------------------------------
@@ -493,7 +603,8 @@ create procedure bmk_comment_insert (
     return;
 
       foaf_maker (graph_iri, u_url, u_name, u_mail);
-      ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+  SIOC..ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+  SIOC..ods_object_services_attach (graph_iri, comment_iri, 'bookmark/item/comment');
   DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
     }
@@ -524,6 +635,7 @@ create procedure bmk_comment_delete (
   }
   comment_iri := bmk_comment_iri (domain_id, master_id, comment_id);
   delete_quad_s_or_o (graph_iri, comment_iri, comment_iri);
+  SIOC..ods_object_services_dettach (graph_iri, comment_iri, 'bookmark/item/comment');
 }
 ;
 
@@ -651,8 +763,7 @@ create procedure bmk_annotation_insert (
 	inout created datetime,
 	inout updated datetime)
 {
-	declare master_iri, annotattion_iri varchar;
-
+  declare master_iri, annotation_iri varchar;
 	declare exit handler for sqlstate '*'
 	{
 		sioc_log_message (__SQL_MESSAGE);
@@ -667,15 +778,16 @@ create procedure bmk_annotation_insert (
     if (isnull (graph_iri))
       return;
 		}
-		annotattion_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
-  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  annotation_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, an_iri ('annotates'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotation_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('author'), author);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('body'), body);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('created'), created);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotation_iri, an_iri ('modified'), updated);
 
-	  bmk_claims_insert (graph_iri, annotattion_iri, claims);
+  bmk_claims_insert (graph_iri, annotation_iri, claims);
+  SIOC..ods_object_services_attach (graph_iri, annotation_iri, 'bookmark/item/annotation');
 	}
 ;
 
@@ -688,7 +800,7 @@ create procedure bmk_annotation_delete (
   inout annotation_id integer,
   inout claims any)
 {
-  declare master_iri, annotattion_iri varchar;
+  declare master_iri, annotation_iri varchar;
 	declare exit handler for sqlstate '*'
 	{
 		sioc_log_message (__SQL_MESSAGE);
@@ -703,8 +815,9 @@ create procedure bmk_annotation_delete (
     if (isnull (graph_iri))
       return;
   }
-	annotattion_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
-  SIOC..delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+  annotation_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
+  SIOC..delete_quad_s_or_o (graph_iri, annotation_iri, annotation_iri);
+  SIOC..ods_object_services_dettach (graph_iri, annotation_iri, 'bookmark/item/annotation');
 }
 ;
 
@@ -712,7 +825,7 @@ create procedure bmk_annotation_delete (
 --
 create procedure bmk_claims_insert (
   in graph_iri varchar,
-  in annotattion_iri varchar,
+  in annotation_iri varchar,
   in claims any)
 {
   declare N integer;
@@ -729,7 +842,7 @@ create procedure bmk_claims_insert (
     } else {
       cPedicate := ODS.ODS_API."ontology.denormalize" (cPedicate);
   }
-    DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, annotation_iri, cPedicate, cValue);
 }
 }
 ;
@@ -804,7 +917,21 @@ create procedure ods_bookmark_sioc_init ()
 
 -------------------------------------------------------------------------------
 --
--- Bookmrks RDF Views
+create procedure BMK.WA.tmp_update ()
+{
+  if (registry_get ('bmk_services_update') = '1')
+    return;
+
+  SIOC..fill_ods_bookmark_services();
+  registry_set ('bmk_services_update', '1');
+}
+;
+
+BMK.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+-- Bookmarks RDF Views
 --
 -------------------------------------------------------------------------------
 use DB;

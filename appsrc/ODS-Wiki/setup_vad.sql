@@ -20,7 +20,11 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-create procedure WV.WIKI.SILENT_EXEC (in code varchar) { whenever sqlstate '*' goto cont; exec (code); commit work; return; cont: rollback work; };
+create procedure WV.WIKI.SILENT_EXEC (in code varchar)
+{
+  whenever sqlstate '*' goto cont; exec (code); commit work; return; cont: rollback work;
+};
+
 create procedure WV.WIKI.USERROLE_DROP (in _role varchar)
 {
   if ((_role is not null) and (_role <> ''))
@@ -30,8 +34,6 @@ create procedure WV.WIKI.USERROLE_DROP (in _role varchar)
   }
 };
 
--- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')');
--- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiUser\', 1)');
 WV.WIKI.SILENT_EXEC('drop trigger WV.Wiki.WIKI_USERS_U');

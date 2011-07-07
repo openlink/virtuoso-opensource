@@ -169,7 +169,7 @@ trig_call (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *calli
 {
   query_instance_t *qi = (query_instance_t *) qst;
   char auto_qi[AUTO_QI_DEFAULT_SZ];
-  caddr_t err;
+  caddr_t err = NULL;
   int inx;
   caddr_t *pars;
   int n_args = BOX_ELEMENTS (args);
@@ -238,6 +238,8 @@ trig_call_check (query_t * qr, int event, data_source_t * qn)
     upd_col_ids = ((update_node_t *) qn)->upd_col_ids;
   else if ((qn_input_fn) remote_table_source_input == qn->src_input)
     upd_col_ids = ((remote_table_source_t *) qn)->rts_trigger_cols;
+  else if ((qn_input_fn) query_frag_input == qn->src_input)
+    upd_col_ids = ((query_frag_t *) qn)->qf_trigger_cols;
   else
     {
       GPF_T;			/* update trigger event and non-update qn */
@@ -287,6 +289,11 @@ trig_copy_trigger_qrs (dbe_table_t * tb, dbe_table_t *calling_tb,
   END_DO_SET ();
 }
 
+void
+cl_trig_flush (qn_input_fn qn_run, data_source_t * qn, caddr_t * qst)
+{
+}
+
 
 void
 trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
@@ -321,6 +328,7 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
   if (!instead)
     {
       qn_run (qn, qst, qst);
+      cl_trig_flush (qn_run, qn, qst);
       ROW_AUTOCOMMIT (qi);
     }
   for (inx = 0; inx < fill; inx++)

@@ -30,7 +30,7 @@ export LANG LC_ALL
 
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.4.48"
+VERSION="1.4.71"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -222,7 +222,7 @@ sticker_init() {
   echo "  <name package=\"AddressBook\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS AddressBook Manager\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2010 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -234,8 +234,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.67.12\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2010-03-29 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.82.42\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2011-06-15 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER
@@ -261,7 +261,6 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-table.sql', 1, 'report',  $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-code.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-update.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-soap.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-api.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/sioc_ab.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER

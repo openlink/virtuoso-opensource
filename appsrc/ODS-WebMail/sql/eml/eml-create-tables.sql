@@ -19,7 +19,8 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
  'create table OMAIL.WA.MESSAGES (
     DOMAIN_ID        INTEGER         NOT NULL,
@@ -42,6 +43,8 @@ OMAIL.WA.exec_no_error (
     PRIORITY         INTEGER         NOT NULL,
     SUBJECT          VARCHAR(255),
     ADDRES_INFO      VARCHAR(255)    NOT NULL,
+    M_CONTENT        LONG VARCHAR,
+    M_OPTIONS        LONG VARCHAR,
     M_RFC_ID         VARCHAR,
     M_RFC_HEADER     LONG VARCHAR,
     M_RFC_REFERENCES VARCHAR,
@@ -53,6 +56,16 @@ OMAIL.WA.exec_no_error (
 
 OMAIL.WA.exec_no_error (
   'update DB.DBA.SYS_COLS set COL_PREC=1000 where "TABLE" = \'OMAIL.WA.MESSAGES\' and "COLUMN" = \'REF_ID\''
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.MESSAGES add M_CONTENT LONG VARCHAR', 'C', 'OMAIL.WA.MESSAGES', 'M_CONTENT'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.MESSAGES add M_OPTIONS LONG VARCHAR', 'C', 'OMAIL.WA.MESSAGES', 'M_OPTIONS'
 )
 ;
 
@@ -71,6 +84,8 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
  'create table OMAIL.WA.MSG_PARTS (
     DOMAIN_ID   INTEGER         NOT NULL,
@@ -98,6 +113,8 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
  'create table OMAIL.WA.FOLDERS (
     DOMAIN_ID   integer         not null,
@@ -110,6 +127,8 @@ OMAIL.WA.exec_no_error (
     NAME        varchar         not null,
     PATH        varchar,
     DATA        long varchar,
+    F_TYPE      varchar,
+    F_SOURCE    integer,
 
     PRIMARY KEY (DOMAIN_ID,USER_ID,FOLDER_ID)
   )'
@@ -142,31 +161,227 @@ OMAIL.WA.exec_no_error (
 ;
 
 OMAIL.WA.exec_no_error (
-  'CREATE UNIQUE INDEX FOLDERS_NAME_ID ON OMAIL.WA.FOLDERS (DOMAIN_ID, USER_ID, PARENT_ID, NAME)'
+  'alter table OMAIL.WA.FOLDERS add F_TYPE varchar', 'C', 'OMAIL.WA.FOLDERS', 'F_TYPE'
 )
 ;
 
 OMAIL.WA.exec_no_error (
- 'create table OMAIL.WA.EXTERNAL_POP_ACC(
-    DOMAIN_ID   INTEGER      NOT NULL,
-    USER_ID     INTEGER      NOT NULL,
-    ACC_ID      INTEGER      NOT NULL,
-    ACC_NAME    VARCHAR(100) NOT NULL,
-    POP_SERVER  VARCHAR(100) NOT NULL,
-    POP_PORT    INTEGER      NOT NULL,
-    USER_NAME   VARCHAR(100) NOT NULL,
-    USER_PASS   VARCHAR(100) NOT NULL,
-    CH_INTERVAL INTEGER      NOT NULL,
-    MCOPY       INTEGER      NOT NULL,
-    FOLDER_ID   INTEGER      NOT NULL,
-    LAST_CHECK  DATETIME,
-    CH_ERROR    INTEGER      NOT NULL,
+  'alter table OMAIL.WA.FOLDERS add F_SOURCE integer', 'C', 'OMAIL.WA.FOLDERS', 'F_SOURCE'
+)
+;
 
-    PRIMARY KEY (DOMAIN_ID,USER_ID,ACC_ID)
+OMAIL.WA.exec_no_error (
+  'CREATE UNIQUE INDEX FOLDERS_NAME_ID ON OMAIL.WA.FOLDERS (DOMAIN_ID, USER_ID, PARENT_ID, NAME)'
+)
+;
+
+OMAIL.WA.exec_no_error('
+  create trigger FOLDERS_AI after insert on OMAIL.WA.FOLDERS referencing new as N {
+    OMAIL.WA.folder_trigger (N.DOMAIN_ID, N.USER_ID, N.FOLDER_ID, N.PARENT_ID, N.NAME, N.F_TYPE);
+  }
+');
+
+OMAIL.WA.exec_no_error('
+  create trigger FOLDERS_AU after update on OMAIL.WA.FOLDERS referencing old as O, new as N {
+    OMAIL.WA.folder_trigger (N.DOMAIN_ID, N.USER_ID, N.FOLDER_ID, N.PARENT_ID, N.NAME, N.F_TYPE);
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.folder_trigger (
+  in _domain_id integer,
+  in _user_id integer,
+  in _folder_id integer,
+  in _parent_id integer,
+  in _name varchar,
+  in _type varchar)
+{
+  declare _path varchar;
+
+  _path := coalesce((select PATH from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and FOLDER_ID = _parent_id), '') || '/' || _name;
+
+  set triggers off;
+  update OMAIL.WA.FOLDERS
+     set PATH = _path
+   where DOMAIN_ID = _domain_id
+     and USER_ID = _user_id
+     and FOLDER_ID = _folder_id;
+  OMAIL.WA.folder_paths (_domain_id, _user_id, _folder_id, _path);
+  set triggers on;
+
+  if (DB.DBA.is_empty_or_null (_type))
+  {
+    declare _type varchar;
+
+    _type := '';
+    if (ucase (_name) like 'INBOX%')
+      _type := 'INBOX';
+
+    if (ucase (_name) like 'TRASH%')
+      _type := 'TRASH';
+
+    if (ucase (_name) like 'SENT%')
+      _type := 'SENT';
+
+    if (ucase (_name) like 'DRAFT%')
+      _type := 'DRAFT';
+
+    if (ucase (_name) like 'SPAM%')
+      _type := 'SPAM';
+
+    if (_type <> '')
+    {
+      set triggers off;
+      update OMAIL.WA.FOLDERS
+         set SYSTEM_FLAG = 'S',
+             F_TYPE = _type
+       where DOMAIN_ID = _domain_id
+         and USER_ID = _user_id
+         and FOLDER_ID = _folder_id;
+      set triggers on;
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.folder_paths (
+  in _domain_id integer,
+  in _user_id integer,
+  in _parent_id integer,
+  in _path varchar)
+{
+  declare _folder_id integer;
+
+  for (select NAME, FOLDER_ID from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and PARENT_ID = _parent_id) do
+  {
+    _folder_id := FOLDER_ID;
+    update OMAIL.WA.FOLDERS
+       set PATH = _path || '/' || NAME
+     where DOMAIN_ID = _domain_id
+       and USER_ID = _user_id
+       and FOLDER_ID = _folder_id;
+    OMAIL.WA.folder_paths (_domain_id, _user_id, _folder_id, _path || '/' || NAME);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.mail_folder_type ()
+{
+  if (registry_get ('mail_folder_type') = '1')
+    return;
+
+  update OMAIL.WA.FOLDERS set F_TYPE = 'INBOX' where FOLDER_ID = 100;
+  update OMAIL.WA.FOLDERS set F_TYPE = 'TRASH' where FOLDER_ID = 110;
+  update OMAIL.WA.FOLDERS set F_TYPE = 'SENT'  where FOLDER_ID = 120;
+  update OMAIL.WA.FOLDERS set F_TYPE = 'DRAFT' where FOLDER_ID = 130;
+  update OMAIL.WA.FOLDERS set F_TYPE = 'SPAM'  where FOLDER_ID = 125;
+
+  registry_set ('mail_folder_type', '1');
+}
+;
+
+OMAIL.WA.mail_folder_type ()
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.mail_folder_path ()
+{
+  if (registry_get ('mail_folder_path') = '1')
+    return;
+
+  for (select distinct DOMAIN_ID, USER_ID from OMAIL.WA.FOLDERS where PARENT_ID = 0) do
+  {
+    OMAIL.WA.folder_paths(DOMAIN_ID, USER_ID, 0, '');
+  }
+
+  registry_set ('mail_folder_path', '1');
+}
+;
+
+OMAIL.WA.mail_folder_path ()
+;
+
+-------------------------------------------------------------------------------
+--
+OMAIL.WA.exec_no_error (
+ 'create table OMAIL.WA.EXTERNAL_ACCOUNT (
+    EA_ID             integer      identity,
+    EA_DOMAIN_ID      integer      not null,
+    EA_USER_ID        integer      not null,
+    EA_NAME           varchar      not null,
+    EA_TYPE           varchar      default \'pop3\',
+    EA_HOST           varchar      not null,
+    EA_PORT           integer      not null,
+    EA_CONNECT_TYPE   varchar      default \'none\',
+    EA_USER           varchar      not null,
+    EA_PASSWORD       varchar      not null,
+    EA_MCOPY          integer      not null,
+    EA_FOLDER_ID      integer      default 100,
+    EA_CHECK_INTERVAL integer      not null,
+    EA_CHECK_DATE     datetime,
+    EA_CHECK_ERROR    integer,
+
+    PRIMARY KEY (EA_ID)
   )'
 )
 ;
 
+OMAIL.WA.exec_no_error (
+  'CREATE UNIQUE INDEX EXTERNAL_ACCOUNT_NAME_ID ON OMAIL.WA.EXTERNAL_ACCOUNT (EA_DOMAIN_ID, EA_USER_ID, EA_NAME)'
+)
+;
+
+create procedure OMAIL.WA.upgrade ()
+{
+  if (registry_get ('omail_accounts_upgrade') = '1')
+    return;
+
+  OMAIL.WA.exec_no_error (
+   'insert into OMAIL.WA.EXTERNAL_ACCOUNT(
+      EA_DOMAIN_ID,
+      EA_USER_ID,
+      EA_NAME,
+      EA_HOST,
+      EA_PORT,
+      EA_CONNECT_TYPE,
+      EA_USER,
+      EA_PASSWORD,
+      EA_MCOPY,
+      EA_FOLDER_ID,
+      EA_CHECK_INTERVAL,
+      EA_CHECK_DATE,
+      EA_CHECK_ERROR)
+    select
+      DOMAIN_ID,
+      USER_ID,
+      ACC_NAME,
+      POP_SERVER,
+      POP_PORT,
+      POP_TYPE,
+      USER_NAME,
+      USER_PASS,
+      MCOPY,
+      FOLDER_ID,
+      CH_INTERVAL,
+      LAST_CHECK,
+      CH_ERROR
+    from OMAIL.WA.EXTERNAL_POP_ACC
+    '
+  );
+
+  registry_set ('omail_accounts_upgrade', '1');
+}
+;
+OMAIL.WA.upgrade ();
+
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
   'create table OMAIL.WA.MIME_HANDLERS(
     ID      INTEGER     NOT NULL,
@@ -179,6 +394,8 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
   'create table OMAIL.WA.SETTINGS(
     DOMAIN_ID   INTEGER      NOT NULL,
@@ -191,6 +408,8 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
   'create table OMAIL.WA.SHARES (
     SHARE_ID    INTEGER         NOT NULL,
@@ -206,6 +425,8 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
   'create table OMAIL.WA.CONVERSATION (
     C_ID integer identity,
@@ -224,6 +445,8 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
+-------------------------------------------------------------------------------
+--
 OMAIL.WA.exec_no_error (
   'create table OMAIL.WA.FILTERS (
     F_ID integer identity,
@@ -294,7 +517,7 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
--- CREATE TRIGERS --------------------------------------------------------------
+-- CREATE TRIGGERS -------------------------------------------------------------
 
 OMAIL.WA.exec_no_error (
   'CREATE TRIGGER EML_MESSAGES_A_I after insert on OMAIL.WA.MESSAGES referencing new as N
@@ -549,12 +772,17 @@ create procedure OMAIL.WA.dsize_update (in _domain_id integer, in _user_id integ
 --
 create procedure OMAIL.WA.MESSAGES_ADDRESS_HOOK (inout vtb any, inout d_id any, in mode any)
 {
-  declare _user_id, _folder_id, _address any;
+  declare S, _user_id, _folder_id, _address, _options any;
 
-  select USER_ID, FOLDER_ID, ADDRESS into _user_id, _folder_id, _address from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
+  select USER_ID, FOLDER_ID, ADDRESS, M_OPTIONS into _user_id, _folder_id, _address, _options from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
 
+  S := '';
   if (not isnull(_address))
-    vt_batch_feed (vtb, _address, mode, 1);
+    S := S || _address;
+  if (not isnull(_options))
+    S := S || _options;
+  if (S <> '')
+    vt_batch_feed (vtb, S, mode, 1);
   if (not isnull(_folder_id))
     vt_batch_feed (vtb, sprintf ('^F%d', _folder_id), mode);
   if (not isnull(_user_id))
@@ -568,7 +796,9 @@ create procedure OMAIL.WA.MESSAGES_ADDRESS_HOOK (inout vtb any, inout d_id any, 
 --
 create procedure OMAIL.WA.drop_index ()
 {
-  if (registry_get ('mail_index_version') <> '1')
+  if (registry_get ('mail_index_version') = '2')
+    return;
+
     OMAIL.WA.exec_no_error('drop table OMAIL.WA.MESSAGES_ADDRESS_WORDS');
 }
 ;
@@ -593,15 +823,9 @@ create procedure OMAIL.WA.MESSAGES_ADDRESS_UNINDEX_HOOK (inout vtb any, inout d_
 ;
 
 OMAIL.WA.exec_no_error(
-  'create text xml index on OMAIL.WA.MESSAGES (ADDRESS) with key FREETEXT_ID not insert CLUSTERED WITH (FOLDER_ID) using function'
+  'create text xml index on OMAIL.WA.MESSAGES (ADDRESS) with key FREETEXT_ID not insert CLUSTERED WITH (FOLDER_ID) using function language \'x-ViDoc\''
 )
 ;
-
-OMAIL.WA.VT_INDEX_OMAIL_WA_MESSAGES ()
-;
-DB.DBA.vt_batch_update ('OMAIL.WA.MESSAGES', 'off', null)
-;
-
 -------------------------------------------------------------------------------
 --
 create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, in mode any)
@@ -637,7 +861,9 @@ create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, i
 --
 create procedure OMAIL.WA.drop_index()
 {
-  if (registry_get ('mail_index_version') <> '1')
+  if (registry_get ('mail_index_version') = '2')
+    return;
+
     OMAIL.WA.exec_no_error ('drop table OMAIL.WA.MSG_PARTS_TDATA_WORDS');
 }
 ;
@@ -661,26 +887,26 @@ create procedure OMAIL.WA.MSG_PARTS_TDATA_unindex_hook (inout vtb any, inout d_i
   }
 ;
 
-OMAIL.WA.exec_no_error('
-  create text index on OMAIL.WA.MSG_PARTS(TDATA) with key FREETEXT_ID not insert CLUSTERED WITH (TAGS) using function
-')
-;
-
-OMAIL.WA.vt_index_OMAIL_WA_MSG_PARTS ()
-;
-DB.DBA.vt_batch_update('OMAIL.WA.MSG_PARTS', 'off', null)
+OMAIL.WA.exec_no_error(
+  'create text index on OMAIL.WA.MSG_PARTS(TDATA) with key FREETEXT_ID not insert CLUSTERED WITH (TAGS) using function language \'x-ViDoc\''
+)
 ;
 
 -------------------------------------------------------------------------------
 --
-registry_set ('mail_index_version', '1')
+registry_set ('mail_index_version', '2')
 ;
 
 -------------------------------------------------------------------------------
 --
 OMAIL.WA.exec_no_error ('
+  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = \'WebMail External POP3 Scheduler\'
+')
+;
+
+OMAIL.WA.exec_no_error ('
   insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-    values(\'WebMail External POP3 Scheduler\', now(), \'OMAIL.WA.omail_ch_pop3_acc_schedule ()\', 10)
+    values(\'WebMail External Account Scheduler\', now(), \'OMAIL.WA.external_account_schedule ()\', 10)
 ')
 ;
 

@@ -493,7 +493,6 @@ Interop.INTEROP.echoVoid
  published by OpenLink containing the descriptions of these tests can be found
  at <ulink url="http://demo.openlinksw.com:8890/Interop/">http://demo.openlinksw.com:8890/Interop/</ulink>.
  This URL will be updated as new interoperability tests are devised.</para>
- <para>As of the general release of Virtuoso 2.7, the SOAP implementation
- passes all known interoperability tests.</para>
+ <para>The SOAP implementation passes all known interoperability tests.</para>
  </sect2>
 </sect1>

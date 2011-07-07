@@ -42,6 +42,11 @@ AB.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'A
 
 VHOST_REMOVE (lpath => '/addressbook');
 VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
+VHOST_REMOVE (lpath => '/ods/portablecontacts');
+VHOST_REMOVE (lpath => '/ods/livecontacts');
+VHOST_REMOVE (lpath => '/ods/yahoocontacts');
+VHOST_REMOVE (lpath => '/ods/google');
+
 
 -- NNTP
 AB.WA.exec_no_error ('DROP procedure DB.DBA.ADDRESSBOOK_NEWS_MSG_I');
@@ -64,14 +69,19 @@ AB.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'AddressBook\'');
 AB.WA.exec_no_error ('DROP type wa_AddressBook');
 
 -- Views
-AB.WA.exec_no_error ('DROP view AB..TAGS_VIEW');
+AB.WA.exec_no_error ('DROP view AB.DBA.TAGS_VIEW');
+AB.WA.exec_no_error ('DROP view AB.DBA.GRANTS_PERSON_VIEW');
+AB.WA.exec_no_error ('DROP view AB.DBA.GRANTS_VIEW');
 
 -- Registry
 registry_remove ('ab_path');
 registry_remove ('ab_version');
 registry_remove ('ab_build');
 registry_remove ('ab_index_version');
+registry_remove ('ab_path_upgrade2');
+registry_remove ('ab_acl_update');
 registry_remove ('__ods_addressbook_sioc_init');
+registry_remove ('ab_services_update');
 
 -- Procedures
 create procedure AB.WA.drop_procedures()
@@ -121,10 +131,6 @@ AB.WA.exec_no_error ('DROP view DB.DBA.ODS_ADDRESSBOOK_TAGS');
 
 -- reinit
 ODS_RDF_VIEW_INIT ();
-
--- dropping SIOC procs
-AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_import');
-AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_export');
 
 -- dropping API procs
 AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.get"');

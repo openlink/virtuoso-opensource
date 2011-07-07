@@ -101,14 +101,15 @@ create procedure BMK.WA.vhost()
                realm    => 'wa',
                def_page => 'bookmarks.vspx'
              );
-  USER_CREATE ('SOAP_BOOKMARK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
-  USER_SET_QUALIFIER ('SOAP_BOOKMARK', 'DBA');
 
+  -- old SOAP
+  -- api user & url
+  BMK.WA.exec_no_error ('USER_DROP (\'SOAP_BOOKMARK\')');
   VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
-  VHOST_DEFINE (lpath => '/dataspace/services/bookmark',
-                ppath => '/SOAP/',
-                soap_user => 'SOAP_BOOKMARK',
-                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )); 
+  -- procs
+  BMK.WA.exec_no_error ('DROP procedure DBA.DB.bookmark_import');
+  BMK.WA.exec_no_error ('DROP procedure DBA.DB.bookmark_export');
+  BMK.WA.exec_no_error ('DROP procedure DBA.DB.bookmark_update');
 }
 ;
 
@@ -156,6 +157,11 @@ BMK.WA.exec_no_error('
 ;
 
 BMK.WA.exec_no_error(
+  'alter type wa_bookmark add overriding method wa_dashboard () returns any'
+)
+;
+
+BMK.WA.exec_no_error(
   'alter type wa_bookmark add method wa_dashboard_last_item () returns any'
 )
 ;
@@ -199,6 +205,14 @@ create method wa_id_string() for wa_bookmark
 --
 create method wa_drop_instance () for wa_bookmark
 {
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/bookmark/' || self.BookmarkID) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
   BMK.WA.domain_delete(self.BookmarkID);
   (self as web_app).wa_drop_instance();
 }
@@ -258,16 +272,7 @@ create method wa_new_inst (in login varchar) for wa_bookmark
              );
 
   BMK.WA.domain_update (iWaiID, iUserID);
-
   retValue := (self as web_app).wa_new_inst(login);
-
-  --  SIOC service
-  declare  graph_iri, iri, bmk_iri varchar;
-
-  graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s%s/services/bookmark', SIOC..get_cname(), SIOC..get_base_path ());
-  bmk_iri := SIOC..bmk_iri (self.wa_name);
-  SIOC..ods_sioc_service (graph_iri, iri, bmk_iri, null, null, null, iri, 'SOAP');
 
   return retValue;
 }
@@ -382,13 +387,38 @@ create method get_param (in param varchar) for wa_bookmark
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_bookmark
+{
+  declare iWaiID integer;
+
+  iWaiID := self.BookmarkID;
+  return (select XMLAGG (
+                         XMLELEMENT (
+                                     'dash-row',
+                                     XMLATTRIBUTES (
+                                                    'normal' as "class",
+                                                    BMK.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                    self.wa_name as "application"
+                                                   ),
+                                     XMLELEMENT(
+                                                'dash-data',
+                                                XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..bmk_post_iri (iWaiID, _id) as nvarchar), N'">', BMK.WA.utf2wide (_title), N'</a>') as "content",
+	                                                              0 "comments"
+	                                                            )
+                                          	   )
+                                    )
+                     	  )
+            from BMK.WA.dashboard_rs(p0)(_id integer, _title varchar, _time datetime) x
+           where p0 = iWaiID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_bookmark
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-  return BMK.WA.dashboard_get(domainID, userID);
+  return BMK.WA.dashboard_get (self.BookmarkID);
 }
 ;
 
@@ -398,9 +428,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_bookmark
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
+  domainID := self.BookmarkID;
+  userID := BMK.WA.domain_owner_id (domainID);
   return concat(BMK.WA.dav_url2(domainID, userID), 'BM.rdf');
 }
 ;
@@ -432,3 +461,40 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_boo
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('bmk_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Bookmark') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/bookmark/' || cast (WAI_ID as varchar) || '/bookmarks.vspx') do
+    {
+      _new_lpath := '/bookmark/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('bmk_path_upgrade2', '1');
+}
+;
+BMK.WA.path_upgrade ();

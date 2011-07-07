@@ -43,9 +43,6 @@
     <para>isarray is true if the argument is a valid argument to aref.
     This is the case for any string or vector.</para>
   </refsect1>
-  <refsect1 id="errors_isarray"><title>Errors</title>
-    <para>No error, it always succeeds.</para>
-  </refsect1>
   <refsect1 id="params_isarray"><title>Parameters</title>
     <refsect2>
       <title>x</title>
@@ -54,6 +51,9 @@
   </refsect1>
   <refsect1 id="ret_isarray"><title>Return Values</title>
       <para>1 - if arg is an array (vector()) or string (varchar, char) otherwise return 0.</para>
+  </refsect1>
+  <refsect1 id="errors_isarray"><title>Errors</title>
+    <para>No error, it always succeeds.</para>
   </refsect1>
 </refentry>
 

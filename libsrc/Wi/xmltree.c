@@ -58,6 +58,7 @@ extern "C" {
 #include "xpathp.h"
 #include "date.h" /* for DT_DT_TYPE */
 #include "rdf_core.h" /* for rdf_type_twobyte_to_iri */
+#include "uname_const_decl.h"
 
 #define REF_REL_URI(xte,head) \
  ((BOX_ELEMENTS (head) > 4) ? \
@@ -69,7 +70,7 @@ struct xe_class_s xec_tree_xe;
 static void xte_destroy (xml_entity_t * xe);
 char * xte_output_method (xml_tree_ent_t * xte);
 int xte_ent_name_test (xml_entity_t * xe, XT * node);
-
+int xte_string_value_of_tree_is_nonempty (caddr_t *current);
 
 dk_mutex_t * xqr_mtx;
 
@@ -695,6 +696,32 @@ xqi_raw_value (xp_instance_t * xqi, XT * tree)
   GPF_T; return NULL;
 }
 
+int
+xqi_truth_value_of_box (caddr_t val)
+{
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_STRING: case DV_UNAME: return (1 < box_length (val));
+    case DV_WIDE: return (sizeof (wchar_t) < box_length (val));
+    case DV_LONG_INT: return unbox (val);
+    case DV_DOUBLE_FLOAT: return (0 != unbox_double (val));
+    case DV_SINGLE_FLOAT: return (0 != unbox_float (val));
+    case DV_NUMERIC: return !num_is_zero ((numeric_t)val);
+    case DV_XML_ENTITY:
+      {
+        xml_entity_t *xe = (xml_entity_t *)val;
+        return xe->_->xe_string_value_is_nonempty (xe);
+      }
+    case DV_ARRAY_OF_XQVAL:
+      if (0 == box_length (val))
+        return 0;
+      return xqi_truth_value_of_box (((caddr_t *)val)[0]);
+    case DV_ARRAY_OF_POINTER:
+      return xte_string_value_of_tree_is_nonempty ((caddr_t *)val);
+    default: return 1;
+    }
+}
+
 
 int
 xqi_truth_value (xp_instance_t * xqi, XT * tree)
@@ -720,8 +747,13 @@ xqi_truth_value (xp_instance_t * xqi, XT * tree)
       val = xqi_raw_value (xqi, tree);
       return (NULL != val);
     default:
+#if 1
+      val = xqi_raw_value (xqi, tree);
+      return xqi_truth_value_of_box (val);
+#else
       val = xqi_value (xqi, tree, DV_SHORT_STRING);
       return val && (box_length (val) > 1);
+#endif
     }
 }
 
@@ -4412,7 +4444,7 @@ static void xp_lexem_descrs_fill (void)
   if (!first_run)
     return;
   first_run = 0;
-  #include "xpathp_lex_props.c"
+#include "xpathp_lex_props.c"
 }
 
 caddr_t
@@ -5633,6 +5665,34 @@ DBG_NAME(xte_string_value) (DBG_PARAMS xml_tree_ent_t * xte, caddr_t * ret, dtp_
   DBG_NAME(xte_string_value_from_tree) (DBG_ARGS xte->xte_current, ret, dtp);
 }
 
+int
+xte_string_value_of_tree_is_nonempty (caddr_t *current)
+{
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (current))
+    {
+      int inx, len = BOX_ELEMENTS (current);
+      for (inx = 1; inx < len; inx++)
+        {
+          caddr_t child = current[inx];
+          if (DV_STRINGP (child))
+            {
+              if (1 < box_length (child))
+                return 1;
+            }
+          else if (xte_string_value_of_tree_is_nonempty ((caddr_t *)child))
+            return 1;
+        }
+      return 0;
+    }
+  return (1 < box_length (current));
+}
+
+
+int
+xte_string_value_is_nonempty (xml_tree_ent_t * xte)
+{
+  return xte_string_value_of_tree_is_nonempty (xte->xte_current);
+}
 
 #define XTE_IS_XSLT_OUTPUT(xte) \
   ((xte) && \
@@ -6323,6 +6383,8 @@ and the document will stay locked in that time */
 query_instance_t *
 qi_top_qi (query_instance_t * qi)
 {
+  if (-1 == (ptrlong)qi)
+    return NULL;
   while (IS_POINTER (qi->qi_caller))
     qi = qi->qi_caller;
   return qi;
@@ -6356,6 +6418,24 @@ DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi)
   xte->xte_child_no = 0;
   return xte;
 }
+
+void
+xte_set_qi (caddr_t xte, query_instance_t * qi)
+{
+  dtp_t dtp = DV_TYPE_OF (xte);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      int inx;
+      DO_BOX (caddr_t, elt, inx, (caddr_t*)xte)
+	{
+	  xte_set_qi (elt, qi);
+	}
+      END_DO_BOX;
+    }
+  else if (DV_XML_ENTITY == dtp && XE_IS_TREE ((xml_tree_ent_t*)xte))
+    ((xml_tree_ent_t*)xte)->xe_doc.xtd->xd_qi = qi;
+}
+
 
 #define B_SET(x, y) dk_free_tree (x); x = box_copy_tree (y)
 void
@@ -6500,7 +6580,6 @@ xte_word_range (xml_entity_t * xe, wpos_t * start, wpos_t * end)
   caddr_t * ent = xte->xte_current;
   xml_tree_doc_t * xtd = xte->xe_doc.xtd;
   xe_word_ranges_t *locals;
-  dbg_printf(("xte_word_range (%p)", (void *)xe));
   if (NULL == xtd->xtd_wrs)
     {
       char hider = '\0';
@@ -6517,7 +6596,12 @@ xte_word_range (xml_entity_t * xe, wpos_t * start, wpos_t * end)
       start[0] = locals->xewr_main_beg;
       end[0] = locals->xewr_main_end;
     }
-  dbg_printf(("=>(%lu,%lu)", (unsigned long)(start[0]), (unsigned long)(end[0])));
+  dbg_printf(("xte_word_range (%p:%s) => (%lu,%lu)\n",
+      (void *)xe,
+      ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (ent)) ?
+        XTE_HEAD_NAME (XTE_HEAD (ent)) :
+        ((DV_STRING == DV_TYPE_OF (ent)) ? (caddr_t)ent : "<weird>") ),
+      (unsigned long)(start[0]), (unsigned long)(end[0]) ));
 }
 
 
@@ -7477,6 +7561,27 @@ bif_xml_tree_doc_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return ret;
 }
 
+static caddr_t
+bif_xtree_doc_get_dtd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  xml_entity_t * xe = bif_entity_arg (qst, args, 0, "xtree_doc_get_dtd");
+  long what = bif_long_arg (qst, args, 1, "xtree_doc_get_dtd");
+  xml_doc_t *xd = xe->xe_doc.xd;
+  caddr_t ret = NULL;
+  if (xd->xd_dtd)
+    {
+      switch (what)
+	{
+	  case 1:
+	      ret = xd->xd_dtd->ed_sysuri ? box_dv_short_string (xd->xd_dtd->ed_sysuri) : NULL;
+	      break;
+	  case 2:
+	      ret = xd->xd_dtd->ed_puburi ? box_dv_short_string (xd->xd_dtd->ed_puburi) : NULL;
+	      break;
+	}
+    }
+  return ret ? ret : NEW_DB_NULL;
+}
 
 int
 xe_destroy (caddr_t box)
@@ -7492,6 +7597,15 @@ xe_make_copy (caddr_t box)
 {
   xml_entity_t * xe = (xml_entity_t *) box;
   return (caddr_t) (xe->_->xe_copy (xe));
+}
+
+
+caddr_t
+xe_mp_copy (mem_pool_t * mp, caddr_t box)
+{
+  caddr_t cp = xe_make_copy (box);
+  dk_set_push (&mp->mp_trash, (void*)cp);
+  return cp;
 }
 
 
@@ -7542,8 +7656,13 @@ xe_serialize (xml_entity_t * xe, dk_session_t * ses)
   dtp_t out_dtp = DV_LONG_STRING;
 
   strses = strses_allocate ();
-
-  if (cli)
+  if ((DKS_TO_CLUSTER & ses->dks_cluster_flags) && XE_IS_TREE (xe))
+    {
+      xml_tree_ent_t * xte = (xml_tree_ent_t *)xe;
+      out_dtp = DV_XML_ENTITY;
+      xte_serialize_packed (xte->xte_current, xte->xe_doc.xd->xd_dtd, strses);
+    }
+  else if (cli)
     { /* GK: if this is a top level serialization to the client session force UTF-8 */
       out_dtp = DV_LONG_WIDE;
       if (!xe_strses_serialize_utf8 (xe, strses, 1))
@@ -7561,7 +7680,7 @@ xe_serialize (xml_entity_t * xe, dk_session_t * ses)
       xe->_->xe_serialize (xe, strses);
     }
 
-  if (cli && cli->cli_version >= 2724)
+  if (cli && !(DKS_TO_CLUSTER & ses->dks_cluster_flags) && cli->cli_version >= 2724)
     print_object (strses, ses, NULL, NULL);
   else
     {
@@ -7572,6 +7691,29 @@ xe_serialize (xml_entity_t * xe, dk_session_t * ses)
   strses_free (strses);
 }
 
+caddr_t
+xe_deserialize (dk_session_t * ses)
+{
+  xml_entity_t * xe = NULL;
+  caddr_t *tree = NULL;
+  dtd_t *dtd = NULL;
+  long len = read_long (ses);
+  query_instance_t * qi = DKS_QI_DATA (ses);
+
+  if (!qi && !ses->dks_cluster_data)
+    return NEW_DB_NULL;
+
+  SAVE_READ_FAIL(ses)
+    {
+      xte_deserialize_packed (ses, &tree, &dtd);
+    }
+  RESTORE_READ_FAIL (ses);
+  xe = (xml_entity_t *) xte_from_tree ((caddr_t) tree, qi ? qi : (query_instance_t*)(ptrlong)-1);
+  if (NULL != dtd)
+    dtd_addref (dtd, 0);
+  xe->xe_doc.xd->xd_dtd = dtd;
+  return (caddr_t) xe;
+}
 
 xml_entity_t *
 xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
@@ -7709,7 +7851,11 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
           goto val_is_xpack_serialization; /* see below */
         }
       else
-	sqlr_new_error ("HT002", "XI022", "Can't make XML tree from datum of type %d", (int) dtp);
+        {
+	  if (xqr->xqr_is_quiet)
+	    return NULL;
+	  sqlr_new_error ("HT002", "XI022", "Can't make XML tree from datum of type %d", (int) dtp);
+        }
       if (xqr->xqr_xml_parser_cfg)
         {
 	  caddr_t boxed_abs_uri = (('\0' != abs_uri[0]) ? box_dv_short_string (abs_uri) : NULL);
@@ -7812,6 +7958,8 @@ xn_init (xpath_node_t * xn, query_instance_t * qi)
 	  dk_free_box (_str);
 	  if (err)
 	    return err;
+	  if (qi->qi_query->qr_no_cast_error)
+            xqr->xqr_is_quiet = 1;
 	  qst_set (qst, xn->xn_compiled_xqr, (caddr_t) xqr);
 	  qst_set (qst, xn->xn_compiled_xqr_text, box_copy_tree (str));
 	  xqr->xqr_wr_enabled = 0;
@@ -8109,8 +8257,45 @@ xn_text_query (xpath_node_t * xn, query_instance_t * qi, caddr_t xp_str)
       dk_free_box (_str);
       if (err)
 	sqlr_resignal (err);
+      if (qi->qi_query->qr_no_cast_error)
+	xqr->xqr_is_quiet = 1;
       qst_set (qst, xn->xn_compiled_xqr, (caddr_t) xqr);
       qst_set (qst, xn->xn_compiled_xqr_text, box_copy_tree (xp_str));
+    }
+  return ((caddr_t) xpt_text_exp (xqr->xqr_tree, NULL));
+}
+
+
+caddr_t
+txs_xn_text_query (text_node_t * txs, query_instance_t * qi, caddr_t xp_str)
+{
+  /* with a combination of text_node, table_source, xp_node
+   * the txs calls this to get the text part of the query */
+  caddr_t * qst = (caddr_t *) qi;
+  caddr_t err = NULL;
+  xp_query_t * xqr;
+  caddr_t prev_text = qst_get (qst, txs->txs_xn_xq_source);
+  if (prev_text && 0 == strcmp (prev_text, xp_str))
+    xqr = (xp_query_t *) qst_get (qst, txs->txs_xn_xq_compiled);
+  else
+    {
+      caddr_t _str = DV_WIDESTRINGP (xp_str) ?
+	      box_wide_as_utf8_char (xp_str, box_length (xp_str) / sizeof (wchar_t) - 1, DV_SHORT_STRING) :
+	      NULL;
+      caddr_t str_to_parse = (_str ? _str : xp_str);
+      if (!DV_STRINGP(str_to_parse) && (NULL != str_to_parse))
+        {
+          dk_free_box (_str);
+          sqlr_error ("37000", "XPATH interpreter: input text is not a string");
+        }
+      xqr = xp_query_parse (qi, str_to_parse, txs->txs_xn_pred_type, &err, &xqre_default);
+      dk_free_box (_str);
+      if (err)
+	sqlr_resignal (err);
+      if (qi->qi_query->qr_no_cast_error)
+	xqr->xqr_is_quiet = 1;
+      qst_set (qst, txs->txs_xn_xq_compiled, (caddr_t) xqr);
+      qst_set (qst, txs->txs_xn_xq_source, box_copy_tree (xp_str));
     }
   return ((caddr_t) xpt_text_exp (xqr->xqr_tree, NULL));
 }
@@ -9346,10 +9531,10 @@ caddr_t bif_xml_serialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t
 }
 
 
-caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+caddr_t
+xml_deserialize_packed (caddr_t * qst, caddr_t strg)
 {
-  caddr_t *res;
-  caddr_t strg = bif_arg (qst, args, 0, "__xml_deserialize_packed");
+  caddr_t * res = NULL;
   dtp_t strg_dtp = DV_TYPE_OF (strg);
   if (DV_STRING == strg_dtp)
     {
@@ -9360,6 +9545,7 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
       ses.dks_in_buffer = strg;
       ses.dks_in_fill = box_length (strg) - 1;
       SESSION_SCH_DATA ((&ses)) = &iod;
+      DKS_QI_DATA (&ses) = (query_instance_t *)qst;
       xte_deserialize_packed (&ses, &res, NULL);
     }
   else
@@ -9374,6 +9560,7 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
         sqlr_new_error ("22023", "SR561",
 	  "Blob argument to __xml_deserialize_packed() must be a non-interactive blob");
       tmp_ses = blob_to_string_output (((query_instance_t *)qst)->qi_trx, (caddr_t)bh);
+      DKS_QI_DATA (tmp_ses) = (query_instance_t *)qst;
       xte_deserialize_packed (tmp_ses, &res, NULL);
       dk_free_box (tmp_ses);
     }
@@ -9381,6 +9568,15 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
     return NEW_DB_NULL;
   return (caddr_t)res;
 }
+
+
+caddr_t
+bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t strg = bif_arg (qst, args, 0, "__xml_deserialize_packed");
+  return xml_deserialize_packed (qst, strg);
+}
+
 
 caddr_t bif_xml_get_logical_path (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -9590,7 +9786,7 @@ again:
       return (ccaddr_t)((ptrlong)2);
     case DV_RDF:
       {
-        rdf_box_t *rb = (rdf_box_t *)rb;
+        rdf_box_t *rb = (rdf_box_t *)arg;
         if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
           {
             ccaddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
@@ -9636,7 +9832,7 @@ bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           dtp_t dtp = DV_TYPE_OF (arg);
           sqlr_new_error ("22023", "SR544",
             "Function __xsd_type() can not find XML Schema datatype that matches SQL datatype %s (%d)",
-            dv_type_title (dtp), dtp );
+            dv_type_title (dtp), (int)dtp );
         }
       return box_copy_tree (bif_arg (qst, args, 2, "__xsd_type"));
     }
@@ -9700,6 +9896,47 @@ xe_compare_content (xml_entity_t *xe1, xml_entity_t *xe2, int compare_uris_and_d
   return (xte_subtrees_are_equal ((caddr_t *)(xte1->xte_current), (caddr_t *)(xte2->xte_current)) ? DVC_MATCH : DVC_NOORDER);
 }
 
+int32
+xml_ent_hash (caddr_t box)
+{
+  xml_entity_t *xe = (xml_entity_t *)box;
+  int32 chld_hash = 0;
+  if (XE_IS_TREE (xe))
+    chld_hash = (int32)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
+  else if (XE_IS_PERSISTENT (xe))
+    chld_hash = (int32)(((xper_entity_t *)(xe))->xper_pos);
+/* No need in "if (XE_IS_LAZY (xe))", because there's no position in not-yet-loaded doc */
+  return 17 * (ptrlong)(xe->_) +
+    13 * (ptrlong)(xe->xe_doc.xd) +
+    11 * (ptrlong)(xe->xe_nth_attr) +
+    9 * (ptrlong)(xe->xe_referer) +
+    chld_hash;
+}
+
+int
+xml_ent_hash_cmp (ccaddr_t a1, ccaddr_t a2)
+{
+  xml_entity_t *xe1 = (xml_entity_t *)a1;
+  xml_entity_t *xe2 = (xml_entity_t *)a2;
+  if (xe1->_ != xe2->_) return 0;
+  if (XE_IS_TREE (xe1))
+    {
+      if (((xml_tree_ent_t *)(xe1))->xte_stack_top->xteb_current != ((xml_tree_ent_t *)(xe2))->xte_stack_top->xteb_current)
+        return 0;
+    }
+  else if (XE_IS_PERSISTENT (xe1))
+    {
+      if (((xper_entity_t *)(xe1))->xper_pos != ((xper_entity_t *)(xe2))->xper_pos)
+        return 0;
+    }
+  if (xe1->xe_doc.xd != xe2->xe_doc.xd)
+    return 0;
+  if (xe1->xe_nth_attr != xe2->xe_nth_attr)
+    return 0;
+  if (xe1->xe_referer != xe2->xe_referer)
+    return 0;
+  return 1;
+}
 
 xml_ns_2dict_t *xml_global_ns_2dict = NULL;
 dk_mutex_t *xml_global_ns_2dict_mutex = NULL;
@@ -10002,233 +10239,13 @@ shuric_cache_t *xpath_eval_cache;
 
 caddr_t xmltype_class_name = NULL;
 
-caddr_t uname__bang_cdata_section_elements;
-caddr_t uname__bang_exclude_result_prefixes;
-caddr_t uname__bang_file;
-caddr_t uname__bang_location;
-caddr_t uname__bang_name;
-caddr_t uname__bang_ns;
-caddr_t uname__bang_uri;
-caddr_t uname__bang_use_attribute_sets;
-caddr_t uname__bang_xmlns;
-caddr_t uname__attr;
-caddr_t uname__comment;
-caddr_t uname__disable_output_escaping;
-caddr_t uname__root;
-caddr_t uname__pi;
-caddr_t uname__ref;
-caddr_t uname__srcfile;
-caddr_t uname__srcline;
-caddr_t uname__txt;
-caddr_t uname__xslt;
-caddr_t uname_lang;
-caddr_t uname_nil;
-caddr_t uname_nodeID_ns;
-caddr_t uname_rdf_ns_uri;
-caddr_t uname_rdf_ns_uri_Description;
-caddr_t uname_rdf_ns_uri_ID;
-caddr_t uname_rdf_ns_uri_RDF;
-caddr_t uname_rdf_ns_uri_Seq;
-caddr_t uname_rdf_ns_uri_Statement;
-caddr_t uname_rdf_ns_uri_XMLLiteral;
-caddr_t uname_rdf_ns_uri_about;
-caddr_t uname_rdf_ns_uri_first;
-caddr_t uname_rdf_ns_uri_li;
-caddr_t uname_rdf_ns_uri_nil;
-caddr_t uname_rdf_ns_uri_nodeID;
-caddr_t uname_rdf_ns_uri_object;
-caddr_t uname_rdf_ns_uri_predicate;
-caddr_t uname_rdf_ns_uri_resource;
-caddr_t uname_rdf_ns_uri_rest;
-caddr_t uname_rdf_ns_uri_subject;
-caddr_t uname_rdf_ns_uri_type;
-caddr_t uname_rdf_ns_uri_datatype;
-caddr_t uname_rdf_ns_uri_parseType;
-caddr_t uname_rdf_ns_uri_value;
-caddr_t uname_space;
-caddr_t uname_swap_reify_ns_uri;
-caddr_t uname_swap_reify_ns_uri_statement;
-caddr_t uname_virtrdf_ns_uri;
-caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
-caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
-caddr_t uname_virtrdf_ns_uri_QuadMap;
-caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
-caddr_t uname_virtrdf_ns_uri_QuadStorage;
-caddr_t uname_virtrdf_ns_uri_array_of_any;
-caddr_t uname_virtrdf_ns_uri_array_of_string;
-caddr_t uname_virtrdf_ns_uri_bitmask;
-caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
-caddr_t uname_virtrdf_ns_uri_isSubclassOf;
-caddr_t uname_virtrdf_ns_uri_loadAs;
-caddr_t uname_xhv_ns_uri;
-caddr_t uname_xhv_ns_uri_alternate;
-caddr_t uname_xhv_ns_uri_appendix;
-caddr_t uname_xhv_ns_uri_bookmark;
-caddr_t uname_xhv_ns_uri_chapter;
-caddr_t uname_xhv_ns_uri_cite;
-caddr_t uname_xhv_ns_uri_contents;
-caddr_t uname_xhv_ns_uri_copyright;
-caddr_t uname_xhv_ns_uri_first;
-caddr_t uname_xhv_ns_uri_glossary;
-caddr_t uname_xhv_ns_uri_help;
-caddr_t uname_xhv_ns_uri_icon;
-caddr_t uname_xhv_ns_uri_index;
-caddr_t uname_xhv_ns_uri_last;
-caddr_t uname_xhv_ns_uri_license;
-caddr_t uname_xhv_ns_uri_meta;
-caddr_t uname_xhv_ns_uri_next;
-caddr_t uname_xhv_ns_uri_p3pv1;
-caddr_t uname_xhv_ns_uri_prev;
-caddr_t uname_xhv_ns_uri_role;
-caddr_t uname_xhv_ns_uri_section;
-caddr_t uname_xhv_ns_uri_start;
-caddr_t uname_xhv_ns_uri_stylesheet;
-caddr_t uname_xhv_ns_uri_subsection;
-caddr_t uname_xhv_ns_uri_up;
-caddr_t uname_xml;
-caddr_t uname_xmlns;
-caddr_t uname_xml_colon_base;
-caddr_t uname_xml_colon_lang;
-caddr_t uname_xml_colon_space;
-caddr_t uname_xml_ns_uri;
-caddr_t uname_xml_ns_uri_colon_base;
-caddr_t uname_xml_ns_uri_colon_lang;
-caddr_t uname_xml_ns_uri_colon_space;
-caddr_t uname_xmlschema_ns_uri;
-caddr_t uname_xmlschema_ns_uri_hash;
-caddr_t uname_xmlschema_ns_uri_hash_any;
-caddr_t uname_xmlschema_ns_uri_hash_anyURI;
-caddr_t uname_xmlschema_ns_uri_hash_boolean;
-caddr_t uname_xmlschema_ns_uri_hash_bitmask;
-caddr_t uname_xmlschema_ns_uri_hash_date;
-caddr_t uname_xmlschema_ns_uri_hash_dateTime;
-caddr_t uname_xmlschema_ns_uri_hash_decimal;
-caddr_t uname_xmlschema_ns_uri_hash_double;
-caddr_t uname_xmlschema_ns_uri_hash_float;
-caddr_t uname_xmlschema_ns_uri_hash_integer;
-caddr_t uname_xmlschema_ns_uri_hash_string;
-caddr_t uname_xmlschema_ns_uri_hash_time;
-caddr_t unames_colon_number[20];
-
 bif_type_t bt_xml_entity = {NULL, DV_XML_ENTITY, 0, 0};
 
 void
 xml_tree_init (void)
 {
-  int ctr;
-#define UNAME_IT(var,txt) var = box_dv_uname_string (txt); box_dv_uname_make_immortal (var)
-  UNAME_IT(uname__bang_cdata_section_elements	, " !cdata-section-elements"	);
-  UNAME_IT(uname__bang_exclude_result_prefixes	, " !exclude_result_prefixes"	);
-  UNAME_IT(uname__bang_file			, " !file"			);
-  UNAME_IT(uname__bang_location			, " !location"			);
-  UNAME_IT(uname__bang_name			, " !name"			);
-  UNAME_IT(uname__bang_ns			, " !ns"			);
-  UNAME_IT(uname__bang_uri			, " !uri"			);
-  UNAME_IT(uname__bang_use_attribute_sets	, " !use-attribute-sets"	);
-  UNAME_IT(uname__bang_xmlns			, " !xmlns"			);
-  UNAME_IT(uname__attr				, " attr"			);
-  UNAME_IT(uname__comment			, " comment"			);
-  UNAME_IT(uname__disable_output_escaping	, " disable-output-escaping"	);
-  UNAME_IT(uname__root				, " root"			);
-  UNAME_IT(uname__pi				, " pi"				);
-  UNAME_IT(uname__ref				, " ref"			);
-  UNAME_IT(uname__srcfile			, " srcfile"			);
-  UNAME_IT(uname__srcline			, " srcline"			);
-  UNAME_IT(uname__txt				, " txt"			);
-  UNAME_IT(uname__xslt				, " xslt"			);
-  UNAME_IT(uname_lang				, "lang"			);
-  UNAME_IT(uname_nil				, "nil"				);
-  UNAME_IT(uname_nodeID_ns			, "nodeID://"			);
-  UNAME_IT(uname_rdf_ns_uri			, RDF_NS_URI			);
-  UNAME_IT(uname_rdf_ns_uri_Description		, RDF_NS_URI "Description"	);
-  UNAME_IT(uname_rdf_ns_uri_ID			, RDF_NS_URI "ID"		);
-  UNAME_IT(uname_rdf_ns_uri_RDF			, RDF_NS_URI "RDF"		);
-  UNAME_IT(uname_rdf_ns_uri_Seq			, RDF_NS_URI "Seq"		);
-  UNAME_IT(uname_rdf_ns_uri_Statement		, RDF_NS_URI "Statement"	);
-  UNAME_IT(uname_rdf_ns_uri_XMLLiteral		, RDF_NS_URI "XMLLiteral"	);
-  UNAME_IT(uname_rdf_ns_uri_about		, RDF_NS_URI "about"		);
-  UNAME_IT(uname_rdf_ns_uri_first		, RDF_NS_URI "first"		);
-  UNAME_IT(uname_rdf_ns_uri_li			, RDF_NS_URI "li"		);
-  UNAME_IT(uname_rdf_ns_uri_nil			, RDF_NS_URI "nil"		);
-  UNAME_IT(uname_rdf_ns_uri_nodeID		, RDF_NS_URI "nodeID"		);
-  UNAME_IT(uname_rdf_ns_uri_object		, RDF_NS_URI "object"		);
-  UNAME_IT(uname_rdf_ns_uri_predicate		, RDF_NS_URI "predicate"	);
-  UNAME_IT(uname_rdf_ns_uri_resource		, RDF_NS_URI "resource"		);
-  UNAME_IT(uname_rdf_ns_uri_subject		, RDF_NS_URI "subject"		);
-  UNAME_IT(uname_rdf_ns_uri_rest		, RDF_NS_URI "rest"		);
-  UNAME_IT(uname_rdf_ns_uri_type		, RDF_NS_URI "type"		);
-  UNAME_IT(uname_rdf_ns_uri_datatype		, RDF_NS_URI "datatype"		);
-  UNAME_IT(uname_rdf_ns_uri_parseType		, RDF_NS_URI "parseType"	);
-  UNAME_IT(uname_rdf_ns_uri_value		, RDF_NS_URI "value"		);
-  UNAME_IT(uname_space				, "space"			);
-  UNAME_IT(uname_swap_reify_ns_uri		, SWAP_REIFY_NS_URI		);
-  UNAME_IT(uname_swap_reify_ns_uri_statement	, SWAP_REIFY_NS_URI "#statement"	);
-  UNAME_IT(uname_virtrdf_ns_uri			, VIRTRDF_NS_URI		);
-  UNAME_IT(uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	);
-  UNAME_IT(uname_virtrdf_ns_uri_PrivateGraphs	, VIRTRDF_NS_URI "PrivateGraphs"	);
-  UNAME_IT(uname_virtrdf_ns_uri_QuadMap		, VIRTRDF_NS_URI "QuadMap"	);
-  UNAME_IT(uname_virtrdf_ns_uri_QuadMapFormat	, VIRTRDF_NS_URI "QuadMapFormat"	);
-  UNAME_IT(uname_virtrdf_ns_uri_QuadStorage	, VIRTRDF_NS_URI "QuadStorage"	);
-  UNAME_IT(uname_virtrdf_ns_uri_array_of_any	, VIRTRDF_NS_URI "array-of-any"	);
-  UNAME_IT(uname_virtrdf_ns_uri_array_of_string	, VIRTRDF_NS_URI "array-of-string"	);
-  UNAME_IT(uname_virtrdf_ns_uri_bitmask		, VIRTRDF_NS_URI "bitmask"	);
-  UNAME_IT(uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	);
-  UNAME_IT(uname_virtrdf_ns_uri_isSubclassOf	, VIRTRDF_NS_URI "isSubclassOf"	);
-  UNAME_IT(uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	);
-  UNAME_IT(uname_xhv_ns_uri			, XHV_NS_URI			);
-  UNAME_IT(uname_xhv_ns_uri_alternate		, XHV_NS_URI "alternate"	);
-  UNAME_IT(uname_xhv_ns_uri_appendix		, XHV_NS_URI "appendix"		);
-  UNAME_IT(uname_xhv_ns_uri_bookmark		, XHV_NS_URI "bookmark"		);
-  UNAME_IT(uname_xhv_ns_uri_chapter		, XHV_NS_URI "chapter"		);
-  UNAME_IT(uname_xhv_ns_uri_cite		, XHV_NS_URI "cite"		);
-  UNAME_IT(uname_xhv_ns_uri_contents		, XHV_NS_URI "contents"		);
-  UNAME_IT(uname_xhv_ns_uri_copyright		, XHV_NS_URI "copyright"	);
-  UNAME_IT(uname_xhv_ns_uri_first		, XHV_NS_URI "first"		);
-  UNAME_IT(uname_xhv_ns_uri_glossary		, XHV_NS_URI "glossary"		);
-  UNAME_IT(uname_xhv_ns_uri_help		, XHV_NS_URI "help"		);
-  UNAME_IT(uname_xhv_ns_uri_icon		, XHV_NS_URI "icon"		);
-  UNAME_IT(uname_xhv_ns_uri_index		, XHV_NS_URI "index"		);
-  UNAME_IT(uname_xhv_ns_uri_last		, XHV_NS_URI "last"		);
-  UNAME_IT(uname_xhv_ns_uri_license		, XHV_NS_URI "license"		);
-  UNAME_IT(uname_xhv_ns_uri_meta		, XHV_NS_URI "meta"		);
-  UNAME_IT(uname_xhv_ns_uri_next		, XHV_NS_URI "next"		);
-  UNAME_IT(uname_xhv_ns_uri_p3pv1		, XHV_NS_URI "p3pv1"		);
-  UNAME_IT(uname_xhv_ns_uri_prev		, XHV_NS_URI "prev"		);
-  UNAME_IT(uname_xhv_ns_uri_role		, XHV_NS_URI "role"		);
-  UNAME_IT(uname_xhv_ns_uri_section		, XHV_NS_URI "section"		);
-  UNAME_IT(uname_xhv_ns_uri_start		, XHV_NS_URI "start"		);
-  UNAME_IT(uname_xhv_ns_uri_stylesheet		, XHV_NS_URI "stylesheet"	);
-  UNAME_IT(uname_xhv_ns_uri_subsection		, XHV_NS_URI "subsection"	);
-  UNAME_IT(uname_xhv_ns_uri_up			, XHV_NS_URI "up"		);
-  UNAME_IT(uname_xml				, "xml"				);
-  UNAME_IT(uname_xmlns				, "xmlns"			);
-  UNAME_IT(uname_xml_colon_base			, "xml:base"			);
-  UNAME_IT(uname_xml_colon_lang			, "xml:lang"			);
-  UNAME_IT(uname_xml_colon_space		, "xml:space"			);
-  UNAME_IT(uname_xml_ns_uri			, XML_NS_URI			);
-  UNAME_IT(uname_xml_ns_uri_colon_base		, XML_NS_URI ":base"		);
-  UNAME_IT(uname_xml_ns_uri_colon_lang		, XML_NS_URI ":lang"		);
-  UNAME_IT(uname_xml_ns_uri_colon_space		, XML_NS_URI ":space"		);
-  UNAME_IT(uname_xmlschema_ns_uri		, XMLSCHEMA_NS_URI		);
-  UNAME_IT(uname_xmlschema_ns_uri_hash		, XMLSCHEMA_NS_URI "#"		);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_any	, XMLSCHEMA_NS_URI "#any"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_anyURI	, XMLSCHEMA_NS_URI "#anyURI"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_boolean	, XMLSCHEMA_NS_URI "#boolean"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_date	, XMLSCHEMA_NS_URI "#date"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_dateTime	, XMLSCHEMA_NS_URI "#dateTime"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_decimal	, XMLSCHEMA_NS_URI "#decimal"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_double	, XMLSCHEMA_NS_URI "#double"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_float	, XMLSCHEMA_NS_URI "#float"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_integer	, XMLSCHEMA_NS_URI "#integer"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_string	, XMLSCHEMA_NS_URI "#string"	);
-  UNAME_IT(uname_xmlschema_ns_uri_hash_time	, XMLSCHEMA_NS_URI "#time"	);
-  for (ctr = 0; ctr < (sizeof (unames_colon_number) / sizeof (caddr_t)); ctr++)
-    {
-      char tmp[15];
-      sprintf (tmp, ":%d", ctr);
-      UNAME_IT((unames_colon_number[ctr]), tmp);
-    }
-
+  macro_char_func *rt;
+  dk_dtp_register_hash (DV_XML_ENTITY, xml_ent_hash, xml_ent_hash_cmp);
 #ifdef MALLOC_DEBUG
   xec_tree_xe.dbg_xe_copy = dbg_xte_copy;
   xec_tree_xe.dbg_xe_cut = dbg_xte_cut;
@@ -10242,6 +10259,7 @@ xml_tree_init (void)
   xec_tree_xe.xe_attribute = xte_attribute;
   xec_tree_xe.xe_string_value = (void (*) (xml_entity_t * xe, caddr_t * ret, dtp_t dtp)) xte_string_value;
 #endif
+  xec_tree_xe.xe_string_value_is_nonempty = (int (*) (xml_entity_t * xe)) xte_string_value_is_nonempty;
   xec_tree_xe.xe_first_child = xte_first_child;
   xec_tree_xe.xe_last_child = xte_last_child;
   xec_tree_xe.xe_get_child_count_any = xte_get_child_count_any;
@@ -10296,6 +10314,7 @@ xml_tree_init (void)
   bif_define ("xml_tree_doc_set_output", bif_xml_tree_doc_set_output);
   bif_define ("xml_tree_doc_set_ns_output", bif_xml_tree_doc_set_ns_output);
   bif_define ("xml_namespace_scope", bif_xml_namespace_scope);
+  bif_define ("xtree_doc_get_dtd", bif_xtree_doc_get_dtd);
   bif_define ("xpath_eval", bif_xpath_eval);
   bif_set_uses_index (bif_xpath_eval);
   bif_define ("xquery_eval", bif_xquery_eval);
@@ -10339,10 +10358,13 @@ xml_tree_init (void)
   bif_define ("__xml_remove_ns_by_prefix", bif_xml_remove_ns_by_prefix);
   bif_define ("__xml_clear_all_ns_decls", bif_xml_clear_all_ns_decls);
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
+  box_tmp_copier[DV_XML_ENTITY] = xe_mp_copy;
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
   dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);
   PrpcSetWriter (DV_XML_ENTITY, (ses_write_func) xe_serialize);
   PrpcSetWriter (DV_XPATH_QUERY, (ses_write_func) xqr_serialize);
+  rt = get_readtable ();
+  rt[DV_XML_ENTITY] = (macro_char_func) xe_deserialize;
   xpf_init();
   xslt_init ();
   bif_tidy_init();

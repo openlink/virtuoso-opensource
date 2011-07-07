@@ -38,6 +38,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_connection_get"><title>Description</title>
+    <para><function>connection_get</function> is used to retrieve values
+    stored within the current connection context. See
+    <link linkend="fn_connection_set"><function>connection_set</function></link>
+    for a more detailed discussion of connection variables.</para></refsect1>
   <refsect1 id="params_connection_get"><title>Parameters</title>
     <refsect2><title>name</title>
       <para>Name of the connection variable</para></refsect2>
@@ -45,11 +50,6 @@
   <refsect1 id="ret_connection_get"><title>Return Values</title>
     <para>A value associated to the connection by connection_set in the datatype of the original value. If the variable does not exist, a NULL is returned.</para>
   </refsect1>
-  <refsect1 id="desc_connection_get"><title>Description</title>
-    <para><function>connection_get</function> is used to retrieve values
-    stored within the current connection context. See
-    <link linkend="fn_connection_set"><function>connection_set</function></link>
-    for a more detailed discussion of connection variables.</para></refsect1>
 <!--
   <refsect1 id="errors_connection_get"><title>Errors</title>
     <table><title>Errors signalled by <function>connection_get</function></title>

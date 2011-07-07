@@ -866,7 +866,7 @@ else if (length (self.catid))
         <script type="text/javascript" src="/weblog/public/scripts/plugins.js"></script>
       ]]>
       <xsl:apply-templates/>
-      <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Description" href="http://<?V self.host ?>/weblog/public/search.vspx?blogid=<?V self.blogid ?>&amp;type=text&amp;kwds=dir&amp;OpenSearch" />
+      <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Description" href="http://<?V self.host ?>/weblog/public/search.vspx?blogid=<?V self.blogid ?><?V '&amp;type=text&amp;kwds=dir&amp;OpenSearch' ?>" />
       <?vsp
         foreach (any f in self.custom_rss) do
 	  {
@@ -2142,6 +2142,11 @@ window.onload = function (e)
 	  <xsl:apply-templates/>
       </a>
   </xsl:template>
+  <xsl:template match="vm:post-tweet-link">
+      <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" 
+	  data-url="<?V self.ur ?>?id=<?V t_post_id ?>">Tweet</a>
+      <![CDATA[<script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>]]>
+  </xsl:template>
 
   <xsl:template match="vm:post-date">
       <xsl:call-template name="post-parts-check"/>
@@ -2198,6 +2203,26 @@ window.onload = function (e)
                     }
 		    if (title_val <> '')
 		      http (title_val);
+	      }
+	  ?>
+      </span>
+  </xsl:template>
+
+  <xsl:template match="vm:post-author-nick">
+      <xsl:call-template name="post-parts-check"/>
+      <span class="dc-creator" property="dc:creator">
+	<?vsp
+	     {
+		    declare title_val any;
+                    set isolation = 'uncommitted';
+		    declare auth_name, auth_iri, auth_pers_iri any;
+                    declare exit handler for not found;
+                    select U_NAME into auth_name from BLOG.DBA.SYS_BLOG_INFO, SYS_USERS where BI_OWNER = control.te_rowset[5] and U_ID = BI_OWNER;
+			   auth_iri := sioc.DBA.user_obj_iri (auth_name);
+                           auth_pers_iri := sioc.DBA.person_iri (auth_iri);
+                           title_val := charset_recode ('<a rel="foaf:maker" rev="foaf:made" href="' || auth_pers_iri || '">' ||
+			       sprintf('%V', auth_name) || '</a>', 'UTF-8', '');
+		    http (title_val);
 	      }
 	  ?>
       </span>
@@ -2335,6 +2360,20 @@ window.onload = function (e)
     ?>
   </xsl:template>
 
+  <xsl:template match="vm:micropost-actions">
+    <xsl:call-template name="post-parts-check"/>
+    <?vsp
+      if (BLOG2_GET_ACCESS (t_blog_id, self.sid, self.realm, 120) in (1, 2))
+      {
+    ?>
+    <v:url name="delete1" value="Delete" url="--concat('index.vspx?delete_post=', t_post_id)" render-only="1" />
+    <xsl:text> </xsl:text>
+    <v:url name="show_log1" value="Log" url="--concat('index.vspx?page=routing_queue&post_id=', t_post_id)" render-only="1" />
+    <?vsp
+      }
+    ?>
+  </xsl:template>
+
   <xsl:template match="vm:post-categories">
       <xsl:variable name="val">get_keyword ('title', self.user_data, <xsl:apply-templates select="@title" mode="static_value"/>)</xsl:variable>
       <xsl:variable name="delm">get_keyword ('delimiter', self.user_data, <xsl:apply-templates select="@delimiter" mode="static_value"/>)</xsl:variable>
@@ -2448,7 +2487,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:posts">
       <v:data-set name="posts" scrollable="1" edit="1" data-source="self.dss" nrows="10" enabled="--isnull (self.post_to_remove)">
-        <v:template name="template1" type="simple" condition="self.sel_cat is not null">
+        <!--v:template name="template1" type="simple" condition="self.sel_cat is not null">
           <div class="posts-title">
             <?vsp
 	    if (self.page <> 'archive')
@@ -2468,7 +2507,7 @@ window.onload = function (e)
 	      }
 	    ?>
           </div>
-        </v:template>
+        </v:template-->
         <v:template name="template2" type="repeat">
           <v:template name="template7" type="if-not-exists">
             <div class="widget-title">
@@ -4438,25 +4477,12 @@ window.onload = function (e)
                   };
       commit work;
 
+                  declare mess, elm, __uid any;
                   pop3s := get_keyword ('POP3Server', self.opts);
                   nam :=   get_keyword ('POP3Account', self.opts);
                   pwd1 :=  get_keyword ('POP3Passwd', self.opts);
-
-      res := pop3_get(pop3s, nam, pwd1, 999999999);
-
-                  declare inx, len int;
-                  declare mess, elm, __uid any;
-                  inx := 0;
-                  len := length(res);
                   __uid := (select VS_UID from VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm);
-                  while (inx < len)
-                  {
-                    mess := aref(aref(res, inx), 1);
-                    elm := mail_header(mess, 'Message-Id');
-                    if (not exists(select 1 from MAIL_MESSAGE where MM_MSG_ID = elm and MM_OWN = __uid))
-                      NEW_MAIL(__uid, mess);
-                    inx := inx + 1;
-                  }
+                  BLOG..BLOG_GET_MAIL_VIA_POP3 (pop3s, nam, pwd1, __uid);
                   self.moblog_ds.vc_data_bind(e);
                 ]]>
               </v:on-post>
@@ -9260,15 +9286,16 @@ window.onload = function (e)
 							      xhtml_style="width:100%"
 							      name="templates_list"
 							      sql="select rtrim (WS.WS.COL_PATH (COL_ID), '/') as KEYVAL, COL_NAME as NAME FROM WS.WS.SYS_DAV_COL
-							      WHERE WS..COL_PATH (COL_ID) like registry_get('_blog2_path_') || 'templates/_*' union all select self.phome || 'templates/custom' as KEYVAL, 'custom' as NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid"
+							      WHERE WS..COL_PATH (COL_ID) like registry_get('_blog2_path_') || 'templates/_*' and 
+								  not WS..COL_PATH (COL_ID) like registry_get('_blog2_path_') || 'templates/_*/_*'
+								  union all select self.phome || 'templates/custom' as KEYVAL, 'custom' as NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid"
 							      key-column="KEYVAL"
 							      value-column="NAME"
 							      xhtml_size="10">
 							      <v:after-data-bind>
 								  control.ufl_value := self.current_template;
 								  if (control.ufl_value is null)
-								    control.ufl_value := registry_get('_blog2_path_')
-								  	|| 'templates/openlink/';
+								    control.ufl_value := registry_get('_blog2_path_') || 'templates/openlink/';
 								  control.vs_set_selected ();
 							      </v:after-data-bind>
 							  </v:data-list>

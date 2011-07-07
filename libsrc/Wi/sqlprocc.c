@@ -929,6 +929,38 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
     }
 }
 
+id_hash_t * ua_func_to_ua;
+
+query_t *
+sch_ua_func_ua (caddr_t name)
+{
+  query_t ** place;
+  if (!ua_func_to_ua)
+    return NULL;
+  place = (query_t**)id_hash_get (ua_func_to_ua, (caddr_t)&name);
+  return place ? *place : NULL;
+}
+
+
+void
+sch_set_ua_func_ua (caddr_t name, query_t * qr)
+{
+  if (!ua_func_to_ua)
+    ua_func_to_ua = id_casemode_hash_create (23);
+  name = box_copy (name);
+  id_hash_set (ua_func_to_ua, (caddr_t)&name, (caddr_t)&qr);
+}
+
+
+bif_t
+bif_ua_find (caddr_t name)
+{
+  bif_t bif = bif_find (name);
+  if (bif)
+    bif_set_is_aggregate (bif);
+  return bif;
+}
+
 
 void
 sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree)
@@ -963,15 +995,17 @@ sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree)
   aggr->ua_name = box_copy (tree->_.user_aggregate.name);
   aggr->ua_init.uaf_name = box_copy (tree->_.user_aggregate.init_name);
   aggr->ua_acc.uaf_name = box_copy (tree->_.user_aggregate.acc_name);
+  sch_set_ua_func_ua (aggr->ua_acc.uaf_name, sc->sc_cc->cc_query);
   aggr->ua_final.uaf_name = box_copy (tree->_.user_aggregate.final_name);
   aggr->ua_merge.uaf_name = box_copy (tree->_.user_aggregate.merge_name);
-  aggr->ua_init.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_init.uaf_name));
+  aggr->ua_init.uaf_bif = box_num ((ptrlong) bif_ua_find (aggr->ua_init.uaf_name));
   aggr->ua_acc.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_acc.uaf_name));
   aggr->ua_final.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_final.uaf_name));
   if (aggr->ua_merge.uaf_name)
     aggr->ua_merge.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_merge.uaf_name));
   else
     aggr->ua_merge.uaf_bif = NULL;
+  aggr->ua_need_order = tree->_.user_aggregate.need_order;
 }
 
 
@@ -1057,6 +1091,7 @@ sqlc_module_decl (sql_comp_t * sc, ST * tree)
 	{ /* source & line are from qr_module */
 	  qr->qr_line_counts = hash_table_allocate (100);
 	  qr->qr_call_counts = id_str_hash_create (101);
+	  qr->qr_stats_mtx = mutex_allocate ();
 	}
 #endif
 

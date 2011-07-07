@@ -26,6 +26,7 @@ create table SYS_VT_INDEX (VI_TABLE varchar, VI_INDEX varchar, VI_COL varchar,
        VI_ID_IS_PK integer, VI_ID_CONSTR varchar,
        VI_OFFBAND_COLS varchar, VI_OPTIONS varchar, VI_LANGUAGE varchar,
        primary key (VI_TABLE, VI_COL))
+alter index SYS_VT_INDEX on SYS_VT_INDEX partition cluster REPLICATED
 ;
 
 create table DB.DBA.SYS_CACHED_RESOURCES
@@ -481,10 +482,10 @@ try_http_get:
 	}
       else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)) or (timeout is not null and timeout > 0))
         {
-	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout);
+	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15);
  	}
       else
-        str := http_get (base_uri, head);
+        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15);
       if (aref (head, 0) not like '% 200%')
 	signal ('H0001', concat ('HTTP request failed: ', aref (head, 0), 'for URI ', base_uri));
     }
@@ -989,9 +990,9 @@ create procedure ddl_pk_copy_inx (in tb varchar, in ntb varchar, in nk_id intege
 	{
 	  k_id := new_key_id (0);
 	  insert into DB.DBA.SYS_KEYS (KEY_TABLE, KEY_NAME, KEY_ID, KEY_DECL_PARTS,
-				KEY_CLUSTER_ON_ID, KEY_SUPER_ID, KEY_IS_UNIQUE, KEY_IS_OBJECT_ID)
+				KEY_CLUSTER_ON_ID, KEY_SUPER_ID, KEY_IS_UNIQUE, KEY_IS_OBJECT_ID, KEY_VERSION)
 	  values (ntb, KEY_NAME, k_id, _KEY_DECL_PARTS,
-		  k_id, k_id, KEY_IS_UNIQUE, KEY_IS_OBJECT_ID);
+		  k_id, k_id, KEY_IS_UNIQUE, KEY_IS_OBJECT_ID, 1);
 
 	  insert into DB.DBA.SYS_KEY_PARTS (KP_KEY_ID, KP_NTH, KP_COL)
 	  select k_id, KP_NTH, (select n.COL_ID from DB.DBA.SYS_COLS n where n."TABLE" = ntb and n."COLUMN" = c."COLUMN")
@@ -1027,9 +1028,9 @@ create procedure ddl_pk_change_1 (in tb varchar, in cols any)
       where KEY_TABLE = tb and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is null;
   nk_id := new_key_id (0);
   insert into DB.DBA.SYS_KEYS (KEY_TABLE, KEY_NAME, KEY_ID, KEY_DECL_PARTS, KEY_N_SIGNIFICANT,
-			KEY_CLUSTER_ON_ID, KEY_SUPER_ID, KEY_IS_MAIN, KEY_IS_UNIQUE)
+			KEY_CLUSTER_ON_ID, KEY_SUPER_ID, KEY_IS_MAIN, KEY_IS_UNIQUE, KEY_VERSION)
     values  (tname, pk_name, nk_id, length (cols), length (cols),
-	     nk_id, nk_id, 1, 1);
+	     nk_id, nk_id, 1, 1, 1);
   declare cr cursor for select
     "COLUMN",
     COL_DTP,
@@ -1255,7 +1256,7 @@ create procedure DB.DBA.ddl_check_constraint (in pk_table varchar, in decl any)
 
   uniq := registry_get ('FK_UNIQUE_CHEK');
 
-  if (uniq <> 'ON')
+  if (uniq <> 'ON' or bit_and (decl [8], 1))
     return;
   -- first we check primary key constraint of PK table
   if (n_pc = n_pkc)
@@ -1416,7 +1417,7 @@ create procedure ddl_alter_constr (in tb varchar, in op integer, in decl any)
   ddl_owner_check (tb);
   --dbg_obj_print ('in ddl_alter_constr', decl);
   type := decl[0];
-  if (op = 2 and length (decl) = 8 and type = 1 and 127 = __tag (aref (decl, 7)))
+  if (op = 2 and length (decl) = 9 and type = 1 and 127 = __tag (aref (decl, 7)))
     {
       declare _name varchar;
       _name := convert (varchar, decl[7]);
@@ -1469,7 +1470,7 @@ create procedure ddl_unq_modify (in tb varchar, in op integer, in decl any)
   declare inx, len, int_name integer;
 
   int_name := 0;
-  if (length (decl) = 8 and op = 2)
+  if (length (decl) = 9 and op = 2)
     nconstr := aref (decl, 7);
   else
     nconstr := aref (decl, 1);
@@ -2512,6 +2513,47 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 }
 ;
 
+create procedure DB.DBA.__DB2_SYS_COL_STAT (in DSN varchar, in RT_NAME varchar, in RT_REMOTE_NAME varchar)
+returns ANY
+{
+--  dbg_obj_print ('DB.DBA.__ORACLE_SYS_COL_STAT', DSN, RT_NAME, RT_REMOTE_NAME);
+  declare _meta, _res any;
+
+  rexecute (DSN,
+    'select c.COLNAME, c.COLCARD, c.LOW2KEY, c.HIGH2KEY, c.AVGCOLLEN, t.CARD - c.NUMNULLS, t.CARD ' ||
+    'from SYSSTAT.COLUMNS c, SYSSTAT.TABLES t ' ||
+    'where t.TABNAME = c.TABNAME and t.TABSCHEMA = c.TABSCHEMA and c.TABSCHEMA = ? and c.TABNAME = ?',
+    NULL, NULL, vector (name_part (RT_REMOTE_NAME, 1, NULL), name_part (RT_REMOTE_NAME, 2, NULL)),
+    NULL, _meta, _res);
+
+  if (isarray (_res) and length (_res) > 0 and isarray (_res[0]) and isarray (_meta) and isarray (_meta[0]))
+    {
+      declare _inx, _len integer;
+      _inx := 0;
+      _len := length (_res);
+      exec_result_names (_meta[0]);
+      while (_inx < _len)
+	{
+	  exec_result (_res[_inx]);
+	  _inx := _inx + 1;
+	}
+    }
+  return NULL;
+}
+;
+
+--!AWK AFTER
+insert soft SYS_STAT_VDB_MAPPERS
+  (SVDM_TYPE,
+   SVDM_PROC,
+   SVDM_DBMS_NAME_MASK,
+   SVDM_DBMS_VER_MASK)
+ values
+  ('SYS_COL_STAT',
+   'DB.DBA.__DB2_SYS_COL_STAT',
+   '%DB2%',
+   '%')
+;
 
 create procedure SYS_STAT_VDB_SYNC ()
 {
@@ -2977,6 +3019,7 @@ DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME varchar,
 			   SDT_TYPE integer,
 			   SDT_UDT varchar,
 			   primary key (SDT_NAME, SDT_TYPE))
+alter index SYS_SOAP_DATATYPES on DB.DBA.SYS_SOAP_DATATYPES partition cluster replicated
 ;
 
 
@@ -3000,7 +3043,9 @@ DB.DBA.SOAP_DATATYPES_UPGRADE ()
 ;
 --#ENDIF
 
+--#IF VER=5
 --!AFTER_AND_BEFORE DB.DBA.SYS_SOAP_DATATYPES SDT_TYPE !
+--#ENDIF
 create procedure
 soap_dt_define (in name varchar, in sch varchar, in udt_name varchar := null)
 {
@@ -3119,7 +3164,10 @@ create procedure DB.DBA.HTTP_CLIENT (
     in cert_file varchar := null,
     in cert_pwd varchar := null,
     in timeout int := null,
-    in proxy varchar := null
+    in proxy varchar := null,
+    in ca_certs varchar := null,
+    in insecure int := 0,
+    in n_redirects int := 0
   )
 {
 
@@ -3131,7 +3179,7 @@ create procedure DB.DBA.HTTP_CLIENT (
       if (length (http_headers))
         http_headers := http_headers || '\r\n';
     }
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout, proxy);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout, proxy, ca_certs, insecure, n_redirects);
 }
 ;
 
@@ -3147,7 +3195,10 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
     in cert_pwd varchar := null,
     inout headers any,
     in timeout int := null,
-    in proxy varchar := null
+    in proxy varchar := null,
+    in ca_certs varchar := null,
+    in insecure int := 0,
+    in n_redirects int := 0
   )
 {
 
@@ -3159,7 +3210,7 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
       if (length (http_headers))
         http_headers := http_headers || '\r\n';
     }
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout, proxy);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout, proxy, ca_certs, insecure, n_redirects);
 }
 ;
 
@@ -3308,6 +3359,7 @@ DB.DBA.__XML_TEMPLATE (in path any, in params any, in lines any, in enc any := n
 }
 ;
 
+--#IF VER=5
 --!AFTER
 create procedure vt_upgrade_text_index (
     in tb varchar,
@@ -3485,6 +3537,7 @@ VT_INDEX_UPGRADE ()
 --!AFTER
 VT_INDEX_UPGRADE ()
 ;
+--#ENDIF
 
 --!AWK PUBLIC
 create procedure
@@ -3570,7 +3623,9 @@ DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 xslt_sheet ('__xml_template_default', xml_tree_doc (xml_tree(
 '<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
@@ -4014,7 +4069,7 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
          w := trim (w, '"'' ');
          if (upper(w) not in ('AND', 'NOT', 'NEAR', 'OR')
 	     and length (w) > 1
-             and not vt_is_noise (w, 'utf-8', 'x-any'))
+             and not vt_is_noise (w, 'utf-8', 'x-ViAny'))
            {
              exp1 := concat (exp1, sprintf ('"%s" AND ', w));
              words := vector_concat (words, vector (w));
@@ -4028,7 +4083,7 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
        }
    }
 
- vt := vt_batch (100, 'x-any', 'UTF-8');
+ vt := vt_batch (100, 'x-ViAny', 'UTF-8');
  vt_batch_feed (vt, exp, 0, 0);
 
  war := vt_batch_strings_array (vt);
@@ -4042,12 +4097,12 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
      declare word1 varchar;
      if (war[n] not in ('AND', 'NOT', 'NEAR', 'OR')
 	 and length (war[n]) > 1
-	 and not vt_is_noise (war[n], 'utf-8', 'x-any'))
+	 and not vt_is_noise (war[n], 'utf-8', 'x-ViAny'))
        {
          word1 := war[n];
          words := vector_concat (words, vector (word1));
-         if (strchr (word1, '.') is not null
-	     or regexp_match ('[A-Za-z_][A-Za-z0-9_-]*', word1) is null)
+         if (strchr (word1, '.') is not null or strchr (word1, '-') is not null
+	     or regexp_match ('^[A-Za-z_][A-Za-z0-9_-]*', word1) is null)
            word1 := concat ('"', word1, '"');
          exp1 := concat (exp1, word1, ' AND ');
        }
@@ -4099,6 +4154,15 @@ create procedure exec_quiet (in expn varchar)
   exec (expn, sta, msg);
 }
 ;
+
+-- __ANY is a placeholder in a long any col declaration, not to be instantiated.
+
+--#IF VER=5
+--!AFTER
+--#ENDIF
+exec_quiet ('create type __ANY as (__any any)')
+;
+
 
 -- drop type XMLType;
 
@@ -4877,25 +4941,17 @@ create procedure
 HTTP_GET_HOST ()
 {
   declare ret varchar;
+  ret := null;
   if (is_http_ctx ())
     {
       ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
-      if (isstring (ret) and strchr (ret, ':') is null)
-        {
-          declare hp varchar;
-          declare hpa any;
-          hp := sys_connected_server_address ();
-          hpa := split_and_decode (hp, 0, '\0\0:');
-          ret := ret || ':' || hpa[1];
-        }
     }
   else
-   {
-     ret := sys_connected_server_address ();
-     if (ret is null)
-       ret := sys_stat ('st_host_name')||':'||server_http_port ();
-   }
-
+    {
+      ret := sys_connected_server_address ();
+    }
+  if (ret is null)
+    ret := sys_stat ('st_host_name')||':'||server_http_port ();
   return ret;
 }
 ;
@@ -4978,106 +5034,464 @@ create procedure DB.DBA.VACUUM (in table_name varchar := '%', in index_name varc
 
 
 
-create procedure tc_result (in n varchar)
+create procedure tc_result (in n varchar, in is_cl int := 0)
 {
+  declare r int;
   declare exit handler for sqlstate '*' {
     result (-1, n);
 };
-if (sys_stat (n) = 0)
+  if (is_cl and 1 <> sys_stat ('cl_run_local_only'))
+  r := cl_sys_stat (n);
+  else
+  r := sys_stat (n);
+if (r = 0)
   return;
-  result (sys_stat (n), n);
+  result (r, n);
 }
 ;
 
-create procedure tc_stat ()
+create procedure tc_stat (in is_cl int := 0)
 {
 declare cond varchar (60);
 declare n int;
 result_names (n, cond);
-  tc_result ('tc_initial_while_closing');
-  tc_result ('tc_initial_while_closing_died');
-  tc_result ('tc_client_dropped_connection');
-  tc_result ('tc_no_client_in_tp_data');
-  tc_result ('tc_bp_get_buffer');
-  tc_result ('tc_bp_get_buffer_loop');
-  tc_result ('tc_first_free_replace');
-  tc_result ('tc_hi_lock_new_lock');
-  tc_result ('tc_hi_lock_old_dp_no_lock');
-  tc_result ('tc_hi_lock_old_dp_no_lock_deadlock');
-  tc_result ('tc_hi_lock_old_dp_no_lock_put_lock');
-  tc_result ('tc_hi_lock_lock');
-  tc_result ('tc_hi_lock_lock_deadlock');
-  tc_result ('tc_pg_write_compact');
-  tc_result ('tc_write_cancel');
-  tc_result ('tc_write_scrapped_buf');
-  tc_result ('tc_serializable_land_reset');
-  tc_result ('tc_dive_cache_compares');
-  tc_result ('tc_desc_serial_reset');
-  tc_result ('tc_try_land_write');
-  tc_result ('tc_try_land_reset');
-  tc_result ('tc_up_transit_parent_change');
-  tc_result ('tc_dp_set_parent_being_read');
-  tc_result ('tc_dp_changed_while_waiting_mtx');
-  tc_result ('tc_dive_split');
-  tc_result ('tc_dtrans_split');
-  tc_result ('tc_up_transit_wait');
-  tc_result ('tc_double_deletes');
-  tc_result ('tc_delete_parent_waits');
-  tc_result ('tc_wait_trx_self_kill');
-  tc_result ('tc_split_while_committing');
-  tc_result ('tc_rb_code_non_unique');
-  tc_result ('tc_set_by_pl_wait');
-  tc_result ('tc_split_2nd_read');
-  tc_result ('tc_read_wait');
-  tc_result ('tc_write_wait');
-  tc_result ('tc_reentry_split');
-  tc_result ('tc_pl_moved_in_reentry');
-  tc_result ('tc_release_pl_on_deleted_dp');
-  tc_result ('tc_release_pl_on_absent_dp');
-  tc_result ('tc_cpt_lt_start_wait');
-  tc_result ('tc_cpt_rollback');
-  tc_result ('tc_wait_for_closing_lt');
-  tc_result ('tc_pl_non_owner_wait_ref_deld');
-  tc_result ('tc_pl_split');
-  tc_result ('tc_pl_split_multi_owner_page');
-  tc_result ('tc_pl_split_while_wait');
-  tc_result ('tc_insert_follow_wait');
-  tc_result ('tc_history_itc_delta_wait');
-  tc_result ('tc_page_wait_reset');
-  tc_result ('tc_key_sample_reset');
-  tc_result ('tc_posthumous_lock');
-  tc_result ('tc_finalize_while_being_read');
-  tc_result ('tc_rollback_cpt_page');
-  tc_result ('tc_kill_closing');
-  tc_result ('tc_dive_cache_hits');
-  tc_result ('tc_deadlock_win_get_lock');
-  tc_result ('tc_double_deadlock');
-  tc_result ('tc_update_wait_move');
-  tc_result ('tc_root_cache_miss');
-  tc_result ('tc_dive_would_deadlock');
-  tc_result ('tc_bm_split_left_separate_but_no_split;');
-  tc_result ('tc_enter_transiting_bm_inx');
-  tc_result ('tc_root_image_miss');
-  tc_result ('tc_root_image_ref_deleted');
-  tc_result ('tc_root_write');
-  tc_result ('tc_cpt_rollback_retry');
-  tc_result ('tc_uncommit_cpt_page');
-  tc_result ('tc_repl_cycle');
-  tc_result ('tc_repl_connect_quick_reuse');
-  tc_result ('tc_no_thread_kill_idle');
-  tc_result ('tc_no_thread_kill_vdb');
-  tc_result ('tc_no_thread_kill_running');
-  tc_result ('tc_deld_row_rl_rb');
-  tc_result ('tc_blob_read');
-  tc_result ('tc_blob_write');
-  tc_result ('tc_blob_ra');
-  tc_result ('tc_blob_ra_size');
-  tc_result ('tc_get_buf_failed');
-  tc_result ('tc_read_wait_decoy');
-  tc_result ('tc_read_absent_while_finalize');
-  tc_result ('tc_read_wait_while_ra_finding_buf');
-  tc_result ('tc_unregister_enter');
+  tc_result ('tc_initial_while_closing', is_cl);
+  tc_result ('tc_initial_while_closing_died', is_cl);
+  tc_result ('tc_client_dropped_connection', is_cl);
+  tc_result ('tc_no_client_in_tp_data', is_cl);
+  tc_result ('tc_bp_get_buffer', is_cl);
+  tc_result ('tc_bp_get_buffer_loop', is_cl);
+  tc_result ('tc_first_free_replace', is_cl);
+  tc_result ('tc_hi_lock_new_lock', is_cl);
+  tc_result ('tc_hi_lock_old_dp_no_lock', is_cl);
+  tc_result ('tc_hi_lock_old_dp_no_lock_deadlock', is_cl);
+  tc_result ('tc_hi_lock_old_dp_no_lock_put_lock', is_cl);
+  tc_result ('tc_hi_lock_lock', is_cl);
+  tc_result ('tc_hi_lock_lock_deadlock', is_cl);
+  tc_result ('tc_pg_write_compact', is_cl);
+  tc_result ('tc_write_cancel', is_cl);
+  tc_result ('tc_write_scrapped_buf', is_cl);
+  tc_result ('tc_serializable_land_reset', is_cl);
+  tc_result ('tc_dive_cache_compares', is_cl);
+  tc_result ('tc_desc_serial_reset', is_cl);
+  tc_result ('tc_try_land_write', is_cl);
+  tc_result ('tc_try_land_reset', is_cl);
+  tc_result ('tc_up_transit_parent_change', is_cl);
+  tc_result ('tc_dp_set_parent_being_read', is_cl);
+  tc_result ('tc_dp_changed_while_waiting_mtx', is_cl);
+  tc_result ('tc_dive_split', is_cl);
+  tc_result ('tc_dtrans_split', is_cl);
+  tc_result ('tc_up_transit_wait', is_cl);
+  tc_result ('tc_double_deletes', is_cl);
+  tc_result ('tc_delete_parent_waits', is_cl);
+  tc_result ('tc_wait_trx_self_kill', is_cl);
+  tc_result ('tc_split_while_committing', is_cl);
+  tc_result ('tc_rb_code_non_unique', is_cl);
+  tc_result ('tc_set_by_pl_wait', is_cl);
+  tc_result ('tc_split_2nd_read', is_cl);
+  tc_result ('tc_read_wait', is_cl);
+  tc_result ('tc_write_wait', is_cl);
+  tc_result ('tc_reentry_split', is_cl);
+  tc_result ('tc_pl_moved_in_reentry', is_cl);
+  tc_result ('tc_release_pl_on_deleted_dp', is_cl);
+  tc_result ('tc_release_pl_on_absent_dp', is_cl);
+  tc_result ('tc_cpt_lt_start_wait', is_cl);
+  tc_result ('tc_cpt_rollback', is_cl);
+  tc_result ('tc_wait_for_closing_lt', is_cl);
+  tc_result ('tc_pl_non_owner_wait_ref_deld', is_cl);
+  tc_result ('tc_pl_split', is_cl);
+  tc_result ('tc_pl_split_multi_owner_page', is_cl);
+  tc_result ('tc_pl_split_while_wait', is_cl);
+  tc_result ('tc_insert_follow_wait', is_cl);
+  tc_result ('tc_history_itc_delta_wait', is_cl);
+  tc_result ('tc_page_wait_reset', is_cl);
+  tc_result ('tc_key_sample_reset', is_cl);
+  tc_result ('tc_posthumous_lock', is_cl);
+  tc_result ('tc_finalize_while_being_read', is_cl);
+  tc_result ('tc_rollback_cpt_page', is_cl);
+  tc_result ('tc_kill_closing', is_cl);
+  tc_result ('tc_dive_cache_hits', is_cl);
+  tc_result ('tc_deadlock_win_get_lock', is_cl);
+  tc_result ('tc_double_deadlock', is_cl);
+  tc_result ('tc_update_wait_move', is_cl);
+  tc_result ('tc_root_cache_miss', is_cl);
+  tc_result ('tc_dive_would_deadlock', is_cl);
+  tc_result ('tc_enter_transiting_bm_inx', is_cl);
+  tc_result ('tc_root_image_miss', is_cl);
+  tc_result ('tc_root_image_ref_deleted', is_cl);
+  tc_result ('tc_root_write', is_cl);
+  tc_result ('tc_cpt_rollback_retry', is_cl);
+  tc_result ('tc_uncommit_cpt_page', is_cl);
+  tc_result ('tc_repl_cycle', is_cl);
+  tc_result ('tc_repl_connect_quick_reuse', is_cl);
+  tc_result ('tc_no_thread_kill_idle', is_cl);
+  tc_result ('tc_no_thread_kill_vdb', is_cl);
+  tc_result ('tc_no_thread_kill_running', is_cl);
+  tc_result ('tc_deld_row_rl_rb', is_cl);
+  tc_result ('tc_blob_read', is_cl);
+  tc_result ('tc_blob_write', is_cl);
+  tc_result ('tc_blob_ra', is_cl);
+  tc_result ('tc_blob_ra_size', is_cl);
+  tc_result ('tc_get_buf_failed', is_cl);
+  tc_result ('tc_read_wait_decoy', is_cl);
+  tc_result ('tc_read_absent_while_finalize', is_cl);
+  tc_result ('tc_read_wait_while_ra_finding_buf', is_cl);
+  tc_result ('tc_unregister_enter', is_cl);
+  tc_result ('tc_autocompact_split', is_cl);
+  tc_result ('tc_get_buffer_while_stat', is_cl);
+  tc_result ('tc_page_fill_hash_overflow', is_cl);
+  tc_result ('tc_bp_wait_flush', is_cl);
+  tc_result ('tc_cl_keep_alives', is_cl);
+  tc_result ('tc_cl_branch_wanted_queries', is_cl);
+  tc_result ('tc_cl_branch_missed_rb', is_cl);
+  tc_result ('tc_cl_keep_alive_timeouts', is_cl);
+  tc_result ('tc_cl_deadlocks', is_cl);
+  tc_result ('tc_cl_wait_queries', is_cl);
+  tc_result ('tc_cl_kill_1pc', is_cl);
+  tc_result ('tc_cl_kill_2pc', is_cl);
+}
+;
 
+create procedure cl_exec_srv (in str varchar, in params any)
+{
+  declare st, msg varchar;
+ st := '00000';
+  exec (str, st, msg, params);
+  if (st <> '00000') signal (st, msg);
+}
+;
+
+
+create procedure daq_results (in daq any)
+{
+  declare r any;
+  for (;;)
+    {
+      r := daq_next (daq);
+      if (0 = r)
+	return;
+      --dbg_obj_print (r);
+      if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	err := r[2][1];
+	  if (isarray (err))
+	    signal (err[1], err[2]);
+	}
+    }
+}
+;
+
+
+create procedure cl_all_hosts ()
+{
+  declare map, inx, hosts any;
+  map := cl_control (0, 'cl_host_map');
+  hosts := vector ();
+  for (inx := 0; inx < length (map); inx := inx + 1)
+    {
+      if (map[inx] <> 1 and map[inx] <> 7)
+        hosts := vector_concat (hosts, vector (inx));
+    }
+  return hosts;
+}
+;
+
+create procedure cl_exec (in str varchar, in params any := null, in txn int := 0, in hosts any := null, in delay float := null, in best_effort int := 0,
+			  in control int := 0, in as_read int := 0)
+{
+  declare d, flags any;
+  if (0 = txn) -- if got branches, will not do with autocommitting daq
+    commit work;
+  if (sys_stat ('cl_run_local_only'))
+    {
+      declare st, msg varchar;
+      st := '00000';
+      exec (str, st, msg, params);
+      if (st <> '00000')
+	signal (st, msg);
+      return;
+    }
+  if (params is null)
+  params := vector ();
+ d := daq (txn);
+  if (delay is not null)
+    delay (delay);
+  if (as_read and hosts is null)
+    {
+      hosts := cl_all_hosts ();
+      flags := 0;
+    }
+  else if (as_read)
+    flags := 0;
+  else
+  flags := 1;
+  if (best_effort)
+    flags := bit_or (flags, 32);
+  if (control)
+    flags := bit_or (flags, 64);
+  if (hosts is null)
+    daq_call (d, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_EXEC_SRV', vector (str, params), flags);
+  else
+    daq_call (d, '__ALL', hosts, 'DB.DBA.CL_EXEC_SRV', vector (str, params), flags);
+  daq_results (d);
+}
+;
+
+create procedure CL_STAT_SRV (in x varchar, in k varchar, in fl varchar)
+{
+  if (k is not null)
+    return key_stat (x, k, fl);
+  return sys_stat (x);
+}
+;
+
+
+create procedure daq_next_or_error (in daq any)
+{
+  declare r, err any;
+  r := daq_next (daq);
+  if (0 = r)
+    return null;
+  if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+    {
+      declare err any;
+      err := r[2][1];
+      if (isarray (err))
+	signal (err[2], err[2]);
+    }
+
+  return r[2][1];
+}
+;
+
+create procedure cl_sys_stat (in x varchar, in  k varchar := null, in fl varchar := null)
+{
+  declare daq, r any;
+  declare s int;
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      if (k is null)
+	return sys_stat (x);
+      else
+	return key_stat (x, k, fl);
+    }
+  daq := daq (0);
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_STAT_SRV', vector (x, k, fl), 1);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	err := r[2][1];
+	  if (isarray (err))
+	    signal (err[2], err[2]);
+	}
+    s := s + r[2][1];
+    }
+  return s;
+}
+;
+
+create procedure IF_CLUSTER (in str varchar)
+{
+  if (sys_stat ('cl_run_local_only') <> 2) return;
+  str := trim (str, ';');
+  exec (str);
+}
+;
+
+create procedure IF_NO_CLUSTER (in str varchar)
+{
+  if (sys_stat ('cl_run_local_only') = 2) return;
+  str := trim (str, ';');
+  exec (str);
+}
+;
+
+
+create procedure CL_START_SRV ()
+{
+  return sys_stat ('db_exists');
+}
+;
+
+create procedure cl_init_seqs ()
+{
+  -- when single goes cluster for the 1st time, set the seqs on master so the next op gets a new range starting at the current value
+  declare seqs, name any;
+  declare inx, s_next int;
+  seqs := get_all_sequences ();
+  for (inx := 0; inx < length (seqs); inx := inx + 2)
+    {
+    name := cast (seqs[inx] as varchar);
+      if (name not like '__MAX__%' and name not like '__NEXT__%')
+	{
+	  s_next := __sequence_set (sprintf ('__NEXT__%s', name), 0, 2);
+	  sequence_set (sprintf ('__MAX__%s', name), 0, 1);
+	  if (0 = s_next)
+	    {
+	      __sequence_set (sprintf ('__NEXT__%s', name), sequence_set (name, 0, 2), 1);
+	    }
+	}
+    }
+  commit work;
+}
+;
+
+
+create procedure cl_reset_seqs ()
+{
+  -- When removed host rejoins cluster, set it so that all seq nexts will get a new range
+  declare seqs, name any;
+  declare inx, s_next int;
+  seqs := get_all_sequences ();
+  for (inx := 0; inx < length (seqs); inx := inx + 2)
+    {
+    name := cast (seqs[inx] as varchar);
+      if (name not like '__MAX__%' and name not like '__NEXT__%')
+	{
+	  __sequence_set (sprintf ('__MAX__%s', name), 0, 0);
+	}
+    }
+  rdf_seq_init_srv ();
+}
+;
+
+create procedure cl_new_db ()
+{
+  cl_init_seqs ();
+  cl_control (sys_stat ('cl_this_host'), 'ch_status', 0);
+  cl_wait_start ();
+  log_message ('new clustered database:Init of RDF');
+  rdf_dpipes ();
+  rdf_cl_init ();
+  DB.DBA.RDF_CREATE_SPARQL_ROLES_CL ();
+  WS.WS.SYS_DAV_INIT ();
+  cl_exec ('checkpoint');
+}
+;
+
+
+create procedure cl_node_started ()
+{
+  if (sys_stat ('cl_run_local_only') = 1)
+    return;
+  if (sys_stat ('cl_this_host') = sys_stat ('cl_master_host'))
+    {
+      if ((select cl_map from sys_cluster where cl_name = '__ALL') is null)
+	{
+	  cl_control (sys_stat ('cl_this_host'), 'ch_status', 0);
+	  cl_wait_start ();
+	  delete from sys_cluster where cl_name = '__ALL';
+	  insert into sys_cluster (cl_name, cl_HOSTS, cl_map) values ('__ALL', null, clm_map ('__ALL'));
+	  commit work;
+	  cl_exec ('cl_read_cluster (''__ALL'')');
+	}
+      if (0 = sys_stat ('db_exists'))
+	{
+	  cl_new_db ();
+	}
+    }
+}
+;
+
+
+create procedure ddl_ren_k_new_name (in kn varchar, in o varchar, in n varchar)
+{
+  if (name_part (kn, 2) = name_part (o, 2))
+    return name_part (n, 2);
+  else
+    return kn;
+}
+;
+
+
+create procedure DB.DBA.DDL_TABLE_RENAMED (in o varchar, in n varchar)
+{
+  __ddl_table_renamed (o, n);
+  log_text ('__ddl_table_renamed (?, ?)', o, n);
+}
+;
+
+
+create procedure rename_table (in n varchar, in o varchar)
+{
+  if (exists (select 1 from SYS_KEYS where KEY_TABLE = n)) {
+    signal ('42S01', 'Table already exists in rename table.', 'SR277');
+  }
+  ddl_owner_check (o);
+  if (exists (select 1 from SYS_VIEWS where V_NAME = o))
+    signal ('42S02', 'ALTER TABLE not supported for views. Drop the view and recreate it instead.', 'SR327');
+  if (not (exists (select 1 from SYS_KEYS where KEY_TABLE = o))) {
+    signal ('42S02', 'Bad table in rename table.', 'SR278');
+  }
+  update SYS_COLS set "TABLE" = n where "TABLE" = o;
+  for select COL_CHECK, "COLUMN" as COL from SYS_COLS where "TABLE" = n do {
+     declare num int;
+     if (strstr (COL_CHECK, 'I') is not null)
+       {
+	  num := GET_IDENTITY_COLUMN (o, COL, 1);
+         SET_IDENTITY_COLUMN (n, COL, num);
+       }
+  }
+  update SYS_KEYS set KEY_TABLE = n where KEY_TABLE = o;
+  update SYS_KEYS set KEY_NAME = n where KEY_TABLE = n and KEY_NAME = o;
+  update SYS_FOREIGN_KEYS set PK_TABLE = n where PK_TABLE = o;
+  update SYS_FOREIGN_KEYS set FK_TABLE = n where FK_TABLE = o;
+
+  update SYS_PARTITION set PART_TABLE = n, PART_KEY = ddl_ren_k_new_name (PART_KEY, o, n),
+      PART_DATA = vector (PART_DATA[0], n, ddl_ren_k_new_name (PART_KEY, o, n), PART_DATA[3], PART_DATA[4])
+    where PART_TABLE = o;
+  cl_exec ('DB.DBA.ddl_table_renamed (?, ?)', vector (o, n), txn => 1);
+}
+;
+
+
+create procedure VT_GET_CLUSTER (in tablename varchar, in k varchar)
+{
+  declare ret any;
+  if (k is null)
+    return '';
+  k := name_part (k, 2);
+  ret := coalesce ((select PART_CLUSTER from DB.DBA.SYS_PARTITION where PART_TABLE = tablename and PART_KEY = k), '');
+  if (ret = '__ALL')
+    return '';
+  return ' cluster ' || ret;
+}
+;
+
+create procedure VT_GET_CLUSTER_COL_OPTS (in tablename varchar, in k varchar, in col varchar)
+{
+  declare opts, ret any;
+  declare tmp any;
+  if (k is null)
+    return '';
+  ret := '';
+  k := name_part (k, 2);
+  opts := (select PART_DATA from DB.DBA.SYS_PARTITION where PART_TABLE = tablename and PART_KEY = k);
+  if (not isarray (opts))
+    return '';
+  if (length (opts) < 5)
+    return '';
+  if (length (opts[4]) < 1)
+    return '';
+  tmp := opts[4][0];
+  if (cast (tmp [1] as varchar) <> col)
+    return '';
+  if (tmp [2] = 1)
+    {
+      if (tmp[3] <> 65535)
+	ret := sprintf ('(0hex%x)', tmp[3]);
+    }
+  else if (tmp [2] = 3)
+    {
+      if (tmp[3] <> 0)
+	{
+	  ret := sprintf ('(%d, 0hex%x)', tmp[3], tmp[4]);
+	}
+    }
+  return ret;
 }
 ;
 
@@ -5129,6 +5543,295 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 ;
 
 
+-- RDF Schema objects
+
+create procedure view_from_tbl (in _dir varchar, in _tbls any)
+{
+   declare create_class_stmt, create_view_stmt, prefix, ns, uriqa_str, ret any;
+
+   ret := make_array (2, 'any');
+   prefix := 'SPARQL\n';
+
+   ns := sprintf ('prefix %s: <http://%s/%s#>\n', _dir, cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost'), _dir);
+   ns := ns || 'prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix demo: <http://www.openlinksw.com/schemas/demo#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n';
+
+   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+   create_class_stmt := '';
+
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+     create_class_stmt := create_class_stmt || view_create_class (_tbls[xx], uriqa_str, _dir);
+
+   create_class_stmt := prefix || ns || create_class_stmt;
+--   exec (create_class_stmt);
+   aset (ret, 0, create_class_stmt);
+
+   create_view_stmt := view_create_view (_tbls, _dir);
+   create_view_stmt := prefix || ns || create_view_stmt;
+--   exec (create_view_stmt);
+   aset (ret, 1, create_view_stmt);
+
+   return ret;
+}
+;
+
+
+create procedure view_create_view (in _tbls any, in _dir varchar)
+{
+   declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
+   declare sufix, tname, tbl any;
+
+   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+   qual := name_part (_tbls[0], 0);
+   qual_l := lcase (qual);
+
+   ret := 'alter quad storage virtrdf:DefaultQuadStorage\n';
+   sufix := '_s';
+
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+      ret := ret || ' from ' || _tbls[xx] || ' as ' || lcase (name_part (_tbls[xx], 3) || sufix) || '\n';
+
+   ret := ret || view_get_where_from_foreign_key (_tbls, sufix) || '\n';
+
+   ret := ret || ' { create virtrdf:' || qual || '
+	as graph iri ("http://' || uriqa_str || '/' || qual_l || '") option (exclusive) \n{ \n';
+
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+      {
+	   tbl := _tbls[xx];
+	   tbl_name := name_part (tbl, 3);
+	   tbl_name_l := lcase (tbl_name);
+	   pks := view_get_primary_key (tbl);
+	   tname := tbl_name_l || sufix;
+	   pk_text := '';
+
+	   for (declare xx any, xx := 0; xx < length (pks) ; xx := xx + 1)
+	     pk_text := tname || '.' || pks[xx][0] || ',';
+
+	   pk_text := trim (pk_text, ',');
+
+
+	   ret := ret || sprintf ('%s:%s (%s)\n', _dir, tbl_name_l, pk_text);
+
+	    for select "COLUMN" from SYS_COLS where "TABLE" = tbl do
+	       {
+			ret := ret || sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;\n',
+				_dir, lcase("COLUMN"), tname, "COLUMN", tbl_name_l, lcase("COLUMN") );
+
+			-- If col is FK?
+			if (exists (select 1 from DB.DBA.SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN"
+				AND position (PK_TABLE, _tbls) <> 0))
+			  {
+				for (select name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME from DB.DBA.SYS_FOREIGN_KEYS
+					where FK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN" AND position (PK_TABLE, _tbls) <> 0) do
+					   {
+					      ret := ret || sprintf ('%s:has_%s %s:%s (%s%s.%s) as virtrdf:%s-%s_has_%s ;\n\n',
+						 _dir, lcase (PK_TABLE_NAME), _dir, PK_TABLE_NAME,
+						 tbl_name_l, sufix, "COLUMN", tbl_name, tbl_name_l, lcase (PK_TABLE_NAME));
+					   }
+			  }
+
+			-- If col is part from FK?
+			if (exists (select 1 from DB.DBA.SYS_FOREIGN_KEYS where PK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN"
+				AND position (FK_TABLE, _tbls) <> 0))
+			  {
+				for (select name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME, PK_TABLE,
+				   FK_TABLE, FKCOLUMN_NAME
+				     from DB.DBA.SYS_FOREIGN_KEYS
+					where PK_TABLE = tbl and PKCOLUMN_NAME= "COLUMN" AND position (FK_TABLE, _tbls) <> 0) do
+					   {
+					      ret := ret || sprintf ('%s:%s_of %s:%s (%s%s.%s) as virtrdf:%s-%s_of ;\n\n',
+						 _dir, lcase (FK_TABLE_NAME),
+						 _dir, FK_TABLE_NAME,
+						 FK_TABLE_NAME, sufix, view_get_pk (FK_TABLE),
+						 lcase (name_part (PK_TABLE, 2)),
+						 FK_TABLE_NAME);
+					   }
+			  }
+
+
+
+	       }
+
+   	    ret := trim (ret, '\n');
+   	    ret := trim (ret, ';');
+   	    ret := ret || '.\n\n';
+      }
+
+   ret := ret || ' } }';
+
+   return ret;
+
+}
+;
+
+create procedure view_dv_to_printf_str_type (in _dv varchar)
+{
+   if (_dv = 189 or _dv = 188) return '%d';
+   if (_dv = 182) return '%U';
+   signal ('XXXXX', sprintf ('Unknown DV %i in view_dv_to_printf_str_type', _dv));
+}
+;
+
+create procedure view_dv_to_sql_str_type (in _dv varchar)
+{
+   if (_dv = 189 or _dv = 188) return 'integer';
+   if (_dv = 182) return 'varchar';
+   signal ('XXXXX', sprintf ('Unknown DV %i', _dv));
+}
+;
+
+create procedure view_create_class (in _tbl varchar, in _host varchar, in _f varchar)
+{
+   declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_len any;
+
+   qual := name_part (_tbl, 0);
+   tbl_name := name_part (_tbl, 3);
+   tbl_name_l := lcase (tbl_name);
+   pks := view_get_primary_key (_tbl);
+
+   pk_text := '';
+   sk_len := '';
+
+   if (length (pks) = 0)
+     return '';
+
+   for (declare xx any, xx := 0; xx < length (pks) ; xx := xx + 1)
+       {
+           pk_text := pk_text || 'in ' || pks[xx][0] || ' ' || view_dv_to_sql_str_type(pks[xx][1]) || ' not null,';
+	   sk_len := sk_len || '/' || view_dv_to_printf_str_type (pks[xx][1]);
+       }
+
+   pk_text := trim (pk_text, ',');
+   sk_len  := trim (sk_len , '/');
+
+-- ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s/%sd#this" (%s) option (bijection, deref) .',
+-- ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s/%sd#this" (%s) option (bijection, deref) .',
+   ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s/%s#this" (%s) . \n',
+		_f, tbl_name_l, _host, _f, tbl_name_l, pks[0][0], sk_len, pk_text);
+
+   return ret;
+}
+;
+
+create procedure view_get_primary_key (in _tbl varchar)
+{
+   return DB.DBA.REPL_PK_COLS (_tbl);
+}
+;
+
+create procedure view_get_pk (in _tbl varchar)
+{
+   return DB.DBA.REPL_PK_COLS (_tbl)[0][0];
+}
+;
+
+create procedure view_get_where_from_foreign_key (in _tbls varchar, in _suff varchar)
+{
+   declare ret, tbl any;
+
+   ret := '';
+
+   foreach (any tbl in _tbls) do
+
+   for (SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA, PK_TABLE,
+                     name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
+                     name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
+                     name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
+                     KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
+                     FROM DB.DBA.SYS_FOREIGN_KEYS WHERE FK_TABLE like tbl) do
+
+	{
+		if (position (PK_TABLE, _tbls) <> 0)
+		  {
+			ret := ret || sprintf (' where (^{%s%s.}^."%s" = ^{%s%s.}^."%s") \n',
+			lcase (FK_TABLE_NAME), _suff, FK_COLUMN_NAME,
+			lcase (PK_TABLE_NAME), _suff, PK_COLUMN_NAME);
+		  }
+	}
+
+   return ret;
+}
+;
+
+-- END RDF Schema objects
+
+-- for cost model estimates of free text hits
+create procedure text_est_text (in tb varchar)
+{
+  declare temp, ic, tc varchar;
+ temp := '
+create procedure "<q>"."<o>"."TEXT_EST_<tb>" (in str varchar)
+{
+  declare key_est, key_ct, rno int;
+  declare cr cursor for select "<idc>" from "<q>"."<o>"."<tb>" where contains ("<tc>", str);
+ key_est := key_estimate (''<q>.<o>.<tb>'', ''<tb>'');
+  set isolation = ''uncommitted'';
+  open cr;
+  whenever not found goto done;
+  while (1)
+    {
+      fetch cr into rno;
+    key_ct := key_ct + 1;
+      if (key_ct = 100)
+	return cast ((( cast (key_est as double precision) / rno)  * 100) as int);
+    }
+ done: return key_ct;
+}';
+  temp := replace (temp, '<q>', name_part (tb, 0));
+  temp := replace (temp, '<o>', name_part (tb, 1));
+  temp := replace (temp, '<tb>', name_part (tb, 2));
+  whenever not found goto nf;
+  select vi_col, vi_id_col into tc, ic from sys_vt_index where vi_table = tb;
+ temp := replace (temp, '<tc>', tc);
+ temp := replace (temp, '<idc>', ic);
+  return temp;
+  nf:
+  signal ('22023', 'The table has no text index.');
+}
+;
+
+
+-- for cluster text search wildcard
+
+create procedure CL_RANGE_WORDS_SRV (in l varchar, in h varchar, in mask varchar, in tb varchar)
+{
+  declare md, res, msg, st any;
+ st := '00000';
+  exec (sprintf ('select distinct vt_word from "%I"."%I"."%I" table option (no cluster) where vt_word >= ? and vt_word < ? and vt_word like ?', name_part (tb, 0), name_part (tb, 1), name_part (tb, 2)),
+	msg, st, vector (l, h, mask), 1000, md, res);
+  if (st <> '00000') signal (st, msg);
+  return res;
+}
+;
+
+create procedure cl_range_words (in tb varchar, in l varchar, in h varchar, in mask varchar)
+{
+  declare daq, r, d any;
+  daq := daq (0);
+  d := dict_new ();
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_RANGE_WORDS_SRV', vector (l, h, mask, tb), 1);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	err := r[2][1];
+	  if (isarray (err))
+	    signal (err[2], err[2]);
+	}
+      foreach (any w in r[2][1]) do
+	dict_put (d, w[0], 1);
+    }
+  return dict_list_keys (d, 2);
+}
+;
+
 create table SYS_HTTP_CLIENT_CACHE (
     HCC_URI varchar,
     HCC_HASH varchar,
@@ -5167,26 +5870,34 @@ create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := n
 
 create procedure csv_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
 {
-  declare r any;
-  declare stmt varchar;
-  declare inx, old_mode, num_cols, nrows int;
+  declare r, log_ses any;
+  declare stmt, enc varchar;
+  declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols int;
   declare delim, quot char;
 
-  delim := quot := null;
+  delim := quot := enc := mode := null;
+  log_error := 0;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       delim := get_keyword ('csv-delimiter', opts);
       quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
+      log_error := get_keyword ('log', opts, 0);
+      import_first_n_cols := get_keyword ('lax', opts, 0);
     }
 
   stmt := csv_ins_stmt (tb, num_cols);
   old_mode := log_enable (log_mode, 1);
   inx := 0;
   nrows  := 0;
-  while (isvector (r := get_csv_row (s, delim, quot)))
+  log_ses := string_output ();
+  while (isvector (r := get_csv_row (s, delim, quot, enc, mode)))
     {
       if (inx >= _from)
 	{
+	  if (import_first_n_cols and length (r) > num_cols)
+            r := subseq (r, 0, num_cols);
 	  if (length (r) = num_cols)
 	    {
 	      declare stat, message varchar;
@@ -5194,14 +5905,26 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
 	      exec (stmt, stat, message, r, vector ('max_rows', 0, 'use_cache', 1));
 	      if (stat <> '00000')
 		{
+		  if (log_error)
+		    {
+		      http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
+		    }
+		  else
+		    {
 		  log_message (sprintf ('CSV import: error importing row: %d', inx));
 		  log_message (message);
+		}
 		}
 	      else
 		nrows := nrows + 1;
 	    }
 	  else
+	    {
+	      if (log_error)
+		http (sprintf ('<error line="%d">different number of columns</error>', inx), log_ses);
+	      else
 	    log_message (sprintf ('CSV import: wrong number of values at line: %d', inx));
+	}
 	}
       if (inx > _to)
 	goto end_loop;
@@ -5209,6 +5932,8 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
     }
   end_loop:;
   log_enable (old_mode, 1);
+  if (log_error)
+    return vector (nrows, log_ses);
   return nrows;
 }
 ;
@@ -5216,18 +5941,20 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
 create procedure csv_parse (in s any, in cb varchar, inout cbd any, in _from int := 0, in _to int := null, in opts any := null)
 {
   declare r any;
-  declare inx int;
-  declare delim, quot char;
+  declare inx, mode int;
+  declare delim, quot, enc char;
 
-  delim := quot := null;
+  delim := quot := enc := mode := null;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       delim := get_keyword ('csv-delimiter', opts);
       quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
     }
 
   inx := 0;
-  while (isvector (r := get_csv_row (s, delim, quot)))
+  while (isvector (r := get_csv_row (s, delim, quot, enc, mode)))
     {
       if (inx >= _from)
 	call (cb) (r, inx, cbd);

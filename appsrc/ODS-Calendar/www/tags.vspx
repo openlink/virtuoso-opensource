@@ -33,10 +33,21 @@
       <v:variable persist="0" name="v_tags" type="any"/>
     </vm:variables>
     <vm:pagebody>
-      <table id="tags" class="CAL_grid" style="width: 100%;" cellspacing="0">
-        <thead class="sortHeader">
+      <?vsp
+        declare params any;
+
+        params := self.vc_page.vc_event.ve_params;
+
+        http (sprintf ('<input type="hidden" name="sid"   id="sid"   value="%V"/>', get_keyword ('sid', params)));
+        http (sprintf ('<input type="hidden" name="realm" id="realm" value="%V"/>', get_keyword ('realm', params)));
+        http (sprintf ('<input type="hidden" name="txt"   id="txt"   value="%V"/>', get_keyword ('txt', params)));
+        http (sprintf ('<input type="hidden" name="txt2"  id="txt2"  value="%V"/>', get_keyword ('txt2', params)));
+        http (sprintf ('<input type="hidden" name="fld"   id="fld"   value="%V"/>', get_keyword ('fld', params)));
+      ?>
+      <table id="tags" class="ODS_grid">
+        <thead>
           <tr>
-            <th class="checkbox" width="1%">
+            <th class="checkbox">
               <?vsp
                 http('<input type="checkbox" name="cb_all" value="Unselect All" checked="checked" onclick="selectAllCheckboxes(this, \'cb_item\'); "/>');
               ?>
@@ -45,40 +56,33 @@
           </tr>
         </thead>
         <?vsp
-          declare exit handler for SQLSTATE '*' { goto _end;};
+          declare exit handler for SQLSTATE '*' { dbg_obj_print ('', __SQL_MESSAGE); goto _end;};
 
           declare N integer;
-          declare rules, vTags any;
+          declare rules any;
 
-          self.v_tags := '';
+          self.v_tags := vector ();
           rules := user_tag_rules (self.account_id);
-          vTags := tag_document (self.v_txt, 0, rules);
-          for (N := 0; N < length (vTags); N := N + 2)
-            self.v_tags := concat (self.v_tags, ',', vTags[N]);
+          self.v_tags := vector_concat (tag_document (self.v_txt, 0, rules), tag_document (self.v_txt2, 0, rules));
 
-          vTags := tag_document (self.v_txt2, 0, rules);
-          for (N := 0; N < length(vTags); N := N + 2)
-            self.v_tags := concat (self.v_tags, ',', vTags[N]);
-          self.v_tags := trim(self.v_tags, ',');
-
-        _end:
-          if (not is_empty_or_null(self.v_tags)) {
-            vTags := CAL.WA.tags2vector (self.v_tags);
-            for (N := 0; N < length (vTags); N := N + 1) {
+          for (N := 0; N < length (self.v_tags); N := N + 1)
+          {
         ?>
           <tr>
-            <td>
+            <td class="checkbox">
               <?vsp
-                http (sprintf ('<input type="checkbox" name="cb_item" value="%s" checked="checked" onclick="javascript: coloriseRow(getParent(this, \'tr\'), this.checked);"/>', vTags[N]));
+                http (sprintf ('<input type="checkbox" name="cb_item" value="%s" checked="checked" onclick="javascript: coloriseRow(getParent(this, \'tr\'), this.checked);"/>', self.v_tags[N]));
               ?>
             </td>
             <td>
-              &nbsp;<?V vTags[N] ?>
+              &nbsp;<?V self.v_tags[N] ?>
             </td>
           </tr>
         <?vsp
             }
-          } else {
+        _end:
+          if (length (self.v_tags) = 0)
+          {
         ?>
             <tr>
               <td align="center" colspan="2">
@@ -89,20 +93,17 @@
           }
         ?>
       </table>
-      <div class="form-footer">
-        <?vsp
-          http(sprintf('<input type="hidden" name="fld" id="fld" value="%s" />', self.v_field));
-          if (length (self.v_tags))
-            http('<input type="button" name="use" value="Use Selection" onclick="javascript: addCheckedTags(\'fld\', \'cb_item\')" />');
-        ?>
-        <input type="button" name="close" value="Cancel" onclick="javascript: window.close()" />
+      <div style="padding: 0 0 0.5em 0;">
+        <hr />
+        <span onclick="javascript: addCheckedTags('fld', 'cb_item');" class="button"> Add selected</span>
       </div>
       <script type="text/javascript">
         <![CDATA[
           coloriseTable('tags');
 
           var objForm = document.forms['F1'];
-          for (var i = 0; i < objForm.elements.length; i++) {
+          for (var i = 0; i < objForm.elements.length; i++)
+          {
             var o = objForm.elements[i];
             if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf ('cb_item') != -1)
               coloriseRow(getParent(o, 'tr'), o.checked);

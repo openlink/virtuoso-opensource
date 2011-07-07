@@ -28,7 +28,8 @@
 
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="box.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/box.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="bp">
         <xsl:attribute name="value"><xsl:value-of select="bp"/></xsl:attribute>
@@ -227,11 +228,11 @@
           <xsl:variable name="open_url">javascript:Go(<xsl:value-of select="msg_id" />,'<xsl:value-of select="subject" />')</xsl:variable>
         </xsl:when>
         <xsl:when test="/page/folder_id = 130">
-          <xsl:variable name="open_url">write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
+          <xsl:variable name="open_url"><xsl:value-of select="$iri" />/write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
           </xsl:variable>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:variable name="open_url">open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
+          <xsl:variable name="open_url"><xsl:value-of select="$iri" />/open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
           </xsl:variable>
         </xsl:otherwise>
       </xsl:choose>
@@ -313,11 +314,11 @@
         <xsl:variable name="open_url">javascript:Go(<xsl:value-of select="msg_id"/>,'<xsl:value-of select="subject"/>')</xsl:variable>
       </xsl:when>
       <xsl:when test="/page/folder_id = 130">
-        <xsl:variable name="open_url">write.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;wp=<xsl:value-of select="msg_id"/>
+        <xsl:variable name="open_url"><xsl:value-of select="$iri" />/write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
         </xsl:variable>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:variable name="open_url">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="msg_id"/>,<xsl:value-of select="position"/>
+        <xsl:variable name="open_url"><xsl:value-of select="$iri" />/open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
         </xsl:variable>
       </xsl:otherwise>
     </xsl:choose>
@@ -413,13 +414,13 @@
           <tr>
             <td>
               <xsl:call-template name="nbsp"/>Move selected to
-              <xsl:apply-templates select="folders" mode="combo" />
+              <xsl:apply-templates select="foldersCombo" mode="combo" />
               <xsl:call-template name="make_href">
                 <xsl:with-param name="url">javascript: if (anySelected(document.f1, 'ch_msg', 'No messages were selected to be moved.')) formSubmit('fa_move.x', '1'); </xsl:with-param>
                 <xsl:with-param name="title">Move</xsl:with-param>
                 <xsl:with-param name="img">/oMail/i/move_16.png</xsl:with-param>
                 <xsl:with-param name="img_label"> Move</xsl:with-param>
-                <xsl:with-param name="class">button</xsl:with-param>
+                <xsl:with-param name="class">button2</xsl:with-param>
               </xsl:call-template>
             </td>
             <td class="right">
@@ -430,7 +431,7 @@
                   <xsl:with-param name="label">Delete All</xsl:with-param>
                   <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
                   <xsl:with-param name="img_label"> Delete All</xsl:with-param>
-                  <xsl:with-param name="class">button</xsl:with-param>
+                  <xsl:with-param name="class">button2</xsl:with-param>
                 </xsl:call-template>
               </xsl:if>
               <xsl:call-template name="make_href">
@@ -438,7 +439,7 @@
                 <xsl:with-param name="lable">Delete Selected</xsl:with-param>
                 <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
                 <xsl:with-param name="img_label"> Delete</xsl:with-param>
-                <xsl:with-param name="class">button</xsl:with-param>
+                <xsl:with-param name="class">button2</xsl:with-param>
               </xsl:call-template>
             </td>
           </tr>

@@ -52,6 +52,7 @@ public class VirtuosoRdfBox implements RdfBox
     public static final int RBS_HAS_TYPE = 0x08;
     public static final int RBS_CHKSUM   = 0x10;
     public static final int RBS_64   	  = 0x20;
+    public static final int RBS_SKIP_DTP = 0x40;
 
     private VirtuosoConnection connection = null;
 
@@ -152,6 +153,7 @@ public class VirtuosoRdfBox implements RdfBox
 	    try
 	    {
 	      stmt.execute (sql);
+	      stmt.setFetchSize(200);
 
 	      ResultSet rs = stmt.getResultSet ();
 	      while (rs.next ())
@@ -174,33 +176,61 @@ public class VirtuosoRdfBox implements RdfBox
 
     private void ensureTypeHash ()
     {
-      if (this.connection.rdf_type_hash.isEmpty ())
+      if (!this.connection.rdf_type_loaded)
       {
 	fillHashFromSQL (this.connection.rdf_type_hash, this.connection.rdf_type_rev, "select RDT_TWOBYTE, RDT_QNAME from DB.DBA.RDF_DATATYPE");
+	this.connection.rdf_type_loaded = true;
       }
     }
 
     private void ensureLangHash ()
     {
-      if (this.connection.rdf_lang_hash.isEmpty ())
+      if (!this.connection.rdf_lang_loaded)
       {
 	fillHashFromSQL (this.connection.rdf_lang_hash, this.connection.rdf_lang_rev, "select RL_TWOBYTE, RL_ID from DB.DBA.RDF_LANGUAGE");
+	this.connection.rdf_lang_loaded = true;
       }
+    }
+
+    private String _getType ()
+    {
+      ensureTypeHash ();
+      return (String) this.connection.rdf_type_hash.get (new Integer (this.rb_type));
     }
 
     public String getType ()
     {
-      String r;
-      ensureTypeHash ();
-      r = (String) this.connection.rdf_type_hash.get (new Integer (this.rb_type));
+      if (this.rb_type == RDF_BOX_DEFAULT_TYPE)
+        return null;
+
+      String r = _getType();
+      if (r == null) {
+        synchronized(connection) {
+          this.connection.rdf_type_loaded = false;
+          r = _getType();
+        }
+      }
       return r;
+    }
+
+    private String _getLang ()
+    {
+      ensureLangHash ();
+      return (String) this.connection.rdf_lang_hash.get (new Integer (this.rb_lang));
     }
 
     public String getLang ()
     {
-      String r;
-      ensureLangHash ();
-      r = (String) this.connection.rdf_lang_hash.get (new Integer (this.rb_lang));
+      if (this.rb_lang == RDF_BOX_DEFAULT_LANG)
+        return null;
+
+      String r = _getLang();
+      if (r == null) {
+        synchronized(connection) {
+          this.connection.rdf_lang_loaded = false;
+          r = _getLang();
+        }
+      }
       return r;
     }
 

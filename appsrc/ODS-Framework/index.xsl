@@ -40,7 +40,6 @@
   <xsl:include href="comp/dav_browser.xsl"/>
   <xsl:include href="comp/tagging.xsl"/>
   <xsl:include href="comp/dashboard.xsl"/>
-  <!-- zdravko -->
   <xsl:include href="comp/site_home.xsl"/>
   <xsl:include href="comp/app_inst_menu.xsl"/>
   <xsl:include href="comp/map_control.xsl"/>

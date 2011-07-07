@@ -35,7 +35,6 @@ caddr_t not_impl (char * text);
 
 int ammsc_to_code (char * op);
 
-caddr_t list (long n, ...);
 void list_extend (caddr_t *list_ptr, long n, ...);
 void list_nappend (caddr_t *list_ptr, caddr_t cont);
 caddr_t sc_list (long n, ...);
@@ -149,7 +148,9 @@ caddr_t * sqlp_string_col_list (caddr_t * lst);
 caddr_t sqlp_xml_col_name (ST * tree);
 extern int sqlp_xml_col_directive (char *id);
 long sqlp_xml_select_flags (char * mode, char * elt);
+extern void sqlp_tweak_selection_names (ST * tree);
 ptrlong sqlp_bunion_flag (ST * l, ST * r, long f);
+ST *sqlp_wpar_nonselect (ST *subq);
 ST * sqlp_inline_order_by (ST *tree, ST **oby);
 ST * sqlp_patch_call_if_special (ST * funcall_tree);
 ptrlong sqlp_cursor_name_to_type (caddr_t name);
@@ -242,5 +243,7 @@ ST * sqlp_infoschema_redirect (ST *texp);
 void sqlp_breakup (ST * sel);
 int sel_n_breakup (ST * sel);
 void sqlp_dt_header (ST * exp);
-
+caddr_t sqlp_col_num (caddr_t);
+int sqlp_is_num_lit (caddr_t x);
+caddr_t sqlp_minus (caddr_t n);
 #endif /* _SQLPFN_H */

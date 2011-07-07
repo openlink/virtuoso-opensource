@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
+<v:page name="services-page"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
 	style="index.xsl"
@@ -87,10 +87,11 @@
 	      Search in
 	    </td>
 	    <td>
-	      <v:data-list name="howto" value="--self.filt_app"
+                        <v:data-list name="howto"
+                                     value="--self.filt_app"
 		sql="select '%' as WAT_NAME, 'Any' as WAT_LABEL from WA_SETTINGS union all select WAT_NAME, WA_GET_APP_NAME (WAT_NAME) as WAT_LABEL from WA_TYPES"
-		key-column="WAT_NAME" value-column="WAT_LABEL"
-		>
+                                     key-column="WAT_NAME"
+                                     value-column="WAT_LABEL">
 	      </v:data-list>
 	    </td>
 	  </tr>
@@ -105,9 +106,7 @@
 		<v:item name="Member" value="2"/>
 		<v:on-post>
 		  if (e.ve_initiator = control)
-		  {
 		    self.filt_own := control.ufl_value;
-		  }
 		</v:on-post>
 	      </v:select-list>
 	    </td>
@@ -153,8 +152,8 @@
   </table>
   <v:data-source name="mdss" expression-type="sql" nrows="-1" initial-offset="0">
     <v:expression></v:expression>
-    <v:before-data-bind><![CDATA[
-
+                <v:before-data-bind>
+                  <![CDATA[
       declare cond, ord any;
 
       control.ds_parameters := null;
@@ -185,17 +184,14 @@
       if (self.app_sort_by = 4)
         ord := cast (self.app_sort_by as varchar);
       else
-        ord := sprintf ('lower (%s)',
-            case self.app_sort_by when 2 then 'WAI_DESCRIPTION' when 3 then 'WAI_NAME' when 9 then 'WAI_APP_NAME' end);
+                    ord := sprintf ('lower (%s)', case self.app_sort_by when 2 then 'WAI_DESCRIPTION' when 3 then 'WAI_NAME' when 9 then 'WAI_APP_NAME' end);
 
-
-	control.ds_sql := 'select WAI_ID, WAI_DESCRIPTION, WAI_NAME, WAM_STATUS, WAI_INST, WAM_MEMBER_TYPE, WAI_TYPE_NAME, WAI_IS_FROZEN,
-        WA_GET_APP_NAME (WAI_TYPE_NAME) as WAI_APP_NAME, WAI_IS_PUBLIC
-        from WA_INSTANCE, WA_MEMBER where ' || cond ||
+                  control.ds_sql := 'select WAI_ID, WAI_DESCRIPTION, WAI_NAME, WAM_STATUS, WAI_INST, WAM_MEMBER_TYPE, WAI_TYPE_NAME, WAI_IS_FROZEN, WA_GET_APP_NAME (WAI_TYPE_NAME) as WAI_APP_NAME, WAI_IS_PUBLIC ' ||
+                                    '  from WA_INSTANCE, WA_MEMBER where ' ||
+                                    cond ||
 	' order by ' || ord;
-
-
-    ]]></v:before-data-bind>
+                  ]]>
+                </v:before-data-bind>
     <v:column name="WAI_ID" label="Id" />
     <v:column name="WAI_DESCRIPTION" label="Description" />
     <v:column name="WAI_NAME" label="Name" />
@@ -285,32 +281,13 @@
 		<?vsp
 		    }
 		?>
-                <v:button style="url" value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[2], 'owner')" action="simple" name="membership_enter">
-                  <v:on-post>
-                    <v:script>
-                      <![CDATA[
-                        declare h, id, ss any;
-                        declare inst web_app;
-                        inst := (control.vc_parent as vspx_row_template).te_rowset[4];
-                        ss := null;
-                        declare exit handler for sqlstate 'NOPAT'
-                        {
-                          self.vc_is_valid := 0;
-                          self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
-                          return;
-                        };
-                        h := udt_implements_method(inst, 'wa_front_page');
-                        id := call (h) (inst, ss);
-                      ]]>
-                    </v:script>
-                  </v:on-post>
-                </v:button>
+                            <a href="<?vsp http (wa_utf8_to_wide (SIOC..forum_iri ((control as vspx_row_template).te_rowset[6], (control as vspx_row_template).te_rowset[2]) || sprintf ('?sid=%s&realm=%s', self.sid, self.realm))); ?>"><?V wa_utf8_to_wide((control as vspx_row_template).te_rowset[2]) ?></a>
               </td>
               <td>
-                <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[8]" format="%s"/>
+                            <?V (control as vspx_row_template).te_rowset[8] ?>
               </td>
               <td>
-                <v:label value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[1], 'owner')" format="%s"/>
+                            <?V coalesce ((control as vspx_row_template).te_rowset[1], 'owner') ?>
               </td>
               <td>
                 <vm:label value="" format="(%s)">
@@ -321,13 +298,10 @@
                           control.ufl_value := 'owner';
                         else
                           control.ufl_value :=
-                          (select
-                           WMT_NAME
-                          from
-                            WA_MEMBER_TYPE
-                          where
-                            WMT_APP = (control.vc_parent as vspx_row_template).te_rowset[6] and
-                            WMT_ID = (control.vc_parent as vspx_row_template).te_rowset[5]);
+                                      (select WMT_NAME
+                                         from WA_MEMBER_TYPE
+                                        where WMT_APP = (control.vc_parent as vspx_row_template).te_rowset[6]
+                                          and WMT_ID = (control.vc_parent as vspx_row_template).te_rowset[5]);
                       ]]>
                     </v:script>
                   </v:before-render>
@@ -481,7 +455,7 @@
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Members (application)" title="Members (application)"/>&#160;Members';
 		      if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1 or
-		        (control.vc_parent as vspx_row_template).te_rowset[6] in ('oDrive', 'oMail', 'IM'))
+                                    (control.vc_parent as vspx_row_template).te_rowset[6] in ('oMail', 'IM'))
 		        control.vc_enabled := 0;
                     ]]>
                   </v:after-data-bind>
@@ -506,15 +480,7 @@
                           http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
                           return;
                         }
-
-                        --declare h, id, ss any;
-                        --declare inst web_app;
-                        --inst := (control.vc_parent as vspx_row_template).te_rowset[4];
-                        --ss := null;
-                        --h := udt_implements_method (inst, 'wa_membership_edit_form');
-			--id := call (h) (inst, ss);
-			self.vc_redirect (sprintf ('members.vspx?wai_id=%d',
-				(control.vc_parent as vspx_row_template).te_rowset[0]));
+                                  self.vc_redirect (sprintf ('members.vspx?wai_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0]));
                       ]]>
                     </v:script>
                   </v:on-post>
@@ -527,8 +493,7 @@
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Related (applications)" title="Related (applications)"/>&#160;Related';
-		      if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1 or
-		        (control.vc_parent as vspx_row_template).te_rowset[6] in ('oDrive', 'oMail', 'IM'))
+                                if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1)
 		        control.vc_enabled := 0;
                     ]]>
                   </v:after-data-bind>
@@ -550,8 +515,7 @@
 			    self.vc_redirect ('services.vspx');
                             return;
                           }
-			self.vc_redirect (sprintf ('related_apps.vspx?wai_id=%d',
-			   (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                  self.vc_redirect (sprintf ('related_apps.vspx?wai_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0]));
                       ]]>
                     </v:script>
                   </v:on-post>

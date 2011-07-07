@@ -63,6 +63,11 @@
       <v:variable name="v_mode" type="varchar" param-name="mode" default="'targetBrowse'" persist="0"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'subscriptions.vspx'));
+        ]]>
+      </v:before-render>
       <vm:if test="self.v_mode in ('targetBrowse', 'queueBrowse', 'retrievedBrowse', 'retrievedEdit')">
         <div style="padding: 0 0 0.5em 0;">
           <vm:if test="self.v_mode in ('targetBrowse')">
@@ -131,14 +136,14 @@
           <v:param name="instance" value="--self.domain_id" />
 
           <v:template name="ds_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="groups" class="OD_grid" cellspacing="0">
-              <thead class="sortHeader">
+            <table class="ODS_grid">
+              <thead>
                 <tr>
                   <th>Description</th>
                   <th>Host</th>
                   <th>Start Path</th>
                   <th>Target Collection</th>
-                  <th nowrap="nowrap" width="1%">Action</th>
+                  <th class="action">Action</th>
                 </tr>
               </thead>
             </table>
@@ -147,8 +152,8 @@
           <v:template name="ds_repeat_template" type="repeat" name-to-remove="" set-to-remove="">
             <v:template name="ds_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
-                <tr class="listing_count">
-                  <td align="center" colspan="5" class="listing_row_count">
+                <tr>
+                  <td colspan="5">
                     No rows retrieved
                   </td>
                 </tr>
@@ -170,7 +175,7 @@
                   <td>
                     <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[3])" />
                   </td>
-                  <td nowrap="nowrap" width="1%">
+                  <td class="action">
                     <v:button action="simple" value="Edit" name="edit1" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[
@@ -341,9 +346,9 @@
                     ]]>
                   </v:after-data-bind>
                 </v:text>
-                <v:template name="subscriptions_t1" type="simple" enabled="-- case when ODRIVE.WA.check_admin (self.account_id) then 1 else 0 end;">
-                  <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=owner:s1;')" class="button" />
-                </v:template>
+                <vm:if test="ODRIVE.WA.check_admin (self.account_id)">
+                  <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&amp;params=owner:s1;&nrows=<?V ODRIVE.WA.settings_rows (self.settings) ?>')" class="button" />
+                </vm:if>
               </td>
             </tr>
             <tr>
@@ -427,7 +432,7 @@
               <td colspan="2">
                 <div  id="meta_opts" style="display: <?V case when self.v_get_rdf = 0 then 'none' else 'block' end ?>;">
                   <table class="listing">
-                    <thead class="sortHeader">
+                    <thead>
                       <tr>
                         <th class="checkbox" style="text-align: left;">
                           <label>
@@ -668,15 +673,15 @@
           <v:param name="instance" value="--self.domain_id" />
 
           <v:template name="data_set2_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="groups" class="OD_grid" cellspacing="0">
-              <thead class="sortHeader">
+            <table class="ODS_grid">
+              <thead>
                 <tr>
                   <th>Description</th>
                   <th>Host</th>
                   <th>URL</th>
                   <th>Target Collection</th>
                   <th>State</th>
-                  <th nowrap="nowrap" width="1%">Action</th>
+                  <th class="action">Action</th>
                 </tr>
               </thead>
             </table>
@@ -686,8 +691,8 @@
 
             <v:template name="data_set2_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
-                <tr class="listing_count">
-                  <td class="listing_row_count" colspan="6">
+                <tr>
+                  <td colspan="6">
                     No rows retrieved
                   </td>
                 </tr>
@@ -712,7 +717,7 @@
                   <td>
                     <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
                   </td>
-                  <td nowrap="nowrap" width="1%">
+                  <td class="action">
                     <v:button action="simple" value="Start" name="start" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[
@@ -836,14 +841,14 @@
           <v:param name="instance" value="--self.domain_id" />
 
           <v:template name="ds3_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="groups" class="OD_grid" cellspacing="0">
-              <thead class="sortHeader">
+            <table class="ODS_grid">
+              <thead>
                 <tr>
                   <th>Description</th>
                   <th>Start on</th>
                   <th>Interval (minutes)</th>
                   <th>Last executed</th>
-                  <th nowrap="nowrap" width="1%">Action</th>
+                  <th class="action">Action</th>
                 </tr>
               </thead>
             </table>
@@ -854,7 +859,7 @@
             <v:template name="ds3_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
-                  <td class="listing_count" colspan="5">
+                  <td colspan="5">
                     No rows retrieved
                   </td>
                 </tr>
@@ -876,7 +881,7 @@
                   <td>
                     <v:label format="%s" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"  fmt-function="date_fmt"/>
                   </td>
-                  <td nowrap="nowrap" width="1%">
+                  <td class="action">
                     <v:button action="simple" value="Edit" name="edit3" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[
@@ -909,13 +914,16 @@
 
           <v:template name="ds3_footer_template" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <tr class="browse_button_row">
+              <tfoot>
+                <tr align="right">
                 <td colspan="5" align="center">
                   <vm:ds-navigation data-set="ds3"/>
                 </td>
               </tr>
+              </tfoot>
             </table>
           </v:template>
+
         </v:data-set>
       </vm:if>
 
@@ -1164,15 +1172,15 @@
           <v:param name="instance" value="--self.domain_id" />
 
           <v:template name="ds4_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="groups" class="OD_grid" cellspacing="0">
-              <thead class="sortHeader">
+            <table class="ODS_grid">
+              <thead>
                 <tr>
                   <th>Description</th>
                   <th>Host</th>
                   <th>URL</th>
                   <th>Collection</th>
                   <th nowrap="nowrap" width="1%">Total pages</th>
-                  <th nowrap="nowrap" width="1%">Action</th>
+                  <th class="action">Action</th>
                 </tr>
               </thead>
             </table>
@@ -1183,7 +1191,7 @@
             <v:template name="ds4_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
-                  <td class="listing_count" colspan="6">
+                  <td colspan="6">
                     No rows retrieved
                   </td>
                 </tr>
@@ -1208,7 +1216,7 @@
                   <td nowrap="nowrap" width="1%" align="right">
                     <?V (select count (*) from WS.WS.VFS_URL where VU_HOST = (control as vspx_row_template).te_rowset[1] and VU_ROOT = (control as vspx_row_template).te_rowset[3]) ?>
                   </td>
-                  <td nowrap="nowrap" width="1%">
+                  <td class="action">
                     <v:button action="simple" value="Edit" name="edit4" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[
@@ -1249,13 +1257,13 @@
       <vm:if test="self.v_mode = 'retrievedEdit'">
         <h3>Current downloads for <?V self.v_host ?></h3>
         <hr />
-        <table id="groups" class="OD_grid" cellspacing="0">
-          <thead class="sortHeader">
+        <table class="ODS_grid">
+          <thead>
             <tr>
               <th>URL</th>
               <th>Etag</th>
               <th>Retrieved</th>
-              <th nowrap="nowrap" width="1%">Action</th>
+              <th class="action">Action</th>
             </tr>
           </thead>
           <v:data-set name="data_set1" sql=" select VU_URL, VU_ETAG, VU_CPTIME from WS.WS.VFS_URL where VU_HOST = :ehost and VU_ROOT = :eroot" nrows="0" scrollable="1" cursor-type="keyset" edit="0">
@@ -1273,7 +1281,7 @@
               </v:template>
 
               <v:template name="tmpl2" type="browse">
-                <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                <tr>
                   <td>
                     <?V control.te_rowset[0] ?>
                   </td>
@@ -1283,7 +1291,7 @@
                   <td>
                     <?V subseq(cast (control.te_rowset[2] as varchar),0, 19) ?>
                   </td>
-                  <td nowrap="nowrap" width="1%">
+                  <td class="action">
                     <v:button action="simple" value="Delete" name="delete4" xhtml_onclick="javascript: return deleteConfirm();" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[

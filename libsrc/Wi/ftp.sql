@@ -18,13 +18,11 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
---
 
--- Note the FTP_POP_WRITE debugging function.
--- To debug, replace all 'pop_write<whitespace>(' with 'FTP_POP_WRITE<whitespace>('.
--- But do NOT replace all 'pop_write' with 'FTP_POP_WRITE'.
--- See the code of FTP_POP_WRITE and FTP_WRITE to find out the reason :)
+--  Note the FTP_POP_WRITE debugging function.
+--  To debug, replace all 'pop_write<whitespace>(' with 'FTP_POP_WRITE<whitespace>('.
+--  But do NOT replace all 'pop_write' with 'FTP_POP_WRITE'.
+--  See the code of FTP_POP_WRITE and FTP_WRITE to find out the reason :)
 
 --
 -- SERVER

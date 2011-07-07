@@ -45,14 +45,14 @@
       set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
-      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
       self.domain_id := POLLS.WA.session_domain (params);
       self.account_id := POLLS.WA.domain_owner_id (self.domain_id);
 
       if (self.v_mode = 'opensearchdescription') 
       {
-        http_header ('Content-Type: text/xml\r\n'); 
+        http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+
         http (         '<?xml version="1.0" encoding="UTF-8"?>\n');
         http (         '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">');
         http (sprintf ('<Url type="text/html" template="%Vsearch.vspx?mode=opensearch&amp;q={searchTerms}&amp;cnt={count}&amp;page={startPage}" />', POLLS.WA.polls_url (self.domain_id)));
@@ -68,8 +68,6 @@
         http (         '<SyndicationRight>open</SyndicationRight>');
         http (         '<AdultContent>false</AdultContent>');
         http (         '</OpenSearchDescription>');
-        
-        goto _end;
       } 
       else if (self.v_output in ('rss', 'rdf', 'atom03', 'atom10')) 
       {
@@ -88,10 +86,18 @@
 
         state := '00000';
         sqlParams := vector();
-        sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+        sql := POLLS.WA.search_sql (self.domain_id, self.account_id, self.account_rights, 'R', data);
         exec(sql, state, msg, sqlParams, 0, meta, rows);
         if (state <> '00000')
           goto _error;
+
+        declare _header, _links varchar;
+
+        _header := case when (self.v_output like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        _links := ODS..PSH_HEADER_LINKS (self.domain_id);
+        if (length (_links))
+          _header := _header || sprintf ('Link: %s\r\n', _links);
+        http_header (_header);
 
         http ('<?xml version="1.0" encoding="UTF-8"?>\n');
         http ('<rss version="2.0">\n');
@@ -119,6 +125,12 @@
           http ('<link>');
             http_value (POLLS.WA.polls_url (self.domain_id));
           http ('</link>\n');
+          if (self.v_output like '%atom%')
+          {
+            _links := ODS..PSH_ATOM_LINKS (self.domain_id);
+            if (length (_links))
+              http (_links);
+          }
         }
         foreach (any row in rows) do 
         {
@@ -161,14 +173,12 @@
 
         else if (self.v_output = 'rdf')
           http_xslt (POLLS.WA.xslt_full ('rss2rdf.xsl'));
-
-        goto _end;
       }
-    _error:
-      http('<?xml version="1.0" ?><empty />');
-
     _end:
       return;
+
+    _error:
+      http('<?xml version="1.0" ?><empty />');
     ?>
   ]]>
 </v:page>

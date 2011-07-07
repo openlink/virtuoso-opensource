@@ -1,4 +1,5 @@
 /*
+ *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -255,7 +256,7 @@ shuric_t *shuric_get (caddr_t uri)
     }
   else
     {
-    dbg_printf ((" returns NULL\n"));
+      dbg_printf ((" returns NULL\n"));
     }
   return (cached_shuric);
 }

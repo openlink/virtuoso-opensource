@@ -20,7 +20,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
-
 create procedure DB.DBA.ddl_load_script (in _filename varchar)
 {
   declare cnt, parts, errors any;
@@ -69,8 +68,16 @@ DB.DBA.ddl_load_script_safe (_filename);
 }
 ;
 
+create procedure ddl_dav_replicate_rdf_quad ()
+{
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return;
+  DB.DBA.DAV_AUTO_REPLICATE_TO_RDF_QUAD ();
+}
+;
+
 --!AFTER
-DB.DBA.DAV_AUTO_REPLICATE_TO_RDF_QUAD ()
+ddl_dav_replicate_rdf_quad ()
 ;
 
 --!AFTER

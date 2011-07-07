@@ -41,14 +41,20 @@
 Date: <xsl:value-of select="to_snd_date"/>
 Reply-To: <xsl:apply-templates select="displayName"/><xsl:text> </xsl:text>&lt;<xsl:apply-templates select="replyTo"/>&gt;
 Message-ID: &lt;<xsl:value-of select="srv_msg_id"/>&gt;
-MIME-Version: 1.0
-Content-Type: <xsl:call-template name="content_type"/>;
-<xsl:call-template name="content_transfer_encoding"/>;
 X-Priority: <xsl:value-of select="priority"/>
     <xsl:apply-templates select="ref_id"/>
 X-MSMail-Priority: Normal
+<xsl:choose>
+  <xsl:when test="/message/signed = '1'">
+    <xsl:call-template name="mbody"/>
+  </xsl:when>
+  <xsl:otherwise>MIME-Version: 1.0
+Content-Type: <xsl:call-template name="content_type"/>;
+<xsl:call-template name="content_transfer_encoding"/>;
 
 <xsl:call-template name="mbody"/>
+</xsl:otherwise>
+</xsl:choose>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="address/addres_list/from | address/addres_list/to">

@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2010 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="wa-groups"
+        fast-render="1"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:variable name="fg_mode" type="varchar" default="'browse'"/>
+
+  <v:variable name="fg_id" type="integer" default="null"/>
+  <v:variable name="fg_name" param-name="name" type="varchar" default="''"/>
+  <v:variable name="fg_description" type="varchar" default="''"/>
+  <v:variable name="fg_members" type="any" default="null"/>
+
+  <h3>User Groups Addministration</h3>
+  <vm:if test="self.fg_mode = 'browse'">
+    <fieldset>
+      <legend><b>ODS groups</b></legend>
+  	<v:data-source name="fgrc" expression-type="sql" nrows="0" initial-offset="10">
+      <v:before-data-bind>
+        <![CDATA[
+            control.ds_sql := sprintf('select b.WAG_ID, a.U_NAME, a.U_FULL_NAME from DB.DBA.SYS_USERS a, DB.DBA.WA_GROUPS b where a.U_ID=b.WAG_GROUP_ID and a.U_IS_ROLE=1 and b.WAG_USER_ID=\'%d\' order by U_NAME', self.u_id);
+        ]]>
+      </v:before-data-bind>
+    </v:data-source>
+    <v:data-set name="fg" data-source="self.fgrc" scrollable="1">
+      <div style="padding: 0 0 0.5em 0;">
+        <v:button name="fgCreate" action="simple" style="url" value="''" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+            ]]>
+          </v:before-render>
+          <v:on-post>
+            <![CDATA[
+                self.fg_name := '';
+                self.fg_description := '';
+                self.fg_members := vector ();
+                self.fg_mode := 'fgCreate';
+
+     		      self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+      <v:template name="fg_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+        <table id="groups" class="listing" cellspacing="0">
+          <tr class="listing_header_row">
+              <th>Name</th>
+              <th>Description</th>
+              <th width="1%">Actions</th>
+          </tr>
+        </table>
+      </v:template>
+
+      <v:template name="fg_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+        <v:template name="fg_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+          <table>
+            <tr align="center">
+                <td colspan="3">No own regular groups</td>
+            </tr>
+          </table>
+        </v:template>
+
+        <v:template name="fg_browse" type="browse" name-to-remove="table" set-to-remove="both">
+          <table>
+              <tr>
+                <td nowrap="nowrap">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" format="%s"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_FULL_NAME')" format="%s"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button name="fgEdit" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_value := '<img src="/ods/images/icons/edit_16.png" border="0" /> Edit';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        self.fg_id := (control.vc_parent as vspx_row_template).te_column_value('WAG_ID');
+                        select a.U_NAME,
+                               a.U_FULL_NAME
+                          into self.fg_name,
+                               self.fg_description
+                          from DB.DBA.SYS_USERS a,
+                               DB.DBA.WA_GROUPS b
+                         where a.U_IS_ROLE   = 1
+                           and a.U_ID      = b.WAG_GROUP_ID
+                           and b.WAG_ID      = self.fg_id;
+
+                        self.fg_members := vector ();
+                        for (select b.U_NAME
+                               from DB.DBA.SYS_ROLE_GRANTS a,
+                                    DB.DBA.SYS_USERS b,
+                                    DB.DBA.SYS_USERS c
+                              where a.GI_SUPER = b.U_ID
+                                and a.GI_GRANT = c.U_ID
+                                and a.GI_DIRECT = '1'
+                                and c.U_NAME = self.fg_name) do
+                        {
+                          self.fg_members := vector_concat (self.fg_members, vector (U_NAME));
+                        }
+                        self.fg_mode := 'fgUpdate';
+
+              		      self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button name="fgDelete" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_value := '<img src="/ods/images/icons/trash_16.png" border="0" /> Delete';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        self.fg_id := (control.vc_parent as vspx_row_template).te_column_value('WAG_ID');
+                        delete from DB.DBA.SYS_USERS where U_ID in (select WAG_GROUP_ID from DB.DBA.WA_GROUPS where WAG_ID = self.fg_id);
+                        delete from DB.DBA.WA_GROUPS where WAG_ID = self.fg_id;
+
+              		      self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+
+        </v:template>
+
+        <v:template name="fg_navigation" type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
+            <tr align="center">
+              <td colspan="3">
+                <vm:ds-navigation data-set="fg"/>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+    </fieldset>
+
+    <fieldset>
+      <legend><b>WebID groups</b></legend>
+    	<v:data-source name="fg2rc" expression-type="sql" nrows="0" initial-offset="10">
+        <v:before-data-bind>
+          <![CDATA[
+            control.ds_sql := sprintf('select WACL_ID, WACL_NAME, WACL_DESCRIPTION from WA_GROUPS_ACL where WACL_USER_ID=%d order by WACL_NAME', self.u_id);
+          ]]>
+        </v:before-data-bind>
+      </v:data-source>
+      <v:data-set name="fg2" data-source="self.fg2rc" scrollable="1">
+        <div style="padding: 0 0 0.5em 0;">
+          <v:button name="fg2Create" action="simple" style="url" value="''" xhtml_class="img_button">
+            <v:before-render>
+              <![CDATA[
+                control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+              ]]>
+            </v:before-render>
+            <v:on-post>
+              <![CDATA[
+                self.fg_name := '';
+                self.fg_description := '';
+                self.fg_members := null;
+                self.fg_mode := 'fg2Create';
+
+       		      self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+        <v:template name="fg2_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <table id="groups" class="listing" cellspacing="0">
+            <tr class="listing_header_row">
+              <th>Name</th>
+              <th>IRI</th>
+              <th width="1%">Actions</th>
+            </tr>
+          </table>
+        </v:template>
+
+        <v:template name="fg2_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="fg2_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr align="center">
+                <td colspan="3">No ACL groups</td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="fg2_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <table>
+            <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+              <td nowrap="nowrap">
+                <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WACL_NAME')" format="%s"/>
+              </td>
+              <td nowrap="nowrap">
+                <v:label value="--SIOC..acl_group_iri (self.u_id, (control.vc_parent as vspx_row_template).te_column_value('WACL_NAME'))" format="%s"/>
+              </td>
+              <td nowrap="nowrap">
+                  <v:button name="fg2Edit" action="simple" style="url" value="''" xhtml_class="img_button">
+                  <v:before-render>
+                    <![CDATA[
+                      control.ufl_value := '<img src="/ods/images/icons/edit_16.png" border="0" /> Edit';
+                    ]]>
+                  </v:before-render>
+                  <v:on-post>
+                    <![CDATA[
+                        self.fg_id := (control.vc_parent as vspx_row_template).te_column_value('WACL_ID');
+                      select WACL_NAME,
+                             WACL_DESCRIPTION,
+                             WACL_WEBIDS
+                          into self.fg_name,
+                               self.fg_description,
+                               self.fg_members
+                        from WA_GROUPS_ACL
+                         where WACL_ID = self.fg_id;
+
+                        self.fg_mode := 'fg2Update';
+            		      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                  <v:button name="fg2Delete" action="simple" style="url" value="''" xhtml_class="img_button">
+                  <v:before-render>
+                    <![CDATA[
+                      control.ufl_value := '<img src="/ods/images/icons/trash_16.png" border="0" /> Delete';
+                    ]]>
+                  </v:before-render>
+                  <v:on-post>
+                    <![CDATA[
+                        self.fg_id := (control.vc_parent as vspx_row_template).te_column_value('WACL_ID');
+                        delete from DB.DBA.WA_GROUPS_ACL where WACL_ID = self.fg_id;
+
+            		      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+
+      </v:template>
+
+      <v:template type="simple" name-to-remove="table" set-to-remove="top">
+        <table>
+          <tr align="center">
+            <td colspan="3">
+                <vm:ds-navigation data-set="fg2"/>
+            </td>
+          </tr>
+        </table>
+      </v:template>
+
+    </v:data-set>
+    </fieldset>
+  </vm:if>
+
+  <vm:if test="self.fg_mode in ('fgCreate', 'fgUpdate')">
+    <h4><v:label format="%s" value="--concat(initcap(subseq(self.fg_mode, 2)), ' ODS Group')"/></h4>
+    <div id="fg_page" class="tabContent">
+      <ul id="fg_tabs" class="tabs">
+        <li id="fg_tab_0"><b>Main</b></li>
+        <li id="fg_tab_1"><b>Users</b></li>
+      </ul>
+      <div style="background-color: #fff; min-height: 150px; min-width: 650px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+        <div id="fg_content">
+        </div>
+        <div id="fg_page_0" class="tabContent">
+          <table class="form-body" cellspacing="0">
+            <tr>
+              <th>
+                <v:label for="fgName" value="Group name"/>
+              </th>
+              <td>
+                <v:text name="fgName" value="--self.fg_name" type="--either(equ(self.fg_mode, 'fgCreate'), 'plain', 'hidden')" xhtml_size="40" />
+                <vm:if test="self.fg_mode = 'fgUpdate'">
+                  <span class="text"><v:label value="--self.fg_name"/></span>
+                </vm:if>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="fgDescription" value="Group description"/>
+              </th>
+              <td>
+                <v:text name="fgDescription" value="--self.fg_description" xhtml_size="80" />
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div id="fg_page_1" class="tabContent">
+          <table>
+            <tr>
+              <td width="800px">
+                <table id="x_tbl" class="listing" cellspacing="0">
+                  <tr class="listing_header_row">
+                    <th>
+                      Name
+                    </th>
+                    <th width="1%">
+                      Action
+                    </th>
+                  </tr>
+            		  <![CDATA[
+            		    <script type="text/javascript">
+                    <?vsp
+            		      declare N varchar;
+
+                      for (N := 0; N < length (self.fg_members); N := N + 1)
+                      {
+                        http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 1, value: "%s"}});});});', self.fg_members[N]));
+                      }
+                    ?>
+            		    </script>
+            		  ]]>
+                  <tr id="x_tr_no"><td colspan="2"><b>No Members</b></td></tr>
+                </table>
+              </td>
+              <td valign="top" nowrap="nowrap">
+                <span class="button pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 1}});"><img src="/ods/images/icons/add_16.png" class="button" border="0" alt="Add Security" title="Add Security" /> Add</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <script>
+        <![CDATA[
+          function createFGTabs() {
+            var fgTab = new OAT.Tab("fg_content");
+            fgTab.add("fg_tab_0", "fg_page_0");
+            fgTab.add("fg_tab_1", "fg_page_1");
+            fgTab.go(0);
+          }
+          ODSInitArray.push(function(){OAT.Loader.load(["tab"], function(){createFGTabs();});});
+        ]]>
+      </script>
+    </div>
+
+    <div class="new-form-footer">
+      <v:button name="fgSave" action="simple" value="--initcap (subseq (self.fg_mode, 2))" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
+        <v:on-post>
+          <![CDATA[
+            declare N integer;
+            declare uid, gid integer;
+            declare params any;
+            declare exit handler for SQLSTATE '*'
+            {
+              if (__SQL_STATE = 'TEST')
+              {
+                self.vc_error_message := wa_clear(__SQL_MESSAGE);
+                self.vc_is_valid := 0;
+                return;
+              }
+              resignal;
+            };
+
+            params := self.vc_page.vc_event.ve_params;
+            self.fg_name := trim (self.fgName.ufl_value);
+            self.fg_description := trim (self.fgDescription.ufl_value);
+            self.fg_members := vector();
+            for (N := 0; N < length (params); N := N + 2)
+            {
+              if ((params [N] like 'x_fld_1_%') and (trim (params [N+1]) <> ''))
+              {
+                self.fg_members := vector_concat (self.fg_members, split_and_decode (trim (trim (params [N+1]), ','), 0, '\0\0,'));
+              }
+            }
+
+            self.fg_name := wa_validate (self.fg_name, vector('name', 'Group name', 'class', 'varchar', 'minLength', 1, 'maxLength', 128));
+            self.fg_description := wa_validate (self.fg_description, vector('name', 'Group description', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
+
+            uid := self.u_id;
+            gid := (select a.U_ID
+                      from DB.DBA.SYS_USERS a,
+                           DB.DBA.WA_GROUPS b
+                     where a.U_ID = b.WAG_GROUP_ID
+                       and a.U_NAME = self.fg_name
+                       and a.U_IS_ROLE = 1
+                       and b.WAG_USER_ID <> uid);
+            if (not isnull(gid))
+              signal('TEST', 'Group already exists for another user. Please choose another name!<>');
+
+            gid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.fg_name);
+            if (self.fg_mode = 'fgCreate')
+            {
+              if (not isnull(gid))
+                signal('TEST', 'Group already exists. Please choose another name!<>');
+
+              gid := USER_ROLE_CREATE(self.fg_name);
+              -- make owner
+              insert soft DB.DBA.WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID) values(uid, gid);
+            }
+            update DB.DBA.SYS_USERS set U_FULL_NAME = self.fg_description, U_DAV_ENABLE = 1 where U_NAME = self.fg_name;
+
+            -- delete members
+            for (select b.U_NAME
+                   from DB.DBA.SYS_ROLE_GRANTS a, DB.DBA.SYS_USERS b, DB.DBA.SYS_USERS c
+                  where a.GI_SUPER = b.U_ID and a.GI_GRANT = c.U_ID and c.U_NAME = self.fg_name and a.GI_DIRECT = '1') do
+            {
+              if (not ODRIVE.WA.vector_contains (self.fg_members, U_NAME))
+              {
+                declare continue handler for sqlstate '*' { goto _delete;};
+                USER_REVOKE_ROLE (U_NAME, self.fg_name);
+              _delete:;
+              }
+            }
+
+            -- add members
+            for (N := 0; N < length(self.fg_members); N := N + 1)
+            {
+              declare continue handler for sqlstate '*' { goto _add;};
+              USER_GRANT_ROLE (self.fg_members[N], self.fg_name);
+            _add:;
+            }
+
+            self.fg_mode := 'browse';
+     		    self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button  name="fgCancel" action="simple" value="Cancel" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+            self.fg_mode := 'browse';
+     		    self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+    </div>
+  </vm:if>
+
+  <vm:if test="self.fg_mode in ('fg2Create', 'fg2Update')">
+    <h4><v:label format="%s" value="--concat(initcap(subseq(self.fg_mode, 3)), ' ACL Group')"/></h4>
+    <div id="fg2_page" class="tabContent">
+      <ul id="fg2_tabs" class="tabs">
+        <li id="fg2_tab_0"><b>Main</b></li>
+        <li id="fg2_tab_1"><b>WebIDs</b></li>
+      </ul>
+      <div style="background-color: #fff; min-height: 150px; min-width: 650px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+        <div id="fg2_content">
+        </div>
+        <div id="fg2_page_0" class="tabContent">
+          <table class="ctl_grp" cellspacing="0">
+            <tr>
+              <th>
+                <v:label for="fg2Name" value="Group name"/>
+              </th>
+              <td>
+                <v:text name="fg2Name" value="--self.fg_name" xhtml_size="40" />
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="fg2Description" value="Group description"/>
+              </th>
+              <td>
+                <v:text name="fg2Description" value="--self.fg_description" xhtml_size="80" />
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div id="fg2_page_1" class="tabContent" style="display: none;">
+          <table>
+            <tr>
+              <td width="800px">
+                <table id="x_tbl" class="listing" cellspacing="0">
+                  <tr class="listing_header_row">
+                    <th>
+                      Personal WebID
+                    </th>
+                    <th width="1%">
+                      Action
+                    </th>
+                  </tr>
+            		  <![CDATA[
+            		    <script type="text/javascript">
+                    <?vsp
+            		      declare N varchar;
+
+         		          self.fg_members := split_and_decode (self.fg_members, 0, '\0\0\n');
+                      if ((self.fg_mode = 'fg2Create') and (length(self.fg_members) = 0))
+         		            self.fg_members := vector (SIOC..person_iri (SIOC..user_iri (self.u_id)));
+
+                      for (N := 0; N < length (self.fg_members); N := N + 1)
+                      {
+                        if (length (self.fg_members[N]))
+                          http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 51, className: "_validate_ _uri_", value: "%s"}});});});', self.fg_members[N]));
+                      }
+                    ?>
+            		    </script>
+            		  ]]>
+                  <tr id="x_tr_no"><td colspan="2"><b>No Personal WebIDs</b></td></tr>
+                </table>
+              </td>
+              <td valign="top" nowrap="nowrap">
+                <span class="button pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 51, className: '_validate_ _uri_'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <script>
+        <![CDATA[
+          function createFG2Tabs() {
+            var fg2Tab = new OAT.Tab("fg2_content");
+            fg2Tab.add("fg2_tab_0", "fg2_page_0");
+            fg2Tab.add("fg2_tab_1", "fg2_page_1");
+            fg2Tab.go(0);
+          }
+          ODSInitArray.push(function(){OAT.Loader.load(["tab"], function(){createFG2Tabs();});});
+        ]]>
+      </script>
+
+      <div class="new-form-footer">
+        <v:button name="fg2Cancel" action="simple" value="Cancel" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              self.fg_mode := 'browse';
+       		    self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button name="fg2Save" action="simple" value="--initcap (subseq (self.fg_mode, 3))" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
+          <v:on-post>
+            <![CDATA[
+              declare N integer;
+              declare params any;
+              declare exit handler for SQLSTATE '*'
+              {
+                if (__SQL_STATE = 'TEST')
+                {
+                  self.vc_error_message := wa_clear(__SQL_MESSAGE);
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                resignal;
+              };
+
+              params := self.vc_page.vc_event.ve_params;
+              self.fg_name := trim (self.fg2Name.ufl_value);
+              self.fg_description := trim (self.fg2Description.ufl_value);
+
+              self.fg_name := wa_validate (self.fg_name, vector('name', 'Group name', 'class', 'varchar', 'minLength', 1, 'maxLength', 128));
+              self.fg_description := wa_validate (self.fg_description, vector('name', 'Group description', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
+              if (exists (select 1 from WA_GROUPS_ACL where WACL_ID <> self.fg_id and WACL_USER_ID = self.u_id and WACL_NAME = self.fg_name))
+              {
+                self.vc_error_message := 'Dublicate group name';
+                self.vc_is_valid := 0;
+                return;
+              }
+
+              self.fg_members := '';
+              for (N := 0; N < length (params); N := N + 2)
+              {
+                if ((params [N] like 'x_fld_1_%') and (trim (params [N+1]) <> ''))
+                {
+                  self.fg_members := self.fg_members || trim (params [N+1]) || '\n';
+                }
+              }
+              if (self.fg_mode = 'fg2Create')
+              {
+                insert into WA_GROUPS_ACL (WACL_USER_ID, WACL_NAME, WACL_DESCRIPTION,  WACL_WEBIDS)
+                  values (self.u_id, self.fg_name, self.fg_description, self.fg_members);
+              } else {
+                update WA_GROUPS_ACL
+                   set WACL_NAME = self.fg_name,
+                       WACL_DESCRIPTION = self.fg_description,
+                       WACL_WEBIDS = self.fg_members
+                 where WACL_ID = self.fg_id
+                   and WACL_USER_ID = self.u_id;
+              }
+
+              self.fg_mode := 'browse';
+       		    self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </div>
+  </vm:if>
+
+</v:page>

@@ -184,10 +184,10 @@ sqlo_qc_make_refresh (sqlo_t * so, query_cursor_t * qc)
   {
     int nth = 0;
     from[inx] =
-	t_listst (3, TABLE_REF, t_list (5, TABLE_DOTTED,
+	t_listst (3, TABLE_REF, t_list (6, TABLE_DOTTED,
 	    t_box_string (ot->ot_table->tb_name),
 	    t_box_copy (ot->ot_new_prefix), t_box_num (ot->ot_u_id),
-	    t_box_num (ot->ot_g_id)), NULL);
+					t_box_num (ot->ot_g_id), ot->ot_opts), NULL);
     DO_SET (dbe_column_t *, col, &ot->ot_table->tb_primary_key->key_parts)
     {
       char tmp[10];
@@ -220,8 +220,8 @@ sqlo_qc_position_texp (sqlo_t * so, query_cursor_t * qc)
   op_table_t *ot = (op_table_t *) dfe_ot (dfe)->ot_from_ots->data;
   int nth = 0;
   from[0] =
-      (ST *) t_list (5, TABLE_DOTTED, t_box_string (ot->ot_table->tb_name),
-      NULL, t_box_num (ot->ot_u_id), t_box_num (ot->ot_g_id));
+      (ST *) t_list (6, TABLE_DOTTED, t_box_string (ot->ot_table->tb_name),
+		     NULL, t_box_num (ot->ot_u_id), t_box_num (ot->ot_g_id), ot->ot_opts);
 
   DO_SET (dbe_column_t *, col, &ot->ot_table->tb_primary_key->key_parts)
   {
@@ -257,7 +257,7 @@ sqlo_qc_make_update (sqlo_t * so, query_cursor_t * qc)
   memset (vals, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_P (col_ref, COL_DOTTED))
+    if (!ST_COLUMN (col_ref, COL_DOTTED))
       {
 	return NULL;
       }
@@ -268,10 +268,10 @@ sqlo_qc_make_update (sqlo_t * so, query_cursor_t * qc)
   END_DO_BOX;
 
   upd = (ST *) t_list (5, UPDATE_SRC,
-      t_list (5, TABLE_DOTTED,
+      t_list (6, TABLE_DOTTED,
 	  t_full_box_copy_tree (tb_name), NULL,
 	  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.u_id),
-	  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.g_id)),
+	      t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.g_id), tb_ref->_.table_ref.table->_.table.opts),
       cols, vals, sqlo_qc_position_texp (so, qc));
   qc->qc_update = sqlc_cr_method (so->so_sc, &upd, 1, 1);
   qc->qc_update_text = upd;

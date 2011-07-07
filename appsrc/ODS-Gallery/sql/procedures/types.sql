@@ -20,15 +20,14 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-PHOTO.WA._exec_no_error('drop type photo_user');
-PHOTO.WA._exec_no_error('drop type photo_comment');
-PHOTO.WA._exec_no_error('drop type photo_exif');
-PHOTO.WA._exec_no_error('drop type SOAP_album');
-PHOTO.WA._exec_no_error('drop type SOAP_external_album');
-PHOTO.WA._exec_no_error('drop type image_ids');
-PHOTO.WA._exec_no_error('drop type SOAP_gallery');
-PHOTO.WA._exec_no_error('drop type photo_instance');
-
+PHOTO.WA._exec_no_error('drop type DB.DBA.photo_user');
+PHOTO.WA._exec_no_error('drop type DB.DBA.photo_comment');
+PHOTO.WA._exec_no_error('drop type DB.DBA.photo_exif');
+PHOTO.WA._exec_no_error('drop type DB.DBA.SOAP_album');
+PHOTO.WA._exec_no_error('drop type DB.DBA.SOAP_external_album');
+PHOTO.WA._exec_no_error('drop type DB.DBA.image_ids');
+PHOTO.WA._exec_no_error('drop type DB.DBA.SOAP_gallery');
+PHOTO.WA._exec_no_error('drop type DB.DBA.photo_instance');
 
 --------------------------------------------------------------------------------
 create type photo_user as (
@@ -45,14 +44,36 @@ create type photo_user as (
   ses_vars    any
   )
   constructor method photo_user(auth_uid varchar),
-  constructor method photo_user(auth_uid integer)
+  constructor method photo_user(user_id integer),
+  method photo_user_init(auth_uid varchar) returns any
 ;
 
+--------------------------------------------------------------------------------
+create constructor method photo_user(
+  in auth_uid varchar
+  )
+  for photo_user
+{
+  self.photo_user_init(auth_uid);
+  return;
+}
+;
 
 --------------------------------------------------------------------------------
---
 create constructor method photo_user(
-  in auth_uid varchar)
+  in user_id integer
+  )
+  for photo_user
+{
+  self.photo_user_init((SELECT U_NAME FROM DB.DBA.SYS_USERS WHERE U_ID = user_id));
+  return;
+}
+;
+
+--------------------------------------------------------------------------------
+create method photo_user_init (
+  in auth_uid varchar
+  )
   for photo_user
 {
   declare user_data,result any;
@@ -81,36 +102,6 @@ create constructor method photo_user(
     self.first_name := 'Anonymous';
     self.last_name  := 'Anonymous';
   }
-  return;
-}
-;
-
---------------------------------------------------------------------------------
---
-create constructor method photo_user(
-  in user_id integer)
-  for photo_user
-{
-
-  declare auth_uid varchar;
-
-  auth_uid := (SELECT U_NAME FROM DB.DBA.SYS_USERS WHERE U_ID = user_id);
-
-  self.auth_uid := auth_uid;
-  self.auth_pwd := PHOTO.WA._user_pwd(auth_uid);
-  if (auth_uid = 'dav')
-  {
-    self.home_dir := '/DAV/';
-  }else{
-    self.home_dir := DAV_HOME_DIR(auth_uid);
-  }
-  if (__tag(self.home_dir) <> 189)
-  {
-    self.gallery_dir := concat(self.home_dir,PHOTO.WA.get_gallery_folder_name(),'/');
-  }else{
-    self.gallery_dir := '';
-  }
-  self.user_id := user_id;
   return;
 }
 ;
@@ -145,9 +136,9 @@ for SOAP_gallery
   self.albums := albums;
   self.settings   := settings;
   self.owner_name := owner_name;
-
 }
 ;
+
 --------------------------------------------------------------------------------
 create type SOAP_album as (
   fullpath varchar,
@@ -222,7 +213,6 @@ constructor method SOAP_album(
 ;
 
 --------------------------------------------------------------------------------
---
 create constructor method SOAP_album(
  in fullpath varchar,
  in type varchar,
@@ -239,9 +229,7 @@ create constructor method SOAP_album(
  in start_date datetime,
  in end_date datetime,
  in description varchar
-
-)
-for SOAP_album
+ ) for SOAP_album
 {
   self.fullpath     := fullpath;
   self.type         := type;
@@ -308,8 +296,6 @@ for SOAP_album
 ;
 
 --------------------------------------------------------------------------------
---
-
 create constructor method SOAP_album(
  in id integer,
  in name varchar
@@ -366,15 +352,11 @@ create type SOAP_external_album as (
 
 
 --------------------------------------------------------------------------------
-
 create type image_ids as (
-  image_id integer
-  )
+  image_id integer)
 ;
 
 --------------------------------------------------------------------------------
---
-
 create type photo_comment as (
   comment_id integer,
   res_id integer,
@@ -425,8 +407,7 @@ create type photo_exif as (
 create constructor method photo_exif(
   in name varchar,
   in value varchar
-)
-for photo_exif
+  ) for photo_exif
 {
   self.name := name;
   self.value := value;
@@ -474,6 +455,7 @@ for photo_instance
   self.photo_instance_create(home_url);
 }
 ;
+
 --------------------------------------------------------------------------------
 create method photo_instance_create(in _home_url varchar)
 for photo_instance

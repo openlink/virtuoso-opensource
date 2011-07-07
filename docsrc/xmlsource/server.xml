@@ -36,83 +36,11 @@ command line SQL interface.
 
 <sect2 id="dbadm"><title>Database</title>
 
-  <sect3 id="srvadminstallreqt"><title>Installation Requirements</title>
-    <para>A typical installation will require a minimum of 400Mb of hard disk
-    space to install the code, samples, documentation and sample database.
-The database will need additional space for data inserted, backups,
-    logs and reports, web pages, etc.
 
-</para>
-    <para>The size of the database .db file will not reduce when data is
-    removed. The spare space will however be reclaimed for later use.</para>
-  </sect3>
-
-  <sect3 id="srvadmopreq"><title>Operational Requirements</title>
-    <para>The Virtuoso database requires a minimum of 64Mb of system memory
-    for each instance to operate in. Each connection will take between 70kb
-    and 130kb of memory.</para>
-    <para>The memory usage is affected by the following parameters in the
-    <link linkend="VIRTINI">Virtuoso configuration file</link>.</para>
-    <simplelist>
-      <member>ServerThreads</member>
-      <member>ServerThreadSize</member>
-      <member>MainThreadSize</member>
-      <member>FutureThreadSize</member>
-      <member>NumberOfBuffers</member>
-    </simplelist>
-    <para>See the following <link linkend="parameters">Parameter section</link>
-    for more details.</para>
-  </sect3>
-
-  <sect3 id="srvadmossupport"><title>Operating System Support</title>
-    <para>Virtuoso runs on the following operating systems:</para>
-    <simplelist>
-      <member>Windows 2000,XP,ME,98,95</member>
-      <member>Linux</member>
-      <member>Unix</member>
-      <member>Mac OS X</member>
-    </simplelist>
-  </sect3>
-
-
-<sect3 id="limitsandparameters">
-<title>Limits</title>
-
-<para>
-The below table lists the most important parameters and limits for a database or a Virtuoso server instance.  For space consumption of individual data types, see <link linkend="SpaceConsump">Space Consumption</link>.
-</para>
-
-
-<table> 
-<tbody>
-<row><entry>Identifier length</entry> <entry>100</entry></row>
-<row><entry>User name and password length</entry> <entry>100</entry></row>
-<row><entry>SQLstmt and proc text</entry> <entry>100K+</entry></row>
-<row><entry>varchar length</entry> <entry>Constrained by max row length when stored into non-LOB column, 10MB inside procedure code.</entry></row>
-<row><entry>Numeric precision</entry> <entry>Max 40 digits</entry></row>
-<row><entry>LOB column length</entry> <entry>2GB</entry></row>
-<row><entry>row length</entry> <entry>4086</entry></row>
-<row><entry>Columns per row</entry> <entry>200</entry></row>
-<row><entry>Database size</entry> <entry>32TB for data, 32TB for temp data </entry></row>
-<row><entry>Page size</entry> <entry>8K</entry></row>
-<row><entry>File size</entry> <entry>64 bit file offsets on supporting OS's</entry></row>
-<row><entry>Files per database</entry> <entry>unlimited</entry></row>
-<row><entry>Table size</entry> <entry>Up to database size </entry></row>
-<row><entry>Tables per database</entry> <entry>64K keys, a table takes 1 key for primary key, 1 key per index and 1 key for each obsolete primary key layout  resulting from adding or dropping columns.</entry></row>
-<row><entry>Indexes per table</entry> <entry>Unlimited, subject to global cap on keys.</entry></row>
-<row><entry>Row in sorting/distinct temp</entry> <entry>4078b, as in tables </entry></row>
-<row><entry>Locks per transaction</entry> <entry>Depends on memory, 16b per row lock, 60b per page with at least one row lock.</entry></row>
-<row><entry>Changes per transaction</entry> <entry>Depends on memory, ini parameter allows cap on  rollback before image.</entry></row>
-<row><entry>Virtual memory></entry> <entry>Depends on OS, 64 bit pointers on 64 bit platforms</entry></row>
-<row><entry>Threads</entry> <entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thread pools.</entry></row>
-<row><entry>Max connections</entry> <entry>Depends on OS fdset size, at least 2048, license can set a limit</entry></row>
-<row><entry>Memory per connection</entry> <entry>22K plus up to 100 cached SQL statement compilations</entry></row>
-</tbody>
-</table>
-
-</sect3>
-
-
+<para>See details for <link linkend="srvadminstallreqt">Installation Requirements</link>, 
+<link linkend="srvadmopreq">Operational Requirements</link>, 
+	<link linkend="srvadmossupport">Operating System Support</link> and 
+	<link linkend="limitsandparameters">Limits</link>.</para>
 
   <sect3 id="srvadmsrvinst"><title>Server Instance Creation</title>
     <para>Multiple Virtuoso server instances  may coexist on a single machine. Each
@@ -398,7 +326,7 @@ forces Virtuoso to only run on one CPU in a multiprocessor environment.</para>
 				</listitem>
 				<listitem id="ini_Parameters_ServerPort">
 					<formalpara>
-						<title>ServerPort=[&lt;IP Address&gt;]&lt;port&gt;</title>
+						<title>ServerPort=[&lt;IP Address&gt;]:&lt;port&gt;</title>
 						<para>This is the IP Address and port number where the server will start listening.
 You do not need to specify the listening IP Address but can do in a situation that you want the server to bind to a specific address only.</para>
 					</formalpara>
@@ -983,7 +911,6 @@ LIMIT 1000
 	    </formalpara>
 	</listitem>
 
-
 	<listitem id="ini_LiteMode">
 	    <formalpara>
 		<title>LiteMode = 0/1 (default 0)</title>
@@ -997,6 +924,8 @@ LIMIT 1000
                     <listitem>the relevant tables to the above are not created</listitem>
                     <listitem>the index tree maps is set to 8 if no other setting is given</listitem>
                     <listitem>memory reserve is not allocated</listitem>
+                    <listitem>affects DisableTcpSocket. So DisableTcpSocket setting is treated as 1 
+                    	when LiteMode=1, regardless of value in INI file</listitem>
                   </itemizedlist>
 		</para>
 	    </formalpara>
@@ -1022,15 +951,65 @@ lite is 2 in 'normal' mode is 256 by default.
 	<listitem id="ini_DisableTcpSocket">
 	    <formalpara>
 		<title>DisableTcpSocket = 1/0 </title>
-		<para>Disable odbc listen on tcp port, if this given unix socket will always be used.
-In lite mode is 0, thus no tcp listen for sql/odbc connections, can connect
-only via unix socket.
+		<para>Default = 0. If set to 1, disables database listener on TCP port; unix socket must be 
+			used for data access connections (ODBC, JDBC, ADO.NET, OLE DB). When LiteMode=1, 
+			DisableTcpSocket setting in INI file is ignored and treated as if set to 1.
 		</para>
 	    </formalpara>
 	</listitem>
-
-
+	    <listitem id="ini_ExtentReadThreshold">
+	    <formalpara>
+		    <title>ExtentReadThreshold</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+        <para>ExtentReadThreshold parameter gives how many consecutive reads are needed to 
+        trigger this.</para>
+        <para>When is set to 0, this means that anytime a page is read, the whole extent is 
+        read along with it</para>
+        <para>When is set to 1, this means that if the first read is at time <emphasis>t</emphasis> 
+        and the next one at time <emphasis>t1</emphasis> and <emphasis>t1-t</emphasis> &lt; ini_ExtentReadWindow msec, 
+        then 2nd read triggers the speculative read.</para>
+        <para>Default is 2.</para> 
+        <para>Takes effect after the buffer pool is full.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ExtentReadWindow">
+	    <formalpara>
+		    <title>ExtentReadWindow</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+		    <para>ExtentReadWindow parameter gives the time within which the reads must fall.</para>
+		    <para>Default is 1000.</para>
+		    <para>Takes effect after the buffer pool is full.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ExtentReadStartupThreshold">
+	    <formalpara>
+		    <title>ExtentReadStartupThreshold</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+		    <para>ExtentReadStartupThreshold parameter value applies while the server is freshly 
+        started and the buffer pool is not yet full. It can be set to preread more aggressively.</para>
+		    <para>Default is 0.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ExtentReadStartupWindow">
+	    <formalpara>
+		    <title>ExtentReadStartupWindow</title>
+		    <para>Controls speculative read of disk pages. If pages are read in close succession 
+        from an extent of 256 consecutive pages, the system may decide to speculatively read 
+        the entire extent.</para>
+		    <para>ExtentReadStartupWindow parameter value applies while the server is freshly 
+        started and the buffer pool is not yet full. It can be set to preread more aggressively.</para>
+		    <para>Default is 40000.</para>
+	    </formalpara>
+	  </listitem>
           </itemizedlist>
+          <para>Note: The default for startup behavior is to always read full extents and the default for the normal 
+behavior is to trigger preread on the third read inside one second.</para>
 		</sect5>
   <sect5 id="ini_HTTPServer">
 			<title>[HTTPServer]</title>
@@ -1152,6 +1131,18 @@ This is a timeout in seconds before Virtuoso closes an idle HTTP 1.1 connection.
         outside world under any situation.</para>
         </note>
 				</listitem>
+				<listitem id="ini_HTTPServer_HTTPProxyServer">
+            <formalpara>
+        	<title>HTTPProxyServer = proxylocal:3128</title>
+        	<para>HTTP proxy server name and port</para>
+            </formalpara>
+        </listitem>
+        <listitem id="ini_HTTPServer_HTTPProxyExceptions">
+            <formalpara>
+        	<title>HTTPProxyExceptions = localhost:8890, 127.0.0.1:8890</title>
+        	<para>HTTP proxy exceptions name and port.</para>
+            </formalpara>
+        </listitem>   
                                 <listitem id="ini_HTTPServer_HTTPLogFile">
 				<formalpara><title>HTTPLogFile = log.out</title>
 <para>If specified, Virtuoso will produce an HTTP server log file with the date
@@ -1263,11 +1254,14 @@ then the service will be disabled.</para>
 						<para>Whether the server will require X509 certificates from the browsers.</para>
 					</formalpara>
  <simplelist>
-  <member><emphasis>X509ClientVerify = 0</emphasis> - do not ask</member>
+  <member><emphasis>X509ClientVerify = 0</emphasis> - no certificate verification required</member>
   <member><emphasis>X509ClientVerify = 1</emphasis> - ask for trusted certificates</member>
-  <member><emphasis>X509ClientVerify = 2</emphasis> - optionally ask, if certificate is given will be verified</member>
-  <member><emphasis>X509ClientVerify = 3</emphasis> - accept optionally any certificate even self-signed</member>
+  <member><emphasis>X509ClientVerify = 2</emphasis> - optionally ask for trusted certificates, if trusted certificate is presented it will be verified</member>
+  <member><emphasis>X509ClientVerify = 3</emphasis> - optionally accept any certificate including self-signed certificates</member>
  </simplelist>
+  <tip><title>See Also:</title>
+    <para><link linkend="secureodbcx509foafsll">WebID Protocol ODBC Login</link></para>
+  </tip>
 				</listitem>
 				<listitem id="ini_HTTPServer_X509ClientVerifyDepth">
 					<formalpara>
@@ -1456,6 +1450,14 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 	<para>This controls processing of the "query-uri" parameter of the SPARQL query protocol webservice, means enable 1 or prohibited 0.</para>
     </formalpara>
 </listitem>
+<listitem id="ini_MinExpiration">
+    <formalpara>
+	<title>MinExpiration = 86400</title>
+	<para>Sponger caching parameter in seconds. It will cause sponger to use this value as minimal 
+		expiration of the pages, which would help in cases where source document's server do not 
+		report expiration or it reports no caching at all.</para>
+    </formalpara>
+</listitem>
 <listitem id="ini_MaxCacheExpiration">
     <formalpara>
 	<title>MaxCacheExpiration = 1</title>
@@ -1551,6 +1553,35 @@ impractical in all cases.
 		<sect5 id="ini_I18N">
                   <title>[I18N]</title>
                   <itemizedlist>
+                  	
+                  	<listitem id="ini_I18N_XAnyNormalization">
+                      <formalpara>
+                        <title>WideFileNames = 1/2/3/0</title>
+                        <para>0: default value. It means not to normalize anything, so for ex. 
+                        	"José" and "Jose" are two distinct words.</para>
+                        <para>1: Any pair of base char and combinig char (NSM, non-spacing
+modifier) is replaced with a single combined char, so if character "é" is written as a sequence 
+of "base" character "e" and a unicode char U +301 ("combining acute accent") then the pair will 
+be replaced with single U+00E9 ("latin small letter e acute").
+</para>
+                        <para>2: Any combined char is converted to its (smallest known) base. So
+"é" will lose its accent and become plain old ASCII "e".
+</para>
+                        <para>3: This is equl to 1|2 and when set then performs both conversions. 
+As a result, pair of base char and combinig char loses its second char and chars with accents will lose
+accents.</para>
+                        <para>If the parameter is required at all, the needed value is probably 3. 
+So the fragment of virtuoso.ini should be:</para>
+<programlisting><![CDATA[
+[I18N]
+XAnyNormalization=3	
+]]></programlisting>                        
+  <tip><title>See Also:</title>
+    <para><link linkend="virtuosotipsandtrickscontrolunicode3">How Can I Control the normalization of UNICODE3 accented chars in free-text index?</link></para>
+  </tip>
+                      </formalpara>
+                    </listitem>
+                    
                     <listitem id="ini_I18N_WideFileNames">
                       <formalpara>
                         <title>WideFileNames = 1/0</title>
@@ -2624,6 +2655,10 @@ where the remote is not available. It is SYNCING if a resync is in
 progress, IN SYNC if the account is up to date or REMOTE DISCONNECTED if
 there was a connection to a remote party which subsequently disconnected.
 </para>
+
+  <tip><title>See Also:</title>
+    <para><link linkend="rdfgraphreplication">RDF Graph Replication</link></para>
+  </tip>
 		</sect4>
 		<sect4 id="indexusage">
 			<title>Index Usage</title>
@@ -2922,7 +2957,7 @@ The following functions are restricted by file Access Control Lists (ACL) in the
 
 &usermodel;
 
-&vad;
+&vaddistr;
 
 &backups;
 

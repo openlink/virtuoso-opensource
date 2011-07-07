@@ -19,6 +19,31 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
+function setFooter() {
+  if ($('ab_main')) {
+    var wDims = OAT.Dom.getViewport()
+    var hDims = OAT.Dom.getWH('FT')
+    var cPos = OAT.Dom.position('ab_main')
+    $('ab_main').style.height = (wDims[1] - hDims[1] - cPos[1] - 20) + 'px';
+  }
+}
+
+function urlParam(fldName)
+{
+  var obj = document.forms[0].elements[fldName];
+  if (obj && obj.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(obj.value);
+
+  return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function myPost(frm_name, fld_name, fld_value) {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
@@ -41,6 +66,19 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   if (f3Name)
     createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
+}
+
+function odsPost(obj, fields, button) {
+  var form = getParent (obj, 'form');
+  var formName = form.name;
+  for (var i = 0; i < fields.length; i += 2)
+    createHidden(formName, fields[i], fields[i+1]);
+
+  if (button) {
+    doPost(formName, button);
+  } else {
+    form.submit();
+  }
 }
 
 function toolbarPost(fValue) {
@@ -147,12 +185,6 @@ function submitEnter(myForm, myButton, e) {
   return true;
 }
 
-function getObject(id) {
-  if (document.all)
-    return document.all[id];
-  return document.getElementById(id);
-}
-
 function getParent(obj, tag) {
   var obj = obj.parentNode;
   if (obj.tagName.toLowerCase() == tag)
@@ -184,41 +216,22 @@ function enableToolbars(objForm, prefix) {
   enableElement('tbDelete', 'tbDelete_gray', oCount>0);
 }
 
-function enableElement(id, id_gray, idFlag) {
-  var mode = 'block';
-  var element = document.getElementById(id);
-  if (element != null) {
-    if (idFlag) {
-      element.style.display = 'block';
-      mode = 'none';
+function enableElement(id, id_gray, showFlag) {
+  if (showFlag) {
+    OAT.Dom.show(id);
+    if ($(id))
+      OAT.Dom.hide(id_gray);
     } else {
-      element.style.display = 'none';
-      mode = 'block';
-    }
-  }
-  element = document.getElementById(id_gray);
-  if (element != null)
-    element.style.display = mode;
+    OAT.Dom.hide(id);
+    OAT.Dom.show(id_gray);
 }
-
-function showCell(cell) {
-  var c = getObject (cell);
-  if ((c) && (c.style.display == "none"))
-    c.style.display = "";
-}
-
-function hideCell(cell) {
-  var c = getObject(cell);
-  if ((c) && (c.style.display != "none"))
-    c.style.display = "none";
 }
 
 function selectAllCheckboxes (obj, prefix) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
-		if (o != null && o.type == "checkbox" && !o.disabled
-				&& o.name.indexOf(prefix) != -1) {
+		if (o && o.type == "checkbox" && !o.disabled && o.name.indexOf(prefix) != -1) {
       if (obj.value == 'Select All')
         o.checked = true;
       else
@@ -238,8 +251,7 @@ function anySelected (form, txt, selectionMsq) {
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
-			if (obj != null && obj.type == "checkbox"
-					&& obj.name.indexOf(txt) != -1 && obj.checked)
+			if (obj && obj.type == "checkbox" && obj.name.indexOf(txt) != -1 && obj.checked)
         return true;
     }
     if (selectionMsq != null)
@@ -273,36 +285,9 @@ function showTag(tag) {
   parent.document.forms['F1'].submit();
 }
 
-//
-// sortSelect(select_object)
-//   Pass this function a SELECT object and the options will be sorted
-//   by their text (display) values
-//
-function sortSelect(box) {
-  var o = new Array();
-  for (var i=0; i<box.options.length; i++)
-		o[o.length] = new Option(box.options[i].text, box.options[i].value,
-				box.options[i].defaultSelected, box.options[i].selected);
-
-  if (o.length==0)
-    return;
-
-  o = o.sort(function(a,b) {
-		if ((a.text + "") < (b.text + "")) {
-			return -1;
-		}
-		if ((a.text + "") > (b.text + "")) {
-			return 1;
-                           }
-		return 0;
-	});
-
-  for (var i=0; i<o.length; i++)
-		box.options[i] = new Option(o[i].text, o[i].value,
-				o[i].defaultSelected, o[i].selected);
-}
-
 function showTab(tabs, tabsCount, tabNo) {
+	if (tabNo == null) { tabNo = $v('tabNo'); }
+	if (tabNo == null) { tabNo = 0; }
 	if ($(tabs)) {
 		for ( var i = 0; i < tabsCount; i++) {
       var l = $(tabs+'_tab_'+i);      // tab labels
@@ -323,95 +308,23 @@ function showTab(tabs, tabsCount, tabNo) {
   }
 }
 
-function windowShow(sPage, width, height) {
-  if (width == null)
-    width = 500;
-  if (height == null)
-    height = 420;
-	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value
-			+ '&realm=' + document.forms[0].elements['realm'].value;
-	win = window.open(sPage, null, "width=" + width + ",height=" + height
-			+ ", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+function windowShow(sPage, sPageName, width, height) {
+	if (width == null)
+		width = 700;
+	if (height == null)
+		height = 500;
+  if (sPage.indexOf('form=') == -1)
+    sPage += '&form=F1';
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
 
-function rowSelect(obj) {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
-
-  var s2 = (obj.name).replace('b1', 's2');
-  var s1 = (obj.name).replace('b1', 's1');
-
-  var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
-  var myArray;
-  while(true) {
-    myArray = myRe.exec(params);
-    if (myArray == undefined)
-      break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
-          if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s1],
-									singleMode, submitMode);
-          if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s2],
-									singleMode, submitMode);
-        }
-    if (myArray.length < 4)
-      break;
-    params = '' + myArray[3];
-  }
-  if (submitMode) {
-    window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
-  }
-  if (closeMode)
-    window.close();
-}
-
-function rowSelectValue(dstField, srcField, singleMode) {
-	if (singleMode) {
-    dstField.value = srcField.value;
-  } else {
-    dstField.value = AB.trim(dstField.value);
-    dstField.value = AB.trim(dstField.value, ',');
-    dstField.value = AB.trim(dstField.value);
-		if (dstField.value.indexOf(srcField.value) == -1) {
-			if (dstField.value == '') {
-        dstField.value = srcField.value;
-      } else {
-        dstField.value = dstField.value + ',' + srcField.value;
-      }
-    }
-  }
-}
-
 function createHidden(frm_name, fld_name, fld_value) {
-  var hidden;
-
-  createHidden2(document, frm_name, fld_name, fld_value);
+	return createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 function createHidden2(doc, frm_name, fld_name, fld_value) {
@@ -428,6 +341,7 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
     }
     hidden.value = fld_value;
   }
+	return hidden;
 }
 
 function changeExportName(fld_name, from, to) {
@@ -459,58 +373,6 @@ function updateChecked(obj, objName) {
   objForm.s1.value = AB.trim(objForm.s1.value, ',');
 }
 
-function addChecked(form, txt, selectionMsq) {
-  if (!anySelected (form, txt, selectionMsq, 'confirm'))
-    return;
-
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
-
-  var s1 = 's1';
-  var s2 = 's2';
-
-  var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
-  var myArray;
-  while(true) {
-    myArray = myRe.exec(params);
-    if (myArray == undefined)
-      break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
-          if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s1],
-									singleMode, submitMode);
-          if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s2],
-									singleMode, submitMode);
-        }
-    if (myArray.length < 4)
-      break;
-    params = '' + myArray[3];
-  }
-  if (submitMode)
-    window.opener.document.F1.submit();
-  window.close();
-}
-
 function addTag(tag, objName) {
   var obj = document.F1.elements[objName];
   obj.value = AB.trim(obj.value);
@@ -525,6 +387,7 @@ function addTag(tag, objName) {
     obj.value = (obj.value).replace(tag+',', '');
   }
   obj.value = AB.trim(obj.value, ',');
+	return false;
 }
 
 function addCheckedTags(openerName, checkName) {
@@ -554,13 +417,13 @@ function addCheckedTags(openerName, checkName) {
 }
 
 function changeType(obj) {
-  showTab(1, 4); 
+	showTab('a', 7, 1);
   if (obj.value != "1") {
-    OAT.Dom.show ('a_tab_1');
     OAT.Dom.show ('a_tab_2');
+		OAT.Dom.show('a_tab_3');
   } else {
-    OAT.Dom.hide ('a_tab_1');
     OAT.Dom.hide ('a_tab_2');
+		OAT.Dom.hide('a_tab_3');
 }
 	var trNodes = document.getElementsByTagName("tr");
 
@@ -675,16 +538,14 @@ function updateGeodata(mode) {
   		}
   	}
 	}
-	OAT.AJAX.GET(S, '', function(arg) {
-		cb(arg, mode);
-	}, {});
+	OAT.AJAX.GET(S, '', function(arg) {cb(arg, mode);});
 }
 
 function davBrowse(fld) {
-	var options = {
-		mode : 'browser',
-		onConfirmClick : function(path, fname) {$(fld).value = path + fname;}
-                };
+  var options = {
+    mode: 'browser',
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
+  };
   OAT.WebDav.open(options);
 }
 
@@ -746,14 +607,170 @@ function destinationChange(obj, actions) {
   }
 }
 
-var AB = new Object();
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
 
-AB.trim = function(sString, sChar) {
+// progress bar
+var progressTimer = null;
+var progressPollTimer = null;
+var progressID = null;
+var progressMax = null;
+var progressSize = 40;
+var progressInc = 100 / progressSize;
 
-	if (sString) {
-		if (sChar == null) {
-      sChar = ' ';
+function stopState()
+{
+  progressTimer = null;
+  var x = function (data) {
+    doPost ('F1', 'btn_Background');
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=stop&id="+progressID+urlParam("sid")+urlParam("realm"), x, {async: false});
+}
+
+function initState()
+{
+  progressTimer = null;
+  var x = function (data) {
+    try {
+      var xml = OAT.Xml.createXmlDoc(data);
+      progressID = OAT.Xml.textValue(xml.getElementsByTagName('id')[0]);
+    } catch (e) {}
+
+    createProgressBar();
+    progressTimer = setTimeout("checkState()", 500);
+
+    document.forms['F1'].action = 'home.vspx';
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=init"+urlParam("sid")+urlParam("realm")+urlParam("i_type")+urlParam("i_data")+urlParam("i_options")+urlParam("i_validation"), x, {async: false});
+}
+
+function checkState()
+{
+  var x = function (data) {
+    var progressIndex;
+    try {
+      var xml = OAT.Xml.createXmlDoc(data);
+      progressIndex = OAT.Xml.textValue(xml.getElementsByTagName('index')[0]);
+    } catch (e) { }
+
+    showProgress (progressIndex);
+
+    if ((progressIndex != null) && (progressIndex != progressMax)) {
+      setTimeout("checkState()", 500);
+      if (!progressPollTimer) {
+        var progressPoll = xml.getElementsByTagName('poll')[0];
+        if (progressPoll) {
+          var progressPollAction = OAT.Xml.textValue(progressPoll.getElementsByTagName('action')[0]);
+          if (progressPollAction == 'ask') {
+            progressPollTimer = setTimeout("checkPollState()", 2000);
+            var progressPollData = OAT.Xml.textValue(progressPoll.getElementsByTagName('data')[0]);
+            if (!askDialog) {
+              askDialog = new OAT.Dialog("Select action", "askDiv", {width:400, resize:0, buttons: 1, modal:1});
+              OAT.Dom.show('askDiv');
+            }
+            OAT.MSG.attach(askDialog, "DIALOG_OK", function() {
+              askDialog.hide();
+              var pollValue = '';
+              if ($('i_ask_0').checked)
+                pollValue = 'answer:merge';
+              if ($('i_ask_1').checked)
+                pollValue = 'answer:override';
+              if ($('i_ask_2').checked)
+                pollValue = 'answer:skip';
+              OAT.AJAX.POST('ajax.vsp', "a=load&sa=poll&id="+progressID+'&value='+pollValue+urlParam("sid")+urlParam("realm"), function(){});
+              progressPollTimer = null;
+              askprogressPollTimer = null;
+            });
+            $('askDiv_data').innerHTML = progressPollData;
+            askDialog.show();
+          }
+        }
+      }
+    } else {
+      progressTimer = null;
+      progressPollTimer = null;
+      $('btn_Stop').click();
     }
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParam("sid")+urlParam("realm"), x);
+}
+
+function checkPollState()
+{
+  var x = function (data) {
+    if (progressTimer && progressPollTimer)
+      setTimeout("checkPollState()", 2000);
+  }
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=poll&id="+progressID+urlParam("sid")+urlParam("realm"), x);
+}
+
+function createProgressBar()
+{
+  progressMax = $('progressMax').innerHTML;
+  var centerCellName;
+  var tableText = "";
+  var tdText = "";
+  for (x = 0; x < progressSize; x++) {
+    if (progressMax != null) {
+      if (x == (progressSize/2))
+        centerCellName = "progress_" + x;
+    }
+    tableText += "<td id=\"progress_" + x + "\" width=\"" + progressInc + "%\" height=\"20\" bgcolor=\"blue\" />";
+  }
+  var idiv = $("progressText");
+  if (idiv)
+    idiv.innerHTML = "Imported 0 contacts from " + progressMax;
+  var idiv = $("progressBar");
+  if (idiv)
+    idiv.innerHTML = "<table with=\"200\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr>" + tableText + "</tr></table>";
+  centerCell = $(centerCellName);
+}
+
+function showProgress (progressIndex)
+{
+  if (!progressMax)
+    return;
+
+  if (!progressIndex)
+    progressIndex = progressMax;
+
+  var idiv = $("progressText");
+  if (idiv)
+    idiv.innerHTML = "Imported " + progressIndex + " contacts from " + progressMax;
+  var percentage = 100;
+  if (progressMax != 0)
+    percentage = Math.round (progressIndex * 100 / progressMax);
+  var percentageText = "";
+  if (percentage < 10)
+  {
+    percentageText = "&nbsp;" + percentage;
+  } else {
+    percentageText = percentage;
+  }
+  centerCell.innerHTML = "<font color=\"white\">" + percentageText + "%</font>";
+  for (x = 0; x < progressSize; x++)
+  {
+    var cell = $("progress_" + x);
+    if ((cell) && (percentage/x < progressInc))
+    {
+      cell.style.backgroundColor = "blue";
+    } else {
+      cell.style.backgroundColor = "red";
+    }
+  }
+}
+
+var AB = new Object();
+AB.trim = function(sString, sChar) {
+	if (sString) {
+		if (!sChar)
+      sChar = ' ';
+
 		while (sString.substring(0, 1) == sChar) {
       sString = sString.substring(1, sString.length);
     }
@@ -765,7 +782,7 @@ AB.trim = function(sString, sChar) {
 }
 
 AB.getFOAFData = function(iri) {
-  var S = '/ods/api/user.getFOAFData?foafIRI='+encodeURIComponent(iri);
+	var S = '/ods/api/user.getFOAFData?spongerMode=1&foafIRI=' + encodeURIComponent(iri);
   var x = function(data) {
     var o = null;
     try {
@@ -774,9 +791,10 @@ AB.getFOAFData = function(iri) {
 			o = null;
 		}
 		if (o && o.iri) {
-			if (confirm('New data for \'' + o.iri + '\' is founded. Do you like to fill in the corresponding fields?')) {
+			if (confirm('New data for \'' + o.iri + '\' is founded. Would you like to import discovered data into the corresponding contact details fields?')) {
+				AB.setFOAFValue(o.personalProfileDocument, 'ab_foaf');
         AB.setFOAFValue(o.iri, 'ab_iri');
-				AB.setFOAFValue(o.nickName, 'ab_name');
+				AB.setFOAFValue(o.nick, 'ab_name');
 				AB.setFOAFValue(o.title, 'ab_title');
         AB.setFOAFValue(o.name, 'ab_fullName');
         AB.setFOAFValue(o.firstName, 'ab_fName');
@@ -807,27 +825,23 @@ AB.getFOAFData = function(iri) {
         }
         // intersts
 				if (o.interest) {
-          var S = o.interest.split ("\n");
-					for ( var i = 0; i < S.length; i++) {
-            var T = S[i].split(";");
-						if (T.length > 0 && T[0].length > 0) {
-              if (T.length == 1)
-                T.push('');
-							TBL.createRow('a', null, {
-								fld1 : {
-								  mode : 0,
-									value : T[0],
-									className : '_validate_ _url_',
-									onBlur : function() {
-										AB.validateField(this);
-									}
-								},
-								fld2 : {
-								  mode : 0,
-									value : T[1]
-								}
-							});
+					for (var i = 0; i < o.interest.length; i++) {
+						TBL.createRow('a',
+						              null,
+						              {fld_1 : {value: o.interest[i].value, className: '_validate_ _url_', onBlur: function() {validateField(this);}},
+								           fld_2 : {value: o.interest[i].label}
+								          }
+								         );
+					}
+				}
+				if (o.knows) {
+					for (var i = 0; i < o.knows.length; i++) {
+						TBL.createRow('b',
+						              null,
+                          {fld_1: {mode: 20, value: 'foaf:knows', className: "_validate_"},
+                           fld_2: {value: o.knows[i].value, className: "_validate_ _uri_"}
       }
+                         );
     }
   }
       }
@@ -835,14 +849,7 @@ AB.getFOAFData = function(iri) {
       alert('No data founded for \''+iri+'\'');
     }
   }
-	OAT.AJAX.GET(S, '', x, {
-		onstart : function() {
-			OAT.Dom.show('ab_import_image')
-		},
-		onend : function() {
-			OAT.Dom.hide('ab_import_image')
-		}
-	});
+	OAT.AJAX.GET(S, '', x, {onstart : function() {OAT.Dom.show('ab_import_image')}, onend : function() {OAT.Dom.hide('ab_import_image')}});
 }
 
 AB.setFOAFValue = function(fValue, fName) {
@@ -869,11 +876,12 @@ AB.aboutDialog = function() {
 	}
 	aboutDiv = OAT.Dom.create('div', {
 		width : '430px',
-		height : '150px'
+    height: '170px',
+    overflow: 'hidden'
 	});
   aboutDiv.id = 'aboutDiv';
 	aboutDialog = new OAT.Dialog('About ODS AddressBook', aboutDiv, {
-		width : 430,
+		width : 445,
 		buttons : 0,
 		resize : 0,
 		modal : 1
@@ -891,10 +899,8 @@ AB.aboutDialog = function() {
   }
 	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
 		type : OAT.AJAX.TYPE_TEXT,
-		onstart : function() {
-		},
-		onerror : function() {
-		}
+		onstart : function() {},
+		onerror : function() {}
 	});
 }
 
@@ -916,56 +922,4 @@ AB.getFileName = function(from, to) {
     S = S.substr(0, N);
   }
   to.value = S;
-}
-
-AB.validateError = function(fld, msg) {
-  alert(msg);
-	setTimeout(function() {
-		fld.focus();
-	}, 1);
-  return false;
-}
-
-AB.validateMail = function(fld) {
-  if ((fld.value.length == 0) || (fld.value.length > 40))
-		return AB.validateError(fld,
-				'E-mail address cannot be empty or longer then 40 chars');
-
-  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value))
-    return AB.validateError(fld, 'Invalid E-mail address');
-
-  return true;
-}
-
-AB.validateURL = function(fld) {
-  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  if (!regex.test(fld.value))
-    return AB.validateError(fld, 'Invalid URL address');
-
-  return true;
-}
-
-AB.validateField = function(fld) {
-  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
-    return true;
-  if (OAT.Dom.isClass(fld, '_mail_'))
-    return AB.validateMail(fld);
-  if (OAT.Dom.isClass(fld, '_url_'))
-    return AB.validateURL(fld);
-  return true;
-}
-
-AB.validateInputs = function(fld) {
-  var retValue = true;
-  var form = fld.form;
-	for (i = 0; i < form.elements.length; i++) {
-    var fld = form.elements[i];
-		if (OAT.Dom.isClass(fld, '_validate_')) {
-      retValue = AB.validateField(fld);
-      if (!retValue)
-        return retValue;
-    }
-  }
-  return retValue;
 }

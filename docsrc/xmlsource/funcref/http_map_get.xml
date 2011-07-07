@@ -38,13 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_http_map_get"><title>Parameters</title>
-    <refsect2><title>element_name</title>
-      <para>The possible values for element_name are: 'vsp_uid', 'soap_uid', 'persist_ses_vars',
-      'default_page', 'browseable', 'security_level' , 'auth_opts', 'soap_opts', 'domain',
-      'mounted'.</para>
-    </refsect2>
-  </refsect1>
   <refsect1 id="desc_http_map_get"><title>Description</title>
     <para>
     Retrieves information associated with the virtual host / HTTP path mapping in
@@ -53,6 +46,13 @@
     in current connection or URL context may be retrieved by <parameter>element_name</parameter>.</para>
     <para>Calling <function>http_map_get</function> has no use outside of http context. In this case an
     error will be signalled.</para>
+  </refsect1>
+  <refsect1 id="params_http_map_get"><title>Parameters</title>
+    <refsect2><title>element_name</title>
+      <para>The possible values for element_name are: 'vsp_uid', 'soap_uid', 'persist_ses_vars',
+      'default_page', 'browseable', 'security_level' , 'auth_opts', 'soap_opts', 'domain',
+      'mounted'.</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="ret_http_map_get"><title>Return Types</title>
     <para>Value returned depends of <parameter>element_name</parameter>:</para>

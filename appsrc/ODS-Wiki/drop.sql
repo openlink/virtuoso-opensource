@@ -109,7 +109,17 @@ WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextSparql_AI');
 WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextSparql_AU');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.Wiki_TopicTextSparql_AI');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.Wiki_TopicTextSparql_AU');
+
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.WIKI_SYS_DAV_PROP_AI');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.WIKI_SYS_DAV_PROP_BU');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.WIKI_SYS_DAV_PROP_BD');
+
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.WIKI_SYS_DAV_RES_AI');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.WIKI_SYS_DAV_RES_AU');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.WIKI_SYS_DAV_RES_BD');
+
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.SYS_USERS_WIKI_USERS_U');
+
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP_OPEN');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP_CLOSE');
@@ -171,7 +181,9 @@ DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix');
 DB.DBA.VHOST_REMOVE(lpath=>'/wikiview');
 DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview');
 
+-- Registry
 registry_remove('wiki default uri');
+registry_remove('wiki_services_update');
 
 -- NNTP
 DROP procedure DB.DBA.oWiki_NEWS_MSG_I;

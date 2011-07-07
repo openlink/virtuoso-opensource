@@ -58,6 +58,7 @@
 #include "shuric.h"
 #include "srvstat.h"
 #include "sqloinv.h"
+#include "uname_const_decl.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -79,8 +80,10 @@
 int mode_pass_change;
 
 int in_srv_global_init = 0;
-int sparql_inited = 0;
 
+int it_n_maps = 256;
+int rdf_obj_ft_rules_size;
+extern int disable_listen_on_tcp_sock;
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
@@ -349,7 +352,7 @@ lt_leave (lock_trx_t * lt)
 #endif
     )
     {
-      rdbg_printf (("Trx T=%ld close ach in lt_leave\n", TRX_NO (lt)));
+      rdbg_printf (("Trx T=%ld close ack in lt_leave\n", TRX_NO (lt)));
       lt_ack_close (lt);
     }
 
@@ -381,7 +384,7 @@ void
 cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
     lock_trx_t * this_trx_only)
 {
-  /* Kiull cursors of this client except the one <except.
+  /* Kill cursors of this client except the one <except.
    * If this_trx_only is non-NULL, only kill cursors of that transaction */
   int rc;
   id_hash_iterator_t it;
@@ -643,6 +646,12 @@ client_connection_free (client_connection_t * cli)
   LEAVE_TXN;
 #endif
   dk_free_tree (cli->cli_info);
+  if (NULL != cli->cli_ns_2dict)
+    {
+      xml_ns_2dict_clean (cli->cli_ns_2dict);
+      dk_free (cli->cli_ns_2dict, sizeof (xml_ns_2dict_t));
+      cli->cli_ns_2dict = NULL;
+    }
   dk_free ((caddr_t) cli, sizeof (client_connection_t));
 }
 
@@ -874,7 +883,8 @@ srv_client_connection_died (client_connection_t *cli)
 	  cli, cli->cli_tp_data->cli_trx_type,
 	  cli->cli_tp_data->cli_tp_enlisted));
 
-      if (cli->cli_tp_data->cli_trx_type == TP_XA_TYPE ||
+      /* xa or mts transaction is prepared, keep it live */
+      if ((cli->cli_tp_data->cli_trx_type == TP_XA_TYPE && lt->lt_2pc._2pc_wait_commit) ||
 	  (cli->cli_tp_data->cli_trx_type == TP_MTS_TYPE && cli->cli_tp_data->cli_tp_enlisted == CONNECTION_PREPARED))
 	{
 	  lt_log_debug (("srv_client_connection_died %p enlisted=%d : deferred", cli, cli->cli_tp_data->cli_tp_enlisted));
@@ -883,6 +893,13 @@ srv_client_connection_died (client_connection_t *cli)
 	  cli->cli_session = NULL;
 	  LEAVE_TXN;
 	  return;
+	}
+      /* client connection died before prepare, remove xid */
+      if (cli->cli_tp_data->cli_trx_type == TP_XA_TYPE && !lt->lt_2pc._2pc_wait_commit)
+	{
+	  tp_data_free (cli->cli_tp_data);
+	  cli->cli_tp_data = NULL;
+	  virt_xa_remove_xid (lt->lt_2pc._2pc_xid);
 	}
       lt_log_debug (("srv_client_connection_died cli=%p : done", cli));
     }
@@ -1023,7 +1040,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
     }
 
   /* check if the client is of the right version */
-  if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) < 2303)
+  if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) < 2303) /* was 3104 */
     {
       if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) >= 1619)
 	{
@@ -1201,6 +1218,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
   if (prpc_forced_fixed_thread)
     PrpcFixedServerThread ();
 
+  dk_free_tree ((caddr_t) info);
   srv_add_login (cli);
   return ret;
 }
@@ -1641,7 +1659,7 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
 	cursor_name, params, current_ofs, options))
     {
       err = srv_make_new_error ("41000", "SR344", "Malformed RPC");
-      goto report_error;
+      goto report_rpc_format_error;
     }
 
   stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
@@ -1665,6 +1683,7 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       err = srv_make_new_error ("S1010", "SR210", "Async exec busy");
 report_error:
       mutex_leave (cli->cli_mtx);
+    report_rpc_format_error:
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
 
@@ -1843,34 +1862,41 @@ report_error:
       log_info ("EXEC_1 %s %s %s %s Exec %d time(s) %.*s", user, from, peer, stmt->sst_id,
 	  n_params, LOG_PRINT_STR_L, stmt->sst_query->qr_text ? ((stmt->sst_query->qr_text[0] == -35) ? "" : stmt->sst_query->qr_text) :"");
     }
-
-  for (inx = 0; inx < n_params; inx++)
+  if (!stmt->sst_query->qr_select_node && !stmt->sst_query->qr_is_call)
     {
-      caddr_t *par = (caddr_t *) params[inx];
-      params[inx] = NULL;
-
-      if (!first_set)
+      err = qr_dml_array_exec (cli, stmt->sst_query, CALLER_CLIENT,
+			       cursor_name ? box_string (cursor_name) : NULL,
+			       stmt, (caddr_t**)params, options);
+      dk_free_tree (err);
+    }
+  else
+    {
+      for (inx = 0; inx < n_params; inx++)
 	{
-	  mutex_enter (cli->cli_mtx);
-	}
-      first_set = 0;
+	  caddr_t *par = (caddr_t *) params[inx];
+	  params[inx] = NULL;
 
-      err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
-	  cursor_name ? box_string (cursor_name) : NULL,
-	  stmt, NULL, par, options, 0);
-      dk_free_box ((caddr_t) par);
-      ASSERT_OUTSIDE_MTX (cli->cli_mtx);
-      if (err != (caddr_t) SQL_SUCCESS)
-	{
-	  dk_free_tree (err);
-	  break;
-	}
+	  if (!first_set)
+	    {
+	      mutex_enter (cli->cli_mtx);
+	    }
+	  first_set = 0;
+	  err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
+			 cursor_name ? box_string (cursor_name) : NULL,
+			 stmt, NULL, par, options, 0);
+	  dk_free_box ((caddr_t) par);
+	  ASSERT_OUTSIDE_MTX (cli->cli_mtx);
+	  if (err != (caddr_t) SQL_SUCCESS)
+	    {
+	      dk_free_tree (err);
+	      break;
+	    }
       else
 	sql_warnings_send_to_cli ();
-      stmt->sst_parms_processed = inx;
-
+	  stmt->sst_parms_processed = inx;
+	}
+      dk_free_tree ((caddr_t) params);
     }
-
   if (n_params == 0)
     mutex_leave (cli->cli_mtx);
   thrs_printf ((thrs_fo, "ses %p thr:%p in execute4\n", client, THREAD_CURRENT_THREAD));
@@ -1884,7 +1910,6 @@ report_error:
   dk_free_tree (cursor_name);
   stmt->sst_param_array = NULL;
   dk_free_tree ((caddr_t) options);
-  dk_free_tree ((caddr_t) params);
   if (DK_MEM_RESERVE)
     {
       IN_CLIENT (cli);
@@ -2328,7 +2353,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
       if (qi->qi_threads > 1)
 	{
 	  du_thread_t *self = THREAD_CURRENT_THREAD;
-	  cli->cli_terminate_requested = 1;
+	  cli->cli_terminate_requested = CLI_TERMINATE;
 	  qi->qi_threads--;
 	  qi->qi_thread_waiting_termination = self;
 	  dbg_printf (("sf_sql_free_stmt going to wait for termination\n"));
@@ -2378,6 +2403,7 @@ CLI_WRAPPER (sf_sql_free_stmt, (caddr_t stmt_id, int op), (stmt_id, op))
 #define sf_sql_free_stmt sf_sql_free_stmt_w
 #endif
 
+/* in case of rollback don't report txn error as txn is already rolledback */
 caddr_t
 cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 {
@@ -2389,13 +2415,14 @@ cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 
   IN_TXN;
   lt = cli->cli_trx;
+  lt_wait_checkpoint ();
 
   lt_threads_inc_inner (lt);
 
   LEAVE_CLIENT (cli);
   rc = lt_close (lt, op);
   /* lt_close leaves the txn mtx */
-  if (rc == LTE_OK)
+  if (rc == LTE_OK || SQL_ROLLBACK == op)
     {
       res = SQL_SUCCESS;
     }
@@ -2665,7 +2692,7 @@ sf_makecp (char *log_name, lock_trx_t *trx, int fail_on_vdb, int shutdown)
 
 
   IN_TXN;
-  dbs_checkpoint (wi_inst.wi_master, log_name, shutdown);
+  dbs_checkpoint (log_name, shutdown);
   LEAVE_TXN;
   if (need_mtx && !shutdown)
     LEAVE_CPT(trx);
@@ -2804,14 +2831,10 @@ sf_shutdown (char *log_name, lock_trx_t * trx)
   shuric_terminate_module ();
   dkbox_terminate_module ();
 
-#if defined (MALLOC_DEBUG)
-  {
-    FILE *fp = fopen ("xmemdump.txt", "at");
-    dbg_malstats (fp ? fp : stderr, DBG_MALSTATS_ALL);
-    if (fp)
-      fclose (fp);
-  }
 #endif
+
+#ifdef MALLOC_DEBUG
+   dbg_dump_mem ();
 #endif
 
   if (db_exit_hook)
@@ -2997,9 +3020,7 @@ sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_i
   key = sch_id_to_key (isp_schema (NULL), bh->bh_key_id);
   if (!key)
     GPF_T1 ("Non-valid key_id in sf_sql_get_data_ac");
-  if (bh->bh_frag_no < 0 || bh->bh_frag_no > BOX_ELEMENTS_INT (key->key_fragments) - 1)
-    GPF_T1 ("Non-valid fragment number in sf_sql_get_data_ac");
-  bh->bh_it = key->key_fragments[bh->bh_frag_no]->kf_it;
+  bh->bh_it = key->key_fragments[0]->kf_it;
   if (LTE_OK != (is_timeout = lt_enter (cli->cli_trx)))
     {
       caddr_t err;
@@ -3033,8 +3054,7 @@ CLI_WRAPPER (sf_sql_get_data_ac,
 #define sf_sql_get_data_ac sf_sql_get_data_ac_w
 #endif
 
-SERVICE_1 (s_sql_no_threads, ssqlnth, "no_threads", DA_FUTURE_REQUEST,
-		DV_SEND_NO_ANSWER, DV_LONG_INT, 1)
+SERVICE_1 (s_sql_no_threads, ssqlnth, "no_threads", DA_FUTURE_REQUEST, DV_SEND_NO_ANSWER, DV_LONG_INT, 1);
 
 #define NO_THREADS_REPORT_PERIOD   10 * 60 /* 10 min */
 
@@ -3170,6 +3190,8 @@ box_flags_serial_test (dk_session_t * ses)
 {
   /* serialize box flags only for clients that are 3029 or newer.  Do not serialize this if going to non-client.  */
   client_connection_t *cli = DKS_DB_DATA (ses);
+  if (ses->dks_cluster_flags & (DKS_TO_CLUSTER | DKS_TO_OBY_KEY | DKS_TO_HA_DISK_ROW))
+    return 1;
   if (!cli)
     return 0;
   if (cli && cli->cli_version < 3029)
@@ -3240,17 +3262,29 @@ wide_serialize_client (caddr_t n, dk_session_t * ses)
 }
 
 
+extern long dbf_cl_blob_autosend_limit;
+
 void
 bh_serialize_to_client (blob_handle_t *bh, dk_session_t *ses)
 {
   client_connection_t *cli = DKS_DB_DATA (ses);
   int is_utf8 = DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE ? 1 : 0;
 
+  if (bh->bh_send_as_bh)
+    {
+      bh_serialize (bh, ses);
+      return;
+    }
   if (!cli && BLOB_NULL_RECEIVED != bh->bh_all_received && !bh->bh_ask_from_client)
     { /* serialize as string when not on the ODBC connection */
       caddr_t obj;
-
       cli = sqlc_client ();
+      if (bh->bh_diskbytes > dbf_cl_blob_autosend_limit && (DKS_TO_CLUSTER & ses->dks_cluster_flags))
+	{
+	  /* for cluster operands  over a limit length, send the bh and have the party ask for the data */
+	  bh_serialize (bh, ses);
+	  return;
+	}
       if (bh->bh_length > MAX_READ_STRING / (is_utf8 ? (2 + sizeof (wchar_t)) : 1))
 	obj = (caddr_t) blob_to_string_output (cli->cli_trx, (caddr_t) bh);
       else
@@ -3354,6 +3388,25 @@ cov_load (void)
 }
 #endif
 
+char * bpel_check_proc =
+"create procedure RESTART_ALL_BPEL_INSTANCES ()\n"
+"{\n"
+"  declare pkgs any;\n"
+"  pkgs := \"VAD\".\"DBA\".\"VAD_GET_PACKAGES\" ();\n"
+"  if (pkgs is not null)\n"
+"    {\n"
+"      declare idx int;\n"
+"      while (idx < length (pkgs))\n"
+"        {\n"
+"          if (pkgs[idx][1] = 'bpel4ws')\n"
+"            {\n"
+"              BPEL..restart_all_instances();\n"
+"            }\n"
+"          idx := idx + 1;\n"
+"        }\n"
+"    }\n"
+"}\n";
+
 #define NO_LITE(f) if (!lite_mode) f ();
 
 void
@@ -3362,8 +3415,8 @@ sql_code_global_init ()
   sqls_define_sys ();
   sqls_define ();
   sqls_define_sparql ();
-  sparql_inited = 1;
-  ddl_read_views (1);
+  if (CL_RUN_LOCAL == cl_run_local_only)
+    sas_ensure ();
   NO_LITE (sqls_define_ddk);
   NO_LITE (sqls_define_repl);
   NO_LITE (sqls_define_ws);
@@ -3376,6 +3429,7 @@ sql_code_global_init ()
   NO_LITE (sqls_define_adm);
 #ifdef VAD
   NO_LITE (sqls_define_vad);
+  ddl_ensure_table ("do this always", bpel_check_proc);
 #endif
   NO_LITE (sqls_define_dbp);
   NO_LITE (sqls_define_uddi);
@@ -3384,7 +3438,7 @@ sql_code_global_init ()
   ddl_sel_for_effect ("select count (*) from DB.DBA.SYS_XPF_EXTENSIONS where xpf_extension (XPE_NAME, XPE_PNAME, 0)");
 #ifdef _SSL
   /* do load of the persisted encryption keys */
-  ddl_sel_for_effect ("select count (*) from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_SQL_ENABLE <> 0 and U_OPTS is not null and USER_KEYS_INIT (U_NAME, U_OPTS)");
+  ddl_sel_for_effect ("select count (*) from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_OPTS is not null and USER_KEYS_INIT (U_NAME, U_OPTS)");
 #endif
 
   qr_dotnet_get_assembly_real = sql_compile ("SELECT VAC_REAL_NAME from DB.DBA.CLR_VAC where VAC_INTERNAL_NAME=?", bootstrap_cli, NULL, 0);
@@ -3395,8 +3449,9 @@ sql_code_global_init ()
 void
 sql_code_arfw_global_init ()
 {
+/*
   ddl_scheduler_arfw_init ();
-
+*/
   sqls_arfw_define_sys ();
   sqls_arfw_define_sparql ();
   sqls_arfw_define ();
@@ -3462,7 +3517,7 @@ sf_sql_cancel_hook (dk_session_t* session, caddr_t _request)
       client_connection_t *cli = DKS_DB_DATA (session);
       if (cli)
 	{
-	  cli->cli_terminate_requested = 1;
+	  cli->cli_terminate_requested = CLI_TERMINATE;
 	  IN_TXN;
 	  if (cli->cli_trx)
 	    lt_kill_waiting_trx (cli->cli_trx, LTE_TIMEOUT);
@@ -3576,12 +3631,41 @@ srv_global_init_clear_table (char *stmt)
 
 
 static void
+srv_global_init_drop ()
+{
+  id_hash_iterator_t hit;
+  char ** tn;
+  caddr_t * piter;id_hash_iterator (&hit, wi_inst.wi_schema->sc_name_to_object[sc_to_table]);
+  while (hit_next (&hit, (caddr_t*)&tn, (caddr_t*)&piter))
+    {
+      id_casemode_entry_llist_t *iter = *(id_casemode_entry_llist_t **)piter;
+      for (iter = iter; iter; iter = iter->next)
+	{
+	  dbe_table_t * tb = (dbe_table_t*)iter->data;
+	  if (tb->tb_primary_key->key_id <= KI_UDT)
+	    continue;
+	  tb_mark_affected (tb->tb_name);
+	  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	    {
+	      it_cursor_t itc_auto;
+	      it_cursor_t * itc = &itc_auto;
+	      ITC_INIT (itc, NULL, bootstrap_cli->cli_trx);
+	      itc_drop_index (itc, key);
+	      itc_free (itc);
+	      key_dropped (key);
+	    }
+	  END_DO_SET();
+	}
+    }
+}
+
+static void
 srv_session_disconnect_action (dk_session_t *ses)
 {
   client_connection_t *cli = DKS_DB_DATA (ses);
   if (cli && ses->dks_to_close)
     {
-      cli->cli_terminate_requested = 1;
+      cli->cli_terminate_requested = CLI_TERMINATE;
       IN_TXN;
       if (cli->cli_trx)
         lt_kill_waiting_trx (cli->cli_trx, LTE_REMOTE_DISCONNECT);
@@ -3589,6 +3673,7 @@ srv_session_disconnect_action (dk_session_t *ses)
     }
 }
 
+void   rdf_key_comp_init ();
 
 void
 srv_global_init (char *mode)
@@ -3623,6 +3708,11 @@ srv_global_init (char *mode)
     {
       log_info ("Starting for DBA password change.");
       mode_pass_change = 1;
+    }
+
+  if (!mode_pass_change)
+    {
+	/*NOTHING*/
     }
 
   srv_pid = getpid ();
@@ -3680,18 +3770,17 @@ srv_global_init (char *mode)
  	}
       return;
     }
-
+  uname_const_decl_init ();
 #ifdef BIF_XML
   html_hash_init ();
 #endif
+  cluster_init ();
 #ifdef PLDBG
   if (lite_mode)
     pl_debug_all = 0;
 #endif
   wi_open (mode);
-  dbs_cpt_recov ();
   sql_bif_init ();
-
   if (lite_mode)
     log_info ("Entering Lite Mode");
 
@@ -3727,8 +3816,10 @@ srv_global_init (char *mode)
     {
       ddl_init_proc ();
     }
-  srv_calculate_sqlo_unit_msec ();
-
+  if (!f_read_from_rebuilt_database)
+    {
+      srv_calculate_sqlo_unit_msec ();
+    }
   the_main_thread = current_process;	/* Used by the_grim_lock_reaper */
 
   sec_init ();
@@ -3769,18 +3860,17 @@ srv_global_init (char *mode)
 	  srv_global_init_clear_table ("delete from DB.DBA.SYS_USER_TYPES");
 	  srv_global_init_clear_table ("delete from DB.DBA.SYS_KEY_SUBKEY");
 	  srv_global_init_clear_table ("delete from DB.DBA.SYS_KEY_FRAGMENTS");
+	  srv_global_init_drop ();
 	  local_commit (bootstrap_cli);
 	}
-
+      sec_users = id_str_hash_create (101);
+      sec_user_by_id = hash_table_allocate (101);
+      sec_new_user (NULL, "dba", "dba");
       if (strchr (mode, 'b'))
 	db_replay_registry_sequences ();
+      else
+	id_hash_clear (registry);
       log_init (wi_inst.wi_master);
-      if (strchr (mode, 'b'))
-	{
-	  sec_users = id_str_hash_create (101);
-	  sec_user_by_id = hash_table_allocate (101);
-	  sec_new_user (NULL, "dba", "dba");
-	}
       local_commit (bootstrap_cli);
       c_checkpoint_interval = 0;
       sf_makecp (sf_make_new_log_name(wi_inst.wi_master), bootstrap_cli->cli_trx, 1, CPT_NORMAL);
@@ -3806,6 +3896,7 @@ srv_global_init (char *mode)
   sparql_init ();
 #endif
   http_init_part_one ();
+  sqlbif_sequence_init ();
   ddl_init_plugin ();
   if (!strchr (mode, 'a'))
     {
@@ -3817,18 +3908,12 @@ srv_global_init (char *mode)
       read_proc_tables (0);
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
-#if REPLICATION_SUPPORT
-      if (!lite_mode)
-	{
-	  repl_init ();
-	  repl_serv_init (0);
-	}
-#endif
     }
   ddl_obackup_init ();
 
   ddl_ensure_stat_tables ();
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, bootstrap_cli);
+  bootstrap_cli->cli_user = sec_id_to_user (U_ID_DBA);
   if (!in_crash_dump)
     sql_code_global_init ();
   /* and a third time to process grants over the sqls_define procs */
@@ -3837,6 +3922,15 @@ srv_global_init (char *mode)
   if (ddl_init_hook)
     ddl_init_hook (bootstrap_cli);
   local_commit (bootstrap_cli);
+  if (!in_crash_dump && !db_exists)
+    {
+      /* if brand new, flush out the basic state so that can reopen without gpf reading the page sets */
+      bootstrap_cli->cli_trx->lt_threads = 0;
+      IN_TXN;
+      dbs_checkpoint ((char *)-1, 0);
+      LEAVE_TXN;
+      bootstrap_cli->cli_trx->lt_threads = 1;
+    }
   if (!f_read_from_rebuilt_database)
     {
       log_init (wi_inst.wi_master);
@@ -3844,7 +3938,7 @@ srv_global_init (char *mode)
   if (strchr (mode, 'r'))
     return;
   sqlc_set_client (bootstrap_cli);
-  if (!in_crash_dump)
+  if (!in_crash_dump && cl_run_local_only == CL_RUN_LOCAL)
     {
       sql_code_arfw_global_init();
     }
@@ -3858,6 +3952,7 @@ srv_global_init (char *mode)
 #endif
   dbev_startup ();
   sqlc_hook_enable = 1;
+  rdf_key_comp_init ();
   if (default_charset_name && !default_charset)
     log_error ("Default charset %.200s not defined. Reverting to ISO-8859-1", default_charset_name);
   if (init_trace)
@@ -3928,13 +4023,22 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 
   caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t),
       DV_ARRAY_OF_POINTER);
-  box[0] = (caddr_t) QA_ERROR;
-  box[1] = box_dv_short_string (code);
-
   va_start (list, msg);
   vsnprintf (temp, 2000, msg, list);
   va_end (list);
   msg_len = (int) strlen (temp);
+
+  if (code[1] == 'Y')
+    virtuoso_sleep (0, 10000);
+
+  {
+    if ('S' == code[0] || '4' == code[0])
+      {
+        at_printf (("Host %d make err %s %s in %s\n", local_cll.cll_this_host, code, temp, cl_thr_stat ()));
+      }
+  }
+  box[0] = (caddr_t) QA_ERROR;
+  box[1] = box_dv_short_string (code);
   if (virt_code)
     {
       box[2] = dk_alloc_box (msg_len + code_len + 3, DV_SHORT_STRING);
@@ -3995,14 +4099,30 @@ srv_make_trx_error (int code, caddr_t detail)
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_SQL_ERROR:
-	  err = srv_make_new_error ("4000X", "SR176",
-	      "Transaction rolled back due to previous SQL error%s%s",
-	      detail ? " : " : "", detail ? detail : "");
-	  break;
+        {
+          du_thread_t *self = THREAD_CURRENT_THREAD;
+          caddr_t *probable_err = (caddr_t *)thr_get_error_code (self);
+          if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (probable_err))
+            probable_err = NULL;
+          if (NULL == probable_err)
+            {
+	      err = srv_make_new_error ("4000X", "SR176",
+	        "Transaction rolled back due to previous SQL error%s%s",
+	        detail ? " : " : "", detail ? detail : "");
+	      break;
+            }
+          else
+            {
+	      err = srv_make_new_error ("4000X", "SR176",
+	        "Transaction rolled back due to previous SQL error %s (((\n%s\n)))%s%s",
+					probable_err[1], probable_err[2], detail ? " : " : "", detail ? detail : "");
+	      break;
+            }
+        }
       case LTE_REMOTE_DISCONNECT:
 	  err = srv_make_new_error ("08U01", "SR324",
 	      "Remote server has disconnected making the transaction "
-	      "uncomittable. Transaction has been rolled back%s%s",
+	      "uncommittable. Transaction has been rolled back%s%s",
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_CHECKPOINT:
@@ -4022,7 +4142,24 @@ srv_make_trx_error (int code, caddr_t detail)
 	      "Transaction aborted because the server is out of memory%s%s",
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
-      default:
+    case LTE_CLUSTER:
+	  err = srv_make_new_error ("08C02", "SR337",
+				    "Transaction aborted due to cluster connection failure");
+	  break;
+    case LTE_CANCEL:
+	  err = srv_make_new_error ("40001", "SR337",
+				    "Transaction aborted due to async rollback in cluster");
+	  break;
+    case LTE_CLUSTER_SYNC:
+	  err = srv_make_new_error ("40007", "CLTSY",
+				    "Transaction not committable because async update branch not synced before commit.  Commit has overtaken the branch message or the branch message was lost by the network");
+	  break;
+    case LTE_PREPARED_NOT_COMMITTED:
+	  err = srv_make_new_error ("40007", "CLPNC",
+				    "Transaction prepared but not committed.  Probably dropped commit message.  The branch will automatically query coordinator for the final status.  The situation will reset itself in a few seconds");
+	  break;
+
+    default:
 	  err = srv_make_new_error ("4000X", "SR177", "Misc Transaction Error%s%s",
 	      detail ? " : " : "", detail ? detail : "");
 	  break;

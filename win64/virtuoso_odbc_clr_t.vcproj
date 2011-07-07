@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="virtuoso_clr_t"
 	ProjectGUID="{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
 	RootNamespace="virtuoso_clr_t"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -73,6 +74,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_clr_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -92,9 +95,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -157,6 +157,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_clr_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -176,9 +178,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -241,6 +240,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_clr_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -260,9 +261,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -327,6 +325,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_clr_t.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -346,9 +346,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -391,6 +388,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath="..\win32\virtuoso_t.rc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="PreBuild"
@@ -452,7 +453,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_clr.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_xslt.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputFileName) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						Outputs="$(InputDir)\sql_code_xslt.c"
 					/>
 				</FileConfiguration>
@@ -470,7 +471,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_clr.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sql_code_xslt.c&#x0D;&#x0A;gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputFileName) &gt; sql_code_xslt.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						Outputs="$(InputDir)\sql_code_xslt.c"
 					/>
 				</FileConfiguration>

@@ -22,30 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="channels" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
+<v:page name="channels" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-      if (self.c_order = columnName and self.c_direction = 'desc')
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      }
-      else if (self.c_order = columnName and self.c_direction = 'asc')
-      {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      }
-      else
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
       if (columnName = '')
@@ -60,11 +38,16 @@
       self.c_order := columnName;
     ]]>
   </v:method>
+
+  <v:method name="pshCheck" arglist="">
+    <![CDATA[
+      return case when ENEWS.WA.pshCheck () and not isnull (self.v_psh) then 1 else 0 end;
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Feeds</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:header>
-      Feeds
-    </vm:header>
+    <vm:header>Feeds</vm:header>
     <vm:variables>
       <v:variable name="c_order" persist="1" type="varchar" default="'EF_TITLE'" />
       <v:variable name="c_direction" persist="1" type="varchar" default="'asc'" />
@@ -83,19 +66,77 @@
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_directory_name" type="varchar" default="''"/>
       <v:variable name="v_directory_id" type="varchar" default="'0'"/>
+      <v:variable name="v_graph" type="varchar" default="''"/>
+      <v:variable name="v_psh" type="varchar" default="null"/>
+      <v:variable name="v_psh_enabled" type="integer" default="1"/>
+      <v:variable name="v_acl" type="varchar" default="null"/>
     </vm:variables>
     <vm:pagebody>
-      <v:template type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
+        ]]>
+      </v:before-render>
+      <v:template name="t1" type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
           <div style="padding: 0 0 0.5em 0;">
-        <v:button action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
+          <v:button name="btn_subscribe" action="simple" value="subscribe" xhtml_class="button" xhtml_alt="Subscribe feed">
               <v:on-post>
                 <![CDATA[
-                  self.vc_redirect('channels_create.vspx');
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx')));
                 ]]>
               </v:on-post>
             </v:button>
+          <v:button name="btn_delete" value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
+            <v:on-post>
+              <![CDATA[
+                declare i integer;
+
+                for (i := 0; i < length(e.ve_params); i := i + 2)
+                {
+                  if (e.ve_params[i] = 'cb_item')
+                  {
+                    declare exit handler for sqlstate '*'
+                    {
+                      rollback work;
+                      goto _next;
+                    };
+                    commit work;
+
+                    ENEWS.WA.channel_delete (e.ve_params[i+1]);
+                  }
+                  _next:;
+                }
+                ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button name="btn_refresh" value="refresh" action="simple" xhtml_onclick="javascript: return anySelected(this.form, \'cb_item\', \'No feeds were selected to be refreshed.\');" xhtml_class="button" xhtml_alt="Refresh selected feed(s)">
+            <v:on-post>
+              <![CDATA[
+                declare i integer;
+
+                for (i := 0; i < length(e.ve_params); i := i + 2)
+                {
+                  if (e.ve_params[i] = 'cb_item')
+                  {
+                    declare exit handler for sqlstate '*'
+                    {
+                      rollback work;
+                      goto _next;
+                    };
+                    commit work;
+
+                     ENEWS.WA.feed_refresh(e.ve_params[i+1]);
+                  }
+                  _next:;
+                }
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
             <div class="menuBar" id="exportBar">
-          <a class="menuButton button2" onMouseDown="return this.blur();" onClick="return menuPopup(this, 'exportMenu');" title="Export Feeds">export</a>
+            <a class="menuButton button2" onMouseDown="return this.blur();" onclick="return menuPopup(this, 'exportMenu');" title="Export Feeds">export</a>
               <div class="menu" id="exportMenu">
                 <?vsp
               http(sprintf('<a class="menuItem" href="%sOFM.ocs" target="_blank" title="%s"><img src="image/%s" border="0" alt="%s"/> %s</a>', ENEWS.WA.dav_url (self.domain_id), 'OCS Export', 'blue-icon-16.gif', 'OCS Export', 'OCS'));
@@ -114,27 +155,22 @@
             control.ds_sql := concat(control.ds_sql, ' order by ', self.c_order, ' ', self.c_direction);
           ]]>
         </v:before-data-bind>
+          <v:after-data-bind>
+            control.ds_make_statistic ();
+          </v:after-data-bind>
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="channels" class="FM_grid" cellspacing="0">
-              <thead class="sortHeader">
+            <table id="channels" class="ODS_grid" cellspacing="0">
+              <thead>
                 <tr>
-                  <th class="checkbox" width="1%">
+                  <th class="checkbox">
                     <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')" title="Select All" />
                   </th>
-                  <th>
-                    <?vsp self.sortColumn('Title', 'EF_TITLE'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Feed URL', 'EF_URI'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Retrieved', 'EF_COUNT'); ?>
-                  </th>
-                  <th width="5%" colspan="2">
-                    <v:label value="Action" format="%s"/>
-                  </th>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Title', 'EF_TITLE', self.c_order, self.c_direction, ' width="50%"')); ?>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Feed URL', 'EF_URI', self.c_order, self.c_direction, ' width="50%"')); ?>
+                  <?vsp http (DB.DBA.wa_show_column_header ('Retrieved', 'EF_COUNT', self.c_order, self.c_direction)); ?>
+                  <th class="action">Action</th>
                 </tr>
               </thead>
             </table>
@@ -144,8 +180,8 @@
 
             <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
-                <tr align="center">
-                  <td colspan="6">No feeds</td>
+                <tr>
+                  <td colspan="5">No feeds</td>
                 </tr>
               </table>
             </v:template>
@@ -153,7 +189,7 @@
             <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
-                  <td align="center">
+                  <td class="checkbox">
                     <?vsp
                       http (sprintf ('<input type="checkbox" name="cb_item" value="%d" title="%V" />', control.te_rowset[0], control.te_rowset[2]));
                     ?>
@@ -167,35 +203,13 @@
                   <td align="right">
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_COUNT')" format="%d"/>
                   </td>
-                  <td nowrap="nowrap">
-                    <v:button value="edit" action="simple" xhtml_class="button" xhtml_alt="edit feed">
+                  <td class="action">
+                    <v:button name="btn_edit" value="edit" action="simple" xhtml_class="button" xhtml_alt="edit feed">
                       <v:on-post>
                         <![CDATA[
                           self.v_id := (control.vc_parent as vspx_row_template).te_column_value('EFD_ID');
                           self.v_mode := 'update';
                           self.vc_data_bind (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                  <td nowrap="nowrap">
-                    <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this feed?\');" xhtml_class="button" xhtml_alt="Delete feed">
-                      <v:on-post>
-                        <![CDATA[
-                        ENEWS.WA.channel_delete ((control.vc_parent as vspx_row_template).te_column_value('EFD_ID'));
-                          ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
-                		      self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh feed">
-                      <v:on-post>
-                        <![CDATA[
-                          declare exit handler for sqlstate '*' { goto _next; };
-
-                 			    ENEWS.WA.feed_refresh((control.vc_parent as vspx_row_template).te_column_value('EF_ID'));
-                 			  _next:
-                   		    self.vc_data_bind (e);
                         ]]>
                       </v:on-post>
                     </v:button>
@@ -208,117 +222,13 @@
 
           <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <v:template type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
-                <tr class="td_border">
-                  <td align="right" colspan="4" class="td_border">
-                    <b>Selected&amp;nbsp;</b>
-                  </td>
-                  <td class="td_border">
-                    &amp;nbsp;
-                  </td>
-                  <td nowrap="nowrap" class="td_border">
-                    <v:button value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
-                      <v:on-post>
-                        <![CDATA[
-                          declare i integer;
-
-                          for (i := 0; i < length(e.ve_params); i := i + 2) {
-                            if (e.ve_params[i] = 'cb_item') {
-                              declare exit handler for sqlstate '*' {
-                                rollback work;
-                                goto _next;
-                              };
-                              commit work;
-
-                            ENEWS.WA.channel_delete (e.ve_params[i+1]);
-                            }
-                            _next:;
-                          }
-                          ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
-                		      self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button value="refresh" action="simple" xhtml_onclick="javascript: return anySelected(this.form, \'cb_item\', \'No feeds were selected to be refreshed.\');" xhtml_class="button" xhtml_alt="Refresh selected feed(s)">
-                      <v:on-post>
-                        <![CDATA[
-                          declare i integer;
-
-                          for (i := 0; i < length(e.ve_params); i := i + 2) {
-                            if (e.ve_params[i] = 'cb_item') {
-                              declare exit handler for sqlstate '*' {
-                                rollback work;
-                                goto _next;
-                              };
-                              commit work;
-
-                     			    ENEWS.WA.feed_refresh(e.ve_params[i+1]);
-                            }
-                            _next:;
-                          }
-                   		    self.vc_data_bind (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-                <tr class="td_border">
-                  <td align="right" colspan="4" class="td_border">
-                    <b>All&amp;nbsp;</b>
-                  </td>
-                  <td class="td_border">
-                    &amp;nbsp;
-                  </td>
-                  <td nowrap="nowrap" class="td_border">
-                    <v:button value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete all feeds?\');" xhtml_class="button" xhtml_alt="Delete all feeds">
-                      <v:on-post>
-                        <![CDATA[
-                        for (select EFD_ID
-                                 from ENEWS.WA.FEED
-                                   join ENEWS.WA.FEED_DOMAIN EC on EFD_FEED_ID = EF_ID
-                                where EFD_DOMAIN_ID = self.domain_id) do {
-                            declare exit handler for sqlstate '*' {
-                              rollback work;
-                              goto _next;
-                            };
-                            commit work;
-
-                          ENEWS.WA.channel_delete(EFD_ID);
-                          _next:;
-                          }
-                          ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
-                		      self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh all feeds">
-                      <v:on-post>
-                        <![CDATA[
-                          for (select EF_ID
-                                 from ENEWS.WA.FEED ECD
-                                   join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EF_ID
-                                where EFD_DOMAIN_ID = self.domain_id) do {
-                            declare exit handler for sqlstate '*' {
-                              rollback work;
-                              goto _next;
-                            };
-                            commit work;
-
-                   			    ENEWS.WA.feed_refresh(EF_ID);
-                          _next:;
-                          }
-                   		    self.vc_data_bind (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-              </v:template>
-              <tr align="center">
-                <td align="center" colspan="6">
+              <tfoot>
+                <tr align="right" >
+                  <td colspan="5">
                   <vm:ds-navigation data-set="ds"/>
                 </td>
               </tr>
+              </tfoot>
             </table>
           </v:template>
 
@@ -329,7 +239,7 @@
           ]]>
         </script>
       </v:template>
-      <v:template type="simple" enabled="--either(equ(self.v_mode, 'update'), 1, 0)">
+      <v:template name="t3" type="simple" enabled="--either(equ(self.v_mode, 'update'), 1, 0)">
         <v:before-data-bind>
           <![CDATA[
             declare exit handler for not found goto _end;
@@ -344,25 +254,34 @@
                       b.EF_UPDATE_PERIOD,
                       b.EF_UPDATE_FREQ,
                       b.EF_STORE_DAYS,
+                      b.EF_PSH_SERVER,
+                      b.EF_PSH_ENABLED,
                       a.EFD_TITLE,
+                      a.EFD_GRAPH,
                       a.EFD_TAGS,
                       a.EFD_FOLDER_ID,
-                      c.EFD_DIRECTORY_ID
+                      c.EFD_DIRECTORY_ID,
+                      a.EFD_ACL
                  into self.v_feed_id,
                       self.v_feed_uri,
                       self.v_home,
                       self.v_update_period,
                       self.v_update_frequency,
                       self.v_store_days,
+                      self.v_psh,
+                      self.v_psh_enabled,
                       self.v_title,
+                      self.v_graph,
                       self.v_tags,
                       self.v_folder_id,
-                      self.v_directory_id
+                      self.v_directory_id,
+                      self.v_acl
                 from ENEWS.WA.FEED_DOMAIN a
                        join ENEWS.WA.FEED b on b.EF_ID = a.EFD_FEED_ID
                           left join ENEWS.WA.FEED_DIRECTORY c on c.EFD_FEED_ID = a.EFD_FEED_ID
                 where a.EFD_ID = self.v_id;
 
+              self.rdf_iri := SIOC..feed_iri (self.v_feed_id);
               return;
             }
 
@@ -372,18 +291,26 @@
             self.v_update_period := get_keyword('f_update_period', params, 'daily');
             self.v_update_frequency := get_keyword('f_update_frequency', params, '4');
             self.v_store_days := get_keyword('f_store_days', params, '');
+            self.v_psh_enabled := get_keyword('f_psh_enabled', params, '0');
             self.v_tags := get_keyword('f_tags', params, '');
             self.v_folder_id := get_keyword('f_folder_id', params, '');
             self.v_folder_name := get_keyword('f_folder_name', params, '');
             self.v_directory_id := get_keyword('f_directory_id', params, '');
             self.v_directory_name := get_keyword('f_directory_name', params, '');
+            self.v_acl := null;
           ]]>
         </v:before-data-bind>
-        <div class="new-form-header">
+        <div class="form-header">
           Feed
         </div>
-        <div class="new-form-body">
-          <table cellspacing="0">
+        <div id="p" class="c1">
+          <div class="tabs">
+            &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="0" caption="Main" />
+            &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Sharing" />
+          </div>
+          <div class="contents">
+            <div id="p_content_0" class="tabContent">
+              <table class="form-body" cellspacing="0">
             <tr>
               <th>
                 <v:label value="Feed URL"/>
@@ -408,7 +335,32 @@
                 <v:text name="f_home" null-value="--''" value="--self.v_home" xhtml_class="textbox" xhtml_size="70%"/>
               </td>
             </tr>
-            <v:template type="simple" enabled="--case when (ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id) = 1) then 1 else 0 end">
+            <v:template name="t4" type="simple" enabled="--self.pshCheck()">
+              <tr>
+                <th>
+                  PubSubHub Server
+                </th>
+                <td>
+                  <v:label value="--self.v_psh"/>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <v:label for="f_psh_enabled" value="PubSubHub Enable"/>
+                </th>
+                <td>
+                  <v:check-box name="f_psh_enabled" is-boolean="1" true-value="1" false-value="0" value="--self.v_psh_enabled">
+                 	  <v:after-data-bind>
+                 		  <![CDATA[
+                 		    if (not ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id))
+                          control.vc_add_attribute ('disabled', 'disabled');
+            			    ]]>
+            			  </v:after-data-bind>
+                  </v:check-box>
+                </td>
+              </tr>
+            </v:template>
+            <v:template name="t5" type="simple" enabled="--case when (ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id) = 1) then 1 else 0 end">
               <tr>
                 <th>
                   <v:label for="f_update_period" value="Update period"/>
@@ -450,6 +402,14 @@
             </v:template>
             <tr>
               <th>
+                    <v:label for="f_graph" value="RDF Graph"/>
+                  </th>
+                  <td>
+                    <v:text name="f_graph" null-value="''" value="--self.v_graph" xhtml_class="textbox" xhtml_size="70%"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
                 <v:label for="f_tags" value="Tags"/>
               </th>
               <td>
@@ -466,7 +426,7 @@
                 <v:data-list name="f_folder_id" value="--self.v_folder_id" sql="select 0 as EFO_ID, 'Select folder ...' as EFO_PATH2, '' as EFO_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select EFO_ID, ENEWS.WA.folder_path2(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH2, ENEWS.WA.folder_path(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = self.domain_id order by EFO_PATH" key-column="EFO_ID" value-column="EFO_PATH2" xhtml_class="select"/>
               </td>
             </tr>
-            <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
+            <v:template name="t6" type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
               <tr>
                 <th>
                   <v:label for="f_directory_name" value="Feed directory"/>
@@ -479,8 +439,65 @@
             </v:template>
           </table>
         </div>
+            <div id="p_content_1" class="tabContent" style="display: none;">
+              <fieldset>
+                <legend><b>WebID users</b></legend>
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <td style="width: 90%; background-color: white;">
+                    <table id="s_tbl" width="100%" cellspacing="0">
+                      <thead class="sortHeader">
+                        <tr>
+                          <th width="15%">Type</th>
+                          <th>Value</th>
+                          <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                          <th width="50px">Action</th>
+                        </tr>
+                      </thead>
+                		  <![CDATA[
+                		    <script type="text/javascript">
+                        <?vsp
+                          declare N, L integer;
+                          declare acl, aType, aAccess any;
+
+                          L := 0;
+                          acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                          acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                          for (N := 0; N < length (acl); N := N + 1)
+                          {
+                            L := L + 1;
+                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                          }
+                          acl := deserialize (self.v_acl);
+                          for (N := 0; N < length (acl); N := N + 1)
+                          {
+                            L := L + 1;
+                            if (self.v_mode <> 'view')
+                            {
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                            } else {
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                            }
+                          }
+                        ?>
+                		    </script>
+                		  ]]>
+                      <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.v_mode='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                		</table>
+                	</td>
+                  <vm:if test="self.v_mode <> 'view'">
+                    <td valign="top" nowrap="nowrap">
+                      <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                    </td>
+                  </vm:if>
+                </tr>
+              </table>
+              </fieldset>
+            </div>
+          </div>
+        </div>
         <div class="form-footer">
-          <v:button action="simple" value="Save" xhtml_alt="Save feed data" xhtml_class="form-button">
+          <v:button name="btn_save" action="simple" value="Save" xhtml_alt="Save feed data" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare N, isAdmin integer;
@@ -553,10 +570,17 @@
                          EF_UPDATE_FREQ = atoi(self.f_update_frequency.ufl_value),
                          EF_STORE_DAYS = atoi(self.f_store_days.ufl_value)
                    where EF_ID = self.v_feed_id;
+
+                  -- PubSubHub
+                  self.v_psh_enabled := self.f_psh_enabled.ufl_selected;
+                  ENEWS.WA.channel_psh_unsubscribe (self.v_feed_id, self.v_psh, self.v_psh_enabled);
+                  ENEWS.WA.channel_psh_subscribe (self.v_feed_id, self.v_psh, self.v_psh_enabled);
                 }
 
                 -- domain
-                ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
+                ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim (self.f_folder_id.ufl_value), self.f_graph.ufl_value);
+                self.v_acl := serialize (DB.DBA.wa_acl_params (params));
+                ENEWS.WA.channel_acl (self.v_id, self.v_acl);
 
                 -- directory
                 if (isAdmin)
@@ -579,7 +603,7 @@
               ]]>
            </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button name="btn_cancel" action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.v_mode := '';

@@ -49,15 +49,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_datestring"><title>Parameters</title>
-    <refsect2><title>date</title>
-      <para>A <type>datetime</type> value.</para>
-    </refsect2>
-  </refsect1>
-  <refsect1 id="ret_datestring"><title>Return values</title>
-    <para><function>datestring</function> and <function>datestring_GMT</function>
-    return a <type>varchar</type>.</para>
-  </refsect1>
   <refsect1 id="desc_datestring"><title>Description</title>
     <para><function>datestring</function> and datestring_gmt convert
     <type>timestamps</type> or <type>datetimes</type>
@@ -71,6 +62,15 @@
     <note><title>Note:</title>
     <para>Using <computeroutput>cast (dt as varchar)</computeroutput>
     is preferred over <function>datestring</function>.</para></note>
+  </refsect1>
+  <refsect1 id="params_datestring"><title>Parameters</title>
+    <refsect2><title>date</title>
+      <para>A <type>datetime</type> value.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_datestring"><title>Return values</title>
+    <para><function>datestring</function> and <function>datestring_GMT</function>
+    return a <type>varchar</type>.</para>
   </refsect1>
 <!--  <refsect1 id="errors_datestring"><title>Errors</title>
     <table><title>Errors signalled by <function>datestring</function> and

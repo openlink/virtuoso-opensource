@@ -24,7 +24,7 @@
 <refentry id="fn_vad_check">
   <refmeta> 
     <refentrytitle>VAD_CHECK</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_CHECK</refname> 

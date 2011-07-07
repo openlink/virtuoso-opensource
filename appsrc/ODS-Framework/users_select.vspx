@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -32,24 +33,9 @@
 
   <vm:page>
     <vm:header>
-      <vm:title>Select users to invite</vm:title>
+      <vm:title>Select user/group</vm:title>
   <link rel="stylesheet" type="text/css" href="default.css" />
 <style type="text/css">
-        a {
-          text-decoration: none;
-        }
-        a:active {
-          text-decoration: none;
-        }
-        a:visited {
-          text-decoration: none;
-        }
-        a:hover {
-          text-decoration: none;
-        }
-        .listing_row_odd:hover, .listing_row_even:hover {
-         	background-color: #eec;
-        }
 div.boxHeader {
   background-color: #EFEFEF;
   margin: 0 0 0.5em 0;
@@ -57,76 +43,38 @@ div.boxHeader {
   border: 1px solid #7F94A5;
   vertical-align: middle;
 }
-
-input.button {
-  margin: .2em 0 .1em 0;
-  font-size: .8em;
-	font-family: verdana, sans-serif;
-  color: #ffffff;
-  font-weight: bold;
-  border: solid 1px;
-  border-color: #7F94A5;
-  background: #99b3c5;
+      </style>
+      <script type="text/javascript">
+      	window.onkeyup = function (event) {
+      		if (event.keyCode == 27) {
+      			window.close ();
 }
-
-
-.button2 {
-  font-size: .8em;
-	font-family: verdana, sans-serif;
-  color: #ffffff;
-  font-weight: bold;
-  padding: 0.1em 1em 0.1em 1em ;
-  border: solid 1px;
-  border-color: #7F94A5;
-  background: #99b3c5;
 }
-
-</style>
-
-
+      </script>
     </vm:header>
 
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
-
-      if (self.v_order = columnName and self.v_direction = 'desc') {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="images/icons/orderdown_16.png" border="0" alt="Down"/>';
-      } else if (self.v_order = columnName and self.v_direction = 'asc') {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="images/icons/orderup_16.png" border="0" alt="Up"/>';
-      } else {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''page_form'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
-      if (columnName = '')
-        return;
+        if (columnName <> '')
+        {
       self.ds.vc_reset();
-      if (self.v_order = columnName) {
+          if (self.v_order = columnName)
+          {
         self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
       } else {
         self.v_direction := 'asc';
-      }
       self.v_order := columnName;
+          }
+        }
     ]]>
   </v:method>
+
   <v:method name="isMultiple" arglist="in dst any">
     <![CDATA[
-      declare pos integer;
-
-      pos := strstr(self.v_dst, 'm');
-      if (not isnull(pos))
-        return 1;
-      return 0;
+        return case when isnull (strstr (self.v_dst, 'm')) then 0 else 1 end;
     ]]>
   </v:method>
+
     <v:before-data-bind>
       <![CDATA[
         if (self.v_mode = 'g')
@@ -134,6 +82,10 @@ input.button {
           self.v_filter := 'g';
         }
         else if (self.v_mode = 'u')
+        {
+          self.v_filter := 'u';
+        }
+        else if (self.v_mode like 's_%')
         {
           self.v_filter := 'u';
         }
@@ -145,19 +97,21 @@ input.button {
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="''"/>
-        <v:variable name="v_form" persist="0" param-name="form" type="varchar" default="'page_form'"/>
         <v:variable name="v_filter" persist="0" type="varchar" default="''"/>
       <v:variable name="v_value" persist="0" type="varchar" default="''"/>
       <v:variable name="v_mask" persist="0" type="varchar" default="''"/>
       <v:variable name="v_how" persist="0" type="varchar" default="'1'"/>
       <v:variable name="v_order" persist="0" type="varchar" default="'U_NAME'" />
       <v:variable name="v_direction" persist="0" type="varchar" default="'asc'" />
+        <v:variable name="v_nrows" persist="0" param-name="nrows" type="varchar" default="'10'" />
         <v:variable name="v_src" persist="0" param-name="src" type="varchar" default="''" />
         <v:variable name="v_dst" persist="0" param-name="dst" type="varchar" default="'sc'" />
         <v:variable name="v_s1" persist="0" param-name="s1" type="varchar" default="''" />
         <v:variable name="v_s2" persist="0" param-name="s2" type="varchar" default="''" />
     </vm:variables>
   <vm:body>
+        <vm:login redirect="index.vspx"/>
+        <?vsp http(sprintf('<input type="hidden" name="nrows" id="nrows" value="%s"/>', get_keyword('nrows', self.vc_page.vc_event.ve_params, '10'))); ?>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
         <?vsp http(sprintf('<input type="hidden" name="form"  id="form"  value="%s"/>', get_keyword('form', self.vc_page.vc_event.ve_params, 'page_form'))); ?>
@@ -168,7 +122,7 @@ input.button {
       <v:text name="params" type="hidden" value="--self.v_params"/>
         <div style="padding: 0.2em;">
         <div style="padding: 0 0 0.5em 0;">
-          &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="images/icons/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+            <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
         </div>
         <div class="boxHeader">
             Show
@@ -188,9 +142,11 @@ input.button {
           <v:button action="simple" value="Filter" xhtml_class="button">
             <v:on-post>
               <![CDATA[
-                self.v_filter := get_keyword('filter', self.vc_page.vc_event.ve_params, self.v_filter);
+                  self.v_filter := get_keyword('filter', e.ve_params, self.v_filter);
                 self.v_how := self.how.ufl_value;
                 self.v_value := trim(self.value.ufl_value);
+
+                  self.ds.vc_reset();
                 self.vc_data_bind (e);
               ]]>
             </v:on-post>
@@ -200,12 +156,16 @@ input.button {
               <![CDATA[
                 self.v_how := '1';
                 self.v_value := '';
+
+                  self.ds.vc_reset();
                 self.vc_data_bind (e);
               ]]>
             </v:on-post>
           </v:button>
+            <label>
             <v:check-box auto-submit="1" name="show_all_cbx" xhtml_id="show_all_cbx" initial-checked="--0" value="--1"/>
-          show all
+              Show all
+            </label>
         </div>
           <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
           <v:before-data-bind>
@@ -230,13 +190,18 @@ input.button {
                   {
                     group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a where (a.U_IS_ROLE=1) and (upper(a.U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
                   } else {
-                    group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a, ODRIVE.WA.GROUPS b, DB.DBA.SYS_USERS c where (a.U_ID=b.GROUP_ID) and (a.U_IS_ROLE=1) and (b.USER_ID=c.U_ID) and (c.U_NAME=\'%s\') and (upper(a.U_NAME) like upper(\'%s\') and (a.U_ID<>5) and (a.U_ID<>6))', self.u_name, self.v_mask);
+                    group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a, DB.DBA.WA_GROUPS b, DB.DBA.SYS_USERS c where (a.U_ID=b.WAG_GROUP_ID) and (a.U_IS_ROLE=1) and (b.WAG_USER_ID=c.U_ID) and (c.U_NAME=\'%s\') and (upper(a.U_NAME) like upper(\'%s\') and (a.U_ID<>5) and (a.U_ID<>6))', self.u_name, self.v_mask);
                   }
               }
               if (self.v_filter <> 'g')
               {
+                  if (self.v_mode = 's_bmk')
+                  {
+                    user_sql := sprintf('select ''User'' U_TYPE, b.U_NAME, coalesce(b.U_FULL_NAME, \'\') U_FULL_NAME from BMK..GRANTS_VIEW a, DB.DBA.SYS_USERS b where (b.U_ACCOUNT_DISABLED=0) and upper(b.U_NAME) like upper(\'%s\') and a.GW_ID = %d and a.U_ID = b.U_ID', self.v_mask, self.u_id);
+                  } else {
                 user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (U_ACCOUNT_DISABLED=0) and (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
               }
+                }
                 if (user_sql = '')
                 {
                 control.ds_sql := group_sql;
@@ -253,13 +218,14 @@ input.button {
               control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
                 if (get_keyword('show_all_cbx', self.vc_page.vc_event.ve_params, 0))
                 {
+                  self.ds.vc_reset();
                   control.ds_nrows := 1000;
                   control.ds_rows_fetched := 0;
                   control.ds_rows_offs := 0;
                 }
                 else
                 {
-                  control.ds_nrows := 10;
+                  control.ds_nrows := cast (self.v_nrows as integer);
                 }
             ]]>
           </v:before-data-bind>
@@ -269,34 +235,21 @@ input.button {
         </v:data-source>
         <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
             <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table id="users" class="listing" cellspacing="0">
-              <thead class="sortHeader">
-                <tr class="listing_header_row">
-                  <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
-                    <th class="checkbox" width="1%">
-                      <?vsp
-                          http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this.form, ''cb_item''); "/>');
-                      ?>
+              <table class="ODS_grid">
+                <thead>
+                  <tr>
+                  <vm:if test="self.isMultiple(self.v_dst)">
+                      <th class="checkbox">
+                      <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item'); updateChecked(this, 'cb_item'); "/>
                     </th>
-                  </v:template>
-                  <v:template type="simple" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
-                    <th>
-                      <v:label value="Type" format="%s"/>
-                    </th>
-                  </v:template>
-                  <th>
-                    <?vsp self.sortColumn('Name', 'U_NAME'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Description', 'U_FULL_NAME'); ?>
-                  </th>
-                  <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                      <th width="1%">
-                        Action
-                    </th>
-                  </v:template>
+                  </vm:if>
+                  <vm:if test="self.v_mode = ''">
+                      <th>Type</th>
+                  </vm:if>
+                    <?vsp http (DB.DBA.wa_show_column_header('Name', 'U_NAME', self.v_order, self.v_direction, 'width="50%"')); ?>
+                    <?vsp http (DB.DBA.wa_show_column_header('Description', 'U_FULL_NAME', self.v_order, self.v_direction, 'width="50%"')); ?>
                 </tr>
-              </thead>
+                </thead>
             </table>
           </v:template>
 
@@ -305,47 +258,40 @@ input.button {
             <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr align="center">
-                  <?vsp http(sprintf('<td colspan="%d">No records</td>', either(equ(self.v_mode,''),4,3))); ?>
+                    <td colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
+                      No records
+                    </td>
                 </tr>
               </table>
             </v:template>
 
             <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table>
-                <tr class="<?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
-                  <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
-                    <td  align="center">
+                  <tr onclick="rowSelected(this);" class="pointer">
+                    <vm:if test="self.isMultiple(self.v_dst)">
+                      <td class="checkbox">
                       <?vsp
-                        declare pos integer;
                         declare S, name any;
 
-                        name := (control.vc_parent as vspx_row_template).te_column_value('U_NAME');
-                        S := '';
-                        pos := strstr(self.v_s1, concat(name, ','));
-                        if (not isnull(pos))
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this.form, ''cb_item''); " />', name, S));
+                          name := (control as vspx_row_template).te_column_value('U_NAME');
+                          S := case when isnull (strstr(self.v_s1, concat(name, ','))) then '' else 'checked="checked"' end;
+                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item'', event); " />', name, S));
                       ?>
                     </td>
-                  </v:template>
-                  <v:template type="simple" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
+                    </vm:if>
+                    <vm:if test="self.v_mode = ''">
                     <td nowrap="nowrap">
-                      <v:label value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('U_TYPE')" format="%s"/>
+                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_TYPE')" format="%s"/>
                     </td>
-                  </v:template>
-                  <td nowrap="nowrap">
+                    </vm:if>
+                    <td width="50%" nowrap="nowrap">
+                      <input name="s1_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('U_NAME') ?>" />
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" format="%s"/>
                   </td>
-                  <td nowrap="nowrap">
+                    <td width="50%" nowrap="nowrap">
+                      <input name="s2_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('U_FULL_NAME') ?>" />
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_FULL_NAME')" format="%s"/>
                   </td>
-                  <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                    <td nowrap="nowrap">
-                      <v:text name="s1" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('U_NAME')"/>
-                      <v:text name="s2" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('U_FULL_NAME')"/>
-                      <v:button name="b1" action="simple" value="select" xhtml_alt="Select" xhtml_onclick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
-                    </td>
-                  </v:template>
                 </tr>
               </table>
             </v:template>
@@ -354,21 +300,23 @@ input.button {
 
           <v:template type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <tr align="center">
-                <?vsp http(sprintf('<td colspan="%d">', either(equ(self.v_mode,''),4,3))); ?>
-                  <vm:ds-members-navigation data-set="ds"/>
-                <?vsp http('</td>'); ?>
+                <tfoot>
+                  <tr>
+                    <td style="text-align: right;" colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
+                      <vm:ds-navigation data-set="ds"/>
+                  </td>
               </tr>
+                </tfoot>
             </table>
           </v:template>
 
         </v:data-set>
-        <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+          <vm:if test="self.isMultiple(self.v_dst)">
           <div style="padding: 0 0 0.5em 0;">
             <hr />
-              <a href="#" onclick="javascript: return addChecked(document.forms['page_form'], 'cb_item', 'No users were selected for addition. No groups were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
+              <a href="#" onclick="javascript: return addChecked(document.forms['page_form'], 'cb_item', 'No users were selected for addition. No groups were selected for addition.');" class="navi-button">&amp;nbsp;Add selected</a>
           </div>
-        </v:template>
+          </vm:if>
       </div>
   </vm:body>
     </vm:pagewrapper>

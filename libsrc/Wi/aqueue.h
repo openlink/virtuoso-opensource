@@ -68,10 +68,10 @@ typedef struct aq_request_s
 #define AQR_DONE 4
 
 
-int aq_request (async_queue_t * aq, aq_func_t f, caddr_t arg);
+int aq_request (async_queue_t * aq, aq_func_t f, caddr_t arg, lock_trx_t * lt);
 caddr_t  aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait);
 caddr_t aq_wait_all (async_queue_t * aq, caddr_t * err_ret);
-async_queue_t * aq_allocate (client_connection_t * cli, int n_threads);
+async_queue_t *  aq_allocate (client_connection_t * cli, int n_threads);
 void aq_init ();
 
 #define AQ_NO_REQUEST ((caddr_t)3)

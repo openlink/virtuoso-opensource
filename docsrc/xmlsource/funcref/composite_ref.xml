@@ -39,17 +39,17 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_composite_ref">
+    <title>Description</title>
+      <para><function>composite_ref</function> returns the <parameter>nth</parameter>
+      element of the composite. The index is 0 based.</para>
+  </refsect1>
   <refsect1 id="params_composite_ref"><title>Parameters</title>
     <refsect2><title>nth</title>
       <para><type>integer</type></para></refsect2>
   </refsect1>
   <refsect1 id="rettypes_composite_ref"><title>Return types</title>
     <para>The type returned is the type of the composite member referred to.</para>
-  </refsect1>
-  <refsect1 id="desc_composite_ref">
-    <title>Description</title>
-      <para><function>composite_ref</function> returns the <parameter>nth</parameter>
-      element of the composite. The index is 0 based.</para>
   </refsect1>
   <refsect1 id="err_composite_ref"><title>Errors</title>
     <table><title>Errors signalled by <function>composite_ref</function></title>

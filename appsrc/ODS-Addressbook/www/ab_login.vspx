@@ -27,28 +27,33 @@
   <v:after-data-bind>
     <![CDATA[
       declare page_name varchar;
+      declare vh, lh, hf, ods_path any;
 
       set_qualifier ('DB');
       page_name := AB.WA.page_name ();
       if (page_name = 'error.vspx')
         return;
 
-      if (AB.WA.check_grants2 (self.account_role, page_name))
+      if (AB.WA.check_grants (self.account_rights, page_name))
         return;
 
-      declare vh, lh, hf, ods_path any;
+      if (isnull (self.account_rights) and not is_empty_or_null (self.sid))
+      {
+        self.vc_redirect (sprintf ('/ods/error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
+        return;
+      }
 
+      if (isnull (self.account_rights))
+      {
       vh := http_map_get ('vhost');
       lh := http_map_get ('lhost');
       hf := http_request_header (lines, 'Host');
-
       if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
-        ods_path := 'http://' || hf || '/ods/';
-      else
+        {
+          ods_path := DB.DBA.WA_GET_PROTOCOL() || hf || '/ods/';
+        } else {
         ods_path := DB.DBA.WA_LINK (1, '/ods/');
-
-      if (self.account_role = 'expire') {
-
+        }
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;
         return;

@@ -198,7 +198,7 @@ ssl2: ../../virtjdbc2ssl.jar
 ../../virtjdbc2ssl.jar: outssl2 $(ssljavafiles)
 	@echo jdbc2 javac $(JDK2_FLAGS)
 	@cd outssl2 ; $(JDK2)/javac -classpath ".:$(jssljars)" $(JDK2_FLAGS) virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/sql/*.java
-	@cd outssl2 ; $(JDK2)/jar cf ../../../virtjdbc2ssl.jar virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
+	@cd outssl2 ; $(JDK2)/jar cfm ../../../virtjdbc2ssl.jar ../../../manifest2.main virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java SSL 2.0 built"
 
 outssl2:
@@ -242,7 +242,7 @@ std3: ../../virtjdbc3.jar
 ../../virtjdbc3.jar: outstd3 $(std3javafiles)
 	@echo jdbc3 javac $(JDK3_FLAGS)
 	@cd outstd3 ; $(JDK3)/javac $(JDK3_FLAGS) -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outstd3 ; $(JDK3)/jar cf ../../../virtjdbc3.jar virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outstd3 ; $(JDK3)/jar cfm ../../../virtjdbc3.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java 3.0 built"
 
 outstd3:
@@ -284,7 +284,7 @@ ssl3: ../../virtjdbc3ssl.jar
 ../../virtjdbc3ssl.jar: outssl3 $(ssl3javafiles)
 	@echo jdbc3 ssl javac $(JDK3_FLAGS)
 	@cd outssl3 ; $(JDK3)/javac $(JDK3_FLAGS) -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl3 ; $(JDK3)/jar cf ../../../virtjdbc3ssl.jar virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outssl3 ; $(JDK3)/jar cfm ../../../virtjdbc3ssl.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java SSL 3.0 built"
 
 outssl3:
@@ -335,7 +335,7 @@ std4: ../../virtjdbc4.jar
 ../../virtjdbc4.jar: outstd4 $(std4javafiles)
 	@echo jdbc4 ssl javac $(JDK4_FLAGS)
 	@cd outstd4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outstd4 ; $(JDK4)/jar cf ../../../virtjdbc4.jar virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outstd4 ; $(JDK4)/jar cfm ../../../virtjdbc4.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java 4.0 built"
 
 outstd4:
@@ -379,7 +379,7 @@ ssl4: ../../virtjdbc4ssl.jar
 ../../virtjdbc4ssl.jar: outssl4 $(ssl4javafiles)
 	@echo jdbc4 ssl javac $(JDK4_FLAGS)
 	@cd outssl4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl4 ; $(JDK4)/jar cf ../../../virtjdbc4ssl.jar virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outssl4 ; $(JDK4)/jar cfm ../../../virtjdbc4ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java SSL 4.0 built"
 
 outssl4:

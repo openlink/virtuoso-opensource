@@ -50,13 +50,14 @@ Load9    = Hosting, hosting_php.dll
 
 Note: you should have the users.jsp and users_dsn.jsp (created after installation) file physically located on your machine.
 
-   1. The implementation uses Java version 1.5 (version 5), so you should run the corresponding Virtuoso executive. You need also to have installed Tomcat version 5.5.x.
+   1. The implementation uses Java version 1.5 (version 5), so you should run the corresponding Virtuoso executive. You need also to have installed Tomcat version 5.5.x. Download and install following packages: Commons FileUpload, Commons IO.
    1. The page name is 'users.jsp'.
    1. The Endpoint URL is http://[host]:[port]/jsp/users/users.jsp
    1. Configuration
       1. Start Virtuoso executive
       1. Install Tomcat
-      1. Copy file 'virtjdbc3.jar' into '[Tomcat installation folder]/common/lib'
+      1. Download 'Apache FileUpload package' from http://commons.apache.org/fileupload/ and next copy file 'commons-fileupload-1.2.1.jar' into '[Tomcat installation folder]/common/lib'
+      1. Download 'Apache IO package' from http://commons.apache.org/io/ and next copy file 'commons-io-1.4.jar' into '[Tomcat installation folder]/common/lib'
       1. Create file with name 'users#jsp.xml' in '[Tomcat installation folder]/conf/Catalina/[host]/' with content:
 
 <!--

@@ -92,9 +92,11 @@ create procedure ODS.ODS_API."bookmark.get" (
 
   inst_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
-  {
     return ods_auth_failed ();
-  }
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   ods_describe_iri (SIOC..bmk_post_iri (inst_id, bookmark_id));
   return '';
 }
@@ -121,6 +123,9 @@ create procedure ODS.ODS_API."bookmark.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   rc := BMK.WA.bookmark_update (
           -1,
@@ -220,6 +225,9 @@ create procedure ODS.ODS_API."bookmark.folder.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   rc := BMK.WA.folder_id (inst_id, path);
 
   return ods_serialize_int_res (rc);
@@ -243,6 +251,9 @@ create procedure ODS.ODS_API."bookmark.folder.delete" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = inst_id and F_PATH = path))
     return ods_serialize_sql_error ('37000', 'The item is not found');
@@ -273,6 +284,9 @@ create procedure ODS.ODS_API."bookmark.import" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   -- get content
   if (lcase (sourceType) = 'string')
@@ -325,6 +339,9 @@ create procedure ODS.ODS_API."bookmark.export" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   if (lcase (contentType) not in ('netscape', 'xbel'))
   	signal ('BMK05', 'The content type must be Netscape or XBEL.');
@@ -601,6 +618,9 @@ create procedure ODS.ODS_API."bookmark.publication.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
+
   _type := ODS.ODS_API.bookmark_type_check (destinationType, destination);
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'folderPath', folderPath, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
   insert into BMK.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
@@ -808,6 +828,9 @@ create procedure ODS.ODS_API."bookmark.subscription.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'Bookmark'))
+    return ods_serialize_sql_error ('37000', 'The instance is not found');
 
   _type := ODS.ODS_API.bookmark_type_check (sourceType, source);
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'folderPath', folderPath, 'tags', tags);

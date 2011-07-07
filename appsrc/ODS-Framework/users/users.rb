@@ -31,10 +31,10 @@ def login_form()
     <div id="lf" class="form">
       #{display_error()}
       <div class="header">
-        User login
+        Please identify yourself
       </div>
       <ul id="lf_tabs" class="tabs">
-        <li id="lf_tab_0" title="ODS">ODS</li>
+        <li id="lf_tab_0" title="Digest">Digest</li>
         <li id="lf_tab_1" title="OpenID">OpenID</li>
         <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
         <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -45,7 +45,7 @@ def login_form()
       <table class="form" cellspacing="5">
         <tr>
           <th width="30%">
-            <label for="lf_uid">Member ID</label>
+                <label for="lf_uid">User ID</label>
           </th>
           <td nowrap="nowrap">
             <input type="text" name="lf_uid" value="" id="lf_uid" />
@@ -964,6 +964,9 @@ def main()
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
@@ -1009,7 +1012,7 @@ def main()
       <div id="FT_R">
         <a href="/ods/faq.html">FAQ</a> | <a href="/ods/privacy.html">Privacy</a> | <a href="/ods/rabuse.vspx">Report Abuse</a>
         <div>
-          Copyright &copy; 1999-2010 OpenLink Software
+          Copyright &copy; 1999-2011 OpenLink Software
         </div>
       </div>
      </div>

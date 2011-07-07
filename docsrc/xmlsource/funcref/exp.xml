@@ -38,6 +38,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_exp"><title>Description</title>
+    <para>The function raises e to the power of <parameter>x</parameter>, it
+    works with double precision floating point numbers, converts its argument
+    to an IEEE 64-bit float and returns a result of that type.</para>
+  </refsect1>
   <refsect1 id="params_exp"><title>Parameters</title>
     <refsect2><title>x</title>
       <para><type>double precision</type></para>
@@ -46,11 +51,6 @@
   <refsect1 id="ret_exp"><title>Return Values</title>
     <para><function>exp</function> returns a IEEE 64-bit
     <type>float</type>.</para>
-  </refsect1>
-  <refsect1 id="desc_exp"><title>Description</title>
-    <para>The function raises e to the power of <parameter>x</parameter>, it
-    works with double precision floating point numbers, converts its argument
-    to an IEEE 64-bit float and returns a result of that type.</para>
   </refsect1>
   <refsect1 id="examples_exp"><title>Examples</title>
     <example id="ex_exp"><title>Simple Examples</title>

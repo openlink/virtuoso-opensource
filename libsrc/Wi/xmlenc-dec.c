@@ -43,6 +43,7 @@
 #include "soap.h"
 #include "security.h"
 #include "date.h"
+#include "bif_text.h"
 
 #ifdef DEBUG
 #include "xmlenc_test.h"
@@ -321,8 +322,10 @@ void wsse_y_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 void wsse_rsakeyvalue_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 void wsse_modulus_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 void wsse_exponent_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
+void wsse_x509data_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
+void wsse_x509certificate_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 
-
+/* MUST keep this list in alphabetical order */
 static
 wsse_callback_item_t wsse_dsig_callbacks [] =
 {
@@ -346,6 +349,8 @@ wsse_callback_item_t wsse_dsig_callbacks [] =
   {"SignedInfo", wsse_signedinfo_callback},
   {"Transform", wsse_transform_callback},
   {"Transforms", wsse_transforms_callback},
+  {"X509Certificate", wsse_x509certificate_callback},
+  {"X509Data", wsse_x509data_callback},
   {"XPath", wsse_xpath_callback},
   {"Y", wsse_p_callback}
 };
@@ -739,6 +744,35 @@ void wsse_keyname_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t *
 
 void wsse_keyvalue_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)
 {
+}
+
+void wsse_x509data_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)
+{
+  dsig_signature_t * dsig = ctx->wc_dsig;
+  WSSE_ASSERT (ctx->wc_dsig);
+  dsig->dss_key_value_type = XENC_T_X509_CERT;
+}
+
+void wsse_x509certificate_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)
+{
+  caddr_t content = wsse_get_content_val (curr);
+  xenc_key_t * key;
+  if (!content)
+    wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "tag is empty");
+  key = certificate_decode (content, WSSE_OASIS_X509_VALUE_TYPE, WSSE_OASIS_BASE64_ENCODING_TYPE);
+  dk_free_box (content);
+  if (!key)
+    wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "could not decode certificate");
+  if (ctx->wc_object_type == XENC_T_DSIG)
+    {
+      WSSE_ASSERT (ctx->wc_dsig);
+      ctx->wc_dsig->dss_key = key;
+    }
+  else if (ctx->wc_object_type == XENC_T_ENCKEY)
+    {
+      WSSE_ASSERT (ctx->wc_curr_enckey);
+      ctx->wc_curr_enckey->xeke_super_key = box_dv_short_string (key->xek_name);
+    }
 }
 
 void wsse_cipherdata_c (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)
@@ -1277,11 +1311,12 @@ int dsig_verify_signature (dsig_signature_t * d, xml_tree_ent_t * xte, id_hash_t
       strses_free (ses_out);
       return 0;
     }
+  strses_free (ses_out);
   return 1;
 }
 
 xenc_err_code_t dsig_check_xml (query_instance_t * qi, dsig_signature_t * d, char * xml_text,
-	 long len, xenc_err_code_t * c, char ** err)
+	 long len, xenc_err_code_t * c, char ** err, int is_wsse)
 {
   dsig_signature_t * d_copy = dsig_copy_draft (d);
   xenc_err_code_t cc;
@@ -1305,6 +1340,9 @@ xenc_err_code_t dsig_check_xml (query_instance_t * qi, dsig_signature_t * d, cha
       strses_free (xml_doc);
       return cc;
     }
+  xml_doc->dks_in_buffer = NULL;
+  strses_free (xml_doc);
+  xml_doc = NULL;
 
   if (dsig_compare (d, d_copy, &cmp))
     {
@@ -1320,9 +1358,6 @@ xenc_err_code_t dsig_check_xml (query_instance_t * qi, dsig_signature_t * d, cha
 	  err[0] = box_dv_short_string (buf);
 	}
       dsig_free (d_copy);
-      xml_doc->dks_in_buffer = NULL;
-      strses_free (xml_doc);
-
       return cc;
     }
 
@@ -1332,7 +1367,7 @@ xenc_err_code_t dsig_check_xml (query_instance_t * qi, dsig_signature_t * d, cha
     id_hash_t * nss = 0;
     xml_tree_ent_t * xte = (xml_tree_ent_t *) xml_make_tree_with_ns (qi, xml_text,
 	0, "UTF-8", lh_get_handler ("x-any"), &nss, 0);
-    caddr_t * signature = xte ? xml_find_signedinfo (xte->xte_current) : 0;
+    caddr_t * signature = xte ? xml_find_signedinfo (xte->xte_current, is_wsse) : 0;
 
     if (!signature)
       {
@@ -1445,7 +1480,7 @@ caddr_t dsig_sign_signature_ (query_instance_t * qi, dsig_signature_t * dsig, ca
       if (!doc)
 	wsse_report_error (ctx, WSSE_XML_CODE, 0);
 
-      signature = xml_find_signature (doc->xte_current);
+      signature = xml_find_signature (doc->xte_current, 1);
 
       if (!signature)
 	wsse_report_error (ctx, WSSE_NO_TAG_CODE, strlen ("Signature"), "Signature");
@@ -1476,81 +1511,82 @@ caddr_t dsig_sign_signature_ (query_instance_t * qi, dsig_signature_t * dsig, ca
 caddr_t bif_dsig_validate (caddr_t *qst, caddr_t *err, state_slot_t ** args)
 {
   caddr_t xml_text = bif_string_arg (qst, args, 0, "dsig_validate");
-  caddr_t signature_xml_text = bif_string_arg (qst, args, 1, "dsig_validate");
-  caddr_t enc = bif_string_arg (qst, args, 2, "dsig_validate");
-  lang_handler_t *lh = lh_get_handler (bif_string_arg (qst, args, 3, "dsig_validate"));
+  caddr_t signature_xml_text = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "dsig_validate") : NULL;
+  caddr_t enc = BOX_ELEMENTS (args) > 2 ? bif_string_arg (qst, args, 2, "dsig_validate") : "UTF-8";
+  lang_handler_t *lh = BOX_ELEMENTS (args) > 3 ? lh_get_handler (bif_string_arg (qst, args, 3, "dsig_validate")) : server_default_lh;
   wsse_ctx_t * ctx;
   dsig_signature_t * dsig;
-  caddr_t * signature_tag;
+  caddr_t * signature_tag, err_ret = NULL;
   caddr_t * xml_doc;
   xenc_err_code_t c;
-  char * errm;
+  caddr_t errm = NULL;
   id_hash_t * nss = 0;
-  xml_tree_ent_t * xte = (xml_tree_ent_t *) xml_make_tree_with_ns ((query_instance_t*) qst, signature_xml_text,
-	err, enc, lh, &nss, 0);
+  xml_tree_ent_t * xte;
+
+  if (!signature_xml_text)
+    signature_xml_text = xml_text;
+
+  xte = (xml_tree_ent_t *) xml_make_tree_with_ns ((query_instance_t*) qst, signature_xml_text, &err_ret, enc, lh, &nss, 0);
 
   if (!xte)
     {
-      sqlr_new_error ("42000", "XENC25", "Could not parse signature XML document, call xml_validate_dtd() to obtain errors list");
+      nss_free (nss);
+      if (!err_ret)
+	sqlr_new_error ("42000", "XENC25", "Could not parse signature XML document");
+      else
+	{
+	  *err = err_ret;
+	  return NULL;
+	}
     }
 
   xml_doc = xte->xte_current;
-
-  signature_tag = xml_find_child (xml_doc, "Signature", DSIG_URI, 0, 0);
+  signature_tag = xml_find_any_child (xml_doc, "Signature", DSIG_URI);
   if (!signature_tag)
     {
-      dk_free_tree ((box_t) xml_doc);
+      dk_free_box ((box_t) xte);
       nss_free (nss);
       sqlr_new_error ("42000", "XENC26", "XML document is not XML Signature");
     }
 
   xte->xte_current = signature_tag;
-
   ctx = wsse_ctx_allocate();
-
   XENC_TRY (&ctx->wc_tb)
     {
-      caddr_t signval;
       wsse_build_wsse_objects (signature_tag, wsse_get_callback (ctx, DSIG_URI , "Signature"), ctx);
-      signval = dsig_sign_signature (ctx->wc_dsig, xte, nss, ctx);
-
-      if (strcmp (signval, ctx->wc_dsig->dss_signature))
-	{
-	  dk_free_box (signval);
-	  wsse_report_error (ctx, WSSE_WRONG_SIGNVAL_CODE, 0);
-	}
-      dk_free_box (signval);
     }
   XENC_CATCH
     {
       char errbuf[1024];
-      dk_free_tree ((box_t) xml_doc);
+      dk_free_box ((box_t) xte);
       nss_free (nss);
       xenc_make_error (errbuf, 1024, ctx->wc_tb.xtb_err_code, ctx->wc_tb.xtb_err_buffer);
       wsse_ctx_free (ctx);
       sqlr_new_error ("42000", "XENC27", "dsig_validate function reports an error: %s", errbuf);
     }
   XENC_TRY_END(&ctx->wc_tb);
-  wsse_ctx_free (ctx);
-
-  dk_free_tree ((box_t) xml_doc);
-  nss_free (nss);
 
   dsig = ctx->wc_dsig;
+  dk_free_box ((box_t) xte);
+  nss_free (nss);
 
-  if (dsig_check_xml ((query_instance_t*) qst, dsig, xml_text, box_length (xml_text) - 1, &c, &errm))
+  if (dsig_check_xml ((query_instance_t*) qst, dsig, xml_text, box_length (xml_text) - 1, &c, &errm, 0))
     {
       char buf[1024];
       xenc_make_error (buf, 1024, c, errm);
+      dk_free_tree (errm);
+      wsse_ctx_free (ctx);
       sqlr_new_error ("42000", "XENC28", "error occurred when xml document was checked: %s", buf);
     }
-
+  wsse_ctx_free (ctx);
   return NEW_DB_NULL;
 }
 
-caddr_t * xml_find_signature (caddr_t * doc)
+caddr_t * xml_find_signature (caddr_t * doc, int is_wsse)
 {
   caddr_t * envelope;
+  if (!is_wsse)
+    return xml_find_any_child (doc, "Signature", DSIG_URI);
   envelope = xml_find_child (doc, "Envelope", WSS_SOAP_URI, 0, NULL);
   if (envelope)
     {
@@ -1566,9 +1602,9 @@ caddr_t * xml_find_signature (caddr_t * doc)
   return 0;
 }
 
-caddr_t * xml_find_signedinfo (caddr_t * doc)
+caddr_t * xml_find_signedinfo (caddr_t * doc, int is_wsse)
 {
-  caddr_t * signature = xml_find_signature (doc);
+  caddr_t * signature = xml_find_signature (doc, is_wsse);
   if (signature)
     {
       return xml_find_child (signature, "SignedInfo", DSIG_URI, 0, NULL);
@@ -1647,7 +1683,7 @@ xmlenc_decrypt_soap (caddr_t * qst, char * xml_text, long soap_version, long val
   int is_valid_secxml = 0, try_decode = (validate_sign & 4);
   char * decrypted_xml_text = NULL;
   dk_session_t *decrypted_xml;
-  wsse_ser_ctx_t sctx;
+  wsse_ser_ctx_t sctx, *pctx = &sctx;
 
   memset (&sctx, 0, sizeof (wsse_ser_ctx_t));
   doc = (caddr_t *) xml_make_tree ((query_instance_t*) qst, xml_text, err_ret, (char *) enc, lh, 0);
@@ -1697,7 +1733,7 @@ xmlenc_decrypt_soap (caddr_t * qst, char * xml_text, long soap_version, long val
 
   XENC_TRY (&ctx->wc_tb)
     {
-      wsse_build_wsse_objects (security, wsse_get_callback (ctx, WSSE_URI(&sctx) , "Security"), ctx);
+      wsse_build_wsse_objects (security, wsse_get_callback (ctx, WSSE_URI(pctx) , "Security"), ctx);
       wsse_resolve_encrypted_keys (envelope, ctx);
     }
   XENC_CATCH
@@ -1725,7 +1761,7 @@ xmlenc_decrypt_soap (caddr_t * qst, char * xml_text, long soap_version, long val
   decrypted_xml_text = strses_string (decrypted_xml);
 
   if (validate_sign != XENC_VALIDATE_NONE && signature)
-    if (dsig_check_xml ((query_instance_t*) qst, ctx->wc_dsig, xml_text, strlen (xml_text), &c, &errm))
+    if (dsig_check_xml ((query_instance_t*) qst, ctx->wc_dsig, xml_text, strlen (xml_text), &c, &errm, 1))
       {
 	char buf[1024];
 	wsse_ctx_free (ctx);
@@ -1829,7 +1865,7 @@ void wsse_report_error (struct wsse_ctx_s * ctx, char * code, int buflen, ...)
       code = WSSE_UNKNOWN_CODE;
       goto again;
     }
-#ifdef DEBUG
+#if 0
   if (xenc_test_processing())
     return;
 #endif

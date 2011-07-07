@@ -66,9 +66,9 @@ extern void dt_audit_fields (char *dt);
  */
 
 #define DT_DAY(dt) \
-  ((CUC (dt, 0) << 16) | \
+  ((int32)((CUC (dt, 0) << 16) | \
     (CUC (dt, 1) << 8) | \
-    CUC (dt, 2))
+    CUC (dt, 2) | ((CUC (dt, 0) & 0x80) ? 0xff000000 : 0)))
 
 #define DT_HOUR(dt) \
   CUC(dt, 3)
@@ -105,49 +105,49 @@ extern void dt_audit_fields (char *dt);
 #endif
 
 #define DT_SET_DAY(dt, y)  \
-  ((UC (dt, 0) = _UC ((y >> 16) & 0xFF), \
-    UC (dt, 1) = _UC ((y >> 8) & 0xFF), \
-    UC (dt, 2) = _UC (y & 0xFF)))
+  ((UC (dt, 0) = _UC (((y) >> 16) & 0xFF), \
+    UC (dt, 1) = _UC (((y) >> 8) & 0xFF), \
+    UC (dt, 2) = _UC ((y) & 0xFF)))
 
 #define DT_SET_HOUR(dt, h) \
   UC(dt, 3) = _UC (h)
 
 #define DT_SET_MINUTE(dt, m) \
   (UC (dt, 4) &= 0x3, \
-   UC (dt, 4) |= m << 2)
+   UC (dt, 4) |= (m) << 2)
 
 #define DT_SET_SECOND(dt, m) \
   (UC (dt, 4) &= 0xFC, \
-   UC (dt, 4) |= (m >> 4) & 0x3, \
+   UC (dt, 4) |= ((m) >> 4) & 0x3, \
    UC (dt, 5) &= 0x0F, \
-   UC (dt, 5) |= (m & 0x0F) << 4)
+   UC (dt, 5) |= ((m) & 0x0F) << 4)
 
 #define DT_SET_FRACTION(dt, f) \
   (UC (dt, 5) &= 0xF0, \
-   UC (dt, 5) |= ((f/1000) >> 16) & 0x0F, \
-   UC (dt, 6) = _UC ((f/1000) >> 8), \
-   UC (dt, 7) = _UC ((f/1000) & 0xFF))
+   UC (dt, 5) |= (((f)/1000) >> 16) & 0x0F, \
+   UC (dt, 6) = _UC (((f)/1000) >> 8), \
+   UC (dt, 7) = _UC (((f)/1000) & 0xFF))
 
 #ifdef NO_DT_TYPE_IN_TZ
 #define DT_SET_TZ(dt, tz) \
-  (SIGNC (dt, 8) = _SIGNC (tz >> 8), \
-   SIGNC (dt, 9) = _SIGNC (tz & 0xFF))
+  (SIGNC (dt, 8) = _SIGNC ((tz) >> 8), \
+   SIGNC (dt, 9) = _SIGNC ((tz) & 0xFF))
 
 #define DT_SET_COMPAT_TZ(dt, tz) DT_SET_TZ(dt, tz)
 
 #define DT_SET_DT_TYPE(dt, type) SIGNC (dt, 8) = SIGNC (dt, 8)
 #else
 #define DT_SET_TZ(dt, tz) \
-    (UC (dt, 8) = (_UC (_UC (UC (dt, 8) >> 3) << 3) | (_UC (tz >> 8) & 0x07)), \
-     UC (dt, 9) = _UC (tz & 0xFF))
+    (UC (dt, 8) = (_UC (_UC (UC (dt, 8) >> 3) << 3) | (_UC ((tz) >> 8) & 0x07)), \
+     UC (dt, 9) = _UC ((tz) & 0xFF))
 
 #define DT_SET_DT_TYPE(dt, type) do { \
-  UC (dt, 8) = _UC (_UC (UC (dt, 8) & 0x07) | _UC (type << 5)); \
+  UC (dt, 8) = _UC (_UC (UC (dt, 8) & 0x07) | _UC ((type) << 5)); \
   DT_AUDIT_FIELDS(dt); } while (0)
 
 #define DT_SET_COMPAT_TZ(dt, tz) \
-  (SIGNC (dt, 8) = _SIGNC (tz >> 8), \
-   SIGNC (dt, 9) = _SIGNC (tz & 0xFF))
+  (SIGNC (dt, 8) = _SIGNC ((tz) >> 8), \
+   SIGNC (dt, 9) = _SIGNC ((tz) & 0xFF))
 #endif
 
 

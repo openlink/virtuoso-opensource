@@ -1,3 +1,30 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2010 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+body {
+  text-align: left !important;
+}
+
 .error
 {
   color: red;
@@ -9,7 +36,7 @@
 }
 
 .logo {
-  margin: 40px;
+  margin: 15px;
 }
 
 #ob {
@@ -66,6 +93,7 @@ table.form th {
 table.form td {
   padding-left: 3px;
   margin-bottom: 5px;
+  white-space: nowrap;
 }
 
 .tabs {
@@ -126,4 +154,30 @@ img.button {
 
 table.listing td, table.listing th {
   border-spacing: 0px;
+}
+
+div.PF_header {
+  width: 100%;
+  padding: 5px 0 5px 0px;
+  background-color: #F9F9F9;
+  font-size: 14px;
+  font-weight: bold;
+}
+table.PF_form {
+  width: 100%;
+}
+
+table.PF_form th {
+  vertical-align: top;
+  text-align: right;
+  width: 150px;
+  padding-right: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+table.PF_form td {
+  padding-left: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
 }

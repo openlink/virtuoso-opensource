@@ -90,8 +90,8 @@ typedef struct wlex_state_s {
 #endif
 
 #define ISNOTWIKIWORDCHAR(ch) \
-	((' ' == (ch)) || ('\t' == (ch))\
-	|| (!isalnum((ch)) && (',' != (ch)) && ('.' != (ch)) && ('_' != (ch)) && ('-' != (ch))))
+	((' ' == (ch)) || ('\t' == (ch)) || ('.' == (ch)) \
+	|| (!isalnum((ch)) && (',' != (ch)) && ('_' != (ch)) && ('-' != (ch))))
 
 static wlex_state_t wlex_instance;
 #define STATE(n) (wlex_instance.n)

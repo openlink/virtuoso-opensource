@@ -37,7 +37,10 @@
 	<paramdef>in <parameter>_SINVM_NAME_IN</parameter> varchar</paramdef>
       </funcprototype>
     </funcsynopsis>
-  </refsynopsisdiv>
+  </refsynopsisdiv>$
+  <refsect1 id="desc_sinv_drop_inverse"><title>Description</title>
+    <para>Reverses the effect of <link linkend="fn_sinv_create_inverse"><function>sinv_create_inverse</function></link> procedure.</para>
+  </refsect1>
   <refsect1 id="params_sinv_drop_inverse">
     <title>Parameters</title>
     <refsect2><title>_SINVM_NAME_IN</title>

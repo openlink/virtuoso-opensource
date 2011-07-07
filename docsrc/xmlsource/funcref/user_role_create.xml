@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>USER_ROLE_CREATE</refname>
-    <refpurpose>create a new SQL role.  Same as the create role statemen..</refpurpose>
+    <refpurpose>Creates a new SQL role. Same as the create role statement.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_USER_ROLE_CREATE">

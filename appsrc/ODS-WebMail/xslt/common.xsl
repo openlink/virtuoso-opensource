@@ -26,6 +26,7 @@
   <xsl:output method="xhtml" indent="yes" omit-xml-declaration="no" encoding="utf-8" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
   <xsl:include href="base.xsl"/>
 
+  <xsl:variable name="iri" select="//user_info/domain_path"/>
   <xsl:variable name="sid" select="/page/sid"/>
   <xsl:variable name="realm" select="/page/realm"/>
   <xsl:variable name="fid" select="/page/folder_id"/>
@@ -98,7 +99,7 @@
                     <xsl:call-template name="make_href">
                         <xsl:with-param name="params" />
                       <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-                      <xsl:with-param name="label">External POP3 Accounts</xsl:with-param>
+                        <xsl:with-param name="label">External Accounts</xsl:with-param>
                     </xsl:call-template>
                   </li>
                 </ul>
@@ -160,8 +161,7 @@
       </head>
       <body style="margin: 5px; font-size: 9pt;">
         <div style="padding: 0 0 0.5em 0;">
-          <img src="/oMail/i/close_16.png" border="0" onClick="javascript: if (opener != null) opener.focus(); window.close();" alt="Close" title="Close" /><a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"  alt="Close" title="Close">&nbsp;Close</a>
-          <hr/>
+          <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
         </div>
         <xsl:apply-templates/>
         <div id="FT">
@@ -238,43 +238,46 @@
   <xsl:template name="css">
     <link type="text/css" rel="stylesheet" href="/oMail/i/css/styles.css" />
     <link type="text/css" rel="stylesheet" href="/oMail/i/css/print.css" media="print" />
+    <link type="text/css" rel="stylesheet" href="/ods/typeahead.css" />
     <link type="text/css" rel="stylesheet" href="/ods/oat/styles/webdav.css" />
   </xsl:template>
 
   <!-- ========================================================================== -->
   <xsl:template name="javaScript">
-    <script type="text/javascript" src="/oMail/i/js/script.js"></script>
-    <script type="text/javascript">
-      var toolkitPath="/ods/oat";
-      var imagePath="/ods/images/oat/";
-
-      var featureList=["ajax", "combolist", "json", "anchor", "dav", "dialog", "calendar"];
-    </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
-    <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
-      function myInit() {
         OAT.Preferences.imagePath = '/ods/images/oat/';
         OAT.Preferences.stylePath = '/ods/oat/styles/';
         OAT.Preferences.showAjax = false;
 
-      	/* Load Stylesheets */
-      	OAT.Style.include("grid.css");
-      	OAT.Style.include("webdav.css");
-
-        // WebDAV
-        var options = { imagePath: OAT.Preferences.imagePath,
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
                         pathHome: '/home/',
                         path: '/home/<xsl:value-of select="//user_info/user_name" />/',
                         user: '<xsl:value-of select="//user_info/user_name" />',
                         connectionHeaders: {Authorization: '<xsl:value-of select="//user_info/user_basic_authorization" />'}
                       };
-        OAT.WebDav.init(options);
 
-        // a++
-        OAT.Preferences.imagePath = '/ods/images/oat/';
-        OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-        OAT.Anchor.zIndex = 1001;
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "tree", "calendar"];
+        OAT.Loader.load(featureList);
+      </script>
+    <script type="text/javascript" src="/oMail/i/js/script.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/oMail/i/js/tbl.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/app.js"></script>
+    <script type="text/javascript">
+      function myInit() {
+        if (!OAT._loaded) {
+          setTimeout(myInit, 100);
+          return;
+        }
 
         if (<xsl:value-of select="//user_info/app" /> == 1)
         {
@@ -287,9 +290,10 @@
 
         // Init OMAIL object
         OMAIL.init();
+        OAT.MSG.send(OAT, 'PAGE_LOADED');
       }
-      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+      OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
     </script>
   </xsl:template>
 
@@ -308,14 +312,14 @@
       <div style="background-color: #fff;">
         <div style="float: left;">
           <xsl:call-template name="make_href">
-          <xsl:with-param name="params" />
-            <xsl:with-param name="url"><xsl:value-of select="//user_info/domain_path" /></xsl:with-param>
+          <xsl:with-param name="url"></xsl:with-param>
             <xsl:with-param name="title">Mail Home</xsl:with-param>
             <xsl:with-param name="img">/oMail/i/omailbanner_sml.jpg</xsl:with-param>
           </xsl:call-template>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-        <form name="FS" action="search.vsp" method="get">
+        <form name="FS" method="get">
+          <xsl:attribute name="action"><xsl:value-of select="$iri" />/search.vsp</xsl:attribute>
           <xsl:call-template name="hid_sid"/>
           <input type="text" name="q" value=""/>
           <input type="hidden" name="search.x" value="x"/>

@@ -72,9 +72,9 @@ is_ok (char *resp)
 }
 
 
-static dk_session_t *
+static void
 pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
-    long end_size, caddr_t mode, dk_set_t * ret_v, caddr_t * in, caddr_t *qst)
+    long end_size, caddr_t mode, dk_set_t * ret_v, caddr_t * in, caddr_t *qst, long cert)
 {
   int rc;
   volatile int inx, inx_mails;
@@ -84,11 +84,16 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   caddr_t * volatile my_list = NULL;
   dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
   char num[11], resp[1024];
-  char message[16], err_text[64], err_code[6];
+  char message[16], err_text[512], err_code[6];
   char end_msg[5] = ".\x0D\x0A\x00";
   dk_session_t *msg = NULL;
+#ifdef _SSL
+  SSL *ssl;
+  SSL_CTX *ssl_ctx = NULL;
+  SSL_METHOD *ssl_method;
+#endif
 
-  resp[0] = 0;
+  resp[0] = 0; err_code[0] = 0;
   if (!_thread_sched_preempt)
     {
       ses->dks_read_block_timeout = dks_fibers_blocking_read_default_to;
@@ -98,7 +103,7 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
     {
       PrpcSessionFree (ses);
       *err_ret = srv_make_new_error ("2E000", "PO001", "Cannot resolve host in pop3_get");
-      return NULL;
+      return;
     }
 
   rc = session_connect (ses->dks_session);
@@ -108,7 +113,28 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	session_disconnect (ses->dks_session);
       PrpcSessionFree (ses);
       *err_ret = srv_make_new_error ("08001", "PO002", "Cannot connect in pop3_get");
-      return NULL;
+      return;
+    }
+  if (cert)
+    {
+      int ssl_err = 0;
+      int fd = tcpses_get_fd (ses->dks_session);
+      ssl_method = SSLv23_client_method ();
+      ssl_ctx = SSL_CTX_new (ssl_method);
+      ssl = SSL_new (ssl_ctx);
+      SSL_set_fd (ssl, fd);
+      ssl_err = SSL_connect (ssl);
+      if (ssl_err != 1)
+	{
+	  strcpy_ck (err_code, "08006");
+	  if (ERR_peek_error ())
+	    cli_ssl_get_error_string (err_text, sizeof (err_text));
+	  else
+	    strcpy_ck (err_text, "Cannot connect via SSL");
+	  goto error_end;
+	}
+      else
+	tcpses_to_sslses (ses->dks_session, ssl);
     }
 
   msg = strses_allocate ();
@@ -299,22 +325,32 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   /* QUIT from pop3 server */
   SEND (ses, rc, "QUIT", "");
   IS_OK_NEXT (ses, resp, rc, "PO012", "Could not QUIT from remote POP3 server");
+
   strses_free (msg);
   dk_free_tree ((box_t) my_list);
-  return ses;
-error_end:
-  session_disconnect (ses->dks_session);
+  PrpcDisconnect (ses);
   PrpcSessionFree (ses);
+  SSL_CTX_free (ssl_ctx);
+  return;
+
+error_end:
+
   strses_free (msg);
   dk_free_tree ((box_t) my_list);
+  PrpcDisconnect (ses);
+  PrpcSessionFree (ses);
+  SSL_CTX_free (ssl_ctx);
+
+  if (err_code[0] != 0)
   *err_ret = srv_make_new_error ("08006", err_code, "%s", err_text);
-  return NULL;
+  else
+    *err_ret = srv_make_new_error ("08006", "PO014", "Misc. error in connection in pop3_get");
+  return;
 }
 
 static caddr_t
 bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *ses = NULL;
   caddr_t * in_uidl = NULL;
   caddr_t addr = bif_string_arg (qst, args, 0, "pop3_get");
   caddr_t user = bif_string_arg (qst, args, 1, "pop3_get");
@@ -324,6 +360,7 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   caddr_t mode = "";
   caddr_t err = NULL;
+  long cert = 0;
   dk_set_t volatile uidl_mes = NULL;
   IO_SECT(qst);
 
@@ -332,14 +369,15 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (BOX_ELEMENTS (args) > 5)
     {
-      in_uidl = (caddr_t *) bif_array_arg (qst, args, 5, "pop3_get");
+      in_uidl = (caddr_t *) bif_array_or_null_arg (qst, args, 5, "pop3_get");
 
-      if (DV_TYPE_OF (in_uidl) != DV_ARRAY_OF_POINTER)
-	sqlr_new_error ("08000", "PO013",
-			"Argument 6 to pop3_get must be a vector");
+      if (in_uidl && DV_TYPE_OF (in_uidl) != DV_ARRAY_OF_POINTER)
+	sqlr_new_error ("08000", "PO013", "Argument 6 to pop3_get must be a vector");
     }
+  if (BOX_ELEMENTS (args) > 6)
+    cert = bif_long_arg (qst, args, 6, "pop3_get");
 
-  ses = pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) &uidl_mes, in_uidl, qst);
+  pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) &uidl_mes, in_uidl, qst, cert);
 
   if (err)
     {
@@ -347,14 +385,6 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       uidl_mes = NULL;
       sqlr_resignal (err);
     }
-  if (!ses)
-    {
-      dk_free_tree (list_to_array (uidl_mes));
-      uidl_mes = NULL;
-      sqlr_new_error ("08006", "PO014", "Misc. error in connection in pop3_get");
-    }
-  session_disconnect (ses->dks_session);
-  PrpcSessionFree (ses);
   END_IO_SECT (err_ret);
   ret = list_to_array (dk_set_nreverse (uidl_mes));
   if (*err_ret)

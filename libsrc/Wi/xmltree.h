@@ -26,6 +26,7 @@
 #ifndef _XMLTREE_H
 #define _XMLTREE_H
 
+#include "uname_const_decl.h"
 #include "xpath.h"
 #ifdef __cplusplus
 extern "C" {
@@ -41,23 +42,6 @@ extern "C" {
 #define XPATH_DEBUG
 #endif
 */
-
-/*				 0         1         2         3        */
-/*				 01234567890123456789012345678901234567 */
-
-#define SWAP_REIFY_NS_URI	"http://www.w3.org/2000/10/swap/reify#"
-#define SWAP_REIFY_NS_URI_LEN	37
-
-/*				 0         1         2         3         4   */
-/*				 0123456789012345678901234567890123456789012 */
-#define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
-#define VIRTRDF_NS_URI_LEN	42
-
-/*				 0         1         2         3      */
-/*				 012345678901234567890123456789012345 */
-#define XHV_NS_URI		"http://www.w3.org/1999/xhtml/vocab#"
-#define XHV_NS_URI_LEN		35
-
 
 #define MAX_XML_LNAME_LENGTH 500				/* for local names, namespace prefixes and namespace URIs */
 #define MAX_XML_QNAME_LENGTH (2*MAX_XML_LNAME_LENGTH + 1)	/* for qualified names (that have semicolons) */
@@ -128,6 +112,7 @@ according to section 5 'Data Model' of XML Path Language (XPath) Version 1.0 W3C
 according to section 5 'Data Model' of XML Path Language (XPath) Version 1.0 W3C Recommendation 16 November 1999 */
     void (* xe_string_value) (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
 #endif
+    int (* xe_string_value_is_nonempty) (xml_entity_t * xe);
 /*! Tries to go up to parent and maybe through entity reference(s). */
     int (* xe_up) (xml_entity_t * xe, XT * node, int up_flags);
 /*! Tries to go down through entity reference(s). If down, tries to find first child of the root. If not down, tests given node. */
@@ -300,7 +285,7 @@ See where the document is created and put an appropriate breakpoint */
 'xd_type' is unused and I have no idea what was the initial intention, will kill it;
 'xd_qi' is the creator of the document: neither XML document nor XML entity can survive the end of query or be passed from one query instance to other;
 'xd_xqi' is the creator of the document if it is composed or loaded to memory by XPath or XQuery expression;
-'xd_ref_count' is the reference counter of the document to freee it when the last user disappears, users are entities in the document and members of 'xd_referenced_entities' or 'xd_cached_docs';
+'xd_ref_count' is the reference counter of the document to free it when the last user disappears, users are entities in the document and members of 'xd_referenced_entities' or 'xd_cached_docs';
 'xd_cost' is the cost of the reloading of the document; the more it costs the later it should be removed from cache;
 'xd_weight' is the estimate of the size of the document in memory, in kbytes; note that this includes referenced entities.
 'xd_top_doc' is a pointer to document that references to this one;
@@ -643,6 +628,7 @@ typedef struct xp_node_s
   caddr_t *	xn_attrs;
   dk_set_t	 xn_children;
   caddr_t *	xn_namespaces;
+  long 		xn_n_children;
   struct xparse_ctx_s * xn_xp;
 } xp_node_t;
 
@@ -711,28 +697,34 @@ typedef struct xp_rdfa_locals_s
   struct xp_rdfa_locals_s *xrdfal_parent;	/*!< Pointer to parent context */
   xp_node_t *	xrdfal_xn;		/*!< Node whose not-yet-closed element corresponds to the given context */
   int		xrdfal_place_bits;	/*!< A combination of RDFA_IN_... bits */
-  caddr_t	xrdfal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs */
   caddr_t	xrdfal_subj;		/*!< A [new subject] as set at the end of parsing the opening tag. It can be NULL, look up */
   caddr_t	xrdfal_obj_res;		/*!< A [current object resource] as set at the end of parsing the opening tag or created as bnode after that */
   caddr_t	xrdfal_datatype;	/*!< Datatype IRI */
-  caddr_t	xrdfal_language;	/*!< Language label */
+  caddr_t	xrdfal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs. Automatically inherited from parent */
+  caddr_t	xrdfal_language;	/*!< Language label. Automatically inherited from parent */
+  caddr_t	xrdfal_vocab;		/*!< Vocabulary URI. Automatically inherited from parent */
+  caddr_t *	xrdfal_profile_terms;	/*!< Definitions of terms from an external RDFa profile resource, get-keyword style, sorted by terms for \c ecm_find_name(). Automatically inherited from parent */
   rdfa_ict_t *	xrdfal_ict_buffer;	/*!< Storage for incomplete triples, may contain NULLs at the end */
   int		xrdfal_ict_count;	/*!< Count of stored incomplete triples */
-  int		xrdfal_boring_opened_elts;	/*!< Number of opend but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
+  int		xrdfal_boring_opened_elts;	/*!< Number of opened but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
 } xp_rdfa_locals_t;
 
-#define RDFA_ATTR_ABOUT		101
-#define RDFA_ATTR_CONTENT	102
-#define RDFA_ATTR_DATATYPE	103
-#define RDFA_ATTR_HREF		104
-#define RDFA_ATTR_PROPERTY	105
-#define RDFA_ATTR_REL		106
-#define RDFA_ATTR_RESOURCE	107
-#define RDFA_ATTR_REV		108
-#define RDFA_ATTR_SRC		109
-#define RDFA_ATTR_TYPEOF	110
-#define RDFA_ATTR_XML_BASE	111
-#define RDFA_ATTR_XML_LANG	112
+#define RDFA_ATTR_ABOUT		0
+#define RDFA_ATTR_CONTENT	1
+#define RDFA_ATTR_DATATYPE	2
+#define RDFA_ATTR_HREF		3
+#define RDFA_ATTR_PREFIX	4
+#define RDFA_ATTR_PROFILE	5
+#define RDFA_ATTR_PROPERTY	6
+#define RDFA_ATTR_REL		7
+#define RDFA_ATTR_RESOURCE	8
+#define RDFA_ATTR_REV		9
+#define RDFA_ATTR_SRC		10
+#define RDFA_ATTR_TYPEOF	11
+#define RDFA_ATTR_VOCAB		12
+#define RDFA_ATTR_XML_BASE	13
+#define RDFA_ATTR_XML_LANG	14
+#define COUNTOF__RDFA_ATTR	15
 
 /*! This structure is kept in RDFa parser as a DV_ARRAY_OF_POINTER and freed in case of error, to avoid memleaks.
 It is allocated once and only partially cleaned by callback calls. */
@@ -825,7 +817,8 @@ typedef struct xslt_sheet_s
     xqi_binding_t *	xsh_globals;
     dk_set_t		xsh_formats;
     xml_ns_2dict_t	xsh_ns_2dict;		/*!< Dictionary of namespace that are declared in the stylesheet (or imported) and will extend the xd_ns_2dict of the resulting tree */
-    caddr_t		xsh_top_excl_res_prefx;	/*!< String that is an attribute value expression (string with expressins in {...}) that is value of exclude-result-prefixes attr of xsl:stylesheet element */
+    caddr_t		xsh_top_excl_res_prefx;	/*!< String that is an attribute value expression (string with expressions in {...}) that is value of exclude-result-prefixes attr of xsl:stylesheet element */
+    caddr_t		xsh_sparql_preamble;	/*!< A string that is inserted at the front of any SPARQL query that is executed by for-each-row */
     XOUT_MEMBERS
     xslt_sheet_stats_t	xsh_total_uses;
     xslt_sheet_stats_t	xsh_new_uses;
@@ -841,11 +834,11 @@ extern xslt_number_format_t *xsnf_default;
 typedef struct xparse_ctx_s
 {
   struct xparse_ctx_s *	xp_parent;	/*!< Context of parent parser (not-NULL when a parser reads GE (generic entity) nested in other document) */
-  xp_node_t *		xp_top;		/*!< Topmost node of the (curently incomplete) tree */
+  xp_node_t *		xp_top;		/*!< Topmost node of the (currently incomplete) tree */
   xp_node_t *		xp_current;	/*!< Current node (innermost not-yet-closed tag) */
   xp_node_t *		xp_free_list;	/*!< Free-list, to avoid costly dk_alloc() overhead for every node */
   long			xp_bytes;
-  query_instance_t *	 xp_qi;		/*!< Query that lauched the parser */
+  query_instance_t *	 xp_qi;		/*!< Query that launched the parser */
   dk_session_t *	xp_strses;
   caddr_t		xp_id;
   caddr_t		xp_id_limit;
@@ -904,6 +897,7 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
     caddr_t text = strses_string ((xp)->xp_strses); \
     strses_flush ((xp)->xp_strses); \
     dk_set_push (&((xp)->xp_current->xn_children), (void*) text); \
+    (xp)->xp_current->xn_n_children++; \
   }
 
 #define XP_STRSES_FLUSH(xp) \
@@ -914,6 +908,8 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
         if (xp_strses_length & ~0xffffff) \
           sqlr_new_error ("42000", "SR596", "Unable to place abnormally long string into XML tree, %ld bytes is above 16Mb limit", (long)xp_strses_length); \
         XP_STRSES_FLUSH_NOCHECK(xp); \
+	if ((xp)->xp_current->xn_n_children >= MAX_BOX_ELEMENTS) \
+          sqlr_new_error ("42000", "SR596", "Unable to place abnormally long XML tree, %ld elements are above %ld limit", (long)(xp)->xp_current->xn_n_children, MAX_BOX_ELEMENTS); \
       } \
     } while (0)
 
@@ -957,6 +953,7 @@ extern xml_entity_t * xte_copy (xml_entity_t * xe);
 extern void xslt_init (void);
 
 extern int xqi_truth_value (xp_instance_t * xqi, XT * tree);
+extern int xqi_truth_value_of_box (caddr_t val);
 extern int xqi_pred_truth_value (xp_instance_t * xqi, XT * tree);
 extern xp_instance_t *xqr_instance (xp_query_t * xqr, query_instance_t * qi);
 extern void xn_error (xp_node_t * xn, const char * msg);
@@ -1015,115 +1012,6 @@ extern void xslt_instantiate (xparse_ctx_t * xp, xslt_template_t * xst, xml_enti
 #define xslt_traverse_1(XP) xslt_traverse_inner ((XP), NULL)
 
 extern caddr_t xml_get_ns_uri (client_connection_t *cli, caddr_t pref, ptrlong persistent, int ret_in_mp_box);
-
-extern caddr_t uname___empty;
-extern caddr_t uname__bang_cdata_section_elements;
-extern caddr_t uname__bang_exclude_result_prefixes;
-extern caddr_t uname__bang_file;
-extern caddr_t uname__bang_location;
-extern caddr_t uname__bang_name;
-extern caddr_t uname__bang_ns;
-extern caddr_t uname__bang_uri;
-extern caddr_t uname__bang_use_attribute_sets;
-extern caddr_t uname__bang_xmlns;
-extern caddr_t uname__attr;
-extern caddr_t uname__comment;
-extern caddr_t uname__disable_output_escaping;
-extern caddr_t uname__root;
-extern caddr_t uname__pi;
-extern caddr_t uname__ref;
-extern caddr_t uname__srcfile;
-extern caddr_t uname__srcline;
-extern caddr_t uname__txt;
-extern caddr_t uname__xslt;
-extern caddr_t uname_lang;
-extern caddr_t uname_nil;
-extern caddr_t uname_nodeID_ns;
-extern caddr_t uname_rdf_ns_uri;
-extern caddr_t uname_rdf_ns_uri_Description;
-extern caddr_t uname_rdf_ns_uri_ID;
-extern caddr_t uname_rdf_ns_uri_RDF;
-extern caddr_t uname_rdf_ns_uri_Seq;
-extern caddr_t uname_rdf_ns_uri_Statement;
-extern caddr_t uname_rdf_ns_uri_XMLLiteral;
-extern caddr_t uname_rdf_ns_uri_about;
-extern caddr_t uname_rdf_ns_uri_first;
-extern caddr_t uname_rdf_ns_uri_li;
-extern caddr_t uname_rdf_ns_uri_nil;
-extern caddr_t uname_rdf_ns_uri_nodeID;
-extern caddr_t uname_rdf_ns_uri_object;
-extern caddr_t uname_rdf_ns_uri_predicate;
-extern caddr_t uname_rdf_ns_uri_resource;
-extern caddr_t uname_rdf_ns_uri_rest;
-extern caddr_t uname_rdf_ns_uri_subject;
-extern caddr_t uname_rdf_ns_uri_type;
-extern caddr_t uname_rdf_ns_uri_datatype;
-extern caddr_t uname_rdf_ns_uri_parseType;
-extern caddr_t uname_rdf_ns_uri_value;
-extern caddr_t uname_space;
-extern caddr_t uname_swap_reify_ns_uri;
-extern caddr_t uname_swap_reify_ns_uri_statement;
-extern caddr_t uname_virtrdf_ns_uri;
-extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
-extern caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
-extern caddr_t uname_virtrdf_ns_uri_QuadMap;
-extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
-extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
-extern caddr_t uname_virtrdf_ns_uri_array_of_any;
-extern caddr_t uname_virtrdf_ns_uri_array_of_string;
-extern caddr_t uname_virtrdf_ns_uri_bitmask;
-extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
-extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
-extern caddr_t uname_virtrdf_ns_uri_loadAs;
-extern caddr_t uname_xhv_ns_uri;
-extern caddr_t uname_xhv_ns_uri_alternate;
-extern caddr_t uname_xhv_ns_uri_appendix;
-extern caddr_t uname_xhv_ns_uri_bookmark;
-extern caddr_t uname_xhv_ns_uri_cite;
-extern caddr_t uname_xhv_ns_uri_chapter;
-extern caddr_t uname_xhv_ns_uri_contents;
-extern caddr_t uname_xhv_ns_uri_copyright;
-extern caddr_t uname_xhv_ns_uri_first;
-extern caddr_t uname_xhv_ns_uri_glossary;
-extern caddr_t uname_xhv_ns_uri_help;
-extern caddr_t uname_xhv_ns_uri_icon;
-extern caddr_t uname_xhv_ns_uri_index;
-extern caddr_t uname_xhv_ns_uri_last;
-extern caddr_t uname_xhv_ns_uri_license;
-extern caddr_t uname_xhv_ns_uri_meta;
-extern caddr_t uname_xhv_ns_uri_next;
-extern caddr_t uname_xhv_ns_uri_p3pv1;
-extern caddr_t uname_xhv_ns_uri_prev;
-extern caddr_t uname_xhv_ns_uri_role;
-extern caddr_t uname_xhv_ns_uri_section;
-extern caddr_t uname_xhv_ns_uri_stylesheet;
-extern caddr_t uname_xhv_ns_uri_subsection;
-extern caddr_t uname_xhv_ns_uri_start;
-extern caddr_t uname_xhv_ns_uri_up;
-extern caddr_t uname_xml;
-extern caddr_t uname_xmlns;
-extern caddr_t uname_xml_colon_base;
-extern caddr_t uname_xml_colon_lang;
-extern caddr_t uname_xml_colon_space;
-extern caddr_t uname_xml_ns_uri;
-extern caddr_t uname_xml_ns_uri_colon_base;
-extern caddr_t uname_xml_ns_uri_colon_lang;
-extern caddr_t uname_xml_ns_uri_colon_space;
-extern caddr_t uname_xmlschema_ns_uri;
-extern caddr_t uname_xmlschema_ns_uri_hash;
-extern caddr_t uname_xmlschema_ns_uri_hash_any;
-extern caddr_t uname_xmlschema_ns_uri_hash_anyURI;
-extern caddr_t uname_xmlschema_ns_uri_hash_boolean;
-extern caddr_t uname_xmlschema_ns_uri_hash_date;
-extern caddr_t uname_xmlschema_ns_uri_hash_dateTime;
-extern caddr_t uname_xmlschema_ns_uri_hash_decimal;
-extern caddr_t uname_xmlschema_ns_uri_hash_double;
-extern caddr_t uname_xmlschema_ns_uri_hash_float;
-extern caddr_t uname_xmlschema_ns_uri_hash_integer;
-extern caddr_t uname_xmlschema_ns_uri_hash_string;
-extern caddr_t uname_xmlschema_ns_uri_hash_time;
-extern caddr_t unames_colon_number[20];
-
 
 extern void DBG_NAME(xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * ret, dtp_t dtp);
 #ifdef MALLOC_DEBUG

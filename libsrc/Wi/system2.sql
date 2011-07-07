@@ -551,8 +551,8 @@ create procedure SYS_CREATE_TABLE_AS (
     --dbg_obj_print (_stmt);
     if (exec_it <> 0)
       {
---        if (log_is_on)
---	  log_enable (0);
+        --if (log_is_on and 1 = sys_stat ('cl_run_local_only'))
+	--  log_enable (0);
         {
 	    declare exit handler for sqlstate '*'
             {
@@ -585,7 +585,7 @@ create procedure SYS_CREATE_TABLE_AS (
                    _tb_dotted,
 		   0,
 		   _parse_tree,
-		   0 -- INS_NORMAL
+		   0, 0, 0 -- INS_NORMAL, 0 key, 0 opts
 		);
                 aref_set_0 (_insert_stmt, 2);
                 aref_set_0 (_insert_stmt, 4);
@@ -593,9 +593,12 @@ create procedure SYS_CREATE_TABLE_AS (
 		--dbg_obj_print ('after insert');
 	      }
         }
---        if (log_is_on)
---          log_enable (1);
---        log_text ('DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)', tb_name, _parse_tree, with_data);
+        --if (log_is_on and 1 = sys_stat ('cl_run_local_only'))
+        --  log_enable (1);
+	--if (1 = sys_stat ('cl_run_local_only'))
+	--  {
+	--    log_text ('DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)', tb_name, _parse_tree, with_data);
+	--  }
       }
     else
       return _stmt;
@@ -633,15 +636,25 @@ decode_b32_num (in s varchar) returns integer
   declare x integer; x := 0;
   declare y integer;
 
-  declare b32_s varchar;
+  declare b32_s, typo_s, corr_s varchar;
+
   b32_s := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  typo_s := '1089';
+  corr_s := 'IOBG';
 
   declare i integer;
+  declare c varchar;
+
   i := 0;
 
   while (i < length(s))
     {
-      y := locate (chr (aref (s, i)), b32_s);
+      c := chr (aref (s, i));
+
+      y := locate (c, typo_s);
+      if (y > 0) c := chr(aref (corr_s, y - 1));
+
+      y := locate (c, b32_s);
 
       if (y > 0)
 	    x := (x * 32) + y - 1;
@@ -653,7 +666,6 @@ decode_b32_num (in s varchar) returns integer
   return x;
 }
 ;
-
 
 
 -- add all known sequences created by DBA
@@ -754,4 +766,76 @@ add_protected_sequence ('vad_id')
 add_protected_sequence ('vad_tmp')
 ;
 add_protected_sequence ('vdd_init')
+;
+
+create table SYS_X509_CERTIFICATES (
+    	C_U_ID	int,			-- user id
+    	C_ID varchar, 			-- key id
+	C_DATA long varchar, 		-- certificate (and possibly key) pem format
+	C_KIND integer, 		-- 1 : CA certificate, rest for future use
+	C_NAME varchar,
+	primary key (C_U_ID, C_KIND, C_ID))
+;
+
+
+create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
+{
+  declare ki varchar;
+  declare name, subj varchar;
+  declare arr any;
+  declare user_id int;
+
+  arr := pem_certificates_to_array (certs);
+  user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = user);
+  if (user_id <> 0 and kind = 1)
+    signal ('39000', 'Only DBA can install CA roots');
+  foreach (varchar cert in arr) do
+    {
+      ki := get_certificate_info (6, cert, 0, '');
+      if (ki is null)
+	signal ('22023', 'Can not get certificate id');
+      subj := get_certificate_info (2, cert, 0, '');
+      name := regexp_match ('/CN=[^/]+/?', subj);
+      if (name is null or name like '/CN=http:%')
+	name := regexp_match ('/O=[^/]+/?', subj);
+      if (name is not null)
+	{
+	  declare pos int;
+	  name := trim (name, '/');
+	  pos := strchr (name, '=');
+	  name := subseq (name, pos + 1);
+	  name := split_and_decode (replace (name, '\\x', '%'))[0];
+	}
+      insert soft SYS_X509_CERTIFICATES (C_U_ID, C_ID, C_DATA, C_KIND, C_NAME) values (user_id, ki, cert, kind, name);
+    }
+}
+;
+
+create procedure X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
+{
+  declare ki varchar;
+  declare name, subj varchar;
+  declare arr any;
+  declare user_id int;
+
+  arr := pem_certificates_to_array (certs);
+  user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = user);
+  if (user_id <> 0 and kind = 1)
+    signal ('39000', 'Only DBA can install CA roots');
+  foreach (varchar cert in arr) do
+    {
+      ki := get_certificate_info (6, cert, 0, '');
+      if (ki is null)
+	signal ('22023', 'Can not get certificate id');
+      delete from SYS_X509_CERTIFICATES where C_U_ID = user_id and C_KIND = kind and C_ID = ki;
+    }
+}
+;
+
+create procedure X509_ROOT_CA_CERTS ()
+{
+  declare ret any;
+  ret := (select vector_agg (C_DATA) from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1);
+  return ret;
+}
 ;

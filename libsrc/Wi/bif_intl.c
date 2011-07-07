@@ -38,6 +38,7 @@
 #include "multibyte.h"
 #include "srvmultibyte.h"
 #include "xml.h"
+#include "security.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -535,7 +536,10 @@ bif_uname (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
     default:
     case 3: allow_long = bif_long_arg (qst, args, 2, "uname");
     case 2: cs1_name = bif_string_or_null_arg (qst, args, 1, "uname");
-    case 1: break;
+    case 1:
+      if (DV_UNAME == dtp)
+        return box_copy (narrow);
+      break;
     }
   cs1_uname = cs1_name ? sqlp_box_upcase (cs1_name) : NULL;
 
@@ -610,6 +614,17 @@ bif_uname (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
       return res;
     }
   return box_dv_uname_nchars (narrow, box_length (narrow) - 1);
+}
+
+extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
+
+caddr_t
+bif_quick_uname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t strg = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "__uname");
+  if (NULL == strg)
+    return NEW_DB_NULL;
+  return box_cast_to_UTF8_uname (qst, strg);
 }
 
 static int
@@ -1018,6 +1033,15 @@ bif_dbg_assert_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy_tree (box);
 }
 
+static
+caddr_t
+bif_dbg_set_lh_xany_normalization_flags (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "dbg_set_lh_xany_normalization_flags");
+  lh_xany_normalization_flags = bif_long_arg (qst, args, 0, "dbg_set_lh_xany_normalization_flags");
+  return box_num (lh_xany_normalization_flags);
+}
+
 wcharset_t *
 wcharset_by_name_or_dflt (ccaddr_t cs_name, query_instance_t *qi)
 {
@@ -1090,7 +1114,6 @@ get_q_of_lang_in_http_accept_language (const char *lang, const char *line)
         }
 garbage_after_q:
       while ((' ' <= tail[0]) && (',' != tail[0])) tail++;
-q_done:
       match_weight = lang_match_to_accept_language_range (lang, key, key_end);
       if (match_weight > best_match_weight)
         {
@@ -1121,7 +1144,7 @@ bif_intl_init (void)
 {
   bif_define_typed ("collation__define", bif_collation__define, &bt_integer);
   bif_define_typed ("charset__define", bif_charset_define, &bt_integer);
-  bif_define_typed ("charset_canonical_name", bif_charset_canonical_name, &bt_varchar);
+  bif_define_typed ("charset_canonical_name", bif_charset_canonical_name, &bt_integer);
   bif_define_typed ("complete_collation_name", bif_complete_collation_name, &bt_varchar);
   bif_define_typed ("collation_order_string", bif_collation_order_string, &bt_varchar);
   bif_define_typed ("current_charset", bif_current_charset, &bt_varchar);
@@ -1129,6 +1152,7 @@ bif_intl_init (void)
   bif_define_typed ("bf_text_to_UTF8", bif_bf_text_to_UTF8, &bt_varchar);
   bif_define_typed ("bf_text_to_UTF8_or_wide", bif_bf_text_to_UTF8_or_wide, &bt_varchar);
   bif_define ("uname", bif_uname);
+  bif_define ("__uname", bif_quick_uname);
   bif_define ("charsets_list", bif_charsets_list);
   bif_define_typed ("unicode_toupper", bif_unicode_toupper, &bt_integer);
   bif_define_typed ("unicode_tolower", bif_unicode_tolower, &bt_integer);
@@ -1138,6 +1162,7 @@ bif_intl_init (void)
   bif_define ("set_utf8_output", bif_set_utf8_output);
 #endif
   bif_define ("dbg_assert_encoding", bif_dbg_assert_encoding);
+  bif_define ("__dbg_set_lh_xany_normalization_flags", bif_dbg_set_lh_xany_normalization_flags);
   bif_define_typed ("langmatches_pct_http", bif_langmatches_pct_http, &bt_integer);
 }
 

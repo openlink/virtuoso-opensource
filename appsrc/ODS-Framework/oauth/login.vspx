@@ -51,7 +51,7 @@
 	      <div id="login_form_ctr">
 		<v:template type="if-no-login" name="login_if_no_login">
 		  <div id="login_form">
-		    <label for="login_frm_username">Member ID</label>
+		    <label for="login_frm_username">User ID</label>
 		    <v:text xhtml_id="login_frm_username" name="username" value=""/><br/>
 		    <label for="password">Password</label>
 		    <v:text xhtml_id="login_frm_password" name="password" value="" type="password"/><br/>

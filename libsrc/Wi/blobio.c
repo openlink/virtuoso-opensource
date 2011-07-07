@@ -61,7 +61,7 @@ bh_free (blob_handle_t * bh)
  */
 
 void
-bh_serialize (blob_handle_t * bh, dk_session_t * ses)
+bh_serialize_compat (blob_handle_t * bh, dk_session_t * ses)
 {
   if (BLOB_NULL_RECEIVED == bh->bh_all_received)
     {
@@ -74,7 +74,7 @@ bh_serialize (blob_handle_t * bh, dk_session_t * ses)
     print_long (bh->bh_param_index, ses);
   else
     print_long (bh->bh_page, ses);
-  print_long ((long) (bh->bh_length), ses);
+  print_long ((long) MIN (bh->bh_length, LONG_MAX), ses);
   print_long (bh->bh_key_id, ses);
   print_long (bh->bh_frag_no, ses);
   print_long (bh->bh_dir_page, ses);
@@ -82,9 +82,8 @@ bh_serialize (blob_handle_t * bh, dk_session_t * ses)
   print_object  (bh->bh_pages, ses, NULL, NULL);
 }
 
-
-caddr_t
-bh_deserialize (dk_session_t * session)
+blob_handle_t *
+bh_deserialize_compat (dk_session_t * session)
 {
   blob_handle_t *bh;
   MARSH_CHECK_BOX (bh = (blob_handle_t *) dk_try_alloc_box (
@@ -105,6 +104,119 @@ bh_deserialize (dk_session_t * session)
   bh->bh_frag_no = (short) read_long (session);
   bh->bh_dir_page = read_long (session);
   bh->bh_timestamp = read_long (session);
+  bh->bh_pages = (dp_addr_t *) scan_session (session);
+  return bh;
+}
+
+void
+bh_serialize_wide_compat (blob_handle_t * bh, dk_session_t * ses)
+{
+  if (BLOB_NULL_RECEIVED == bh->bh_all_received)
+    {
+      session_buffered_write_char (DV_DB_NULL, ses);
+      return;
+    }
+  session_buffered_write_char (DV_BLOB_WIDE_HANDLE, ses);
+  print_long (bh->bh_ask_from_client, ses);
+  if (bh->bh_ask_from_client)
+    print_long (bh->bh_param_index, ses);
+  else
+    print_long (bh->bh_page, ses);
+  print_long ((long) MIN (LONG_MAX, bh->bh_length), ses);
+  print_long (bh->bh_key_id, ses);
+  print_long (bh->bh_frag_no, ses);
+  print_long (bh->bh_dir_page, ses);
+  print_long (bh->bh_timestamp, ses);
+  print_object  (bh->bh_pages, ses, NULL, NULL);
+}
+
+
+blob_handle_t *
+bh_deserialize_wide_compat (dk_session_t * session)
+{
+  blob_handle_t *bh;
+
+  MARSH_CHECK_BOX (bh = (blob_handle_t *) dk_try_alloc_box (
+      sizeof (blob_handle_t), DV_BLOB_WIDE_HANDLE));
+  memset (bh, 0, sizeof (blob_handle_t));
+
+  bh->bh_ask_from_client = read_long (session);
+  if (bh->bh_ask_from_client)
+    {
+      bh->bh_param_index = read_long (session);
+    }
+  else
+    {
+      bh->bh_page = read_long (session);
+    }
+  bh->bh_length = read_long (session);
+  bh->bh_key_id = (unsigned short) read_long (session);
+  bh->bh_frag_no = (short) read_long (session);
+  bh->bh_dir_page = read_long (session);
+  bh->bh_timestamp = read_long (session);
+  bh->bh_pages = (dp_addr_t *) scan_session (session);
+  return bh;
+}
+
+void
+bh_serialize (blob_handle_t * bh, dk_session_t * ses)
+{
+  client_connection_t *cli = DKS_DB_DATA (ses);
+  if (BLOB_NULL_RECEIVED == bh->bh_all_received)
+    {
+      session_buffered_write_char (DV_DB_NULL, ses);
+      return;
+    }
+  if (cli && cli->cli_version < 3104)
+    {
+      bh_serialize_compat (bh, ses);
+      return;
+    }
+  session_buffered_write_char (DV_BLOB_HANDLE, ses);
+  print_int (bh->bh_ask_from_client, ses);
+  if (bh->bh_ask_from_client)
+    print_int (bh->bh_param_index, ses);
+  else
+    print_int (bh->bh_page, ses);
+  print_int (bh->bh_length, ses);
+  print_int (bh->bh_diskbytes, ses);
+  print_int (bh->bh_key_id, ses);
+  print_int (bh->bh_frag_no, ses);
+  print_int (bh->bh_dir_page, ses);
+  print_int (bh->bh_timestamp, ses);
+  print_object  (bh->bh_pages, ses, NULL, NULL);
+}
+
+
+caddr_t
+bh_deserialize (dk_session_t * session)
+{
+  blob_handle_t *bh;
+  client_connection_t *cli = DKS_DB_DATA (session);
+  if (cli && cli->cli_version < 3104)
+    {
+      bh = bh_deserialize_compat (session);
+      return (caddr_t) bh;
+    }
+  MARSH_CHECK_BOX (bh = (blob_handle_t *) dk_try_alloc_box (
+      sizeof (blob_handle_t), DV_BLOB_HANDLE));
+  memset (bh, 0, sizeof (blob_handle_t));
+
+  bh->bh_ask_from_client = read_int (session);
+  if (bh->bh_ask_from_client)
+    {
+      bh->bh_param_index = read_int (session);
+    }
+  else
+    {
+      bh->bh_page = read_int (session);
+    }
+  bh->bh_length = read_int (session);
+  bh->bh_diskbytes = read_int (session);
+  bh->bh_key_id = (unsigned short) read_int (session);
+  bh->bh_frag_no = (short) read_int (session);
+  bh->bh_dir_page = read_int (session);
+  bh->bh_timestamp = read_int (session);
   bh->bh_pages = (dp_addr_t *) scan_session (session);
   return ((caddr_t) bh);
 }
@@ -162,22 +274,29 @@ bh_deserialize_xper (dk_session_t * session)
 void
 bh_serialize_wide (blob_handle_t * bh, dk_session_t * ses)
 {
+  client_connection_t *cli = DKS_DB_DATA (ses);
   if (BLOB_NULL_RECEIVED == bh->bh_all_received)
     {
       session_buffered_write_char (DV_DB_NULL, ses);
       return;
     }
+  if (cli && cli->cli_version < 3104)
+    {
+      bh_serialize_wide_compat (bh, ses);
+      return;
+    }
   session_buffered_write_char (DV_BLOB_WIDE_HANDLE, ses);
-  print_long (bh->bh_ask_from_client, ses);
+  print_int (bh->bh_ask_from_client, ses);
   if (bh->bh_ask_from_client)
-    print_long (bh->bh_param_index, ses);
+    print_int (bh->bh_param_index, ses);
   else
-    print_long (bh->bh_page, ses);
-  print_long ((long) bh->bh_length, ses);
-  print_long (bh->bh_key_id, ses);
-  print_long (bh->bh_frag_no, ses);
-  print_long (bh->bh_dir_page, ses);
-  print_long (bh->bh_timestamp, ses);
+    print_int (bh->bh_page, ses);
+  print_int (bh->bh_length, ses);
+  print_int (bh->bh_diskbytes, ses);
+  print_int (bh->bh_key_id, ses);
+  print_int (bh->bh_frag_no, ses);
+  print_int (bh->bh_dir_page, ses);
+  print_int (bh->bh_timestamp, ses);
   print_object  (bh->bh_pages, ses, NULL, NULL);
 }
 
@@ -186,25 +305,32 @@ caddr_t
 bh_deserialize_wide (dk_session_t * session)
 {
   blob_handle_t *bh;
+  client_connection_t *cli = DKS_DB_DATA (session);
+  if (cli && cli->cli_version < 3104)
+    {
+      bh = bh_deserialize_compat (session);
+      return (caddr_t) bh;
+    }
 
   MARSH_CHECK_BOX (bh = (blob_handle_t *) dk_try_alloc_box (
       sizeof (blob_handle_t), DV_BLOB_WIDE_HANDLE));
   memset (bh, 0, sizeof (blob_handle_t));
 
-  bh->bh_ask_from_client = read_long (session);
+  bh->bh_ask_from_client = read_int (session);
   if (bh->bh_ask_from_client)
     {
-      bh->bh_param_index = read_long (session);
+      bh->bh_param_index = read_int (session);
     }
   else
     {
-      bh->bh_page = read_long (session);
+      bh->bh_page = read_int (session);
     }
-  bh->bh_length = read_long (session);
-  bh->bh_key_id = (unsigned short) read_long (session);
-  bh->bh_frag_no = (short) read_long (session);
-  bh->bh_dir_page = read_long (session);
-  bh->bh_timestamp = read_long (session);
+  bh->bh_length = read_int (session);
+  bh->bh_diskbytes = read_int (session);
+  bh->bh_key_id = (unsigned short) read_int (session);
+  bh->bh_frag_no = (short) read_int (session);
+  bh->bh_dir_page = read_int (session);
+  bh->bh_timestamp = read_int (session);
   bh->bh_pages = (dp_addr_t *) scan_session (session);
   return ((caddr_t) bh);
 }
@@ -525,20 +651,38 @@ void
 iri_id_write (iri_id_t * iid, dk_session_t * ses)
 {
   iri_id_t n = *iid;
+  int fill = ses->dks_out_fill;
   if (n <= 0xffffffff)
     {
-      session_buffered_write_char (DV_IRI_ID, ses);
-      print_long (n, ses);
+      if (fill + 5 <= ses->dks_out_length)
+	{
+	  ses->dks_out_buffer[fill] = DV_IRI_ID;
+	  LONG_SET_NA (ses->dks_out_buffer + fill + 1, n);
+	  ses->dks_out_fill += 5;
+	}
+      else
+	{
+	  session_buffered_write_char (DV_IRI_ID, ses);
+	  print_long (n, ses);
+	}
     }
   else
     {
-      session_buffered_write_char (DV_IRI_ID_8, ses);
-      print_long (n >> 32, ses);
-      print_long (n & 0xffffffff, ses);
+      if (fill + 9 <= ses->dks_out_length)
+	{
+	  ses->dks_out_buffer[fill] = DV_IRI_ID_8;
+	  INT64_SET_NA (ses->dks_out_buffer + fill + 1, n);
+	  ses->dks_out_fill += 9;
+	}
+      else
+	{
+	  session_buffered_write_char (DV_IRI_ID_8, ses);
+	  print_long (n >> 32, ses);
+	  print_long (n & 0xffffffff, ses);
+	}
     }
-
-
 }
+
 
 void *
 box_read_iri_id (dk_session_t * ses, dtp_t dtp)

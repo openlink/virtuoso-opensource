@@ -155,7 +155,7 @@ again:
   declare deadlock_cnt int;
   deadlock_cnt := 5;
  
-  declare exit handler for sqlstate '*', not found {
+  declare exit handler for sqlstate '*', NOT FOUND {
 major_exit_handler:
 	  if ( (__SQL_STATE = '42001') and (deadlock_cnt > 0))
 	    {
@@ -165,7 +165,6 @@ major_exit_handler:
 	    }
 	  if (__SQL_STATE = 'WVRLD')
 	    {
-        --???WV.WIKI.redirect ();
 	      http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: ?%V\r\n', _sid, _realm, __SQL_MESSAGE));
 	      return;
@@ -195,9 +194,11 @@ error_report:
 	  declare _ext_params any;
 	  _ext_params := _topic.ti_xslt_vector (WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
     http_value (
-      WV.WIKI.VSPXSLT ('PostProcess.xslt', WV.WIKI.VSPXSLT ( 'VspReportError.xslt', XMLELEMENT ('error', XMLATTRIBUTES (error_id as "id")), _ext_params),
+      WV.WIKI.VSPXSLT (
+        'PostProcess.xslt',
+        WV.WIKI.VSPXSLT ( 'VspReportError.xslt', XMLELEMENT ('error', XMLATTRIBUTES (error_id as "id")), _ext_params),
       _ext_params,
-      WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default')));
+        WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id , vector())));
 	  WV.WIKI.VSPFOOTER (path,params,lines);
 	  return;
   };
@@ -224,7 +225,7 @@ cont:
 	declare wa_home_link varchar;
 	wa_home_link := registry_get ('wa_home_link');
 	if (isinteger(wa_home_link))
-	 wa_home_link :='/wa/';
+        wa_home_link :='/ods/';
         http_request_status ('HTTP/1.1 302 Found');
 	if (_cmd = 'wa_redirect')
         http_header (sprintf('Location: %s/uiedit.vspx?sid=%s&realm=wa\r\n', wa_home_link, sid));
@@ -311,8 +312,6 @@ cont:
 	  goto major_exit_handler;
   	http_rewrite();
         WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
---        http_request_status ('HTTP/1.1 302 Found');
---        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
         return;
       };
 
@@ -346,7 +345,8 @@ cont:
     }
   WV.WIKI.VSPHEADER (path,params,lines, _topic, _base_adjust);
 content:
-  if (_error is not null) {
+  if (_error is not null)
+    {
     http ('<div class="error"><span>' || _error || '</span></div>');
   }
   _error := null;
@@ -399,8 +399,6 @@ content:
 	  goto major_exit_handler;
   	http_rewrite();
         WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
---        http_request_status ('HTTP/1.1 302 Found');
---        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
         return;
       };
 	WV.WIKI.VSPTOPICATTACH (path, lines, _topic,
@@ -450,9 +448,11 @@ content:
 
   if (_cmd = 'edit')
     {
-      declare exit handler for sqlstate '42WV9' {
+      declare exit handler for sqlstate '42WV9'
+      {
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
+
   	http_rewrite();
         WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
 --        http_request_status ('HTTP/1.1 302 Found');
@@ -477,18 +477,19 @@ content:
       goto make_footer;
     }
 
-  if (_cmd = 'upstream_now') {
-    declare exit handler for sqlstate '42WV9' {
+  if (_cmd = 'upstream_now')
+    {
+    declare exit handler for sqlstate '42WV9'
+    {
       if (_user <> 'WikiGuest')
         goto major_exit_handler;
+
       http_rewrite();
       WV.WIKI.redirect (sprintf('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
---      http_request_status ('HTTP/1.1 302 Found');
---      http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
       return;
     };
     declare _filename varchar;
---    _topic.ti_text := _text;
+
     _filename := coalesce ((select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), concat (_topic.ti_local_name,'.txt'));
     WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id, 'Upstream is not allowed by owner of this cluster.');
     declare _lock_uid int;
@@ -539,22 +540,33 @@ content:
           goto content;
         }
       declare _vspx, _type varchar;
+
       _type := '';
       if (_cmd = 'maintenance')
+      {
         _vspx := 'ops.vspx';
-      if (_cmd = 'web')
+      }
+      else if (_cmd = 'web')
+      {
         _vspx := 'export.vspx';
-      if (_cmd = 'doc') {
+      }
+      else if (_cmd = 'doc')
+      {
         _vspx := 'export.vspx';
         _type := 'docbook';
       }
-      if (_cmd = 'revisions')
+      else if (_cmd = 'revisions')
+      {
         _vspx := 'history.vspx';
-      if (_cmd = 'tags')
+      }
+      else if (_cmd = 'tags')
+      {
         _vspx := 'tags.vspx';
-      if (_cmd = 'tag')
+      }
+      else if (_cmd = 'tag')
+      {
         _vspx := 'tag.vspx';
-
+      }
       WV.WIKI.VSPTOPICRESOURCE (_vspx, _type, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
       goto do_nothing;
     }
@@ -576,18 +588,19 @@ content:
     }
 	
 create_or_view:
+
   if (_topic.ti_id = 0)
     {
-      declare exit handler for sqlstate '42WV9' {
+      declare exit handler for sqlstate '42WV9'
+      {
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
+
+        _title := sprintf ('?goto_title=%U', coalesce (_title, ''));
   	http_rewrite();
         http_request_status ('HTTP/1.1 302 Found');
-	if (_title is not null)
-	  _title := sprintf ('?goto_title=%U', _title);
-	else
-	  _title := '';
         http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || _title || '?' ||  _parent));
+
         return;
       };
       WV.WIKI.VSPTOPICCREATE (path, lines, _cluster, _topic.ti_raw_title, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));

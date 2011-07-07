@@ -134,12 +134,12 @@ char *xslt_fmt_print_numbers (char *tail, int tail_max_fill, unsigned *nums, int
   int num_idx;
   int format_len = (int) strlen(format);
 /* Printing starting nonalpha-s */
-  while (('\0' != format[0]) && !isalnum (format[0]))
+  while (('\0' != format[0]) && !isalnum ((unsigned char) (format[0])))
     (tail++)[0] = (format++)[0];
   delim_begin = delim_end = format;
 /* Remembering format end */
   last_nonalpha_begin = format + format_len;
-  while ((last_nonalpha_begin > format) && !isalnum(last_nonalpha_begin[-1]))
+  while ((last_nonalpha_begin > format) && !isalnum((unsigned char) (last_nonalpha_begin[-1])))
     last_nonalpha_begin--;
 /* Now the printing loop is running. */
   for (num_idx = 0; num_idx < nums_count; num_idx++)
@@ -171,11 +171,11 @@ char *xslt_fmt_print_numbers (char *tail, int tail_max_fill, unsigned *nums, int
 	      break;
 	    }
 /* Error recovery should be made if the format is unsupported or invalid */
-	  if (isalnum (fmt_end[0]))
+	  if (isalnum ((unsigned char) (fmt_end[0])))
 	    {
 	      fmt_type = '1';
 	      fmt_len = 1;
-	      while (isalnum (fmt_end[0]))
+	      while (isalnum ((unsigned char) (fmt_end[0])))
 		fmt_end++;
 	    }
 	}
@@ -208,7 +208,7 @@ char *xslt_fmt_print_numbers (char *tail, int tail_max_fill, unsigned *nums, int
 	  if (delim_end < last_nonalpha_begin)
 	    {
 	      delim_begin = delim_end = fmt_end;
-	      while ((delim_end < last_nonalpha_begin) && !isalnum (delim_end[0]))
+	      while ((delim_end < last_nonalpha_begin) && !isalnum ((unsigned char) (delim_end[0])))
 		delim_end++;
 	    }
 	  if (delim_begin < delim_end)

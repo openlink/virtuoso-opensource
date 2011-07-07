@@ -27,7 +27,8 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        fast-render="1">
   <vm:page>
     <vm:header>
       <vm:title>Application Notifications</vm:title>
@@ -51,10 +52,9 @@
 	      <tr class="listing_header_row">
 		  <th>Application</th>
 		  <th>Notification Services</th>
-		  <th>Action</th>
+      		  <th width="5%">Action</th>
 	      </tr>
-	      <v:data-set name="maps" sql="select WAI_NAME, WAI_ID, DB.DBA.WA_APP_PING_TGT_AGG (SH_NAME) as SH_SVC from ODS..APP_PING_REG, ODS..SVC_HOST, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where SH_ID = AP_HOST_ID  and WAI_ID = AP_WAI_ID and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = :self.u_id group by WAI_NAME, WAI_ID"
-		  scrollable="1" editable="1" nrows="1000">
+	        <v:data-set name="maps" sql="select WAI_NAME, WAI_ID, DB.DBA.WA_APP_PING_TGT_AGG (SH_NAME) as SH_SVC from ODS..APP_PING_REG, ODS..SVC_HOST, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where SH_ID = AP_HOST_ID  and WAI_ID = AP_WAI_ID and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = :self.u_id group by WAI_NAME, WAI_ID" scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_svc is not null)
 {
@@ -84,14 +84,14 @@ if (not e.ve_is_post and control.te_rowset[1] = self.edit_svc)
 			      </td>
 			      <td>
 				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
-
 			      </td>
-			      <td>
-				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+      			      <td nowrap="nowrap">
+          				  <v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
 				      url="--sprintf ('inst_ping.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[1])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
+          				      xhtml_class="img_button"
 				      />
 			      </td>
 			  </tr>
@@ -108,22 +108,23 @@ if (not e.ve_is_post and control.te_rowset[1] = self.edit_svc)
 	      </v:data-set>
 	  </table>
 	  <div class="fm">
-	      <fieldset>
-		  <label for="app1">Application</label>
-		  <v:data-list name="app1" sql="select '--' as WAI_NAME, -1 as WAI_ID from SYS_USERS where U_ID = self.u_id union all select WAI_NAME, WAI_ID from WA_INSTANCE, WA_MEMBER where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id and WAI_IS_PUBLIC = 1"
-		      key-column="WAI_ID" value-column="WAI_NAME">
+  	      <fieldset class="form">
+  	        <div>
+  		        <label class="form" for="app1">Application</label>
+	        	  <v:data-list name="app1" sql="select '--' as WAI_NAME, -1 as WAI_ID from SYS_USERS where U_ID = self.u_id union all select WAI_NAME, WAI_ID from WA_INSTANCE, WA_MEMBER where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id and WAI_IS_PUBLIC = 1" key-column="WAI_ID" value-column="WAI_NAME">
 		      <v:before-render>
 			  if (self.edit_svc is not null)
 			    control.vc_add_attribute ('disabled', 1);
 		      </v:before-render>
 		  </v:data-list>
-		  <br/>
-		  <label for="ps1">Notification Services</label>
-		  <v:data-list name="ps1" sql="select SH_ID, SH_NAME from ODS..SVC_HOST" key-column="SH_ID" value-column="SH_NAME"
-		      multiple="1" xhtml_size="--(select count(*) from ODS..SVC_HOST)">
+  	        </div>
+  	        <div>
+        		  <label class="form" for="ps1">Notification Services</label>
+        		  <v:data-list name="ps1" sql="select SH_ID, SH_NAME from ODS..SVC_HOST" key-column="SH_ID" value-column="SH_NAME" multiple="1" xhtml_size="--(select count(*) from ODS..SVC_HOST)">
 		  </v:data-list>
-		  <br />
-	      <span class="fm_ctl_btn">
+  	        </div>
+  	        <div>
+        		  <label class="form">&nbsp;</label>
 		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_svc),0)">
 		      <v:on-post>
 self.app1.ufl_value := null;
@@ -185,7 +186,7 @@ control.vc_data_bind (e);
 self.maps.vc_data_bind (e);
 ]]></v:on-post>
 		  </v:button>
-	      </span>
+            </div>
 	  </fieldset>
       </div>
       </vm:body>

@@ -115,6 +115,7 @@ trset_printf (const char *str, ...)
 void
 trset_end (void)
 {
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   char *report_linebuf;
   char *report_ptr;
   char *line;
@@ -131,10 +132,13 @@ trset_end (void)
       dk_free_box (line);
     }
   dk_free_box (report_linebuf);
-  ret = list (2, (caddr_t) QA_PROC_RETURN, (caddr_t) 0);
-  PrpcAddAnswer ((caddr_t) ret, DV_ARRAY_OF_POINTER, PARTIAL, 0);
-  dk_free_box (ret);
 
+  if (cli && !cli->cli_ws && !cli->cli_resultset_comp_ptr)
+    {
+      ret = list (2, (caddr_t) QA_PROC_RETURN, (caddr_t) 0);
+      PrpcAddAnswer ((caddr_t) ret, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+      dk_free_box (ret);
+    }
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, NULL);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, NULL);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST, NULL);

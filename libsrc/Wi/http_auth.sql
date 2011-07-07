@@ -1,6 +1,8 @@
 --
 --  $Id$
 --
+--  Authenticate against names and passwords in SYS_USERS, using HP_SECURITY for level
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -21,7 +23,6 @@
 --
 --
 
--- Authenticate against names and passwords in SYS_USERS, using HP_SECURITY for level
 create procedure
 DB.DBA.HP_AUTH_SQL_USER (in realm varchar)
 {

@@ -833,10 +833,23 @@ class VirtuosoInputStream extends BufferedInputStream
       long ro_id = 0L;
       VirtuosoRdfBox rb;
 
+      //System.out.println ("flags:" + flags);
       if (0 != (flags & VirtuosoRdfBox.RBS_CHKSUM))
       {
 	throw new VirtuosoException ("Invalid rdf box received", "42000", VirtuosoException.MISCERROR);
       }
+      if (0 != (flags & VirtuosoRdfBox.RBS_SKIP_DTP))
+      {
+	  int n = readshortint();
+	  byte[] array = new byte[n];
+	  for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+	  if (connection.charset_utf8)
+	      box = convByte2UTF(array);
+	  else
+	      box = convByte2Ascii(array);
+
+      }
+      else
       box = read_object ();
       if (0 != (flags & VirtuosoRdfBox.RBS_OUTLINED))
       {

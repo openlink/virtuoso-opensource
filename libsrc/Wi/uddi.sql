@@ -1,4 +1,6 @@
 --
+--  uddi.sql
+--
 --  $Id$
 --
 --  UDDI support.

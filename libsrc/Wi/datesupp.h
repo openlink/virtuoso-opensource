@@ -33,8 +33,8 @@
 #define GMTIMESTAMP_STRUCT TIMESTAMP_STRUCT
 
 /* datesupp.c */
-uint32 date2num (const int year, const int month, const int day);
-void num2date (uint32 julian_days, int *year, int *month, int *day);
+int32 date2num (const int year, const int month, const int day);
+void num2date (int32 julian_days, int *year, int *month, int *day);
 int ymd_valid_p (const int year, const int month, const int day);
 int date2weekday (const int year, const int month, const int day);
 void dt_now (caddr_t dt);
@@ -58,6 +58,7 @@ void dt_date_round (char *dt);
 void dt_init (void);
 int dt_part_ck (char *str, int min, int max, int *err);
 void dt_to_string (const char *dt, char *str, int len);
+void dbg_dt_to_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string (const char *dt, char *str, int len);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);

@@ -38,6 +38,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+ <refsect1 id="desc_registry_get"><title>Description</title>
+    <para><function>registry_get</function> is used to retrieve values
+    stored within database registry. </para></refsect1>
   <refsect1 id="params_registry_get"><title>Parameters</title>
     <refsect2><title>name</title>
       <para>Name of the registry setting</para></refsect2>
@@ -45,9 +48,6 @@
   <refsect1 id="ret_registry_get"><title>Return Values</title>
     <para>A string value associated to the registry by registry_set. If the variable does not exist, a 0 (zero) is returned.</para>
   </refsect1>
-  <refsect1 id="desc_registry_get"><title>Description</title>
-    <para><function>registry_get</function> is used to retrieve values
-    stored within database registry. </para></refsect1>
   <refsect1 id="examples_registry_get"><title>Examples</title>
     <example id="ex_registry_var1"><title>Setting and Retrieving Registry Settings</title>
 <programlisting>

@@ -1332,7 +1332,7 @@ xp_add_as (ST ** selection)
       if (!ST_P (col, BOP_AS))
 	{
 	  caddr_t name;
-	  if (ST_P (col, COL_DOTTED))
+	  if (ST_COLUMN (col, COL_DOTTED))
 	    name = t_box_string (col->_.col_ref.name);
 	  else
 	    name = t_box_string ("__");
@@ -2008,7 +2008,7 @@ xv_attr_paths (xpp_t *xpp, xv_join_elt_t * start, XT * step,  dk_set_t * paths)
       if (xt_node_test_match (step->_.step.node, xc->xc_xml_name))
 	{
     	  char * col_name;
-	  if (!ST_P (xc->xc_exp, COL_DOTTED))
+	  if (!ST_COLUMN (xc->xc_exp, COL_DOTTED))
 	    xe_error ("S0002", "The column in an XML view must correspond to a SQL column, not an expression");
 	  col_name = xc->xc_exp->_.col_ref.name;
           if (!IS_BOX_POINTER(xc->xc_relationship)) /*mapping schema*/
@@ -2101,7 +2101,7 @@ xv_paths (xpp_t *xpp, xv_join_elt_t * start, XT * step, XT * end_step, xv_step_t
       else / * child is a column of the start table* /
         {
  	  char * col_name;
-	  if (!ST_P (child->xj_mp_schema->xj_column, COL_DOTTED))
+	  if (!ST_COLUMN (child->xj_mp_schema->xj_column, COL_DOTTED))
 	    xe_error ("S0002", "The column in an XML view must correspond to a SQL column, not an expression");
 	  col_name = child->xj_mp_schema->xj_column->_.col_ref.name;
 	  NCONCF1 (*paths, xtlist (xpp, 6, XP_STEP, NULL, XP_CHILD,
@@ -2327,6 +2327,8 @@ xv_label_tree (xpp_t *xpp, xv_join_elt_t * start, XT * tree, dk_set_t * paths)
 	    END_DO_SET();
 	    if (!next)
 	      dk_free_tree ((caddr_t) path);
+            else
+              dk_set_free (next);
 	  }
 	END_DO_SET();
 	dk_set_free (*paths);
@@ -2726,7 +2728,7 @@ static int charref_to_unichar (const char **src_tail_ptr, const char *src_end, c
     {
       if ('=' == src_tail[0])
 	break;
-      if (!isalnum (src_tail[0]) && !(src_tail[0] & 0x80) && (NULL == strchr ("-_%+", src_tail[0])))
+      if (!isalnum ((unsigned char) (src_tail[0])) && !(src_tail[0] & 0x80) && (NULL == strchr ("-_%+", src_tail[0])))
         {
           err_msg_ret[0] = "Syntax error in &...; character reference";
 	  return -1;
@@ -3436,7 +3438,7 @@ xp_debug_col (sql_comp_t * sc, comp_table_t * ct, ST * tree, char * text, size_t
       sprintf_more (text, tlen, fill, " %s ", (caddr_t) tree);
       return 1;
     }
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       sprintf_more (text, tlen, fill, " %s.%s ", tree->_.col_ref.prefix, tree->_.col_ref.name);
       return 1;
@@ -3833,10 +3835,10 @@ xp_text_parse (char * str2, encoding_handler_t *enc, lang_handler_t *lang, caddr
     enc = &eh__WIDE_121;
   else if (DV_STRINGP(str2))
     {
-      if (box_flags(str2) & BF_UTF8)
+      if (box_flags(str2) & (BF_IRI | BF_UTF8))
         enc = &eh__UTF8;
     }
-  else 
+  else
     {
       err_ret[0] = srv_make_new_error ("22023", "FT042" , "text criteria is not a string");
       return NULL;
@@ -4860,6 +4862,54 @@ shuric_t *xqr_shuric_retrieve (query_instance_t *qi, caddr_t uri, caddr_t *err_r
   return res;
 }
 
+xp_query_t *
+xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount)
+{
+  int argctr;
+  xp_env_t l_xe;
+  xpp_t l_xpp;
+  xp_query_t *xqr = (xp_query_t *) dk_alloc_box_zero (sizeof (xp_query_t), DV_XPATH_QUERY);
+  int n_slots, fill = 0;
+  ptrlong *map;
+  XT **arg_array = dk_alloc_box (argcount * sizeof (XT *), DV_ARRAY_OF_POINTER);
+  XT *var = NULL;
+  memset (&l_xe, 0, sizeof (xp_env_t));
+  memset (&l_xpp, 0, sizeof (xpp_t));
+  l_xpp.xpp_xp_env = &l_xe;
+  l_xe.xe_xqr = xqr;
+  l_xe.xe_xqst_ctr = (sizeof (xp_instance_t) / sizeof (caddr_t)) + 1;
+  l_xe.xe_for_interp = 1;
+  if (XPDV_NODESET == metas->xpfm_res_dtp)
+    var = xp_make_variable_ref (&l_xpp, "result of funcall");
+  for (argctr = argcount; argctr--; /* no step */)
+    {
+      char buf[20]; sprintf (buf, "arg%d", argctr);
+      arg_array[argctr] = xp_make_variable_ref (&l_xpp, buf);
+      arg_array[argctr]->type = XP_FAKE_VAR;
+    }
+  xqr->xqr_tree = xtlist_with_tail (&l_xpp, 8, (caddr_t)arg_array, CALL_STMT,
+    box_dv_uname_string (metas->xpfm_name),
+    box_num((ptrlong)(metas->xpfm_executable)),
+    (ptrlong)(metas->xpfm_res_dtp),
+    xe_new_xqst (&l_xpp, XQST_REF),
+    xe_new_xqst (&l_xpp, XQST_REF),
+    var );
+  xqr->xqr_instance_length = sizeof (caddr_t) * l_xe.xe_xqst_ctr;
+
+  n_slots = dk_set_length (xqr->xqr_state_map);
+  map = (ptrlong *) dk_alloc_box (sizeof (ptrlong) * n_slots, DV_SHORT_STRING);
+  DO_SET (ptrlong, pos, &xqr->xqr_state_map)
+    {
+      map[fill++] = (pos);
+    }
+  END_DO_SET();
+  xqr->xqr_slots = map;
+  xqr->xqr_n_slots = n_slots;
+  xqr->xqr_base_uri = uname___empty;
+  return xqr;
+}
+
+
 xp_query_t *xp_query_parse (query_instance_t * qi, char * str, ptrlong predicate_type, caddr_t * err_ret, xp_query_env_t *xqre)
 {
   if (NULL == str)
@@ -5137,11 +5187,11 @@ xp_wordstack_from_string (char * str, encoding_handler_t *eh, lang_handler_t *lh
   int ret;
   if ((&eh__UTF8 == eh) || (&eh__UTF8_QR == eh))
     {
-    ASSERT_NCHARS_UTF8 (str, strlen (str));
+      ASSERT_NCHARS_UTF8 (str, strlen (str));
     }
   else
     {
-    ASSERT_NCHARS_8BIT (str, strlen (str));
+      ASSERT_NCHARS_8BIT (str, strlen (str));
     }
   ret = lh_iterate_patched_words(
     eh, lh->lh_ftq_language,
@@ -5240,7 +5290,6 @@ fine:
 caddr_t
 sqlr_make_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst)
 {
-  du_thread_t *self;
   char temp[2000];
   int n;
   caddr_t err;
@@ -5282,6 +5331,16 @@ sqlr_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t
   va_end (vlst);
 }
 
+caddr_t
+sqlr_make_new_error_xqi_xdl (const char *code, const char *virt_code, xp_instance_t * xqi, const char *string, ...)
+{
+  caddr_t err;
+  va_list vlst;
+  va_start (vlst, string);
+  err = sqlr_make_new_error_xdl_base (code, virt_code, &(xqi->xqi_xqr->xqr_xdl), string, vlst);
+  va_end (vlst);
+  return err;
+}
 
 void
 sqlr_new_error_xqi_xdl (const char *code, const char *virt_code, xp_instance_t * xqi, const char *string, ...)

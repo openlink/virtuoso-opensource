@@ -1,4 +1,5 @@
 /*
+ *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -307,7 +308,6 @@ stssl_qnode (comp_context_t * cc, table_source_t * node)
     {
       setp_node_t * setp = (setp_node_t *) node;
       stssl_ha (cc, setp->setp_ha);
-      STSSL (setp->setp_temp_tree);
       stssl_list (setp->setp_keys);
       stssl_list (setp->setp_dependent);
       DO_SET (gb_op_t *, go, &setp->setp_gb_ops)

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="xml"
 	ProjectGUID="{0C234EF0-7725-4BDA-A1C3-47F5835A3837}"
+	RootNamespace="xml"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -393,6 +395,19 @@
 			<File
 				RelativePath="..\libsrc\Xml.new\schema_fsm.c"
 				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Xml.new\xhtml_ent.gperf"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="gperf -aCDGptr -Kentity -k1,2,3,4,5,$ $(InputDir)xhtml_ent.gperf -Nxhtml_ent_gperf &gt; $(InputDir)xhtml_ent.h&#x0D;&#x0A;&#x0D;&#x0A;"
+						Outputs="xhtml_ent.h"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Xml.new\xml_ecm.c"

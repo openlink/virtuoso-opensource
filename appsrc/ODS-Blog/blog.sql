@@ -430,8 +430,22 @@ blog2_exec_no_error ('create table BLOG_POST_LINKS (
       PL_POST_ID varchar,
       PL_LINK varchar,
       PL_TITLE varchar,
+      PL_PING int default 0,
       foreign key (PL_BLOG_ID, PL_POST_ID) references SYS_BLOGS (B_BLOG_ID, B_POST_ID) on delete cascade,
       primary key (PL_BLOG_ID, PL_POST_ID, PL_LINK)
+      )');
+
+blog2_add_col('BLOG.DBA.BLOG_POST_LINKS', 'PL_PING', 'int default 0');
+
+blog2_exec_no_error ('create table BLOG_COMMENT_LINKS (
+      CL_BLOG_ID varchar,
+      CL_POST_ID varchar,
+      CL_CID	int,
+      CL_LINK varchar,
+      CL_TITLE varchar,
+      CL_PING int default 0,
+      foreign key (CL_BLOG_ID, CL_POST_ID) references SYS_BLOGS (B_BLOG_ID, B_POST_ID) on delete cascade,
+      primary key (CL_BLOG_ID, CL_POST_ID, CL_CID, CL_LINK)
       )');
 
 blog2_exec_no_error ('create table BLOG_POST_ENCLOSURES (
@@ -1469,6 +1483,9 @@ BLOG_VER_UPGRADE ();
 create procedure BLOG_ADD_LINKS (in blogid varchar, in postid varchar, inout content any)
 {
   declare xt, xp any;
+  declare tit, href, cls any;
+  declare me, blog_iri, _inst varchar;
+
   delete from BLOG_POST_LINKS where PL_BLOG_ID = blogid and PL_POST_ID = postid;
   if (content is null)
     return;
@@ -1479,10 +1496,24 @@ create procedure BLOG_ADD_LINKS (in blogid varchar, in postid varchar, inout con
   xp := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
   foreach (any elm in xp) do
     {
-      declare tit, href any;
       tit := cast (xpath_eval ('string()', elm) as varchar);
       href := cast (xpath_eval ('@href', elm) as varchar);
-      insert soft BLOG_POST_LINKS (PL_BLOG_ID,PL_POST_ID,PL_LINK,PL_TITLE) values (blogid,postid,href,tit);
+      cls := cast (xpath_eval ('@class', elm) as varchar);
+      insert soft BLOG_POST_LINKS (PL_BLOG_ID,PL_POST_ID,PL_LINK,PL_TITLE, PL_PING) values (blogid,postid,href,tit, 
+	  case when cls = 'auto-href' then 1 else 0 end);
+    }
+  xp := xpath_eval ('//a[starts-with (@href,"http") and not(img) and @class = "auto-href"]', xt, 0);
+  me := sioc..blog_post_iri (blogid, postid);
+  _inst := (select BI_WAI_NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = blogid);
+  blog_iri := sioc..blog_iri (_inst);
+  -- do this conditionally
+  if (exists (select 1 from SEMPING..PING_RULES where PR_IRI = blog_iri))    
+    {
+      foreach (any elm in xp) do
+	{
+	  href := cast (xpath_eval ('@href', elm) as varchar);
+	  SEMPING..CLI_PING (me, href);
+	}
     }
 };
 
@@ -1498,6 +1529,44 @@ create procedure BLOG_LINKS_UPGRADE ()
 };
 
 BLOG_LINKS_UPGRADE ();
+
+create procedure BLOG_ADD_COMMENT_LINKS (in blogid varchar, in postid varchar, in cid int, inout content any)
+{
+  declare xt, xp any;
+  declare tit, href, cls any;
+  declare me, blog_iri, _inst varchar;
+
+  delete from BLOG_COMMENT_LINKS where CL_BLOG_ID = blogid and CL_POST_ID = postid and CL_CID = cid;
+  if (content is null)
+    return;
+  else if (isentity (content))
+    xt := content;
+  else
+    xt := xtree_doc (content, 2, '', 'UTF-8');
+  xp := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
+  foreach (any elm in xp) do
+    {
+      tit := cast (xpath_eval ('string()', elm) as varchar);
+      href := cast (xpath_eval ('@href', elm) as varchar);
+      cls := cast (xpath_eval ('@class', elm) as varchar);
+      insert soft BLOG_COMMENT_LINKS (CL_BLOG_ID,CL_POST_ID, CL_CID, CL_LINK,CL_TITLE, CL_PING) values (blogid,postid,cid,href,tit, 
+	  case when cls = 'auto-href' then 1 else 0 end);
+    }
+  xp := xpath_eval ('//a[starts-with (@href,"http") and not(img) and @class = "auto-href"]', xt, 0);
+  me := sioc..blog_comment_iri (blogid, postid, cid);
+  _inst := (select BI_WAI_NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = blogid);
+  blog_iri := sioc..blog_iri (_inst);
+  -- do this conditionally
+  if (0 and exists (select 1 from SEMPING..PING_RULES where PR_IRI = blog_iri))    
+    {
+      foreach (any elm in xp) do
+	{
+	  href := cast (xpath_eval ('@href', elm) as varchar);
+	  SEMPING..CLI_PING (me, href);
+	}
+    }
+};
+
 
 create procedure BLOG_ENCL_UPGRADE ()
 {
@@ -1585,7 +1654,7 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
   declare is_spam, published int;
   declare mid, rfc, refs, comment_title varchar;
   declare oid_sig, oid_is_valid int;
-  declare post_iri varchar;
+  declare post_iri, body varchar;
 
   blogid := N.BM_BLOG_ID;
   postid := N.BM_POST_ID;
@@ -1602,6 +1671,9 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
   select deserialize (blob_to_string (BI_OPTIONS)), BI_OWNER, BI_HOME, B_TITLE, BI_BLOG_ID, B_RFC_ID
       into opts, owner, home, title, orgblogid, refs from BLOG..SYS_BLOG_INFO, BLOG..SYS_BLOGS
       where B_POST_ID = N.BM_POST_ID and B_BLOG_ID = BI_BLOG_ID;
+
+  body := BLOG.DBA.CONTENT_ANNOTATE (owner, N.BM_COMMENT);
+  BLOG_ADD_COMMENT_LINKS (orgblogid, postid, id, body);
 
   comment_title := 'Re:' || title;
 
@@ -1692,7 +1764,7 @@ own_comm:;
 skip:
   set triggers off;
   update BLOG..BLOG_COMMENTS set BM_IS_PUB = published, BM_IS_SPAM = is_spam, BM_POSTED_VIA = domain, BM_BLOG_ID = orgblogid,
-	 BM_RFC_ID = mid, BM_RFC_HEADER = rfc, BM_TITLE = comment_title, BM_RFC_REFERENCES = refs
+	 BM_RFC_ID = mid, BM_RFC_HEADER = rfc, BM_TITLE = comment_title, BM_RFC_REFERENCES = refs, BM_COMMENT = body
       where BM_BLOG_ID = blogid and BM_POST_ID = postid and BM_ID = id;
   set triggers on;
 ret:
@@ -1738,6 +1810,7 @@ create trigger BLOG_COMMENTS_NO_D after delete on BLOG_COMMENTS referencing old 
       set triggers on;
     }
   delete from SYS_BLOGS_ROUTING_LOG where  RL_COMMENT_ID = O.BM_ID;
+  delete from BLOG_COMMENT_LINKS where CL_BLOG_ID = O.BM_BLOG_ID and CL_POST_ID = O.BM_POST_ID and CL_CID = O.BM_ID;
 
   set triggers off;
   update BLOG.DBA.SYS_BLOG_INFO
@@ -4700,12 +4773,16 @@ create procedure BLOG_GET_MAIL_VIA_POP3 (in pop3s varchar, in pop3u varchar, in 
     if (pop3s <> '' and pop3u <> '' and pop3p <> '')
       {
       declare res any;
-      declare inx, len int;
+      declare inx, len, cert int;
       declare mess, elm any;
       declare exit handler for sqlstate '*' { goto nextu; };
 
       commit work;
-      res := pop3_get (pop3s, pop3u, pop3p, 999999999);
+      if (pop3s like '%:995')
+	cert := 1;
+      else
+        cert := 0;	
+      res := pop3_get (pop3s, pop3u, pop3p, 999999999, '', null, cert);
 
       inx := 0; len := length (res);
       while (inx < len)
@@ -6887,100 +6964,6 @@ __soap_type 'http://www.openlinksw.com/virtuoso/blog/api:ArrayOfWebDAVResource'
   }
 ;
 
-create procedure BLOG.DBA.BLOG_RSS2WML_PP ()
-  {
-    declare accept, upar, pars any;
-    declare lines any;
-    lines := http_request_header ();
-    accept := http_request_header (lines, 'Accept');
-    if (not isstring (accept))
-      accept := '';
-    upar := http_request_get ('QUERY_STRING');
-    if (regexp_match ('text/vnd\.wap\.wml', accept) is not null)
-      {
-  if (http_path () like '%/rss.xml')
-    {
-      declare opts, filt, bid any;
-      whenever not found goto exitp;
-      select top 1 BI_BLOG_ID into bid from SYS_BLOG_INFO where
-      http_physical_path () like BI_P_HOME || '%' order by length (BI_P_HOME) desc;
-      select deserialize (blob_to_string (BI_OPTIONS)) into opts from SYS_BLOG_INFO where BI_BLOG_ID = bid;
-
-      if (not isarray(opts))
-        opts := vector ();
-
-      filt := get_keyword ('RSSFilter', opts, '*wml-default*');
-
-      if (filt = '*wml-default*')
-        filt := 'http://local.virt/rss2wml';
-
-      if (not isstring (filt))
-        goto exitp;
-
-      if (length (upar) = 0)
-        {
-                http_xslt (filt);
-        }
-      else
-        {
-    declare rss, xt, xsl any;
-    rss := http_get_string_output ();
-    xt := xml_tree_doc (rss);
-    http_rewrite ();
-    xsl := xslt (filt, xt, vector ('id', upar));
-    http_value (xsl, null);
-        }
-      http_header ('Content-Type: text/vnd.wap.wml\r\n');
-      exitp:;
-    }
-      }
-    else if (http_path () like '%/rss%.xml')
-      {
-  declare bid, rss, modif, match, stag varchar;
-        declare xt, xp, ss any;
-
-  -- Get the body and calculate md5 over the 1-st item
-  rss := http_get_string_output ();
-  xt := xml_tree_doc (rss);
-  xp := xpath_eval ('//item[1]', xt);
-  ss := string_output ();
-  http_value (xp, null, ss);
-  stag := md5(ss);
-  -- prepare standard header
-  http_header (sprintf ('Content-Type: text/xml\r\nETag: %s\r\nLast-Modified: %s\r\n',
-    stag, date_rfc1123 (now ())));
-
-  match := http_request_header (lines, 'If-None-Match');
-  modif := http_request_header (lines, 'If-Modified-Since');
-
-  -- if Etag is same; do nothing
-  if (match = stag)
-    {
-      http_request_status ('HTTP/1.1 304 Not Modified');
-      http_header ('Content-Type: text/xml\r\n');
-      http_rewrite ();
-    }
-  else if (isstring (modif))
-    {
-      declare modifd datetime;
-      modifd := http_string_date (modif);
-      whenever not found goto exitp1;
-      select top 1 BI_BLOG_ID into bid from SYS_BLOG_INFO where
-      http_path () like BI_HOME || '%' order by length (BI_HOME) desc;
-      -- if no newest items; do nothing
-      if (not exists (select 1 from SYS_BLOGS where B_BLOG_ID = bid and B_MODIFIED > modifd))
-        {
-    http_request_status ('HTTP/1.1 304 Not Modified');
-    http_header ('Content-Type: text/xml\r\n');
-    http_rewrite ();
-        }
-      exitp1:;
-    }
-      }
-    return;
-  }
-;
-
 create procedure
 BLOG_GET_TIME_LINE ()
   {
@@ -7484,7 +7467,7 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
         hdrs := BLOG_MAKE_MAIL_SUBJECT ('[Weblog post] '||_B_TITLE);
 
       for select BV_NAME, BV_E_MAIL, BV_POST_ID, BV_VIA_DOMAIN from SYS_BLOG_VISITORS
-         where BV_NOTIFY = 1 and BV_BLOG_ID = item_id
+         where BV_NOTIFY = 1 and BV_BLOG_ID = item_id and length (BV_E_MAIL)
           and (BV_POST_ID = _RL_POST_ID or length (BV_POST_ID) = 0)
         do
           {
@@ -8100,27 +8083,14 @@ enf:
 ;
 
 
-create procedure
-IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, in bid varchar, in uid varchar, in pwd varchar)
-{
-  declare tmp, xt, cnt, hdr, rc any;
-  declare posts any;
-
-  url := cast (url as varchar);
-  api := cast (api as varchar);
-  bid := cast (bid as varchar);
-  uid := cast (uid as varchar);
-  pwd := cast (pwd as varchar);
-
-  rc := 0;
-  if (length (bid) = 0) -- import from a feed
+create procedure IMPORT_PARSE_FEED (inout xt any)
     {
-      declare title, content, published, postid any;
+  declare title, content, published, postid, tmp, posts any;
       declare res "MTWeblogPost";
       declare i int;
 
-      cnt := BLOG..GET_URL_AND_REDIRECTS (url, hdr);
-      xt := xtree_doc (cnt);
+  posts := null;
+
       if (xpath_eval ('/rss', xt) is not null)
         {
           tmp := xpath_eval ('/rss/channel/item', xt, 0);
@@ -8184,19 +8154,12 @@ IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, 
 	      i := i + 1;
 	    }
 	}
+  return posts;
     }
-  else -- import using an api
-    {
-      if (api = 'MetaWeblog' or api = 'MoveableType')
-	{
-	  posts := metaweblog.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
-	}
-      else -- use blogger
-	{
-	  posts := blogger.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
-	}
-    }
+;
 
+create procedure IMPORT_INSERT_POSTS (inout posts any, in blogid any, in user_id any)
+{
   foreach (any x in posts) do
     {
       declare title, content, pub, id any;
@@ -8224,10 +8187,67 @@ IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, 
 	}
 
       insert into BLOG.DBA.SYS_BLOGS (B_APPKEY, B_POST_ID, B_BLOG_ID, B_TS, B_CONTENT, B_USER_ID, B_META, B_STATE, B_TITLE)
-	  values ('Import', id, blogid, pub, content, user_id, meta, 1, title);
+	  values ('Import', id, blogid, pub, content, user_id, meta, 2, title);
+    }
+}
+;
+
+create procedure
+IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, in bid varchar, in uid varchar, in pwd varchar, in hub varchar := null)
+{
+  declare tmp, xt, cnt, hdr, rc any;
+  declare posts any;
+
+  url := cast (url as varchar);
+  api := cast (api as varchar);
+  bid := cast (bid as varchar);
+  uid := cast (uid as varchar);
+  pwd := cast (pwd as varchar);
+
+  rc := 0;
+  if (length (bid) = 0) -- import from a feed
+    {
+      cnt := BLOG..GET_URL_AND_REDIRECTS (url, hdr);
+      xt := xtree_doc (cnt);
+      posts := IMPORT_PARSE_FEED (xt);
+    }
+  else -- import using an api
+    {
+      if (api = 'MetaWeblog' or api = 'MoveableType')
+	{
+	  posts := metaweblog.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
+	}
+      else -- use blogger
+	{
+	  posts := blogger.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
+	}
+    }
+  IMPORT_INSERT_POSTS (posts, blogid, user_id);
+  if (length (hub))
+    {
+      declare token, subsu, callback, head, ret varchar;
+      declare inst int;
+
+      inst := (select WAI_ID from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_WAI_NAME = WAI_NAME and BI_BLOG_ID = blogid);
+      PSH.DBA.ods_cli_subscribe (inst, hub, 'subscribe', url);
     }
   return length (posts);
 };
+
+create procedure PSH.DBA.ods_weblog_psh_cbk (in url varchar, in content any, in inst any)
+{
+  declare xt, posts, blogid, user_id any;
+
+  for select BI_BLOG_ID, BI_OWNER from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_WAI_NAME = WAI_NAME and WAI_ID = inst do
+    {
+      blogid := BI_BLOG_ID;
+      user_id := BI_OWNER; 
+    }
+  xt := xtree_doc (content);
+  posts := IMPORT_PARSE_FEED (xt);
+  IMPORT_INSERT_POSTS (posts, blogid, user_id);
+}
+;
 
 -- /* re-tagging */
 create procedure blog_tag2str (inout tags any)
@@ -8355,3 +8375,14 @@ CREATE FUNCTION BLOG..GET_DAYS_IN_MONTH (in pDate  DATETIME) RETURNS INT
 
 }
 ;
+
+create procedure BLOG..BLOG_RESOLVE_REFS (in txt any)
+{
+  declare a any;
+  a := regexp_replace (txt, '((http://|https://|mailto:|ftp:)[^ ]+)', '<a href="\\1">\\1</a>', 1, null);
+  a := regexp_replace (a, '(@)([[:alnum:]]+)(:)', '\\1<a href="/dataspace/person/\\2">\\2</a>\\3', 1, null);
+  a := regexp_replace (a, '([[:alnum:]]+)(@)([[:alnum:]]+\\.[[:alnum:]]+)', '<a href="mailto:\\1@\\3">\\1@\\3</a>', 1, null);
+  return '<div>' || a || '</div>';
+}
+;
+

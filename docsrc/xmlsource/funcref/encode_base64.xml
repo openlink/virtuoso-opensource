@@ -45,6 +45,9 @@
     </funcprototype>
   </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_encode_base64"><title>Description</title>
+      <para>These functions convert strings from/to base64-encoding.</para>
+  </refsect1>
   <refsect1 id="params_encode_base64"><title>Parameters</title>
     <refsect2><title><parameter>str</parameter></title>
       <para>A <type>varchar</type> value.</para>
@@ -54,9 +57,6 @@
     <para><function>encode_base64</function> returns a <type>varchar</type>
     containing base64-encoded data. <function>decode_base64</function> returns
     a <type>varchar</type> containing the result of the base64-decoding.</para>
-  </refsect1>
-  <refsect1 id="desc_encode_base64"><title>Description</title>
-      <para>These functions convert strings from/to base64-encoding.</para>
   </refsect1>
   <refsect1 id="examples_encode_base64"><title>Examples</title>
     <example id="ex_encode_base64_1"><title>Simple Example</title>

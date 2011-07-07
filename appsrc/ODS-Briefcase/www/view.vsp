@@ -71,7 +71,17 @@ _again:
       goto _again;
   }
   if (res_header[0] like 'HTTP/1._ 4__%' or res_header[0] like 'HTTP/1._ 5__%')
+  {
+    if (is_https_ctx ())
+    {
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf ('Location: %s\r\n', uri));
+      http_flush ();
+      return;
+    }
     content := res_header[0];
+  }
 
   http_rewrite();
   if ((contentType = 'text/plain') and (mode <> 'download'))

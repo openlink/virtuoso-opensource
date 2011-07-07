@@ -19,6 +19,15 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
+function setFooter() {
+  if ($('content')) {
+    var wDims = OAT.Dom.getViewport()
+    var hDims = OAT.Dom.getWH('FT')
+    var cPos = OAT.Dom.position('content')
+    $('content').style.height = (wDims[1] - hDims[1] - cPos[1] - 20) + 'px';
+  }
+}
+
 function myPost(frm_name, fld_name, fld_value) {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
@@ -37,6 +46,19 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   if (f3Name)
     createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
+}
+
+function odsPost(obj, fields, button) {
+  var form = getParent (obj, 'form');
+  var formName = form.name;
+  for (var i = 0; i < fields.length; i += 2)
+    createHidden(formName, fields[i], fields[i+1]);
+
+  if (button) {
+    doPost(formName, button);
+  } else {
+    form.submit();
+  }
 }
 
 function dateFormat(date, format) {
@@ -108,44 +130,77 @@ function dateParse(dateString, format) {
 	return result;
 }
 
-function datePopup(objName, format) {
-	if (!format) {
+function datePopup(objName, format, cb) {
+	if (!format)
 		format = 'yyyy-MM-dd';
-	}
+
 	var obj = $(objName);
 	var d = dateParse(obj.value, format);
-	var c = new OAT.Calendar( {
-		popup : true
-	});
+	var c = new OAT.Calendar({popup: true});
 	var coords = OAT.Dom.position(obj);
-	if (isNaN(coords[0])) {
+	if (isNaN(coords[0]))
 		coords = [ 0, 0 ];
-	}
+
 	var x = function(date) {
 		obj.value = dateFormat(date, format);
+		if (cb)
+		  cb();
 	}
 	c.show(coords[0], coords[1] + 30, x, d);
 }
 
-function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name,
-		f3Value) {
+function dateUpdate(srcField, dstFields, format) {
+  function dp(v, f) {
+    var dt = dateParse(v, f);
+    if (dt)
+      dt = new Date(dt[0], dt[1]-1, dt[2]);
+
+    return dt;
+  }
+  var src = $(srcField);
+  if (!src) {return;}
+  var srcDate = dp(src.value, format);
+  if (!srcDate) {return;}
+
+  var srcSave = $(srcField+'_save');
+  if (!srcSave) {return;}
+  var srcSaveDate = dp(srcSave.value, format);
+  if (!srcSaveDate) {return;}
+
+  var delta = (srcDate.getTime() - srcSaveDate.getTime()) / (60 * 60 * 24 * 1000);
+	for (var i = 0; i < dstFields.length; i++) {
+    var dst = $(dstFields[i]);
+    if (!dst) {continue;}
+    var dstDate = dp(dst.value, format);
+    if (!dstDate) {continue;}
+
+    dstDate = new Date(dstDate.getFullYear(), dstDate.getMonth(), dstDate.getDate()+delta);
+    dst.value = dateFormat([dstDate.getFullYear(), dstDate.getMonth()+1, dstDate.getDate()], format);
+
+    var dstSave = $(dstFields[i]+'_save');
+    if (!dstSave) {continue;}
+    dstSave.value = dst.value;
+  }
+  srcSave.value = src.value;
+}
+
+function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   var keyCode;
   
 	if (window.event) {
     keycode = window.event.keyCode;
   } else {
-		if (!e) {
+		if (!e)
 			return true;
-		}
+
       keycode = e.which;
   }
 	if (keycode == 13) {
 		if (fButton != '') {
       vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value);
       return false;
-    } else {
-      document.forms[fForm].submit();
     }
+		document.forms[fForm].submit();
   }
   return true;
 }
@@ -277,10 +332,8 @@ function coloriseTable(id) {
     var table = $(id);
 		if (table) {
       var rows = table.getElementsByTagName("tr");
-			for (i = 0; i < rows.length; i++) {
+			for (i = 0; i < rows.length; i++)
 				rows[i].className = rows[i].className + " tr_" + (i % 2);
-				;
-      }
     }
   }
 }
@@ -320,8 +373,7 @@ function sortSelect(box) {
 	});
 
   for (var i=0; i<o.length; i++)
-		box.options[i] = new Option(o[i].text, o[i].value,
-				o[i].defaultSelected, o[i].selected);
+		box.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
 }
 
 function showTab(tabs, tabsCount, tabNo) {
@@ -338,98 +390,109 @@ function showTab(tabs, tabsCount, tabNo) {
         OAT.Dom.addClass(l, "activeTab");
         l.blur();
       } else {
-				if (c) {
+				if (c)
           OAT.Dom.hide(c);
-}
+
         OAT.Dom.removeClass(l, "activeTab");
   }
 }
   }
 }
 
-function windowShow(sPage, width, height) {
+function windowShow(sPage, sPageName, width, height) {
   if (width == null)
-    width = 500;
+		width = 700;
   if (height == null)
-    height = 420;
-	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value
-			+ '&realm=' + document.forms[0].elements['realm'].value;
-	win = window.open(sPage, null, "width=" + width + ",height=" + height
-			+ ", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+		height = 500;
+  if (sPage.indexOf('form=') == -1)
+    sPage += '&form=F1';
+  if (sPage.indexOf('sid=') == -1)
+    sPage += urlParam('sid');
+  if (sPage.indexOf('realm=') == -1)
+    sPage += urlParam('realm');
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
+
+	return false;
 }
 
 function calendarsShow(sPage, width, height) {
-	if ($('ss_type_0').checked) {
+	if ($('ss_type_0').checked)
     sPage = sPage + '&mode=p'
-  }
-  windowShow(sPage, width, height);
+
+	return windowShow(sPage, width, height);
+}
+
+function tagsShow(sPage, prefix) {
+	if ($(prefix+'_subject'))
+		sPage += '&txt=' + encodeURIComponent($v(prefix+'_subject'))
+
+	if ($(prefix+'_description'))
+		sPage += '&txt2=' + encodeURIComponent($v(prefix+'_description'))
+
+	return windowShow(sPage);
 }
 
 function calendarsHelp(mode) {
   var T = '';
-	if ($('ss_type_0').checked) {
+	if ($('ss_type_0').checked)
     T = 'Select Public';
-  }
-	if ($('ss_type_1').checked) {
+
+	if ($('ss_type_1').checked)
     T = 'Select Shared';
-  }
+
   $('ss_type_button').value = T;
   if (mode)
     $('ss_calendar').value = '';
 }
 
 function rowSelect(obj) {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
+  var srcForm = window.document.F1;
+  var dstForm = window.opener.document.F1;
 
   var s2 = (obj.name).replace('b1', 's2');
   var s1 = (obj.name).replace('b1', 's1');
 
+  var submitMode = false;
+  if (srcForm.elements['src'] && (srcForm.elements['src'].value.indexOf('s') != -1)) {
+      submitMode = true;
+    if (dstForm && dstForm.elements['submitting'])
+        return false;
+  }
+  var closeMode = true;
+  var singleMode = true;
+  if (srcForm.elements['dst']) {
+    if (srcForm.elements['dst'].value.indexOf('c') == -1)
+      closeMode = false;
+    if (srcForm.elements['dst'].value.indexOf('s') == -1)
+      singleMode = false;
+  }
+
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = srcForm.elements['params'].value;
   var myArray;
+  if (dstForm) {
 	while (true) {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-				if (window.opener.document.F1.elements[myArray[1]]) {
+      if (myArray.length > 2) {
+        var fld = dstForm.elements[myArray[1]];
+        if (fld) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s1],
-									singleMode, submitMode);
+            rowSelectValue(fld, srcForm.elements[s1], singleMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s2],
-									singleMode, submitMode);
+            rowSelectValue(fld, srcForm.elements[s2], singleMode);
+        }
         }
     if (myArray.length < 4)
       break;
     params = '' + myArray[3];
   }
+  }
 	if (submitMode) {
     window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
+    dstForm.submit();
   }
   if (closeMode)
     window.close();
@@ -537,79 +600,6 @@ function changeExportName(fld_name, from, to) {
     obj.value = (obj.value).replace(from, to);
 }
 
-function updateChecked(obj, objName) {
-  var objForm = obj.form;
-  coloriseRow(getParent(obj, 'tr'), obj.checked);
-  objForm.s1.value = CAL.trim(objForm.s1.value);
-  objForm.s1.value = CAL.trim(objForm.s1.value, ',');
-  objForm.s1.value = CAL.trim(objForm.s1.value);
-  objForm.s1.value = objForm.s1.value + ',';
-	for ( var i = 0; i < objForm.elements.length; i = i + 1) {
-    var obj = objForm.elements[i];
-		if (obj != null && obj.type == "checkbox" && obj.name == objName) {
-			if (obj.checked) {
-				if (objForm.s1.value.indexOf(obj.value + ',') == -1) {
-          objForm.s1.value = objForm.s1.value + obj.value+',';
-        }
-      } else {
-				objForm.s1.value = (objForm.s1.value).replace(obj.value + ',',
-						'');
-      }
-    }
-  }
-  objForm.s1.value = CAL.trim(objForm.s1.value, ',');
-}
-
-function addChecked(form, txt, selectionMsq) {
-  if (!anySelected (form, txt, selectionMsq, 'confirm'))
-    return;
-
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
-
-  var s1 = 's1';
-  var s2 = 's2';
-
-  var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
-  var myArray;
-	while (true) {
-    myArray = myRe.exec(params);
-    if (myArray == undefined)
-      break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-				if (window.opener.document.F1.elements[myArray[1]]) {
-          if (myArray[2] == 's1')
-						rowSelectValue(
-								window.opener.document.F1.elements[myArray[1]],
-								window.document.F1.elements[s1], singleMode,
-								submitMode);
-          if (myArray[2] == 's2')
-						rowSelectValue(
-								window.opener.document.F1.elements[myArray[1]],
-								window.document.F1.elements[s2], singleMode,
-								submitMode);
-        }
-    if (myArray.length < 4)
-      break;
-    params = '' + myArray[3];
-  }
-  if (submitMode)
-    window.opener.document.F1.submit();
-  window.close();
-}
-
 function addTag(tag, objName) {
   var obj = document.F1.elements[objName];
   obj.value = CAL.trim(obj.value);
@@ -627,6 +617,7 @@ function addTag(tag, objName) {
   obj.value = CAL.trim(obj.value);
   obj.value = CAL.trim(obj.value, ',');
   obj.value = CAL.trim(obj.value);
+	return false;
 }
 
 function addCheckedTags(openerName, checkName) {
@@ -694,22 +685,22 @@ function eDelete(event, obj, onOffset) {
 
 	// delete dialog
 	if (onOffset != null) {
-		deleteDialog2.ok = function() {
+		deleteDialog2.okBtn.onclick = function() {
   		deleteDialog2.hide();
       if ($('e_delete_0').checked)
         createHidden('F1', 'onOffset', onOffset);
       createHidden('F1', 'delete', obj.id);
     doPost ('F1', 'command');
   }
-  	deleteDialog2.cancel = deleteDialog2.hide;
+		deleteDialog2.cancelBtn = deleteDialog2.hide;
   	deleteDialog2.show ();
   } else {
-  	deleteDialog.ok = function() {
+		deleteDialog.okBtn.onclick = function() {
       createHidden('F1', 'delete', obj.id);
       doPost ('F1', 'command');
   		deleteDialog.hide();
    	}
-   	deleteDialog.cancel = deleteDialog.hide;
+		deleteDialog.cancelBtn = deleteDialog.hide;
   	deleteDialog.show ();
   }
   return false;
@@ -718,14 +709,8 @@ function eDelete(event, obj, onOffset) {
 function eAnnotea(event, id, domain_id, account_id) {
   event.cancelBubble = true;
 
-	URL = 'annotea.vspx?sid=' + document.forms[0].sid.value + '&realm='
-			+ document.forms[0].realm.value + '&oid=' + id + '&did='
-			+ domain_id + '&aid=' + account_id;
-	window
-			.open(
-					URL,
-					'addressbook_anotea_window',
-					'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600');
+	URL = 'annotea.vspx?' + urlParam("sid") + urlParam("realm") + '&oid=' + id + '&did=' + domain_id + '&aid=' + account_id;
+	window.open(URL, 'addressbook_anotea_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600');
   return false;
 }
 
@@ -748,8 +733,7 @@ function cExchange(command) {
 }
 
 function cCalendar(calendar_id) {
-	vspxPost('command', 'select', 'settings', 'mode', 'sharedUpdate', 'id',
-			calendar_id);
+	vspxPost('command', 'select', 'settings', 'mode', 'sharedUpdate', 'id', calendar_id);
 }
 
 function exchangeHTML() {
@@ -789,6 +773,13 @@ function urlParam(fldName) {
   return S;
 }
 
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function checkReminder() {
   var cb = function(txt) {
     setTimeout("checkReminder()", 60000);
@@ -811,8 +802,7 @@ function checkReminder() {
       }
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=list" + urlParam("sid")
-			+ urlParam("realm"), cb, {
+	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=list" + urlParam("sid") + urlParam("realm"), cb, {
 		type : OAT.AJAX.TYPE_TEXT,
 		onstart : function() {
 		},
@@ -832,14 +822,7 @@ function dismissReminder(prefix, mode) {
         reminders = reminders + "," + o.value;
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=dismiss&reminders=" + reminders
-			+ urlParam("sid") + urlParam("realm"), function() {
-	}, {
-		onstart : function() {
-		},
-		onerror : function() {
-		}
-	});
+	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=dismiss&reminders="+reminders+urlParam("sid")+urlParam("realm"), function(){}, {onstart : function(){}, onerror : function(){}});
 	reminderDialog.hide ();
 }
 
@@ -847,7 +830,7 @@ function davBrowse(fld) {
 	var options = {
 		mode : 'browser',
 		onConfirmClick : function(path, fname) {
-			$(fld).value = path + fname;
+			$(fld).value = '/DAV' + path + fname;
 		}
                 };
   OAT.WebDav.open(options);
@@ -878,39 +861,36 @@ function destinationChange(obj, actions) {
     var a = actions.hide;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
-			if (o) {
+			if (o)
 				OAT.Dom.hide(o);
 			}
-    }
   }
 	if (actions.show) {
     var a = actions.show;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
-			if (o) {
+			if (o)
 				OAT.Dom.show(o);
-    }
   }
 	}
 	if (actions.clear) {
     var a = actions.clear;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
-			if (o && o.value) {
+			if (o && o.value)
 				o.value = '';
 			}
     }
   }
-}
 
 var CAL = new Object();
 
 CAL.trim = function(sString, sChar) {
 
 	if (sString) {
-		if (sChar == null) {
+		if (sChar == null)
       sChar = ' ';
-    }
+
 		while (sString.substring(0, 1) == sChar) {
       sString = sString.substring(1, sString.length);
     }
@@ -933,20 +913,16 @@ CAL.colorRef = function(fldName) {
                         		
 CAL.aboutDialog = function() {
   var aboutDiv = $('aboutDiv');
-	if (aboutDiv) {
+	if (aboutDiv)
 		OAT.Dom.unlink(aboutDiv);
-	}
-	aboutDiv = OAT.Dom.create('div', {
-		width : '430px',
-		height : '150px'
-	});
+
+  aboutDiv = OAT.Dom.create('div', {
+    width:'430px',
+    height: '170px',
+    overflow: 'hidden'
+  });
   aboutDiv.id = 'aboutDiv';
-	aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {
-		width : 430,
-		buttons : 0,
-		resize : 0,
-		modal : 1
-	});
+	aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {
@@ -958,63 +934,5 @@ CAL.aboutDialog = function() {
       }
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
-		type : OAT.AJAX.TYPE_TEXT,
-		onstart : function() {
-		},
-		onerror : function() {
-		}
-	});
-}
-
-CAL.validateError = function(fld, msg) {
-  alert(msg);
-	setTimeout(function() {
-		fld.focus();
-	}, 1);
-  return false;
-}
-
-CAL.validateMail = function(fld) {
-  if ((fld.value.length == 0) || (fld.value.length > 40))
-		return CAL.validateError(fld,
-				'E-mail address cannot be empty or longer then 40 chars');
-
-  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value))
-    return CAL.validateError(fld, 'Invalid E-mail address');
-
-  return true;
-}
-
-CAL.validateURL = function(fld) {
-  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  if (!regex.test(fld.value))
-    return CAL.validateError(fld, 'Invalid URL address');
-
-  return true;
-}
-
-CAL.validateField = function(fld) {
-  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
-    return true;
-  if (OAT.Dom.isClass(fld, '_mail_'))
-    return CAL.validateMail(fld);
-  if (OAT.Dom.isClass(fld, '_url_'))
-    return CAL.validateURL(fld);
-  return true;
-}
-
-CAL.validateInputs = function(fld) {
-  var retValue = true;
-  var form = fld.form;
-	for (i = 0; i < form.elements.length; i++) {
-    var fld = form.elements[i];
-		if (OAT.Dom.isClass(fld, '_validate_')) {
-      retValue = CAL.validateField(fld);
-      if (!retValue)
-        return retValue;
-    }
-  }
-  return retValue;
+	OAT.AJAX.POST("ajax.vsp", "a=about", x, {type: OAT.AJAX.TYPE_TEXT, onstart: function(){}, onerror: function(){}});
 }

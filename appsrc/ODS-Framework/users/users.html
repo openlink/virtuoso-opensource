@@ -4,6 +4,7 @@
     <title>Virtuoso Web Applications</title>
     <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
     <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
@@ -11,10 +12,11 @@
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/typeahead.js"></script>
     <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "crypto", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -33,15 +35,14 @@
         }
         return true;
       }
-      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
       document.onkeypress=navigate;
     </script>
   </head>
   <body>
     <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
     </div>
-    <form name="page_form" id="page_form" method="post">
+    <iframe id="form_target" name="form_target" src="#" style="width:0;height:0;border:0px solid #fff;"></iframe>
+    <form name="page_form" id="page_form" action="/ods/api/user.upload" method="post" enctype="multipart/form-data" target="form_target">
       <input type="hidden" name="mode" id="mode" value="html" />
       <input type="hidden" name="sid" id="sid" value="" />
       <input type="hidden" name="realm" id="realm" value="wa" />
@@ -49,7 +50,9 @@
       <input type="hidden" name="formSubtab" id="formSubtab" value="" />
       <input type="hidden" name="formMode" id="formMode" value="" />
       <div id="ob">
-        <div id="ob_left">Login</div>
+        <div id="ob_left" style="display: none;">
+          <span id="ob_left_01"><b>User</b>: <span id="ob_left_name"></span></span><span id="ob_left_02">, <b>Profile</b>: <a href="#" onclick="javascript: return ufProfileSubmit();">Edit</a> / <a href="#" onclick="javascript: return loginUrl();">View</a></span>
+        </div>
         <div id="ob_right"><a href="#" id="ob_right_logout" onclick="javascript: return logoutSubmit();" style="display: none;">Logout</a></div>
       </div>
       <div id="MD">
@@ -61,13 +64,15 @@
             <td valign="top">
               <div id="lf" class="form">
                 <div class="header">
-                  User login
+                  Please identify yourself
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="ODS">ODS</li>
-                  <li id="lf_tab_1" title="OpenID">OpenID</li>
+                  <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
+                  <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
+                  <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content"></div>
@@ -75,10 +80,10 @@
                 <table class="form" cellspacing="5">
                   <tr>
                     <th width="30%">
-                      <label for="lf_uid">Member ID</label>
+                          <label for="lf_uid">User ID</label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="lf_uid" value="" id="lf_uid" />
+                          <input type="text" name="lf_uid" value="" id="lf_uid" style="width: 150px;" />
                     </td>
                   </tr>
                   <tr>
@@ -86,7 +91,7 @@
                       <label for="lf_password">Password</label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="password" name="lf_password" value="" id="lf_password" />
+                          <input type="password" name="lf_password" value="" id="lf_password" style="width: 150px;" />
                     </td>
                   </tr>
                     </table>
@@ -98,7 +103,7 @@
                           <label for="lf_openId">OpenID URL</label>
                     </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
+                          <input type="text" name="lf_openId" value="" id="lf_openId" style="width: 300px;" />
                         </td>
                   </tr>
                     </table>
@@ -121,6 +126,32 @@
                     <table id="lf_table_3" class="form" cellspacing="5">
                     </table>
                   </div>
+                  <div id="lf_page_4" class="tabContent" style="display: none">
+                    <table id="lf_table_4" class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                        </th>
+                        <td>
+                          <span id="lf_twitter" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="lf_twitterButton" src="/ods/images/sign-in-with-twitter-d.png" border="0"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="lf_page_5" class="tabContent" style="display: none;">
+                    <table id="lf_table_5" class="form" cellspacing="5">
+                      <tr>
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <span id="lf_linkedin" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="lf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div class="footer">
                   <input type="button" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
@@ -130,27 +161,29 @@
 
               <div id="rf" class="form" style="display: none">
                 <div class="header">
-                  User register
+                  User Registration
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="ODS">ODS</li>
-                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_0" title="Digest">Digest</li>
+                  <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
+                  <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
+                  <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
                   <div id="rf_page_0" class="tabContent" >
-                    <table class="form" cellspacing="5">
-                      <tr id="rf_login_1">
+                    <table id="rf_table_0" class="form" cellspacing="5">
+                      <tr>
                         <th>
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="rf_uid" value="" id="rf_uid" />
+                          <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
                         </td>
                       </tr>
-                      <tr id="rf_login_2">
+                      <tr>
                         <th>
                           <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
@@ -158,26 +191,26 @@
                           <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
                         </td>
                       </tr>
-                      <tr id="rf_login_3">
+                      <tr>
                         <th>
                           <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="password" name="rf_password" value="" id="rf_password" />
+                          <input type="password" name="rf_password" value="" id="rf_password" style="width: 150px;" />
                         </td>
                       </tr>
-                      <tr id="rf_login_4">
+                      <tr>
                         <th>
                           <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="password" name="rf_password2" value="" id="rf_password2" />
+                          <input type="password" name="rf_password2" value="" id="rf_password2" style="width: 150px;" />
                         </td>
                       </tr>
                     </table>
                   </div>
                   <div id="rf_page_1" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
@@ -189,7 +222,7 @@
                     </table>
                   </div>
                   <div id="rf_page_2" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                         </th>
@@ -206,6 +239,32 @@
                     <table id="rf_table_3" class="form" cellspacing="5">
                     </table>
                   </div>
+                  <div id="rf_page_4" class="tabContent" style="display: none">
+                    <table id="rf_table_4" class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                        </th>
+                        <td>
+                          <span id="rf_twitter" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="rf_twitterButton" src="/ods/images/sign-in-with-twitter-d.png" border="0"/></a>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_5" class="tabContent" style="display: none;">
+                    <table id="rf_table_5" class="form" cellspacing="5">
+                      <tr>
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <span id="rf_linkedin" style="min-height: 20px;"></span>
+                          <br />
+                          <img id="rf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div>
                   <table class="form" cellspacing="5">
@@ -219,47 +278,16 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
-                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                  <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
 
-              <div id="uf" class="form" style="display: none;">
+              <div id="uf" class="form" style="width: 100%; display: none;">
                 <div class="header">
                   User profile
                 </div>
-                <ul id="uf_tabs" class="tabs">
-                  <li id="uf_tab_0" title="Personal">Personal</li>
-                  <li id="uf_tab_1" title="Messaging Services">Messaging Services</li>
-                  <li id="uf_tab_2" title="Home">Home</li>
-                  <li id="uf_tab_3" title="Business">Business</li>
-                  <li id="uf_tab_4" title="Data Explorer">Data Explorer</li>
-                </ul>
-                <div style="min-height: 180px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                  <div id="uf_content"></div>
-                  <div id="uf_page_0" class="tabContent" >
-                    <table id="uf_table_0" class="form" cellspacing="5">
-                    </table>
-                  </div>
-                  <div id="uf_page_1" class="tabContent" >
-                    <table id="uf_table_1" class="form" cellspacing="5">
-                    </table>
-                  </div>
-                  <div id="uf_page_2" class="tabContent" >
-                    <table id="uf_table_2" class="form" cellspacing="5">
-                    </table>
-                  </div>
-                  <div id="uf_page_3" class="tabContent" >
-                    <table id="uf_table_3" class="form" cellspacing="5">
-                </table>
-                  </div>
-                  <div id="uf_page_4" class="tabContent" >
-                    <div id="uf_rdf_content">
-                      &nbsp;
-                    </div>
-                  </div>
-                </div>
-                <div class="footer">
-                  <input type="button" name="uf_profile" value="Edit Profile" onclick="javascript: return ufProfileSubmit();" />
+
+                <div id="uf_div_new" style="clear: both;">
                 </div>
               </div>
 
@@ -275,23 +303,19 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Import">Import</li>
-                      <li id="pf_tab_0_1" title="Main">Main</li>
-                      <li id="pf_tab_0_2" title="Address">Address</li>
-                      <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
-                      <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
-                      <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
-                      <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
-                      <li id="pf_tab_0_7" title="Creator Of">Creator Of</li>
-                      <li id="pf_tab_0_8" title="My Offers">My Offers</li>
-                      <li id="pf_tab_0_9" title="Offers I Seek">Offers I Seek</li>
+                      <li id="pf_tab_0_0">Profile Import</li>
+                      <li id="pf_tab_0_1">Main</li>
+                      <li id="pf_tab_0_2">Address</li>
+                      <li id="pf_tab_0_3">Online Accounts</li>
+                      <li id="pf_tab_0_4">Messaging Services</li>
+                      <li id="pf_tab_0_5">Others</li>
                     </ul>
-                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
-                    <table class="form" cellspacing="5">
-                      <tr>
+                        <table class="form" cellspacing="5">
+                          <tr>
                             <th>
-                              <label for="pf_foaf">Personal URI (Web ID)</label>
+                              <label for="pf_foaf">Profile Document URL</label>
                             </th>
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />
@@ -336,12 +360,15 @@
                         </th>
                         <td>
                           <select name="pf_title" value="" id="pf_title">
-                            <option value=""/>
+                                <option></option>
                             <option value="Mr">Mr</option>
                             <option value="Mrs">Mrs</option>
                             <option value="Dr">Dr</option>
                             <option value="Ms">Ms</option>
+                                <option value="Sir">Sir</option>
                           </select>
+                              <select name="pf_acl_title" id="pf_acl_title">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -350,6 +377,8 @@
                         </th>
                         <td>
                           <input type="text" name="pf_firstName" value="" id="pf_firstName" style="width: 220px;" />
+                              <select name="pf_acl_firstName" id="pf_acl_firstName">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -358,6 +387,8 @@
                         </th>
                         <td>
                           <input type="text" name="pf_lastName" value="" id="pf_lastName" style="width: 220px;" />
+                              <select name="pf_acl_lastName" id="pf_acl_lastName">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -366,6 +397,8 @@
                         </th>
                         <td>
                           <input type="text" name="pf_fullName" value="" id="pf_fullName" size="60" />
+                              <select name="pf_acl_fullName" id="pf_acl_fullName">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -374,6 +407,8 @@
                         </th>
                         <td>
                           <input type="text" name="pf_mail" value="" id="pf_mail" style="width: 220px;" />
+                              <select name="pf_acl_mail" id="pf_acl_mail">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -382,10 +417,12 @@
                         </th>
                         <td>
                           <select name="pf_gender" value="" id="pf_gender">
-                            <option value=""/>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                                <option></option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
                           </select>
+                              <select name="pf_acl_gender" id="pf_acl_gender">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -394,6 +431,8 @@
                         </th>
                         <td>
                           <input name="pf_birthday" id="pf_birthday" value="" onclick="datePopup('pf_birthday');"/>
+                              <select name="pf_acl_birthday" id="pf_acl_birthday">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -402,6 +441,8 @@
                         </th>
                         <td>
                           <input name="pf_homepage" id="pf_homepage" value="" style="width: 220px;" />
+                              <select name="pf_acl_homepage" id="pf_acl_homepage">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -418,16 +459,19 @@
                                           <th>
                                             URI
                                           </th>
+                                          <th width="10%">
+                                            Access
+                                          </th>
                                           <th width="65px">
                                             Action
                                           </th>
                                         </tr>
                                       </thead>
-                                      <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
+                                      <tr id="x1_tr_no" style="display: none;"><td colspan="3"><b>No Personal URIs</b></td></tr>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}, fld_2: {mode: 4}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>
@@ -447,12 +491,14 @@
                         </th>
                         <td>
                               <textarea name="pf_summary" id="pf_summary" style="width: 400px;"></textarea>
+                              <select name="pf_acl_summary" id="pf_acl_summary">
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                              <label for="pf_foaf">Web page URL indicating a topic of interest</label>
-                        </th>
+                              <label>Web page URL indicating a topic of interest</label>
+                                          </th>
                             <td nowrap="nowrap">
                               <table>
                                 <tr>
@@ -476,6 +522,8 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -483,7 +531,7 @@
                       </tr>
                       <tr>
                         <th>
-                              <label for="pf_foaf">Resource URI indicating thing of interest</label>
+                              <label>Resource URI indicating thing of interest</label>
                         </th>
                             <td nowrap="nowrap">
                               <table>
@@ -508,11 +556,49 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photoContent">Upload Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_photoContent" id="pf_photoContent"onblur="javascript: getFileName(this.form, this, this.form.pf_photo);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photo">Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_photo" id="pf_photo" value="" style="width: 400px;" >
+                              <select name="pf_acl_photo" id="pf_acl_photo">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audioContent">Upload Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_audioContent" id="pf_audioContent"onblur="javascript: getFileName(this.form, this, this.form.pf_audio);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audio">Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_audio" id="pf_audio"value="" style="width: 400px;" >
+                              <select name="pf_acl_audio" id="pf_acl_audio">
+                              </select>
+                            </td>
+                          </tr>
                           <tr>
                             <th>
                               <label for="pf_appSetting">Show &lt;a&gt;++ links</label>
@@ -522,6 +608,46 @@
                                 <option value="0">disabled</option>
                                 <option value="1">click</option>
                                 <option value="2">hover</option>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                              <label>
+                           	    <input type="checkbox" id="pf_spbEnable" name="pf_spbEnable" value="1">
+                                <b>Enable Semantic Pingback for ACLs</b>
+                              </label>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                             <label>
+                               <input type="checkbox" id="pf_inSearch" name="pf_inSearch" value="1">
+                               <b>Include my profile in search results</b>
+                             </label>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                             <label>
+                               <input type="checkbox" id="pf_showActive" name="pf_showActive" value="1">
+                               <b>Include in User active information</b>
+                             </label>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_1" id="pf_set_0_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">acl</option>
+                                <option value="3">private</option>
                               </select>
                             </td>
                           </tr>
@@ -535,7 +661,10 @@
                           <label for="pf_homecountry">Country</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;" />
+                              <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;">
+                              </select>
+                              <select name="pf_acl_homeCountry" id="pf_acl_homeCountry">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -545,6 +674,8 @@
                         <td nowrap="nowrap">
                           <span id="span_pf_homestate">
                           </span>
+                              <select name="pf_acl_homeState" id="pf_acl_homeState">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -552,7 +683,9 @@
                           <label for="pf_homecity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homecity" value="" id="pf_homecity" style="width: 220px;" />
+                              <input type="text" name="pf_homecity" value="" id="pf_homecity" style="width: 216px;" />
+                              <select name="pf_acl_homeCity" id="pf_acl_homeCity">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -560,7 +693,9 @@
                           <label for="pf_homecode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homecode" value="" id="pf_homecode" style="width: 220px;" />
+                              <input type="text" name="pf_homecode" value="" id="pf_homecode" style="width: 216px;" />
+                              <select name="pf_acl_homeCode" id="pf_acl_homeCode">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -568,7 +703,9 @@
                           <label for="pf_homeaddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress1" value="" id="pf_homeaddress1" style="width: 220px;" />
+                              <input type="text" name="pf_homeaddress1" value="" id="pf_homeaddress1" style="width: 216px;" />
+                              <select name="pf_acl_homeAddress1" id="pf_acl_homeAddress1">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -576,7 +713,7 @@
                           <label for="pf_homeaddress2">Address2</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress2" value="" id="pf_homeaddress2" style="width: 220px;" />
+                              <input type="text" name="pf_homeaddress2" value="" id="pf_homeaddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -584,7 +721,7 @@
                           <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_homeTimezone" id="pf_homeTimezone">
+                              <select name="pf_homeTimezone" id="pf_homeTimezone" style="width: 114px;" >
                             <option value="-12">GMT -12:00</option>
                             <option value="-11">GMT -11:00</option>
                             <option value="-10">GMT -10:00</option>
@@ -611,6 +748,8 @@
                             <option value="11">GMT +11:00</option>
                             <option value="12">GMT +12:00</option>
                           </select>
+                              <select name="pf_acl_homeTimezone" id="pf_acl_homeTimezone">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -618,11 +757,9 @@
                           <label for="pf_homelat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homelat" value="" id="pf_homelat" />
-                          <label>
-                          <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                            Default Map Location
-                          </label>
+                              <input type="text" name="pf_homelat" value="" id="pf_homelat" style="width: 110px;" />
+                              <select name="pf_acl_homeLatitude" id="pf_acl_homeLatitude">
+                              </select>
                         <td>
                       <tr>
                       <tr>
@@ -630,7 +767,11 @@
                           <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homelng" value="" id="pf_homelng" />
+                              <input type="text" name="pf_homelng" value="" id="pf_homelng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
+                                Use as default map location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -638,7 +779,11 @@
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homePhone" value="" id="pf_homePhone" />
+                              <input type="text" name="pf_homePhone" value="" id="pf_homePhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_homePhoneExt" value="" id="pf_homePhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_homePhone" id="pf_acl_homePhone">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -646,7 +791,20 @@
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeMobile" value="" id="pf_homeMobile" />
+                              <input type="text" name="pf_homeMobile" value="" id="pf_homeMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_2">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_2" id="pf_set_0_2" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">acl</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                     </table>
@@ -663,7 +821,7 @@
                                       Select from Service List ot Type New One
                                     </th>
                                     <th>
-                                      Member Home Page URL
+                                      Member Home Page URI
                                     </th>
                                     <th width="65px">
                                       Action
@@ -674,13 +832,101 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
                       </div>
 
                       <div id="pf_page_0_4" class="tabContent" style="display:none;">
+                        <table id="x6_tbl" class="form" cellspacing="5">
+                          <tr>
+                            <th width="30%">
+                              <label for="pf_icq">ICQ</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_icq" value="" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_icq" id="pf_acl_icq">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_skype">Skype</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_skype" value="" id="pf_skype" style="width: 220px;" />
+                              <select name="pf_acl_skype" id="pf_acl_skype">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_yahoo">Yahoo</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_yahoo" value="" id="pf_yahoo" style="width: 220px;" />
+                              <select name="pf_acl_yahoo" id="pf_acl_yahoo">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_aim">AIM</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_aim" value="" id="pf_aim" style="width: 220px;" />
+                              <select name="pf_acl_aim" id="pf_acl_aim">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_msn">MSN</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_msn" value="" id="pf_msn" style="width: 220px;" />
+                              <select name="pf_acl_msn" id="pf_acl_msn">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <span class="button pointer" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                            </td>
+                            <td width="40%">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_4">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_4" id="pf_set_0_4" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">acl</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <ul id="pf_tabs_0_5" class="tabs">
+                          <li id="pf_tab_0_5_0">Biographical Events</li>
+                          <li id="pf_tab_0_5_1">Others</li>
+                          <li id="pf_tab_0_5_2">Favorite Things</li>
+                          <li id="pf_tab_0_5_3">Creator Of</li>
+                          <li id="pf_tab_0_5_4">My Offers</li>
+                          <li id="pf_tab_0_5_5">Offers I Seek</li>
+                          <li id="pf_tab_0_5_6">Likes &amp; DisLikes</li>
+                          <li id="pf_tab_0_5_7">Social Network</li>
+                        </ul>
+                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -711,95 +957,148 @@
                         </table>
                       </div>
 
-                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
-                        <table id="x6_tbl" class="form" cellspacing="5">
-                          <tr>
-                            <th width="30%">
-                              <label for="pf_icq">ICQ</label>
-                            </th>
-                            <td colspan="2">
-                              <input type="text" name="pf_icq" value="" id="pf_icq" style="width: 220px;" />
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
-                              <label for="pf_skype">Skype</label>
-                            </th>
-                            <td colspan="2">
-                              <input type="text" name="pf_skype" value="" id="pf_skype" style="width: 220px;" />
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
-                              <label for="pf_yahoo">Yahoo</label>
-                            </th>
-                            <td colspan="2">
-                              <input type="text" name="pf_yahoo" value="" id="pf_yahoo" style="width: 220px;" />
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
-                              <label for="pf_aim">AIM</label>
-                            </th>
-                            <td colspan="2">
-                              <input type="text" name="pf_aim" value="" id="pf_aim" style="width: 220px;" />
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
-                              <label for="pf_msn">MSN</label>
-                            </th>
-                            <td colspan="2">
-                              <input type="text" name="pf_msn" value="" id="pf_msn" style="width: 220px;" />
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>Add other services</th>
-                            <td>
-                              <span class="button pointer" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                            </td>
-                            <td width="40%">
-                            </td>
-                          </tr>
-                        </table>
-                      </div>
+                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                            <h3>Owns</h3>
+                            <div id="pf051_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: pfShowOwn('new', '0');" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
+                              </div>
+                          	  <table id="pf051_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf051_tbody">
+                          	    </tbody>
+                              </table>
+                            </div>
+                            <div id="pf051_form" style="display: none;">
+                              <table class="form" cellspacing="5">
+                  		    		  <tr>
+                                  <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf051_flag" id="pf051_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf051_name" id="pf051_name" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Comment
+                                  </th>
+                                  <td>
+                                    <textarea name="pf051_comment" id="pf051_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                  </td>
+                                </tr>
+                  		    		  <tr>
+                  		    		    <th valign="top">
+                  		              Products
+                  		            </th>
+                  		            <td width="800px">
+                                    <table id="ow_tbl" class="listing">
+                                      <tbody id="ow_tbody">
+                                      </tbody>
+                                    </table>
+                                    <input type="hidden" id="ow_no" name="ow_no" value="1" />
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf051');"/>
+                                <input type="submit" name="pf_update051" value="Save" onclick="return mySubmit('pf051');"/>
+                              </div>
+                            </div>
+                          </div>
 
-                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                          <tr>
-                            <td width="600px">
-                              <table id="r_tbl" class="listing">
+                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
+                        <h3>My Offers</h3>
+                            <div id="pf052_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: pfShowFavorite('new', '0');" class="button pointer"><img class="button" border="0" title="Add Favorite" alt="Add Favorite" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                          	  <table id="pf052_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
-                                    <th>
-                                      <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                          	    <tbody id="pf052_tbody">
+                      	    </tbody>
+                          </table>
+                        </div>
+                            <div id="pf052_form" style="display: none;">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf052_flag" id="pf052_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                Label (*)
                                     </th>
-                                    <th width="100%">
-                                      Favorite Type
+                              <td>
+                                    <input type="text" name="pf052_label" id="pf052_label" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                External URI
                                     </th>
-                                    <th width="65px">
-                                      Action
-                                    </th>
+                              <td>
+                                    <input type="text" name="pf052_uri" id="pf052_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                              </td>
                                   </tr>
-                                </thead>
+                            <tr>
+                              <th valign="top">
+                                Item Properties
+                              </th>
+                  		        <td width="800px">
+                                <table id="r_tbl" class="listing">
                                 <tbody id="r_tbody">
-                                  <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
                                 </tbody>
                               </table>
                             </td>
-                            <td valign="top" nowrap="nowrap">
-                              <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                            </td>
                           </tr>
                         </table>
+                          <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf052');"/>
+                                <input type="submit" name="pf_update052" value="Save" onclick="return mySubmit('pf052');"/>
+                          </div>
+                        </div>
                       </div>
-                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
+
+                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
-                        <div id="pf07_list">
+                            <div id="pf053_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowMade('new', '0');" class="button pointer"><img class="button" border="0" title="Add Creator Of" alt="Add Creator Of" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf07_tbl" class="listing">
+                          	  <table id="pf053_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Property</th>
@@ -807,11 +1106,11 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf07_tbody">
+                          	    <tbody id="pf053_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf07_form" style="display: none;">
+                            <div id="pf053_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
@@ -822,7 +1121,7 @@
                                   function p_init ()
                                   {
                                     var fld = new OAT.Combolist([]);
-                                    fld.input.name = 'pf07_property';
+                                        fld.input.name = 'pf053_property';
                                     fld.input.id = fld.input.name;
                                     fld.input.style.width = "400px";
                                     $("if_opt").appendChild(fld.div);
@@ -839,7 +1138,7 @@
                                 URI
                               </th>
                               <td>
-                                <input type="text" name="pf07_url" id="pf07_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf053_url" id="pf053_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -847,48 +1146,61 @@
                                 Description (*)
                               </th>
                               <td>
-                                <textarea name="pf07_description" id="pf07_description" style="width: 400px;"></textarea>
+                                    <textarea name="pf053_description" id="pf053_description" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                             <tr>
-                              <td />
+                              <td></td>
                               <td>
   		                          <b>Note: The fields designated with '*' will be fetched from the source document if empty</b>
                               </td>
                             </tr>
                           </table>
                       <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf07');"/>
-                            <input type="submit" name="pf_update07" value="Save" onclick="return mySubmit('pf07');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf053');"/>
+                                <input type="submit" name="pf_update053" value="Save" onclick="return mySubmit('pf053');"/>
                           </div>
                         </div>
                       </div>
-                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
+
+                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
-                        <div id="pf08_list">
+                            <div id="pf054_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowOffer('new', '0');" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf08_tbl" class="listing">
+                          	  <table id="pf054_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th>Name</th>
-                        		    <th>Description</th>
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf08_tbody">
+                          	    <tbody id="pf054_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf08_form" style="display: none;">
+                            <div id="pf054_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Name
+                  		              Access
                               </th>
                               <td>
-                                <input type="text" name="pf08_name" id="pf08_name" value="" class="_validate_" style="width: 400px;">
+                                    <select name="pf054_flag" id="pf054_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf054_name" id="pf054_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -896,7 +1208,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf08_comment" id="pf08_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf054_comment" id="pf054_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -904,46 +1216,82 @@
                   		          Products
                   		        </th>
                   		        <td width="800px">
+                                    <table class="ctl_grp">
+                                      <tr>
+                                        <td width="800px">
                                 <table id="ol_tbl" class="listing">
-                                  <tbody id="ol_tbody">
+                                            <thead>
+                                              <tr class="listing_header_row">
+                                                <th>
+                                                  <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                                                </th>
+                                                <th width="100%">
+                                                  Ontology
+                                                </th>
+                                                <th width="80px">
+                                                  Action
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody id="ol_tbody" class="colorize">
+                                              <tr id="ol_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                                   </tbody>
                                 </table>
+                                        </td>
+                                        <td valign="top" nowrap="nowrap">
+                                          <span class="button pointer" onclick="TBL.createRow('ol', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                                        </td>
+                                      </tr>
+                                    </table>
                                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
                               </td>
                             </tr>
                           </table>
                           <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf08');"/>
-                            <input type="submit" name="pf_update08" value="Save" onclick="return mySubmit('pf08');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf054');"/>
+                                <input type="submit" name="pf_update054" value="Save" onclick="return mySubmit('pf054');"/>
                           </div>
                         </div>
                       </div>
-                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
+
+                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
-                        <div id="pf09_list">
+                            <div id="pf055_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowSeek('new', '0');" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf09_tbl" class="listing">
+                          	  <table id="pf055_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th>Name</th>
-                        		    <th>Description</th>
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf09_tbody">
+                          	    <tbody id="pf055_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf09_form" style="display: none;">
+                            <div id="pf055_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Name
+                  		              Access
                               </th>
                               <td>
-                                <input type="text" name="pf09_name" id="pf09_name" value="" class="_validate_" style="width: 400px;">
+                                    <select name="pf055_flag" id="pf055_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf055_name" id="pf055_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -951,7 +1299,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf09_comment" id="pf09_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf055_comment" id="pf055_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -959,17 +1307,258 @@
                   		          Products
                   		        </th>
                   		        <td width="800px">
+                                    <table class="ctl_grp">
+                                      <tr>
+                                        <td width="800px">
                                 <table id="wl_tbl" class="listing">
-                                  <tbody id="wl_tbody">
+                                            <thead>
+                                              <tr class="listing_header_row">
+                                                <th>
+                                                  <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                                                </th>
+                                                <th width="100%">
+                                                  Ontology
+                                                </th>
+                                                <th width="80px">
+                                                  Action
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody id="wl_tbody" class="colorize">
+                                              <tr id="wl_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
                                   </tbody>
                                 </table>
+                                        </td>
+                                        <td valign="top" nowrap="nowrap">
+                                          <span class="button pointer" onclick="TBL.createRow('wl', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                                        </td>
+                                      </tr>
+                                    </table>
                                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
                               </td>
                             </tr>
                           </table>
                           <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf09');"/>
-                            <input type="submit" name="pf_update09" value="Save" onclick="return mySubmit('pf09');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf055');"/>
+                                <input type="submit" name="pf_update055" value="Save" onclick="return mySubmit('pf055');"/>
+                          </div>
+                        </div>
+                      </div>
+
+                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
+                        <h3>Likes &amp; DisLikes</h3>
+                            <div id="pf056_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: pfShowLike('new', '0');" class="button pointer"><img class="button" border="0" title="Add Like" alt="Add Like" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                          	  <table id="pf056_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                            		    <th width="10%">Type</th>
+                            		    <th width="45%">URI</th>
+                            		    <th width="45%">Name</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                          	    <tbody id="pf056_tbody">
+                      	    </tbody>
+                          </table>
+                        </div>
+                            <div id="pf056_form" style="display: none;">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf056_flag" id="pf056_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                Type
+                              </th>
+                              <td>
+                                    <select name="pf056_type" id="pf056_type">
+                                  <option value="L">Like</option>
+                                  <option value="DL">DisLike</option>
+                                </select>
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                    URI (*)
+                              </th>
+                              <td>
+                                    <input type="text" name="pf056_uri" id="pf056_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                    Name (*)
+                              </th>
+                              <td>
+                                    <input type="text" name="pf056_name" id="pf056_name" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Comment
+                              </th>
+                              <td>
+                                    <textarea name="pf056_comment" id="pf056_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                  				  <tr>
+                  				    <th valign="top">
+		                            Properties
+                  		        </th>
+                  		        <td width="800px">
+                                    <table class="ctl_grp">
+                                      <tr>
+                                        <td width="800px">
+                                <table id="ld_tbl" class="listing">
+                                            <thead>
+                                              <tr class="listing_header_row">
+                                                <th>
+                                                  <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                                                </th>
+                                                <th width="100%">
+                                                  Ontology
+                                                </th>
+                                                <th width="80px">
+                                                  Action
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody id="ld_tbody" class="colorize">
+                                              <tr id="ld_tr_no"><td colspan="3"><b>No Attached Ontologies</b></td></tr>
+                                  </tbody>
+                                </table>
+                                        </td>
+                                        <td valign="top" nowrap="nowrap">
+                                          <span class="button pointer" onclick="TBL.createRow('ld', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'Ontology: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41, title: 'Attach'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Ontology" title="Add Ontology" /> Add</span>
+                                        </td>
+                                      </tr>
+                                    </table>
+                                <input type="hidden" id="ld_no" name="ld_no" value="1" />
+                              </td>
+                            </tr>
+                          </table>
+                          <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf056');"/>
+                                <input type="submit" name="pf_update056" value="Save" onclick="return mySubmit('pf056');"/>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                            <h3>Knows</h3>
+                            <div id="pf057_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: pfShowKnow('new', '0');" class="button pointer"><img class="button" border="0" title="Add Know" alt="Add Know" src="/ods/images/icons/add_16.png"> Add</span>
+                                <span onclick="javascript: pfShowKnow('import', '0');" class="button pointer"><img class="button" border="0" title="Import Know" alt="Add Know" src="/ods/images/icons/add_16.png"> Import</span>
+                              </div>
+                          	  <table id="pf057_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf057_tbody">
+                          	    </tbody>
+                              </table>
+                            </div>
+                            <div id="pf057_import" style="display: none;">
+                              <table>
+                      				  <tr>
+                      				    <th width="100px">
+                      		          Source
+                      		        </th>
+                                  <td>
+                                    <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                  </th><td>
+                                    <table class="listing" id="k_tbl">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            Access
+                                          </th>
+                                          <th width="50%">
+                                            URI
+                                          </th>
+                                          <th width="50%">
+                                            Label
+                                          </th>
+                                          <th width="65px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr id="k_tr_no">
+                                           <td colspan="3">
+                                             <b>No downloaded items</b>
+                                           </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf057');"/>
+                                <input type="submit" name="pf_update057" value="Import" onclick="return mySubmit('pf057');"/>
+                              </div>
+                            </div>
+                            <div id="pf057_form" style="display: none;">
+                              <table class="form" cellspacing="5">
+                  		    		  <tr>
+                                  <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf057_flag" id="pf057_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    URI (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_uri" id="pf057_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Label (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_label" id="pf057_label" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf057');"/>
+                                <input type="submit" name="pf_update057" value="Save" onclick="return mySubmit('pf057');"/>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -989,7 +1578,7 @@
                       <li id="pf_tab_1_2" title="Online Accounts">Online Accounts</li>
                       <li id="pf_tab_1_3" title="Messaging Services">Messaging Services</li>
                     </ul>
-                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_1_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -997,7 +1586,10 @@
                           <label for="pf_businessIndustry">Industry</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;" />
+                              <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
+                              </select>
+                              <select name="pf_acl_businessIndustry" id="pf_acl_businessIndustry">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1005,7 +1597,9 @@
                           <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessOrganization" value="" id="pf_businessOrganization" style="width: 220px;" />
+                              <input type="text" name="pf_businessOrganization" value="" id="pf_businessOrganization" style="width: 216px;" />
+                              <select name="pf_acl_businessOrganization" id="pf_acl_businessOrganization">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1013,7 +1607,7 @@
                           <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="" id="pf_businessHomePage" style="width: 220px;" />
+                              <input type="text" name="pf_businessHomePage" value="" id="pf_businessHomePage" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1021,15 +1615,19 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessJob" value="" id="pf_businessJob" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
+                              <input type="text" name="pf_businessJob" value="" id="pf_businessJob" style="width: 216px;" />
+                              <select name="pf_acl_businessJob" id="pf_acl_businessJob">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
                               <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessRegNo" value="" id="pf_businessRegNo"  style="width: 220px;" />
+                              <input type="text" name="pf_businessRegNo" value="" id="pf_businessRegNo" style="width: 216px;" />
+                              <select name="pf_acl_businessRegNo" id="pf_acl_businessRegNo">
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1038,7 +1636,7 @@
                             </th>
                             <td>
                               <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <option value="Job seeker-Permanent">Job seeker-Permanent</option>
                                 <option value="Job seeker-Temporary">Job seeker-Temporary</option>
                                 <option value="Job seeker-Temp/perm">Job seeker-Temp/perm</option>
@@ -1046,6 +1644,8 @@
                                 <option value="Employer">Employer</option>
                                 <option value="Agency">Agency</option>
                                 <option value="Resourcing supplier">Resourcing supplier</option>
+                              </select>
+                              <select name="pf_acl_businessCareer" id="pf_acl_businessCareer">
                               </select>
                             </td>
                           </tr>
@@ -1055,12 +1655,14 @@
                             </th>
                             <td>
                               <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <option value="1-100">1-100</option>
                                 <option value="101-250">101-250</option>
                                 <option value="251-500">251-500</option>
                                 <option value="501-1000">501-1000</option>
                                 <option value=">1000">>1000</option>
+                              </select>
+                              <select name="pf_acl_businessEmployees" id="pf_acl_businessEmployees">
                               </select>
                             </td>
                           </tr>
@@ -1070,11 +1672,13 @@
                             </th>
                             <td>
                               <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <option value="Not a Vendor">Not a Vendor</option>
                                 <option value="Vendor">Vendor</option>
                                 <option value="VAR">VAR</option>
                                 <option value="Consultancy">Consultancy</option>
+                              </select>
+                              <select name="pf_acl_businessVendor" id="pf_acl_businessVendor">
                               </select>
                             </td>
                           </tr>
@@ -1084,10 +1688,12 @@
                             </th>
                             <td>
                               <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <option value="Enterprise Data Integration">Enterprise Data Integration</option>
                                 <option value="Business Process Management">Business Process Management</option>
                                 <option value="Other">Other</option>
+                              </select>
+                              <select name="pf_acl_businessService" id="pf_acl_businessService">
                               </select>
                             </td>
                           </tr>
@@ -1096,7 +1702,9 @@
                               <label for="pf_businessOther">Other Technology service</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessOther" value="" id="pf_businessOther"  style="width: 220px;" />
+                              <input type="text" name="pf_businessOther" value="" id="pf_businessOther" style="width: 216px;" />
+                              <select name="pf_acl_businessOther" id="pf_acl_businessOther">
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1104,7 +1712,9 @@
                               <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessNetwork" value="" id="pf_businessNetwork"  style="width: 220px;" />
+                              <input type="text" name="pf_businessNetwork" value="" id="pf_businessNetwork" style="width: 216px;" />
+                              <select name="pf_acl_businessNetwork" id="pf_acl_businessNetwork">
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1113,6 +1723,21 @@
                             </th>
                             <td>
                               <textarea name="pf_businessResume" id="pf_businessResume" style="width: 400px;"></textarea>
+                              <select name="pf_acl_businessResume" id="pf_acl_businessResume">
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_0">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_0" id="pf_set_1_0" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">acl</option>
+                                <option value="3">private</option>
+                              </select>
                             </td>
                           </tr>
                         </table>
@@ -1125,7 +1750,10 @@
                           <label for="pf_businesscountry">Country</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businesscountry" id="pf_businesscountry"  onchange="javascript: return updateState('pf_businesscountry', 'pf_businessstate');" style="width: 220px;" />
+                              <select name="pf_businesscountry" id="pf_businesscountry"  onchange="javascript: return updateState('pf_businesscountry', 'pf_businessstate');" style="width: 220px;">
+                              </select>
+                              <select name="pf_acl_businessCountry" id="pf_acl_businessCountry">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1135,6 +1763,8 @@
                         <td nowrap="nowrap">
                           <span id="span_pf_businessstate">
                           </span>
+                              <select name="pf_acl_businessState" id="pf_acl_businessState">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1142,7 +1772,9 @@
                           <label for="pf_businesscity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businesscity" value="" id="pf_businesscity" style="width: 220px;" />
+                              <input type="text" name="pf_businesscity" value="" id="pf_businesscity" style="width: 216px;" />
+                              <select name="pf_acl_businessCity" id="pf_acl_businessCity">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1150,7 +1782,9 @@
                           <label for="pf_businesscode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businesscode" value="" id="pf_businesscode" style="width: 220px;" />
+                              <input type="text" name="pf_businesscode" value="" id="pf_businesscode" style="width: 216px;" />
+                              <select name="pf_acl_businessCode" id="pf_acl_businessCode">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1158,7 +1792,9 @@
                           <label for="pf_businessaddress1">Address1</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessaddress1" value="" id="pf_businessaddress1"  style="width: 220px;" />
+                              <input type="text" name="pf_businessaddress1" value="" id="pf_businessaddress1" style="width: 216px;" />
+                              <select name="pf_acl_businessAddress1" id="pf_acl_businessAddress1">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1166,7 +1802,7 @@
                           <label for="pf_businessaddress2">Address2</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessaddress2" value="" id="pf_businessaddress2"  style="width: 220px;" />
+                              <input type="text" name="pf_businessaddress2" value="" id="pf_businessaddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1174,7 +1810,7 @@
                           <label for="pf_businessTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_businessTimezone" id="pf_businessTimezone">
+                              <select name="pf_businessTimezone" id="pf_businessTimezone"style="width: 114px;">
                             <option value="-12">GMT -12:00</option>
                             <option value="-11">GMT -11:00</option>
                             <option value="-10">GMT -10:00</option>
@@ -1201,6 +1837,8 @@
                             <option value="11">GMT +11:00</option>
                             <option value="12">GMT +12:00</option>
                           </select>
+                              <select name="pf_acl_businessTimezone" id="pf_acl_businessTimezone">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1208,11 +1846,9 @@
                           <label for="pf_businesslat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslat" value="" id="pf_businesslat" />
-                          <label>
-                          <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
-                            Default Map Location
-                          </label>
+                              <input type="text" name="pf_businesslat" value="" id="pf_businesslat" style="width: 110px;" />
+                              <select name="pf_acl_businessLatitude" id="pf_acl_businessLatitude">
+                              </select>
                         <td>
                       <tr>
                       <tr>
@@ -1220,7 +1856,11 @@
                           <label for="pf_businesslng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslng" value="" id="pf_businesslng" />
+                              <input type="text" name="pf_businesslng" value="" id="pf_businesslng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
+                                Use as default map location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -1228,7 +1868,11 @@
                           <label for="pf_businessPhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessPhone" value="" id="pf_businessPhone" />
+                              <input type="text" name="pf_businessPhone" value="" id="pf_businessPhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_businessPhoneExt" value="" id="pf_businessPhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_businessPhone" id="pf_acl_businessPhone">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1236,7 +1880,20 @@
                           <label for="pf_businessMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessMobile" value="" id="pf_businessMobile" />
+                              <input type="text" name="pf_businessMobile" value="" id="pf_businessMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_1" id="pf_set_1_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">acl</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                         </table>
@@ -1264,7 +1921,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                         </td>
                       </tr>
                         </table>
@@ -1278,6 +1935,8 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessIcq" value="" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_businessIcq" id="pf_acl_businessIcq">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1286,6 +1945,8 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessSkype" value="" id="pf_businessSkype" style="width: 220px;" />
+                              <select name="pf_acl_businessSkype" id="pf_acl_businessSkype">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1294,6 +1955,8 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessYahoo" value="" id="pf_businessYahoo" style="width: 220px;" />
+                              <select name="pf_acl_businessYahoo" id="pf_acl_businessYahoo">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1302,6 +1965,8 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessAim" value="" id="pf_businessAim" style="width: 220px;" />
+                              <select name="pf_acl_businessAim" id="pf_acl_businessAim">
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1310,6 +1975,8 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="" id="pf_businessMsn" style="width: 220px;" />
+                              <select name="pf_acl_businessMsn" id="pf_acl_businessMsn">
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1320,6 +1987,19 @@
                             <td width="40%">
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_3">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_3" id="pf_set_1_3" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">acl</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                     </table>
                   </div>
 
@@ -1332,103 +2012,60 @@
                   </div>
 
                   <div id="pf_page_2" class="tabContent" style="display:none;">
+                    <ul id="pf_tabs_2" class="tabs">
+                      <li id="pf_tab_2_0" title="Password">Password</li>
+                      <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
+                      <li id="pf_tab_2_2" title="OpenID">OpenID</li>
+                      <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
+                      <li id="pf_tab_2_4" title="Limits">Limits</li>
+                      <li id="pf_tab_2_5" title="Certificate Generator" style="display:none;">Certificate Generator</li>
+                      <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
+                    </ul>
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <div id="pf_page_2_0" class="tabContent" style="display:none;">
+                        <h2>Change login password</h2>
+                        <p class="fm_expln">For your security, please use a password not found in a dictionary, consisting of both letters, and numbers or non-alphanumeric characters.</p>
                     <table class="form" cellspacing="5">
                       <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Password Settings
-                        </th>
+                            <td align="center" colspan="2">
+                              <span id="pf_change_txt"></span>
+                            </td>
                       </tr>
-                      <tr>
-                        <th width="30%" nowrap="nowrap">
+                          <tr id="tr_oldPassword">
+                            <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                            <th width="30%">
                           <label for="pf_newPassword">New Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="password" name="pf_newPassword" value="" id="pf_newPassword" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_password">Repeat Password</label>
+                              <label for="pf_newPassword2">Repeat Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
                         </td>
                       </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          OpenID
-                        </th>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_securityOpenID">OpenID URL</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_securityOpenID" value="" id="pf_securityOpenID" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(31);"/>
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook" style="display:none;">
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Facebook
-                        </th>
-                      </tr>
-                      <tr id="pf_facebook1" style="display:none;">
-                        <th>
-                          Saved Facebook ID
-                        </th>
-                        <td nowrap="nowrap">
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook2" style="display:none;">
-                        <th>
-                        </th>
-                        <td nowrap="nowrap">
-                          <span id="pf_facebookData" style="min-height: 20px;"></span>
-                          <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook3" style="display:none;">
-                        <th>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(32);"/>
-                          <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(33);" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Password Recovery
-                        </th>
-                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_1" class="tabContent" style="display:none;">
+                        <h2>Password recovery questions</h2>
+                        <p class="fm_expln">Manage password recovery procedure. Set verification question / answer.</p>
+                        <table class="form" cellspacing="5">
                       <tr>
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
-                        <td id="td_securitySecretQuestion" nowrap="nowrap">
+                            <td id="td_securitySecretQuestion">
                           <script type="text/javascript">
                             function categoryCombo ()
                             {
@@ -1451,90 +2088,149 @@
                         <th>
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="text" name="pf_securitySecretAnswer" value="" id="pf_securitySecretAnswer"  style="width: 220px;" />
                         </td>
                       </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_2" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                        <th>
+                              <label for="pf_openID">OpenID URL</label>
+                        </th>
+                            <td>
+                              <input type="text" name="pf_openID" value="" id="pf_openID" style="width: 220px;" />
+                        </td>
+                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_3" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                            <th>
+                              Saved Facebook ID
+                        </th>
+                            <td>
+                              <span id="span_facebookName"></span>
+                            </td>
+                      </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(34);"/>
+                            <td>
+                              <span id="pf_facebookData" style="min-height: 20px;"></span>
+                              <br />
+                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                              <fb:login-button autologoutlink="true"></fb:login-button>
                         </td>
                       </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Applications restrictions
-                        </th>
-                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
                       <tr>
                         <th>
-                          <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
+                              <label for="pf_securitySiocLimit">SIOC Query Result Limit</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySiocLimit" value="" id="pf_securitySiocLimit" />
+                            <td>
+                              <input type="text" name="pf_securitySiocLimit" value="" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(35);"/>
-                        </td>
+                        </table>
+                      </div>
+
+                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
+            	          <iframe id="cert" src="/ods/cert.vsp" width="650" height="270" frameborder="0" scrolling="no">
+            	            <p>Your browser does not support iframes.</p>
+            	          </iframe>
+                      </div>
+
+                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
+                        <h3>X.509 Certificates</h3>
+                        <div id="pf26_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: pfShowCertificate('new', '0');" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf26_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Subject</th>
+                          		  <th>Created</th>
+                          		  <th>Fingerprint</th>
+                          		  <th>Login enabled</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
                       </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          X.509 Certificate
-                        </th>
-                      </tr>
-                      <tr id="tr_certificateSubject" style="display: none;">
+                            </thead>
+                      	    <tbody id="pf26_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificates();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <div id="pf26_form" style="display: none;">
+                          <table class="form" cellspacing="5">
+                            <tr id="pf26_form_0">
                         <th>
                 	    	  Subject
                         </th>
-                        <td nowrap="nowrap">
-                    		  <span id="span_certificateSubject"></span>
+                              <td>
+                          		  <span id="pf26_subject"></span>
                     		</td>
                       </tr>
-                      <tr id="tr_certificateAgentID" style="display: none;">
+                            <tr id="pf26_form_1">
                         <th>
                 	    	  Agent ID
                         </th>
-                        <td nowrap="nowrap">
-                    		  <span id="span_certificateAgentID"></span>
+                              <td>
+                          		  <span id="pf26_agentID"></span>
+                          		</td>
+                            </tr>
+                            <tr id="pf26_form_2">
+                              <th>
+                      	    	  Fingerprint
+                              </th>
+                              <td>
+                          		  <span id="pf26_fingerPrint"></span>
                     		</td>
                       </tr>
                       <tr>
                         <th valign="top">
-                          <label for="pf_certificate">Certificate</label>
+                                <label for="pf26_certificate">Certificate</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"></textarea>
-              	          <iframe id="iframe_certificate" src="" width="200" height="200" frameborder="0" scrolling="no" style="display: none;">
-              	            <p>Your browser does not support iframes.</p>
-              	          </iframe>
+                              <td>
+                                <textarea name="pf26_certificate" id="pf26_certificate" rows="20" style="width: 560px;"></textarea>
                         </td>
                       </tr>
                       <tr>
-                        <th />
-                        <td nowrap="nowrap">
+                        <th></th>
+                              <td>
                           <label>
-                            <input type="checkbox" name="pf_certificateLogin" id="pf_certificateLogin" value="1" />
+                                  <input type="checkbox" name="pf26_enableLogin" id="pf26_enableLogin" value="1"/>
                             Enable Automatic WebID Login
                           </label>
                         </td>
                       </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(36);" />
-                          <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(37);" />
-                          <input type="submit" name="pf_update" value="Refresh" onclick="return pfUpdateSubmit(99);" />
-                        </td>
-                      </tr>
                     </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificate();});
+                          </script>
                     <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf26');"/>
+                            <input type="submit" name="pf_update26" value="Save" onclick="return mySubmit('pf26');"/>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div id="pf_footer_2" class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="return pfCancelSubmit();"/>
+                        <input type="submit" name="pf_clear" value="Clear" onclick="return pfUpdateSubmit(2);"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="return pfUpdateSubmit(0);"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="return pfUpdateSubmit(1);"/>
+                      </div>
+
                   </div>
                 </div>
                 </div>
@@ -1543,8 +2239,6 @@
           </tr>
         </table>
       </div>
-    </form>
-   </div>
    <div id="FT">
      <div id="FT_L">
        <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" /></a>
@@ -1552,7 +2246,7 @@
      <div id="FT_R">
        <a href="/ods/faq.html">FAQ</a> | <a href="/ods/privacy.html">Privacy</a> | <a href="/ods/rabuse.vspx">Report Abuse</a>
        <div>
-         Copyright &copy; 1999-2010 OpenLink Software
+            Copyright &copy; 1999-2011 OpenLink Software
        </div>
      </div>
     </div>

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="wi"
 	ProjectGUID="{93051962-7797-49F0-8958-BB1CE60FFE6F}"
 	RootNamespace="wi"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -123,8 +124,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions=""
 				Optimization="3"
-				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;&quot;$(InputDir)\tidy&quot;;..\binsrc\driver;.;..\libsrc\Tidy"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC;OLD_TIDY"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -277,7 +278,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -379,6 +380,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_gnw.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\bif_imap.c"
 				>
 			</File>
 			<File
@@ -494,6 +499,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\cl_stubs.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\crypt.c"
 				>
 			</File>
@@ -515,6 +524,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\eqlcomp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\extent.c"
 				>
 			</File>
 			<File
@@ -594,6 +607,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\nquad_p.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\numeric.c"
 				>
 			</File>
@@ -603,6 +620,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\odbccat.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\page.c"
 				>
 			</File>
 			<File
@@ -639,22 +660,6 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\regist.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\repldb.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\replpush.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\replsri.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\replsub.c"
 				>
 			</File>
 			<File
@@ -719,6 +724,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_qm.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparql_rdb2rdf.c"
 				>
 			</File>
 			<File
@@ -1426,6 +1435,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sqlinx.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sqlo.c"
 				>
 			</File>
@@ -1534,11 +1547,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\trans.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\turtle_l.c"
 				>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\turtle_p.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\uname_const_decl.c"
 				>
 			</File>
 			<File
@@ -2065,6 +2086,19 @@
 						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_p.c&#x0D;&#x0A;rm -f json_p.h&#x0D;&#x0A;bison -y -vd -pjsonyy json.y -ojson_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies=""
 						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\nquad_p.y"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f nquad_p.c&#x0D;&#x0A;rm -f nquad_p.h&#x0D;&#x0A;bison -y -vd -pnqyy nquad_p.y -onquad_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)nquad_p.c;$(InputDir)nquad_p.h"
 					/>
 				</FileConfiguration>
 			</File>

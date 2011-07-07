@@ -175,7 +175,8 @@ typedef enum
   oFORCE_DBMS_NAME,
   oIsolationLevel,
   oNoSystemTables,
-  oTreatViewsAsTables
+  oTreatViewsAsTables,
+  oWideUTF16
 } CfgOptions;
 
 
@@ -208,7 +209,8 @@ static CfgRecord attrs[] = {
   { _T ("FORCE_DBMS_NAME"),	_T ("ForceDBMSName"),		511,	_T ("")},
   { _T ("IsolationLevel"),	_T ("IsolationLevel"),		32,	_T ("")},
   { _T ("NoSystemTables"),	_T ("NoSystemTables"),		32,	_T ("")},
-  { _T ("TreatViewsAsTables"),	_T ("TreatViewsAsTables"),	32,	_T ("")}
+  { _T ("TreatViewsAsTables"),	_T ("TreatViewsAsTables"),	32,	_T ("")},
+  { _T ("WideAsUTF16"),		_T ("WideAsUTF16"),		32,	_T ("")}
 };
 
 
@@ -668,6 +670,15 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
       con->con_round_robin = OPTION_TRUE (nst1) ? 1 : 0;
       free_wide_buffer (nst);
     }
+  if (cfgdata[oWideUTF16].data && _tcslen (cfgdata[oWideUTF16].data))
+    {
+      char *nst, nst1;
+
+      nst = virt_wide_to_ansi (cfgdata[oWideUTF16].data);
+      nst1 = toupper (*nst);
+      con->con_wide_as_utf16 = OPTION_TRUE (nst1) ? 1 : 0;
+      free_wide_buffer (nst);
+    }
 
   FORCE_DMBS_NAMEW = cfgdata[oFORCE_DBMS_NAME].data && _tcslen (cfgdata[oFORCE_DBMS_NAME].data) ? cfgdata[oFORCE_DBMS_NAME].data : NULL;
   if (FORCE_DMBS_NAMEW)
@@ -693,6 +704,18 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
 
   DATABASEW = cfgdata[oDATABASE].data;
   DATABASE = virt_wide_to_ansi (DATABASEW);
+
+  if (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data))
+    {
+      char * cs = virt_wide_to_ansi (cfgdata[oCHARSET].data);
+      if (!strcmp (cs, "UTF-8"))
+	{
+	  free (cfgdata[oCHARSET].data);
+	  cfgdata[oCHARSET].data = NULL;
+	  cfgdata[oCHARSET].supplied = FALSE;
+	  con->con_string_is_utf8 = 1;
+	}
+    }
 
   CHARSETW = (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data)) ? cfgdata[oCHARSET].data : NULL;
   CHARSET = con->con_charset_name = virt_wide_to_ansi (CHARSETW);

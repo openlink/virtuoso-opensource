@@ -35,30 +35,8 @@
     if (not _authorized)
     {
       _authorized := 1;
-      _authorizeVector := DB.DBA.vsp_auth_vec (http_request_header());
-      if (_authorizeVector = 0)
-      {
-        _authorized := 0;
-      } else {
-        if (get_keyword ('authtype', _authorizeVector) <> 'basic')
-        {
+      if (not ODS..ods_check_auth (_user, _domain_id, 'reader'))
           _authorized := 0;
-        } else {
-          _user := get_keyword ('username', _authorizeVector, '');
-          _password := get_keyword ('pass', _authorizeVector, '');
-          if (not DB.DBA.web_user_password_check (_user, _password))
-          {
-            _authorized := 0;
-          } else {
-            _user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
-            _role := POLLS.WA.access_role (_domain_id, _user_id);
-            if (_role not in ('admin', 'owner'))
-            {
-              _authorized := 0;
-            }
-          }
-        }
-      }
     }
     http_rewrite ();
     if (not _authorized)
@@ -69,14 +47,14 @@
     }
     else
     {
-      --declare exit handler for sqlstate '*' {
-      --  return;
-      --};
+      declare exit handler for sqlstate '*' {
+        return;
+      };
 
       _gems := get_keyword('type', params);
       if (_gems in ('Polls.rss', 'Polls.atom', 'Polls.rdf', 'Polls.comment'))
       {
-        declare _result, _path, _content, _type, _xslt any;
+        declare _header, _links, _result, _path, _content, _type, _xslt any;
 
         _user_id := POLLS.WA.domain_owner_id (_domain_id);
         _path := POLLS.WA.dav_home (_user_id) || 'Gems/' || POLLS.WA.domain_name (_domain_id) || '/' || _gems;
@@ -96,19 +74,26 @@
           {
             _xslt := POLLS.WA.xslt_full ('rss2rdf.xsl');
           }
-          else
-          {
-            _xslt := POLLS.WA.xslt_full ('rss2atom03.xsl');
-            if (POLLS.WA.settings_atomVersion (_domain_id) = '1.0')
+          else if (POLLS.WA.settings_atomVersion (_domain_id) = '1.0')
             {
               _xslt := POLLS.WA.xslt_full ('rss2atom.xsl');
             }
+          else
+          {
+            _xslt := POLLS.WA.xslt_full ('rss2atom03.xsl');
           }
           _result := xslt (_xslt, _result);
         }
 
+        _header := case when (_gems like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        if (_gems in ('Polls.rss', 'Polls.atom'))
+        {
+          _links := ODS..PSH_HEADER_LINKS (_domain_id);
+          if (length (_links))
+            _header := _header || sprintf ('Link: %s\r\n', _links);
+        }
         http_request_status ('HTTP/1.1 200 OK');
-        http_header ('Content-Type: text/xml\r\n');
+        http_header (_header);
         http_value (_result);
       }
     }
