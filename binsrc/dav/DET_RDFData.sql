@@ -641,6 +641,11 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
           ses := sioc..compose_foaf (uname, type, pg);
 	  goto ret_place2;
 	}
+      else if (__proc_exists ('sioc.DBA.ods_obj_describe') is not null)
+	{
+	  ses := sioc..ods_obj_describe (iri, type, pg);
+	  goto ret_place2;
+	}
       else if (regexp_match ('https?://([^/]*)/dataspace/([^/]*)(#this|/sioc.rdf|/sioc.n3)?\x24', iri) is not null
 	  and __proc_exists ('sioc.DBA.ods_sioc_obj_describe') is not null)
 	{
