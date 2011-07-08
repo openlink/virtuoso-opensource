@@ -765,16 +765,6 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
-static caddr_t
-bif_query_instance_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  query_instance_t * qi = (query_instance_t *) qst;
-  long depth = bif_long_range_arg (qst, args, 0, "query_instance_id", 0, 0xffff);
-  while ((depth-- > 0) && (NULL != qi)) qi = qi->qi_caller;
-  if (NULL == qi)
-    return NEW_DB_NULL;
-  return box_num ((ptrlong)qi);
-}
 
 static caddr_t
 bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1557,6 +1547,32 @@ static char restricted_xml_chars[0x80] = {
   return NULL;
 }
 
+static const char *cl_sequence_set_text =
+" create procedure cl_sequence_set (in _name varchar, in _count int, in _mode int)\n"
+"{\n"
+"if (sys_stat (\'cl_master_host\') = sys_stat (\'cl_this_host\'))\n"
+"{\n"
+"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
+"__sequence_set (\'__NEXT__\' || _name, _count, _mode);\n"
+"__sequence_set (_name, _count, _mode);\n"
+"}\n"
+"else\n"
+"{\n"
+"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
+"__sequence_set (_name, 0, _mode);\n"
+"}\n"
+"}\n"
+;
+
+static const char *sequence_set_text =
+" create procedure sequence_set (in _name varchar, in _count int, in _mode int)\n"
+"{\n"
+"if (sys_stat (\'cl_run_local_only\') or _mode = 2)\n"
+"return __sequence_set (_name, _count, _mode);\n"
+"else\n"
+"cl_exec (\'cl_sequence_set (?, ?, ?)\', vector (_name, _count, _mode), txn => 1);\n"
+"}\n"
+;
 
 
 /*
@@ -1595,14 +1611,6 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
-
-static caddr_t
-bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return NEW_DB_NULL;
-}
-
-
 void
 sqlbif2_init (void)
 {
@@ -1621,7 +1629,6 @@ sqlbif2_init (void)
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
   bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
-  bif_define_typed ("query_instance_id", bif_query_instance_id, &bt_integer);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
@@ -1632,7 +1639,6 @@ sqlbif2_init (void)
   bif_define ("patch_restricted_xml_chars", bif_patch_restricted_xml_chars);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
-  bif_define ("repl_this_server", bif_this_server);
   /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();
@@ -1642,7 +1648,13 @@ void
 sqlbif_sequence_init (void)
 {
   /* sequence_set bifs */
+  ddl_std_proc_1 (sequence_set_text, 0x1, 1);
+  ddl_std_proc_1 (cl_sequence_set_text, 0x1, 1);
+  pl_bif_name_define ("cl_sequence_set");
+  pl_bif_name_define ("sequence_set");
+#if 0
   bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
+#endif
 }
 
 /* This should stay the last part of the file */

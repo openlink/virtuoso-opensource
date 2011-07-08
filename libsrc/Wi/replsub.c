@@ -204,29 +204,6 @@ sf_resync_acct (char *account, repl_level_t level, char *subscriber_name,
 
   user = sec_check_login (name, digest, client);
 /* Check grants */
-#ifdef REPLICATION_SUPPORT2
-  if (!user)
-    {
-      log_info ("Bad replication login '%s' for account '%s' from '%s'.",
-		name, account, subscriber_name);
-      thrs_printf ((thrs_fo, "ses %p thr:%p in sf_resync_acct1\n", client, THREAD_CURRENT_THREAD));
-      DKST_RPC_DONE (client);
-      return;
-    }
-  if (!sec_user_has_group (G_ID_DBA, user->usr_id))
-    {
-      int kpg = 0;
-      kpg = get_repl_grants (account, name);
-      if (!kpg)
-	{
-	  log_info ("User '%s' does not have privileges for account '%s' requested from '%s'.",
-	      name, account, subscriber_name);
-	  thrs_printf ((thrs_fo, "ses %p thr:%p in sf_resync_acct2\n", client, THREAD_CURRENT_THREAD));
-	  DKST_RPC_DONE (client);
-          return;
-	}
-    }
-#else
   if (!user || !sec_user_has_group (G_ID_DBA, user->usr_id))
     {
       log_info ("Bad replication login '%s' for account '%s' requested from '%s' (not in DBA group).",
@@ -235,7 +212,6 @@ sf_resync_acct (char *account, repl_level_t level, char *subscriber_name,
       DKST_RPC_DONE (client);
       return;
     }
-#endif
 /* End check grants */
 
   /* Before any action we should be sure that account exists */

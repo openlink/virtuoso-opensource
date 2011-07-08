@@ -479,7 +479,16 @@ cli_scrap_cached_statements (client_connection_t * cli)
   IN_CLIENT (cli);
   while (hit_next (&it, (caddr_t *) & text, (caddr_t *) & stmt))
     {
-
+      srv_stmt_t * sst = *stmt;
+      if (sst->sst_query)
+	{
+	  IN_CLL;
+	  if (!sst->sst_query->qr_ref_count)
+	    log_error ("Suspect to have query assigned to stmt but 0 ref count on query");
+	  else
+	    sst->sst_query->qr_ref_count--;
+	  LEAVE_CLL;
+	}
       if (client_trace_flag)
        {
 	 if (79 < box_length (*text))
@@ -1028,7 +1037,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
   while (!virtuoso_server_initialized)
     { /* suspend thread right here if the server isn't up */
-      virtuoso_sleep (5, 0);
+      virtuoso_sleep (0, 100);
     }
   if (failed_login_to_disconnect (client))
     {
@@ -2407,6 +2416,7 @@ CLI_WRAPPER (sf_sql_free_stmt, (caddr_t stmt_id, int op), (stmt_id, op))
 caddr_t
 cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 {
+  int err = LTE_OK;
   caddr_t res;
   int rc;
   lock_trx_t *lt;
@@ -2428,6 +2438,8 @@ cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
     }
   else
     {
+      if (LTE_OK != err)
+	rc = err;
       MAKE_TRX_ERROR (rc, res, LT_ERROR_DETAIL (lt));
     }
   return res;
@@ -2648,6 +2660,8 @@ sf_make_auto_cp(void)
   make_cp = (wi_inst.wi_master->dbs_log_length >= min_checkpoint_size ||
 	     wi_inst.wi_master->dbs_log_length >= autocheckpoint_log_size)
     ? 1 : 0;
+  if (server_lock.sl_owner || local_cll.cll_atomic_trx_id)
+    make_cp = 0;
   LEAVE_TXN;
   if (make_cp)
     {
@@ -2666,7 +2680,11 @@ void
 sf_makecp (char *log_name, lock_trx_t *trx, int fail_on_vdb, int shutdown)
 {
   int need_mtx = !srv_have_global_lock(THREAD_CURRENT_THREAD);
-
+  if (in_log_replay)
+    {
+      log_info ("Host %d: Checkpoint invoked during log replay, ignoring.", local_cll.cll_this_host);
+      return;
+    }
   if (need_mtx)
     IN_CPT (trx);
   else if (trx)
@@ -3774,6 +3792,8 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
+  dt_init ();
+  dt_now (srv_approx_dt);
   cluster_init ();
 #ifdef PLDBG
   if (lite_mode)
@@ -3781,6 +3801,7 @@ srv_global_init (char *mode)
 #endif
   wi_open (mode);
   sql_bif_init ();
+  bif_daq_init ();
   if (lite_mode)
     log_info ("Entering Lite Mode");
 
@@ -3904,6 +3925,7 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 0);
       sec_read_tb_rls (NULL, NULL, NULL);
       sinv_read_sql_inverses (NULL, bootstrap_cli);
+      cl_read_dpipes ();
       read_proc_tables (1);
       read_proc_tables (0);
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */

@@ -71,6 +71,7 @@ state_slot_t *ssl_new_column (comp_context_t * cc, const char *cr_name,
 
 state_slot_t *ssl_new_inst_variable (comp_context_t * cc, const char *name,
     dtp_t dtp);
+state_slot_t * ssl_new_vec (comp_context_t * cc, const char *name, dtp_t dtp);
 state_slot_t * ssl_new_tree (comp_context_t * cc, const char *name);
 
 extern state_slot_t *ssl_new_constant (comp_context_t * cc, caddr_t val);
@@ -196,5 +197,7 @@ void clb_free (cl_buffer_t * clb);
 void dsr_free (data_source_t * x);
 void qn_free (data_source_t * qn);
 void cl_order_free (clo_comp_t ** ord);
+void sp_list_free (dk_set_t sps);
+void ks_free (key_source_t *ks);
 
 #endif /* __EQLCOMP_H_010520 */

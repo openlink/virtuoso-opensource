@@ -20,6 +20,62 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
+create table DB.DBA.SYS_COL_INFO (coi_table varchar, coi_index varchar, coi_nth int, coi_type int,
+  primary key (coi_table, coi_index, coi_nth, coi_type),
+  coi_column varchar,
+  coi_pages bigint,
+  coi_ces bigint,
+  coi_values bigint,
+  coi_bytes bigint)
+;
+
+
+
+create procedure coi_fill (in stats any)
+{
+  declare inx, n int;
+ n := length (stats);
+  delete from sys_col_info;
+  for (inx := 0; inx < n; inx := inx + 1)
+    {
+      declare stat any;
+      declare tb, kn, cname varchar;
+      declare icol, ice, k_id int;
+    stat := stats[inx];
+    k_id := stat[0];
+    stat := stat[6];
+      if (not isstring (stat))
+	goto next_key;
+      select key_table, key_name into tb, kn from sys_keys where key_id = k_id;
+    icol := 0;
+      for (;;)
+	{
+	cname := (select "COLUMN" from sys_key_parts, sys_cols where kp_key_id = k_id and kp_nth = icol and col_id = kp_col);
+	  if (cname is null)
+	    goto next_key;
+	  insert into sys_col_info (coi_table, coi_index, coi_nth, coi_type, coi_column,
+				coi_pages, coi_ces, coi_values, coi_bytes)
+	    values (tb, kn, icol, -1, cname,
+		    __col_info (stat, icol, 'n_pages', 0), 0, __col_info (stat, icol, 'n_values', 0), __col_info (stat, icol, 'n_bytes', 0));
+	  for (ice := 0; ice < 16; ice := ice + 1)
+	    {
+	      if (__col_info (stat, icol, 'ce_ces', ice))
+		{
+		  insert into sys_col_info (coi_table, coi_index, coi_nth, coi_type, coi_column,
+					coi_pages, coi_ces, coi_values, coi_bytes)
+		    values (tb, kn, icol, ice, cname,
+			    0, __col_info (stat, icol, 'ce_ces', ice), __col_info (stat, icol, 'ce_values', ice), __col_info (stat, icol, 'ce_bytes', ice));
+
+		}
+	    }
+	icol := icol + 1;
+	}
+    next_key: ;
+    }
+}
+;
+
 create procedure DB.DBA.SYS_INDEX_SPACE_STATS_PROC ()
 {
   declare ISS_KEY_ID, ISS_NROWS, ISS_ROW_BYTES, ISS_BLOB_PAGES, ISS_ROW_PAGES integer;
@@ -32,6 +88,7 @@ create procedure DB.DBA.SYS_INDEX_SPACE_STATS_PROC ()
   if (isarray (_res))
     {
       declare _inx, _len integer;
+      coi_fill (_res);
       _inx := 0;
       _len := length (_res);
 

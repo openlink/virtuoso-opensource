@@ -652,27 +652,6 @@ sf_resync_replay (char *account, char *subscriber_name,
 
   user = sec_check_login (name, digest, client);
 /* Check grants */
-#ifdef REPLICATION_SUPPORT2
-  if (!user)
-    {
-      log_info ("Bad replication login '%s' for account '%s' from '%s'.",
-		name, account, subscriber_name);
-      PrpcDisconnect (client);
-      return box_num(0);
-    }
-  if (!sec_user_has_group (G_ID_DBA, user->usr_id))
-    {
-      int kpg = 0;
-      kpg = get_repl_grants (account, name);
-      if (!kpg)
-	{
-	  log_info ("User '%s' does not have privileges for account '%s' from '%s'.",
-	      name, account, subscriber_name);
-          PrpcDisconnect (client);
-	  return box_num(0);
-	}
-    }
-#else
   if (!user || !sec_user_has_group (G_ID_DBA, user->usr_id))
     {
       log_info ("Bad replication login '%s' for account '%s' from '%s' (not in DBA group).",
@@ -680,7 +659,6 @@ sf_resync_replay (char *account, char *subscriber_name,
       PrpcDisconnect (client);
       return box_num(0);
     }
-#endif
 /* End check grants */
 
   client->dks_is_server = 0; /* no auto dealloc when dead hook called */
@@ -746,7 +724,7 @@ replay_process_msg (dk_session_t * ses)
           ra->ra_sync_user, ra->ra_account);
       goto seserr;
     }
-  res = log_replay_trx (replay_str_in, replay_cli, (caddr_t) header, 1, 1);
+  res = log_replay_trx (replay_str_in, replay_cli, (caddr_t) header, 1, 1, 0);
   if (LTE_OK == res)
     {
       replay_message_add (RPM_OUT, ses, box_num(1));

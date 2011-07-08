@@ -29,7 +29,7 @@
 # define _SRVSTAT_H
 
 /* disk.c */
-extern long disk_reads;
+extern unsigned long disk_reads;
 extern long disk_releases;
 extern long read_cum_time;
 extern long disk_writes;

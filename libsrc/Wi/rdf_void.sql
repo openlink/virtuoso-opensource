@@ -246,7 +246,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
     declare exit handler for sqlstate '*' { goto end1; };
      _cnt_subj := (select count(distinct S) from DB.DBA.RDF_QUAD where G = iri_to_id (graph));
      http (sprintf ('%s:DistinctSubjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_subj), ses);
-     http (sprintf (' scovo:dimension void:numberOfDistinctSubjects . \n'), ses);
+     http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
     end1:;
   }
   if (details)
@@ -261,7 +261,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
 	_cnt_obj  := (sparql define input:storage "" select count(distinct (?o)) where { graph `iri (?:graph)` { ?s ?p ?o . filter (isIRI (?o)) } });
       }
     http (sprintf ('%s:DistinctObjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_obj), ses);
-    http (sprintf (' scovo:dimension void:numberOfDistinctObjects . \n'), ses);
+    http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
     end2:;
   }
 

@@ -480,12 +480,12 @@ BEGIN   {
 		    if ((pieces[2] == "PROCEDURE" || pieces[2] == "FUNCTION") &&  three_part != "VIEW" )
 		      {
 			_defines1 = "\n  " define_proc_macro " (\"" pieces[3] "\", proc" nproc ");"
-			print "static const char *proc" nproc " = \n\"#line " line_begin_no+1 " \\\"[executable]/" end_name "\\\"\\n\"\n" fun
                         # Here is a debug comment code
 			if (pl_stats == "PLDBG")
-			  print "\"--src " end_name ":" line_begin_no-1 "\\n\";\n"
+			  print "static const char *proc" nproc " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
 			else
-			  print ";\n"
+			  print "static const char *proc" nproc " = \n" fun ";\n"
+
 			nproc = nproc + 1
 		      }
 	            else if (pieces[2] == "TYPE")
@@ -500,11 +500,10 @@ BEGIN   {
 		    else if (pieces[2] == "TRIGGER")
 		      {
 			_defines1 = "\n  ddl_std_proc (trig" ntriggers ", 0x0);"
-			print "static const char *trig" ntriggers " = \n\"#line " line_begin_no+1 " \\\"[executable]/" end_name "\\\"\\n\"\n" fun
 			if (pl_stats == "PLDBG")
-			  print "\"--src " end_name ":" line_begin_no-1 "\\n\";\n"
+			  print "static const char *trig" ntriggers " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
 			else
-			  print ";\n"
+			  print "static const char *trig" ntriggers " = \n" fun ";\n"
 			ntriggers = ntriggers + 1
 		      }
 		    else if (pieces[2] == "INDEX")

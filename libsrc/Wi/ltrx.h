@@ -212,6 +212,7 @@ typedef struct lock_trx_s
     caddr_t		lt_log_name;
     dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if overwritten in the same trx */
     char		lt_timestamp[DT_LENGTH];
+    char		lt_approx_dt[DT_LENGTH];
     dk_session_t *	lt_backup;  /* if running an online backup,
 				     * the session to the backup device */
     int64		lt_backup_length;
@@ -250,12 +251,16 @@ typedef struct lock_trx_s
     dk_hash_t *	lt_upd_hi;  /* for each update node active in txn, the set of affected hi's */
     dk_set_t		lt_hi_delta;
     int64		lt_w_id;
+    int64		lt_rc_w_id; /* in a parallel query branch, set this to the lt_w_id of the starting lt so as to see the same uncommitted state in read committed */
     dk_set_t 		lt_cl_branches; /* cl_host_t for cluster hosts in same commit */
+    caddr_t		lt_2pc_hosts; /* list of host ids with prepared state.  Use for recov consensus */
     struct cl_host_s *	lt_branch_of;
     OFF_T		lt_commit_flag_offset; /* use for updating log record state in 2pc */
+    char		lt_need_branch_consensus; /* prepared originating from self comes in log sync. Must ask other branches what became of it. */
     char		lt_known_in_cl; /* if ever participated in wait or had remote branch, must notify monitor of transact, else not */
     char		lt_log_2pc;
     char		lt_transact_notify_sent; /* if non-monitor commits a branch on the monitor, no separate notify wanted */
+    char		lt_cl_server_recd_rb;
     struct cl_req_group_s *	lt_clrg;
     caddr_t		lt_error_detail; /* if non-zero fill it with details about the error at hand */
 #ifdef MSDTC_DEBUG
@@ -269,8 +274,14 @@ typedef struct lock_trx_s
 #define LT_LAST_RESERVED_NO 99 /* the first 100 trx_no are reserved for temp use, no real transaction uses them */
 #define LT_ID_FREE ((int64)-1) /* lt_w_id and lt_trx_no when lt is free in trx_rc */
 
+#define LT_SEES_EFFECT(branch, owner) \
+  (branch == owner || branch->lt_rc_w_id == owner->lt_w_id)
+
 #define LTN_HOST(ltn) ((uint32)((ltn) >> 32))
 #define LTN_NO(ltn) ((uint32)((ltn) & 0xffffffff))
+
+#define W_ID_GT(w1, w2) \
+  (((uint32)(w1)) - ((uint32)(w2)) < 0x80000000)
 
 #define LOCK_MAX_WAITS 1024 /* no more than this many queued on a single lock */
 
@@ -323,7 +334,7 @@ typedef struct lock_wait_s {
   ((page_lock_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_locks))
 
 #define LT_NAME(lt) \
-  (snprintf (lt->lt_name, sizeof (lt->lt_name), "%d:%u", QFID_HOST (lt->lt_w_id), (uint32)(0xffffffff & (lt)->lt_w_id) ), lt->lt_name)
+  (snprintf (lt->lt_name, sizeof (lt->lt_name), "%5d:%10ld", QFID_HOST (lt->lt_w_id), (long)lt->lt_w_id), lt->lt_name)
 
 #define LT_IS_TIMED_OUT(lt) \
   (lt->lt_started && approx_msec_real_time () - lt->lt_started > lt->lt_timeout)
@@ -340,6 +351,20 @@ typedef struct gen_lock_s
     LOCK;
   } gen_lock_t;
 
+
+typedef struct col_lock_s
+{
+  LOCK;
+  row_no_t	clk_pos;
+  char		clk_change; /* row inserted/deleted/both by lock owner */
+  db_buf_t *	clk_rbe;
+} col_row_lock_t;
+/* clk_change */
+#define CLK_INSERTED 1
+#define CLK_DELETE_AT_COMMIT 2
+#define CLK_DELETE_AT_ROLLBACK 4
+#define CLK_REVERT_AT_ROLLBACK 8
+#define CLK_FINALIZED 16
 #define N_RLOCK_SETS 4
 
 
@@ -347,8 +372,9 @@ typedef struct row_lock_s
   {
     LOCK;
     short		rl_pos;
+    row_no_t		rl_n_cols;
     struct row_lock_s *	rl_next;
-
+    col_row_lock_t **	rl_cols; /* row locks for column projection segment for this row */
   } row_lock_t;
 
 
@@ -371,7 +397,7 @@ typedef struct page_lock_s
 #define RL_FOLLOW	8
 #define PL_PAGE_LOCK	16
 #define PL_FINALIZE	32
-
+#define PL_WHOLE_SEG 64 /* in row lock when the rl is escalated over all rows in the column proj seg */
 
 
 #define PL_TYPE(pl) (pl->pl_type & 0x3)
@@ -397,8 +423,8 @@ typedef struct page_lock_s
 
 
 #define ITC_MAYBE_LOCK(itc, pos) \
-  (it->itc_pl \
-   && (PL_RLS (it->itc_pl, pos) || PL_IS_PAGE (it->itc_pl)))
+  (itc->itc_pl \
+   && (PL_RLS (itc->itc_pl, pos) || PL_IS_PAGE (itc->itc_pl)))
 
 
 #define PL_RL_ADD(pl, rl, to) \
@@ -428,7 +454,7 @@ typedef struct page_lock_s
 
 
 #define PL_CAN_ESCALATE(itc, pl, buf) \
-  ((pl->pl_n_row_locks * 100) / (buf->bd_content_map->pm_count + 1) > lock_escalation_pct \
+  (!itc->itc_is_col && (pl->pl_n_row_locks * 100) / (buf->bd_content_map->pm_count + 1) > lock_escalation_pct \
     && !PL_IS_PAGE (pl) \
     && !pl->pl_is_owner_list \
     && pl->pl_owner == itc->itc_ltrx \
@@ -454,6 +480,7 @@ int lock_add_owner (gen_lock_t * pl, it_cursor_t * it, int was_waiting);
 
 void pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf);
 void pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf);
+void lock_release (gen_lock_t * pl, lock_trx_t * lt);
 page_lock_t * pl_allocate (void);
 void pl_free (page_lock_t * pl);
 row_lock_t * rl_allocate (void);
@@ -514,13 +541,13 @@ void itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * ex
 void itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend);
 row_lock_t * upd_refit_rlock (it_cursor_t * itc, int pos);
 void lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl);
-int itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
+int itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, int may_replace);
 void itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int do_not_escalate);
 #define RL_NO_ESCALATE 1
 #define RL_ESCALATE_OK 0
 
 
-int itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret);
+int itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_wait);
 int itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl);
 int pl_lt_is_owner (page_lock_t * pl, lock_trx_t * lt);

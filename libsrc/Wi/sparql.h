@@ -320,9 +320,7 @@ typedef struct sparp_s {
   caddr_t sparp_immortal_exec_uname;	/*!< Cached value returned by spar_immortal_exec_uname(). Do not use directly, call spar_immortal_exec_uname() instead! */
   caddr_t sparp_gs_app_callback;	/*!< NULL or name of application-specific callback function */
   caddr_t sparp_gs_app_uid;		/*!< NULL or ID (supposedly app user ID) for application-specific callback */
-#ifdef DEBUG
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
-#endif
 } sparp_t;
 
 

@@ -338,6 +338,8 @@ pldbg_ssl_print (char * buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst)
     case SSL_VARIABLE:
     case SSL_REF_PARAMETER:
     case SSL_REF_PARAMETER_OUT:
+    case SSL_VEC:
+    case SSL_REF:
 	  {
 	    caddr_t value = qst_get (qst, ssl);
 	    dtp_t dtp = DV_TYPE_OF (value);

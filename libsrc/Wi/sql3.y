@@ -540,6 +540,7 @@
 %type <tree> alter_type_action
 %type <box> array_modifier
 %type <tree> cost_decl
+%type <tree> vectored_decl
 %type <list> cost_number_list
 %type <box> cost_number
 %type <tree> cluster_def
@@ -558,12 +559,16 @@
 %type <box> opt_index
 %type <list> colnum_commalist_2
 %type <box> colnum_commalist
+%type <list> vectored_list
+%type <tree> vectored_var
+%type <intval> opt_modify
+
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA DISABLE_L NOVALIDATE_L ENABLE_L VALIDATE_L
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __TAG_L RDF_BOX_L VECTOR_L
+%token __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -1721,6 +1726,9 @@ sql_option
 	| WITH STRING { $$ = t_CONS (OPT_RDF_INFERENCE, t_CONS ($2, NULL)); }
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
+	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
+	| VECTORED { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)1, NULL)); }
+	| WITHOUT_L VECTORING { $$ = t_cons ((void*)OPT_NOT_VECTORED, t_cons ((void*)1, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
@@ -3397,6 +3405,11 @@ cost_decl
 	;
 
 
+vectored_decl
+	: VECTORED { $$ = t_list (1, OPT_VECTORED); }
+	;
+
+
 routine_statement
 	: selectinto_statement
 	| update_statement_positioned
@@ -3410,6 +3423,7 @@ routine_statement
 	| rollback_statement
 	| commit_statement
 	| cost_decl
+	| vectored_decl
 	| /* empty */				{ $$ = t_listst (1, NULL_STMT); }
 	;
 
@@ -3684,6 +3698,24 @@ for_opt_search_cond
 	| search_condition { $$ = $1; }
 	;
 
+vectored_var
+	: IN_L identifier data_type_ref EQUALS scalar_exp { $$ = t_listst (5, VECT_DECL, IN_MODE, t_listst (3, COL_DOTTED, NULL, $2), $3, $5); }
+	| OUT_L identifier EQUALS scalar_exp { $$ = t_listst (5, VECT_DECL, OUT_MODE, t_listst (3, COL_DOTTED, NULL, $2), NULL, $4); }
+	;
+
+vectored_list
+	: vectored_var
+		{ $$ = t_CONS ($1, NULL); }
+	| vectored_list ',' vectored_var
+		{ $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+
+opt_modify
+	: /* empty */  { $$ = 0;}
+| MODIFY { $$ = 1; }
+;
+
 for_statement
 	: FOR query_exp  DO statement
 		{ $$ = sqlp_for_statement ($2, $4); }
@@ -3691,6 +3723,7 @@ for_statement
 		{ $$ = sqlp_c_for_statement ((ST **) t_list_to_array ($3), $5, (ST **) t_list_to_array ($7), $9); }
 	| FOREACH '(' data_type_ref identifier IN_L scalar_exp ')' DO statement
 		{ $$ = sqlp_foreach_statement ($3, $4, $6, $9); }
+| FOR VECTORED opt_modify '(' vectored_list ')' compound_statement { $$ = t_listst (4, FOR_VEC_STMT, t_list_to_array ($5), $7, (ptrlong) $3); }
 	;
 
 trigger_def

@@ -74,6 +74,7 @@ typedef struct ri_iterator_s
 struct rdf_inf_node_s
 {
   data_source_t	src_gen;
+  iter_node_t		ri_iter;
   rdf_inf_ctx_t *	ri_ctx;
   caddr_t 		ri_ctx_name;
   char		ri_mode; /* enum subclasses or subproperties */
@@ -82,7 +83,10 @@ struct rdf_inf_node_s
   state_slot_t *	ri_o;
   state_slot_t *	ri_isnon_org_o; /* for gs, fp, go, this ssl is true if the o is an enum other than the given o */
   caddr_t	ri_given; /* the iri for which to enum sub/super classes/properties */
-  state_slot_t *	ri_output;
+#define ri_output 	ri_iter.in_output
+#define ri_current_value ri_iter.in_current_value
+#define ri_current_set 	ri_iter.in_current_set
+#define ri_vec_array ri_iter.in_vec_array
   state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   state_slot_t *	ri_iterator;
   state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
@@ -143,6 +147,7 @@ struct trans_node_s
 {
   data_source_t	src_gen;
   cl_buffer_t	clb;
+  int		tn_current_set; /* current set in vector */
   char		tn_is_pre_iter; /* like an invisible sameas or such */
   char		tn_is_primary;
   char		tn_commutative;
@@ -157,12 +162,13 @@ struct trans_node_s
   char		tn_ends_given; /* both start and end are given */
   char		tn_shortest_only; /* if both ends given, generate all paths with length equal to the shortest path length */
   char		tn_direction;
-  trans_node_t *	tn_complement;
+  trans_node_t *	tn_complement; /* from left-right and back */
   state_slot_t *	tn_min_depth;
   state_slot_t *	tn_max_depth;
   caddr_t *		tn_input_pos;
   caddr_t *		tn_output_pos;
   state_slot_t **	tn_input;
+  state_slot_t **	tn_input_ref;
   state_slot_t **	tn_output;
   state_slot_t **	tn_target;
   state_slot_t **	tn_data;
@@ -218,6 +224,8 @@ ri_iterator_t * ri_iterator (rdf_sub_t * rs, int mode, int distinct);
 void sas_ensure ();
 id_hash_t * tn_hash_table_get (trans_node_t * tn);
 extern dk_mutex_t * tn_cache_mtx;
+
+#define RDFS_TYPE_IRI "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
 #endif

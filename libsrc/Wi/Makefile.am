@@ -61,7 +61,9 @@ noinst_HEADERS = \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
-	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h
+	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
+	simd.h vec.h mhash.h
+
 
 
 generated_code = \
@@ -113,23 +115,24 @@ CLEANFILES = \
 
 C_FILES_SPARQL	= \
 	jso.c \
-	rdfbox.c \
-	rdf_core.c \
-	rdfinf.c \
-	rdf_mapping_jso.c \
-	rdfxml_parser.c \
 	nquad_p.c \
 	nquad_p.h \
+	rdf_core.c \
+	rdf_mapping_jso.c \
+	rdfbox.c \
+	rdfinf.c \
+	rdfld.c \
+	rdfxml_parser.c \
 	sparql2sql.c \
 	sparql2sqltext.c \
-	sparqld.c \
 	sparql_core.c \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_qm.c \
+	sparql_rdb2rdf.c \
 	sparql_sff.c \
 	sparql_tree.c \
-	sparql_rdb2rdf.c \
+	sparqld.c \
 	sparul2sql.c \
 	sql_code_sparql.c \
 	turtle_l.c \
@@ -150,13 +153,21 @@ libwi_la_SOURCES = \
 	bitmap.c \
 	blob.c \
 	blobio.c \
+	ceins.c \
+	cetop.c \
+	chash.c \
 	cl_stubs.c \
+	col.c \
+	colin.c \
+	colins.c \
+	collock.c \
+	colsearch.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
-	extent.c \
 	eqlcomp.c \
+	extent.c \
 	gate.c \
 	hash.c \
 	hosting.c \
@@ -169,6 +180,7 @@ libwi_la_SOURCES = \
 	lock.c \
 	log.c \
 	map_schema.c \
+	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -177,6 +189,7 @@ libwi_la_SOURCES = \
 	obackup.c \
 	page.c \
 	plugin_loader.c \
+	read.c \
 	recovery.c \
 	regist.c \
 	rendezvous.c \
@@ -191,8 +204,6 @@ libwi_la_SOURCES = \
 	sort.c \
 	space.c \
 	sql3.c \
-	sqlbif2.c \
-	sqlbif.c \
 	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
@@ -212,8 +223,10 @@ libwi_la_SOURCES = \
 	sql_code_vad.c \
 	sql_code_vdb.c \
 	sql_code_ws.c \
-	sqlcomp2.c \
+	sqlbif.c \
+	sqlbif2.c \
 	sqlcomp.c \
+	sqlcomp2.c \
 	sqlcost.c \
 	sqlcr.c \
 	sqldf.c \
@@ -222,8 +235,9 @@ libwi_la_SOURCES = \
 	sqlhash.c \
 	sqlintrp.c \
 	sqlinx.c \
-	sqloby.c \
+	sqljp.c \
 	sqlo.c \
+	sqloby.c \
 	sqlocr.c \
 	sqloinv.c \
 	sqloinx.c \
@@ -238,8 +252,11 @@ libwi_la_SOURCES = \
 	sqlstmts.c \
 	sqltrig.c \
 	sqltype.c \
+	sqlvec.c \
 	sqlver.c \
 	sqlview.c \
+	sqlvnode.c \
+	sqlvrun.c \
 	srvcr.c \
 	srvmultibyte.c \
 	srvstat.c \
@@ -247,6 +264,11 @@ libwi_la_SOURCES = \
 	trans.c \
 	update.c \
 	uuencode.c \
+	vec.c \
+	vechash.c \
+	vecins.c \
+	vecrdf.c \
+	vecsearch.c \
 	wirpc.c \
 	wiservic.c \
 	xpathp.c \
@@ -267,13 +289,21 @@ libwi_odbc_la_SOURCES = \
 	bitmap.c \
 	blob.c \
 	blobio.c \
+	ceins.c \
+	cetop.c \
+	chash.c \
 	cl_stubs.c \
+	col.c \
+	colin.c \
+	colins.c \
+	collock.c \
+	colsearch.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
-	extent.c \
 	eqlcomp.c \
+	extent.c \
 	gate.c \
 	hash.c \
 	hosting.c \
@@ -286,6 +316,7 @@ libwi_odbc_la_SOURCES = \
 	lock.c \
 	log.c \
 	map_schema.c \
+	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -294,6 +325,7 @@ libwi_odbc_la_SOURCES = \
 	obackup.c \
 	page.c \
 	plugin_loader.c \
+	read.c \
 	recovery.c \
 	regist.c \
 	rendezvous.c \
@@ -308,8 +340,6 @@ libwi_odbc_la_SOURCES = \
 	sort.c \
 	space.c \
 	sql3.c \
-	sqlbif2.c \
-	sqlbif.c \
 	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
@@ -329,8 +359,10 @@ libwi_odbc_la_SOURCES = \
 	sql_code_vad.c \
 	sql_code_vdb.c \
 	sql_code_ws.c \
-	sqlcomp2.c \
+	sqlbif.c \
+	sqlbif2.c \
 	sqlcomp.c \
+	sqlcomp2.c \
 	sqlcost.c \
 	sqlcr.c \
 	sqldf.c \
@@ -339,8 +371,9 @@ libwi_odbc_la_SOURCES = \
 	sqlhash.c \
 	sqlintrp.c \
 	sqlinx.c \
-	sqloby.c \
+	sqljp.c \
 	sqlo.c \
+	sqloby.c \
 	sqlocr.c \
 	sqloinv.c \
 	sqloinx.c \
@@ -355,8 +388,11 @@ libwi_odbc_la_SOURCES = \
 	sqlstmts.c \
 	sqltrig.c \
 	sqltype.c \
+	sqlvec.c \
 	sqlver.c \
 	sqlview.c \
+	sqlvnode.c \
+	sqlvrun.c \
 	srvcr.c \
 	srvmultibyte.c \
 	srvstat.c \
@@ -364,6 +400,11 @@ libwi_odbc_la_SOURCES = \
 	trans.c \
 	update.c \
 	uuencode.c \
+	vec.c \
+	vechash.c \
+	vecins.c \
+	vecrdf.c \
+	vecsearch.c \
 	wirpc.c \
 	wiservic.c \
 	xpathp.c \
@@ -610,12 +651,13 @@ SQL_FILES_REPL		= \
 	$(srcdir)/repl.sql
 
 SQL_FILES_SPARQL	= \
+	$(srcdir)/rdf_schema_objects.sql \
+	$(srcdir)/rdf_sponge.sql \
+	$(srcdir)/rdf_void.sql \
+	$(srcdir)/rdflddir2.sql \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
-	$(srcdir)/rdf_sponge.sql \
-	$(srcdir)/rdf_schema_objects.sql \
-	$(srcdir)/rdf_void.sql \
-	$(srcdir)/rdflddir2.sql
+	$(srcdir)/ttlpv.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql
@@ -988,4 +1030,5 @@ EXTRA_DIST = \
 	sql_to_c.awk \
 	sqlwords.gperf \
 	ssl.c \
-	string_tmpl.c
+	string_tmpl.c \
+	box2any.c

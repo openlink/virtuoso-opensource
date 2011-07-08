@@ -29,7 +29,7 @@
 #define _SQLBIF_H
 
 typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
-    long *scale, caddr_t *collation);
+				 long *scale, caddr_t *collation, long * non_null);
 
 typedef struct
   {
@@ -37,6 +37,7 @@ typedef struct
     long		bt_dtp;
     long		bt_prec;
     long		bt_scale;
+    long		bt_non_null;
   } bif_type_t;
 
 #define is_some_sort_of_an_integer(T)\
@@ -53,6 +54,8 @@ EXE_EXPORT (void, bif_set_uses_index, (bif_t bif));
 EXE_EXPORT (bif_t, bif_find, (const char *name));
 int bif_is_aggregate (bif_t bif);
 void bif_set_is_aggregate (bif_t  bif);
+bif_t bif_vectored (bif_t bif);
+void bif_set_vectored (bif_t bif, bif_vec_t vectored);
 
 
 bif_type_t * bif_type (const char * name);
@@ -71,6 +74,7 @@ EXE_EXPORT (struct xml_tree_ent_s *, bif_tree_ent_arg, (caddr_t * qst, state_slo
 EXE_EXPORT (caddr_t, bif_bin_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (caddr_t, bif_string_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_uname_or_iri_id_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
+EXE_EXPORT (data_col_t *, bif_dc_arg, (caddr_t * qst, state_slot_t ** args, int nth, char * name));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_uname_or_wide_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_or_strses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
@@ -120,6 +124,8 @@ EXE_EXPORT (caddr_t *, bif_array_of_pointer_arg, (caddr_t * qst, state_slot_t **
 extern bif_type_t bt_varchar;
 extern bif_type_t bt_wvarchar;
 extern bif_type_t bt_any;
+extern bif_type_t bt_any_box;
+extern bif_type_t bt_iri_id;
 extern bif_type_t bt_integer;
 extern bif_type_t bt_double;
 extern bif_type_t bt_float;
@@ -171,7 +177,6 @@ caddr_t bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 long get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
     char *szBoundry, char *szType, size_t max_szType,
     caddr_t ** _result, long to_add);
-caddr_t mime_parse_header (int *rfc822, caddr_t szMessage, long message_size, long offset);
 
 #define MIME_POST_LIMIT 10000000
 #define MIME_SESSION_LIMIT 5000000
@@ -229,6 +234,7 @@ extern caddr_t file_native_name (caddr_t server_encoded_fname);
 caddr_t get_ssl_error_text (char *buf, int len);
 
 caddr_t regexp_match_01 (const char *pattern, const char *str, int c_opts);
+caddr_t regexp_match_01_const (const char* pattern, const char* str, int c_opts, void ** compiled_ret);
 caddr_t regexp_split_match (const char* pattern, const char* str, int* next, int c_opts);
 int regexp_make_opts (const char* mode);
 int regexp_split_parse (const char* pattern, const char* str, int* offvect, int offvect_sz, int c_opts);

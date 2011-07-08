@@ -101,43 +101,8 @@ create procedure REPL_PUB_REMOVE (in __pub varchar, in _item varchar, in _type i
 }
 ;
 
-create procedure REPL_GET_ADDR_FROM_DSN (in dsn varchar)
-{
-  declare arr, dsn_exists any;
-  dsn_exists := 0;
-  declare exit handler for sqlstate '*'
-    {
-      rollback work;
-      signal ('42000', sprintf ('Can not get host address from DSN "%s"', dsn));
-    };
-  arr := sql_get_private_profile_string (dsn, 'user');
-  if (isvector (arr))
-    {
-      foreach (any x in arr) do
-	{
-	  dsn_exists := 1;
-	  if (lower (x[0]) = 'address' or lower (x[0]) = 'host')
-	    return x[1];
-	}
-    }
-  arr := sql_get_private_profile_string (dsn, 'system');
-  if (isvector (arr))
-    {
-      foreach (any x in arr) do
-	{
-	  dsn_exists := 1;
-	  if (lower (x[0]) = 'address' or lower (x[0]) = 'host')
-	    return x[1];
-	}
-    }
-  if (dsn_exists)
-    return 'localhost:1111';
-  signal ('22023', sprintf ('Can not find DSN "%s"', dsn));
-}
-;
 
-
-create procedure REPL_SERVER (in name varchar, in addr varchar, in repl_addr varchar := null)
+create procedure REPL_SERVER (in name varchar, in addr varchar, in repl_addr varchar)
 {
   if (not isstring (sys_stat ('st_repl_server_enable')))
     {
@@ -148,15 +113,8 @@ create procedure REPL_SERVER (in name varchar, in addr varchar, in repl_addr var
     }
   if (name = repl_this_server ())
     return;
-  if (repl_addr is null)
-    {
-      if (__proc_exists ('sql_get_private_profile_string', 2) is not null)
-	repl_addr := REPL_GET_ADDR_FROM_DSN (addr);
-      else
-	repl_addr := addr;
-    }
   insert replacing DB.DBA.SYS_SERVERS (SERVER, DB_ADDRESS, REPL_ADDRESS)
-      values (name, addr, repl_addr);
+      values (name, addr, coalesce (repl_addr, addr));
   repl_changed ();
   log_text ('repl_changed ()');
 }
@@ -223,11 +181,6 @@ cont:
       REPL_REVOKE (pub, grnt);
     }
   delete from DB.DBA.SYS_REPL_ACCOUNTS  where SERVER = repl_this_server () and ACCOUNT = pub;
-  delete from SYS_REPL_SUBSCRIBERS where RS_SERVER = repl_this_server () and RS_ACCOUNT = pub;
-  sequence_remove (sprintf ('repl_%s_%s', repl_this_server (), pub));
-  registry_remove (sprintf ('repl_%s_%s', repl_this_server (), pub));
-  commit work;
-  repl_account_remove (pub);
   repl_changed ();
 }
 ;
@@ -341,8 +294,6 @@ create procedure REPL_UNSUBSCRIBE (in serv varchar, in _pub varchar, in _item va
     }
   else
       delete from DB.DBA.SYS_TP_ITEM where TI_SERVER = serv and TI_ACCT = pub and TI_ITEM = _item;
-  sequence_remove (sprintf ('repl_%s_%s', serv, pub));
-  registry_remove (sprintf ('repl_%s_%s', serv, pub));
   repl_changed ();
   log_text ('repl_changed ()');
 }

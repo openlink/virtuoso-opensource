@@ -1867,6 +1867,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
   SPART *var_vector_arg;
   dk_set_t opts_revlist = NULL;
   caddr_t limofs_name;
+  caddr_t storage_name_or_null;
   const char *descr_name;
   int need_limofs_trick = (
     (DV_LONG_INT != DV_TYPE_OF (limit_expn)) ||
@@ -1931,6 +1932,9 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
       t_set_push (&opts_revlist, t_box_dv_short_string ("inference"));
       t_set_push (&opts_revlist, sparp->sparp_env->spare_inference_name);
     }
+  storage_name_or_null = sparp->sparp_env->spare_storage_name;
+  if (NULL == storage_name_or_null)
+    storage_name_or_null = t_NEW_DB_NULL;
   descr_call = spar_make_funcall (sparp, 0, descr_name,
       (SPART **)t_list (6,
         agg_call,
@@ -1938,7 +1942,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
           (SPART **)t_list_to_array (consts) ),
         good_graphs,
         bad_graphs,
-        sparp->sparp_env->spare_storage_name,
+        storage_name_or_null,
         spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_revlist_to_array (opts_revlist)) ) ); /*!!!TBD describe options will be added here */
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,

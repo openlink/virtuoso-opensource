@@ -255,9 +255,7 @@ shuric_t *shuric_get (caddr_t uri)
         cached_shuric->shuric_ref_count ));
     }
   else
-    {
       dbg_printf ((" returns NULL\n"));
-    }
   return (cached_shuric);
 }
 

@@ -279,7 +279,6 @@ vt_noise_word_init (char *file, id_hash_t ** noise_ht)
       res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_tocapital_word, noise_word_init_callback, (void *) (future_noise_words));
       res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_toupper_word, noise_word_init_callback, (void *) (future_noise_words));
       res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_tolower_word, noise_word_init_callback, (void *) (future_noise_words));
-      res |= lh_iterate_patched_words (eh, lh, nw, tail - nw, lh->lh_is_vtb_word, lh->lh_normalize_word, noise_word_init_callback, (void *) (future_noise_words));
       if (res)
 	log_error ("Broken text in noise.txt file, (encoding \"%s\"): %s", eh->eh_names[0], nw);
     }

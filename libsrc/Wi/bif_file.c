@@ -1330,6 +1330,178 @@ error_end:
 
 
 caddr_t
+sys_dirlist (caddr_t fname, int files)
+{
+  caddr_t fname_cvt;
+  long errn = 0;
+  dk_set_t dir_list = NULL;
+#ifndef WIN32
+  DIR *df = 0;
+  struct dirent *de;
+  struct stat st;
+#else
+  ptrlong rc = 0;
+  WIN32_FIND_DATA fd, *de;
+  HANDLE df;
+  caddr_t fname_pattern;
+  size_t fname_pattern_end;
+#endif
+  caddr_t lst = NULL;
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+#ifndef WIN32
+  df = opendir (fname_cvt);
+#else
+  fname_pattern_end = box_length (fname_cvt);
+  while (0 == fname_cvt [fname_pattern_end - 1])
+    fname_pattern_end--;
+  fname_pattern = dk_alloc_box (fname_pattern_end + 3, DV_STRING);
+  memcpy (fname_pattern, fname_cvt, fname_pattern_end);
+  if ('\\' != fname_cvt [fname_pattern_end - 1])
+    fname_pattern[fname_pattern_end++] = '\\';
+  fname_pattern[fname_pattern_end++] = '*';
+  fname_pattern[fname_pattern_end] = '\0';
+  df = FindFirstFile (fname_pattern, &fd);
+#endif
+  if (CHECKFH (df))
+    {
+      do
+	{
+#ifndef WIN32
+	  de = readdir (df);
+#else
+	  de = NULL;
+	  if (rc == 0)
+	    de = &fd;
+#endif
+	  if (de)
+	    {
+	      if (strlen (fname_cvt) + strlen (DIRNAME (de)) + 1 < PATH_MAX)
+		{
+                  int hit = 0;
+                  caddr_t raw_name;
+                  int make_wide_name;
+#ifndef WIN32
+                  char path [PATH_MAX];
+		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
+		  stat (path, &st);
+		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
+		    hit = 1; /* Different values of \c hit are solely for debugging purposes */
+		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
+		    hit = 2;
+		  else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
+		    hit = 3;
+		  else if (((st.st_mode & S_IFMT) != 0) && files == 3)
+		    hit = 4;
+#else
+                  if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
+		    hit = 5;
+                  else if (files == 1 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) == 0)
+		    hit = 6;
+                  else if (files == 3)
+                    hit = 7;
+#endif
+                  if (!hit)
+                    goto next_file;
+                  raw_name = box_dv_short_string (DIRNAME (de));
+                  make_wide_name = 0;
+                  if (i18n_wide_file_names)
+                    {
+                      char *tail;
+                      for (tail = raw_name; '\0' != tail[0]; tail++)
+                        {
+                          if ((tail[0] >= ' ') && (tail[0] < 0x7f))
+                            continue;
+                          make_wide_name = 1;
+                          break;
+                        }
+                    }
+                  if (make_wide_name)
+                    {
+                      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
+                      int state = 0;
+                      wchar_t *buf = dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
+                      wchar_t *wide_name;
+                      const char *raw_tail = raw_name;
+                      int res = i18n_volume_encoding->eh_decode_buffer_to_wchar (
+                        buf, buflen, &raw_tail, raw_name + box_length (raw_name) - 1,
+                        i18n_volume_encoding, state );
+                      if (res < 0)
+                        {
+                          dk_free_box (raw_name);
+                          goto next_file; /*!!! TBD Emergency encoding */
+                        }
+                      if (res < buflen-1)
+                        {
+                          wide_name = dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
+                          memcpy (wide_name, buf, res * sizeof (wchar_t));
+                          dk_free_box (buf);
+                        }
+                      else
+                        wide_name = buf;
+                      wide_name [res] = 0;
+                      dk_set_push (&dir_list, wide_name);
+                      dk_free_box (raw_name);
+                    }
+                  else
+                    dk_set_push (&dir_list, raw_name);
+		}
+	      else
+		{
+/* This bug is possible only in UNIXes, because it requires the use of links,
+   but WIN32 case added too, due to paranoia. */
+#ifndef WIN32
+		  closedir (df);
+#else
+		  FindClose (df);
+#endif
+		  goto error_end;
+		}
+	    }
+next_file: ;
+#ifdef WIN32
+          rc = FindNextFile (df, &fd) ? 0 : 1;
+#endif
+	}
+      while (de);
+#ifndef WIN32
+      closedir (df);
+#else
+      FindClose (df);
+#endif
+    }
+  else
+    {
+      const char *err_msg;
+#ifndef WIN32
+      errn = errno;
+      err_msg = virt_strerror (errn);
+#else
+      char msg_buf[200];
+      DWORD dw = GetLastError();
+
+      err_msg = &msg_buf[0];
+      msg_buf[0] = 0;
+      FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &msg_buf[0], sizeof (msg_buf), NULL);
+#endif
+      goto error_end;
+    }
+  lst = list_to_array (dk_set_nreverse (dir_list));
+error_end:
+  dk_free_box (fname_cvt);
+#ifdef WIN32
+  dk_free_box (fname_pattern);
+#endif
+  return lst;
+}
+
+
+caddr_t
 file_native_name (caddr_t se_name)
 {
   caddr_t volume_fname;

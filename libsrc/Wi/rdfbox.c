@@ -41,7 +41,7 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
   static query_t *rdf_box_qry_complete_text = NULL;
   static query_t *rdf_box_qry_complete_xml_l;
   static query_t *rdf_box_qry_complete_text_l;
-  query_instance_t *caller_qi = caller_qi_v;
+  query_instance_t *caller_qi = (query_instance_t *)caller_qi_v;
   caddr_t err;
   local_cursor_t *lc;
   dtp_t value_dtp = ((rb->rb_chksum_tail) ? (((rdf_bigbox_t *)rb)->rbb_box_dtp) : DV_TYPE_OF (rb->rb_box));
@@ -51,18 +51,33 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
 #endif
   if (NULL == rdf_box_qry_complete_text)
     {
-      rdf_box_qry_complete_xml_l = sql_compile_static (
-        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 16843009 from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
+      rdf_box_qry_complete_xml_l = sql_compile_static ("select \
+ xml_tree_doc (__xml_deserialize_packed (RO_LONG)), \
+ 16843009, \
+ RO_VAL \
+ from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
-      rdf_box_qry_complete_text_l = sql_compile_static (
-        "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end, RO_DT_AND_LANG from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
+      rdf_box_qry_complete_text_l = sql_compile_static ("select \
+ case (isnull (RO_LONG)) \
+   when 0 then case (bit_and (RO_FLAGS, 2)) when 2 then xml_tree_doc (__xml_deserialize_packed (RO_LONG)) else blob_to_string (RO_LONG) end \
+   else RO_VAL end, \
+ RO_DT_AND_LANG, \
+ case (isnull (RO_LONG)) when 0 then RO_VAL else NULL end \
+ from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ? ",
         bootstrap_cli, NULL, SQLC_DEFAULT );
-
-      rdf_box_qry_complete_xml = sql_compile_static (
-        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 16843009 from DB.DBA.RDF_OBJ where RO_ID = ?",
+      rdf_box_qry_complete_xml = sql_compile_static ("select \
+ xml_tree_doc (__xml_deserialize_packed (RO_LONG)), \
+ 16843009, \
+ RO_VAL \
+ from DB.DBA.RDF_OBJ where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
-      rdf_box_qry_complete_text = sql_compile_static (
-        "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end, RO_DT_AND_LANG from DB.DBA.RDF_OBJ where RO_ID = ?",
+      rdf_box_qry_complete_text = sql_compile_static ("select \
+ case (isnull (RO_LONG)) \
+   when 0 then case (bit_and (RO_FLAGS, 2)) when 2 then xml_tree_doc (__xml_deserialize_packed (RO_LONG)) else blob_to_string (RO_LONG) end \
+   else RO_VAL end, \
+ RO_DT_AND_LANG, \
+ case (isnull (RO_LONG)) when 0 then RO_VAL else NULL end \
+ from DB.DBA.RDF_OBJ where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
     }
   err = qr_rec_exec (
@@ -84,8 +99,32 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
       rb->rb_lang = dt_lang & 0xffff;
       rb->rb_type = dt_lang >> 16;
       rb->rb_serialize_id_only = 0; /* may also serialize with value if for order by once it is filled */
+      if (sizeof (rdf_bigbox_t) == box_length (rb))
+        {
+          caddr_t chksum = lc_nth_col (lc, 2);
+          if (DV_STRING != DV_TYPE_OF (chksum))
+            chksum = NULL;
+          if (rb->rb_chksum_tail)
+            {
+              caddr_t cached_chksum = ((rdf_bigbox_t *)rb)->rbb_chksum;
+              if ((DV_TYPE_OF (cached_chksum) != DV_TYPE_OF (chksum)) ||
+                (box_length (cached_chksum) != box_length (chksum)) ||
+                memcmp (cached_chksum, chksum, box_length (chksum)) )
+                sqlr_new_error ("22023", "SR579", "RDF integrity issue: the checksum of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to checksum stored in RDF box",
+                  (boxint)(rb->rb_ro_id) );
+            }
+          else if (NULL != chksum)
+            {
+              dk_check_tree (chksum);
+              ((rdf_bigbox_t *)rb)->rbb_chksum = box_copy (chksum);
+              ((rdf_bigbox_t *)rb)->rbb_box_dtp = DV_TYPE_OF (val);
+              rb->rb_chksum_tail = 1;
+            }
+        }
+      else
+        GPF_T;
       if (rb->rb_chksum_tail && (DV_TYPE_OF (val) != ((rdf_bigbox_t *)rb)->rbb_box_dtp))
-        sqlr_new_error ("22023", "SR579", "The type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
+        sqlr_new_error ("22023", "SR579", "RDF integrity issue: the type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
           (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
       dk_free_tree (rb->rb_box);
       if (RDF_BOX_GEO == rb->rb_type)
@@ -95,6 +134,7 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
       if (DV_STRING == DV_TYPE_OF (rb->rb_box))
         box_flags (rb->rb_box) |= BF_UTF8;
       rb->rb_is_complete = 1;
+      rb_dt_lang_check(rb);
     }
   err = lc->lc_error;
   lc_free (lc);
@@ -132,9 +172,9 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lang = bif_long_arg (qst, args, 2, "rdf_box");
   ro_id = bif_long_arg (qst, args, 3, "rdf_box");
   is_complete = bif_long_arg (qst, args, 4, "rdf_box");
-  if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff))
+  if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff) || (RDF_BOX_ILL_TYPE == type))
     sqlr_new_error ("22023", "SR547", "Invalid datatype id %ld as argument 2 of rdf_box()", type);
-  if ((RDF_BOX_DEFAULT_LANG > lang) || (lang & ~0xffff))
+  if ((RDF_BOX_DEFAULT_LANG > lang) || (lang & ~0xffff) || (RDF_BOX_ILL_LANG == lang))
     sqlr_new_error ("22023", "SR548", "Invalid language id %ld as argument 3 of rdf_box()", lang);
   if ((RDF_BOX_DEFAULT_TYPE != type) && (RDF_BOX_DEFAULT_LANG != lang))
     sqlr_new_error ("22023", "SR549", "Both datatype id %ld and language id %ld are not default in call of rdf_box()", type, lang);
@@ -174,6 +214,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       rbb->rbb_base.rb_is_complete = is_complete;
       rbb->rbb_base.rb_serialize_id_only = is_complete >> 1;
       rbb->rbb_base.rb_chksum_tail = 1;
+      dk_check_tree (chksum);
       rbb->rbb_chksum = box_copy_tree (chksum);
       if (6 < BOX_ELEMENTS (args))
         {
@@ -256,6 +297,7 @@ bif_ro_digest_from_parts (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       rbb->rbb_base.rb_is_outlined = 1;
       rbb->rbb_base.rb_is_complete = 0;
       rbb->rbb_base.rb_chksum_tail = 1;
+      dk_check_tree (box);
       rbb->rbb_chksum = box_copy_tree (box);
       rbb->rbb_box_dtp = (dtp_t)DV_XML_ENTITY;
       rdf_bigbox_audit(rbb);
@@ -272,6 +314,7 @@ bif_ro_digest_from_parts (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
         rbb->rbb_base.rb_is_outlined = 1;
       rbb->rbb_base.rb_is_complete = is_complete;
       rbb->rbb_base.rb_chksum_tail = 1;
+      dk_check_tree (chksum);
       rbb->rbb_chksum = box_copy_tree (chksum);
       if (flags & 2)
         rbb->rbb_box_dtp = (dtp_t)DV_XML_ENTITY;
@@ -436,7 +479,7 @@ bif_rdf_box_set_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   rdf_box_t *rb = bif_rdf_box_arg (qst, args, 0, "rdf_box_set_type");
   long type = bif_long_arg (qst, args, 1, "rdf_box_set_type");
-  if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff))
+  if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff) || (RDF_BOX_ILL_TYPE == type))
     sqlr_new_error ("22023", "SR554", "Invalid datatype id %ld as argument 2 of rdf_box_set_type()", type);
   if (0 != rb->rb_ro_id)
     sqlr_new_error ("22023", "SR555", "Datatype id can be changed only if rdf box has no ro_id in call of rdf_box_set_type ()");
@@ -453,6 +496,7 @@ bif_rdf_box_chksum (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_bigbox_audit (rbb);
   if (!rbb->rbb_base.rb_chksum_tail)
     return NEW_DB_NULL;
+  dk_check_tree (rbb->rbb_chksum);
   return box_copy_tree (rbb->rbb_chksum);
 }
 
@@ -558,6 +602,7 @@ bif_rdf_box_needs_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
             if (DV_DB_NULL != dict_dtp)
               return (caddr_t)((ptrlong)3);
 /* This is no longer needed because in Vajra we don't ft-index all typed strings, but only some
+            rb_dt_lang_check(rb2);
             if ((RDF_BOX_DEFAULT_TYPE != rb2->rb_type) || (RDF_BOX_DEFAULT_LANG != rb2->rb_lang))
               return box_num (3);
 */
@@ -592,6 +637,32 @@ bif_rdf_box_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_box_audit (rb1);
   rdf_box_audit (rb2);
   return box_num (strcmp (rb1->rb_box, rb2->rb_box));
+}
+
+caddr_t
+bif_rdf_box_migrate_after_06_02_3129 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_migrate_after_06_02_3129");
+  switch (DV_TYPE_OF (rb))
+    {
+    case DV_XML_ENTITY: case DV_GEO: return (caddr_t)((ptrlong)1);
+    case DV_RDF: break;
+    default: return (caddr_t)((ptrlong)0);
+    }
+  switch (DV_TYPE_OF (rb->rb_box))
+    {
+    case DV_XML_ENTITY: case DV_GEO: return (caddr_t)((ptrlong)1);
+    default: break;
+    }
+  if (rb->rb_chksum_tail)
+    {
+      switch (((rdf_bigbox_t *)(rb))->rbb_box_dtp)
+        {
+        case DV_XML_ENTITY: case DV_GEO: return (caddr_t)((ptrlong)1);
+        default: return (caddr_t)((ptrlong)0);
+        }
+    }
+  return (caddr_t)((ptrlong)0);
 }
 
 
@@ -664,6 +735,40 @@ rbs_length (db_buf_t rbs)
 }
 
 
+int64
+rbs_ro_id (db_buf_t rbs)
+{
+  long hl, l;
+  dtp_t flags = rbs[1];
+  if (RBS_EXT_TYPE & flags)
+    {
+      l = 2;
+      if (RBS_HAS_TYPE & flags)
+	l += 2;
+      hl = 0;
+      goto ret_id;
+    }
+  else if (flags & RBS_SKIP_DTP)
+    {
+      hl = 1;
+      l = rbs[2];
+    }
+  else
+    db_buf_length (rbs + 2, &hl, &l);
+  l += 2;
+  if (flags & RBS_OUTLINED)
+    {
+      l += hl;
+      ret_id:
+      if (flags & RBS_64)
+	return INT64_REF_NA (rbs + l);
+      else
+	return LONG_REF_NA (rbs + l);
+    }
+  return 0;
+}
+
+
 void
 rbs_hash_range (dtp_t ** buf, int * len, int * is_string)
 {
@@ -718,6 +823,7 @@ rb_ext_serialize (rdf_box_t * rb, dk_session_t * ses)
   int with_content = DKS_DB_DATA (ses) != NULL || DKS_CL_DATA (ses) != NULL
     || ((DKS_TO_CLUSTER | DKS_TO_OBY_KEY) & ses->dks_cluster_flags);
   dtp_t flags = RBS_EXT_TYPE;
+  rb_dt_lang_check(rb);
   session_buffered_write_char (DV_RDF, ses);
   if (with_content && rb->rb_is_complete)
     flags |= RBS_COMPLETE;
@@ -740,6 +846,33 @@ rb_ext_serialize (rdf_box_t * rb, dk_session_t * ses)
 int rdf_no_string_inline = 0;
 
 
+int
+rb_serial_length (caddr_t x)
+{
+  /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
+   * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
+  rdf_box_t * rb = (rdf_box_t *) x;
+  int len = 1;
+  rdf_box_audit (rb);
+  if (!rb->rb_box && rb->rb_ro_id)
+    return  (INT32_MIN > rb->rb_ro_id || INT32_MAX < rb->rb_ro_id) ? 9 : 5;
+
+  if (rb->rb_type != RDF_BOX_DEFAULT_TYPE || RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+    len += 2;
+  if (DV_STRINGP (rb->rb_box) && box_length (rb->rb_box) - 1 < RB_MAX_INLINED_CHARS)
+    len += box_length (rb->rb_box);
+  else if (DV_STRINGP (rb->rb_box))
+    len += RB_MAX_INLINED_CHARS;
+  else
+    len += box_serial_length (rb->rb_box, 0);
+  if (rb->rb_ro_id)
+    len += (INT32_MIN > rb->rb_ro_id || INT32_MAX < rb->rb_ro_id)  ? 8 : 4;
+  if (rb->rb_chksum_tail)
+    len += 1;
+  return len;
+}
+
+
 void
 rb_serialize (caddr_t x, dk_session_t * ses)
 {
@@ -752,22 +885,25 @@ rb_serialize (caddr_t x, dk_session_t * ses)
   rdf_box_audit (rb);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
+  if  ((rdf_no_string_inline || rb->rb_serialize_id_only)
+    && rb->rb_ro_id && !with_content)
+    {
+      rb_id_serialize (rb, ses);
+      return;
+    }
   if (rb->rb_type < RDF_BOX_DEFAULT_TYPE)
     {
       /* geo boxes and strings if string inlining is off */
       rb_ext_serialize (rb, ses);
       return;
     }
-  if  (!unbox_inline (rb->rb_box) && !rb->rb_is_complete)
+  if  (!unbox_inline (rb->rb_box))
+    {
+      if (!rb->rb_is_complete)
     {
       rb_id_serialize (rb, ses);
       return;
     }
-  if  ((rdf_no_string_inline || rb->rb_serialize_id_only)
-    && ((DV_STRINGP (rb->rb_box) && !with_content)) )
-    {
-      rb_id_serialize (rb, ses);
-      return;
     }
       if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
@@ -776,6 +912,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
   else
     {
       int flags = 0;
+      rb_dt_lang_check(rb);
       session_buffered_write_char (DV_RDF, ses);
       if (rb->rb_ro_id)
 	flags |= RBS_OUTLINED;
@@ -814,7 +951,9 @@ rb_serialize (caddr_t x, dk_session_t * ses)
       else if (rb->rb_chksum_tail)
         {
           caddr_t str = ((rdf_bigbox_t *)rb)->rbb_chksum;
-          int str_len = box_length (str) - 1;
+          int str_len;
+          dk_check_tree (str);
+          str_len = box_length (str) - 1;
 	  if (str_len > RB_MAX_INLINED_CHARS)
 	    str_len = RB_MAX_INLINED_CHARS;
 #ifdef OLD_RDF_BOX_SERIALIZATION
@@ -875,6 +1014,134 @@ rb_serialize (caddr_t x, dk_session_t * ses)
     }
 }
 
+
+db_buf_t
+mp_dv_rdf_to_db_serial (mem_pool_t * mp, db_buf_t  dv)
+{
+  dtp_t flags = dv[1];
+  db_buf_t ptr = dv + 2;
+  int64 ro_id;
+  int dt = RDF_BOX_DEFAULT_TYPE;
+  int len = 0;
+  db_buf_t cp;
+  if (!(RBS_OUTLINED & flags))
+    {
+      int len = rbs_length  (dv);
+      cp = (db_buf_t)mp_alloc_box (mp, len + 1, DV_STRING);
+      memcpy_16 (cp, dv, len);
+      cp[len] = 0;
+      return cp;
+    }
+  if (flags & RBS_EXT_TYPE)
+    {
+      if (flags & RBS_HAS_TYPE)
+	len += 2;
+      len += (RBS_64 & flags) ? 8 : 4;
+      cp = mp_alloc_box (mp, len + 4, DV_STRING);
+      memcpy (cp, dv, len + 2);
+      cp[1] &= ~RBS_COMPLETE;
+      cp[len + 3] = 0;
+      return cp;
+    }
+  if (RBS_SKIP_DTP & flags)
+    {
+      len = *ptr++;
+      ptr += len;
+    }
+  else
+    {
+      DB_BUF_TLEN (len, *ptr, ptr);
+      ptr += len;
+    }
+  if (flags & RBS_64)
+    {
+      cp = (db_buf_t) mp_alloc_box (mp, 10, DV_STRING);
+      cp[0] = DV_RDF_ID_8;
+      memcpy (cp + 1, ptr, 8);
+      cp[9] = 0;
+    }
+  else
+    {
+      cp = (db_buf_t) mp_alloc_box (mp, 6, DV_STRING);
+      cp[0] = DV_RDF_ID;
+      memcpy (cp + 1, ptr, 4);
+      cp[5] = 0;
+    }
+  return cp;
+}
+
+
+int64
+dv_rdf_ro_id (db_buf_t dv2)
+{
+  dtp_t flags;
+  int64  ro_id;
+  int len;
+  flags = dv2[1];
+  if (!(RBS_OUTLINED & flags)
+      || (RBS_EXT_TYPE & flags))
+    return -1;
+  if (RBS_SKIP_DTP & flags)
+    len = dv2[2] + 1;
+  else
+    {
+      DB_BUF_TLEN (len, dv2[2], (dv2 + 2))
+	}
+  if (RBS_64 & flags)
+    ro_id = INT64_REF_NA (dv2 + len + 2);
+  else
+    ro_id = LONG_REF_NA (dv2 + len + 2);
+  return ro_id;
+}
+
+
+int
+dv_rdf_dc_compare (db_buf_t dv1, db_buf_t dv2)
+{
+  int64 i1 = dv_rdf_ro_id (dv1);
+  int64 i2 = dv_rdf_ro_id (dv2);
+  if (i1 < i2)
+    return DVC_LESS;
+  if (i1 > i2)
+    return DVC_GREATER;
+  if (-1 == i1)
+    return dv_rdf_compare (dv1, dv2);
+  return DVC_MATCH;
+}
+
+
+int
+dv_rdf_id_compare (db_buf_t dv1, db_buf_t dv2, int64 offset, int64 * delta_ret)
+{
+  /* sometimes a cmp of a stored rdf id with a complete box.  Is equal if box is not ext type and ids match, else rdf id is dtp gt */
+  dtp_t flags;
+  int64  ro_id_2, ro_id_1;
+  int len;
+  if (DV_RDF != *dv2)
+    return -1; /* general case is valid */
+  flags = dv2[1];
+  if (!(RBS_OUTLINED & flags)
+      || (RBS_EXT_TYPE & flags))
+    return DVC_DTP_GREATER;
+  if (RBS_SKIP_DTP & flags)
+    len = dv2[2] + 1;
+  else
+    {
+      DB_BUF_TLEN (len, dv2[2], (dv2 + 2))
+	}
+  if (RBS_64 & flags)
+    ro_id_2 = INT64_REF_NA (dv2 + len + 2);
+  else
+    ro_id_2 = LONG_REF_NA (dv2 + len + 2);
+  if (DV_RDF_ID == *dv1)
+    ro_id_1 = LONG_REF_NA (dv1 + 1);
+  else
+    ro_id_1 = INT64_REF_NA (dv1 + 1);
+  ro_id_1 += offset;
+  if (delta_ret)
+    *delta_ret = ro_id_2 - ro_id_1;
+  return NUM_COMPARE (ro_id_1, ro_id_2);
+}
 
 
 int
@@ -1187,6 +1454,8 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       tmp_rb2.rb_ro_id = 0;
       rb2 = &tmp_rb2;
     }
+  rb_dt_lang_check(rb1);
+  rb_dt_lang_check(rb2);
   {
     short type1 = rb1->rb_type;
     short type2 = rb2->rb_type;
@@ -1271,10 +1540,16 @@ rdf_box_hash (caddr_t box)
 {
   rdf_box_t *rb = (rdf_box_t *)box;
   rdf_box_audit (rb);
+  if (rb->rb_is_complete && rb->rb_type >= RDF_BOX_DEFAULT_TYPE)
+    {
+      if ((RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
+        return box_hash (rb->rb_box);
+    }
+  else
+    {
   if (0 != rb->rb_ro_id)
     return rb->rb_ro_id + (rb->rb_ro_id << 16);
-  if (rb->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
-        return box_hash (rb->rb_box);
+    }
   return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 +
     (rb->rb_chksum_tail ?
       (box_hash (((rdf_bigbox_t *)rb)->rbb_chksum) + 113) :
@@ -1284,38 +1559,7 @@ rdf_box_hash (caddr_t box)
 int
 rdf_box_hash_cmp (ccaddr_t a1, ccaddr_t a2)
 {
-  rdf_box_t * rb1 = (rdf_box_t *) a1;
-  rdf_box_t * rb2 = (rdf_box_t *) a2;
-  rdf_box_t tmp_rb2;
-  dtp_t dtp1 = DV_TYPE_OF (rb1), dtp2 = DV_TYPE_OF (rb2);
-  dtp_t data_dtp1, data_dtp2;
-  int len1, len2, cmp_len, cmp_headlen, mcmp;
-  caddr_t data1 = NULL, data2 = NULL;
-  /* arrange so that if both are not rdf boxes, the one that is a box is first */
-  if (DV_RDF != dtp1)
-    {
-      if (DV_RDF != dtp2)
-        GPF_T1 ("misused rdf_box_hash_cmp()");
-      return rdf_box_hash_cmp (a2, a1);
-    }
-  if (DV_RDF == dtp2)
-    {
-      if ((0 != rb1->rb_ro_id) && (0 != rb2->rb_ro_id))
-        return (rb1->rb_ro_id == rb2->rb_ro_id) ? 1 : 0;
-      else if ((0 != rb1->rb_ro_id) || (0 != rb2->rb_ro_id))
-        return 0;
-      if ((rb1->rb_lang != rb2->rb_lang) || (rb1->rb_type != rb2->rb_type) || (rb1->rb_is_complete != rb2->rb_is_complete) || (rb1->rb_chksum_tail != rb2->rb_chksum_tail))
-        return 0;
-      if (rb1->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb1->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb1->rb_type)
-        && rb2->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb2->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb2->rb_type) )
-        return box_equal (rb1->rb_box, rb2->rb_box);
-      if (rb1->rb_chksum_tail)
-        return box_equal (((rdf_bigbox_t *)rb1)->rbb_chksum, ((rdf_bigbox_t *)rb2)->rbb_chksum);
-      return box_equal (rb1->rb_box, rb2->rb_box);
-    }
-  if ((0 == rb1->rb_ro_id) && rb1->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb1->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb1->rb_type))
-    return box_equal (rb1->rb_box, a2);
-  return 0;
+  return (DVC_MATCH == rdf_box_compare (a1, a2)) ? 1 : 0;
 }
 
 void
@@ -1425,6 +1669,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rb = (rdf_box_t *)shortobj;
   if (!rb->rb_is_complete)
     rb_complete (rb, qi->qi_trx, qi);
+  rb_dt_lang_check(rb);
   if (((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
     || ((1 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 1, "__rdf_sqlval_of_obj")) )
     return box_copy_tree (rb->rb_box);
@@ -1620,14 +1865,13 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
       rdf_bigbox_t *rbb = (rdf_bigbox_t *) val;
       caddr_t subbox = NULL;
       caddr_t res;
-#define SER_VEC_SZ (5 * sizeof (caddr_t))
       char buf[6 * sizeof (caddr_t) + BOX_AUTO_OVERHEAD];
       caddr_t *ser_vec;
       caddr_t ptmp;
 
       BOX_AUTO (ptmp, buf, ((rbb->rbb_base.rb_chksum_tail ? 6 : 5) * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
       ser_vec = (caddr_t *) ptmp;
-
+      rb_dt_lang_check(&(rbb->rbb_base));
       subbox = rbb->rbb_base.rb_box;
       if ((rbb->rbb_base.rb_is_complete) &&
 	  (0 != rbb->rbb_base.rb_ro_id) &&
@@ -1721,6 +1965,7 @@ bif_rdf_dist_deser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (rbb->rbb_base.rb_ro_id)
         rbb->rbb_base.rb_is_outlined = 1;
       vec[0] = 0;
+      rb_dt_lang_check(&(rbb->rbb_base));
       dk_free_tree (vec);
       return (caddr_t)rbb;
     }
@@ -1874,7 +2119,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (23*2,
+      tmp = (caddr_t *)list (25*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -1890,14 +2135,16 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/html"				, "HTML"	, /* 12 */
         "application/vnd.ms-excel"		, "HTML"	, /* 13 */
         "application/javascript"		, "JS"		, /* 14 */
-        "application/rdf+xml"			, "RDFXML"	, /* 15 */
-        "application/atom+xml"			, "ATOM;XML"	, /* 16 */
-        "application/odata+json"		, "JSON;ODATA"	, /* 17 */
-        "text/rdf+nt"				, "NT"		, /* 18 */
-        "text/plain"				, "NT"		, /* 19 */
-        "text/cxml+qrcode"			, "CXML"	, /* 20 */
-        "text/cxml"				, "CXML"	, /* 21 */
-        "text/csv"				, "CSV" /* 22 Increase count in this list() call when add more MIME types! */ );
+        "application/rdf+json"			, "JSON;TALIS"	, /* 15 */
+        "application/x-rdf+json"		, "JSON;TALIS"	, /* 16 */
+        "application/rdf+xml"			, "RDFXML"	, /* 17 */
+        "application/atom+xml"			, "ATOM;XML"	, /* 18 */
+        "application/odata+json"		, "JSON;ODATA"	, /* 19 */
+        "text/rdf+nt"				, "NT"		, /* 20 */
+        "text/plain"				, "NT"		, /* 21 */
+        "text/cxml+qrcode"			, "CXML"	, /* 22 */
+        "text/cxml"				, "CXML"	, /* 23 */
+        "text/csv"				, "CSV" /* 24 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -1906,7 +2153,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (30*2,
+      tmp = (caddr_t *)list (26*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -1924,7 +2171,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/xhtml+xml"			, "RDFA;XHTML"	, /* 14 */
         "text/plain"				, "NT"		, /* 15 */
         "application/sparql-results+json"	, "JSON;RES"	, /* 16 */
-        "text/html"				, "HTML;MICRODATA"	, /* 17 */
+        "text/html"				, "HTML"	, /* 17 */
         "application/vnd.ms-excel"		, "HTML"	, /* 18 */
         "application/javascript"		, "JS"		, /* 19 */
         "application/atom+xml"			, "ATOM;XML"	, /* 20 */
@@ -1932,11 +2179,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/sparql-results+xml"	, "XML"		, /* 22 */
         "text/cxml+qrcode"			, "CXML;QRCODE"	, /* 23 */
         "text/cxml"				, "CXML"	, /* 24 */
-        "text/md+html"				, "HTML;MICRODATA"	, /* 25 */
-        "text/microdata+html"			, "HTML;MICRODATA"	, /* 26 */
-        "application/microdata+json"		, "JSON;MICRODATA"	, /* 27 */
-        "application/x-json+ld"			, "JSON;LD"		, /* 28 */
-        "text/csv"				, "CSV" /* 29 Increase count in this list() call when add more MIME types! */ );
+        "text/csv"				, "CSV" /* 25 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
@@ -2092,6 +2335,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
       rdf_box_t *rb = (rdf_box_t *)obj;
       if (!rb->rb_is_complete)
         rb_complete (rb, qi->qi_trx, qi);
+      rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
         return;
       dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
@@ -2225,6 +2469,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
+      rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
         {
           caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
@@ -2473,6 +2718,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
+      rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
         {
           caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
@@ -2712,6 +2958,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         rb_complete (rb, qi->qi_trx, qi);
       obj_box_value = rb->rb_box;
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
+      rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
     }
@@ -2734,7 +2981,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('\"', ses);
         if (NULL == type_uri)
-          switch (DT_DT_TYPE(obj_box_value))
+          switch (DT_DT_TYPE(obj))
             {
             case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
             case DT_TYPE_TIME: type_uri = uname_xmlschema_ns_uri_hash_time; break;
@@ -2878,218 +3125,6 @@ fail:
   if (obj_iri_is_new) dk_free_box (obj_iri);
   return (caddr_t)((ptrlong)status);
 }
-
-#define ld_json_env_t talis_json_env_t
-#define iri_cast_ld_json_qname iri_cast_talis_json_qname
-
-static void
-http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp)
-{
-  caddr_t obj_box_value;
-  dtp_t obj_box_value_dtp;
-  ccaddr_t type_uri = NULL;
-  if (DV_RDF == obj_dtp)
-    {
-      rdf_box_t *rb = (rdf_box_t *)obj;
-      if (!rb->rb_is_complete)
-        rb_complete (rb, qi->qi_trx, qi);
-      obj_box_value = rb->rb_box;
-      obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
-      rb_dt_lang_check(rb);
-      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
-        type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
-    }
-  else
-    {
-      obj_box_value = obj;
-      obj_box_value_dtp = obj_dtp;
-      switch (obj_box_value_dtp)
-        {
-        case DV_LONG_INT:
-        case DV_DOUBLE_PREC:
-          {
-            caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
-            session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
-            return;
-          }
-        }
-    }
-  if ((NULL != type_uri) && !strcmp (type_uri, uname_xmlschema_ns_uri_hash_boolean) && (DV_LONG_INT == obj_box_value_dtp))
-    {
-      if (unbox (obj_box_value))
-        session_buffered_write (ses, "true", 4);
-      else
-        session_buffered_write (ses, "false", 5);
-      return;
-    }
-                             /* 0          1       */
-                             /* 01.234567890.12345 */
-  session_buffered_write (ses, "{ \"@literal\" : ", 15);
-  switch (obj_box_value_dtp)
-    {
-    case DV_DATETIME:
-      {
-        char temp [50];
-        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
-        session_buffered_write_char ('\"', ses);
-        session_buffered_write (ses, temp, strlen (temp));
-        session_buffered_write_char ('\"', ses);
-        if (NULL == type_uri)
-          switch (DT_DT_TYPE(obj_box_value))
-            {
-            case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
-            case DT_TYPE_TIME: type_uri = uname_xmlschema_ns_uri_hash_time; break;
-            default : type_uri = uname_xmlschema_ns_uri_hash_dateTime; break;
-            }
-        break;
-      }
-    case DV_STRING:
-      session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-      session_buffered_write_char ('\"', ses);
-      break;
-    case DV_XML_ENTITY:
-      {
-        http_json_write_xe (ses, qi, (xml_entity_t *)(obj_box_value));
-        type_uri = uname_rdf_ns_uri_XMLLiteral;
-        break;
-      }
-    case DV_DB_NULL:
-      session_buffered_write (ses, "(NULL)", 6);
-      break;
-    default:
-      {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
-        if (DV_RDF == obj_dtp)
-          session_buffered_write_char ('\"', ses);
-        session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
-        if (DV_RDF == obj_dtp)
-          session_buffered_write_char ('\"', ses);
-        dk_free_box (tmp_utf8_box);
-        if (NULL == type_uri)
-          type_uri = xsd_type_of_box (obj_box_value);
-        break;
-      }
-    }
-  if (DV_RDF == obj_dtp)
-    {
-      rdf_box_t *rb = (rdf_box_t *)obj;
-      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
-        {
-          caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
-          if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
-                                         /* 0          1           */
-            {                            /* 012.3456789012.3456.78 */
-              session_buffered_write (ses, " , \"@language\" : \"", 18);
-              lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
-              if (NULL != lang_id)
-                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-              session_buffered_write_char ('\"', ses);
-            }
-        }
-    }
-  if (NULL != type_uri)
-    {
-      if (!IS_BOX_POINTER (type_uri))
-        sqlr_new_error ("22023", "SR625", "Unsupported datatype %d in LD-style JSON serialization of an RDF object", obj_dtp);
-                                 /* 0          1           */
-                                 /* 012.3456789012.3456.78 */
-      session_buffered_write (ses, " , \"@datatype\" : \"", 18);
-      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-      session_buffered_write_char ('\"', ses);
-    }
-  session_buffered_write (ses, " }", 2);
-}
-
-caddr_t
-bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  query_instance_t *qi = (query_instance_t *)qst;
-  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple");
-  caddr_t subj_iri_or_id = bif_arg (qst, args, 1, "http_ld_json_triple");
-  caddr_t pred_iri_or_id = bif_arg (qst, args, 2, "http_ld_json_triple");
-  caddr_t obj = bif_arg (qst, args, 3, "http_ld_json_triple");
-  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ld_json_triple");
-  int status = 0;
-  int obj_is_iri = 0;
-  dtp_t obj_dtp = 0;
-  caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
-  int subj_iri_is_new = 0, pred_iri_is_new = 0, obj_iri_is_new = 0;
-  int is_bnode, obj_is_bnode;
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
-    (sizeof (ld_json_env_t) != box_length ((caddr_t)env)) ||
-    ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred))) )
-    sqlr_new_error ("22023", "SR607", "Argument 1 of http_ld_json_triple() should be an array of special format");
-  if (!iri_cast_ld_json_qname (qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never used after return */))
-    goto fail; /* see below */
-  if (!iri_cast_ld_json_qname (qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never used after return */))
-    goto fail; /* see below */
-  obj_dtp = DV_TYPE_OF (obj);
-  switch (obj_dtp)
-    {
-    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
-    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
-    default: obj_is_iri = 0; break;
-    }
-  if (obj_is_iri)
-    {
-      if (!iri_cast_ld_json_qname (qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
-        goto fail; /* see below */
-    }
-  if ((DV_STRING != DV_TYPE_OF (env->tje_prev_subj)) && (DV_UNAME != DV_TYPE_OF (env->tje_prev_subj)))
-    {
-      dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
-      dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
-    }
-  if ((NULL == env->tje_prev_subj) || strcmp (env->tje_prev_subj, subj_iri))
-    {
-      if (NULL != env->tje_prev_pred)
-        {                            /* 012345.6789 */
-          session_buffered_write (ses, " ] } ,\n  ", 9);
-          dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
-          dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
-        }
-                                 /* 01.23.456.78 */
-      session_buffered_write (ses, "{ \"@\": \"", 8);
-      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-                                 /* .01.23 */
-      session_buffered_write (ses, "\",\n", 3);
-      env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
-    }
-  if ((NULL == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
-    {
-      if (NULL != env->tje_prev_pred)
-        {                            /* 0123.456789 */
-          session_buffered_write (ses, " ] ,\n    ", 9);
-          dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
-        }
-      session_buffered_write_char ('\"', ses);
-      if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
-        session_buffered_write_char ('a', ses);
-      else
-        dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-                                 /* .0123456 */
-      session_buffered_write (ses, "\" : [ ", 6);
-      env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
-    }
-  else                         /* 01.23456789 */
-    session_buffered_write (ses, " ,\n      ", 9);
-  if (obj_is_iri)
-    {
-      session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-      session_buffered_write_char ('\"', ses);
-    }
-  else
-    http_ld_json_write_literal_obj (ses, qi, obj, obj_dtp);
-  status = 1;
-fail:
-  if (subj_iri_is_new) dk_free_box (subj_iri);
-  if (pred_iri_is_new) dk_free_box (pred_iri);
-  if (obj_iri_is_new) dk_free_box (obj_iri);
-  return (caddr_t)((ptrlong)status);
-}
-
 
 caddr_t
 bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3411,6 +3446,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
         case DV_RDF:
           {
             rdf_box_t *rb = (rdf_box_t *)val;
+            rb_dt_lang_check(rb);
             if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
               {
                 caddr_t iri = rdf_type_twobyte_to_iri (rb->rb_type);
@@ -4395,13 +4431,23 @@ rb_tmp_copy (mem_pool_t * mp, rdf_box_t * rb)
 }
 
 
+caddr_t
+bif_iri_name_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "ri_name_id");
+  return box_num (LONG_REF_NA (name));
+}
+
+
 extern box_tmp_copy_f box_tmp_copier[256];
+void bif_ro2sq_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
 
 
 void
 rdf_box_init ()
 {
-  dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 1);
+  dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 0);
   box_tmp_copier[DV_RDF] = (box_tmp_copy_f) rb_tmp_copy;
   PrpcSetWriter (DV_RDF, (ses_write_func) rb_serialize);
   dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
@@ -4437,6 +4483,7 @@ rdf_box_init ()
   bif_define_typed ("rdf_box_is_storeable", bif_rdf_box_is_storeable, &bt_integer);
   bif_define_typed ("rdf_box_needs_digest", bif_rdf_box_needs_digest, &bt_integer);
   bif_define_typed ("rdf_box_strcmp", bif_rdf_box_strcmp, &bt_integer);
+  bif_define_typed ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, &bt_integer);
   bif_define_typed ("__rdf_long_of_obj", bif_rdf_long_of_obj, &bt_any);
   bif_set_uses_index (bif_rdf_long_of_obj);
   bif_define_typed ("__rdf_box_make_complete", bif_rdf_box_make_complete, &bt_integer);
@@ -4460,8 +4507,6 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_nt_triple);
   bif_define ("http_talis_json_triple", bif_http_talis_json_triple);
   bif_set_uses_index (bif_http_talis_json_triple);
-  bif_define ("http_ld_json_triple", bif_http_ld_json_triple);
-  bif_set_uses_index (bif_http_ld_json_triple);
   bif_define ("http_nt_object", bif_http_nt_object);
   bif_set_uses_index (bif_http_nt_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);
@@ -4478,6 +4523,7 @@ rdf_box_init ()
   /* Short aliases for use in generated SQL text: */
   bif_define ("__ro2lo", bif_rdf_long_of_obj);
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
+  bif_set_vectored (bif_rdf_sqlval_of_obj, bif_ro2sq_vec);
   bif_define ("__rdf_graph_id2iri_dict", bif_rdf_graph_id2iri_dict);
   bif_define ("__rdf_graph_iri2id_dict", bif_rdf_graph_iri2id_dict);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
@@ -4504,4 +4550,5 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_repl_flush_queue);
   bif_define ("__rdf_range_check", bif_rdf_range_check);
   bif_set_uses_index (bif_rdf_range_check );
+  bif_define_typed ("iri_name_id", bif_iri_name_id, &bt_integer);
 }

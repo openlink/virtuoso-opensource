@@ -25,6 +25,7 @@
  *
  */
 
+#include "wi.h"
 #include "CLI.h"
 #include "util/strfuns.h"
 #include "datesupp.h"
@@ -1422,6 +1423,38 @@ dt_make_day_zero (char *dt)
   DT_SET_DAY (dt, DAY_ZERO);
   DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
 }
+
+
+unsigned int64
+dt_seconds (caddr_t dt1)
+{
+  return ((unsigned int64)DT_DAY (dt1)) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+}
+
+
+void
+dt_print (caddr_t dt)
+{
+  char str[100];
+  dt_to_string (dt, str, sizeof (str));
+		printf ("%s\n", str);
+}
+
+
+int
+dt_compare (caddr_t dt1, caddr_t dt2)
+{
+  int inx;
+  for (inx = 0; inx < DT_COMPARE_LENGTH; inx++)
+    {
+      if (dt1[inx] < dt2[inx])
+	return DVC_LESS;
+      else if (dt1[inx] > dt2[inx])
+	return DVC_GREATER;
+    }
+  return DVC_MATCH;
+}
+
 
 #ifdef DEBUG
 void

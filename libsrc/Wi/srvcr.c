@@ -100,6 +100,9 @@ box_md5_1 (caddr_t box, MD5_CTX * ctx)
 	  MD5Update (ctx, (unsigned char *) box - 1, numeric_len + 1);
 	}
       break;
+    case DV_DB_NULL: /* special case since NULLs has zero len */
+      MD5Update (ctx, (unsigned char *) box - 1, 1);
+      break;
     default:
       MD5Update (ctx, (unsigned char *) box - 1, len + 1);
       break;
@@ -290,6 +293,12 @@ cr_lc_next (cursor_state_t * cs)
   query_instance_t *qi = (query_instance_t *) cs->cs_lc->lc_inst;
   if (!qi)
     return NULL;
+  if (qi->qi_query->qr_proc_vectored)
+    {
+      qi->qi_set++;
+      if (qi->qi_set < cs->cs_lc->lc_vec_n_rows)
+	return (caddr_t)SQL_SUCCESS;
+    }
   err = subq_next (qi->qi_query, (caddr_t *) qi, CR_OPEN);
   if (IS_BOX_POINTER (err))
     {

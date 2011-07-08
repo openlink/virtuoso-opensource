@@ -699,7 +699,10 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       return;
     }
   if (group_dfe)
+    {
     group_dfe->dfe_locus = from_ot->ot_work_dfe->dfe_locus; /* if dt passed through then group too */
+      group_dfe->_.setp.is_being_placed = 1;
+    }
   if (group)
     {
       all_cols_p = sqlo_oby_exp_cols (so, from_ot->ot_dt, group);
@@ -772,6 +775,9 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       t_set_push (&group_dfe->_.setp.fun_refs, fref);
     }
   END_DO_SET();
+  if (group_dfe)
+    group_dfe->_.setp.is_being_placed = 0;
+
   /* all the predicates not done so far are from the HAVING clause, even if not mentioned in the texp since they could hav been added to the ot from an enclosing context */
   so->so_gen_pt = from_ot->ot_group_dfe;
   DO_SET (df_elt_t *, pred, &from_ot->ot_preds)

@@ -159,7 +159,7 @@ repl_process_message (dk_session_t * ses)
                   return;
                 }
 	      if (LTE_OK == log_replay_trx (repl_str_in, repl_cli,
-					    (caddr_t) header, 1, 0))
+					    (caddr_t) header, 1, 0, 0))
 		{
 		}
 	      else
@@ -1223,99 +1223,6 @@ bif_repl_is_pushback (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
 }
 
 /* Replication grants */
-#ifdef REPLICATION_SUPPORT2
-id_hash_t * repl_grants;
-static char *repl_grants_tbl =
-" create table SYS_TP_GRANT ( "
-"        TPG_ACCT 	varchar,"
-"        TPG_GRANTEE 	varchar,"
-" primary key (TPG_ACCT, TPG_GRANTEE))";
-
-static caddr_t
-bif_repl_grant (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t acct = bif_string_arg (qst, args, 0, "__repl_grants");
-  caddr_t grnt = bif_string_or_null_arg (qst, args, 1, "__repl_grants");
-  caddr_t gkey = NULL;
-  caddr_t g_copy = box_copy (grnt);
-  (void) err_ret;
-
-  if (acct == NULL)
-    sqlr_new_error ("22023", "TR065", "Replication account can not be empty");
-
-  if (grnt != NULL)
-    {
-      gkey = dk_alloc_box (box_length (acct) + box_length (grnt), DV_SHORT_STRING);
-      snprintf (gkey, box_length (gkey), "%s\n%s", acct, grnt);
-    }
-  else
-    {
-      gkey = dk_alloc_box (box_length (acct) + 1, DV_SHORT_STRING);
-      snprintf (gkey, box_length (gkey), "%s", acct);
-    }
-  id_hash_set (repl_grants, (caddr_t) & gkey, (caddr_t) & g_copy);
-  return (box_num (0));
-}
-
-static caddr_t
-bif_repl_revoke (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t acct = bif_string_arg (qst, args, 0, "__repl_revoke");
-  caddr_t grnt = bif_string_or_null_arg (qst, args, 1, "__repl_revoke");
-  caddr_t gkey = NULL;
-  caddr_t * kp = NULL;
-  caddr_t k;
-  caddr_t *place = NULL;
-  (void) err_ret;
-
-  if (acct == NULL)
-    sqlr_new_error ("22023", "TR066", "Replication account can not be empty");
-
-  if (grnt != NULL)
-    {
-      gkey = dk_alloc_box (box_length (acct) + box_length (grnt), DV_SHORT_STRING);
-      snprintf (gkey, box_length (gkey), "%s\n%s", acct, grnt);
-    }
-  else
-    {
-      gkey = dk_alloc_box (box_length (acct) + 1, DV_SHORT_STRING);
-      snprintf (gkey, box_length (gkey), "%s", acct);
-    }
-  place = (caddr_t*) id_hash_get (repl_grants, (caddr_t) & gkey);
-  if (place && *place)
-    {
-      kp = (caddr_t *) id_hash_get_key (repl_grants, (caddr_t) & gkey);
-      k = kp ? *kp : NULL;
-      if (k)
-	dk_free_box (k);
-      dk_free_tree (*place);
-      id_hash_remove (repl_grants, (caddr_t) & gkey);
-    }
-  dk_free_box (gkey);
-  return (box_num (0));
-}
-
-int
-get_repl_grants (char *acct, char *user)
-{
-  caddr_t * place;
-  caddr_t gkey = NULL;
-
-  place = (caddr_t *) id_hash_get (repl_grants, (caddr_t) & acct);
-  if (place)
-    return 1;
-  if (user == NULL)
-    return 0;
-  gkey = dk_alloc_box (strlen (acct) + strlen (user) + 2, DV_SHORT_STRING);
-  snprintf (gkey, box_length (gkey), "%s\n%s", acct, user);
-  place = (caddr_t *) id_hash_get (repl_grants, (caddr_t) & gkey);
-  dk_free_box (gkey);
-  if (place)
-    return 1;
-  return 0;
-}
-/*End replication grants */
-#endif
 
 query_t *
 repl_compile (char *text)
@@ -1352,14 +1259,6 @@ repl_init (void)
   bif_define ("repl_add_subscriber", bif_repl_add_subscriber);
   bif_define ("repl_update_subscriber", bif_repl_update_subscriber);
   bif_define ("repl_is_pushback", bif_repl_is_pushback);
-#ifdef REPLICATION_SUPPORT2
-  bif_define ("__repl_grant", bif_repl_grant);
-  bif_define ("__repl_revoke", bif_repl_revoke);
-
-  repl_grants = id_str_hash_create (101);
-  ddl_ensure_table ("DB.DBA.SYS_TP_GRANT", repl_grants_tbl);
-  ddl_sel_for_effect ("select count (*) from SYS_TP_GRANT where __repl_grant (TPG_ACCT, TPG_GRANTEE)");
-#endif
 
   repl_str_in = strses_allocate ();
   repl_in_q_mtx = mutex_allocate ();

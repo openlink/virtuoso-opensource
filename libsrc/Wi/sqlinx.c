@@ -1026,6 +1026,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
   if (ic->ic_key == table->tb_primary_key && (tb_dfe->_.table.xpath_pred || tb_dfe->_.table.is_xcontains))
     sqlg_xpath_node (so, tb_dfe);
 
+  ts->ts_order = sc->sc_order;
   if (ic->ic_inx_op)
     {
       ts->ts_inx_op = sqlg_inx_op (so, tb_dfe, ic->ic_inx_op, NULL);
@@ -1076,7 +1077,9 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
 
   sqlc_update_set_keyset (sc, ts);
   sqlc_ts_set_no_blobs (ts);
-  if (!sc->sc_update_keyset)
+  if (SC_UPD_PLACE != sc->sc_is_update && !sc->sc_in_cursor_def)
+    ts->ts_current_of = NULL;
+  if (!sc->sc_update_keyset && !sqlg_is_vector)
     ts_alias_current_of (ts);
   else if (!ts->ts_main_ks)
     ts->ts_need_placeholder = 1;
@@ -1094,6 +1097,8 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
       ts->ts_order_ks->ks_is_vacuum = 1;
     }
   ts->ts_cardinality = ic->ic_arity;
+  ts->ts_inx_cardinality = ic->ic_inx_card;
+  ts->ts_card_measured = 0 != ic->ic_leading_constants;
   so->so_sc->sc_order = ord;
   if (ic->ic_key->key_distinct || ic->ic_key->key_no_pk_ref)
     dfe_list_set_placed (ic->ic_col_preds, DFE_PLACED); /* if partial inx, must recheck the preds with a real inx, could be out of date */

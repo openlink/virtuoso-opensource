@@ -43,6 +43,7 @@ void * dk_alloc_zero (size_t c);/*mapping schema*/
 typedef struct text_node_s
   {
     data_source_t	 src_gen;
+    cl_buffer_t		clb;
     dbe_table_t *	txs_table;
     state_slot_t *	txs_text_exp;
     state_slot_t *	txs_xpath_text_exp; /* if in combination w xpath, this is the free text part */
@@ -76,6 +77,7 @@ typedef struct text_node_s
 typedef struct xpath_node_s
   {
     data_source_t	src_gen;
+    cl_buffer_t		clb;
     ptrlong		xn_predicate_type;
     state_slot_t *	xn_exp_for_xqr_text;
     state_slot_t *	xn_compiled_xqr;

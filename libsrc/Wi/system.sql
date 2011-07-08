@@ -1233,7 +1233,7 @@ create procedure DB.DBA.ddl_check_constraint (in pk_table varchar, in decl any)
   declare k_id, parts integer;
   declare iu cursor for select SC."COLUMN"
       from  DB.DBA.SYS_KEY_PARTS KP, DB.DBA.SYS_COLS SC
-      where KP.KP_KEY_ID = k_id and SC.COL_ID = KP.KP_COL;
+      where KP.KP_KEY_ID = k_id and SC.COL_ID = KP.KP_COL order by KP.KP_NTH+1;
 
 
   pkcols := aref (decl, 3);
@@ -5018,7 +5018,7 @@ create procedure DB.DBA.VACUUM (in table_name varchar := '%', in index_name varc
       if (not exists (select 1 from SYS_VIEWS where V_NAME = _table_name) and
 	  not exists (select 1 from SYS_REMOTE_TABLE where RT_NAME = _table_name))
          {
-	   stmt := sprintf ('select count(*) from "%I"."%I"."%I" table option (index %I, vacuum 0)',
+	   stmt := sprintf ('select count(*) from "%I"."%I"."%I" table option (index %I, index_only, vacuum 0)',
 	     	 name_part (_table_name,0),
 	     	 name_part (_table_name,1),
 	     	 name_part (_table_name,2),
@@ -5149,6 +5149,9 @@ result_names (n, cond);
   tc_result ('tc_cl_wait_queries', is_cl);
   tc_result ('tc_cl_kill_1pc', is_cl);
   tc_result ('tc_cl_kill_2pc', is_cl);
+  tc_result ('tc_cl_consensus_rollback', is_cl);
+  tc_result ('tc_cl_consensus_commit', is_cl);
+  tc_result ('tc_cl_consensus_deferred', is_cl);
 }
 ;
 
@@ -5183,14 +5186,15 @@ create procedure daq_results (in daq any)
 ;
 
 
-create procedure cl_all_hosts ()
+create procedure cl_all_hosts (in except_self int := 0, in except_master int := 0)
 {
   declare map, inx, hosts any;
   map := cl_control (0, 'cl_host_map');
   hosts := vector ();
   for (inx := 0; inx < length (map); inx := inx + 1)
     {
-      if (map[inx] <> 1 and map[inx] <> 7)
+      if (map[inx] <> 1 and map[inx] <> 7 and (0 = except_self or inx <> sys_stat ('cl_this_host'))
+	  and (0 = except_master or 0 = position (inx, cl_control (0, 'cl_master_list'))))
         hosts := vector_concat (hosts, vector (inx));
     }
   return hosts;
@@ -5362,6 +5366,7 @@ create procedure cl_new_db ()
 {
   cl_init_seqs ();
   cl_control (sys_stat ('cl_this_host'), 'ch_status', 0);
+  commit work;
   cl_wait_start ();
   log_message ('new clustered database:Init of RDF');
   rdf_dpipes ();
@@ -5379,9 +5384,11 @@ create procedure cl_node_started ()
     return;
   if (sys_stat ('cl_this_host') = sys_stat ('cl_master_host'))
     {
-      if ((select cl_map from sys_cluster where cl_name = '__ALL') is null)
+      if ((select cl_map from sys_cluster table option (no cluster) where cl_name = '__ALL') is null)
 	{
+	  __dbf_set ('cl_no_disable_of_unavailable', 1);
 	  cl_control (sys_stat ('cl_this_host'), 'ch_status', 0);
+	  commit work;
 	  cl_wait_start ();
 	  delete from sys_cluster where cl_name = '__ALL';
 	  insert into sys_cluster (cl_name, cl_HOSTS, cl_map) values ('__ALL', null, clm_map ('__ALL'));
@@ -5390,6 +5397,7 @@ create procedure cl_node_started ()
 	}
       if (0 = sys_stat ('db_exists'))
 	{
+	  __dbf_set ('cl_no_disable_of_unavailable', 1);
 	  cl_new_db ();
 	}
     }
@@ -6067,3 +6075,194 @@ create procedure csv_cols_def (in f varchar)
   return vec;
 }
 ;
+
+create procedure csv_vec_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
+{
+  declare r, log_ses, vecarr any;
+  declare stmt, enc, pname varchar;
+  declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols, fill, txn int;
+  declare delim, quot char;
+
+  delim := quot := enc := mode := null;
+  log_error := 0;
+  txn := 1;
+  if (isvector (opts) and mod (length (opts), 2) = 0)
+    {
+      delim := get_keyword ('csv-delimiter', opts);
+      quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
+      log_error := get_keyword ('log', opts, 0);
+      import_first_n_cols := get_keyword ('lax', opts, 0);
+      txn := get_keyword ('txn', opts, 1);
+    }
+
+  stmt := csv_vec_ins_stmt (tb, num_cols, pname);
+  exec (stmt);
+  pname := replace (pname, '\"', '');
+  if (0 = txn)
+    {
+      set non_txn_insert = 1;
+    }
+  old_mode := log_enable (log_mode, 1);
+  inx := 0;
+  nrows  := 0;
+  log_ses := string_output ();
+  vecarr := make_array (dc_batch_sz (), 'any');
+  fill := 0;
+  while (isvector (r := get_csv_row (s, delim, quot, enc, mode)))
+    {
+      if (inx >= _from)
+	{
+	  if (0 and import_first_n_cols and length (r) > num_cols)
+            r := subseq (r, 0, num_cols);
+	  if (length (r) = num_cols or import_first_n_cols)
+	    {
+              aset_zap_arg (vecarr, fill, r);
+	      fill := fill + 1;
+	    }
+	  else
+	    {
+	      if (log_error)
+		http (sprintf ('<error line="%d">different number of columns</error>', inx), log_ses);
+	      else
+		log_message (sprintf ('CSV import: wrong number of values at line: %d', inx));
+	    }
+	}
+      if (inx > _to)
+	goto end_loop;
+      if (fill >= length (vecarr))
+	{
+	  declare stat, message varchar;
+	  stat := '00000';
+          call (pname) (vecarr, fill);
+	  --exec (sprintf ('%s (?, ?)', pname), stat, message, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
+	  if (stat <> '00000')
+	    {
+	      if (log_error)
+		{
+		  http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
+		}
+	      else
+		{
+		  log_message (sprintf ('CSV import: error importing row: %d', inx));
+		  log_message (message);
+		}
+	    }
+	  else
+	    nrows := nrows + fill;
+	  fill := 0;
+	}
+      inx := inx + 1;
+    }
+  end_loop:;
+
+  if (fill > 0)
+    {
+      declare stat, message varchar;
+      stat := '00000';
+      call (pname) (vecarr, fill);
+      -- exec (sprintf ('%s (?, ?)', pname), stat, message, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
+      if (stat <> '00000')
+	{
+	  if (log_error)
+	    {
+	      http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
+	    }
+	  else
+	    {
+	      log_message (sprintf ('CSV import: error importing row: %d', inx));
+	      log_message (message);
+	    }
+	}
+      else
+	nrows := nrows + fill;
+    }
+
+  log_enable (old_mode, 1);
+  exec (sprintf ('drop procedure %s', pname));
+  if (log_error)
+    return vector (nrows, log_ses);
+  return nrows;
+}
+;
+
+create procedure csv_vec_ins_stmt (in tb varchar, out num_cols int, out pname varchar)
+{
+  declare ss any;
+  declare cols any;
+  declare i int;
+  tb := complete_table_name (tb, 0);
+  cols := vector ();
+  for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' and COL_CHECK <> 'I' order by COL_ID do
+    {
+      cols := vector_concat (cols, vector (col));
+    }
+  if (length (cols) = 0)
+    signal ('22023', 'No such table');
+  ss := string_output ();
+
+  pname := sprintf ('"%I"."%I"."%I_CSV_VEC_INS_%d"',
+	  name_part (tb, 0),
+	  name_part (tb, 1),
+	  name_part (tb, 2),
+	  sequence_next ('CSV_IMP_SEQ')
+	  );
+  http (sprintf ('create procedure %s (inout arr any, in fill any) \n { \n', pname), ss);
+  -- variables
+  for (i := 0; i < length (cols); i := i + 1)
+     {
+       http (sprintf ('   declare "%I_VA" any; \n', cols[i]), ss);
+       http (sprintf ('   "%I_VA" := make_array (fill, \'any\'); \n', cols[i]), ss);
+     }
+
+  -- prepare vectors
+  http ('   for (declare i int, i := 0; i < fill; i := i + 1) \n   {\n', ss);
+
+  for (i := 0; i < length (cols); i := i + 1)
+     {
+       http (sprintf ('\t\taset_1_2_zap ("%I_VA", i, arr, i,%d); \n', cols[i], i), ss);
+     }
+
+  http ('   }\n', ss);
+
+  -- call vectored insert
+  http ('  for vectored modify (', ss);
+
+  for (i := 0; i < length (cols); i := i + 1)
+     {
+       http (sprintf ('in "%I_VI" any array := "%I_VA"', cols[i], cols[i]), ss);
+       if (i < length (cols) - 1)
+         http (', ', ss);
+     }
+
+  http (')\n  {\n', ss);
+
+  http (sprintf ('   INSERT INTO "%I"."%I"."%I" (',
+	  name_part (tb, 0),
+	  name_part (tb, 1),
+	  name_part (tb, 2)
+	  ), ss);
+  for (i := 0; i < length (cols); i := i + 1)
+    {
+       http (sprintf ('"%I"', cols[i]), ss);
+       if (i < length (cols) - 1)
+         http (', ', ss);
+    }
+  http (') values (', ss);
+  for (i := 0; i < length (cols); i := i + 1)
+    {
+       http (sprintf ('"%I_VI"', cols[i]), ss);
+       if (i < length (cols) - 1)
+         http (', ', ss);
+    }
+  http (');', ss);
+
+  http ('\n }\n', ss);
+
+  http ('\n }\n', ss);
+  num_cols := length (cols);
+  return string_output_string (ss);
+}
+;
+

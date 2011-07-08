@@ -201,6 +201,8 @@ User-level object is of type DV_XML_ENTITY. */
 
 #define DV_INDEX_TREE 137
 #define DV_ITC 138
+#define DV_DATA 141 /*vector of data in a column */
+#define DV_QI 142
 #define DV_GEO 238
 #define DV_FIXED_STRING 240
 #define DV_TINY_INT 241
@@ -280,6 +282,8 @@ User-level object is of type DV_XML_ENTITY. */
 #define IS_INT_DTP(dtp) \
   (DV_LONG_INT == dtp || DV_SHORT_INT == dtp || DV_INT64 == dtp)
 
+#define IS_DT_DTP(dtp) \
+  (DV_DATE == dtp || DV_DATETIME == dtp || DV_TIME == dtp || DV_TIMESTAMP == dtp)
 
 #define DV_STRINGP(q) \
   (IS_BOX_POINTER (q) && ((DV_STRING == box_tag (q)) || (DV_UNAME == box_tag (q))))

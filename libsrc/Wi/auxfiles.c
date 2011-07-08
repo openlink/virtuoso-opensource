@@ -86,7 +86,7 @@ int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
 int c_compress_mode = 0;
-int default_txn_isolation = ISO_REPEATABLE;
+int default_txn_isolation = ISO_COMMITTED;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
 char *db_name;
@@ -575,6 +575,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   COND_PARAM("\nmax_static_cursor_rows:", max_static_cursor_rows);
   COND_PARAM("\ncheckpoint_audit_trail:", log_audit_trail);
   COND_PARAM_WITH_DEFAULT("\nmin_autocheckpoint_size:", min_checkpoint_size, MIN_CHECKPOINT_SIZE);
+  COND_PARAM_WITH_DEFAULT("\nthreads_per_query:", enable_qp, 8);
+  COND_PARAM_WITH_DEFAULT("\naq_threads:", aq_max_threads, 20);
   COND_PARAM("\nautocheckpoint_log_size:", autocheckpoint_log_size);
   COND_PARAM("\nuse_daylight_saving:", isdts_mode);
   isdts_mode = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_daylight_saving:", 1);
@@ -690,7 +692,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   else if (wi_inst.wi_temp_allocation_pct < 0)
     wi_inst.wi_temp_allocation_pct = 30;
 
-  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_REPEATABLE);
+  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_COMMITTED);
   COND_PARAM_WITH_DEFAULT("\nsql_compile_on_startup:", sql_proc_use_recompile, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_ft_usage:", recursive_ft_usage, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_trigger_calls:", recursive_trigger_calls, 1);

@@ -1473,11 +1473,7 @@ sqlp_complete_fun_ref (ST * tree)
     {
       /* count of non-* */
       ST * arg = tree->_.fn_ref.fn_arg; /* not AMMSC_USER so it's argument, not a vector of them */
-      ST * exp = (ST*) t_list (2, SEARCHED_CASE,
-			     t_list (4, t_list (4, BOP_NULL, arg, NULL, NULL),
-				   box_num (0),
-				   t_list (2, QUOTE, NULL),
-				   box_num (1)));
+      ST * exp = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase  ("isnotnull"), t_list (1, arg));
       tree->_.fn_ref.fn_arg = exp;
       tree->_.fn_ref.fn_code = AMMSC_COUNTSUM;
     }

@@ -511,6 +511,7 @@ bif_date_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int n = (int) bif_long_arg (qst, args, 1, "dateadd");
   caddr_t dt = bif_date_arg (qst, args, 2, "dateadd");
   TIMESTAMP_STRUCT ts;
+  int dt_type = DT_DT_TYPE (dt);
   int year_or_month_tz_tweak = (((!strcmp ("year", part)) || (!strcmp ("month", part))) ? DT_TZ (dt) : 0);
   dt_to_GMTimestamp_struct (dt, &ts);
   if (year_or_month_tz_tweak)
@@ -521,6 +522,9 @@ bif_date_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   GMTimestamp_struct_to_dt (&ts, res);
   DT_SET_TZ (res, DT_TZ (dt));
+  if (DT_TYPE_DATE == dt_type
+      && (0 == stricmp (part, "year") || 0 == stricmp (part, "month") || 0 == stricmp (part, "day")))
+    DT_SET_DT_TYPE (res, dt_type);
   return res;
 }
 

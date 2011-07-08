@@ -299,6 +299,7 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 
 /* if rb content longer than this, use md5 in rdf_obj table key */
 #define RB_BOX_HASH_MIN_LEN 50
-
+caddr_t mdigest5 (caddr_t str);
+boxint rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi);
 
 #endif

@@ -71,7 +71,7 @@ repl_write_extra_log (repl_acct_t *ra, caddr_t * head, dk_session_t * string)
 
       file_set_rw (f_name);
       fd = fd_open (f_name, OPEN_FLAGS);
-      if (-1 == fd)
+      if (fd < 0)
 	{
 	  log_error ("Can't open replication log '%s'.", f_name);
 	  return LTE_LOG_FAILED;
@@ -262,7 +262,7 @@ repl_trail_new_file (repl_acct_t *ra, char *file, int lock)
 
       file_set_rw (file);
       new_fd = fd_open (file, OPEN_FLAGS);
-      if (-1 == new_fd)
+      if (new_fd < 0)
 	{
 	  log_error ("Cannot open new replication log '%s': %s (errno %d).",
               file, strerror(errno), errno);
@@ -559,7 +559,7 @@ log_repl_text_array (lock_trx_t * lt, char * srv, char * acct, caddr_t box)
   if (!srv)
     srv = db_name;
 
-  if (lt->lt_replicate == REPL_NO_LOG)
+  if (lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   if (0 != strcmp(srv, db_name) && lt->lt_repl_is_raw)
     {
@@ -729,7 +729,7 @@ rm_log_head (lock_trx_t * lt, repl_message_t * rm)
 
   memset (repl, 0, box_length ((caddr_t) repl));
   memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
-  cbox[LOGH_TIME] = 0;
+  cbox[LOGH_CL_2PC] = 0;
   cbox[LOGH_USER] = box_string ("");
   cbox[LOGH_BYTES] = box_num (bytes);
 
@@ -746,7 +746,7 @@ int
 lt_log_replication (lock_trx_t * lt)
 {
   int rc = LTE_OK;
-  if (REPL_NO_LOG == lt->lt_replicate)
+  if (REPL_NO_LOG == lt->lt_replicate || cl_non_logged_write_mode)
     return LTE_OK;
   DO_SET (repl_message_t *, rm, &lt->lt_repl_logs)
     {
@@ -1162,6 +1162,64 @@ purge_done:
   repl_sched_purger (NULL, ra);
 }
 
+static void
+repl_purge_cfg (char * account, caddr_t * err_ret)
+{
+  FILE *cfg_file, *tmp_cfg;
+  char cfg_line[100];
+  char srv[100];
+  char acct[100];
+  char file[100];
+
+  mutex_enter (cfg_mtx);
+  cfg_file = fopen (REPL_CFG, "r");
+  if (cfg_file)
+    {
+      tmp_cfg = fopen (REPL_CFG_TMP, "w");
+      if (!tmp_cfg)
+	{
+	  *err_ret = srv_make_new_error ("37000", "TR099", "Can not open '%s' file for write: %s (errno %d)",
+	      REPL_CFG_TMP, strerror (errno), errno);
+	  fclose (cfg_file);
+	  mutex_leave (cfg_mtx);
+	  return;
+	}
+      while (fgets (cfg_line, sizeof (cfg_line), cfg_file))
+	{
+	  if (1 == sscanf (cfg_line, "db_name: %s", acct) || 3 == sscanf (cfg_line, "%s %s %s", srv, acct, file))
+	    {
+	      fprintf (tmp_cfg, "%s", cfg_line);
+	      continue;
+	    }
+          else if (2 == sscanf (cfg_line, "%s %s", acct, file))
+	    {
+	      if (!strcmp (acct, account))
+		unlink (file);
+	      else
+		fprintf (tmp_cfg, "%s", cfg_line);
+            }
+	}
+      fclose (tmp_cfg);
+      fclose (cfg_file);
+#ifdef WIN32
+      file_set_rw (REPL_CFG);
+      if (unlink (REPL_CFG) < 0)
+	{
+	  *err_ret = srv_make_new_error  ("37000", "TR100", "Can't unlink '%s': %s (errno %d).",
+	      REPL_CFG, strerror (errno), errno);
+	  mutex_leave (cfg_mtx);
+	  return;
+	}
+#endif
+      if (rename (REPL_CFG_TMP, REPL_CFG) < 0)
+	{
+	  *err_ret = srv_make_new_error  ("37000", "TR100", "Can't rename '%s' to '%s': %s (errno %d).",
+	      REPL_CFG_TMP, REPL_CFG, strerror (errno), errno);
+	}
+    }
+  mutex_leave (cfg_mtx);
+}
+
 static caddr_t
 bif_repl_sched_purger (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1182,6 +1240,197 @@ bif_repl_sched_purger (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+extern dk_mutex_t * repl_accounts_mtx;
+
+static caddr_t
+bif_repl_account_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t acct = bif_string_arg (qst, args, 0, "repl_account_remove");
+  repl_acct_t *ra;
+  sec_check_dba (qi, "repl_purge_cfg");
+#if 1
+  IN_TXN;
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      DO_SET (repl_message_t *, rm, &lt->lt_repl_logs)
+	{
+	  if (!strcmp (rm->rm_srv, db_name) && !strcmp (rm->rm_acct, acct))
+	    {
+	      *err_ret = srv_make_new_error ("22023", "TR101", "Cannot remove replication account because of pending transactions to it.");
+	      LEAVE_TXN;
+	      return 0;
+	    }
+	}
+      END_DO_SET ();
+    }
+  END_DO_SET ();
+  LEAVE_TXN;
+  mutex_enter (repl_accounts_mtx);
+  if ((ra = ra_find (db_name, acct)) != NULL)
+    {
+      dk_set_delete (&repl_accounts, (void*)ra);
+    }
+  mutex_leave (repl_accounts_mtx);
+#endif
+  repl_purge_cfg (acct, err_ret);
+  return 0;
+}
+
+/* sqlprt.c */
+void trset_start (caddr_t *qst);
+void trset_printf (const char *str, ...);
+void trset_end (void);
+
+#define RTT_BAD 0x01
+#define RTT_NOF 0x02
+#define RTT_REP 0x04
+#define RTT_ALL (RTT_BAD | RTT_NOF | RTT_REP)
+
+static void
+repl_test_read_cfg (long f)
+{
+  FILE *cfg_file;
+  char cfg_line[100];
+  char srv[100];
+  char acct[100];
+  char file[100];
+  STAT_T st;
+
+  cfg_file = fopen (REPL_CFG, "r");
+  if (cfg_file)
+    {
+      while (fgets (cfg_line, sizeof (cfg_line), cfg_file))
+	{
+          repl_level_t level;
+          if (3 == sscanf (cfg_line, "%s %s %s", srv, acct, file))
+            ;
+          else if (2 == sscanf (cfg_line, "%s %s", acct, file))
+	    ;
+          else
+            continue;
+	  if (V_STAT (file, &st) == -1)
+	    {
+	      if (f & RTT_NOF)
+		trset_printf ("Non-existing: %s\n", file);
+	      continue;
+	    }
+	  level = repl_log_start_level (file);
+	  if ((f & RTT_BAD) && level == -1)
+	    trset_printf ("*** CORRUPTED: %s\n", file);
+	  if ((f & RTT_REP) && level >= 0)
+	    trset_printf ("%s LEVEL: %ld\n", file, level);
+	}
+      fclose (cfg_file);
+    }
+}
+
+void log_skip_blobs_1 (dk_session_t * ses);
+
+static int
+repl_test_log_file (char * file)
+{
+  repl_level_t level = 0;
+  repl_level_t volatile level_at = level;
+  repl_level_t volatile lvl_back;
+  dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
+  int fd;
+
+  if ((fd = fd_open (file, OPEN_FLAGS_RO)) < 0)
+    {
+      log_error ("repl_trail_send: %s: %s", file, strerror (errno));
+      goto err;
+    }
+  tcpses_set_fd (ses->dks_session, fd);
+
+  for (;;)
+    {
+      caddr_t *header;
+      volatile long bytes;
+
+      /* see if we're at the end of last log */
+      header = (caddr_t *) PrpcReadObject (ses);
+      if (!header || DKSESSTAT_ISSET (ses, SST_NOT_OK))
+	break;
+      if (!IS_BOX_POINTER (header) || !header[LOGH_REPLICATION])
+	break;
+      bytes = (long) unbox (header[LOGH_BYTES]);
+      level_at = (repl_level_t) LOGH_LEVEL (header);
+      if (repl_is_below (level, level_at))
+	{
+	  caddr_t string = (caddr_t) dk_alloc (bytes);
+
+	  CATCH_READ_FAIL (ses)
+	    {
+	      session_buffered_read (ses, string, bytes);
+	    }
+	  FAILED
+	    { /* If reading failed we are in commit area after commit length,
+		 hence we send sync notice and go ahead */
+	      dk_free_tree ((caddr_t) header);
+	      dk_free (string, bytes);
+	      level_at = lvl_back;
+	      fd_close (fd, file);
+	      goto synced;
+	    }
+	  END_READ_FAIL (ses);
+
+
+	  dk_free_tree ((caddr_t) header);
+	  dk_free (string, bytes);
+	}
+      else
+	{
+	  OFF_T off;
+	  dk_free_tree ((caddr_t) header);
+	  if (ses->dks_in_read + bytes < ses->dks_in_fill)
+	    {
+	      ses->dks_in_read += bytes;
+	      log_skip_blobs_1 (ses);
+	    }
+	  else
+	    {
+	      bytes -= ses->dks_in_fill - ses->dks_in_read;
+	      off = LSEEK (fd, bytes, SEEK_CUR);
+	      ses->dks_in_fill = 0;
+	      ses->dks_in_read = 0;
+	      log_skip_blobs_1 (ses);
+	    }
+	}
+    }
+
+err:
+  fd_close (fd, file);
+  if (ses->dks_error == DKSE_BAD_TAG)
+    level_at = -1;
+synced:
+  PrpcSessionFree (ses);
+  return level_at;
+}
+
+static caddr_t
+bif_repl_test_read_cfg (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  long f = bif_long_arg (qst, args, 0, "repl_test_read_cfg");
+  sec_check_dba (qi, "repl_test_read_cfg");
+  trset_start (qst);
+  repl_test_read_cfg (f);
+  trset_end ();
+  return NULL;
+}
+
+static caddr_t
+bif_repl_test_log_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  int rc;
+  caddr_t f = bif_string_arg (qst, args, 0, "repl_test_log_file");
+  sec_check_dba (qi, "repl_test_log_file");
+  rc = repl_test_log_file (f);
+  return box_num (rc);
+}
+
 void
 repl_serv_init (int make_thr)
 {
@@ -1194,6 +1443,9 @@ repl_serv_init (int make_thr)
   replay_cli->cli_is_log = 1;
 
   bif_define ("repl_sched_purger", bif_repl_sched_purger);
+  bif_define ("repl_account_remove", bif_repl_account_remove);
+  bif_define ("repl_test_read_cfg", bif_repl_test_read_cfg);
+  bif_define ("repl_test_log_file", bif_repl_test_log_file);
 
   repl_queue_init (&repl_queue);
   repl_queue_init (&repl_replay_queue);

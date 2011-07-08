@@ -147,6 +147,8 @@ int bh_read_ahead (struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, uns
 
 int rbs_length (db_buf_t rbs);
 void rbs_hash_range (dtp_t ** buf, int * len, int * is_string);
+int64 rbs_ro_id (db_buf_t rbs);
+
 extern caddr_t rb_copy (rdf_box_t * rb);
 extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi);
 extern void rb_complete_1 (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi, int is_local);

@@ -311,7 +311,8 @@ int ol_buf_disk_read (buffer_desc_t* buf)
     GPF_T1 ("ol_buf_disk_read (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
     {
-      disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off);
+      ext_ref_t er;
+      disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off, 0, &er);
       int fd = dst_fd (dst);
 
       rc = LSEEK (fd, off, SEEK_SET);
@@ -322,7 +323,7 @@ int ol_buf_disk_read (buffer_desc_t* buf)
 	  GPF_T;
 	}
       rc = read (fd, buf->bd_buffer, PAGE_SZ);
-      dst_fd_done (dst, fd);
+      dst_fd_done (dst, fd, &er);
 
       if (rc != PAGE_SZ)
 	{
@@ -447,6 +448,7 @@ ol_write_sets (ol_backup_context_t * ctx, dbe_storage_t * storage)
       if (!DV_STRINGP (name) || !DV_STRINGP (val))
 	continue;
       if (0 == strncmp (name, "__EM:", 5)
+	  || 0 == strncmp (name, "__EMC:", 6)
 	  || 0 == strcmp (name, "__sys_ext_map"))
 	{
 	  dp_addr_t dp = atoi (val);
@@ -1482,6 +1484,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
   dp_addr_t dest = buf->bd_physical_page;
   OFF_T off;
   OFF_T rc;
+  ext_ref_t er;
   if (!IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_raw_write (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
@@ -1499,10 +1502,11 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	      log_error ("Cannot extend database, please free disk space and try again.");
 	      call_exit (-1);
 	    }
+	  dbs_extend_ext_cache (dbs);
 	}
       LEAVE_DBS (dbs);
 
-      dst = dp_disk_locate (dbs, dest, &off);
+      dst = dp_disk_locate (dbs, dest, &off, 1, &er);
       fd = dst_fd (dst);
 
       rc = LSEEK (fd, off, SEEK_SET);
@@ -1517,7 +1521,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	  log_error ("Write failure on stripe %s", dst->dst_file);
 	  GPF_T;
 	}
-      dst_fd_done (dst, fd);
+      dst_fd_done (dst, fd, &er);
     }
   else
     {

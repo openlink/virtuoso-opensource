@@ -73,7 +73,7 @@
 # include <sqlext.h>
 # include <iodbcext.h>
 # ifndef NO_UDBC_SDK
-typedef SQLCHAR SQLTCHAR;
+//typedef SQLCHAR SQLTCHAR;
 #  if !defined (__ODBC3_DEFINES) && (ODBCVER < 0x0300)
 #   define __ODBC3_DEFINES 1
 typedef void * SQLHANDLE;

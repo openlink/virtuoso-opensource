@@ -949,7 +949,7 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
       return;
     }
   if (upd->upd_policy_qr)
-    trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table);
+    trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table, (data_source_t*)upd);
 
   if (!upd->upd_trigger_args)
     {

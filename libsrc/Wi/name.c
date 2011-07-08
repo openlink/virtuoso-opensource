@@ -119,7 +119,7 @@ sqlc_col_table_1 (sql_comp_t * sc, ST * col_ref, dbe_column_t ** col_ret,
   char *col_prefix;
   int inx;
 
-  if (!ST_COLUMN (col_ref, COL_DOTTED))
+  if (!ST_P (col_ref, COL_DOTTED))
     return NULL;
 
   col_prefix = col_ref->_.col_ref.prefix;

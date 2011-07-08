@@ -3577,6 +3577,7 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   int was_ask_from_cli = 1; /* when blob got from cli, the handle keeps the ref so no free until commit cause trigs or other code can ref the blob subsequently. */
   caddr_t str;
   int32 len;
+  mem_pool_t * mp = qi->qi_mp;
   blob_layout_t * bl;
   it_cursor_t itc_auto;
   buffer_desc_t * buf = NULL;
@@ -3588,11 +3589,16 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   dp = LONG_REF_NA (outlined + BL_DP);
   page_wait_blob_access (itc, dp, &buf, PA_WRITE, NULL, 1);
   len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
+  if (mp)
+    str = mp_alloc_box (mp, len + 2, DV_STRING);
+  else
+    {
   str = dk_alloc_box (len + 2, DV_STRING);
+      ITC_OWNS_PARAM (rd->rd_itc, str);
+    }
   str[0] = DV_STRING;
   memcpy (str + 1, buf->bd_buffer + DP_DATA, len);
   str[len + 1] = 0;
-  ITC_OWNS_PARAM (rd->rd_itc, str);
   if (BLOB_IN_INSERT == log_mode)
     {
       blob_log_set_delete (&qi->qi_trx->lt_blob_log, dp);

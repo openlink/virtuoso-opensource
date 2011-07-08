@@ -1798,6 +1798,7 @@ re_search:
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
+	  KEY_TOUCH (itc->itc_insert_key);
 	  iri = itc_box_column (itc, buf, iri_col->col_id, NULL);
 	  itc_page_leave (itc, buf);
 	}
@@ -2075,6 +2076,7 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
   caddr_t dtlang = box_num ((rb->rb_type << 16) | rb->rb_lang);
   buffer_desc_t * buf;
   search_spec_t sp, sp2;
+  rb_dt_lang_check(rb);
   if (dk_set_length (key->key_parts) < 3)
     return 0;
   id_col = (dbe_column_t*)key->key_parts->next->next->data;
@@ -2121,6 +2123,7 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
 rdf_box_t *
 key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
 {
+  caddr_t r, trid;
   int len;
   caddr_t allocd_content = NULL;
   int entered = 0;
@@ -2145,7 +2148,7 @@ key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
     if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
       {
 	QNCAST (rdf_bigbox_t, rbb, rb);
-
+	dk_check_tree (rbb->rbb_chksum);
 	rb->rb_ro_id = key_find_rdf_obj_1 (rb, rbb->rbb_chksum);
       }
     else
@@ -2370,6 +2373,10 @@ canon_iri_to_id (query_instance_t *qi, caddr_t canon_name, int mode, caddr_t *er
           return key_name_to_iri_id (qi->qi_trx, canon_name, 0);
         case IRI_TO_ID_WITH_CREATE:
           return key_name_to_iri_id (qi->qi_trx, canon_name, 1);
+#ifdef DEBUG
+	  if (!boxed_iid) bing ();
+#endif
+	  break;
         case IRI_TO_ID_IF_CACHED:
           return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name);
         }
@@ -2879,12 +2886,14 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+    : mode[0] == 't' ? rdf_type_cache
+    : mode[0] == 'i'? iri_name_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
   if (BOX_ELEMENTS (args) > 2)
     {
-      boxint new_id = bif_long_arg (qst, args, 2, "rdf_cache_id");
+      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
       if (cache == iri_name_cache || cache == iri_prefix_cache)
 	lt_nic_set (qi->qi_trx, cache, pref, new_id);
       else
@@ -2906,6 +2915,7 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
+    : mode[0] == 'i' ? iri_name_cache
     : mode[0] == 't' ? rdf_type_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
@@ -3084,7 +3094,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_obj_ft_rule_iri_hkey_t iri_hkey;
   iid_hkey.hkey_g = g_id;
   iid_hkey.hkey_iid_p = p_id;
-  if (CL_RUN_LOCAL != cl_run_local_only)
+  if (1)
     {
       iri_hkey.hkey_g = g_id;
       iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
@@ -3433,6 +3443,9 @@ rdf_key_comp_init ()
   key_cl_by_name (ogps, "S")->cl_comp_asc = 1;
 }
 
+void bif_rld_init ();
+void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
 
 void
 rdf_core_init (void)
@@ -3451,12 +3464,11 @@ rdf_core_init (void)
   bif_define ("iri_to_id", bif_iri_to_id);
   bif_define ("iri_ensure", bif_iri_ensure);
   bif_set_uses_index (bif_iri_to_id);
-  bif_set_no_cluster ("iri_to_id");
   bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_set_no_cluster ("iri_to_id_repl");
+  bif_set_no_cluster ("iri_to_id");
   bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
   bif_set_uses_index (bif_iri_to_id_nosignal);
   bif_set_no_cluster ("iri_to_id_nosignal");
@@ -3482,7 +3494,8 @@ rdf_core_init (void)
   bif_define ("__i2idn", bif_iri_to_id_nosignal);
   bif_define ("__i2id", bif_iri_to_id);
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_define ("__id2i", bif_id_to_iri);
+  bif_define_typed ("__id2i", bif_id_to_iri, &bt_varchar);
+  bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
   bif_define ("__id2in", bif_id_to_iri_nosignal);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
@@ -3512,4 +3525,5 @@ rdf_core_init (void)
   ddl_std_proc (range_replay, 0);
   rdf_inf_init ();
   rdf_key_comp_init  ();
+  bif_rld_init ();
 }

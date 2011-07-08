@@ -2104,13 +2104,20 @@ numeric_to_double (numeric_t n, double *pvalue)
 {
   char res[NUMERIC_MAX_STRING_BYTES];
   int rc;
-
+  res[0] = 0;
   rc = _numeric_to_string (n, res, sizeof (res), NUMERIC_MAX_PRECISION, 15);
 
   if (rc == NUMERIC_STS_SUCCESS)
     *pvalue = strtod (res, NULL);
   else
+    {
+      if ('I' == res[0])
+	*pvalue = 1e200 * 1e200;
+      else if ('-' == res[0] && 'I' == res[1])
+	*pvalue = -1e200 * 1e200;
+      else
     *pvalue = 0.0;
+    }
 
   return rc;
 }
