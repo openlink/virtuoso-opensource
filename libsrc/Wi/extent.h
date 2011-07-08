@@ -116,3 +116,5 @@ caddr_t em_page_list (extent_map_t * em, int type);
 #define END_DO_EXT } } }
 
 buffer_desc_t **  ext_read (index_tree_t * it, extent_t * ext, int keep_ts, dk_hash_t * phys_to_log);
+buffer_desc_t * page_set_last (buffer_desc_t * buf);
+

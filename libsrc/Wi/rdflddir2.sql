@@ -169,16 +169,16 @@ ld_file (in f varchar, in graph varchar)
     {
       gzip_name := regexp_replace (f, '\.gz\x24', '');
       if (gzip_name like '%.xml' or gzip_name like '%.owl' or gzip_name like '%.rdf')
-	DB.DBA.RDF_LOAD_RDFXML (gz_file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), graph, graph);
       else
-	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name));
+	TTLP_V (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name));
     }
   else
     {
       if (f like '%.xml' or f like '%.owl' or f like '%.rdf')
-	DB.DBA.RDF_LOAD_RDFXML (file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), graph, graph);
       else
-	TTLP (file_open (f), graph, graph, ld_ttlp_flags (f));
+	TTLP_V (file_open (f), graph, graph, ld_ttlp_flags (f));
     }
 
   --log_message (sprintf ('loaded %s', f));
