@@ -671,13 +671,13 @@ SQL_FILES_REPL		= \
 	$(srcdir)/repl.sql
 
 SQL_FILES_SPARQL	= \
-	$(srcdir)/rdf_schema_objects.sql \
-	$(srcdir)/rdf_sponge.sql \
-	$(srcdir)/rdf_void.sql \
-	$(srcdir)/rdflddir2.sql \
+	$(srcdir)/ttlpv.sql \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
-	$(srcdir)/ttlpv.sql
+	$(srcdir)/rdf_sponge.sql \
+	$(srcdir)/rdf_schema_objects.sql \
+	$(srcdir)/rdf_void.sql \
+	$(srcdir)/rdflddir2.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql
