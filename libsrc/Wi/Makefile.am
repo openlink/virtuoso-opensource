@@ -1051,4 +1051,11 @@ EXTRA_DIST = \
 	sqlwords.gperf \
 	ssl.c \
 	string_tmpl.c \
-	box2any.c
+	box2any.c \
+	cedict1.c \
+	cedictad.c \
+	ceintd.c \
+	cesearch.c \
+	ceveci.c \
+	cevecins.c \
+	dvcmp.c
