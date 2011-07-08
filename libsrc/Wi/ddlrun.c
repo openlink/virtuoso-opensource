@@ -2765,8 +2765,6 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
       else
 	log_text (qi->qi_trx, temp_tx);
       temp_tx_box = box_string (temp_tx);
-      log_repl_text_array_all (key->key_table->tb_name, 2, temp_tx_box, qi->qi_client, qi,
-	  LOG_REPL_TEXT_ARRAY_MASK_ALL);
       dk_free_box (temp_tx_box);
     }
   dk_free_box(szTheTableName);
@@ -3972,8 +3970,6 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 	tb_name = tb ? tb->tb_name : tree->_.index.table;
 
 	ddl_index_def (qi, tree->_.index.name, tb_name,
-	  tree->_.index.cols, tree->_.index.opts);
-	trx_repl_log_ddl_index_def (qi, tree->_.index.name, tb_name,
 	  tree->_.index.cols, tree->_.index.opts);
 	break;
       }

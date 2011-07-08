@@ -156,7 +156,17 @@ libwi_la_SOURCES = \
 	ceins.c \
 	cetop.c \
 	chash.c \
-	cl_stubs.c \
+	clcli.c \
+	cldaq.c \
+	cldfg.c \
+	cldt.c \
+	clnode.c \
+	clrdf.c \
+	clserial.c \
+	clsql.c \
+	clsrv.c \
+	cltrx.c \
+	clvec.c \
 	col.c \
 	colin.c \
 	colins.c \
@@ -292,7 +302,17 @@ libwi_odbc_la_SOURCES = \
 	ceins.c \
 	cetop.c \
 	chash.c \
-	cl_stubs.c \
+	clcli.c \
+	cldaq.c \
+	cldfg.c \
+	cldt.c \
+	clnode.c \
+	clrdf.c \
+	clserial.c \
+	clsql.c \
+	clsrv.c \
+	cltrx.c \
+	clvec.c \
 	col.c \
 	colin.c \
 	colins.c \

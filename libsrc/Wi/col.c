@@ -4644,7 +4644,7 @@ bif_rnd_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 int
 crc_test (caddr_t str, int rep)
 {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined (__builtin_ia32_crc32di)
   int inx, len = box_length (str) - 1;
   int64 h = 1;
   for (inx = 0; inx < rep; inx++)
@@ -4871,7 +4871,7 @@ bif_col_count_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined (__builtin_ia32_pcmpestri128)
   /* test bit ops. op is 0 for rld count and 1 for bm count.  Add 2 for word op. add 1024 for non aligned */
   QNCAST (query_instance_t, qi, qst);
   db_buf_t str1 = (db_buf_t) bif_string_arg (qst, args, 0, "col_count_test");
