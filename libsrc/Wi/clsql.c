@@ -1,4 +1,6 @@
 /*
+ *  clsql.c
+ *
  *  $Id$
  *
  *  SQL compiler specifics for cluster
