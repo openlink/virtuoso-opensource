@@ -46,10 +46,10 @@ echo both "recovck1_noreg check trees\n";
 
 cl_exec ('backup ''/dev/null''');
 
-select count (*) from T2;
+--select count (*) from T2;
 
-ECHO BOTH $IF $EQU $LAST[1] 13 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " rows in T2 after roll forward.\n";
+--ECHO BOTH $IF $EQU $LAST[1] 13 "PASSED" "***FAILED";
+--ECHO BOTH ": " $LAST[1] " rows in T2 after roll forward.\n";
 
 --XXX: VJ
 --reconnect USR1;

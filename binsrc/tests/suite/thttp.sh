@@ -1026,14 +1026,16 @@ fi
    fi
 fi
    DoCommand $DSN "registry_set ('__rdf_cartridges_original_doc_uri__', '1');" 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsponge.sql
+   # XXX 
+   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsponge.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsponge.sql"
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < xhtml1-testcases.sql
+   # XXX
+   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < xhtml1-testcases.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: xhtml1-testcases.sql"

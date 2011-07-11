@@ -55,15 +55,15 @@ then
 fi
 RUN $ISQL $DSN '"EXEC=raw_exit();"' ERRORS=STDOUT
 
+# XXX
+#START_SERVER $PORT 1000
 
-START_SERVER $PORT 1000
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb2.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: cpt rb -- tcptrb2.sql"
-    exit 1
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb2.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: cpt rb -- tcptrb2.sql"
+#    exit 1
+#fi
 
 
 
@@ -126,6 +126,7 @@ then
     exit 1
 fi
 
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tac.sql
 if test $STATUS -ne 0
 then
@@ -133,6 +134,8 @@ then
     exit 1
 fi
 
+
+RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 10000  100
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinxint.sql
 if test $STATUS -ne 0
@@ -216,6 +219,7 @@ then
     LOG "***ABORTED: ttrig1.sql"
     exit 1
 fi
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrig2.sql
 if test $STATUS -ne 0
 then
@@ -226,6 +230,7 @@ fi
 
 
 RUN date
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tgroup.sql
 if test $STATUS -ne 0
 then
@@ -233,6 +238,7 @@ then
     exit 1
 fi
 
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tview.sql
 if test $STATUS -ne 0
 then
@@ -240,7 +246,8 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpview.sql
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpview.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpview.sql"
@@ -262,6 +269,7 @@ then
     exit 1
 fi
 
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpkopt.sql
 if test $STATUS -ne 0
 then
@@ -276,6 +284,7 @@ then
     exit 1
 fi
 
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans.sql
 if test $STATUS -ne 0
 then
@@ -295,6 +304,7 @@ RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 100 20
 
 
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcljoin.sql
 if test $STATUS -ne 0
 then
@@ -303,6 +313,7 @@ then
 fi
 
 
+# XXX
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldt.sql
 if test $STATUS -ne 0
 then
@@ -310,7 +321,7 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldfg.sql
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldfg.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcldfg.sql"
@@ -318,14 +329,15 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcllock.sql
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcllock.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcllock.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tanytime.sql
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tanytime.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tanytime.sql"
@@ -333,14 +345,15 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclparts.sql
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclparts.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tclparts.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclcast.sql
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclcast.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tclcast.sql"

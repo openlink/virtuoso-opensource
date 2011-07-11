@@ -94,7 +94,7 @@ then
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "NNTPPORT=$NNTPPORT" < nntp_suite.sql
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "NNTPPORT=$NNTPPORT" < nntp_suite.sql
 
 if test $STATUS -ne 0
 then

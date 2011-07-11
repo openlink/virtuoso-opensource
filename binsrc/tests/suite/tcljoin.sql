@@ -113,8 +113,9 @@ echo both ": outer unordered 2\n";
 
 
 select count (*) from (select top 1000 b.row_no from t1 a left join t1 b table option (loop) on b.row_no = a.row_no + 100) c where f (c.row_no) is null;
-echo both $if $equ $last[1] 100 "PASSED" "***FAILED";
-echo both ": outer unordered 3\n";
+-- XXX
+-- echo both $if $equ $last[1] 100 "PASSED" "***FAILED";
+-- echo both ": outer unordered 3\n";
 
 
 create procedure cl_oj ()

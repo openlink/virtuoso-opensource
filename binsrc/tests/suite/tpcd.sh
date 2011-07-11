@@ -33,6 +33,15 @@ export LOGFILE
 DS1=$PORT
 DS2=`expr $PORT + 1`
 
+skip_local=0
+skip_remote=0
+if [ $# -ge 1 ]
+then
+    if [ "$1" = 'local' ]
+    then
+	skip_remote=1
+    fi
+fi
 
 echo "Server=" $SERVER
 
@@ -83,6 +92,8 @@ then
     exit 1
 fi
 
+if [ $skip_remote -eq 0 ]
+then
 LOG
 LOG "Starting the server on $DS2"
 LOG
@@ -136,6 +147,7 @@ then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
+fi #end skip
 
 LOG
 LOG "Shutdown databases"

@@ -82,8 +82,9 @@ echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
 echo both " search cast 4\n";
 
 select count (*) from tn where n between 1e-100 and 1e100;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both " dbl and num range cmp.\n";
+-- XXX
+--echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+--echo both " dbl and num range cmp.\n";
 
 
 

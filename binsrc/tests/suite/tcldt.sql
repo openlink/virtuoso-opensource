@@ -12,9 +12,6 @@ echo both "Cluster multistate derived tables\n";
 
 
 __dbf_set ('cl_req_batch_size', 7);
-__dbf_set ('dc_batch_sz', 7);
-__dbf_set ('dc_max_batch_sz', 7);
-
 
 create procedure DPINC (in q int)
 {
@@ -140,19 +137,14 @@ echo both $if $equ $last[2] 1 "PASSED" "***FAILED";
 echo both ": simple group by\n";
 
 
-select a.fi6, b.* from (select distinct fi6 from t1) a, (select fi6, count (*) as ct from t1 group by fi6) b where b.fi6 = a.fi6 option (order);
+select a.fi6, b.* from (select distinct fi6 from t1) a, (select fi6, count (*) as ct from t1 group by fi6) b where b.fi6 = a.fi6 order by 1 option (order);
 echo both $if $equ $last[3] 1 "PASSED" "***FAILED";
 echo both ": multistate  group by dt\n";
 
 
 select a.fi6, b.* from (select distinct fi6 from t1) a, (select fi6, count (*) as ct from t1 group by fi6) b where b.fi6 between  a.fi6 - 1 and a.fi6 + 1 order by 1, 2 option (order);
 echo both $if $equ $last[3] 1 "PASSED" "***FAILED";
-echo both ": multistate  group by dt with range, gb partitioned\n";
-
-select  a.fi6, b.* from (select distinct fi6 from t1) a, (select fi6, fi6 + 0 as dum, count (*) as ct from t1 group by fi6, fi6 + 0) b where b.fi6 between  a.fi6 - 1 and a.fi6 + 1 order by 1, 2 option (order);
-echo both $if $equ $last[4] 1 "PASSED" "***FAILED";
-echo both ": multistate  group by dt with range, gb not partitioned\n";
-
+echo both ": multistate  group by dt with range\n";
 
 
 -- existence 
@@ -224,18 +216,3 @@ echo both ": final partitioned gb oby, many batches, one set\n";
 select c.fi2, sum (c.row_no) from t1 a, t1 b table option (hash), t1 d, t1 c where b.fi2 = a.fi2 + 1 and d.fi2 = b.fi2 and c.fi2 = d.fi2 + 1 group by c.fi2 order by 2 desc option (order);
 echo both $if $equ $rowcnt 98 "PASSED" "***FAILED";
 echo both ": final dfg w partitioned gb oby, many batches, one set\n";
-
-
-
--- vectored special cases of oby/gb 
-
-__dbf_set ('qp_thread_min_usec', 0);
-__dbf_set ('enable_qp', 8);
-
-select top 10 a.row_no from t1 a table option (index t1), t1 b  where b.row_no = a.row_no and 0 + a.row_no between 80 and 90 order by a.row_no + 0 option (order, loop);
-
-select top 10 row_no, (select c.row_no from t1 c table option (loop) where c.row_no = 1 + a.row_no) from t1 a where row_no + 1 = (select b.row_no from t1 b table option (loop) where b.row_no = 1 + a.row_no);
-
-select a.string1, count (*) from t1 a, t1 b where b.row_no = 1000 + a.row_no group by a.string1 order by a.string1 option (order, hash);
-select a.string1, count (*) from t1 b, t1 a where b.row_no = 1000 + a.row_no group by a.string1 order by a.string1 option (order, hash);
-select a.string1, count (*) from t1 a, t1 b where b.row_no = 1000 + a.row_no group by a.string1 having count (*) <> 3330 order by a.string1 option (order, loop);

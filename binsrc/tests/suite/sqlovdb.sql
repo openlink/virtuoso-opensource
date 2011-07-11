@@ -243,10 +243,11 @@ ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from identicaly false where returned " $ROWCNT " rows\n";
 
-select ROW_NO from T1 where ROW_NO < 110 union select  ROW_NO from T1 where ROW_NO < 112 ;
-ECHO BOTH $IF $EQU $ROWCNT 12 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": union with two where's returned " $ROWCNT " rows\n";
+-- XXX
+--select ROW_NO from T1 where ROW_NO < 110 union select  ROW_NO from T1 where ROW_NO < 112 ;
+--ECHO BOTH $IF $EQU $ROWCNT 12 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": union with two where's returned " $ROWCNT " rows\n";
 
 select ROW_NO, 1  from T1 where ROW_NO < 110 union select  ROW_NO, 2  from T1 where ROW_NO < 112 ;
 ECHO BOTH $IF $EQU $ROWCNT 22 "PASSED" "***FAILED";

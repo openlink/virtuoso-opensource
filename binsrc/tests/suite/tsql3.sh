@@ -115,7 +115,7 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < texecute.sql
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < texecute.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: EXEC & company tests -- texecute.sql"
@@ -157,15 +157,15 @@ then
     exit 1
 fi
 
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tplmodule.sql
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tplmodule.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: PL modules tests -- tplmodule.sql"
     exit 1
 fi
 
-# disabled 
+# disabled until internal server is installed
 #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tldap.sql
 #if test $STATUS -ne 0
 #then
@@ -189,7 +189,8 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinf.sql"
@@ -197,14 +198,16 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinfifp.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
+# XXX
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- ttrans2.sql"

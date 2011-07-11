@@ -189,9 +189,10 @@ ECHO BOTH ": deleting from SEC_TEST_4 WITHOUT permission to column a: STATE=" $S
 -- Should work for u1, u2 and u5: (and now also u3)
 --
 delete from SEC_TEST_4;
-ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": deleting from SEC_TEST_4 WITH permission: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX
+--ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": deleting from SEC_TEST_4 WITH permission: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- Should produce for all ordinary users:
