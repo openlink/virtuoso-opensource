@@ -62,7 +62,7 @@ noinst_HEADERS = \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
 	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
-	simd.h vec.h mhash.h
+	col.h simd.h vec.h mhash.h
 
 
 
@@ -1028,11 +1028,20 @@ EXTRA_DIST = \
  	*.l \
 	*.y \
 	2pc_client.c \
+	bif_gnw.c \
 	bif_kerberoscli.c \
 	bif_mts.c \
-	bif_gnw.c \
 	bif_purify.c \
+	box2any.c \
+	cedel.c \
+	cedict1.c \
+	cedictad.c \
+	ceintd.c \
+	cesearch.c \
+	ceveci.c \
+	cevecins.c \
 	crypt.c \
+	dvcmp.c \
 	iodbcinst.c \
 	jso_reformat.awk \
 	list_lex_props.sh \
@@ -1044,18 +1053,10 @@ EXTRA_DIST = \
 	rdf_mapping.jso \
 	rdf_mapping_jso.ttl \
 	rdf_mapping_jso.ttl-sample \
-	sql3_vc.c \
 	scn3split.c \
+	sql3_vc.c \
 	sql_code_cache_impl.c \
 	sql_to_c.awk \
 	sqlwords.gperf \
 	ssl.c \
-	string_tmpl.c \
-	box2any.c \
-	cedict1.c \
-	cedictad.c \
-	ceintd.c \
-	cesearch.c \
-	ceveci.c \
-	cevecins.c \
-	dvcmp.c
+	string_tmpl.c
