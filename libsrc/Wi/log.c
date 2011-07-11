@@ -802,7 +802,7 @@ log_insert (lock_trx_t * lt, row_delta_t * rd, int flag)
 {
   int inx;
   dk_session_t *log;
-  int op1=-1, op2=-1;
+  int op1 = -1, op2 = -1;
   lt_hi_row_change (lt, rd->rd_key->key_super_id, LOG_INSERT, NULL);
   if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;

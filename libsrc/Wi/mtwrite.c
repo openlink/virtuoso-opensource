@@ -259,9 +259,6 @@ long tc_aio_seq_write;
 #define AIO_NONE 0
 #define AIO_NATIVE 1
 #define AIO_MERGING 2
-#ifndef WIN32
-#define HAVE_AIO
-#endif
 
 #ifdef HAVE_AIO
 
