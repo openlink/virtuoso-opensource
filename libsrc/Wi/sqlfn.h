@@ -1453,6 +1453,7 @@ void cha_free (chash_t * cha);
 int itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp);
 int ks_add_hash_spec (key_source_t * ks, caddr_t * inst, it_cursor_t * itc);
 int fref_hash_partitions_left (fun_ref_node_t * fref, caddr_t * inst);
+int fref_hash_is_first_partition (fun_ref_node_t * fref, caddr_t * inst);
 
 extern int enable_chash_join;
 extern int enable_chash_gb;

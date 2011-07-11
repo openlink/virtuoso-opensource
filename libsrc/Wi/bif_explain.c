@@ -144,9 +144,12 @@ qr_qn_total (query_t * qr)
 	}
     }
   END_DO_SET();
+  /* do not add up subqs from scalar/exists, their total figures in the node that has them in code */
+#if 0
   DO_SET (query_t *, sq, &qr->qr_subq_queries)
     sum += qr_qn_total (sq);
   END_DO_SET();
+#endif
   return sum;
 }
 

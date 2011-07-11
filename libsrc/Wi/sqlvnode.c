@@ -167,7 +167,7 @@ select_node_input_vec (select_node_t * sel, caddr_t * inst, caddr_t * state)
 {
   QNCAST (query_instance_t, qi, inst);
   int quota = (int) (ptrlong) inst[sel->sel_out_quota];
-  int n_rows, row, skip = 0, top = 0, top_ctr, fill = 0;
+  int n_rows, row, skip = 0, top = 0, top_ctr = 0, fill = 0;
   int pos_in_batch = QST_INT (inst, sel->sel_out_fill);
   if (state)
     {
@@ -396,8 +396,7 @@ ins_vec_subq (instruction_t * ins, caddr_t * inst)
       bits = QST_BOX (db_buf_t, inst, qr->qr_select_node->sel_vec_set_mask);
       if (!bits || box_length (bits) < n_bytes)
 	{
-	  bits = QST_BOX (db_buf_t, inst, qr->qr_select_node->sel_vec_set_mask) =
-	      (db_buf_t) mp_alloc_box (qi->qi_mp, n_bytes, DV_BIN);
+	  bits = QST_BOX (db_buf_t, inst, qr->qr_select_node->sel_vec_set_mask) = (db_buf_t)mp_alloc_box (qi->qi_mp, n_bytes, DV_BIN);
 	}
       if (set_mask)
 	{
@@ -733,6 +732,41 @@ del_vec_log (delete_node_t * del, ins_key_t * ik, it_cursor_t * itc)
 }
 
 
+#if 0 /* check consistent delete */
+#define RQ_CHECK_TEXT "select count (*) from orders a table option (index c_o_ck) where not exists (select 1 from orders b table option (loop, index orders)  where a.o_orderkey = b.o_orderkey)"
+
+extern int rq_check_min, rq_check_mod, rq_check_ctr, rq_batch_sz;
+
+void
+ord_check (query_instance_t * qi)
+{
+  int n, bs;
+  caddr_t err = NULL;
+  static query_t * qr;
+  local_cursor_t * lc;
+  if (!qr)
+    {
+      qr = sql_compile (RQ_CHECK_TEXT, bootstrap_cli, &err, SQLC_DEFAULT);
+    }
+  rq_check_ctr++;
+  if (rq_check_ctr < rq_check_min
+      || (rq_check_ctr % rq_check_mod) != 0)
+    return;
+  bs = dc_batch_sz;
+  dc_batch_sz = rq_batch_sz;
+  qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 0);
+  lc_next (lc);
+  dc_batch_sz = bs;
+  n = unbox (lc_nth_col (lc, 0));
+  lc_free (lc);
+  if (n)
+    {
+      bing ();
+      sqlr_new_error ("xxxxx", ".....", "orders del oow");
+    }
+}
+#endif
+
 void
 delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 {
@@ -820,8 +854,7 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 			sqlr_resignal (err);
 		    }
 		  else
-		    memcpy_16 (target_dc->dc_values + elt_sz * target_dc->dc_n_values, source_dc->dc_values + source_row * elt_sz,
-			elt_sz);
+			memcpy_16 (target_dc->dc_values + elt_sz * target_dc->dc_n_values, source_dc->dc_values + source_row * elt_sz, elt_sz);
 		  target_dc->dc_n_values = n_values + 1;
 		}
 	    }
@@ -861,5 +894,6 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
       qi->qi_client->cli_n_to_autocommit += n_sets;
       if (ROW_AUTOCOMMIT_DUE (qi, del->del_table, dc_batch_sz))
 	ROW_AUTOCOMMIT (qi);
+      /*ord_check (qi);*/
     }
 }

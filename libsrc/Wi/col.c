@@ -382,7 +382,7 @@ cs_length_check (db_buf_t * place, int fill, int bytes)
     GPF_T1 ("write [past end of compress buffer, check more often");
   if (fill + bytes >= l)
     {
-      db_buf_t n = (db_buf_t) mp_alloc_box_ni (THR_TMP_POOL, l * 2 + bytes + 5, DV_STRING);
+      db_buf_t n = (db_buf_t) mp_alloc_box_ni (THR_TMP_POOL, (l + 5) * 2 + bytes + 10, DV_STRING);
       cs_buf_mark (n);
       memcpy (n, *place, fill);
       *place = n;
@@ -500,7 +500,7 @@ void
 cs_write_typed_vec (compress_state_t * cs, dtp_t * out, int *fill_ret, int from, int to, int is_int, int bytes_guess)
 {
   int n_values = to - from;
-  int n_ways = (bytes_guess / 2000) + 1;
+  int n_ways = (bytes_guess / ((PAGE_DATA_SZ - 100) / 4)) + 1;
   int slice = n_values / n_ways, n;
   for (n = 0; n < n_ways; n++)
     {
@@ -1215,7 +1215,7 @@ ce_result (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 o
 }
 
 
-int
+void
 cpo_next_pre (col_pos_t * cpo, int is_first)
 {
   it_cursor_t *itc = cpo->cpo_itc;
@@ -2178,10 +2178,10 @@ cs_write_array (compress_state_t * cs, int from, int to)
   if (cs->cs_all_int && !cs->cs_any_64)
     {
       int_type = 32;
-      non_comp_len = (to - from) * sizeof (int32);
+      non_comp_len = 5 + (to - from) * sizeof (int32);
     }
   else
-    non_comp_len = cs_non_comp_len (cs, from, to, &int_type);
+    non_comp_len = 5 + cs_non_comp_len (cs, from, to, &int_type);
   is_iri = IS_IRI_DTP ((dtp_t) values[from][0]) ? CE_IS_IRI : 0;
   cs_length_check (&cs->cs_asc_output, cs->cs_asc_fill, non_comp_len);
   out = cs->cs_asc_output;
@@ -2905,9 +2905,9 @@ cs_try_asc (compress_state_t * cs, int from, int to)
       if (int_delta_bytes < (cs->cs_asc_fill / 10) * 8 && to == id_end && int_delta_bytes < vec_bytes)
 	{
 	  cs->cs_asc_fill = 0;
-	  if (int_delta_bytes > 2000)
+	  if (int_delta_bytes > 2010)
 	    {
-	      int n, n_split = (int_delta_bytes / 2000) + 1;
+	      int n, n_split = (int_delta_bytes / 2010) + 1;
 	      int slice = (to - from) / n_split;
 	      for (n = 0; n < n_split; n++)
 		{
@@ -2979,7 +2979,8 @@ cs_best (compress_state_t * cs, dtp_t ** best, int *len)
 {
   jmp_buf_splice rst;
   int try_dict = !cs->cs_is_asc && !cs->cs_no_dict && (0 == (CS_NO_DICT & cs->cs_exclude))
-      && cs->cs_n_values > 2 && cs->cs_any_distinct && cs->cs_any_distinct->ht_count > 1;
+      && cs->cs_n_values > 2
+      && cs->cs_any_distinct && cs->cs_any_distinct->ht_count > 1 && cs->cs_any_distinct->ht_count < cs->cs_n_values;
   int rnd_len, dict_only = 0;
   cs->cs_asc_fill = 0;
   cs->cs_dict_fill = 0;
@@ -3346,19 +3347,25 @@ cs_compress (compress_state_t * cs, caddr_t any)
       cs->cs_numbers = nv;
     }
   cs->cs_numbers[cs->cs_n_values - 1] = n;
-
-  if (CE_VEC_MAX_VALUES == cs->cs_n_values)
+  if (!cs->cs_no_dict && !cs->cs_is_asc && cs->cs_n_values > cs->cs_any_distinct->ht_count * 4)
+    {
+      int dict_est = cs->cs_unq_non_comp_len + (cs->cs_n_values / (cs->cs_any_distinct->ht_count <= 16 ? 2 : 1));
+      if (dict_est > ((PAGE_DATA_SZ - 300) / 3))
+	goto enough;
+    }
+  else if (CE_VEC_MAX_VALUES == cs->cs_n_values)
     goto enough;
 
-  if (!cs->cs_no_dict && cs->cs_unq_non_comp_len + cs->cs_n_values < 2500)
+  if (!cs->cs_no_dict && cs->cs_unq_non_comp_len + cs->cs_n_values < 2600 - (cs->cs_non_comp_len / cs->cs_n_values))
     return;
   if (cs->cs_all_int)
     return;
   if (cs->cs_non_comp_len < 2000)
     return;
-  if (!cs->cs_any_delta_distinct)
+  if (!cs->cs_any_delta_distinct || 0 == cs->cs_any_delta_distinct->ht_count)
     {
       int inx;
+      if (!cs->cs_any_delta_distinct)
       cs->cs_any_delta_distinct = t_id_hash_allocate (cs->cs_n_values + 11, sizeof (caddr_t), 0, anyhashf_head, anyhashcmp_head);
       for (inx = 0; inx < cs->cs_n_values; inx++)
 	{
@@ -3385,7 +3392,7 @@ cs_compress (compress_state_t * cs, caddr_t any)
 	  cs->cs_unq_delta_non_comp_len += box_len - 1;
 	}
     }
-  if (cs->cs_unq_delta_non_comp_len /*+ cs->cs_n_values */  > 1850)
+  if (cs->cs_unq_delta_non_comp_len + cs->cs_n_values > 1880 && cs->cs_unq_non_comp_len > 1000)
     goto enough;
   return;
 enough:
@@ -3487,8 +3494,8 @@ cs_init (compress_state_t * cs, mem_pool_t * mp, int f, int sz)
     sz = 301;
   cs->cs_any_distinct = t_id_hash_allocate (sz, sizeof (caddr_t), 0, anyhashf, anyhashcmp);
 
-  cs->cs_values = (caddr_t *) mp_alloc_box_ni (cs->cs_mp, 2048 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  cs->cs_numbers = (int64 *) mp_alloc_box_ni (cs->cs_mp, 2048 * sizeof (int64), DV_BIN);
+  cs->cs_values = (caddr_t *) mp_alloc_box_ni (cs->cs_mp, CS_MAX_VALUES * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  cs->cs_numbers = (int64 *) mp_alloc_box_ni (cs->cs_mp, CS_MAX_VALUES * sizeof (int64), DV_BIN);
   SET_THR_TMP_POOL (NULL);
 }
 
@@ -3855,9 +3862,9 @@ col_ac_set_dirty (caddr_t * qst, state_slot_t ** args, it_cursor_t * itc, buffer
   int n_segs, r, p, icol;
   dk_hash_t *dist = hash_table_allocate (1000);
   if (args && BOX_ELEMENTS (args) < 2 || !key->key_is_col)
-    return;
+    return 0;
   if (DPF_INDEX != SHORT_REF (buf->bd_buffer + DP_FLAGS))
-    return;
+    return 0;
   if (buf->bd_storage)
     {
       ITC_IN_KNOWN_MAP (itc, buf->bd_page);

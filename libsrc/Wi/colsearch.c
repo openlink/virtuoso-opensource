@@ -2261,6 +2261,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       itc->itc_ltrx->lt_client->cli_activity.da_seq_rows += range_end - cpo.cpo_range->r_first - 1;
     }
   itc->itc_n_results += n_used;
+  itc->itc_insert_key->key_touch += n_used;
   if (itc->itc_n_results < 0)
     GPF_T1 ("neg n_results");
   if (!n_used)
@@ -2299,7 +2300,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
     {
       if (!itc->itc_n_matches && -1 == rows_in_seg)
 	rows_in_seg = itc_rows_in_seg (itc, buf);
-      itc_col_lock (itc, buf, rows_in_seg);
+      itc_col_lock (itc, buf, n_used);
     }
   for (col_inx = 0; col_inx < n_out; col_inx++)
     {
@@ -2384,7 +2385,6 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	{
 	  for (nth = 0; nth < n_keys; nth++)
 	    {
-	      data_col_t *dc = QST_BOX (data_col_t *, itc->itc_out_state, om->om_ssl->ssl_index);
 	      ((query_instance_t *) (itc->itc_out_state))->qi_set = inx;
 	      rd.rd_values[key->key_part_cls[nth]->cl_nth] = QST_GET (itc->itc_out_state, om->om_ssl);
 	    }
@@ -2430,7 +2430,7 @@ itc_opt_extend_sets (data_source_t * qn, caddr_t * inst, int sets_fill, int n_mo
   if (sets_fill + n_more > batch_sz)
     {
       *is_extended = 0;
-      return sets;
+      return QST_BOX (int *, inst, qn->src_sets);
     }
   QST_INT (inst, qn->src_out_fill) = max_sets;
   sets = qn_extend_sets (qn, inst, new_sz);
@@ -2542,7 +2542,16 @@ start:
   if (!itc->itc_is_col)
     return DVC_MATCH;
   itc->itc_read_hook = itc_col_read_hook;
+  if (!itc->itc_ks->ks_oby_order)
   itc_col_search (itc, buf);
+  else
+    {
+      /* if params not reordered asc, then do a single set at a time, itc_next_set will do random seek */
+      int n_save = itc->itc_n_sets;
+      itc->itc_n_sets = itc->itc_set + 1;
+      itc_col_search (itc, buf);
+      itc->itc_n_sets = n_save;
+    }
   if (ISO_SERIALIZABLE == itc->itc_isolation)
     {
       wait = itc_col_serializable (itc, &buf);

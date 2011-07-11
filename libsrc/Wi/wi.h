@@ -461,6 +461,7 @@ struct hash_index_s
   mem_pool_t *		hi_pool;
   id_hash_t *		hi_memcache;
   chash_t *		hi_chash;
+  dk_hash_t *	hi_thread_cha; /* when filling hash join chash, maps from thread to cha */
   int			hi_size;
   char			hi_is_unique;
   int64			hi_count;

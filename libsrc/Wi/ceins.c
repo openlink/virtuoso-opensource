@@ -283,8 +283,12 @@ ce_insert_deltas (ce_ins_ctx_t * ceic, db_buf_t ce, db_buf_t * body_ret, int64 *
 	    }
 	  else if (CET_ANY == (flags & CE_DTP_MASK))
 	    {
-	      dv = ceic_ins_any_value (ceic, itc->itc_ce_first_set + inx);
+	      int from_ap = 0;
+	      AUTO_POOL (200);
+	      dv = ceic_ins_any_value_ap (ceic, itc->itc_ce_first_set + inx, &ap, &from_ap);
 	      rc = asc_cmp_delta (ce_first_val, dv, &delta, is_int_delta);
+	      if (from_ap && (dv < ap.ap_area || dv > ap.ap_area + ap.ap_fill))
+		dk_free_box ((caddr_t)dv);
 	      if (rc > DVC_GREATER)
 		goto ntype;
 	      if (DVC_GREATER == rc)
@@ -455,7 +459,7 @@ int
 ce_rld_rl (db_buf_t ce, db_buf_t ce_end)
 {
   int rl = 0;
-  if (ce, ce_end)
+  if (ce < ce_end)
     {
       rl = ce[0] & 0x0f;
       ce++;
@@ -946,7 +950,7 @@ ce_insert_int_delta (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce,
   if (CS_NO_DELTA & dbf_ce_insert_mask)
     return CE_INSERT_GEN;
   CE_2_LENGTH (ce, ce_first, n_bytes, n_values);
-  if (ceic->ceic_n_for_ce + n_values > 1000 || n_bytes > 2500)
+  if (ceic->ceic_n_for_ce + n_values > 1000 || n_bytes + (2 * ceic->ceic_n_for_ce) > 2030)
     {
       *split_at = (n_values + ceic->ceic_n_for_ce) / 2;
       return NULL;

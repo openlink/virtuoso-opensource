@@ -71,6 +71,11 @@ dv_from_int (db_buf_t ctmp, int64 i)
       ctmp[0] = DV_INT64;
       INT64_SET_NA (ctmp + 1, i);
     }
+  else if ((i > -128) && (i < 128))
+    {
+      ctmp[0] = DV_SHORT_INT;
+      ctmp[1] = i;
+    }
   else
     {
       ctmp[0] = DV_LONG_INT;

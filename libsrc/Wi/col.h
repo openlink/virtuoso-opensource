@@ -51,7 +51,8 @@
 
 
 #define CE_MAX_CES 1000
-#define CE_VEC_MAX_VALUES 2048
+#define CE_VEC_MAX_VALUES 2267
+#define CS_MAX_VALUES 2267
 #define COL_MAX_BYTES ((PAGE_DATA_SZ - 20) / 2) /* max bytes in non-blob col value before compression on column wise dependent part col */
 
 #define CE_TYPE_MASK 0xf
@@ -464,7 +465,8 @@ int64 itc_any_param (it_cursor_t * itc, int nth_key, dtp_t * dtp_ret);
 caddr_t itc_ce_box_param (it_cursor_t * itc, int nth_key);
 int64 itc_ce_search_param (it_cursor_t * itc, int nth_key, dtp_t * dtp_ret);
 db_buf_t ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int space_after, int * split_at, int ice);
-db_buf_t ce_extend (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic_ret, db_buf_t ce, db_buf_t * ce_first_ret, int new_bytes, int new_values, int * space_after_ret);
+db_buf_t ce_extend (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic_ret, db_buf_t ce, db_buf_t * ce_first_ret, int new_bytes,
+    int new_values, int *space_after_ret);
 int64 ceic_int_value (ce_ins_ctx_t * ceic, int nth, dtp_t * dtp_ret);
 dtp_t any_canonical_dtp (db_buf_t dv);
 void  ceic_merge_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int ice, db_buf_t org_ce, int start, int split_at);
@@ -540,11 +542,12 @@ int asc_str_cmp (db_buf_t dv1, db_buf_t dv2, int len1, int len2, uint32 * num_re
 int64 dv_if_needed (int64 any_param, dtp_t dtp, db_buf_t tmp);
 dtp_t any_ce_dtp (db_buf_t dv);
 
+/* below note that for a dict the short forms of int must be generated because if mixing long and short forms of equal numbers dict compression is not possible */
 #define CEIC_FLOAT_INT(col_dtp, str) \
   if (DV_DOUBLE_FLOAT == col_dtp) \
-    str[0] = DV_INT64; \
+    dv_from_int (str, INT64_REF_NA (str + 1)); \
   else if (DV_SINGLE_FLOAT == col_dtp)	\
-    str[0] = DV_LONG_INT;
+    dv_from_int (str, LONG_REF_NA (str + 1));
 
 int ce_like_filter (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 offset, int rl);
 int itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int * row_match_ctr);
@@ -629,7 +632,7 @@ col_row_lock_t * itc_new_clk (it_cursor_t * itc, int row);
 void itc_make_rl (it_cursor_t * itc);
 int  ceic_pl_more (ce_ins_ctx_t * ceic, page_lock_t * pl, it_cursor_t * itc, int is_rb);
 int itc_col_serializable (it_cursor_t * itc, buffer_desc_t ** buf_ret);
-void itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int rows_in_seg);
+void itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_rows);
 row_lock_t * rl_col_allocate ();
 db_buf_t  ceic_ins_any_value (ce_ins_ctx_t * ceic, int nth);
 db_buf_t itc_string_param (it_cursor_t * itc, int nth_key, int * len_ret, dtp_t * dtp_ret);

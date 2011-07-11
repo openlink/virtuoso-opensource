@@ -6505,20 +6505,21 @@ err_end:
 static caddr_t
 csv_field (dk_session_t * ses, int mode)
 {
+  static void *r1, *r2;
   caddr_t regex, ret = NULL, str = strses_string (ses);
   if (mode == CSV_LAX && !strcmp (str, "NULL"))
     {
       ret = NEW_DB_NULL;
     }
-  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
+  else if (NULL != (regex = regexp_match_01_const ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0, &r1)))
     {
-      float d = 0;
-      sscanf (str, "%f", &d);
-      ret = box_float (d);
+      double d = 0;
+      sscanf (str, "%lf", &d);
+      ret = box_double (d);
       dk_free_box (str);
       dk_free_box (regex);
     }
-  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+$", str, 0)))
+  else if (NULL != (regex = regexp_match_01_const ("^[\\+\\-]?[0-9]+$", str, 0, &r2)))
     {
       ret = box_num (atol (str));
       dk_free_box (str);

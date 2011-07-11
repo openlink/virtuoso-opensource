@@ -259,30 +259,33 @@ itc_col_lock_1 (it_cursor_t * itc, buffer_desc_t * buf, int row, row_no_t * poin
 
 
 void
-itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int rows_in_seg)
+itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_used)
 {
   /* set locks on selected rows, mark deletes if deleting  */
   row_no_t point = 0;
-  int inx;
-  if (itc->itc_n_matches)
-    {
+  int inx, n_done = 0;
       if (itc->itc_ks->ks_is_deleting && BUF_NEEDS_DELTA (buf))
 	{
 	  ITC_IN_KNOWN_MAP (itc, buf->bd_page);
 	  itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
 	  ITC_LEAVE_MAP_NC (itc);
 	}
-      for (inx = 0; inx < itc->itc_n_matches; inx++)
+  if (itc->itc_n_matches)
+    {
+      for (inx = 0; inx < n_used; inx++)
 	itc_col_lock_1 (itc, buf, itc->itc_matches[inx], &point);
     }
   else
     {
       int set = itc->itc_set - itc->itc_col_first_set;
       int last = itc->itc_ranges[set].r_end;
-      if (last > rows_in_seg)
-	last = rows_in_seg;
       for (inx = itc->itc_ranges[set].r_first; inx < last; inx++)
+	{
+	  if (n_done == n_used)
+	    break;
 	itc_col_lock_1 (itc, buf, inx, &point);
+	  n_done++;
+	}
     }
 }
 

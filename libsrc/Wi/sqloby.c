@@ -388,6 +388,9 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	  sqlo_tb_key_cost (tb_dfe, ot->ot_table->tb_primary_key, col_preds, &is_unq);
 	  if (is_unq)
 	    tb_dfe->_.table.is_unique = 1;
+	  if (!is_unq && ot->ot_table->tb_primary_key->key_is_col && ORDER_DESC == ot->ot_order_dir)
+	    best = NULL; /* can't read col inx backwards */
+	  else
 	  best = ot->ot_table->tb_primary_key;
 	}
     }
@@ -409,6 +412,9 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 		  sqlo_tb_key_cost (tb_dfe, key, col_preds, &is_unq);
 		  if (is_unq)
 		    tb_dfe->_.table.is_unique = 1;
+		  if (!is_unq && key->key_is_col  && ORDER_DESC == tb_dfe->_.table.ot->ot_order_dir)
+		    best = NULL;
+		  else
 		  best = key;
 		  break;
 		}
@@ -419,7 +425,8 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	  if (1 /*key != prev_key */)
 	    {
 	      float cost  = sqlo_tb_key_cost (tb_dfe, key, tb_dfe->_.table.all_preds, &is_unq);
-	      if (is_unq || cost < best_cost || -1 == best_cost)
+	      if ((is_unq || cost < best_cost || -1 == best_cost)
+		  && !(key->key_is_col && ORDER_DESC == tb_dfe->_.table.ot->ot_order_dir))
 		{
 		  best_cost = cost;
 		  best = key;

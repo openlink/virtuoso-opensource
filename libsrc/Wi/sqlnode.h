@@ -1320,6 +1320,7 @@ typedef struct setp_node_s
     data_source_t *	setp_hash_part_filter; /* this filters out the rows that are not in partition.  Most often ts, sometimes the setp itself */
     search_spec_t *	setp_hash_part_spec; /* if hash join filler must make many partitions because too large, then this sp is applied to limit the probes si only stuff potentially in the hash is probed */
     ssl_index_t	setp_hash_fill_partitioned;
+    ssl_index_t	setp_fill_cha; /* for chash join fill, the cha where the filler thread puts its rows */
 } setp_node_t;
 
 #define IS_SETP(qn) IS_QN (qn, setp_node_input)

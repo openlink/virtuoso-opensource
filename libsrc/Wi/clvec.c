@@ -66,7 +66,10 @@ dre_box (dc_read_t * dre)
   dre->dre_pos++;
   switch (dre->dre_dtp)
     {
-    case DV_LONG_INT: case DV_IRI_ID: case DV_IRI_ID_8: case DV_DOUBLE_FLOAT:
+    case DV_LONG_INT:
+    case DV_IRI_ID:
+    case DV_IRI_ID_8:
+    case DV_DOUBLE_FLOAT:
       if (!dre->dre_box || sizeof (int64) != box_length (dre->dre_box))
 	{
 	  dk_free_box (dre->dre_box);
@@ -94,12 +97,8 @@ dre_box (dc_read_t * dre)
       dre->dre_data += DT_LENGTH;
 	return dre->dre_box;
     }
-}
-
-
-void
-dc_append_dre (data_col_t * dc, dc_read_t * dre)
-{
+  GPF_T;
+  return NULL;
 }
 
 

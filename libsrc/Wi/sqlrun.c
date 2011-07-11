@@ -3080,9 +3080,12 @@ fun_ref_node_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
   if (fref->src_gen.src_out_fill)
     QST_INT (inst, fref->src_gen.src_out_fill) = n_sets;
 
-  if (fref->fnr_is_any)
-    QST_INT (inst, fref->fnr_is_any) = 0;
-  fun_ref_set_defaults_and_counts (fref, inst);
+  if (!fref->fnr_prev_hash_fillers || fref_hash_is_first_partition (fref, inst))
+    {
+      if (fref->fnr_is_any)
+	QST_INT (inst, fref->fnr_is_any) = 0;
+      fun_ref_set_defaults_and_counts (fref, inst);
+    }
   if (fref->fnr_setp)
     qn_record_in_state ((data_source_t *) fref, inst, inst);
   qn_input (fref->fnr_select, inst, state);

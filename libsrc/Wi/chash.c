@@ -3369,6 +3369,20 @@ fref_hash_partitions_left (fun_ref_node_t * fref, caddr_t * inst)
 }
 
 
+int
+fref_hash_is_first_partition (fun_ref_node_t * fref, caddr_t * inst)
+{
+  DO_SET (fun_ref_node_t *, fill, &fref->fnr_prev_hash_fillers)
+  {
+    if (!fill->fnr_hash_part_min || 0 == QST_INT (inst, fill->fnr_nth_part))
+      continue;
+    return 0;
+  }
+  END_DO_SET ();
+  return 1;
+}
+
+
 int64
 cha_bytes_est (hash_area_t * ha, int64 * card_ret)
 {

@@ -1293,6 +1293,7 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
       if (HA_FILL == ha->ha_op)
 	{
 	  ha->ha_tree->ssl_qr_global = 1;
+	  setp->setp_fill_cha = cc_new_instance_slot (sc->sc_cc);
 	  REF_SSL (NULL, ha->ha_tree);
 	  ASG_SSL_AGG (NULL, NULL, ha->ha_tree);
 	  DO_SET (table_source_t *, fill_ts, &sc->sc_vec_pred)

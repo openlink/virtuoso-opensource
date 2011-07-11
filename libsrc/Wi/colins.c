@@ -2129,7 +2129,7 @@ cr_unq_check (col_data_ref_t * cr)
     {
       if (!cr->cr_pages[inx].cp_buf->bd_is_write)
 	GPF_T1 ("buffer not in write access in col ac");
-      if (1 == cr->cr_n_pages)
+      if (1 >= cr->cr_n_pages)
 	return;
       if (!unq)
 	unq = hash_table_allocate (cr->cr_n_pages);
