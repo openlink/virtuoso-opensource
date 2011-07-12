@@ -960,6 +960,7 @@ create function DB.DBA.SYS_FILE_SPONGE_UP (in local_iri varchar, in get_uri varc
 
 create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in ret_content_type varchar, inout ret_body any) returns varchar
 {
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (', origin_uri, ret_content_type, '...)');
   if (ret_content_type is not null)
     {
       if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
@@ -980,7 +981,9 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
   ret_begin := subseq (ret_body, 0, 4096);
   if (isstring_session (ret_begin))
     ret_begin := string_output_string (ret_begin);
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_begin = ', ret_begin);
   ret_html := xtree_doc (ret_begin, 2);
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_html = ', ret_html);
   if (xpath_eval ('/html|/xhtml', ret_html) is not null)
     return 'text/html';
   if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
