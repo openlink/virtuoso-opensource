@@ -1,0 +1,6 @@
+July 12, 2011, V7.0.0-alpha1:
+  * First release of the experimental V7 branch.
+
+  NOTE: This version is unstable and should not be used for any production
+        data. The database format may still change during the next couple
+        of cycles and we do not guarantee any upgrading at this point.
