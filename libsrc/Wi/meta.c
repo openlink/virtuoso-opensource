@@ -2391,7 +2391,22 @@ isp_read_schema (lock_trx_t * lt)
 	    col_default = itc_box_column (itc_cols, buf_cols,
 		CI_COLS_DEFAULT, NULL);
 	    if (DV_TYPE_OF (col_default) == DV_SHORT_STRING || DV_TYPE_OF (col_default) == DV_LONG_STRING)
-	      col->col_default = box_deserialize_string (col_default, 0, 0);
+	      {
+		caddr_t def, err_ret = NULL;
+		col->col_default = def = box_deserialize_string (col_default, 0, 0);
+		if (dtp != DV_TYPE_OF (def) && DV_TYPE_OF (def) != DV_DB_NULL)
+		  {
+		    def = box_cast_to (NULL, def, DV_TYPE_OF (def), dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err_ret);
+		    dk_free_tree (col->col_default);
+		    if (!err_ret)
+		      col->col_default = def;
+		    else
+		      {
+			col->col_default = dk_alloc_box (0, DV_DB_NULL);
+			dk_free_tree (err_ret);
+		      }
+		  }
+	      }
 	    else
 	      col->col_default = dk_alloc_box (0, DV_DB_NULL);
 	    dk_free_tree (col_default);
@@ -2643,6 +2658,7 @@ qi_read_table_schema_1 (query_instance_t * qi, char *read_tb, dbe_schema_t * sc)
       dtp_t dtp = (dtp_t) unbox_or_null (lc_nth_col (lc, 3));
       dbe_table_t *tb = sch_name_to_table (sc, tb_name);
       dbe_column_t *col;
+      caddr_t def;
 
       if (!tb)
 	{
@@ -2656,7 +2672,20 @@ qi_read_table_schema_1 (query_instance_t * qi, char *read_tb, dbe_schema_t * sc)
       col->col_scale = (char) unbox_or_null (lc_nth_col (lc, 5));
       col->col_non_null = (1 == unbox_or_null (lc_nth_col (lc, 6)));
       col->col_check = box_copy (lc_nth_col (lc, 7));
-      col->col_default = box_copy_tree (lc_nth_col (lc, 8));
+      col->col_default = def = box_copy_tree (lc_nth_col (lc, 8));
+      if (dtp != DV_TYPE_OF (def) && DV_TYPE_OF (def) != DV_DB_NULL)
+	{
+	  caddr_t err_ret = NULL;
+	  def = box_cast_to (NULL, def, DV_TYPE_OF (def), dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err_ret);
+	  dk_free_tree (col->col_default);
+	  if (!err_ret)
+	    col->col_default = def;
+	  else /* cannot cast and too late */
+	    {
+	      col->col_default = dk_alloc_box (0, DV_DB_NULL);
+	      dk_free_tree (err_ret);
+	    }
+	}
       col->col_options = (caddr_t *) box_copy_tree (lc_nth_col (lc, 9));
       dbe_column_parse_options (col);
       dbe_col_load_stats (qi->qi_client, qi, tb, col);

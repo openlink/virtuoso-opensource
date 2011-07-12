@@ -2795,6 +2795,16 @@ log_replay_trx (dk_session_t * in, client_connection_t * cli,
       cli_set_new_trx (cli);
       rc = LTE_OK;
     }
+  if (in_log_replay)
+    {
+      wi_free_old_qrs ();
+      DO_SET (dbe_schema_t *, sc, &wi_inst.wi_free_schemas)
+	{
+	  dk_set_delete (&wi_inst.wi_free_schemas, (void *) sc);
+	  dbe_schema_free (sc);
+	}
+      END_DO_SET ();
+    }
   LEAVE_TXN;
   if (LTE_LOG_FAILED == rc)
     {

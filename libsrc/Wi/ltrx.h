@@ -334,7 +334,7 @@ typedef struct lock_wait_s {
   ((page_lock_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_locks))
 
 #define LT_NAME(lt) \
-  (snprintf (lt->lt_name, sizeof (lt->lt_name), "%5d:%10ld", QFID_HOST (lt->lt_w_id), (long)lt->lt_w_id), lt->lt_name)
+  (snprintf (lt->lt_name, sizeof (lt->lt_name), "%d:%u", QFID_HOST (lt->lt_w_id), (uint32)(0xffffffff & (lt)->lt_w_id) ), lt->lt_name)
 
 #define LT_IS_TIMED_OUT(lt) \
   (lt->lt_started && approx_msec_real_time () - lt->lt_started > lt->lt_timeout)

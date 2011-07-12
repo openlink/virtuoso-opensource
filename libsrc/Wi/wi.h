@@ -440,6 +440,8 @@ typedef struct chash_s
   int64		cha_reserved;
   chash_page_t *	cha_init_page;
   chash_page_t *	cha_init_data;
+  du_thread_t *		cha_wait_excl;	/* exclusive owner of the chash */
+  dk_set_t 		cha_waiting;    /* thread waiting on this */
 } chash_t;
 
 /* cha_unique */

@@ -710,6 +710,8 @@ cha_rehash_insert (chash_t * new_cha, int64 * row)
   cha_rehash_add (new_cha, h, ent);
 }
 
+int32 cha_resize_factor = 0.33;
+int32 cha_resize_step = 2;
 
 void
 cha_retype (chash_t * cha, setp_node_t * setp)
@@ -717,16 +719,18 @@ cha_retype (chash_t * cha, setp_node_t * setp)
   int n_part, inx;
   int64 new_row[CHASH_MAX_COLS];
   int prev_sz = cha->cha_n_partitions ? cha->cha_partitions[0].cha_size * cha->cha_n_partitions : cha->cha_size;
-  int new_sz = 2 * prev_sz;
+  int new_sz = cha_resize_step * prev_sz;
   chash_t *new_cha = (chash_t *) mp_alloc_box_ni (cha->cha_pool, sizeof (chash_t), DV_BIN);
+
   memset (new_cha, 0, sizeof (chash_t));
   new_cha->cha_size = new_sz;
+  new_cha->cha_pool = cha->cha_pool;
   cha_alloc_int (new_cha, setp, cha->cha_new_sqt, cha);
+  new_cha->cha_sqt = cha->cha_sqt;
+
   for (n_part = 0; n_part < MAX (1, cha->cha_n_partitions); n_part++)
     {
       chash_t *cha_p = CHA_PARTITION (cha, n_part);
-      if (cha->cha_is_1_int)
-	{
 	  for (inx = 0; inx < cha_p->cha_size; inx++)
 	    {
 	      int64 ent = ((int64 *) cha_p->cha_array)[inx];
@@ -743,7 +747,6 @@ cha_retype (chash_t * cha, setp_node_t * setp)
 	    }
 	}
     }
-}
 
 
 uint64
@@ -1322,6 +1325,7 @@ cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
   cha->cha_n_keys = ha->ha_n_keys;
 
   cha->cha_sqt = (sql_type_t *) mp_alloc_box (cha->cha_pool, sizeof (sql_type_t) * n_slots, DV_BIN);
+  cha->cha_new_sqt = (sql_type_t *) mp_alloc_box (cha->cha_pool, sizeof (sql_type_t) * n_slots, DV_BIN);
   memset (cha->cha_sqt, 0, box_length (cha->cha_sqt));
   DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
   {
@@ -1336,6 +1340,7 @@ cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
 	cha->cha_sqt[inx].sqt_dtp = dc->dc_dtp;
 	cha->cha_sqt[inx].sqt_non_null = ssl->ssl_sqt.sqt_non_null;
       }
+    memcpy (&(cha->cha_new_sqt[inx]), &(cha->cha_sqt[inx]), sizeof (sql_type_t));
   }
   END_DO_BOX;
 
@@ -2357,6 +2362,65 @@ singles:
 #define CHAP_LEAVE(cha_p) \
   {if (is_parallel) { mutex_leave (&cha_p->cha_mtx);}}
 
+#define CHA_ENTER(cha) if (cha->cha_is_parallel) mutex_enter (&cha->cha_mtx)
+#define CHA_LEAVE(cha) if (cha->cha_is_parallel) mutex_leave (&cha->cha_mtx)
+
+void
+cha_check_rehash (setp_node_t * setp, caddr_t * inst)
+{
+  index_tree_t *tree;
+  hash_area_t *ha = setp->setp_ha;
+  chash_t *cha = NULL;
+  int key, do_rehash, cha_sz;
+  du_thread_t *self = THREAD_CURRENT_THREAD;
+
+re_check:
+  do_rehash = 0;
+  tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
+  cha = tree->it_hi->hi_chash;
+  cha_sz = cha->cha_n_partitions ? cha->cha_partitions[0].cha_size * cha->cha_n_partitions : cha->cha_size;
+  for (key = 0; key < ha->ha_n_keys; key++)
+    {
+      state_slot_t *ssl = ha->ha_slots[key];
+      data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+      if (dc->dc_dtp != cha->cha_sqt[key].sqt_dtp && cha->cha_sqt[key].sqt_dtp != DV_ANY)
+	{
+	  cha->cha_new_sqt[key].sqt_dtp = DV_ANY;
+	  do_rehash = 1;
+	}
+    }
+  if (cha_sz * cha_resize_factor < cha->cha_count)
+    do_rehash = 1;
+  if (!do_rehash)
+    return;
+  CHA_ENTER (cha);
+#ifndef NDEBUG
+  if (cha->cha_wait_excl == self)
+    GPF_T;			/* must not enter twice */
+#endif
+  if (!cha->cha_wait_excl)
+    {
+      cha->cha_wait_excl = self;
+      CHA_LEAVE (cha);
+    }
+  else
+    {
+      dk_set_push (&cha->cha_waiting, (void *) self);
+      CHA_LEAVE (cha);
+      semaphore_enter (self->thr_sem);
+      goto re_check;
+    }
+  /* rehash */
+  cha_retype (cha, setp);
+  CHA_ENTER (cha);
+  DO_SET (du_thread_t *, waiting, &cha->cha_waiting)
+  {
+    semaphore_leave (waiting->thr_sem);
+  }
+  END_DO_SET ();
+  cha->cha_wait_excl = NULL;
+  CHA_LEAVE (cha);
+}
 
 void
 setp_chash_fill (setp_node_t * setp, caddr_t * inst)
@@ -2375,6 +2439,7 @@ setp_chash_fill (setp_node_t * setp, caddr_t * inst)
   char is_parallel;
   SELF_PARTITION_FILL;
   qi->qi_set = 0;
+  /* cha_check_rehash (setp, inst); */
   tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
   cha = tree->it_hi->hi_chash;
   if (cha->cha_is_1_int_key)
@@ -3011,7 +3076,7 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     case DV_INT64:
     case DV_IRI_ID:
     case DV_IRI_ID_8:
- /* case DV_DOUBLE_FLOAT:*/
+      //: case DV_DOUBLE_FLOAT:
       k = IS_BOX_POINTER (box) ? *(int64 *) box : (int64) (ptrlong) box;
       MHASH_STEP (h, k);
       break;
