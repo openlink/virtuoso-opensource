@@ -716,6 +716,9 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
 	return NULL;
 
+      if (!cert)
+	return NULL;
+
       in = BIO_new (BIO_s_mem());
 
       if (!in)
