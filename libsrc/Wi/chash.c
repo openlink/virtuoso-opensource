@@ -74,6 +74,10 @@ void setp_chash_fill_1i_n (setp_node_t * setp, caddr_t * inst);
 #define GB_HAS_VALUE(ha, row, nth) \
   ((db_buf_t)row)[ ha->ha_ch_nn_flags + (nth / 8)] |= 1 << (nth & 7);
 
+#define GB_NO_VALUE(ha, row, nth) \
+  ((db_buf_t)row)[ ha->ha_ch_nn_flags + (nth / 8)] &= ~(1 << (nth & 7));
+
+
 #define GB_IS_NULL(ha, row, nth) \
   (!(((db_buf_t)row)[ ha->ha_ch_nn_flags + (nth / 8)] & (1 << (nth & 7))))
 
@@ -163,6 +167,8 @@ gb_aggregate (setp_node_t * setp, caddr_t * inst, chash_t * cha, int64 ** groups
 		for (inx = inx; inx < n_sets; inx++)
 		  ((double **) groups)[inx][1 + dep_inx] += ((double *) values)[inx + base_set];
 		break;
+	      default:
+		goto general;
 	      }
 	    dep_inx++;
 	    continue;
@@ -176,6 +182,7 @@ gb_aggregate (setp_node_t * setp, caddr_t * inst, chash_t * cha, int64 ** groups
 	dep_inx++;
 	continue;
       }
+  general:
     switch (AGG_C (dtp, go->go_op))
       {
       case AGG_C (DV_LONG_INT, AMMSC_SUM):
@@ -205,6 +212,37 @@ gb_aggregate (setp_node_t * setp, caddr_t * inst, chash_t * cha, int64 ** groups
 	for (inx = 0; inx < n_sets; inx++)
 	  ((double **) groups)[inx][1 + dep_inx] += ((double *) dc->dc_values)[sets[inx] + base_set];
 	break;
+      case AGG_C (DV_LONG_INT, AMMSC_MIN):
+
+#define CHA_AGG_MAX(dtp, cmp) \
+	  for (inx = 0; inx < n_sets; inx++) \
+	    { \
+	      int64 * ent = groups[inx]; \
+	      if (GB_IS_NULL (ha, ent, dep_inx)) \
+		{ \
+		  *(dtp*)&ent[dep_inx + 1] = ((dtp*)dc->dc_values)[sets[inx] + base_set]; \
+		  GB_HAS_VALUE (ha, ent, dep_inx); \
+		} \
+	      else if (*(dtp*)&ent[dep_inx + 1] cmp ((dtp*)dc->dc_values)[sets[inx] + base_set]) \
+		*(dtp*)&ent[dep_inx + 1] = ((dtp*)dc->dc_values)[sets[inx] + base_set]; \
+	    } \
+	  break;
+
+	CHA_AGG_MAX (int64, >);
+      case AGG_C (DV_LONG_INT, AMMSC_MAX):
+	CHA_AGG_MAX (int64, <);
+
+
+      case AGG_C (DV_SINGLE_FLOAT, AMMSC_MIN):
+	CHA_AGG_MAX (float, >);
+      case AGG_C (DV_SINGLE_FLOAT, AMMSC_MAX):
+	CHA_AGG_MAX (float, <);
+
+      case AGG_C (DV_DOUBLE_FLOAT, AMMSC_MIN):
+	CHA_AGG_MAX (double, >);
+      case AGG_C (DV_DOUBLE_FLOAT, AMMSC_MAX):
+	CHA_AGG_MAX (double, <);
+
       }
     dep_inx++;
   }
@@ -292,8 +330,13 @@ gb_values (chash_t * cha, int64 * hash_no, caddr_t * inst, state_slot_t * ssl, i
   int sets[ARTM_VEC_LEN];
   int64 *arr = NULL;
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-  int elt_sz = dc_elt_size (dc), inx;
+  int elt_sz, inx;
   dtp_t chdtp = cha->cha_sqt[nth].sqt_dtp;
+  if (DV_ANY == chdtp && DV_ANY != dc->dc_dtp)
+    {
+      dc_heterogenous (dc);
+    }
+  elt_sz = dc_elt_size (dc);
   if (SSL_VEC == ssl->ssl_type && dc->dc_dtp == chdtp && (DV_ANY == dc->dc_dtp || !dc->dc_any_null))
     arr = (int64 *) (dc->dc_values + first_set * elt_sz);
   else if (SSL_REF == ssl->ssl_type)
@@ -316,10 +359,6 @@ gb_values (chash_t * cha, int64 * hash_no, caddr_t * inst, state_slot_t * ssl, i
 	  break;
 	}
       arr = (int64 *) temp;
-    }
-  if (DV_ANY == chdtp && DV_ANY != dc->dc_dtp)
-    {
-      gb_arr_to_any (arr, last_set - first_set, any_temp, any_temp_fill);
     }
   chash_array (arr, hash_no, chdtp, first_set, last_set, elt_sz);
   return arr;
@@ -508,10 +547,13 @@ cha_new_gb (setp_node_t * setp, caddr_t * inst, db_buf_t ** key_vecs, chash_t * 
   {
     if (AMMSC_MAX == go->go_op || AMMSC_MIN == go->go_op)
       {
+	GB_NO_VALUE (ha, row, nth_col);
       }
     else
+      {
       row[nth_col + 1] = 0;
     GB_HAS_VALUE (ha, row, nth_col);
+      }
     nth_col++;
   }
   END_DO_SET ();
@@ -1063,7 +1105,6 @@ setp_chash_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
   int n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
   int64 hash_no[ARTM_VEC_LEN];
   int64 *groups[ARTM_VEC_LEN];
-  data_col_t *sets_dc = QST_BOX (data_col_t *, inst, setp->setp_ssa.ssa_set_no->ssl_index);
   db_buf_t *key_vecs[CHASH_GB_MAX_KEYS];
   dtp_t temp[CHASH_GB_MAX_KEYS * DT_LENGTH * ARTM_VEC_LEN];
   dtp_t temp_any[9 * CHASH_GB_MAX_KEYS * ARTM_VEC_LEN];
@@ -1077,14 +1118,9 @@ setp_chash_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
 	hash_no[key] = 1;
       for (key = 0; key < ha->ha_n_keys; key++)
 	{
-	  if (1 == sets_dc->dc_n_values)
-	    {
 	      key_vecs[key] =
-		  (db_buf_t *) gb_values (cha, hash_no, inst, ha->ha_slots[key], key, first_set, last_set, (db_buf_t) temp,
-		  temp_any, &any_temp_fill);
-	    }
-	  else
-	    GPF_T1 ("no vectored multiset gb");
+	      (db_buf_t *) gb_values (cha, hash_no, inst, ha->ha_slots[key], key, first_set, last_set, (db_buf_t) temp, temp_any,
+	      &any_temp_fill);
 	}
       if (2 == ha->ha_n_keys && DV_ANY == cha->cha_sqt[0].sqt_dtp && DV_ANY == cha->cha_sqt[1].sqt_dtp)
 	cmp = cha_cmp_2a;
@@ -1499,6 +1535,8 @@ cha_box_col (chash_t * cha, hash_area_t * ha, db_buf_t row, int inx)
     {
     case DV_LONG_INT:
       return t_box_num (((int64 *) row)[inx + 1]);
+    case DV_IRI_ID:
+      return t_box_iri_id (((int64 *) row)[inx + 1]);
     case DV_SINGLE_FLOAT:
       return t_box_float (*(float *) &(((int64 *) row)[inx + 1]));
     case DV_DOUBLE_FLOAT:
@@ -1620,9 +1658,26 @@ cha_ent_merge (setp_node_t * setp, chash_t * cha, int64 * tar, int64 * ent)
 	*(float *) &tar[inx + 1] += *(float *) &ent[inx + 1];
 	GB_HAS_VALUE (ha, tar, inx);
 	break;
+      case AGG_C (DV_LONG_INT, AMMSC_MIN):
 
-      default:
-	GPF_T1 ("op not supportted in chash merge. ");
+#define CHA_MERGE_MAX(dtp, cmp) \
+	  if (GB_IS_NULL (ha, tar, inx)) \
+	    { \
+	      *(dtp*)&tar[inx + 1] = *(dtp*)&ent[inx + 1];  \
+	      GB_HAS_VALUE (ha, tar, inx); \
+	    } \
+	    else if (*(dtp*)&tar[inx + 1] cmp *(dtp*)&ent[inx + 1]) \
+	    { \
+	      *(dtp*)&tar[inx + 1] = *(dtp*)&ent[inx + 1];  \
+	    } \
+	  break;
+
+      CHA_MERGE_MAX (int64, >)case AGG_C (DV_LONG_INT, AMMSC_MAX):
+      CHA_MERGE_MAX (int64, <)case AGG_C (DV_SINGLE_FLOAT, AMMSC_MIN):
+	CHA_MERGE_MAX (float, >)
+	    case AGG_C (DV_SINGLE_FLOAT, AMMSC_MAX):CHA_MERGE_MAX (float, <)
+	    case AGG_C (DV_DOUBLE_FLOAT, AMMSC_MIN):CHA_MERGE_MAX (double, >)
+	    case AGG_C (DV_DOUBLE_FLOAT, AMMSC_MAX):CHA_MERGE_MAX (double, <) default:GPF_T1 ("op not supportted in chash merge. ");
       }
     inx++;
   }
@@ -2442,6 +2497,16 @@ setp_chash_fill (setp_node_t * setp, caddr_t * inst)
   /* cha_check_rehash (setp, inst); */
   tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
   cha = tree->it_hi->hi_chash;
+  if (!cha->cha_is_1_int)
+    {
+      int inx, last = cha->cha_ha->ha_n_keys + cha->cha_ha->ha_n_deps;
+      for (inx = cha->cha_n_keys; inx < last; inx++)
+	{
+	  data_col_t *dc = QST_BOX (data_col_t *, inst, ha->ha_slots[inx]->ssl_index);
+	  if (DV_ANY == cha->cha_sqt[inx].sqt_dtp && DV_ANY != dc->dc_dtp)
+	    dc_heterogenous (dc);
+	}
+    }
   if (cha->cha_is_1_int_key)
     {
       setp_chash_fill_1i (setp, inst);

@@ -665,5 +665,6 @@ void cs_free_allocd_parts (compress_state_t * cs);
 void cpt_col_uncommitted (dbe_storage_t * dbs);
 void cpt_col_restore_uncommitted (dbe_storage_t * dbs);
 int col_ac_set_dirty (caddr_t * qst, state_slot_t ** args, it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
+void itc_ensure_col_refs (it_cursor_t * itc);
 
 #endif

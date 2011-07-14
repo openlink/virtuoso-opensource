@@ -995,16 +995,8 @@ itc_clear_col_refs (it_cursor_t * itc)
 
 
 void
-pl_col_finalize_page (page_lock_t * pl, it_cursor_t * itc, int is_rb)
+itc_ensure_col_refs (it_cursor_t * itc)
 {
-  ce_ins_ctx_t ceic;
-  row_lock_t *rls[COL_PAGE_MAX_ROWS];
-  int rl_fill = 0, irl, inx;
-  row_delta_t **rds;
-  lock_trx_t *lt = itc->itc_ltrx;
-  buffer_desc_t *buf = NULL;
-  memset (&ceic, 0, sizeof (ce_ins_ctx_t));
-  ceic.ceic_itc = itc;
   if (!itc->itc_is_col)
     itc_col_init (itc);
   else
@@ -1019,6 +1011,21 @@ pl_col_finalize_page (page_lock_t * pl, it_cursor_t * itc, int is_rb)
 	  itc_free_box (itc, (caddr_t) old_refs);
 	}
     }
+}
+
+
+void
+pl_col_finalize_page (page_lock_t * pl, it_cursor_t * itc, int is_rb)
+{
+  ce_ins_ctx_t ceic;
+  row_lock_t *rls[COL_PAGE_MAX_ROWS];
+  int rl_fill = 0, irl, inx;
+  row_delta_t **rds;
+  lock_trx_t *lt = itc->itc_ltrx;
+  buffer_desc_t *buf = NULL;
+  memset (&ceic, 0, sizeof (ce_ins_ctx_t));
+  ceic.ceic_itc = itc;
+  itc_ensure_col_refs (itc);
   if (DP_DELETED == pl->pl_page)
     {
       TC (tc_release_pl_on_deleted_dp);

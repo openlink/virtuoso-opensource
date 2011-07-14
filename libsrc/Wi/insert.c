@@ -1196,7 +1196,7 @@ itc_ac_stat (it_cursor_t * itc, page_rel_t * pr, int pr_fill, int get_all,   ac_
 }
 
 void
-itc_col_multipage_ac (it_cursor_t * itc, page_rel_t * pr, int pr_fill)
+itc_col_multipage_ac (it_cursor_t * itc, page_rel_t * pr, int pr_fill, mem_pool_t ** mp_ret)
 {
   ce_ins_ctx_t ceic;
   memset (&ceic, 0, sizeof (ce_ins_ctx_t));
@@ -1204,7 +1204,7 @@ itc_col_multipage_ac (it_cursor_t * itc, page_rel_t * pr, int pr_fill)
   ceic.ceic_itc = itc;
   ceic.ceic_end_map_pos = itc->itc_map_pos;
   itc_ac_stat (itc, pr, pr_fill, 1, NULL, 0);
-  ceic.ceic_mp = mem_pool_alloc ();
+  *mp_ret = ceic.ceic_mp = mem_pool_alloc ();
   itc->itc_buf = NULL; /* this will not use this to ref to segs right of split for ce updates since there is nothing to the right, being full page */
   ceic_split (&ceic, pr[0].pr_buf);
 }
@@ -1235,7 +1235,8 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   pfh_init (pf.pf_hash, pf.pf_current);
   if (is_col)
     {
-      itc_col_multipage_ac (itc, pr, pr_fill);
+      mem_pool_t * mp;
+      itc_col_multipage_ac (itc, pr, pr_fill, &mp);
       if (KV_LEFT_DUMMY == IE_KEY_VERSION (BUF_ROW (pr[0].pr_buf, 0)))
 	{
 	  row_size_t tf = 1000;
@@ -1254,7 +1255,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
 	}
       END_DO_BOX;
       itc_col_leave (itc, 0);
-      mp_free (itc->itc_col_refs[0]->cr_pages[0].cp_ceic->ceic_top_ceic->ceic_mp);
+      mp_free (mp);
     }
   else
     {

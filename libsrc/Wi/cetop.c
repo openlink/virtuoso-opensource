@@ -102,7 +102,7 @@ dv_if_needed (int64 any_param, dtp_t dtp, db_buf_t tmp)
 
 
 #define ITC_IS_ANY_COL(itc, nth) \
-  (DV_ANY == itc->itc_insert_key->key_part_cls[nth_key]->cl_sqt.sqt_dtp)
+  (DV_ANY == itc->itc_col_spec->sp_cl.cl_sqt.sqt_dtp)
 
 db_buf_t
 itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp)

@@ -880,6 +880,8 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	itc->itc_v_out_map = NULL;
       itc_vec_next (itc, &buf);
       itc_page_leave (itc, buf);
+	  if (itc->itc_is_col)
+	    itc_col_free (itc);
       if (REPL_NO_LOG != qi->qi_trx->lt_replicate && (ik->ik_key->key_is_primary || ik->ik_key->key_partition))
 	del_vec_log (del, ik, itc);
     }

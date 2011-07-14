@@ -2138,6 +2138,7 @@ cr_unq_check (col_data_ref_t * cr)
 	GPF_T1 ("duplicate buf in ceic col ac batch");
       sethash (DP_ADDR2VOID (dp), unq, (void *) 1);
     }
+  if (unq)
   hash_table_free (unq);
 }
 
@@ -2567,6 +2568,12 @@ ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
   cr = itc->itc_col_refs[longest_col];
   ceic->ceic_nth_col = longest_col;
   full_ceic = cr_make_full_ceic (ceic, cr, NULL, 0);
+  if (!full_ceic->ceic_delta_ce)
+    {
+      if (!ceic->ceic_is_ac)
+	GPF_T1 ("split cannot be empty except in autocompact");
+      return 0;
+    }
   cr->cr_pages[0].cp_ceic = full_ceic;
   ce_ctr = 0;
   DO_SET (db_buf_t, ce, &full_ceic->ceic_all_ces)

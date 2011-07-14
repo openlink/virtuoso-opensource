@@ -294,6 +294,7 @@ extern int32 cl_non_logged_write_mode;
 extern int32 cl_dead_w_interval;
 extern int32 cl_stage;
 extern int64 chash_space_avail;
+extern int enable_chash_gb;
 int cl_log_from_sync = 0;
 int cl_no_auto_remove;
 extern int dbf_log_fsync;
@@ -1570,6 +1571,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_compress_mask", &dbf_compress_mask, SD_INT32},
     {"dbf_ce_insert_mask", &dbf_ce_insert_mask, SD_INT32},
     {"chash_space_avail", &chash_space_avail},
+    {"enable_chash_gb", &enable_chash_gb, SD_INT32},
     {"cl_no_disable_of_unavailable", &local_cll.cll_no_disable_of_unavailable, SD_INT32},
     {"dbf_log_fsync", &dbf_log_fsync, SD_INT32},
     { "cls_rollback_no_finish_if_thread", &cls_rollback_no_finish_if_thread, SD_INT32},
