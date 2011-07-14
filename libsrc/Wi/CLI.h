@@ -902,7 +902,7 @@ if (wsz##param) \
     if ((con)->con_defs.cdef_utf8_execs) \
       { \
 	SQLSMALLINT len1; \
-	len1 = (SQLSMALLINT) cli_utf8_to_narrow (con->con_charset, sz##param, _cb##param, wsz##param, cb##param); \
+	len1 = (SQLSMALLINT) cli_utf8_to_narrow (con->con_charset, sz##param, _vpcb##param, wsz##param, cb##param); \
 	if (pcb##param) \
 	  *pcb##param = *_pcb##param; \
 	dk_free_box ((box_t) sz##param); \
