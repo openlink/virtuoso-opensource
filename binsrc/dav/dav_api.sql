@@ -1957,18 +1957,18 @@ DAV_AUTHENTICATE_SSL (
                }
          order by ?p3 ?p2 ?p1 ?mode) do
       {
-        if      (not isnull (p1))
+        if      (not isnull ("p1"))
           I := 0;
-        else if (not isnull (p2))
+        else if (not isnull ("p2"))
           I := 1;
-        else if (not isnull (p3))
+        else if (not isnull ("p3"))
           I := 2;
         else
           goto _skip;
 
-        if (tmp <> coalesce (p1, coalesce (p2, p3)))
+        if (tmp <> coalesce ("p1", coalesce ("p2", "p3")))
         {
-          tmp := coalesce (p1, coalesce (p2, p3));
+	    tmp := coalesce ("p1", coalesce ("p2", "p3"));
           for (M := 0; M < length (IRIs[I]); M := M + 1)
           {
             if (tmp = IRIs[I][M])
@@ -1976,11 +1976,11 @@ DAV_AUTHENTICATE_SSL (
           }
         }
 
-        if      (mode like '%#Read')
+        if ("mode" like '%#Read')
           realMode[0] := 1;
-        else if (mode like '%#Write')
+        else if ("mode" like '%#Write')
           realMode[1] := 1;
-        else if (mode like '%#Control')
+        else if ("mode" like '%#Execute')
           realMode[2] := 1;
 
         if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
