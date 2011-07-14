@@ -1677,7 +1677,7 @@ self.vc_data_bind (e);
                             <tr>
                               <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
-                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                              <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                               <th width="1%">Action</th>
                             </tr>
                             <tr id="f_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>

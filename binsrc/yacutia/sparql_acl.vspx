@@ -265,7 +265,8 @@
 					      self.vc_error_message := 'Web ID could not be empty';
 					      return;
 					    }
-					  if (0 = FOAF_CHECK_WEBID (self.webid.ufl_value))
+					  -- it is pattern  
+					  if (0 and 0 = FOAF_CHECK_WEBID (self.webid.ufl_value))
                                             {
 					      self.vc_is_valid := 0;
                                               self.vc_error_message := 'The WebID is inaccessible or does not contain certificate properties';
