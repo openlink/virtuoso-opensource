@@ -25,6 +25,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY oplcv "http://www.openlinksw.com/schemas/cv#">
 <!ENTITY oplli "http://www.openlinksw.com/schemas/linkedin#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY rdfns  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -34,6 +35,7 @@
 ]>
 <xsl:stylesheet
     xmlns:bibo="&bibo;"
+    xmlns:oplcv="&oplcv;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms="http://purl.org/dc/terms/"
     xmlns:foaf="&foaf;"
@@ -57,6 +59,9 @@
 	<xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	<xsl:variable name="providedByIRI" select="concat ('http://www.linkedin.com', '#this')"/>
 	
+    <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
+    <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
+
 	<xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" standalone="no" indent="yes" />
 
 	<xsl:template match="/">
@@ -93,18 +98,15 @@
 		    <xsl:variable name="id" select="id" />
             <oplli:education>
                 <oplli:Education rdf:about="{vi:proxyIRI ($baseUri, '', concat('Education_', $id))}">
-                <xsl:if test="id">
                     <oplli:id><xsl:value-of select="$id"/></oplli:id>
-                </xsl:if>
                 <xsl:if test="school-name">
                     <oplli:school_name><xsl:value-of select="school-name"/></oplli:school_name>
                 </xsl:if>
-                <xsl:if test="degree">
+                    <xsl:if test="string-length (degree)">
                     <oplli:education_degree><xsl:value-of select="degree"/></oplli:education_degree>
                 </xsl:if>
-                <xsl:if test="field-of-study">
+                    <xsl:if test="string-length (field-of-study)">
                     <oplli:field_of_study><xsl:value-of select="field-of-study"/></oplli:field_of_study>
-                    <rdfs:label><xsl:value-of select="field-of-study"/></rdfs:label>
                 </xsl:if>
                 <xsl:if test="string-length(notes) &gt; 0">
                     <oplli:education_notes><xsl:value-of select="notes"/></oplli:education_notes>
@@ -112,8 +114,76 @@
                 <xsl:if test="string-length(activities) &gt; 0">
                     <oplli:education_activities><xsl:value-of select="activities"/></oplli:education_activities>
                 </xsl:if>
+
+                    <xsl:choose>
+                        <xsl:when test="string-length (school-name) and string-length (field-of-study)">
+                            <rdfs:label><xsl:value-of select="concat (field-of-study, ' : ', school-name)"/></rdfs:label>
+                        </xsl:when>
+                        <xsl:when test="string-length (school-name)">
+                            <rdfs:label><xsl:value-of select="school-name"/></rdfs:label>
+                        </xsl:when>
+                        <xsl:when test="string-length (field-of-study)">
+                            <rdfs:label><xsl:value-of select="field-of-study"/></rdfs:label>
+                        </xsl:when>
+                    </xsl:choose>
+
+                    <xsl:if test="start-date">
+                        <xsl:variable name="start_year" select="start-date/year" />
+                        <xsl:variable name="start_month">
+                          <xsl:choose> 
+                             <xsl:when test="start-date/month">
+                                 <xsl:choose> 
+                                     <xsl:when test="string-length(start-date/month) &gt; 1">
+                                         <xsl:value-of select="start-date/month" />
+                                     </xsl:when>
+                                       <xsl:otherwise>
+                                         <xsl:value-of select="concat('0', start-date/month)" />
+                                     </xsl:otherwise>
+                                    </xsl:choose>
+                             </xsl:when>
+                             <xsl:otherwise>
+                                   <xsl:text>01</xsl:text>
+                             </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:variable>
+                        <oplli:start_date rdf:datatype="&xsd;date"><xsl:value-of select="concat($start_year,'-', $start_month, '-01')" /></oplli:start_date>
+                    </xsl:if>
+
+                    <xsl:if test="end-date">
+                     <xsl:variable name="end_year" select="end-date/year" />
+                        <xsl:variable name="end_month">
+                            <xsl:choose> 
+                                <xsl:when test="end-date/month">
+                                    <xsl:choose> 
+                                        <xsl:when test="string-length(end-date/month) &gt; 1">
+                                             <xsl:value-of select="end-date/month" />
+                                        </xsl:when>
+                                        <xsl:otherwise>
+                                            <xsl:value-of select="concat('0', end-date/month)" />
+                                        </xsl:otherwise>
+                                    </xsl:choose>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <xsl:text>01</xsl:text>
+                                </xsl:otherwise>
+                         </xsl:choose>
+                      </xsl:variable>
+                        <oplli:end_date rdf:datatype="&xsd;date"><xsl:value-of select="concat($end_year,'-', $end_month, '-01')" /></oplli:end_date>
+                    </xsl:if>
+
                 </oplli:Education>
             </oplli:education>
+        </xsl:for-each>
+	</xsl:template>
+
+	<xsl:template match="educations" mode="cv">
+        <xsl:for-each select="education">
+		    <xsl:variable name="id" select="id" />
+            <oplcv:hasEducation>
+                <xsl:call-template name="cv_education">
+                    <xsl:with-param name="education_URI" select="vi:proxyIRI($baseUri, '', concat('cvEducation_', $id))"/>
+                </xsl:call-template>
+            </oplcv:hasEducation>
         </xsl:for-each>
 	</xsl:template>
 
@@ -137,6 +207,53 @@
                 </xsl:call-template>
             </oplli:position>
         </xsl:for-each>
+	</xsl:template>
+
+	<xsl:template match="positions" mode="cv">
+        <xsl:for-each select="position">
+		    <xsl:variable name="id" select="id" />
+            <oplcv:hasWorkHistory>
+                <xsl:call-template name="cv_work_history">
+                    <xsl:with-param name="work_history_URI" select="vi:proxyIRI($baseUri, '', concat('cvWorkHistory_', $id))"/>
+                </xsl:call-template>
+            </oplcv:hasWorkHistory>
+        </xsl:for-each>
+	</xsl:template>
+
+	<xsl:template match="skills">
+        <xsl:for-each select="skill">
+		    <xsl:variable name="id" select="id" />
+            <oplli:skill>
+                <xsl:call-template name="skill">
+                    <xsl:with-param name="skillURI" select="vi:proxyIRI($baseUri, '', concat('Skill_', $id))"/>
+                </xsl:call-template>
+            </oplli:skill>
+        </xsl:for-each>
+	</xsl:template>
+
+	<xsl:template match="skills" mode="cv">
+        <xsl:for-each select="skill">
+		    <xsl:variable name="id" select="id" />
+            <oplcv:hasSkill>
+                <xsl:call-template name="cv_skill">
+                    <xsl:with-param name="skillURI" select="vi:proxyIRI($baseUri, '', concat('cvSkill_', $id))"/>
+                </xsl:call-template>
+            </oplcv:hasSkill>
+        </xsl:for-each>
+	</xsl:template>
+
+	<xsl:template match="interests" mode="cv">
+        <xsl:if test="string-length(.)">
+            <oplcv:hasOtherInfo>
+                <rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', 'cvOtherInfo_Interests_')}">
+                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+                    <rdf:type rdf:resource="&oplcv;OtherInfo" />
+                    <rdfs:label>Interests</rdfs:label>
+                    <oplcv:otherInfoDescription><xsl:value-of select="." /></oplcv:otherInfoDescription>
+                    <oplcv:otherInfo rdf:resource="&oplcv;Interests"/>
+                </rdf:Description>
+            </oplcv:hasOtherInfo>
+        </xsl:if>
 	</xsl:template>
 
 	<xsl:template name="person">
@@ -170,9 +287,34 @@
             <xsl:if test="picture-url">
     		    <foaf:img rdf:resource="{picture-url}"/>
             </xsl:if>
+            <xsl:if test="string-length(specialties)">
+   		        <oplli:specialties><xsl:value-of select="specialties"/></oplli:specialties>
+            </xsl:if>
+            <xsl:if test="string-length(interests)">
+   		        <oplli:interests><xsl:value-of select="interests"/></oplli:interests>
+            </xsl:if>
+            <xsl:if test="string-length(honors)">
+   		        <oplli:honors><xsl:value-of select="honors"/></oplli:honors>
+            </xsl:if>
             <!-- associations -->
-            <!-- interests -->
-            <!-- honors -->
+
+            <!-- Derive a CV from the primary LinkedIn user's profile (but not for people he/she knows) -->
+            <xsl:if test="not(ancestor::connections)">
+            <oplcv:has_CV>
+	            <rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('CV_', id))}">
+	                <opl:providedBy rdf:resource="{$providedByIRI}" />
+                    <rdf:type rdf:resource="&oplcv;CV" />
+                    <rdfs:label><xsl:value-of select="concat ('Auto-generated CV for ', first-name, ' ', last-name)"/></rdfs:label>
+                    <rdfs:comment><xsl:value-of select="concat ('A CV derived from the LinkedIn profile of ', first-name, ' ', last-name)"/></rdfs:comment>
+                    <foaf:firstName><xsl:value-of select="first-name"/></foaf:firstName>
+                    <foaf:lastName><xsl:value-of select="last-name"/></foaf:lastName>
+                    <foaf:name><xsl:value-of select="concat (first-name, ' ', last-name)"/></foaf:name>
+
+                    <xsl:apply-templates select="*" mode="cv" />
+	            </rdf:Description>
+            </oplcv:has_CV>
+            </xsl:if>
+
             <xsl:apply-templates select="*"/>
 		</rdf:Description>
 	</xsl:template>
@@ -284,6 +426,208 @@
         </xsl:for-each>
 	</xsl:template>
 
+    <xsl:template name="skill">
+        <xsl:param name="skillURI"/>
+	    <rdf:Description rdf:about="{$skillURI}">
+	        <opl:providedBy rdf:resource="{$providedByIRI}" />
+            <rdf:type rdf:resource="&oplli;Skill" />
+            <rdfs:label><xsl:value-of select="skill/name"/></rdfs:label>
+            <oplli:id><xsl:value-of select="id"/></oplli:id>
+            <oplli:skill_name><xsl:value-of select="skill/name" /></oplli:skill_name>
+		</rdf:Description>
+	</xsl:template>
+
+    <!-- Mappings to CV ontology -->
+
+    <xsl:template name="cv_work_history">
+        <xsl:param name="work_history_URI"/>
+	    <rdf:Description rdf:about="{$work_history_URI}">
+	        <opl:providedBy rdf:resource="{$providedByIRI}" />
+            <rdf:type rdf:resource="&oplcv;WorkHistory" />
+            <rdfs:label><xsl:value-of select="title" /></rdfs:label>
+            <oplcv:jobTitle><xsl:value-of select="title" /></oplcv:jobTitle>
+            <xsl:choose>
+                <xsl:when test="contains(translate(title, $uc, $lc), 'contractor')">
+                    <oplcv:jobType rdf:resource="&oplcv;Contractor" />
+                </xsl:when>
+                <xsl:otherwise>
+                    <oplcv:jobType rdf:resource="&oplcv;Employee" />
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:if test="is-current">
+                <oplcv:isCurrent rdf:datatype="&xsd;boolean">
+                    <xsl:value-of select="is-current" />
+                </oplcv:isCurrent>
+            </xsl:if>
+            <xsl:if test="start-date">
+                <xsl:variable name="start_year" select="start-date/year" />
+                <xsl:variable name="start_month">
+                    <xsl:choose> 
+                        <xsl:when test="start-date/month">
+                            <xsl:choose> 
+                                <xsl:when test="string-length(start-date/month) &gt; 1">
+                                    <xsl:value-of select="start-date/month" />
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <xsl:value-of select="concat('0', start-date/month)" />
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:text>01</xsl:text>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                <oplcv:startDate rdf:datatype="&xsd;date"><xsl:value-of select="concat($start_year,'-', $start_month, '-01')" /></oplcv:startDate>
+            </xsl:if>
+            <xsl:if test="end-date">
+                <xsl:variable name="end_year" select="end-date/year" />
+                <xsl:variable name="end_month">
+                    <xsl:choose> 
+                        <xsl:when test="end-date/month">
+                            <xsl:choose> 
+                                <xsl:when test="string-length(end-date/month) &gt; 1">
+                                    <xsl:value-of select="end-date/month" />
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <xsl:value-of select="concat('0', end-date/month)" />
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:text>01</xsl:text>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                <oplcv:endDate rdf:datatype="&xsd;date"><xsl:value-of select="concat($end_year,'-', $end_month, '-01')" /></oplcv:endDate>
+            </xsl:if>
+            <xsl:if test="company">
+                <xsl:variable name="company_id">
+                    <xsl:choose>
+                        <xsl:when test="company/id">
+                            <xsl:value-of select="company/id" />
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="translate (company/name, ' ', '_')" />
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                <oplcv:employedIn>
+    	            <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('cvCompany_', $company_id))}">
+                        <rdf:type rdf:resource="&oplcv;Company" />
+                        <rdfs:label><xsl:value-of select="company/name"/></rdfs:label>
+                        <oplcv:organization_name><xsl:value-of select="company/name"/></oplcv:organization_name>
+                        <xsl:if test="company/industry">
+                            <oplcv:industry><xsl:value-of select="company/industry"/></oplcv:industry>
+                        </xsl:if>
+	                </rdf:Description>
+                </oplcv:employedIn>
+            </xsl:if>
+		</rdf:Description>
+	</xsl:template>
+
+    <xsl:template name="cv_education">
+        <xsl:param name="education_URI"/>
+	    <rdf:Description rdf:about="{$education_URI}">
+	        <opl:providedBy rdf:resource="{$providedByIRI}" />
+            <rdf:type rdf:resource="&oplcv;Education" />
+            <xsl:if test="string-length (degree)">
+                <xsl:variable name="degree_type" select="translate (translate (degree, $uc, $lc), '.', '')" />
+                <xsl:choose >
+                    <xsl:when test="contains ($degree_type, 'phd')">
+                        <oplcv:degreeType rdf:resource="&oplcv;EduDoctorate" />
+                    </xsl:when>
+                    <xsl:when test="contains ($degree_type, 'ma') or contains ($degree_type, 'msc') or contains ($degree_type, 'mphil')">
+                        <oplcv:degreeType rdf:resource="&oplcv;EduMaster" />
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <oplcv:degreeType rdf:resource="&oplcv;EduBachelor" />
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:if>
+            <xsl:if test="string-length (field-of-study)">
+                <oplcv:eduMajor><xsl:value-of select="field-of-study"/></oplcv:eduMajor>
+                <oplcv:eduDescription><xsl:value-of select="field-of-study"/></oplcv:eduDescription>
+            </xsl:if>
+            <xsl:if test="string-length (school-name)">
+                <oplcv:studiedIn>
+		            <xsl:variable name="school_name" select="translate (school-name, ' ', '_')" />
+	                <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('cvEducationalOrg_', $school_name))}">
+	                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+                        <rdf:type rdf:resource="&oplcv;EducationalOrg" />
+                        <oplcv:organization_name><xsl:value-of select="school-name"/></oplcv:organization_name>
+                        <rdfs:label><xsl:value-of select="school-name"/></rdfs:label>
+	                </rdf:Description>
+                </oplcv:studiedIn>
+            </xsl:if>
+            <xsl:if test="start-date">
+                <xsl:variable name="start_year" select="start-date/year" />
+                <xsl:variable name="start_month">
+                  <xsl:choose> 
+                     <xsl:when test="start-date/month">
+                         <xsl:choose> 
+                             <xsl:when test="string-length(start-date/month) &gt; 1">
+                                 <xsl:value-of select="start-date/month" />
+                             </xsl:when>
+                               <xsl:otherwise>
+                                 <xsl:value-of select="concat('0', start-date/month)" />
+                             </xsl:otherwise>
+                            </xsl:choose>
+                     </xsl:when>
+                     <xsl:otherwise>
+                           <xsl:text>01</xsl:text>
+                     </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                <oplcv:eduStartDate rdf:datatype="&xsd;date"><xsl:value-of select="concat($start_year,'-', $start_month, '-01')" /></oplcv:eduStartDate>
+            </xsl:if>
+            <xsl:if test="end-date">
+                <xsl:variable name="end_year" select="end-date/year" />
+                   <xsl:variable name="end_month">
+                       <xsl:choose> 
+                           <xsl:when test="end-date/month">
+                               <xsl:choose> 
+                                   <xsl:when test="string-length(end-date/month) &gt; 1">
+                                        <xsl:value-of select="end-date/month" />
+                                   </xsl:when>
+                                   <xsl:otherwise>
+                                       <xsl:value-of select="concat('0', end-date/month)" />
+                                   </xsl:otherwise>
+                               </xsl:choose>
+                           </xsl:when>
+                           <xsl:otherwise>
+                               <xsl:text>01</xsl:text>
+                           </xsl:otherwise>
+                    </xsl:choose>
+                 </xsl:variable>
+                 <oplcv:eduGradDate rdf:datatype="&xsd;date"><xsl:value-of select="concat($end_year,'-', $end_month, '-01')" /></oplcv:eduGradDate>
+           </xsl:if>
+
+            <xsl:choose>
+                <xsl:when test="string-length (school-name) and string-length (field-of-study)">
+                    <rdfs:label><xsl:value-of select="concat (field-of-study, ' : ', school-name)"/></rdfs:label>
+                </xsl:when>
+                <xsl:when test="string-length (school-name)">
+                    <rdfs:label><xsl:value-of select="school-name"/></rdfs:label>
+                </xsl:when>
+                <xsl:when test="string-length (field-of-study)">
+                    <rdfs:label><xsl:value-of select="field-of-study"/></rdfs:label>
+                </xsl:when>
+            </xsl:choose>
+		</rdf:Description>
+	</xsl:template>
+
+    <xsl:template name="cv_skill">
+        <xsl:param name="skillURI"/>
+	    <rdf:Description rdf:about="{$skillURI}">
+	        <opl:providedBy rdf:resource="{$providedByIRI}" />
+            <rdf:type rdf:resource="&oplcv;Skill" />
+            <rdfs:label><xsl:value-of select="skill/name"/></rdfs:label>
+            <oplcv:skillName><xsl:value-of select="skill/name" /></oplcv:skillName>
+		</rdf:Description>
+	</xsl:template>
+
     <xsl:template match="*|text()"/>
+    <xsl:template match="*|text()" mode="cv" />
 
 </xsl:stylesheet>
