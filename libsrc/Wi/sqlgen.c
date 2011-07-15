@@ -1136,7 +1136,7 @@ sqlg_is_hj_result_col (sql_comp_t * sc, df_elt_t * fill_dfe, df_elt_t * out_dfe)
 
 void sqlg_fref_qp (sql_comp_t * sc, fun_ref_node_t * fref, df_elt_t * dt_dfe);
 void sqlg_parallel_ts_seq (sql_comp_t * sc, df_elt_t * dt_dfe, table_source_t * ts, fun_ref_node_t * fref, select_node_t *sel);
-
+int enable_par_fill = 2;
 
 data_source_t *
 sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
@@ -1207,7 +1207,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
     fref->fnr_select_nodes = sqlg_continue_list (head);
     fref->fnr_setp = setp;
     setp->setp_fref = fref;
-    if (enable_chash_join && ha->ha_row_count > chash_min_parallel_fill_rows && enable_qp > 1)
+    if (enable_par_fill  && enable_chash_join && ha->ha_row_count > chash_min_parallel_fill_rows && enable_qp > 1)
       {
 	fref->fnr_parallel_hash_fill = 1;
 	sqlg_fref_qp (sc, fref, tb_dfe);
@@ -1268,7 +1268,7 @@ sqlg_hash_filler_dt (sqlo_t * so, df_elt_t * dt_dfe, subq_source_t * sqs)
     fref->fnr_select_nodes = sqlg_continue_list (head);
     fref->fnr_setp = setp;
     setp->setp_fref = fref;
-    if (enable_chash_join & enable_qp > 1)
+    if (enable_par_fill && enable_chash_join & enable_qp > 1)
       {
 	fref->fnr_parallel_hash_fill = 1;
 	sqlg_parallel_ts_seq (sc, dt_dfe, (table_source_t*)sqs->sqs_query->qr_head_node, fref, NULL);

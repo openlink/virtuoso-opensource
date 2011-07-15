@@ -2568,7 +2568,7 @@ ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
   cr = itc->itc_col_refs[longest_col];
   ceic->ceic_nth_col = longest_col;
   full_ceic = cr_make_full_ceic (ceic, cr, NULL, 0);
-  if (!full_ceic->ceic_delta_ce)
+  if (!full_ceic->ceic_all_ces)
     {
       if (!ceic->ceic_is_ac)
 	GPF_T1 ("split cannot be empty except in autocompact");

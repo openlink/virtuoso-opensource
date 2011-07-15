@@ -260,6 +260,8 @@ hi_free (hash_index_t * hi)
   if (hi->hi_chash)
     {
       cha_free (hi->hi_chash);
+      if (hi->hi_thread_cha)
+	hash_table_free (hi->hi_thread_cha);
     }
   else if (hi->hi_memcache)
     {

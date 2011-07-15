@@ -417,6 +417,7 @@ typedef struct chash_s
   char		cha_rehash_reqd;
   char		cha_is_parallel; /* hash join temp filled on multiple threads */
   char			cha_error;
+  char			cha_hash_last; /* if hash join cha where hash filled after all rows are received */
   short		cha_threads;
   short		cha_rehash_ack_threads; /* if parallel fill and rehash needed, count of threads that have stopped to allow the rehash */
   short		cha_first_len;
@@ -456,6 +457,7 @@ typedef struct chash_s
 
 
 typedef int (*cha_cmp_t) (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no);
+typedef int (*cha_ent_cmp_t) (chash_t * cha, int64 * ent1, int64 * ent2);
 
 
 struct hash_index_s
