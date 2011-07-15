@@ -68,6 +68,13 @@
 			<xsl:choose>
 				<xsl:when test="$baseUri like '%.tumblr.com/post/%'">
 					<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.tumblr.com#this">
+                                 			<foaf:name>Tumblr</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.tumblr.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 						<rdf:type rdf:resource="&sioct;BlogPost"/>
 						<dc:title>
 							<xsl:value-of select="posts/post/@slug"/>

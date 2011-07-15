@@ -127,6 +127,12 @@
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplamz;Product" />
+                  				<opl:providedBy>
+                  					<foaf:Organization rdf:about="http://www.amazon.com#this">
+                  						<foaf:name>Amazon</foaf:name>
+                  						<foaf:homepage rdf:resource="http://www.amazon.com"/>
+                  					</foaf:Organization>
+                  				</opl:providedBy>
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <gr:hasMakeAndModel>
 					<rdf:Description rdf:about="{vi:proxyIRI ($base, '', 'MakeAndModel')}">
@@ -154,6 +160,13 @@
 			</rdf:Description>
 					<xsl:if test="//amz:ItemAttributes/amz:ListPrice">
 						<gr:Offering rdf:about="{vi:proxyIRI($base, '', 'ListOffer')}">
+                         				<opl:providedBy>
+                         					<foaf:Organization rdf:about="http://www.amazon.com#this">
+                         						<foaf:name>Amazon</foaf:name>
+                         						<foaf:homepage rdf:resource="http://www.amazon.com"/>
+                         					</foaf:Organization>
+                         				</opl:providedBy>
+
 							<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 							<gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 							<gr:includes rdf:resource="{$resourceURL}"/>
@@ -194,6 +207,13 @@
 	    	<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 		    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 	    	<gr:includes rdf:resource="{$resourceURL}"/>
+ 			<opl:providedBy>
+ 				<foaf:Organization rdf:about="http://www.amazon.com#this">
+ 					<foaf:name>Amazon</foaf:name>
+ 					<foaf:homepage rdf:resource="http://www.amazon.com"/>
+ 				</foaf:Organization>
+ 			</opl:providedBy>
+
 		    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 			<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 			<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>

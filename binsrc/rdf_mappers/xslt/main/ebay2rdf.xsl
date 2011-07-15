@@ -95,6 +95,13 @@
 			<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offer')}">
 			-->
 			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+                         	<opl:providedBy>
+                         		<foaf:Organization rdf:about="http://www.ebay.com#this">
+                         			<foaf:name>Ebay</foaf:name>
+                         			<foaf:homepage rdf:resource="http://www.ebay.com"/>
+                         		</foaf:Organization>
+                         	</opl:providedBy>
+
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="ebay:Item/ebay:Title"/></rdfs:label>
 				<!-- Xalan
@@ -152,6 +159,13 @@
 			<rdf:Description rdf:about="{$resourceURL}">
 			-->
 			<rdf:Description rdf:about="{$resourceURL}">
+                         	<opl:providedBy>
+                         		<foaf:Organization rdf:about="http://www.ebay.com#this">
+                         			<foaf:name>Ebay</foaf:name>
+                         			<foaf:homepage rdf:resource="http://www.ebay.com"/>
+                         		</foaf:Organization>
+                         	</opl:providedBy>
+
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplebay;Product" />
 

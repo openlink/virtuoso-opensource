@@ -104,6 +104,13 @@
 
 <xsl:template match="a:entry">
     <rdf:Description rdf:about="{$resourceURL}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://books.google.com#this">
+          			<foaf:name>Google Books</foaf:name>
+          			<foaf:homepage rdf:resource="http://books.google.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
+
       <rdf:type rdf:resource="&bibo;Book"/>
           <xsl:apply-templates/>
     </rdf:Description>

@@ -77,6 +77,13 @@
 
     <xsl:template match="ISBNdb/BookList/BookData">
 	<rdf:Description rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.isbndb.com#this">
+                        			<foaf:name>ISBN DB</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.isbndb.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 		<rdf:type rdf:resource="&book;Book"/>
         <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	</rdf:Description>
@@ -104,6 +111,13 @@
 
     <xsl:template match="ISBNdb/SubjectList/SubjectData">
 	<bibo:Collection rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/subject/', @subject_id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.isbndb.com#this">
+                        			<foaf:name>ISBN DB</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.isbndb.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
             <xsl:if test="Name">
             <bibo:shortTitle>
                 <xsl:value-of select="Name"/>
@@ -126,6 +140,13 @@
 
     <xsl:template match="ISBNdb/CategoryList/CategoryData">
 	<bibo:Collection rdf:about="{vi:proxyIRI(concat('http://isbndb.com/c/', @category_id))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.isbndb.com#this">
+                        			<foaf:name>ISBN DB</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.isbndb.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
             <xsl:if test="Name">
             <bibo:shortTitle>
                 <xsl:value-of select="Name"/>

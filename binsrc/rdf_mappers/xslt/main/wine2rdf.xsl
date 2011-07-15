@@ -76,6 +76,13 @@
 				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			</rdf:Description>
 			<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.wine.com#this">
+                                 			<foaf:name>Wine.com</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.wine.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="Product/Name"/></rdfs:label>
@@ -93,6 +100,13 @@
                 <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.wine.com')}"/>
 	        </gr:BusinessEntity>
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.wine.com#this">
+                                 			<foaf:name>Wine.com</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.wine.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
                 <gr:hasMakeAndModel>

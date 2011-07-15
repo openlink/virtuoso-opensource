@@ -71,6 +71,13 @@
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&bibo;Article"/>
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.seevl.com#this">
+                        			<foaf:name>Seevl</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.seevl.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<xsl:if test="string-length(description/value) &gt; 0">
 					<dc:description>
 						<xsl:value-of select="description/value"/>

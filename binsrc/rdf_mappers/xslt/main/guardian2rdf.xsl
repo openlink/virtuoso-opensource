@@ -66,6 +66,13 @@
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.guardian.co.uk#this">
+                        			<foaf:name>Guardian</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.guardian.co.uk"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&foaf;Person"/>
 				<xsl:if test="string-length(person/university) &gt; 0">
 					<guardian:university>

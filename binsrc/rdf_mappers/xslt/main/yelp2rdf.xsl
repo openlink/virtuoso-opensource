@@ -70,6 +70,13 @@
 				<owl:sameAs rdf:resource="{$docIRI}" />
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.yelp.com#this">
+                                 			<foaf:name>Yelp</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.yelp.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 				<rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
 				<dc:title>
 					<xsl:value-of select="name" />

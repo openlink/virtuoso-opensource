@@ -69,6 +69,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.librarything.com#this">
+                        			<foaf:name>LibraryThing</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.librarything.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&sioc;Item"/>
 			<rdf:type rdf:resource="&bibo;Book"/>
 			<rdfs:label>
@@ -111,6 +118,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.librarything.com#this">
+                        			<foaf:name>LibraryThing</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.librarything.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&foaf;Person"/>
 			<foaf:name>
 				<xsl:value-of select="/response[@stat='ok']/ltml/item/author/name"/>

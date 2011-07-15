@@ -69,6 +69,13 @@
 	    <owl:sameAs rdf:resource="{$docIRI}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slidy.com#this">
+                        			<foaf:name>Slidy</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slidy.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	    <rdfs:label>
 		<xsl:value-of select="string (//html/head/title)"/>
 	    </rdfs:label>

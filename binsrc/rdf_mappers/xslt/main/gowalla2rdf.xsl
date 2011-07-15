@@ -77,6 +77,13 @@
 		</rdf:Description>
 		<xsl:if test="$what='checkin'">		
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&gn;Feature"/>
 				<xsl:if test="name">
 					<dc:title>
@@ -274,6 +281,13 @@
 		</xsl:if>
 		<xsl:if test="$what='photos'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&sioct;ImageGallery"/>
 				<xsl:if test="activity[1]/spot/name">
 					<dc:title>
@@ -382,6 +396,13 @@
 		</xsl:if>
 		<xsl:if test="$what='highlights'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&sioct;MessageBoard"/>
 				<xsl:if test="highlights[1]/spot/name">
 					<dc:title>
@@ -449,6 +470,13 @@
 		</xsl:if>
 		<xsl:if test="$what='user'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&foaf;Person"/>
 				<rdfs:label>
 					<xsl:value-of select="concat(first_name, ' ', last_name)"/>
@@ -586,6 +614,13 @@
 		</xsl:if>
 		<xsl:if test="$what='checkins'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&sioct;Comment"/>
 				<rdfs:label>
 					<xsl:value-of select="message"/>

@@ -75,6 +75,13 @@
 
     <xsl:template match="sf:*">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.salesforce.com#this">
+                        			<foaf:name>Salesforce</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.salesforce.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&sioc;Item"/>
 			<xsl:element name="{local-name()}" namespace="http://demo.openlinksw.com/schemas/ecrm#">
 				<xsl:apply-templates select="*|text()" />

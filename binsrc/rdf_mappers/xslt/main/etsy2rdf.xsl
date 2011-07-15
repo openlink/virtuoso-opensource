@@ -89,6 +89,13 @@
 					<owl:sameAs rdf:resource="{$docIRI}"/>
 				</rdf:Description>
 				<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.etsy.com#this">
+                                 			<foaf:name>Etsy</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.etsy.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 					<!--rdfs:label><xsl:value-of select="title"/></rdfs:label-->
@@ -96,6 +103,13 @@
 					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.etsy.com#this">
+                                 			<foaf:name>Etsy</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.etsy.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>

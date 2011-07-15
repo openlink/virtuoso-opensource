@@ -92,6 +92,13 @@
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.flickr.com#this">
+                			<foaf:name>Flickr</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.flickr.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
 			<xsl:variable name="image_url" select="concat('http://farm', @farm,'.static.flickr.com/', @server, '/', @id, '_', @secret, '.', @originalformat)"/>
 			<foaf:img rdf:resource="{$image_url}"/>

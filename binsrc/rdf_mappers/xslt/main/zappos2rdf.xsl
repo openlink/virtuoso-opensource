@@ -78,6 +78,13 @@
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zappos.com#this">
+                                 			<foaf:name>Zappos</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zappos.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 				<rdfs:label><xsl:value-of select="concat('Offer: ', product/productName)"/></rdfs:label>
@@ -98,6 +105,12 @@
 			</gr:BusinessEntity>
 
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zappos.com#this">
+                                 			<foaf:name>Zappos</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zappos.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 				<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 				<rdf:type rdf:resource="&oplbb;Product" />
 				<gr:hasMakeAndModel>

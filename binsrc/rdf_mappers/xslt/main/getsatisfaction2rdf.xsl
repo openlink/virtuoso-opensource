@@ -66,6 +66,13 @@
 	<xsl:template match="results">
 		<xsl:if test="$what = 'product'">
 			<rdf:Description rdf:about="{$resourceURL}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.getsatisfaction.com#this">
+          			<foaf:name>GetSatisfaction</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.getsatisfaction.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
+
 				<rdf:type rdf:resource="&foaf;Project" />
 				<foaf:name>
 					<xsl:value-of select="name" />
@@ -80,6 +87,12 @@
 		<xsl:if test="$what = 'products'">
 			<xsl:for-each select="data">
 				<rdf:Description rdf:about="{url}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.getsatisfaction.com#this">
+          			<foaf:name>GetSatisfaction</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.getsatisfaction.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
 					<rdf:type rdf:resource="&foaf;Project" />
 					<foaf:name>
 						<xsl:value-of select="name" />
@@ -94,6 +107,12 @@
 		</xsl:if>
 		<xsl:if test="$what = 'company'">
 			<foaf:Organization rdf:about="{$resourceURL}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.getsatisfaction.com#this">
+          			<foaf:name>GetSatisfaction</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.getsatisfaction.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
 				<foaf:name>
 					<xsl:value-of select="name" />
 				</foaf:name>

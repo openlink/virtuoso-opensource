@@ -89,6 +89,13 @@
 
     <xsl:template match="user">
 		<foaf:Person rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://upcoming.yahoo.com#this">
+                                 			<foaf:name>Upcoming Yahoo!</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://upcoming.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			<rdfs:label>
 				<xsl:value-of select="@name"/>
 			</rdfs:label>
@@ -108,6 +115,12 @@
 
     <xsl:template match="event">
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://upcoming.yahoo.com#this">
+                                 			<foaf:name>Upcoming Yahoo!</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://upcoming.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			<rdf:type rdf:resource="&c;Vevent"/>
 			<xsl:if test="string-length(@name) &gt; 0">
 				<c:summary>
@@ -202,6 +215,12 @@
 	
     <xsl:template match="venue">
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://upcoming.yahoo.com#this">
+                                 			<foaf:name>Upcoming Yahoo!</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://upcoming.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			<rdf:type rdf:resource="&gn;Feature"/>
 			<xsl:if test="string-length(@name) &gt; 0">
 				<dc:title>

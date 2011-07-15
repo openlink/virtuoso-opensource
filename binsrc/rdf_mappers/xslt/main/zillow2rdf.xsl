@@ -79,6 +79,13 @@
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zillow.com#this">
+                                 			<foaf:name>Zillow</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zillow.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="concat(request/address, ' ', request/citystatezip)"/></rdfs:label>
 			    <gr:includes rdf:resource="{$resourceURL}"/>
@@ -96,6 +103,12 @@
             </gr:BusinessEntity>
 
             <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zillow.com#this">
+                                 			<foaf:name>Zillow</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zillow.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplzllw;Product" />
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>

@@ -57,6 +57,13 @@
 
 	<xsl:template match="Slideshows|Tag|User|Group">
 		<bibo:Collection rdf:about="{$docproxyIRI}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slideshare.net#this">
+                        			<foaf:name>Slideshare</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slideshare.net"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<bibo:uri rdf:resource="{$docIRI}" />
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<xsl:if test="Meta/Query">
@@ -124,6 +131,13 @@
  	  </rdf:Description>
 
 		<bibo:Slideshow rdf:about="{vi:proxyIRI($res)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slideshare.net#this">
+                        			<foaf:name>Slideshare</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slideshare.net"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<xsl:choose>
 				<xsl:when test="Embed">
 					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', Owner))" />

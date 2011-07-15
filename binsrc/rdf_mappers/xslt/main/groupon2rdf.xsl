@@ -77,6 +77,13 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
           </gr:BusinessEntity>
 		  
           <gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.groupon.com#this">
+                        			<foaf:name>Groupon</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.groupon.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
             <sioc:has_container rdf:resource="{$docproxyIRI}" />
             <gr:hasBusinessFunction rdf:resource="&gr;Sell" />
             <gr:validFrom rdf:datatype="&xsd;dateTime">
