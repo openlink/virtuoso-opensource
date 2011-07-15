@@ -36,7 +36,8 @@ body {
 
 #header_text {
     float: left;
-    margin-top: 5px;
+    margin: 0;
+    padding: 0;
 }
 
 #header h1 {

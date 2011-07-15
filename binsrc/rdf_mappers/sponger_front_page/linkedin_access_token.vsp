@@ -4,9 +4,10 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
@@ -145,7 +146,13 @@ cartridge_options_err:
          src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
     </div>
     <div id="header_text">
-      <h1><?=banner_txt?></h1><?=strapline?>
+      <?vsp if (banner_logo <> 0) { ?>
+        <img id="banner_logo" alt="[Sponger instance logo]"
+             src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+      <?vsp } else { ?>
+        <h1><?=banner_txt?></h1>
+      <?vsp } ?>
+      <?=strapline?>
     </div>
   </div>
 
