@@ -82,6 +82,12 @@
 		<xsl:if test="$type='plan'">
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&c;Vevent"/>
+				<opl:providedBy>
+					<foaf:Organization rdf:about="http://www.plancast.com#this">
+						<foaf:name>The Plancast</foaf:name>
+						<foaf:homepage rdf:resource="http://www.plancast.com"/>
+					</foaf:Organization>
+				</opl:providedBy>
 				<xsl:if test="string-length(what) &gt; 0">
 					<c:summary>
 						<xsl:value-of select="what"/>
