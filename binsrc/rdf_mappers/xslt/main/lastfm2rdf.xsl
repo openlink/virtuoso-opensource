@@ -411,6 +411,13 @@
 
     <xsl:template name="artist">
 		<mo:MusicArtist rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="name"/>
 			</foaf:name>
@@ -473,6 +480,13 @@
 
 	<xsl:template name="album">
 		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
 			<dc:title>
@@ -516,6 +530,13 @@
     <xsl:template name="track">
 
 		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
 			<dc:title>
@@ -603,6 +624,13 @@
 	<xsl:template name="event">
 
 		<c:Vevent rdf:about="{vi:proxyIRI(url)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<c:summary>
                 <xsl:value-of select="title"/>
             </c:summary>
@@ -667,6 +695,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI($baseUri)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="realname"/>
 			</foaf:name>
@@ -691,6 +726,13 @@
 	<xsl:template name="user">
 
 		<foaf:Person rdf:about="{vi:proxyIRI(url)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="name"/>
 			</foaf:name>
@@ -725,6 +767,13 @@
     <xsl:template name="playlist">
 
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', id)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.last.fm#this">
+                        			<foaf:name>Last.FM</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.last.fm"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&sioct;PlayList"/>
 			<dc:title>
                 <xsl:value-of select="title"/>

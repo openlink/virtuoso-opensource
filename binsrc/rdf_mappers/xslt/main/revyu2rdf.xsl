@@ -74,6 +74,13 @@
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 	</rdf:Description>
         <rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://revyu.com#this">
+                        			<foaf:name>Revyu.com</foaf:name>
+                        			<foaf:homepage rdf:resource="http://revyu.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	    <rdf:type rdf:resource="&foaf;Person" />
             <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 	    <xsl:for-each select="foaf:made">

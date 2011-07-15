@@ -62,6 +62,13 @@
 
     <xsl:template match="artist">
 		<mo:MusicArtist rdf:about="{html-href}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="@name"/>
 			</foaf:name>
@@ -140,6 +147,13 @@
 
     <xsl:template match="album">
 		<rdf:Description rdf:about="{html-href}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
     		<dc:title>
@@ -198,6 +212,13 @@
 
 	<xsl:template match="track">
 		<rdf:Description rdf:about="{concat('http://www.rhapsody.com/goto?rcid=', @rcid)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
 			<dc:title>
@@ -213,6 +234,13 @@
 
     <xsl:template match="genre">
 		<mo:Genre rdf:about="{html-href}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<dc:title>
                 <xsl:value-of select="@name"/>
             </dc:title>

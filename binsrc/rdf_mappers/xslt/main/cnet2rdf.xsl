@@ -98,6 +98,13 @@
 	               		</gr:BusinessEntity>
 
 				<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
+              				<opl:providedBy>
+              					<foaf:Organization rdf:about="http://www.cnet.com#this">
+              						<foaf:name>CNET</foaf:name>
+              						<foaf:homepage rdf:resource="http://www.cnet.com"/>
+              					</foaf:Organization>
+              				</opl:providedBy>
+
 			    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			                <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
@@ -143,6 +150,13 @@
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;TechProduct" />
+      		<opl:providedBy>
+      			<foaf:Organization rdf:about="http://www.cnet.com#this">
+      				<foaf:name>CNET</foaf:name>
+      				<foaf:homepage rdf:resource="http://www.cnet.com"/>
+      			</foaf:Organization>
+      		</opl:providedBy>
+
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>

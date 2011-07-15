@@ -72,6 +72,13 @@
             <xsl:choose>                                                                   
                         <xsl:when test="$what = 'channel'">
                                     <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.ustream.tv#this">
+                                 			<foaf:name>Ustream</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.ustream.tv"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
                                                 <rdf:type rdf:resource="&bibo;Document" />
                                                 <rdf:type rdf:resource="&oplustream;Channel" />
                                                 <sioc:has_container rdf:resource="{$docproxyIRI}"/>
@@ -104,6 +111,13 @@
                         </xsl:when>
                         <xsl:when test="$what = 'video'">
                                     <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.ustream.tv#this">
+                                 			<foaf:name>Ustream</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.ustream.tv"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
                                                 <rdf:type rdf:resource="&bibo;Document" />
                                                 <rdf:type rdf:resource="&video;Recording" />
                                                 <rdfs:label><xsl:value-of select="title"/></rdfs:label>
@@ -134,6 +148,13 @@
                         </xsl:when>
                         <xsl:when test="$what = 'user'">
                                     <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.ustream.tv#this">
+                                 			<foaf:name>Ustream</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.ustream.tv"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
                                                 <rdf:type rdf:resource="&foaf;Person" />
                                                 <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                                                 <rdfs:label><xsl:value-of select="userName"/></rdfs:label>

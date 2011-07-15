@@ -77,6 +77,13 @@
 				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			</rdf:Description>
 			<gr:Offering rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.google.com#this">
+                        			<foaf:name>Google Store</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.google.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="entry[1]/title"/></rdfs:label>

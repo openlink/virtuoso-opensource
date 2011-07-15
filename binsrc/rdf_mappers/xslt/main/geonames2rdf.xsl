@@ -77,6 +77,13 @@
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.geonames.org#this">
+          			<foaf:name>Geonames</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.geonames.org"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
+
 	    <rdf:type rdf:resource="&geonames;Feature"/>
         <rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
 	    <xsl:copy-of select="*"/>

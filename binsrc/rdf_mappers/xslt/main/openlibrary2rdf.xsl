@@ -68,6 +68,13 @@
 		<rdf:type rdf:resource="&book;Book"/>
           </rdf:Description>
 	<bibo:Book rdf:about="{$res}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.openlibrary.org#this">
+                        			<foaf:name>OpenLibrary</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.openlibrary.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	    <foaf:homepage rdf:resource="{$baseUri}"/>
 	    <xsl:apply-templates select="results/result"/>
 	</bibo:Book>

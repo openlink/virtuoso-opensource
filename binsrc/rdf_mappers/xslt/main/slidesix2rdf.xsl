@@ -65,6 +65,13 @@
 	</xsl:template>
 	<xsl:template match="SLIDESHOWS/SLIDESHOW">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slidesix.com#this">
+                        			<foaf:name>Slidesix</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slidesix.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&bibo;Slideshow"/>
 			<dc:title>
 				<xsl:value-of select="SLIDESHOWTITLE" />

@@ -119,6 +119,13 @@
 	      </xsl:otherwise>
 	  </xsl:choose>
 	  <rdf:type rdf:resource="{$tp}"/>
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://picasaweb.google.com#this">
+                        			<foaf:name>Google Picasa</foaf:name>
+                        			<foaf:homepage rdf:resource="http://picasaweb.google.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	  <xsl:apply-templates select="a:title|a:content|a:published|a:author|media:*"/>
 	  <xsl:for-each select="a:entry">
 	      <xsl:choose>

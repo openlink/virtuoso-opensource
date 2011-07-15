@@ -77,6 +77,13 @@
 						<dcterms:subject rdf:resource="{$resourceURL}"/>
 					</rdf:Description>
 					<gr:LocationOfSalesOrServiceProvisioning rdf:about="{$resourceURL}">
+                  				<opl:providedBy>
+                  					<foaf:Organization rdf:about="http://www.bestbuy.com#this">
+                  						<foaf:name>BestBuy</foaf:name>
+                  						<foaf:homepage rdf:resource="http://www.bestbuy.com"/>
+                  					</foaf:Organization>
+                  				</opl:providedBy>
+
 						<gr:hasOpeningHoursSpecification>
 							<gr:OpeningHoursSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'OpenHoursSpecification')}">
 								<gr:opens><xsl:value-of select="/stores/store/hours"/></gr:opens>
@@ -126,6 +133,12 @@
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
+                  				<opl:providedBy>
+                  					<foaf:Organization rdf:about="http://www.bestbuy.com#this">
+                  						<foaf:name>BestBuy</foaf:name>
+                  						<foaf:homepage rdf:resource="http://www.bestbuy.com"/>
+                  					</foaf:Organization>
+                  				</opl:providedBy>
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 						<rdfs:label><xsl:value-of select="concat('Offer: ', //product/name)"/></rdfs:label>
@@ -157,6 +170,13 @@
 			<rdf:Description rdf:about="{concat ($baseUri, '#', 'Product')}">
 			-->
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                  				<opl:providedBy>
+                  					<foaf:Organization rdf:about="http://www.bestbuy.com#this">
+                  						<foaf:name>BestBuy</foaf:name>
+                  						<foaf:homepage rdf:resource="http://www.bestbuy.com"/>
+                  					</foaf:Organization>
+                  				</opl:providedBy>
+
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
                             <gr:hasMakeAndModel>

@@ -74,6 +74,13 @@
 
 	<xsl:template match="artist">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<foaf:name>
 				<xsl:value-of select="name"/>
@@ -89,6 +96,13 @@
 
 	<xsl:template match="tracks">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<xsl:for-each select="track">
 				<xsl:choose>
@@ -107,6 +121,13 @@
 
 	<xsl:template match="photos">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<xsl:for-each select="photo">
 				<foaf:img rdf:resource="{url}"/>
@@ -116,6 +137,13 @@
 	
 	<xsl:template match="articles">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<xsl:for-each select="article">
 				<rdfs:seeAlso rdf:resource="{sourceUrl}"/>
@@ -125,6 +153,13 @@
 
 	<xsl:template match="profile">
 		<foaf:Person rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:nick>
 				<xsl:value-of select="username" />
 			</foaf:nick>

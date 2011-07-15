@@ -76,6 +76,13 @@
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 				<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.tesco.com#this">
+                                 			<foaf:name>Tesco</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.tesco.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 					<rdfs:label><xsl:value-of select="//Name"/></rdfs:label>
@@ -85,6 +92,13 @@
 					<xsl:apply-templates mode="offering"/>
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.tesco.com#this">
+                                 			<foaf:name>Tesco</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.tesco.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>

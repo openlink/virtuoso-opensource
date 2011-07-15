@@ -87,6 +87,13 @@
 	    </xsl:for-each>
 	</rdf:Description>
 	<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
+
 	    <xsl:for-each select="popular">
 		<scot:hasTag rdf:resource="{vi:proxyIRI(concat ('http://www.delicious.com/tag/', .))}"/>
 	    </xsl:for-each>
@@ -110,6 +117,12 @@
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<sioc:has_container rdf:resource="{$docproxyIRI}" />
 		<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
 		<xsl:variable name="author" select="substring-after(link, 'http://www.delicious.com/')" />
 		<scot:hasScot rdf:resource="{concat('http://www.delicious.com/tags/', $author)}"/>
 		<xsl:for-each select="item">
@@ -183,6 +196,12 @@
 		<xsl:variable name="tag" select="substring-after(substring-after(title, '/'), '/') " />
 		<rdf:type rdf:resource="&scot;Tag"/>
 		<rdf:type rdf:resource="&moat;Tag"/>
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
 		<scot:name>
 		    <xsl:value-of select="$tag"/>
 		</scot:name>
@@ -264,6 +283,12 @@
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
 		<rdf:type rdf:resource="&bookmark;Bookmark"/>
 		<sioc:has_container rdf:resource="{$docproxyIRI}" />
 		<dc:title>

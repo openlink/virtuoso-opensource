@@ -66,9 +66,22 @@
 	    <owl:sameAs rdf:resource="{$pt}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://finance.yahoo.com#this">
+                                 			<foaf:name>Yahoo! Stock</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://finance.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 	    <rdf:type rdf:resource="&stock;StockMarket"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', symbol), '', '#price')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://finance.yahoo.com#this">
+                                 			<foaf:name>Yahoo! Stock</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://finance.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 	    <rdf:type rdf:resource="&stock;DailyPrice"/>
 	    <stock:bid><xsl:value-of select="bid"/></stock:bid>
 	    <stock:ask><xsl:value-of select="ask"/></stock:ask>
@@ -79,12 +92,24 @@
 	    <stock:relativeToStock rdf:resource="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', symbol))}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat('http://finance.yahoo.com/q?s=', symbol))}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://finance.yahoo.com#this">
+                                 			<foaf:name>Yahoo! Stock</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://finance.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 	    <rdf:type rdf:resource="&stock;Stock"/>
 	    <stock:hasDailyPrice rdf:resource="{vi:proxyIRI(concat('http://finance.yahoo.com/q?s=', symbol), '', '#price')}"/>
 	    <stock:partOfCompany rdf:resource="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', symbol))}"/>
 	    <stock:relativeToStockMarket rdf:resource="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', symbol))}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://finance.yahoo.com#this">
+                                 			<foaf:name>Yahoo! Stock</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://finance.yahoo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 	    <rdf:type rdf:resource="&stock;Company"/>
 	    <stock:hasStocks rdf:resource="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', symbol))}"/>
 	    <stock:companyName><xsl:value-of select="company"/></stock:companyName>

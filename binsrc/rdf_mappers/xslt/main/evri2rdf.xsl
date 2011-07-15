@@ -82,6 +82,13 @@ xmlns:oplbb="&oplbb;">
       </rdf:Description>
 
       <rdf:Description rdf:about="{$resourceURL}">
+      	<opl:providedBy>
+      		<foaf:Organization rdf:about="http://www.evri.com#this">
+      			<foaf:name>Evri</foaf:name>
+      			<foaf:homepage rdf:resource="http://www.evri.com"/>
+      		</foaf:Organization>
+      	</opl:providedBy>
+
         <xsl:choose>
           <xsl:when test="$entity = 'person'">
             <rdf:type rdf:resource="&foaf;Person"/>

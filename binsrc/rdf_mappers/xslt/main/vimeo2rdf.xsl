@@ -76,6 +76,13 @@
 
     <xsl:template match="videos/video">
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.vimeo.com#this">
+                                 			<foaf:name>Vimeo</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.vimeo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			<rdf:type rdf:resource="&video;Recording"/>
             <vimeo:id><xsl:value-of select="id"/></vimeo:id>
 			<dc:title><xsl:value-of select="title"/></dc:title>
@@ -99,6 +106,12 @@
         
     <xsl:template match="users/user">
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.vimeo.com#this">
+                                 			<foaf:name>Vimeo</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.vimeo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
             <rdf:type rdf:resource="&foaf;Person" />
             <sioc:has_container rdf:resource="{$docproxyIRI}"/>
             <rdfs:label><xsl:value-of select="display_name"/></rdfs:label>

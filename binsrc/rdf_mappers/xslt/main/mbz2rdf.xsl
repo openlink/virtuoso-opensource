@@ -86,6 +86,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<mo:MusicGroup rdf:about="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (mmd:name, ' ', '_'))"/>
 			<xsl:if test="not starts-with ($sas-iri, '#')">
 				<owl:sameAs rdf:resource="{$sas-iri}"/>
@@ -122,6 +129,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="mmd:name"/>
 			</foaf:name>
@@ -153,6 +167,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
 			<dc:title>
@@ -212,6 +233,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
 			<dc:title>

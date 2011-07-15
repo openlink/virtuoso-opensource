@@ -114,6 +114,13 @@
 	<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offering')}">
 	-->
 	<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.oreilly.com#this">
+                        			<foaf:name>Oreilly</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.oreilly.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
@@ -147,6 +154,13 @@
     </gr:BusinessEntity>
 
 	<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.oreilly.com#this">
+                        			<foaf:name>Oreilly</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.oreilly.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<xsl:choose>
 			<xsl:when test="$category='video'">

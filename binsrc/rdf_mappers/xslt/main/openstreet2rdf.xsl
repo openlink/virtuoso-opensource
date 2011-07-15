@@ -80,6 +80,13 @@
 
     <xsl:template match="osm">
 		<geo:Feature rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.openstreetmap.com#this">
+                        			<foaf:name>Openstreetmap</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.openstreetmap.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<wgs84_pos:lat>
 				<xsl:value-of select="$lat"/>
 			</wgs84_pos:lat>

@@ -80,6 +80,12 @@
 	
 	<xsl:template match="property|listing">
 		<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zoopla.com#this">
+                                 			<foaf:name>Zoopla</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zoopla.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			<xsl:if test="listing_status = 'rent'">
 				<gr:hasBusinessFunction rdf:resource="&gr;LeaseOut"/>
 			</xsl:if>
@@ -103,6 +109,12 @@
 		</gr:BusinessEntity>
 		
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zoopla.com#this">
+                                 			<foaf:name>Zoopla</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zoopla.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			<rdf:type rdf:resource="&oplzllw;Product" />
 			<sioc:has_container rdf:resource="{$docproxyIRI}"/>

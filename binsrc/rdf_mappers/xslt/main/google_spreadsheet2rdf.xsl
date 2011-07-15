@@ -82,6 +82,13 @@
 			</rdf:Description>
 
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://spreadsheets.google.com#this">
+                        			<foaf:name>Google Spreadsheets</foaf:name>
+                        			<foaf:homepage rdf:resource="http://spreadsheets.google.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dcterms:modified rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="a:updated"/>

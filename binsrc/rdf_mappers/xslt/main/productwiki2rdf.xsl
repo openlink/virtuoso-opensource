@@ -88,6 +88,13 @@
 						</gr:BusinessEntity>
 
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.productwiki.com#this">
+                        			<foaf:name>Productwiki</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.productwiki.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
 				   <xsl:apply-templates select="//product[1]" />

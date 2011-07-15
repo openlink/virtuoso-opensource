@@ -106,6 +106,13 @@
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&gn;Feature"/>
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.foursquare.com#this">
+                			<foaf:name>Foursquare</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.foursquare.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<xsl:if test="name">
 				<dc:title>
 					<xsl:value-of select="name" />
