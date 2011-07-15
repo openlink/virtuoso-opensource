@@ -473,7 +473,11 @@
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> )
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> ) | Microdata (
+	<a href="<?=rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |  
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/x-json+ld')?>">JSON-LD</a> 
+
       </div> <!-- #ft_t -->
       <?vsp } ?>
       <div id="ft_b">
