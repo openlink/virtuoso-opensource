@@ -90,6 +90,14 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_TUMBLR', null, 'Tumblr');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*seevl.net/.*',
+    'URL', 'DB.DBA.RDF_LOAD_SEEVL', null, 'Seevl');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*guardian.co.uk/.*',
+    'URL', 'DB.DBA.RDF_LOAD_GUARDIAN', null, 'Guardian');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*yelp.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_YELP', null, 'Yelp');
 
@@ -1887,7 +1895,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 		}
 		else
 		{
-                    http (sprintf ('<%U>\n', tag), ses);
+                    http (sprintf ('<%U>\n', replace(tag, ' ', '_')), ses);
                 }
 		for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
 		{
@@ -1897,7 +1905,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 			http ('</Document>\n',	ses);
 		else
                 {
-			http (sprintf ('</%U>\n', tag),	ses);
+			http (sprintf ('</%U>\n', replace(tag, ' ', '_')),	ses);
                 }
 	}
 	else if (length (tree) > 0)
@@ -3191,11 +3199,14 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
 		ses := string_output_string (ses);
 		xt := xtree_doc (ses, 2);
+		if (xpath_eval ('/results/document/type[ .  = "link_stat"]', xt) is null)
+		  {
 		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
 			vector ('baseUri', new_origin_uri, 'og_object_type', 'general'));
 		xd := serialize_to_UTF8_xml (xt);
 		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 		DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
+		  }
 		mime := get_keyword ('content-type', opts);
 		ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
 		ret := 1;
@@ -5697,6 +5708,93 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_GUARDIAN (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, tree, methods any;
+	declare pos int;
+	declare item_id varchar;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.guardian.co.uk/politics/person/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.guardian.co.uk/politics/person/%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		pos := strchr(item_id, '#');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		url := sprintf('http://www.guardian.co.uk/politics/api/person/%s/json', item_id);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	tree := json_parse (tmp);
+	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/guardian2rdf.xsl', xt, vector ('baseUri', new_origin_uri));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_SEEVL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, tree, methods any;
+	declare pos int;
+	declare item_id, app_id, app_key, auth_header varchar;
+	app_id := get_keyword ('app_id', opts);
+	app_key := get_keyword ('app_key', opts);
+
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://seevl.net/entity/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://seevl.net/entity/%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		pos := strchr(item_id, '#');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		pos := strchr(item_id, '?');
+		if (pos is not null and pos <> 0)
+			return 0;
+	}
+	else
+		return 0;
+	methods := vector('infos', 'facts', 'topics', 'links', 'related');
+	foreach (any method in methods) do
+	{
+		url := concat('http://seevl.net/entity/', item_id, '/', method);
+		auth_header := 'Accept: application/json\r\nX_APP_ID: ' || app_id || '\r\nX_APP_KEY: ' || app_key;
+		tmp := http_get (url, null, 'GET', auth_header, null, proxy=>get_keyword_ucase ('get:proxy', opts));
+		tree := json_parse (tmp);
+		xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/seevl2rdf.xsl', xt, vector ('baseUri', new_origin_uri, 'method', method));
+		xd := serialize_to_UTF8_xml (xt);
+		--RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+		DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	}
 	return 1;
 }
 ;
