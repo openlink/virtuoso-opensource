@@ -31,6 +31,7 @@
    a while, when that same box is free'ed twice!
  */
 
+#include <math.h>
 #include "sqlnode.h"
 #include "sqlver.h"
 #include "sqlfn.h"
@@ -49,7 +50,6 @@
 #include "multibyte.h"
 #include "srvmultibyte.h"
 #include "bif_xper.h"
-#include <math.h>
 #include "libutil.h"
 #include "recovery.h"
 #if !defined (__APPLE__)
@@ -5819,6 +5819,64 @@ bif_isnumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (result));
 }
 
+caddr_t
+bif_isfinitenumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg1 = bif_arg (qst, args, 0, "isfinitenumeric");
+  int result;
+
+  dtp_t dtp = DV_TYPE_OF (arg1);
+  switch (dtp)
+  {
+  case DV_SHORT_INT:
+  case DV_LONG_INT:
+  case DV_C_SHORT:    /* These are  */
+  case DV_C_INT:    /*  not needed? Or no? */
+    result = 1;
+    break;
+  case DV_SINGLE_FLOAT:
+    {
+      float val = unbox_float (arg1);
+#ifdef isfinite
+      result = (isfinite(val) ? 1 : 0);
+#elif WIN32
+      result = _finite (val) ? 1 : 0;
+#else
+      float myNAN_f = 0.0/0.0;
+      float myPOSINF_f = 1.0/0.0;
+      float myNEGINF_f = -1.0/0.0;
+      result = (((val == myNAN_f) || (val == myPOSINF_f) || (val == myNEGINF_f)) ? 0 : 1);
+#endif
+      break;
+    }
+  case DV_DOUBLE_FLOAT:
+    {
+      double val = unbox_double (arg1);
+#ifdef isfinite
+      result = (isfinite(val) ? 1 : 0);
+#elif WIN32
+      result = _finite (val) ? 1 : 0;
+#else
+      double myNAN_d = 0.0/0.0;
+      double myPOSINF_d = 1.0/0.0;
+      double myNEGINF_d = -1.0/0.0;
+      result = (((val == myNAN_d) || (val == myPOSINF_d) || (val == myNEGINF_d)) ? 0 : 1);
+#endif
+      break;
+    }
+  case DV_NUMERIC:
+    {
+      numeric_t val = (numeric_t)arg1;
+      result = (num_is_invalid(val) ? 0 : 1);
+      break;
+    }
+  default:
+    result = 0;
+    break;
+  }
+
+  return (box_num (result));
+}
 
 /* Is arg a single float? */
 caddr_t
@@ -14356,6 +14414,7 @@ sql_bif_init (void)
   bif_define_typed ("internal_type", bif_internal_type, &bt_integer);
   bif_define_typed ("isinteger", bif_isinteger, &bt_integer);
   bif_define_typed ("isnumeric", bif_isnumeric, &bt_integer);
+  bif_define_typed ("isfinitenumeric", bif_isfinitenumeric, &bt_integer);
   bif_define_typed ("isfloat", bif_isfloat, &bt_integer);
   bif_define_typed ("isdouble", bif_isdouble, &bt_integer);
   bif_define_typed ("isnull", bif_isnull, &bt_integer);
