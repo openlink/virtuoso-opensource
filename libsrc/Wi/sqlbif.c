@@ -14565,6 +14565,8 @@ sql_bif_init (void)
   bif_define_typed ("sequence_next", bif_sequence_next, &bt_integer);
   bif_define_typed ("sequence_remove", bif_sequence_remove, &bt_integer);
   bif_define_typed ("__sequence_set", bif_sequence_set, &bt_integer);
+  if (cl_run_local_only == CL_RUN_LOCAL)
+    bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
   bif_define_typed ("get_all_sequences", bif_sequence_get_all, &bt_any);
   bif_define_typed ("sequence_get_all", bif_sequence_get_all, &bt_any);
   bif_define_typed ("registry_get_all", bif_registry_get_all, &bt_any);
