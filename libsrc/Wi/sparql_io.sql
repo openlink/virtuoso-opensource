@@ -1575,14 +1575,16 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
       DB.DBA.USER_CREATE ('SPARQL', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'SPARQL'));
       DB.DBA.EXEC_STMT ('grant SPARQL_SELECT to "SPARQL"', 0);
     }
-  if (registry_get ('__SPARQL_VHOST_RESET') = '1')
+  if (registry_get ('__SPARQL_VHOST_RESET') >= '20110703')
     return;
   DB.DBA.VHOST_REMOVE (lpath=>'/SPARQL');
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud');
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud-auth');
   DB.DBA.VHOST_REMOVE (lpath=>'/services/sparql-query');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
-  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1, 'exec_as_get', 1));
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-auth',
     ppath => '/!sparql/',
@@ -1592,10 +1594,18 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
     realm=>'SPARQL',
     sec=>'digest');
+  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud-auth',
+    ppath => '/!sparql-graph-crud/',
+    is_dav => 1,
+    vsp_user => 'dba',
+    opts => vector('noinherit', 1, 'exec_as_get', 1),
+    auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
+    realm=>'SPARQL',
+    sec=>'digest');
 --DB.DBA.EXEC_STMT ('grant execute on DB.."querySoap" to "SPARQL", 0);
 --VHOST_DEFINE (lpath=>'/services/sparql-query', ppath=>'/SOAP/', soap_user=>'SPARQL',
 --              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'));
-  registry_set ('__SPARQL_VHOST_RESET', '1');
+  registry_set ('__SPARQL_VHOST_RESET', '20110703');
 }
 ;
 
@@ -2942,6 +2952,7 @@ done:
 
 create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params any, inout lines any)
 {
+  declare user_id varchar;
   declare reqbegin varchar;
   declare graph_uri varchar;
   declare graph_uri_is_relative integer;
@@ -2949,9 +2960,11 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   -- dbg_obj_princ ('===============');
   -- dbg_obj_princ ('===============');
   -- dbg_obj_princ ('WS.WS."/!sparql-graph-crud/" (', path, params, lines, ')');
+  set http_charset='utf-8';
+  user_id := connection_get ('SPARQLUserId', 'SPARQL');
   reqbegin := lines[0];
   graph_uri := trim(get_keyword ('graph-uri', params, ''));
-  if (isstring (get_ekyword ('default', params)))
+  if (isstring (get_keyword ('default', params)))
     {
       declare req_hosts varchar;
       declare req_hosts_split any;
@@ -3044,9 +3057,18 @@ graph_processing:
     {
       declare res_file, res_content_type varchar;
       declare full_graph_uri varchar;
+      set_user_id (user_id, 1);
       res_file := get_keyword ('res-file', params, '');
-      if ('' = res_file)
+      -- dbg_obj_princ ('res_file/1=', cast (res_file as varchar));
+      if (0 = length (res_file))
+        res_file := get_keyword ('Content', params, '');
+      -- dbg_obj_princ ('res_file/2=', string_output_string (res_file));
+      if (0 = length (res_file))
         res_file := http_body_read();
+      -- dbg_obj_princ ('res_file/3=', string_output_string (res_file));
+      if (0 = length (res_file))
+        res_file := http_body_read(1);
+      -- dbg_obj_princ ('res_file/4=', string_output_string (res_file));
       res_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, res_file);
       -- dbg_obj_princ ('res_content_type=', res_content_type);
       if (graph_uri_is_relative)
@@ -3084,11 +3106,28 @@ graph_processing:
         }
       else
         signal ('22023', 'The PUT request for graph <' || full_graph_uri || '> is rejected: the submitted resource is of unsupported type ' || coalesce (res_content_type, ''));
+      return;
     }
   else if (reqbegin like 'DELETE%')
     {
+      set_user_id (user_id, 1);
       sparql clear graph ?:graph_uri;
       commit work;
+      return;
+    }
+  else if (reqbegin like 'GET%')
+    {
+      connection_set ('SPARQL_crud_graph', graph_uri);
+      WS.WS."/!sparql/" (path,
+        vector_concat (
+          vector ('query', 'define input:storage "" construct { ?s ?p ?o } where { graph `iri(bif:connection_get("SPARQL_crud_graph"))` { ?s ?p ?o }}'),
+          params ), lines);
+      return;
+    }
+  else
+    {
+      http_request_status ('HTTP/1.1 501 Method Not Implemented');
+      return;
     }
 }
 ;

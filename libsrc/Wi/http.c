@@ -8034,6 +8034,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		map->hm_xml_template = 1;
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"executable"))
 		map->hm_executable = 1;
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"exec_as_get"))
+		map->hm_exec_as_get = 1;
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite"))
 		map->hm_url_rewrite_rule = box_copy_tree (opts[i+1]);
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite_keep_lpath"))
@@ -8870,6 +8872,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_is_dav);
   else if (!strcmp (member, "executable"))
     res = box_num (map->hm_executable);
+  else if (!strcmp (member, "exec_as_get"))
+    res = box_num (map->hm_exec_as_get);
   else if (!strcmp (member, "url_rewrite"))
     res = box_copy_tree ((box_t) map->hm_url_rewrite_rule);
   else if (!strcmp (member, "url_rewrite_keep_lpath"))
@@ -9102,13 +9106,16 @@ static caddr_t
 bif_http_body_read (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
-  ws_connection_t *ws = NULL;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
   dk_session_t *ses;
-
-  if (!qi->qi_client->cli_ws)
-    sqlr_new_error ("42000", "HT053", "Function http_body_read not allowed outside http context");
-  ws = qi->qi_client->cli_ws;
-  if (ws->ws_req_body)
+  if (!ws)
+    sqlr_new_error ("42000", "HT053", "Function http_body_read() not allowed outside http context");
+  if ((0 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 0, "http_body_read"))
+    {
+      ses = strses_allocate ();
+      ws_http_body_read (ws, &ses);
+    }
+  else if (ws->ws_req_body)
     {
       ses = ws->ws_req_body;
       ws->ws_req_body = NULL;
