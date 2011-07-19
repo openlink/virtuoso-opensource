@@ -1341,12 +1341,18 @@ rbb_allocate (void)
 caddr_t 
 rbb_from_id (int64 n)
 {
-  rdf_box_t * rb = (rdf_box_t*)rbb_allocate ();
-  rb->rb_ro_id = n;
-  rb->rb_is_outlined = 1;
-  rb->rb_type = RDF_BOX_DEFAULT_TYPE;
-  rb->rb_lang = RDF_BOX_DEFAULT_LANG;
-  return (caddr_t)rb;
+  rdf_bigbox_t * rbb = rbb_allocate ();
+  rbb->rbb_base.rb_ro_id = n;
+  rbb->rbb_base.rb_is_outlined = 1;
+#if 0
+  rbb->rbb_base.rb_type = RDF_BOX_ILL_TYPE;
+  rbb->rbb_base.rb_lang = RDF_BOX_ILL_LANG;
+#else
+  rbb->rbb_base.rb_type = RDF_BOX_DEFAULT_TYPE;
+  rbb->rbb_base.rb_lang = RDF_BOX_DEFAULT_LANG;
+#endif
+  rbb->rbb_box_dtp = DV_STRING;
+  return (caddr_t)rbb;
 }
 
 
@@ -1359,6 +1365,8 @@ rdf_box_audit_impl (rdf_box_t * rb)
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
+  if (rb->rb_is_complete)
+    rb_dt_lang_check(rb);
 }
 
 

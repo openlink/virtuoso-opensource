@@ -602,6 +602,8 @@ uname_blk_t;
 #define RDF_BOX_DEFAULT_LANG 		0x0101
 #define RDF_BOX_MAX_TYPE 		0x7F01
 #define RDF_BOX_MAX_LANG 		0x7F01
+#define RDF_BOX_ILL_TYPE 		0x7F02
+#define RDF_BOX_ILL_LANG 		0x7F03
 #define RDF_BOX_GEO 			0x100
 #define RDF_BOX_INTERVAL 		0xff
 #define RDF_BOX_STRING_ID 		0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
@@ -620,6 +622,15 @@ typedef struct rdf_box_s
   int64 		rb_ro_id;
   caddr_t 		rb_box;
 } rdf_box_t;
+
+#ifndef NDEBUG
+#define rb_dt_lang_check(rb) do { \
+    if (RDF_BOX_ILL_TYPE == (rb)->rb_type) GPF_T1("Bad rb_type"); \
+    if (RDF_BOX_ILL_LANG == (rb)->rb_lang) GPF_T1("Bad rb_lang"); \
+  } while (0)
+#else
+#define rb_dt_lang_check(rb)
+#endif
 
 #define RB_MAX_INLINED_CHARS 		20
 
