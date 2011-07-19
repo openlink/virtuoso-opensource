@@ -1658,6 +1658,8 @@ again:
 	}
       if (_col_id is null and (rc >= 0))
 	{
+	  if (uid = http_nobody_uid () and gid = http_nogroup_gid ()) 
+	    uid := null;
 	  rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, '1_1', 0, lines, uname, upwd, uid, gid, perms);
 	  if (rc >= 0)
 	    exec_safety_level := 1;
