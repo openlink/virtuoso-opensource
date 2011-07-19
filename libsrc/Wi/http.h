@@ -333,6 +333,11 @@ typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
 extern dks_charclass_props_t dks_charclasses['Q'+1-'>'];
 #define DKS_ESC_CHARCLASS_ACTION(wc,mode) (dks_charclasses[((wc & ~0xff) ? 0 : (dks_esc_char_props[wc] - '>'))][mode])
 
+#define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
+#define isfloatchar(c) (('\0' != (c)) && (NULL != strchr ("0123456789eE+-.", (c))))
+/* This was: #define isplainURIchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c))) */
+#define isplainURIchar(c) ('\0' == DKS_ESC_CHARCLASS_ACTION((unsigned)(c), DKS_ESC_URI))
+
 extern void
 dks_esc_write (dk_session_t * ses, const char * str, size_t len,
   wcharset_t * tgt_charset, wcharset_t * src_charset, int dks_esc_mode);

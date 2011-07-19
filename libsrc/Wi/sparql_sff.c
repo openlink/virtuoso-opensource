@@ -35,11 +35,6 @@ extern "C" {
 #endif
 
 
-#define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
-#define isfloatchar(c) (('\0' != (c)) && (NULL != strchr ("0123456789eE+-.", (c))))
-/* This was: #define isplainURIchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c))) */
-#define isplainURIchar(c) ('\0' == DKS_ESC_CHARCLASS_ACTION((unsigned)(c), DKS_ESC_URI))
-
 int
 sprintff_is_proven_bijection (const char *f)
 {
