@@ -1131,19 +1131,28 @@ extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
     BOX_DV_UNAME_CONCAT4(qname,nsuri,_local1,_local1_len); \
   } while (0)
 
+#define BOX_DV_UNAME_COLONCONCAT5(qname,nsuri,nsuri_len,local,local_len) \
+  do { \
+    ccaddr_t _nsuri5 = (nsuri); \
+    int _nsuri5_len = (nsuri_len); \
+    ccaddr_t _local5 = (local); \
+    int _local5_len = (local_len); \
+    int _qname5_len = _nsuri5_len + _local5_len + 1; \
+    caddr_t _qname5 = box_dv_ubuf (_qname5_len); \
+    memcpy (_qname5, _nsuri5, _nsuri5_len); \
+    _qname5[_nsuri5_len++] = ':'; \
+    memcpy (_qname5 + _nsuri5_len, _local5, _local5_len); \
+    _qname5[_qname5_len] = '\0'; \
+    (qname) = box_dv_uname_from_ubuf (_qname5); \
+  } while (0)
+
 #define BOX_DV_UNAME_COLONCONCAT4(qname,nsuri,local,local_len) \
   do { \
-    ccaddr_t _nsuri = (nsuri); \
-    int _nsuri_len = box_length_inline (_nsuri) - 1; \
-    ccaddr_t _local = (local); \
-    int _local_len = (local_len); \
-    int _qname_len = _nsuri_len + _local_len + 1; \
-    caddr_t _qname = box_dv_ubuf (_qname_len); \
-    memcpy (_qname, _nsuri, _nsuri_len); \
-    _qname[_nsuri_len++] = ':'; \
-    memcpy (_qname + _nsuri_len, _local, _local_len); \
-    _qname[_qname_len] = '\0'; \
-    (qname) = box_dv_uname_from_ubuf (_qname); \
+    ccaddr_t _nsuri4 = (nsuri); \
+    ccaddr_t _local4 = (local); \
+    int _local4_len = (local_len); \
+    int _nsuri4_len = box_length_inline (_nsuri4) - 1; \
+    BOX_DV_UNAME_COLONCONCAT5(qname,_nsuri4,_nsuri4_len,_local4,_local4_len); \
   } while (0)
 
 #define BOX_DV_UNAME_COLONCONCAT(qname,nsuri,local) \

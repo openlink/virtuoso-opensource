@@ -21,6 +21,7 @@
  *
  */
 
+#include "http.h" /* for isplainURIchar() and the like */
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -3130,6 +3131,20 @@ restricted:
   spar_error (sparp, "Function %.200s() can not be used in text of SPARQL query due to security restrictions", fname);
 }
 
+caddr_t
+spar_colonize_qname_uname (const char *strg)
+{
+  const char *tail, *strg_end = strg + strlen (strg);
+  for (tail = strg_end; tail > strg; tail--)
+    if (!isplainURIchar (tail[-1]))
+      {
+        caddr_t res;
+        BOX_DV_UNAME_COLONCONCAT5(res, strg, tail-strg, tail, strg_end-tail);
+        return res;
+      }
+  return box_dv_uname_string (strg);
+}
+
 SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
@@ -3157,6 +3172,39 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   if (!(sparp->sparp_allow_aggregates_in_expn & 1))
     spar_error (sparp, "Aggregate function %.100s() is not allowed outside result-set expressions", funname);
 aggr_checked:
+  if (strncmp (funname, "bif:", 4))
+    {
+      xpf_metadata_t *metas = NULL;
+      caddr_t colonized_funname = spar_colonize_qname_uname (funname);
+      xpf_metadata_t ** metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&colonized_funname));
+      int param_count;
+      if (NULL == metas_ptr)
+        {
+          dk_free_box (colonized_funname);
+          goto xpf_checked; /* see below */
+        }
+      param_count = BOX_ELEMENTS (args);
+      metas = metas_ptr[0];
+      if (metas->xpfm_min_arg_no > param_count)
+        spar_error (sparp, "The XPATH function %.200s() requires %d arguments but the call contains only %d",
+          funname, (int)(metas->xpfm_min_arg_no), param_count );
+      if (metas->xpfm_main_arg_no < param_count)
+        {
+          if (0 == metas->xpfm_tail_arg_no)
+            spar_error (sparp, "The XPATH function %.200s() can handle only %d arguments but the call provides %d",
+              funname, (int)(metas->xpfm_main_arg_no), param_count );
+          else
+            {
+              int tail_mod = (param_count - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
+              if (tail_mod)
+                spar_error (sparp, "The XPATH function %.200s() can handle %d, %d, %d etc. arguments but the call provides %d",
+                  funname, (int)(metas->xpfm_main_arg_no), (int)(metas->xpfm_main_arg_no + metas->xpfm_tail_arg_no), (int)(metas->xpfm_main_arg_no + 2 * metas->xpfm_tail_arg_no),
+                  param_count );
+            }
+        }
+      return spartlist (sparp, 4, SPAR_FUNCALL, t_box_sprintf (100, "xpath:%.90s", colonized_funname), args, (ptrlong) 0);
+    }
+xpf_checked:
   if (aggregate_mode)
     sparp->sparp_query_uses_aggregates++;
   return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string (funname), args, (ptrlong)aggregate_mode);

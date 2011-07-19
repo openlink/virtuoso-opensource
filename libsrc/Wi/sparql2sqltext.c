@@ -3780,13 +3780,19 @@ IN_op_fnt_found:
 xqf_str_parser_desc_t *function_is_xqf_str_parser (caddr_t name)
 {
   long desc_idx;
+  if (!strncmp (name, "xpath:", 6))
+    name += 6;
   if (!strncmp (name, XFN_NS_URI, strlen (XFN_NS_URI)))
     name += strlen (XFN_NS_URI);
   else if (!strncmp (name, XS_NS_URI, strlen (XS_NS_URI)))
     name += strlen (XS_NS_URI);
   else
     return NULL;
-  if ('#' != name[0])
+  if ('/' == name[0])
+    name++;
+  if ('#' == name[0])
+    name++;
+  if (':' != name[0])
     return NULL;
   name++;
   desc_idx = ecm_find_name (name, xqf_str_parser_descs_ptr,

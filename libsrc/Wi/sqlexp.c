@@ -236,11 +236,11 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
       return;
     }
   if ((sqlc_trans_funcs (sc, tree, ret)))
-    return;
-  if ((func_len > 10) && !stricmp (func + (func_len - 10), " (w/cache)") && (n_params > 0))
+    return;                                            /* 0123456789 */
+  if ((func_len > 9) && !stricmp (func + (func_len - 9), "__w_cache") && (n_params >= 1))
     {
-      state_slot_t *cache = ssl_new_inst_variable (sc->sc_cc, "cache", DV_ARRAY_OF_POINTER);
-      ((ptrlong *)(act_params[n_params - 1]))[0] = cache->ssl_index;
+      state_slot_t *aux_ssl = ssl_new_inst_variable (sc->sc_cc, "cache", DV_ARRAY_OF_POINTER);
+      ((ptrlong *)(act_params[n_params - 1]))[0] = aux_ssl->ssl_index;
     }
   if (ret_param)
     params = (state_slot_t **) t_alloc_box ((n_params + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);

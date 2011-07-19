@@ -41,6 +41,7 @@
 #include "sqlbif.h"
 #include "sqlcstate.h"
 #include "xmltree.h" /* For trick with precompilation of strings that are XPATH/XQuery expressions */
+#include "xpf.h"
 
 
 void yyerror (const char *s);
@@ -1840,7 +1841,6 @@ sqlp_inline_order_by (ST *tree, ST **oby)
   return tree;
 }
 
-#if 0 /*GK: dead code */
 static ST *
 sqlp_raw_name_string_to_col_dotted (const char *fullname)
 {
@@ -1866,8 +1866,6 @@ sqlp_raw_name_string_to_col_dotted (const char *fullname)
     return t_listst (3, COL_DOTTED, c_pref (t_sqlp_box_id_upcase (buf), part1-buf, NULL, 0, t_sqlp_box_id_upcase (part2)), t_sqlp_box_id_upcase (part3));
   return t_listst (3, COL_DOTTED, c_pref (t_sqlp_box_id_upcase (buf), part1-buf, t_sqlp_box_id_upcase (part1), part2-part1, t_sqlp_box_id_upcase (part2)), t_sqlp_box_id_upcase (part3));
 }
-#endif
-
 
 static void
 sqlp_contains_opts (ST * tree)
@@ -1986,7 +1984,6 @@ sqlp_sqlxml (ST * tree)
 }
 /*end sqlxml*/
 
-#if 0 /*GK: dead code ?*/
 static void
 sqlp_xpath_or_xquery_eval (ST * funcall_tree)
 {
@@ -1995,7 +1992,7 @@ sqlp_xpath_or_xquery_eval (ST * funcall_tree)
       ST **old_params = funcall_tree->_.call.params;
       size_t old_argcount = BOX_ELEMENTS (old_params);
       if (2 > old_argcount)
-	yyerror ("Functions xpath_eval and xquery_eval require at least two arguments");
+    yyerror ("Functions xpath_eval() and xquery_eval() require at least two arguments");
       if (DV_STRING == DV_TYPE_OF(old_params[0]))
         {
 	  char predicate_type = (0 == stricmp (call_name, "xpath_eval")) ? 'p' : 'q';
@@ -2062,15 +2059,70 @@ sqlp_xpath_or_xquery_eval (ST * funcall_tree)
 	    }
 	  if (NULL != xqr)
 	    {
-	      old_params[0] = (ST *)(t_box_copy ((caddr_t)xqr));
+          /*t_trash_push (xqr);*/
+          old_params[0] = (ST *)xqr;
 	      return;
 	    }
         }
-      sprintf (buf, "%s (w/cache)", call_name);
+  sprintf (buf, "%s__w_cache", call_name);
+  funcall_tree->_.call.name = t_sqlp_box_id_upcase (buf);
+  funcall_tree->_.call.params = (ST **)t_list_concat ((caddr_t)old_params, (caddr_t)t_list (1, t_box_num_and_zero (0)));
+}
+
+static void
+sqlp_xpath_funcall_or_apply (ST * funcall_tree)
+{
+  const char *call_name = funcall_tree->_.call.name;
+  const char *xpf_name = NULL;
+  xpf_metadata_t *metas = NULL;
+  char buf[30];
+  ST **old_params = funcall_tree->_.call.params;
+  size_t old_argcount = BOX_ELEMENTS (old_params);
+  char call_type = ((0 == stricmp (call_name, "xpath_funcall")) ? 'f' : 'a');
+  if ('f' == call_type)
+    {
+      if (2 > old_argcount)
+        yyerror ("Function xpath_funcall() requires at least two arguments");
+    }
+  else
+    {
+      if (3 != old_argcount)
+        yyerror ("Function xpath_apply() requires exactly three arguments");
+    }
+  if (DV_STRING == DV_TYPE_OF(old_params[0]))
+    {
+      xpf_metadata_t ** metas_ptr;
+      xpf_name = (const char *)(old_params[0]);
+      metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&xpf_name));
+      if (NULL == metas_ptr)
+        yyerror ("Unknown XPath function name is used as first argument of xpath_funcall() or xpath_apply() function");
+      metas = metas_ptr[0];
+    }
+  if ((NULL != metas) && ('f' == call_type))
+    {
+      xp_query_t *xqr;
+      int fn_argcount = old_argcount-2;
+      if (metas->xpfm_min_arg_no > fn_argcount)
+        yyerror ("The XPATH function mentioned in xpath_funcall() requires more arguments than specified in the call");
+      if (metas->xpfm_main_arg_no < fn_argcount)
+        {
+          if (0 == metas->xpfm_tail_arg_no)
+            yyerror ("The XPATH function mentioned in xpath_funcall() requires less arguments than specified in the call");
+          else
+            {
+              int tail_mod = (fn_argcount - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
+              if (tail_mod)
+                yyerror ("The XPATH function mentioned in xpath_funcall() requires less arguments than specified in the call");
+            }
+        }
+      xqr = xqr_stub_for_funcall (metas, fn_argcount);
+      /*t_trash_push (xqr);*/
+      old_params[0] = (ST *)xqr;
+    }
+  sprintf (buf, "%s__w_cache", call_name);
       funcall_tree->_.call.name = t_sqlp_box_id_upcase (buf);
       funcall_tree->_.call.params = (ST **)t_list_concat ((caddr_t)old_params, (caddr_t)t_list (1, t_box_num_and_zero (0)));
 }
-#endif
 
 ST *
 sqlp_patch_call_if_special (ST * funcall_tree)
@@ -2112,14 +2164,18 @@ sqlp_patch_call_if_special (ST * funcall_tree)
 	}
       goto generic_check;
     }
-#if 0 /* Tmp change */
   if (0 == stricmp (call_name, "xpath_eval")
 	   || 0 == stricmp (call_name, "xquery_eval") )
     {
       sqlp_xpath_or_xquery_eval (funcall_tree);
       goto generic_check;
     }
-#endif
+  if (0 == stricmp (call_name, "xpath_funcall")
+	   || 0 == stricmp (call_name, "xquery_apply") )
+    {
+      sqlp_xpath_funcall_or_apply (funcall_tree);
+      goto generic_check;
+    }
   if ((0 == strnicmp (call_name, "__I2ID", 6) || strstr (call_name, "IID_OF_QNAME"))
       && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
     {

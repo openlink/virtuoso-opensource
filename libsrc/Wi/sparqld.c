@@ -533,7 +533,17 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         caddr_t fname = tree->_.funcall.qname;
         ssg_putchar (' ');
         if (!strncmp (fname, "xpath:", 6))
+          {
+            char *colon = strrchr (fname + 6, ':');
+            if (NULL == colon)
           fname = t_box_dv_short_string (fname + 6);
+            else
+              {
+                colon[0] = '\0';
+                fname = t_box_sprintf (400, "%.200s%.100s", fname+6, colon+1);
+                colon[0] = ':';
+              }
+          }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
             ssg_putchar ('(');
             ssg->ssg_indent++;

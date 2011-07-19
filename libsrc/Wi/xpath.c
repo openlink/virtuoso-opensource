@@ -2992,8 +2992,8 @@ void xp_reject_option_if_not_allowed (xpp_t *xpp, int type)
 
 void xp_register_default_namespace_prefixes (xpp_t *xpp)
 {
-  xp_register_namespace_prefix (xpp, XFN_NS_PREFIX1	, XFN_NS_URI	);
-  xp_register_namespace_prefix (xpp, XFN_NS_PREFIX2	, XFN_NS_URI	);
+  xp_register_namespace_prefix (xpp, XFN_NS_PREFIX	, XFN_NS_URI	);
+  xp_register_namespace_prefix (xpp, XXF_NS_PREFIX	, XXF_NS_URI	);
   xp_register_namespace_prefix (xpp, XLOCAL_NS_PREFIX	, XLOCAL_NS_URI	);
   xp_register_namespace_prefix (xpp, XOP_NS_PREFIX	, XOP_NS_URI	);
   xp_register_namespace_prefix (xpp, XDT_NS_PREFIX	, XDT_NS_URI	);
@@ -4410,7 +4410,9 @@ substitute_with_undefined:
   metas = metas_ptr[0];
   if (NULL == metas->xpfm_executable)
     {
-      if (!strcmp ("collection", metas->xpfm_name) || !strcmp (XFN_NS_URI ":collection", metas->xpfm_name))
+      if (!strcmp ("collection", metas->xpfm_name)
+        || !strcmp (XFN_NS_URI ":collection", metas->xpfm_name)
+        || !strcmp (XXF_NS_URI ":collection", metas->xpfm_name) )
 	{
 	  dk_set_t dirlist_args = NULL, doc_args = NULL;
 	  int ctr = BOX_ELEMENTS (arg_array);
