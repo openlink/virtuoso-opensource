@@ -322,7 +322,7 @@ div.pager div {
 }
 
 div.pager a {
-  color: #ddd;
+  color: #333;
   font-weight: bold;
   text-decoration: none;
   padding-left: 10px;
@@ -390,6 +390,7 @@ label.load { font-size: 8pt; font-weight: normal}
 #query {
   height: 50ex;
   width: 100%;
+  font-family: monospace;
 }
 
 #goptions label.align {

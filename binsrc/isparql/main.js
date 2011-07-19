@@ -359,10 +359,8 @@ OAT.Observer = {
     }
 }
 
-
-
 //
-// XXX (ghard) consider saving the whole query context (default graph, endpoint, etc.)
+// TODO (ghard) consider saving the whole query context (default graph, endpoint, etc.)
 //
 
 iSPARQL.RecentQueriesUI = function () {
@@ -892,18 +890,24 @@ iSPARQL.EndpointOpts = function (optsObj) {
     }
 
     this.detectEndpointType = function () {
+		if (self.setEndpointTO) {
+			clearTimeout (self.setEndpointTO);
 	self.setEndpointTO = false;
+		}
 	var o = {
-	    type:OAT.AJAX.TYPE_XML
+			type:OAT.AJAX.TYPE_TEXT
 	};
 
-//	OAT.AJAX.POST (self.endpointPath, "select * where {?s ?p ?o} limit 1", self.endPointDetectCB, o);
+//		OAT.AJAX.GET (self.endpointPath, 
+//                      '?query='+encodeURIComponent("ASK where {?s ?p ?o}"), 
+//                      self.endpointDetectCB, o);
     }
 
     this.setEndpointTO = false;
 
     this.setEndpoint = function (callerObj, val) {
 	self.endpointPath = val;
+		iSPARQL.Settings.endpoint = val;
 	if (self.setEndpointTO) clearTimeout (self.setEndpointTO);
 	self.setEndpointTO = setTimeout (self.detectEndpointType, 3000);
 	self.saveSes();
@@ -959,7 +963,8 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    a.push(['define get:soft',[(val)? '"'+val+'"' : val]]);
 	else {
 	    a.push(['define get:soft',[false]]);
-			//	    a.push(['define input:grab-limit',[false]]); XXX will have to test which way is best for user (what happens to existing other 
+			//	    a.push(['define input:grab-limit',[false]]); 
+            //               XXX will have to test which way is best for user (what happens to existing other 
 	    //	    a.push(['define input:grab-depth',[false]]); Sponger options if sponger is set to be off.
 	    //	    a.push(['define input:grab-all',[false]]);
 			//	    a.push(['define input:grab-seealso',[false]]);
@@ -2230,7 +2235,8 @@ function tool_put_line_start(txt){
     }
     query.value = res;
     //alert(res.charAt(start - 1 - OAT.Browser.isIE));
-    if (!((res.charAt(start - 1 - OAT.Browser.isIE) == "\n" || start == 0) && start != end)) start = start + txt.length;
+    if (!((res.charAt(start - 1 - OAT.Browser.isIE) == "\n" || start == 0) && start != end)) 
+      start = start + txt.length;
 
     if (cnt > 1) end = end + (cnt * txt.length) - (OAT.Browser.isIE * (cnt - 1));
     else end = end + txt.length;

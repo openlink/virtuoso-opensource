@@ -492,7 +492,7 @@ var QueryExec = function(optObj) {
 		
 		var nloca = document.location;
 
-		if (opts.endpoint = '/sparql') {
+		if (opts.endpoint == '/sparql') {
 			var resUriBase = nloca.protocol + 
 				"//" + nloca.host + "/sparql/?query=" + encodeURIComponent(opts.query);
 			
@@ -962,11 +962,16 @@ var QueryExec = function(optObj) {
     this.makeErrorResp = function (data) {
 	var txt = OAT.Xml.serializeXmlDoc(data);
 
-		if (txt.length == 0 || txt == false) txt = data;
+		if (txt.length == 0 || txt == false) {
+			if (typeof data == 'object')
+ 				txt = 'Invalid response received';
+			else {
+				txt = data;
 
 		txt = txt.replace(/</g,"&lt;");
 		txt = txt.replace(/>/g,"&gt;");
-
+			} 
+		}
 	return txt;
     };
 
@@ -990,11 +995,13 @@ var QueryExec = function(optObj) {
 // TODO store full query context obj in cache and add functions to restore
 //
 
+		if (typeof iSPARQL.dataObj == 'undefined') iSPARQL.dataObj = {};
 		iSPARQL.dataObj.query        = item.opts.query;
 		iSPARQL.dataObj.defaultGraph = item.opts.defaultGraph;
 		iSPARQL.dataObj.maxrows      = item.opts.maxrows;
 		iSPARQL.dataObj.namedGraphs  = item.opts.namedGraphs;
 		iSPARQL.dataObj.pragmas      = item.opts.pragmas;
+		iSPARQL.dataObj.endpoint     = item.opts.endpoint;
 
 		iSPARQL.endpointOpts.setEndpoint (null, item.opts.endpoint);
 
@@ -1076,16 +1083,16 @@ var QueryExec = function(optObj) {
 
 			var ua = navigator.userAgent.toLowerCase();
 		
-			if (ua.search ("iphone") || 
+/*			if (ua.search ("iphone") || 
 				ua.search ("ipod") ||
 				ua.search ("android") ||
 				ua.search ("symbian") ||
 				ua.search ("S60"))
-				
+*/				
 				map_h = OAT.Dom.getViewport()[1].toString()+'px';
-			else 
+/*			else 
 				map_h = "600px";
-
+*/			
 			//	generate Result
 			
 			if (item.resType == iSPARQL.ResultType.GRAPH) { // Use RDFMini to show Graphs
@@ -1135,10 +1142,11 @@ var QueryExec = function(optObj) {
 													showSearch:false,
 													store: item.store});
 
+				item.mini.processLink = self.processLink;
+
 				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, mini_c]);
 				
 				//		self.tab.go(0); // got to do here or maps won't resize properly.
-				//		self.cache[self.cacheIndex].mini.processLink = self.processLink;
 				//		self.cache[self.cacheIndex].mini.store.addXmlDoc(data);
 				
 				item.mini.select.selectedIndex = lastIndex;
@@ -1194,15 +1202,13 @@ var QueryExec = function(optObj) {
 
 	this.processLink = function(domNode,href) {
 		var dereferenceRef = function(event) {
-			OAT.Event.prevent(event);
-
 			var cache = self.cache[self.cacheIndex];
 
-/*	    var q = 'define get:soft "replacing" \n'+
+			var q = 'define get:soft "replacing" \n'+
 					'define input:same-as "yes" \n'+
 					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
-		'DESCRIBE <'+href+'> FROM <' + href + '>';*/
-	    var q  = 'DESCRIBE <'+href+'>';
+		            'DESCRIBE <'+href+'> FROM <' + href + '>';
+//			var q  = 'DESCRIBE <'+href+'>';
 			var bq = 'DESCRIBE <'+href+'>';
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -1218,7 +1224,6 @@ var QueryExec = function(optObj) {
  	};
 
 		var selectRef = function(event) {
-			OAT.Event.prevent(event);
 			var cache = self.cache[self.cacheIndex];
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -1233,7 +1238,7 @@ var QueryExec = function(optObj) {
 			self.execute(o);
 	};
 
-		var genRef = function() {
+/*		var genRef = function() {
 			var ul = OAT.Dom.create("ul",{marginLeft:"20px",marginTop:"10px"});
 
 			var li = OAT.Dom.create("li");
@@ -1261,7 +1266,7 @@ var QueryExec = function(optObj) {
 			return ul;
 	};
 
-/*		var obj = {
+		var obj = {
 			title:"URL",
 			content:genRef,
 			newHref:href,
@@ -1272,15 +1277,16 @@ var QueryExec = function(optObj) {
 		}; */
 		
 		OAT.Event.attach (domNode, 'click', function (event) {
+            OAT.Event.prevent(event);
 			switch (iSPARQL.Settings.anchorMode) {
 			case 0:
 				dereferenceRef(event);
-				break;
+				event.cancelBubble = true;
+                return false;
 			case 1:
 				selectRef(event);
 				break;
 			default:
-				OAT.Event.prevent(event);
 				window.open(href);
 			}
 		});
@@ -1299,8 +1305,6 @@ var QueryExec = function(optObj) {
 //	a.target = "_blank";
 //	a.href = "/about/html/" + href;
 
-//	domNode.parentNode.appendChild(img1);
-//	domNode.parentNode.appendChild(a);
     };
 
      this.detectLocationMacros = function (q) {
