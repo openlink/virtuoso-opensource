@@ -36,6 +36,13 @@ create distinct no primary key ref bitmap index RDF_QUAD_GS on RDF_QUAD (G, S) p
 create distinct no primary key ref index RDF_QUAD_OP on RDF_QUAD (O, P) partition (O varchar (-1, 0hexffff))
 ;
 
+create table DB.DBA.RDF_QUAD_RECOV_TMP (
+  G1 IRI_ID_8,  S1 IRI_ID_8,  P1 IRI_ID_8,  O1 any,  primary key (P1, S1, O1, G1))
+alter index RDF_QUAD_RECOV_TMP on DB.DBA.RDF_QUAD_RECOV_TMP partition (S1 int (0hexffff00))
+create bitmap index RDF_QUAD_RECOV_TMP_POGS on RDF_QUAD_RECOV_TMP (P1, O1, G1, S1) partition (O1 varchar (-1, 0hexffff))
+create distinct no primary key ref index RDF_QUAD_RECOV_TMP_OP on RDF_QUAD_RECOV_TMP (O1, P1) partition (O1 varchar (-1, 0hexffff))
+;
+
 create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
 {
   return iri_to_id_nosignal (qname);
@@ -12881,6 +12888,167 @@ check_new_style:
 }
 ;
 
+create procedure DB.DBA.RDF_QUAD_OUTLINE_ALL (in force integer := 0)
+{
+  declare c_main, c_pogs, c_op integer;
+  declare c_main_tmp, c_pogs_tmp, c_op_tmp integer;
+  declare c_main_fixed, c_pogs_fixed, c_op_fixed integer;
+  declare old_mode integer;
+  declare c_check char;
+
+  if ((registry_get ('__rb_id_only_for_plain_ro_obj') = '1') and not force)
+    return;
+  if (not exists (select top 1 1 from RDF_QUAD))
+    {
+      registry_set ('__rb_id_only_for_plain_ro_obj', '1');
+      return;
+    }
+  log_message ('This database may contain RDF data that could cause indexing problems on previous versions of the server.');
+  log_message ('The content of the DB.DBA.RDF_QUAD table will be checked and an update may automatically be performed if');
+  log_message ('such data is found.');
+  log_message ('This check will take some time but is made only once.');
+
+  if (not exists (select top 1 1 from RDF_QUAD table option (index RDF_QUAD_OP, index_only) where rdf_box_migrate_after_06_02_3129 (O)))
+    {
+      log_message ('No need to update DB.DBA.RDF_QUAD.');
+      registry_set ('__rb_id_only_for_plain_ro_obj', '1');
+      exec ('checkpoint');
+      return;
+    }
+
+  log_message ('');
+  log_message ('An update is required.');
+
+  c_check := coalesce (cfg_item_value (virtuoso_ini_path (), 'Parameters', 'AnalyzeFixQuadStore'), '0');
+  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'Parameters', 'LiteMode'), '0') <> '0') c_check := '1';
+  if (c_check <> '1')
+    {
+	log_message ('');
+	log_message ('NOTICE: Before Virtuoso can continue fixing the DB.DBA.RDF_QUAD table and its indexes');
+ 	log_message ('        the DB Administrator should check make sure that:');
+	log_message ('');
+	log_message ('         * there is a recent backup of the database');
+	log_message ('         * there is enough free disk space available to complete this conversion');
+	log_message ('         * the database can be offline for the duration of this conversion');
+	log_message ('');
+	log_message ('        Since the update can take a considerable amount of time on large databases');
+	log_message ('        it is advisable to schedule this at an appropriate time.');
+	log_message ('');
+	log_message ('To continue the DBA must change the virtuoso.ini file and add the following flag:');
+	log_message ('');
+	log_message ('    [Parameters]');
+	log_message ('    AnalyzeFixQuadStore = 1');
+	log_message ('');
+	log_message ('For additional information please contact OpenLink Support <support@openlinksw.com>');
+	log_message ('This process will now exit.');
+	raw_exit();
+    }
+
+  log_message ('Please be patient.');
+  log_message ('The table DB.DBA.RDF_QUAD and two of its additional indexes will now be patched.');
+  log_message ('In case of an error during the operation, delete the transaction log before restarting the server.');
+  exec ('checkpoint');
+  declare exit handler for sqlstate '*'
+    {
+      log_message (sprintf ('Error %s: %s', __SQL_STATE, __SQL_MESSAGE));
+      log_message ('Do not forget to delete the transaction log before restarting the server.');
+      raw_exit ();
+    };
+
+
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+      cl_inx_recov (force);
+      return;
+    }
+
+  if (1 <> sys_stat ('cl_run_local_only'))
+    {
+      log_message ('Cluster must be online in order to perform upgrade');
+      return;
+    }
+
+  old_mode := log_enable (2, 1);
+  log_message ('Phase 1 of 9: Gathering statistics...');
+  c_main := (select count (1) from RDF_QUAD table option (index RDF_QUAD) option (no cluster));
+  c_pogs := (select count (1) from RDF_QUAD table option (index RDF_QUAD_POGS) option (no cluster));
+  if (c_main <> c_pogs)
+    log_message ('* Existing indexes are damaged, will try to recover...');
+  c_op := (select count (1) from RDF_QUAD table option (index RDF_QUAD_OP, index_only) option (no cluster));
+  log_message (sprintf (' * Index sizes before the processing: %09d RDF_QUAD, %09d POGS, %09d OP', c_main, c_pogs, c_op));
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP, no cluster) option (index RDF_QUAD_RECOV_TMP, no cluster);
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster) option (index RDF_QUAD_RECOV_TMP_POGS, no cluster);
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_OP, index_only, no cluster) option (index RDF_QUAD_RECOV_TMP_OP, no cluster);
+
+  log_message ('Phase 2 of 9: Copying all quads to a temporary table...');
+  insert soft DB.DBA.RDF_QUAD_RECOV_TMP index RDF_QUAD_RECOV_TMP option (no cluster) (G1,S1,P1,O1) select G,S,P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD, no cluster);
+  insert soft DB.DBA.RDF_QUAD_RECOV_TMP index RDF_QUAD_RECOV_TMP_POGS option (no cluster) (G1,S1,P1,O1) select G,S,P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS, no cluster);
+  insert soft DB.DBA.RDF_QUAD_RECOV_TMP index RDF_QUAD_RECOV_TMP_OP option (index_only, no cluster) (P1,O1) select P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD_OP, index_only, no cluster);
+  if (c_main <> c_pogs) -- cluster should not do that
+    {
+      log_message ('* Recovering additional data from existing indexes');
+      if (c_main < c_pogs)
+        insert soft DB.DBA.RDF_QUAD_RECOV_TMP option (no cluster) (G1,S1,P1,O1) select G,S,P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS) option (no cluster);
+      if (c_pogs < c_main)
+        insert soft DB.DBA.RDF_QUAD_RECOV_TMP option (no cluster) (G1,S1,P1,O1) select G,S,P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD) option (no cluster);
+    }
+  c_op_tmp := (select count (1) from RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_OP, index_only) option (no cluster));
+  log_message (sprintf ('* Index sizes of temporary table: %09d OP', c_op_tmp));
+  if (c_op_tmp < c_op)
+    log_message ('** Some data are lost or the corruption was strong before the processing.');
+
+  log_message ('Phase 3 of 9: Cleaning the quad storage ...');
+  delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD, no cluster) option (index RDF_QUAD, no cluster);
+  delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS, no cluster) option (index RDF_QUAD_POGS, no cluster);
+  delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_OP, index_only, no cluster) option (index RDF_QUAD_OP, no cluster);
+
+  log_message ('Phase 4 of 9: Refilling the quad storage from the temporary table...');
+  insert soft DB.DBA.RDF_QUAD index RDF_QUAD option (no cluster) (G,S,P,O) select G1,S1,P1,O1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP, no cluster);
+  insert soft DB.DBA.RDF_QUAD index RDF_QUAD_POGS option (no cluster) (G,S,P,O) select G1,S1,P1,O1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster);
+  insert soft DB.DBA.RDF_QUAD index RDF_QUAD_OP option (index_only, no cluster) (P,O) select P1,O1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_OP, index_only, no cluster);
+
+  log_message ('Phase 5 of 9: Cleaning the temporary table ...');
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP, no cluster) option (index RDF_QUAD_RECOV_TMP, no cluster);
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster) option (index RDF_QUAD_RECOV_TMP_POGS, no cluster);
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_OP, index_only, no cluster) option (index RDF_QUAD_RECOV_TMP_OP, no cluster);
+
+  log_message ('Phase 6 of 9: Gathering statistics again ...');
+  c_main_fixed := (select count (1) from RDF_QUAD table option (index RDF_QUAD) option (no cluster));
+  c_pogs_fixed := (select count (1) from RDF_QUAD table option (index RDF_QUAD_POGS) option (no cluster));
+  c_op_fixed := (select count (1) from RDF_QUAD table option (index RDF_QUAD_OP, index_only) option (no cluster));
+  log_message (sprintf ('* Index sizes after the processing: %09d RDF_QUAD, %09d POGS, %09d OP', c_main_fixed, c_pogs_fixed, c_op_fixed));
+  if ((__min (c_main_fixed, c_pogs_fixed) < __max (c_main, c_pogs)) or (c_op_fixed < c_op))
+    log_message ('** Some data are lost or the corruption was strong before the processing.');
+
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD) where a.G=b.G and a.S=b.S and a.P=b.P and a.O=b.O);
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD_POGS) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD_POGS) where a.G=b.G and a.S=b.S and a.P=b.P and a.O=b.O);
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD_POGS) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD) where a.G=b.G and a.S=b.S and a.P=b.P and a.O=b.O);
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD_POGS) where a.G=b.G and a.S=b.S and a.P=b.P and a.O=b.O);
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD_OP, index_only) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD_OP, index_only) where a.P=b.P and a.O=b.O);
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD_OP, index_only) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD) where a.P=b.P and a.O=b.O);
+--select * from DB.DBA.RDF_QUAD a table option (index RDF_QUAD) where not exists (select top 1 1 from DB.DBA.RDF_QUAD b table option (index RDF_QUAD_OP, index_only) where a.P=b.P and a.O=b.O);
+
+  log_message ('Phase 7 of 9: integrity check (completeness of index RDF_QUAD_POGS of DB.DBA.RDF_QUAD)...');
+  if (exists (select top 1 1 from DB.DBA.RDF_QUAD a table option (index RDF_QUAD) where not exists (select 1 from DB.DBA.RDF_QUAD b table option (loop, index RDF_QUAD_POGS) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)))
+    log_message ('** IMPORTANT WARNING: not all rows of DB.DBA.RDF_QUAD are found in RDF_QUAD_POGS, data reloading is strictly recommended.');
+
+  log_message ('Phase 8 of 9: integrity check (completeness of primary key of DB.DBA.RDF_QUAD)...');
+  if (exists (select top 1 1 from DB.DBA.RDF_QUAD a table option (index RDF_QUAD_POGS) where not exists (select 1 from DB.DBA.RDF_QUAD b table option (loop, index primary key) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)))
+    log_message ('** IMPORTANT WARNING: not all rows of DB.DBA.RDF_QUAD are found in RDF_QUAD_POGS, data reloading is strictly recommended.');
+
+  log_message ('Phase 9 of 9: final checkpoint...');
+  registry_set ('__rb_id_only_for_plain_ro_obj', '1');
+  exec ('checkpoint');
+  log_enable (old_mode, 1);
+  log_message ('Update complete.');
+}
+;
+
+--!AFTER
+--DB.DBA.RDF_QUAD_OUTLINE_ALL ()
+--;
+
+
 create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
 {
   declare stat, msg varchar;
@@ -13257,3 +13425,125 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
 }
 ;
 
+create procedure cl_tmp_inx_recov_fill ()
+{
+  if (registry_get ('__rb_id_only_for_plain_ro_obj') = '1')
+    return;
+  log_enable (2,1);
+  log_message ('Cleaning the temporary table ...');
+  again:
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP, no cluster) option (index RDF_QUAD_RECOV_TMP, no cluster);
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster) option (index RDF_QUAD_RECOV_TMP_POGS, no cluster);
+  delete from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_OP, index_only, no cluster) option (index RDF_QUAD_RECOV_TMP_OP, no cluster);
+
+  if (exists (select 1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster)))
+    goto again;
+
+  log_message ('Copying all quads to a temporary table ...');
+  insert soft DB.DBA.RDF_QUAD_RECOV_TMP index RDF_QUAD_RECOV_TMP option (no cluster) (G1,S1,P1,O1) select G,S,P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD, no cluster);
+  insert soft DB.DBA.RDF_QUAD_RECOV_TMP index RDF_QUAD_RECOV_TMP_POGS option (no cluster) (G1,S1,P1,O1) select G,S,P,O from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS, no cluster);
+}
+;
+
+create procedure cl_inx_recov_clean ()
+{
+  if (registry_get ('__rb_id_only_for_plain_ro_obj') = '1')
+    return;
+  log_enable (2,1);
+  log_message ('Cleaning the quad storage ...');
+  again:
+  delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD, no cluster) option (index RDF_QUAD, no cluster);
+  delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS, no cluster) option (index RDF_QUAD_POGS, no cluster);
+  delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_OP, index_only, no cluster) option (index RDF_QUAD_OP, no cluster);
+  if (exists (select 1 from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS, no cluster)))
+    goto again;
+
+}
+;
+
+create procedure cl_inx_recov_fill_1 ()
+{
+  if (registry_get ('__rb_id_only_for_plain_ro_obj') = '1')
+    return;
+  log_enable (2,1);
+  log_message ('Refilling the quad storage (PK) from the temporary table...');
+  insert into DB.DBA.RDF_QUAD index RDF_QUAD option (no cluster) (G,S,P,O) select G1,S1,P1,O1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP, no cluster);
+  log_message ('Refilling the quad storage (POGS) from the temporary table...');
+  insert into DB.DBA.RDF_QUAD index RDF_QUAD_POGS option (no cluster) (G,S,P,O) select G1,S1,P1,O1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster);
+  log_message ('Refilling the quad storage (OP) from the temporary table...');
+  insert soft DB.DBA.RDF_QUAD index RDF_QUAD_OP option (index_only, no cluster) (P,O) select P1,O1 from DB.DBA.RDF_QUAD_RECOV_TMP table option (index RDF_QUAD_RECOV_TMP_POGS, no cluster);
+  log_message ('Done.');
+}
+;
+
+create procedure AQ_EXEC_SRV (in cmd varchar)
+{
+  declare st, msg any;
+  st := '00000';
+  exec (cmd, st, msg, vector ());
+  if ('00000' <> st)
+    signal (st, msg);
+}
+;
+
+
+create procedure exec_from_daq (in cmd varchar)
+{
+  declare aq any;
+  aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.AQ_EXEC_SRV', vector (cmd));
+  aq_wait_all (aq);
+}
+;
+
+create procedure cl_inx_recov (in force int := 0)
+{
+  declare old_mode, tries int;
+  if (force)
+    cl_exec ('registry_remove (''__rb_id_only_for_plain_ro_obj'')');
+  if (registry_get ('__rb_id_only_for_plain_ro_obj') = '1')
+    return;
+  cl_exec ('checkpoint_interval (0)');
+  log_message ('Automatic checkpoint is stopped, must enable manually once upgrade finished.');
+  cl_exec ('__dbf_set (''cl_max_keep_alives_missed'', 10000)');
+  cl_exec ('__dbf_set (''cl_non_logged_write_mode'', 1)');
+  cl_exec ('checkpoint');
+  old_mode := log_enable (2,1);
+  cl_exec ('exec_from_daq (''cl_tmp_inx_recov_fill ()'')');
+clear_retry:
+  cl_exec ('exec_from_daq (''cl_inx_recov_clean ()'')');
+  if (
+       exists (select 1 from rdf_quad table option (index rdf_quad)) or
+       exists (select 1 from rdf_quad table option (index rdf_quad_pogs)) or
+       exists (select 1 from rdf_quad table option (index rdf_quad_op, index_only))
+     )
+   {
+     tries := tries + 1;
+     if (tries > 100)
+       {
+         log_message ('Quad store can not be cleaned, data reloading is strictly recommended.');
+	 cl_exec ('raw_exit ()');
+       }
+     log_message (sprintf ('Quad store is not fully cleaned, will try again [%d]', tries));
+     goto clear_retry;
+   }
+  cl_exec ('exec_from_daq (''cl_inx_recov_fill_1 ()'')');
+  cl_exec ('registry_set (''__rb_id_only_for_plain_ro_obj'', ''1'')');
+  if (not force)
+    cl_exec ('checkpoint');
+  log_message ('integrity check (completeness of index RDF_QUAD_POGS of DB.DBA.RDF_QUAD) ...');
+  if (exists (select top 1 1 from DB.DBA.RDF_QUAD a table option (index RDF_QUAD) where not exists (select 1 from DB.DBA.RDF_QUAD b table option (loop, index RDF_QUAD_POGS)
+		where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)))
+    log_message ('** IMPORTANT WARNING: not all rows of DB.DBA.RDF_QUAD are found in RDF_QUAD_POGS, data reloading is strictly recommended.');
+
+  log_message ('integrity check (completeness of primary key of DB.DBA.RDF_QUAD) ...');
+  if (exists (select top 1 1 from DB.DBA.RDF_QUAD a table option (index RDF_QUAD_POGS) where not exists (select 1 from DB.DBA.RDF_QUAD b table option (loop, index RDF_QUAD)
+	where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)))
+    log_message ('** IMPORTANT WARNING: not all rows of DB.DBA.RDF_QUAD are found in RDF_QUAD_POGS, data reloading is strictly recommended.');
+  log_enable (old_mode, 1);
+  cl_exec ('__dbf_set (''cl_non_logged_write_mode'', 0)');
+  log_message ('Update complete.');
+  if (force)
+    log_message ('Must do checkpoint to persist the db state.');
+}
+;

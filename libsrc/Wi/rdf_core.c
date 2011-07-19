@@ -2075,6 +2075,7 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
   caddr_t dtlang = box_num ((rb->rb_type << 16) | rb->rb_lang);
   buffer_desc_t * buf;
   search_spec_t sp, sp2;
+  rb_dt_lang_check(rb);
   if (dk_set_length (key->key_parts) < 3)
     return 0;
   id_col = (dbe_column_t*)key->key_parts->next->next->data;
@@ -2145,7 +2146,7 @@ key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
     if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
       {
 	QNCAST (rdf_bigbox_t, rbb, rb);
-
+	dk_check_tree (rbb->rbb_chksum);
 	rb->rb_ro_id = key_find_rdf_obj_1 (rb, rbb->rbb_chksum);
       }
     else
