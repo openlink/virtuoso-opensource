@@ -1570,10 +1570,11 @@ sqlc_sch_list (sql_comp_t * sc, ST * tree)
 	xv->xv_schema = schema;
 	xv->xv_user = user;
 	xv->xv_local_name = local_name;
-        mpschema_set_view_def (full_name, box_copy_tree ((caddr_t)xv));
-      xmls_set_view_def ((void*) sc, (xml_view_t *) xv);
+      /* mpschema_set_view_def (full_name, (caddr_t)xv); Can't understand the reason: it is called again in xmls_set_view_def */
+      xmls_set_view_def ((void*) sc, xv);
       if (!sc->sc_store_procs)
 	return;
+      /*list[0] = box_copy_tree ((caddr_t)xv); / *... because the original is remembered in a hashtable in mpschema_set_view_def() */
     }
 #endif
   DO_BOX (ST *, elt, inx, list)
