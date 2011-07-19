@@ -314,7 +314,7 @@ int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_stat
     return SPAR_GPT_NODOWN;
   sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] =
     spartlist (sparp, 4, SPAR_ALIAS,
-      spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:MAX"), (SPART **)t_list (1, curr)),
+      spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:_LONG_MAX"), (SPART **)t_list (1, curr)),
       varname, SSG_VALMODE_AUTO );
   return SPAR_GPT_NODOWN;
 }

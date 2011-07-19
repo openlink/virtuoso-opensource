@@ -1508,10 +1508,10 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
   int gp_member_idx;
   if (NULL == eq)
     return NULL;
+  if (eq->e_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
+    return SSG_VALMODE_BOOL; /* A smallest possible type because the equiv is in conflict and no binding exists */
   if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
-    {
       return SSG_VALMODE_SQLVAL;
-    }
   if (SELECT_L == gp->_.gp.subtype)
     {
       caddr_t varname = eq->e_varnames[0];
@@ -1699,7 +1699,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         default: return SSG_VALMODE_SQLVAL;
         }
     case SPAR_FUNCALL:
-      return sparp_rettype_of_function (sparp, tree->_.funcall.qname);
+      return sparp_rettype_of_function (sparp, tree->_.funcall.qname, tree);
     case SPAR_CONV:
       {
         ssg_valmode_t needed = tree->_.conv.needed;
@@ -1990,10 +1990,11 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case SPAR_FUNCALL:
       {
         caddr_t qname = tree->_.funcall.qname;
-        if ((!strcmp (qname, "bif:MAX") || !strcmp (qname, "bif:MIN") || !strcmp (qname, "SPECIAL::bif:MAX")) &&
+        if ((!strcmp (qname, "SPECIAL::bif:MAX") || !strcmp (qname, "SPECIAL::bif:MIN")) &&
           (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL;
-        if (!strcmp (qname, "bif:AVG") && (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)))
+        if ((!strcmp (qname, "SPECIAL::bif:AVG") || !strcmp (qname, "SPECIAL::bif:SUM")) &&
+          (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
             (sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL) );
         if (!strcmp (qname, "SPECIAL::bif:COUNT"))
@@ -3838,7 +3839,7 @@ sparp_rettype_of_global_param (sparp_t *sparp, caddr_t name)
 
 
 ssg_valmode_t
-sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
+sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
 {
   ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
   if (SSG_VALMODE_SPECIAL == res)
@@ -3851,12 +3852,29 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
         return SSG_VALMODE_LONG; /* Fake but this works for use as arg of RDF_DIST_DESER_LONG */
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_DESER_LONG"))
         return SSG_VALMODE_LONG;
-      if (!strcmp (name, "SPECIAL::bif:MAX"))
+      if (!strcmp (name, "SPECIAL::bif:_LONG_MAX"))
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:COUNT"))
         return SSG_VALMODE_SQLVAL;
+      if (!strcmp (name, "SPECIAL::bif:MIN") || !strcmp (name, "SPECIAL::bif:MAX"))
+        {
+          SPART **args = tree->_.funcall.argtrees;
+          SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
+          ssg_valmode_t arg1_native = sparp_expn_native_valmode (sparp, arg1);
+          if (IS_BOX_POINTER (arg1_native))
+            {
+              return SSG_VALMODE_SQLVAL;
+            }
+          if (SSG_VALMODE_NUM == arg1_native)
+            return SSG_VALMODE_NUM;
+          if (SSG_VALMODE_BOOL == arg1_native)
+            return SSG_VALMODE_BOOL;
+          return SSG_VALMODE_SQLVAL;
+        }
+      if (!strcmp (name, "SPECIAL::bif:AVG") || !strcmp (name, "SPECIAL::bif:SUM"))
+        return SSG_VALMODE_NUM;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
@@ -3901,7 +3919,7 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
 
 
 ssg_valmode_t
-sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx)
+sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_idx)
 {
   ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
   if (SSG_VALMODE_SPECIAL == res)
@@ -3914,12 +3932,31 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_DESER_LONG"))
         return SSG_VALMODE_LONG; /* Fake but this works for retvals of RDF_DIST_SER_LONG */
-      if (!strcmp (name, "SPECIAL::bif:MAX"))
+      if (!strcmp (name, "SPECIAL::bif:_LONG_MAX"))
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_SQLVAL;
       if (!strcmp (name, "SPECIAL::bif:COUNT"))
         return SSG_VALMODE_AUTO;
+      if (!strcmp (name, "SPECIAL::bif:MIN") || !strcmp (name, "SPECIAL::bif:MAX"))
+        {
+          SPART **args = tree->_.funcall.argtrees;
+          SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
+          ssg_valmode_t arg1_native = sparp_expn_native_valmode (sparp, arg1);
+          if (IS_BOX_POINTER (arg1_native))
+            {
+              if (arg1_native->qmfIsSubformatOfLongWhenEqToSql)
+                return arg1_native;
+              return SSG_VALMODE_SQLVAL;
+            }
+          if (SSG_VALMODE_NUM == arg1_native)
+            return SSG_VALMODE_NUM;
+          if (SSG_VALMODE_BOOL == arg1_native)
+            return SSG_VALMODE_BOOL;
+          return SSG_VALMODE_SQLVAL;
+        }
+      if (!strcmp (name, "SPECIAL::bif:AVG") || !strcmp (name, "SPECIAL::bif:SUM"))
+        return SSG_VALMODE_NUM;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
@@ -3942,6 +3979,14 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
   if (name == strstr (name, "bif:"))
     {
       name = name + 4;
+      if ('_' == name[0])
+        {
+          if (!strcasecmp(name, "_LONG_MAX"))
+            {
+              ssg_puts ("MAX");
+              return;
+            }
+        }
       if (!strcasecmp(name, "left"))
         ssg_puts ("\"LEFT\"");
       else if (!strcasecmp(name, "right"))
@@ -4474,7 +4519,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       {
         int curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
-	ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname);
+        ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
         if (native != needed)
           {
             ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
@@ -4544,7 +4589,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];
-            ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, arg_ctr);
+            ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
             curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
@@ -6390,7 +6435,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
       {
         int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
-	ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname);
+        ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
         if (((SSG_VALMODE_SHORT_OR_LONG == needed) && (SSG_VALMODE_LONG == native)) ||
           ((SSG_VALMODE_NUM == needed) && (SSG_VALMODE_SQLVAL == native)) ||
           ((SSG_VALMODE_SQLVAL == needed) && (SSG_VALMODE_NUM == native)) ||
@@ -6490,7 +6535,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];
-            ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, arg_ctr);
+            ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
             if (bigtext) ssg_newline (0); else ssg_putchar (' ');

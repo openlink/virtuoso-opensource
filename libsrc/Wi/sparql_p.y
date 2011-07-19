@@ -1327,10 +1327,10 @@ spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
 
 spar_agg_name_int
 	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:COUNT"); }
-	| AVG_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:AVG"); }
-	| MIN_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:MIN"); }
-	| MAX_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:MAX"); }
-	| SUM_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:SUM"); }
+	| AVG_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:AVG"); }
+	| MIN_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MIN"); }
+	| MAX_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MAX"); }
+	| SUM_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:SUM"); }
 	;
 
 spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRIref )	*/

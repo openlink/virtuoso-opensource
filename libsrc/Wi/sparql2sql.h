@@ -863,8 +863,8 @@ extern void ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit);
 extern void ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, ccaddr_t asname);
 
 extern ssg_valmode_t sparp_rettype_of_global_param (sparp_t *sparp, caddr_t name);
-extern ssg_valmode_t sparp_rettype_of_function (sparp_t *sparp, caddr_t name);
-extern ssg_valmode_t sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx);
+extern ssg_valmode_t sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *call_tree);
+extern ssg_valmode_t sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *call_tree, int arg_idx);
 extern void ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name);
 
 extern void ssg_print_global_param (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed);
