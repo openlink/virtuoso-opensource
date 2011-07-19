@@ -759,14 +759,14 @@ create aggregate DB.DBA.BAG_CONCAT_AGG (in _child any) returns any
 
 
 --!AWK PUBLIC
-create procedure GROUP_CONCAT_INIT (inout _env any)
+create procedure DB.DBA.GROUP_CONCAT_INIT (inout _env any)
 {
   _env := 0;
 }
 ;
 
 --!AWK PUBLIC
-create procedure GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
+create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
 {
 --  if (185 <> __tag (_env))
 --    _env := string_output();
@@ -783,7 +783,7 @@ create procedure GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim va
 ;
 
 --!AWK PUBLIC
-create procedure GROUP_CONCAT_FIN (inout _env any)
+create procedure DB.DBA.GROUP_CONCAT_FIN (inout _env any)
 {
 --  if (185 <> __tag (_env))
 --    return '';
@@ -796,6 +796,106 @@ create procedure GROUP_CONCAT_FIN (inout _env any)
 
 create aggregate DB.DBA.GROUP_CONCAT (in token varchar, in delim varchar) returns varchar
   from DB.DBA.GROUP_CONCAT_INIT, DB.DBA.GROUP_CONCAT_ACC, DB.DBA.GROUP_CONCAT_FIN
+order
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_DIGEST_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_DIGEST_ACC (inout _env any, in token varchar, in delim varchar, in maxlen integer, in mode integer)
+{
+  declare curlen integer;
+  declare env_vec, items any;
+  if (__tag of varchar <> __tag (token))
+    {
+      token := cast (token as varchar);
+      if (token is null)
+        return;
+    }
+  if (__tag of varchar <> __tag (_env))
+    {
+      if (length (token) > maxlen)
+        token := subseq (token, 0, maxlen+1);
+      _env := serialize (vector_zap_args (vector_zap_args (token), cast (delim as varchar), maxlen));
+      return;
+    }
+  curlen := length (_env);
+  if (curlen >= maxlen)
+    return;
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  if (bit_and (mode, 1))
+    {
+      if (0 < position (token, items))
+        return;
+    }
+  if (length (token) > (env_vec[2] - curlen))
+    token := subseq (token, 0, (env_vec[2] - curlen)+1);
+  items := vector_concat (items, vector_zap_args (token));
+  aset_zap_arg (env_vec, 0, items);
+  _env := serialize (env_vec);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_DIGEST_FIN (inout _env any)
+{
+  declare envlen, curlen, maxlen, itemctr, itemcount, delim_len, rest_len integer;
+  declare env_vec, items, ses any;
+  declare delim varchar;
+  if (__tag of varchar <> __tag (_env))
+    return '';
+  envlen := length (_env);
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  delim := aref_set_0 (env_vec, 1);
+  rest_len := maxlen := aref_set_0 (env_vec, 2);
+  ses := string_output ();
+  itemctr := 0;
+  itemcount := length (items);
+  delim_len := length (delim);
+  for (itemctr := 0; itemctr < itemcount; itemctr := itemctr + 1)
+    {
+      declare itm varchar;
+      declare itm_len integer;
+      if (delim_len > (rest_len-5))
+        goto items_done;
+      if (itemctr)
+        {
+          http (delim, ses);
+          rest_len := rest_len - delim_len;
+        }
+      itm := items [itemctr];
+      itm_len := length (itm);
+      if ((itm_len > rest_len) or ((envlen > maxlen) and (itemctr = itemcount-1)))
+        {
+          itm := subseq (itm, 0, rest_len);
+          itm_len := coalesce (__max_notnull (strrchr (itm, 32), strrchr (itm, 10), strrchr (itm, 13)), 0);
+          while ((itm_len > 0) and (itm [itm_len-1] in (32, 10, 13)))
+            itm_len := itm_len - 1;
+          if (0 = itm_len)
+            http (subseq (itm, 0, rest_len-3), ses);
+          else
+            http (subseq (itm, 0, itm_len), ses);
+          http ('...', ses);
+          goto items_done;
+        }
+      http (itm, ses);
+      rest_len := rest_len - itm_len;
+    }
+items_done:
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.GROUP_DIGEST (in token varchar, in delim varchar, in maxlen integer, in mode integer) returns varchar
+  from DB.DBA.GROUP_DIGEST_INIT, DB.DBA.GROUP_DIGEST_ACC, DB.DBA.GROUP_DIGEST_FIN
 order
 ;
 
