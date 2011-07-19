@@ -1157,8 +1157,8 @@ static char *_st_os_user_name = &st_os_user_name[0];
 static long oneL = 1;
 
 
-#define SD_INT32 ((char *)-1)
-#define SD_INT64 ((char *)-2)
+#define SD_INT32 ((char **)-1)
+#define SD_INT64 ((char **)-2)
 
 
 stat_desc_t stat_descs [] =
@@ -1525,9 +1525,9 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (0 == strcmp (sd->sd_name, name))
 	{
-	  if (SD_INT32 == (char *) sd->sd_str_value)
+	  if (SD_INT32 == sd->sd_str_value)
 	    return box_num (*(int32*)sd->sd_value);
-	  if (SD_INT64 == (char *) sd->sd_str_value)
+	  if (SD_INT64 == sd->sd_str_value)
 	    return box_num (*(int64*)sd->sd_value);
 	  else if (sd->sd_value)
 	    return (box_num (*(sd->sd_value)));
@@ -1553,7 +1553,7 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (0 == strcmp (sd->sd_name, name))
 	{
-	  if (SD_INT32 == (char *) sd->sd_str_value)
+	  if (SD_INT32 == sd->sd_str_value)
 	    {
 	      int32 ov = *((int32*)sd->sd_value);
 	      *((int32*)sd->sd_value) = v;
