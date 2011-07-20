@@ -737,6 +737,7 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 		}
 	      it->itc_position = pos;
 	      it->itc_row_data = page + pos + IE_FIRST_KEY;
+	      it->itc_row_key = row_key;
 	      it->itc_row_key_id = row_key->key_id;
 	      it->itc_insert_key = row_key;
 	      if (!log_v6_format)
