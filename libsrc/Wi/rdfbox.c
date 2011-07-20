@@ -3657,6 +3657,8 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
       res = (flags & 0x2) ? list (3, NULL, box_dv_short_string (""), box_dv_short_nchars (iri, iri_strlen)) : NULL;
       goto res_done; /* see below */
     }
+  if (tail > iri && tail[-1] == '%' && (tail < (iri + iri_strlen - 2)))
+    tail += 2;
   ns_iri = box_dv_short_nchars (iri, tail-iri);
   prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
   if (NULL != prefix_ptr)

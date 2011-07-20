@@ -3550,11 +3550,14 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): blank node as predicate');
       res := id_to_iri (pred);
 res_for_pred:
-      declare delim, delim1, delim2, delim3 integer;
+      declare delim, delim1, delim2, delim3, delim4 integer;
       delim1 := coalesce (strrchr (res, '/'), -1);
       delim2 := coalesce (strrchr (res, '#'), -1);
       delim3 := coalesce (strrchr (res, ':'), -1);
-      delim := __max (delim1, delim2, delim3);
+      delim4 := coalesce (strrchr (res, '%'), -1);
+      if (delim4 > 0 and delim4 < (length (res) - 2))
+        delim4 := delim4 + 2;
+      delim := __max (delim1, delim2, delim3, delim4);
       if (delim < 0)
         delim := null;
       if (delim is null)
