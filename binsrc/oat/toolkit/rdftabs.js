@@ -1598,6 +1598,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
     this.drawAllProps = function (item, container) {
 	var preds = item.preds;
+        var p_table = OAT.Dom.create ("table");
 	for (var p in preds) {
 	    if (self.markerPredBlacklist.find(parseInt(p)) != -1) continue; // Not all predicates are created equal
 	    var pred = preds[p];
@@ -1608,9 +1609,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		predT.innerHTML = simple;
 		var predV = OAT.Dom.create("td",{className:"pred_value"});
 		var content = self.parent.getContent(pred[0],"replace");
-		OAT.Dom.append([predV,content],[predC,predT,predV],[div,predC]);
+		OAT.Dom.append([predV,content],[predC,predT,predV],[p_table,predC]);
 	    } /* only interesting data */
 	} /* for all predicates */
+        OAT.Dom.append([container,p_table])
 	return container;
     }
 
@@ -1622,6 +1624,11 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
     }
 
+    this.makeAnchor = function (ctr, content, href) {
+	var a = OAT.Dom.create ("a");
+	a.href=href;
+        
+    }
     this.drawMarker = function (item) {
 	var titleH = OAT.Dom.create("h2",{className:"markerTitle"});
 
@@ -1635,13 +1642,15 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	}
 	else {
 	if (title.match(/^http/i)) {
-	    self.parent.processLink(titleH,title);
-	    titleH.style.cursor = "pointer";
-	titleH.innerHTML = title;
+	        var titleA = OAT.Dom.create("a",{href:titleHref,target:"_blank"});
+		self.parent.processLink(titleA, title);
+		titleA.innerHTML = title;
+		OAT.Dom.append ([titleH, titleA]);		
 	} else {
 	    var titleHref = self.parent.getURI(item);
 	    if (titleHref) {
 		var titleA = OAT.Dom.create("a",{href:titleHref,target:"_blank"});
+		    self.parent.processLink(titleA, titleHref);
 		titleA.innerHTML = title;
 		OAT.Dom.append ([titleH, titleA]);
 	    } else {
@@ -1661,12 +1670,13 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	//	if (self.parent.store.itemHasType (item, "")) { }
 	//	if (self.parent.store.itemHasType (item, "")) { }
 
-	var ap = self.drawAllProps (item, ctr);
-
 	if (abstr)
-	OAT.Dom.append([ctr,titleH,abstrC,ap]);
+	    OAT.Dom.append([ctr,titleH,abstrC]);
 	else 
-	    OAT.Dom.append([ctr,titleH,ap]);
+	    OAT.Dom.append([ctr,titleH]);
+
+	self.drawAllProps (item, ctr);
+
 
 	return ctr;
     }
