@@ -1550,7 +1550,7 @@ create procedure WS.WS.GET (in path any, inout params any, in lines any)
   declare resource_owner, exec_safety_level integer;
   declare _res_id , _col_id, is_admin_owned_res integer;
   declare def_page varchar;
-  declare asmx_path any;
+  declare asmx_path, auth_opts, webid_check, webid_check_rc any;
   -- dbg_obj_princ ('WS.WS.GET (', path, params, lines, ')');
   --set isolation='committed';
   if (WS.WS.DAV_CHECK_ASMX (path, asmx_path))
@@ -1668,6 +1668,32 @@ again:
 
   http_rewrite (0);
 
+  -- execute + webid 
+  auth_opts := http_map_get ('auth_opts');
+  if (isvector (auth_opts) and mod (length (auth_opts), 2) = 0)
+    webid_check := atoi (get_keyword ('webid_check', auth_opts, '0'));
+  else
+    webid_check := 0;
+  webid_check_rc := 1;  
+  if (is_https_ctx () and webid_check and http_map_get ('executable'))
+    {
+      declare gid, perms, _check_id, _check_type any;
+      uid := null;
+      if (isinteger (_res_id)) 
+	{ 
+	  _check_id := _res_id; 
+	  _check_type := 'R';
+	} 
+      else 
+	{ 
+	  _check_id := _col_id; 
+	  _check_type := 'C';
+       	} 
+      webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid, perms);
+      if ((webid_check_rc < 0) and (webid_check_rc <> -1))
+	return 0;
+    }  
+
   if (_col_id is not null and http_path () not like '%/')
     {
       http_request_status ('HTTP/1.1 301 Moved Permanently');
@@ -1755,7 +1781,7 @@ again:
   --  }
 
   -- special extensions can be executed if special flag is set
-   if (http_map_get ('executable') or (exec_safety_level and is_admin_owned_res))
+   if ((http_map_get ('executable') and webid_check_rc >= 0) or (exec_safety_level and is_admin_owned_res))
      exec_safety_level := 2;
   -- dbg_obj_princ ('exec_safety_level is ', exec_safety_level);
   -- when directory is executable set the owner for execution to the resource owner
@@ -3588,8 +3614,11 @@ create procedure WS.WS.EXPAND_INCLUDES (in path varchar, inout stream varchar, i
 	  select blob_to_string (RES_CONTENT), RES_OWNER, RES_GROUP, RES_PERMS, RES_MOD_TIME
 	      into curr_file, _u_id, _grp, _perms, modt from WS.WS.SYS_DAV_RES
 	      where RES_NAME = name and RES_COL = col;
+	  if (not http_map_get ('executable'))
+	    {
 	  if (_u_id <> http_dav_uid () or _perms like '____1%' or _perms like '_______1%')
 	    signal ('37000', 'Includes can be owned only by admin & cannot be writable for others', 'DA001');
+	    }
 	  if (st is not null and isarray (st))
 	    st := vector_concat (st, vector (path, datestring(modt)));
 	}
