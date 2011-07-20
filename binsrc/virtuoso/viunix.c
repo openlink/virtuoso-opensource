@@ -78,6 +78,9 @@ extern char *f_crash_dump_data_ini;
 
 extern const char* recover_file_prefix;
 extern int ob_just_report;
+#ifdef V5UPGRADE
+extern int32 log_v6_format;
+#endif
 
 struct pgm_option options[] =
 {
@@ -125,6 +128,10 @@ struct pgm_option options[] =
   {"pwddba", '\0', ARG_STR, &f_new_dba_pass, "New DBA password"},
 
   {"pwddav", '\0', ARG_STR, &f_new_dav_pass, "New DAV password"},
+
+#ifdef V5UPGRADE
+  {"log6", '\0', ARG_NONE, &log_v6_format, "Backup dump in version 6 format"},
+#endif
 
   {0}
 };
@@ -576,6 +583,10 @@ main (int argc, char **argv)
   /* all of the below means foreground ! */
   if (f_backup_dump || recover_file_prefix || f_crash_dump)
     f_foreground = 1;
+#ifdef V5UPGRADE
+  if (!f_backup_dump)
+    log_v6_format = 0;
+#endif
 
   /* put ourselves in the background */
   os_background ();
