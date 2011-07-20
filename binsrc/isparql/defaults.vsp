@@ -69,6 +69,13 @@
   api_key := registry_get ('iSPARQL_API_KEY');
   if (0 = api_key) api_key := '';
   
+
+  declare rdf_mappers_installed varchar;
+  rdf_mappers_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('rdf_mappers') is not NULL)
+    rdf_mappers_installed := 'true';
+
   declare pivot_installed varchar;
   pivot_installed := 'false';
 
@@ -107,6 +114,7 @@
 <?vsp } ?>
    "pivotInstalled":<?= pivot_installed ?>,
    "curiInstalled":<?= curi_installed ?>,
+   "rdfMappersInstalled":<?= rdf_mappers_installed ?>,
    "setup_done":<?= setup_done ?>,
    "namespaces":[
 <?vsp
