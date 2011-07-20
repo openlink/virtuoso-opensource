@@ -207,6 +207,9 @@ create procedure TUT_generate_files(
 
   foreach (varchar gen_path in paths)do
   {
+    if (gen_path like '%/idp_s_1.vsp')
+      goto _skip;
+    
 	  _file := 'index.vsp';
 	  if (length(gen_path) > 5 and (
 	      subseq(gen_path,length(gen_path) - 4,length(gen_path)) = '.vsp'  or
@@ -260,8 +263,9 @@ create procedure TUT_generate_files(
 	  	http_flush (1);
 	  } else {
 	  	result('Wrote ' || http_root() ||path|| gen_path || _file);
-	  };
-  };
+	  }
+	_skip:;  
+  }
 	if (_outmode = 'web'){
 		http('Finished.\n');
 		http_flush(1);

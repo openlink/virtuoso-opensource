@@ -116,7 +116,8 @@ create procedure t_sys_dirlist (in path varchar, in files int, in err any, in so
       declare col any;
       if (path[length(path)-1] <> ascii ('/'))
 	path := path || '/';
-      col := (select COL_ID from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = path);
+
+      col := DAV_SEARCH_ID (path, 'C');
       if (files)
 	{
 	  for select RES_NAME from WS.WS.SYS_DAV_RES where RES_COL = col do
@@ -346,4 +347,3 @@ DB.DBA.rd_v_1_localize()
 			
 drop procedure DB.DBA.rd_v_1_localize
 ;
-			

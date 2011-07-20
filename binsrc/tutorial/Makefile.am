@@ -158,6 +158,9 @@ EXTRA_DIST= \
 	wap/wa_b_3/*.vsp \
 	wap/wa_b_3/*.xml \
 	web2/*.xml \
+	webid/*.html \
+	webid/*.php \
+	webid/*.vsp \
 	xmlapps/*.xml \
 	xmlsql/*.css \
 	xmlsql/*.xml \
