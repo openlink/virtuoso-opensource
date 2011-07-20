@@ -4,19 +4,21 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline, banner_logo varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
   banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
   if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
 ?>
 <head>
   <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-  <title>Sponger-LinkedIn Binding</title>
+  <title><?=fp_title?> - LinkedIn Binding</title>
 <?vsp
   declare li_app_name, li_app_secret, oauth_redirect_url, li_login_dialog_url varchar;
   declare li_user_id, li_user_first_name, li_user_last_name, li_user_public_profile_url varchar;
