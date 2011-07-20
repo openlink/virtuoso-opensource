@@ -2,19 +2,21 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline, banner_logo varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
   banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
   if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
 ?>
 <head>
     <meta name="generator" content="HTML Tidy, see www.w3.org"/>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <title>Virtuoso Sponger</title>
+    <title><?=fp_title?></title>
     <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
   </head><body>
     <div id="outer">
