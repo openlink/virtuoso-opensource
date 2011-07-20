@@ -210,6 +210,8 @@ char *sys_tables[] =
 };
 
 static void log_row_blobs (it_cursor_t * itc, db_buf_t row);
+int32 log_v6_format = 0;
+void log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag);
 
 static void
 srv_dd_to_log (client_connection_t * cli)
@@ -239,6 +241,13 @@ srv_dd_to_log (client_connection_t * cli)
 	  key = sch_id_to_key (wi_inst.wi_schema, key_id);
 	  if (!key)
 	    GPF_T1("No key in row");
+	  it->itc_row_key = key;
+	  it->itc_row_key_id = key_id;
+	  it->itc_insert_key = key;
+	  it->itc_row_data = row + IE_FIRST_KEY;
+	  if (log_v6_format)
+	    log_v6_insert (it, key, (db_buf_t) row, INS_REPLACING);
+	  else
 	  log_insert (cli->cli_trx, key, (db_buf_t) row, INS_REPLACING);
 	  log_row_blobs (it, (db_buf_t) row);
 	}
@@ -726,7 +735,14 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 		  if (bkp_check_and_recover_blob_cols (it, page + pos))
 		    buf_set_dirty (buf);
 		}
+	      it->itc_position = pos;
+	      it->itc_row_data = page + pos + IE_FIRST_KEY;
+	      it->itc_row_key_id = row_key->key_id;
+	      it->itc_insert_key = row_key;
+	      if (!log_v6_format)
 	      log_insert (it->itc_ltrx, row_key, page+pos, INS_REPLACING);
+	      else
+		log_v6_insert (it, row_key, page, INS_REPLACING);
 	      log_row_blobs (it, page+pos);
 	      any++;
 	    }

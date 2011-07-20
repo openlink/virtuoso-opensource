@@ -133,13 +133,14 @@ log_set_byte_order_check (int in_txn)
   log_set_compatibility_check (in_txn, tmp);
 }
 
+extern int32 log_v6_format;
 
 void
 log_set_server_version_check (int in_txn)
 {
   dbe_storage_t * dbs = wi_inst.wi_master;
   char tmp[255];
-  if (!dbs->dbs_log_session)
+  if (!dbs->dbs_log_session || log_v6_format)
     return;
 
   sprintf (tmp, "server_version_check ('%s')", DBMS_SRV_VER);
@@ -527,6 +528,108 @@ log_insert (lock_trx_t * lt, dbe_key_t * key, db_buf_t row, int flag)
   mutex_leave (lt->lt_log_mtx);
 }
 
+dbe_col_loc_t *
+key_next_list (dbe_key_t * key, dbe_col_loc_t * list)
+{
+  if (list == key->key_key_fixed)
+    return key->key_key_var;
+  if (list == key->key_key_var)
+    return key->key_row_fixed;
+  if (list == key->key_row_fixed)
+    return key->key_row_var;
+  return NULL;
+}
+
+#define DO_CL(cl, cls) \
+  { int __inx; \
+    for (__inx = 0; cls[__inx].cl_col_id; __inx++) { \
+      dbe_col_loc_t * cl = &cls[__inx];
+
+#define END_DO_CL } }
+
+dbe_col_loc_t * key_next_list (dbe_key_t * key, dbe_col_loc_t * list);
+
+#define DO_ALL_CL(cl, key) \
+{\
+  dbe_col_loc_t * __list;\
+  for (__list = key->key_key_fixed; __list; __list = key_next_list (key, __list))\
+    {\
+      DO_CL (cl, __list)
+
+
+#define END_DO_ALL_CL  END_DO_CL; } }
+
+void
+log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag)
+{
+  int i, n_values, cols_done = 0;
+  dk_set_t values = NULL;
+  caddr_t * arr;
+  lock_trx_t * lt = itc->itc_ltrx;
+
+  lt_hi_row_change (lt, key->key_super_id, LOG_INSERT, NULL);
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+
+  DO_ALL_CL (ocl, key)
+    {
+      caddr_t box;
+      dbe_col_loc_t cl;
+      dtp_t dtp = ocl->cl_sqt.sqt_dtp;
+
+      if (!strcmp (key->key_name, "SYS_KEYS") && __list == key->key_row_fixed && !cols_done) /* key version */
+	{
+	  dk_set_push (&values, box_num (1));
+	  cols_done = 1;
+	}
+
+      memcpy (&cl, ocl, sizeof (dbe_col_loc_t));
+      cl.cl_sqt.sqt_class = NULL;
+      cl.cl_sqt.sqt_is_xml = 0;
+      if (!ITC_NULL_CK (itc, cl) && IS_BLOB_DTP (dtp))
+	{
+	  db_buf_t xx;
+	  int len, off;
+	  ITC_COL (itc, cl, off, len);
+	  xx = page + itc->itc_position + IE_FIRST_KEY + off;
+	  if (IS_BLOB_DTP (*xx))
+	    {
+	      blob_handle_t * bh = bh_from_dv (xx, itc);
+	      blob_check (bh);
+	      box = dk_alloc_box (DV_BLOB_LEN_64 + 1, DV_STRING);
+	      box [ DV_BLOB_LEN_64 ] = 0;
+	      bh_to_dv64 (bh, box, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (bh)));
+	      dk_set_push (&values, box);
+	      dk_free_box (bh);
+	      continue;
+	    }
+	}
+      if (!ITC_NULL_CK (itc, cl) && (dtp == DV_ANY || dtp == DV_OBJECT || IS_BLOB_DTP (dtp) || IS_WIDE_STRING_DTP (dtp)))
+	cl.cl_sqt.sqt_dtp = DV_STRING;
+      box = itc_box_column (itc, page, cl.cl_col_id, &cl);
+      dk_set_push (&values, box);
+    }
+  END_DO_ALL_CL;
+  arr = (caddr_t *) list_to_array (dk_set_nreverse (values));
+  n_values = BOX_ELEMENTS (arr);
+
+  mutex_enter (lt->lt_log_mtx);
+  if (flag == INS_REPLACING)
+    session_buffered_write_char (LOG_INSERT_REPL, lt->lt_log);
+  else if (flag == INS_SOFT)
+    session_buffered_write_char (LOG_INSERT_SOFT, lt->lt_log);
+  else
+    session_buffered_write_char (LOG_INSERT, lt->lt_log);
+
+  dks_array_head (lt->lt_log, 1 + n_values, DV_ARRAY_OF_POINTER);
+  print_int (key->key_id, lt->lt_log);
+  for (i = 0; i < n_values; i ++)
+    {
+      print_object (arr[i], lt->lt_log, NULL, NULL);
+    }
+  dk_free_tree (arr);
+  mutex_leave (lt->lt_log_mtx);
+}
 
 void
 log_delete (lock_trx_t * lt, it_cursor_t * it, db_buf_t page, int pos)

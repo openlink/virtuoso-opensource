@@ -169,6 +169,14 @@ User-level object is of type DV_XML_ENTITY. */
 #define BL_TS (BL_PAGE_DIR + 4)
 #define DV_BLOB_LEN (BL_TS + sizeof (dp_addr_t))
 
+#define BL_BYTE_LEN_64 9
+#define BL_KEY_ID_64 17
+#define BL_FRAG_NO_64 21
+#define BL_DP_64 25
+#define BL_PAGE_DIR_64 (BL_DP_64 + 4 * BL_DPS_ON_ROW)
+#define BL_TS_64 (BL_PAGE_DIR_64 + 4)
+#define DV_BLOB_LEN_64 (BL_TS_64 + sizeof (dp_addr_t))
+
 #define BL_N_PAGES(bytes)  ((_RNDUP (((bytes) ? bytes : 1), PAGE_DATA_SZ)) / PAGE_DATA_SZ)
 
 #define DV_TIME		210

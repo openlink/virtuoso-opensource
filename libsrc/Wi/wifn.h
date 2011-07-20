@@ -668,6 +668,7 @@ int itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
 blob_layout_t * bl_from_dv (dtp_t * col, it_cursor_t * itc);
 blob_handle_t * bh_from_dv (dtp_t * col, it_cursor_t * itc);
 void bh_to_dv (blob_handle_t * bh, dtp_t * col, dtp_t dtp);
+void bh_to_dv64 (blob_handle_t * bh, dtp_t * col, dtp_t dtp);
 int  blob_check (blob_handle_t * bh);
 int  bl_check (blob_layout_t * bl);
 #define BLOB_OK 0

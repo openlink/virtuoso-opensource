@@ -1676,6 +1676,25 @@ bh_to_dv (blob_handle_t * bh, dtp_t * col, dtp_t dtp)
   LONG_SET_NA (col + BL_TS, bh->bh_timestamp);
 }
 
+void
+bh_to_dv64 (blob_handle_t * bh, dtp_t * col, dtp_t dtp)
+{
+  int inx;
+  int n_pages;
+  col[0] = dtp;
+  INT64_SET_NA (col + BL_CHAR_LEN, bh->bh_length);
+  INT64_SET_NA (col + BL_BYTE_LEN_64, bh->bh_diskbytes);
+  LONG_SET_NA (col + BL_KEY_ID_64, bh->bh_it->it_key->key_id);
+  LONG_SET_NA (col + BL_FRAG_NO_64, bh->bh_frag_no);
+  n_pages = box_length ((caddr_t) bh->bh_pages) / sizeof (dp_addr_t);
+  n_pages = MIN (n_pages, BL_DPS_ON_ROW);
+  for (inx = 0; inx < BL_DPS_ON_ROW; inx++)
+    LONG_SET_NA (col + BL_DP_64 + sizeof (dp_addr_t) * inx,
+		 inx < n_pages ? bh->bh_pages[inx] : 0);
+  LONG_SET_NA (col + BL_PAGE_DIR_64, bh->bh_dir_page);
+  LONG_SET_NA (col + BL_TS_64, bh->bh_timestamp);
+}
+
 static int
 itc_set_xper_col (it_cursor_t * row_itc, db_buf_t col, xper_entity_t *data, dp_addr_t first_page, blob_layout_t **replaced_version_ptr, blob_handle_t **source_bh_ptr)
 {
