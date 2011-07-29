@@ -1945,6 +1945,8 @@ sqlg_pred_find_duplicates (sqlo_t *so, df_elt_t **body, dk_set_t *dfe_set, dk_se
 
       if (pred->dfe_tree)
 	pred = sqlo_df_elt (so, pred->dfe_tree);
+      if (!pred)
+	SQL_GPF_T1 (so->so_sc->sc_cc, "Can't find the predicate internals");
       if (pred->dfe_type != DFE_BOP_PRED)
 	{
 	  if (dk_set_member (*dfe_set, pred))
