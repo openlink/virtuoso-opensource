@@ -4961,6 +4961,9 @@ xpfm_store_alias (const char *alias_local_name, const char *alias_ns, const char
         (main_metas_ptr[0]->xpfm_defun == alias_metas_ptr[0]->xpfm_defun) &&
         (main_metas_ptr[0]->xpfm_res_dtp == alias_metas_ptr[0]->xpfm_res_dtp) &&
         (main_metas_ptr[0]->xpfm_min_arg_no == alias_metas_ptr[0]->xpfm_min_arg_no) );
+#ifndef DEBUG
+      if (!defs_match)
+#endif
       log_info ("XPATH function %s is defined but redefind as alias of %s, %s", alias_n, main_n, (defs_match ? "relatively safe" : "totally wrong"));
       return;
     }
