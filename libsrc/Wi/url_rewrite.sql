@@ -490,7 +490,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 		    goto next_rule;
 		}
 	      -- cannot do redirect on POST or PUT or something having a content sent as part of the request
-	      if (URR_HTTP_REDIRECT is not null and URR_HTTP_REDIRECT > 299 and URR_HTTP_REDIRECT < 304 and meth not in ('GET', 'MGET', 'HEAD'))
+	      if (URR_HTTP_REDIRECT is not null and URR_HTTP_REDIRECT > 299 and URR_HTTP_REDIRECT < 304 and meth not in ('GET', 'MGET', 'HEAD', 'OPTIONS'))
 		{
 		  if (registry_get ('__debug_url_rewrite') in ('1', '2'))
 		    dbg_printf ('skipping rule=[%s] because HTTP redirect cannot be done for HTTP %s', URR_NICE_FORMAT, meth);
