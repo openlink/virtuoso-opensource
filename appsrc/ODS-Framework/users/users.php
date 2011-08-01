@@ -189,7 +189,6 @@
         }
       }
     }
-    -- var_dump($_REQUEST);
 
     $_formTab = intval((isset ($_REQUEST['formTab'])) ? $_REQUEST['formTab'] : "0");
     $_formTab2 = intval((isset ($_REQUEST['formTab2'])) ? $_REQUEST['formTab2'] : "0");
@@ -754,18 +753,6 @@
               $_params .=
                   "&securityOpenID=" . myUrlencode ($_REQUEST['pf_securityOpenID']);
 
-            if ($_formTab2 == 3)
-            {
-              if (isset ($_REQUEST['pf_clear']) && ($_REQUEST['pf_clear'] <> ""))
-              {
-                $_params .=
-                    "&securityFacebookID=";
-              } else {
-              $_params .=
-                  "&securityFacebookID=" . myUrlencode ($_REQUEST['pf_securityFacebookID']);
-              }
-            }
-
             if ($_formTab2 == 4)
               $_params .=
                   "&securitySiocLimit=" . myUrlencode ($_REQUEST['pf_securitySiocLimit']);
@@ -915,9 +902,9 @@
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
@@ -1016,9 +1003,9 @@
                 </div>
                 <ul id="rf_tabs" class="tabs">
                   <li id="rf_tab_0" title="Digest">Digest</li>
+                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
@@ -1028,18 +1015,18 @@
                     <table id="rf_table_0" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
-                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                          <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
+                          <input type="text" name="rf_uid_0" value="" id="rf_uid_0" style="width: 150px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                          <label for="rf_email_0">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                          <input type="text" name="rf_email_0" value="" id="rf_email_0" style="width: 300px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1129,6 +1116,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
+                  <input type="button" id="rf_check" name="rf_check" value="Check Availabilty" onclick="javascript: return rfCheckAvalability();" />
                   <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
@@ -1806,6 +1794,9 @@
                                     <th>
                                       Member Home Page URI
                                     </th>
+                                    <th>
+                                      Account URI
+                                    </th>
                                     <th width="65px">
                                       Action
                                     </th>
@@ -1813,12 +1804,12 @@
                                 </thead>
                                 <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}, fld_3: {value: val3}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -3466,33 +3457,6 @@
                       {
                       ?>
                       <div id="pf_page_2_3" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                      <tr>
-                            <th>
-                              Saved Facebook ID
-                        </th>
-                            <td>
-                              <?php
-                                if (isset ($_xml->securityFacebookID))
-                                {
-                                  print ($_xml->securityFacebookName);
-                                } else {
-                                  print ('not yet');
-                                }
-                              ?>
-                            </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                              <span id="pf_facebookData" style="min-height: 20px;"></span>
-                              <br />
-                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                              <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                        </table>
                       </div>
                       <?php
                       }

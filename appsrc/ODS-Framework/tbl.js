@@ -879,7 +879,8 @@ TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
     suffix = fldOptions.suffix;
   cb(td, prefix, fldName+'_r'+suffix, No, fldOptions, disabled, 0);
   cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
-  // cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
+  if (fldOptions.execute)
+    cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
 }
 
 TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {

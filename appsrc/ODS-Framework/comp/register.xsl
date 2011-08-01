@@ -105,9 +105,9 @@
         </div>
             <ul id="rf_tabs" class="tabs">
               <li id="rf_tab_0" title="Digest">Digest</li>
+              <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
               <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
               <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-              <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
               <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
               <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
             </ul>
@@ -118,18 +118,18 @@
                 <table id="rf_table_0" class="form" cellspacing="5">
                   <tr>
                     <th width="20%">
-                      <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                      <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
+                      <input type="text" name="rf_uid_0" value="" id="rf_uid_0" style="width: 150px;" />
                 </td>
               </tr>
                   <tr>
                     <th>
-                      <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                      <label for="rf_email_0">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_email" value="" id="rf_email" style="width: 300px;" />
+                      <input type="text" name="rf_email_0" value="" id="rf_email_0" style="width: 300px;" />
                 </td>
               </tr>
                   <tr>
@@ -180,10 +180,11 @@
               </div>
               <div id="rf_page_3" class="tabContent" style="display: none;">
                 <table id="rf_table_3" class="form" cellspacing="5">
-              <tr>
+                  <tr id="rf_table_3_throbber">
                     <th width="20%">
                     </th>
-                <td nowrap="nowrap">
+                    <td>
+                      <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
                 </td>
               </tr>
                 </table>
@@ -227,6 +228,7 @@
             </table>
           </div>
             <div class="footer" id="rf_login_5">
+              <input type="button" id="rf_check" name="rf_check" value="Check Availabilty" onclick="javascript: return rfCheckAvalability();" />
               <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
           </div>
           </div>

@@ -2537,11 +2537,13 @@ create procedure fill_ods_sioc (in doall int := 0)
     commit work;
   }
 
-  declare ep varchar;
+  declare ep, ep2 varchar;
   ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  ep2 := ep || '/rest';
   for select * from SEMPING.DBA.PING_RULES where PR_GRAPH = graph_iri do
     {
-      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep2)` . };
+      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/service> `iri(?:ep)` . };
     }
 
   {
@@ -5314,6 +5316,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
 	    ?person pingback:to ?pb .
+	    ?person pingback:service ?psvc .
 	    ?person foaf:made `iri (bif:sprintf (''http://%%{WSHost}s/ods/describe?uri=%%U'', ?mbox))` .
 	  }
 	  WHERE
@@ -5331,6 +5334,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	        optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
 		optional { ?person pingback:to ?pb } .
+		optional { ?person pingback:service ?psvc } .
 	      }
 	    }
 	  }', graph, iri_pref, u_name);
@@ -5572,6 +5576,7 @@ execute_qr:
 }
 ;
 
+-- XXX: obsolete : see ods_obj_describe
 create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {
   declare iri, graph, ses any;
@@ -5623,6 +5628,7 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
 }
 ;
 
+-- XXX: obsolete : see ods_obj_describe
 create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any, inout fmt any, inout maybe_more int)
 {
   declare triples any;
@@ -5676,6 +5682,8 @@ create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any,
     }
 };
 
+
+-- XXX: obsolete : see ods_obj_describe
 create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar := 'n3', in p int := 0)
 {
   declare graph, ses any;
@@ -5684,7 +5692,6 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
   declare triples any;
   declare lim, offs, maybe_more int;
 
---  dbg_obj_print (u_name, fmt);
   set http_charset='utf-8';
   maybe_more := 1;
   if (fmt = 'text/rdf+n3' or fmt = 'text/n3')
@@ -5786,6 +5793,127 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
     }
   if (fmt = 'rdf')
     rdf_tail (ses);
+  return ses;
+}
+;
+
+create procedure ods_dict_merge (inout dict any, inout rset_dict any)
+{
+  declare triples any;
+  triples := dict_list_keys (rset_dict, 1);
+  foreach (any tr in triples) do
+    {
+      dict_put (dict, tr, 0);
+    }
+}
+;
+
+create procedure ods_obj_describe (in iri varchar, in fmt varchar := 'n3', in p int := 0)
+{
+  declare graph, ses any;
+  declare qrs, stat, msg, accept, pref any;
+  declare rset, metas any;
+  declare triples, path, dict any;
+  declare lim, offs, maybe_more int;
+  declare ss, sa_dict any;
+
+  path := http_path ();
+  dict := dict_new ();
+--  dbg_obj_print_vars (iri, fmt, path, http_header_get ());
+  set http_charset='utf-8';
+  maybe_more := 1;
+
+  if (path like '%.rdf')
+    accept := 'application/rdf+xml';
+  if (path like '%.nt')
+     accept := 'text/n3';
+  if (path like '%.n3')
+     accept := 'text/rdf+n3';
+  if (path like '%.ttl')
+     accept := 'text/rdf+ttl';
+  if (path like '%.txt')
+     accept := 'text/plain';
+  if (path like '%.json')
+     accept := 'application/json';
+  if (path like '%.jmd')
+     accept := 'application/microdata+json';
+  if (path like '%.jld')
+     accept := 'application/x-json+ld';
+  if (path like '%.turtle')
+     accept := 'text/turtle';
+
+
+  graph := fix_graph (get_graph ());
+  iri := fix_uri (iri);
+  ses := string_output ();
+  lim := 20;
+  offs := coalesce (p, 0) * lim;
+  qrs := vector (0,0,0);
+  pref := 'sparql prefix sioc: <http://rdfs.org/sioc/ns#> prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dct: <http://purl.org/dc/terms/> prefix atom: <http://atomowl.org/ontologies/atomrdf#> ';
+  if (offs = 0)
+    {
+      qrs[0] := sprintf ('CONSTRUCT { <%s> ?p ?o . } '||
+      ' FROM <%s> WHERE { <%s> ?p ?o . filter (?p != sioc:container_of && ?p != atom:entry && ?p != atom:contains) }',
+      iri, graph, iri);
+      qrs[1] := sprintf ('CONSTRUCT { ?s ?p <%s> . } '||
+      ' FROM <%s> WHERE { ?s ?p <%s> . filter (?p != sioc:has_container && ?p != atom:source ) }',
+      iri, graph, iri);
+    }
+  qrs[2] := sprintf (
+    'CONSTRUCT { <%s> sioc:container_of ?o . ?o sioc:has_container <%s> . ?o a ?t . ?o rdfs:label ?l . ?o rdfs:seeAlso ?sa . } '||
+    ' FROM <%s> WHERE { <%s> sioc:container_of ?o . optional { ?o a ?t } . optional { ?o rdfs:label ?l } . '||
+    ' optional { ?o rdfs:seeAlso ?sa } . optional { ?o dct:created ?cr } } order by desc (?cr) LIMIT %d OFFSET %d',
+    iri, iri, graph, iri, lim, offs);
+
+  set_user_id ('dba');
+
+  metas := null;
+  foreach (any qr in qrs) do
+    {
+      if (qr <> 0)
+    	{
+    	  qr := pref || qr;
+        -- dbg_printf ('%s', qr);
+    	  stat := '00000';
+    	  exec (qr, stat, msg, vector (), 0, metas, rset);
+    	  if (stat <> '00000')
+    	    signal (stat, msg);
+	  ods_dict_merge (dict, rset[0][0]);
+    	}
+    }
+  if (p > 0)
+    {
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0)), ss);
+      http (sprintf ('<foaf:primaryTopic xmlns:foaf="http://xmlns.com/foaf/0.1/" rdf:resource="%s" />', iri), ss);
+      http ('</rdf:Description>', ss);
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, iri, graph);
+      ods_dict_merge (dict, sa_dict);
+    }
+  if (maybe_more)
+    {
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s">', iri), ss);
+      http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />', iri, coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+      http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0) + 1), ss);
+      http (sprintf ('<rdfs:label>page %d</rdfs:label>', coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, iri, graph);
+      ods_dict_merge (dict, sa_dict);
+    }
+  if (metas is not null)
+    {
+      rset := vector (vector (dict));
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+    }
   return ses;
 }
 ;
@@ -6334,12 +6462,12 @@ create procedure SIOC..rdf_links_header (in iri any)
 
 -----------------------------------------------------------------------------------------
 --
-create procedure SIOC..rdf_links_head (in iri any)
+create procedure SIOC..rdf_links_head_internal (in iri any)
 {
   declare links, blank, desc_link varchar;
 
   if (iri is null)
-    return;
+    return '';
 
   blank := repeat (' ', 4);
   desc_link := sprintf ('http://%{WSHost}s/sparql?default-graph-uri=%U&query=%U', SIOC..get_graph (), sprintf ('DESCRIBE <%s>', iri));
@@ -6372,7 +6500,15 @@ create procedure SIOC..rdf_links_head (in iri any)
     blank ||
     sprintf ('<link href="%V" rev="describedby" />\n', iri);
 
-  http (links);
+  return links;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure SIOC..rdf_links_head (in iri any)
+{
+  http (SIOC..rdf_links_head_internal(iri));
 }
 ;
 

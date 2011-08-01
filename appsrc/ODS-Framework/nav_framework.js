@@ -1066,11 +1066,12 @@ ODS.Nav = function(navOptions) {
 	this.initLeftBar = function() {
 	rootDiv = self.leftbar;
 	OAT.Dom.clear (rootDiv);
-    var odsHomeA = OAT.Dom.create ('a', {})
-    odsHomeA.id = 'ODS_HOME_LNK';
-	odsHomeA.innerHTML = '<img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/>';
-	  OAT.Event.attach(odsHomeA, "click", function() {self.loadVspx(self.frontPage());});
-	OAT.Dom.append ([rootDiv, odsHomeA]);
+		var a = OAT.Dom.create('a', {})
+		a.href = '';
+		a.id = 'ODS_HOME_LNK';
+		a.innerHTML = '<img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/>';
+	  OAT.Event.attach(a, "click", function() {self.loadVspx(self.frontPage());});
+		OAT.Dom.append( [ rootDiv, a ]);
     };
 
 	this.initRightBar = function() {
@@ -1550,20 +1551,17 @@ ODS.Nav = function(navOptions) {
 										"click",
 						  function (e) {
 						      var t = eTarget (e);
-											self
-													.userMessageStatusSet(
+											self.userMessageStatusSet(
 															t.msgId,
 															-1,
 										 function () {
-																OAT.Dom
-																		.unlink(t.parentNode);
+																OAT.Dom.unlink(t.parentNode);
 																var msgCount = $('newMsgCountSpan').innerHTML
 																		.substring(
 																				1,
 																				$('newMsgCountSpan').innerHTML.length - 1);
 																$('newMsgCountSpan').innerHTML = '(' + (msgCount - 1) + ')';
-																self
-																		.wait('hide');
+																self.wait('hide');
 										 });
 						  });
 
@@ -2479,7 +2477,7 @@ ODS.Nav = function(navOptions) {
 
 		OAT.Dom.append ([$('search_listing'),resultLi]);
 	    }
-	self.showSearch ()
+		self.showSearch();
 	self.wait ('hide');
     };
 
@@ -3700,8 +3698,7 @@ ODS.Nav = function(navOptions) {
 		}
 
 			if ($('sm_foaf') && $('sm_foaf').tagName == 'A') {
-				$('sm_foaf').href = self.odsLink()
-						+ userProfileDataspace.replace('#this', '/foaf.rdf');
+				$('sm_foaf').href = self.odsLink() + userProfileDataspace.replace('#this', '/foaf.rdf');
 
 		    if (self.serverOptions.useRDFB)
 					$('sm_foaf').onclick = function(e) {
@@ -3714,8 +3711,7 @@ ODS.Nav = function(navOptions) {
 		}
 
 			if ($('sm_sioc') && $('sm_sioc').tagName == 'A') {
-				$('sm_sioc').href = self.odsLink()
-						+ userProfileDataspace.replace('#this', '/sioc.rdf');
+				$('sm_sioc').href = self.odsLink() + userProfileDataspace.replace('#this', '/sioc.rdf');
 
 		    if (self.serverOptions.useRDFB)
 					$('sm_sioc').onclick = function(e) {
@@ -4738,11 +4734,20 @@ ODS.Nav = function(navOptions) {
 	return odsLink;
     };
 
-    self.serverSettings ()
+	self.serverSettings();
     var uriParams = OAT.Dom.uriParams();
     var cookieSid = this.readCookie ('sid');
 
-	if (!self.session.sid && typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
+	if (typeof (uriParams['form']) != 'undefined' && uriParams['form'] == 'login')
+	{
+    self.loadVspx(self.frontPage());
+	  self.logIn();
+	}
+	else if (typeof (uriParams['form']) != 'undefined' && uriParams['form'] == 'register')
+	{
+		self.loadVspx(self.expandURL(self.ods + 'register.vspx'));
+	}
+	else if (!self.session.sid && typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
 	{
 	  self.logIn();
 		lfTab.go(1);
