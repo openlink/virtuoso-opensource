@@ -2126,6 +2126,25 @@ create procedure BMK.WA.tags2unique(
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.tags2delicious (
+  inout tags varchar)
+{
+  declare aVector any;
+  declare aResult varchar;
+  declare N, M integer;
+
+  aResult := '';
+  aVector := BMK.WA.tags2vector(tags);
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
+    aResult := aResult || ' ' || replace(aVector[N], ' ', '_');
+  }
+  return aResult;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.tags_exchangeTest (
   inout tagsEntry any,
   inout tagsInclude any := null,
@@ -2721,7 +2740,7 @@ create procedure BMK.WA.exchange_exec_internal (
             path := sprintf ('%s&extended=%U', path, tmp);
           tmp := cast (xpath_eval ('@tags', post) as varchar);
           if (not is_empty_or_null (tmp))
-            path := sprintf ('%s&tags=%U', path, tmp);
+            path := sprintf ('%s&tags=%U', path, BMK.WA.tags2delicious(tmp));
 
           rc := http_client (path, _user, _password, 'POST', null, null, null, null);
         }
