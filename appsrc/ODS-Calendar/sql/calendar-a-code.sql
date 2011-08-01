@@ -5551,7 +5551,7 @@ create procedure CAL.WA.vcal_str2date (
     if (not isnull (tzID))
     {
       tzObject := dict_get (tzDict, tzID, 0);
-      tzOffset := get_keyword ('standardTo', tzObject);
+      tzOffset := get_keyword ('standartTo', tzObject);
       tzStartRRule := get_keyword ('daylightRRule', tzObject);
       if (not isnull (tzStartRRule))
       {
@@ -6040,7 +6040,7 @@ create procedure CAL.WA.export_vcal_line (
 
   prefix := '';
   value := sprintf ('%s:%s', property, replace (cast (value as varchar), '\n', '\\n'));
-  while (length (value) > lenght (prefix))
+  while (length (value) > length (prefix))
   {
     http (subseq (value, 0, 73) || '\r\n', sStream);
     value := prefix || subseq (value, 73);
