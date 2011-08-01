@@ -210,6 +210,7 @@ create procedure "VAD"."DBA"."VAD_FAIL_CHECK" ( in msg varchar ) returns integer
 create procedure "VAD"."DBA"."VAD_CHDIR" (inout parr any, in curdir integer, in dirname varchar) returns integer
 {
   curdir := cast (curdir as integer);
+  dirname := cast (dirname as varchar);
   if (dirname is not null and aref (dirname, 0) <> 47 and not exists ( select "R_ID" from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = curdir ))
     {
       if (parr is not null)
