@@ -559,13 +559,63 @@ dbe_col_loc_t * key_next_list (dbe_key_t * key, dbe_col_loc_t * list);
 
 #define END_DO_ALL_CL  END_DO_CL; } }
 
+int
+key_col_in_layout_seq (dbe_key_t * key, dbe_column_t * col)
+{
+  oid_t cid = col->col_id;
+  int inx = 0;
+  DO_ALL_CL(cl, key)
+    {
+      if (cl->cl_col_id == cid)
+	return inx;
+      inx++;
+    }
+  END_DO_ALL_CL;
+  return -1;
+}
+
+
+typedef struct {
+  int 		 lrm_pos;
+  dbe_column_t * lrm_col;
+} log_row_map_t;
+
+int
+log_map_row (log_row_map_t * map, dbe_key_t * key, int max, dbe_key_t ** super)
+{
+  dbe_key_t * old_key = key;
+  int inx;
+  if (!key->key_migrate_to)
+    {
+      for (inx = 0; inx < max; inx++)
+	map[inx].lrm_pos = inx;
+      *super = key;
+      return max;
+    }
+  while (key->key_migrate_to)
+    key = sch_id_to_key (wi_inst.wi_schema, key->key_migrate_to);
+  *super = key;
+  inx = 0;
+  DO_ALL_CL (cl, key)
+    {
+      dbe_column_t * col =  sch_id_to_column (wi_inst.wi_schema, cl->cl_col_id);
+      map[inx].lrm_pos = key_col_in_layout_seq (old_key, col);
+      map[inx].lrm_col = col;
+      inx++;
+    }
+  END_DO_ALL_CL;
+  return inx;
+}
+
 void
 log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag)
 {
-  int i, n_values, cols_done = 0;
+  int i, n_values, n_parts, cols_done = 0;
   dk_set_t values = NULL;
-  caddr_t * arr;
+  caddr_t * arr, *super_id = NULL;
   lock_trx_t * lt = itc->itc_ltrx;
+  dbe_key_t * super = NULL;
+  log_row_map_t row_map[TB_MAX_COLS];
 
   lt_hi_row_change (lt, key->key_super_id, LOG_INSERT, NULL);
   if (!lt || lt->lt_replicate == REPL_NO_LOG)
@@ -579,7 +629,7 @@ log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag)
 
       if (!strcmp (key->key_name, "SYS_KEYS") && __list == key->key_row_fixed && !cols_done) /* key version */
 	{
-	  dk_set_push (&values, box_num (1));
+	  dk_set_push (&values, box_num (0xffff));
 	  cols_done = 1;
 	}
 
@@ -598,7 +648,7 @@ log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag)
 	      blob_check (bh);
 	      box = dk_alloc_box (DV_BLOB_LEN_64 + 1, DV_STRING);
 	      box [ DV_BLOB_LEN_64 ] = 0;
-	      bh_to_dv64 (bh, box, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (bh)));
+	      bh_to_dv64 (bh, (dtp_t *) box, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (bh)));
 	      dk_set_push (&values, box);
 	      dk_free_box (bh);
 	      continue;
@@ -613,6 +663,27 @@ log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag)
   arr = (caddr_t *) list_to_array (dk_set_nreverse (values));
   n_values = BOX_ELEMENTS (arr);
 
+  if (!strcmp (key->key_name, "SYS_KEYS"))
+    {
+      key_id_t id = unbox (arr[11]);
+      dbe_key_t * idkey = sch_id_to_key (wi_inst.wi_schema, id);
+      int ver = 1;
+      while (idkey->key_migrate_to)
+	{
+	  idkey = sch_id_to_key (wi_inst.wi_schema, idkey->key_migrate_to);
+	  ver++;
+	}
+      arr[2] = box_num (ver);
+    }
+
+  memset (row_map, -1, sizeof (row_map));
+  n_parts = log_map_row (row_map, key, n_values, &super);
+
+  /*
+  if (n_parts != n_values)
+    bing ();
+  */
+
   mutex_enter (lt->lt_log_mtx);
   if (flag == INS_REPLACING)
     session_buffered_write_char (LOG_INSERT_REPL, lt->lt_log);
@@ -621,11 +692,19 @@ log_v6_insert (it_cursor_t * itc,  dbe_key_t * key, db_buf_t page, int flag)
   else
     session_buffered_write_char (LOG_INSERT, lt->lt_log);
 
-  dks_array_head (lt->lt_log, 1 + n_values, DV_ARRAY_OF_POINTER);
-  print_int (key->key_id, lt->lt_log);
-  for (i = 0; i < n_values; i ++)
+  dks_array_head (lt->lt_log, 1 + n_parts, DV_ARRAY_OF_POINTER);
+  print_int (super->key_id, lt->lt_log);
+  for (i = 0; i < n_parts; i ++)
     {
-      print_object (arr[i], lt->lt_log, NULL, NULL);
+      int pos = row_map [i].lrm_pos;
+      caddr_t val;
+      if (pos >= 0) /* existing column */
+	val = arr [pos];
+      else if (row_map [i].lrm_col != (dbe_column_t *) -1) /* new columns */
+	val = row_map [i].lrm_col->col_default;
+      else /* dropped columns */
+	continue;
+      print_object (val, lt->lt_log, NULL, NULL);
     }
   dk_free_tree (arr);
   mutex_leave (lt->lt_log_mtx);
