@@ -21,7 +21,8 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     		xmlns:v="http://www.w3.org/2006/vcard/ns#"
 		xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 		xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
@@ -219,11 +220,14 @@
   <!-- ============================================================ -->
 
   <xsl:if test="$fn != 0">
-    <v:fn><xsl:value-of select="."/></v:fn>
+			<v:fn>
+				<xsl:value-of select="."/>
+			</v:fn>
   </xsl:if>
 
   <xsl:if test="$n != 0">
-    <v:n rdf:parseType="Resource">
+			<v:n>
+				<rdf:Description>
       <rdf:type rdf:resource="http://nwalsh.com/rdf/vCard#Name"/>
       <xsl:apply-templates select="." mode="extract-field">
 	<xsl:with-param name="field" select="'given-name'"/>
@@ -243,6 +247,13 @@
       <xsl:apply-templates select="." mode="extract-field">
 	<xsl:with-param name="field" select="'nickname'"/>
       </xsl:apply-templates>
+					<xsl:attribute name="rdf:about">
+						<xsl:value-of select="vi:proxyIRI($baseUri, '', replace(., ' ', ''))" />
+					</xsl:attribute>
+					<rdfs:label>
+						<xsl:value-of select="."/>
+					</rdfs:label>
+				</rdf:Description>
     </v:n>
   </xsl:if>
 
@@ -348,11 +359,19 @@
 	</v:org>
       </xsl:when>
       <xsl:otherwise>
-	<v:org rdf:parseType="Resource">
+					<v:org>
+						<rdf:Description>
 	  <rdf:type rdf:resource="http://nwalsh.com/rdf/vCard#Organization"/>
+							<xsl:attribute name="rdf:about">
+								<xsl:value-of select="vi:proxyIRI($baseUri, '', replace(., ' ', ''))" />
+							</xsl:attribute>
 	  <v:organization-name>
 	    <xsl:value-of select="."/>
 	  </v:organization-name>
+							<rdfs:label>
+								<xsl:value-of select="."/>
+							</rdfs:label>
+						</rdf:Description>
 	</v:org>
       </xsl:otherwise>
     </xsl:choose>
@@ -399,11 +418,15 @@
   </xsl:if>
 
   <xsl:if test="$sort-string != 0">
-    <v:sort-string><xsl:value-of select="."/></v:sort-string>
+			<v:sort-string>
+				<xsl:value-of select="."/>
+			</v:sort-string>
   </xsl:if>
 
   <xsl:if test="$nickname != 0">
-    <v:nickname><xsl:value-of select="."/></v:nickname>
+			<v:nickname>
+				<xsl:value-of select="."/>
+			</v:nickname>
   </xsl:if>
 
   <xsl:apply-templates mode="extract-vcard"/>
@@ -560,19 +583,30 @@
     <xsl:when test="$token = 'home' or $token = 'personal'">
       <v:homeAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
-	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+					<rdfs:label>
+						<xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/>
+					</rdfs:label>
       </v:homeAdr>
     </xsl:when>
     <xsl:when test="$token = 'work' or $token = 'office'">
       <v:workAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
-	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+					<rdfs:label>
+						<xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/>
+					</rdfs:label>
       </v:workAdr>
     </xsl:when>
     <xsl:otherwise>
-      <v:adr rdf:parseType="Resource">
+				<v:adr>
+					<rdf:Description>
 	<xsl:copy-of select="$fields"/>
-	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+						<rdfs:label>
+							<xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/>
+						</rdfs:label>
+						<xsl:attribute name="rdf:about">
+							<xsl:value-of select="vi:proxyIRI($baseUri, '', replace(., ' ', ''))" />
+						</xsl:attribute>
+					</rdf:Description>
       </v:adr>
     </xsl:otherwise>
   </xsl:choose>

@@ -119,6 +119,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET', null, 'Google (Spreadsheets)');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('https://plus.google.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE', null, 'Google (Profile)');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://docs.google.com/.*)|'||
     '(https://docs.google.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT', null, 'Google (Documents)');
@@ -317,6 +321,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('.+\\.csv\x24', 'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
         
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('.+\\.xrd\x24', 'URL', 'RDF_LOAD_XRD_GENERIC', null, 'XRD');
+        
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
@@ -382,6 +389,18 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http://.*.linkedin.com/.*', 'URL', 'DB.DBA.RDF_LOAD_LINKEDIN', null, 'LinkedIn', vector (
         'consumer_key', '', 'consumer_secret', '', 'consumer_name', ''));
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+	values ('http://twitter.com/.*', 'URL', 'DB.DBA.RDF_LOAD_TWITTER_V2', null, 'Twitter v2',
+            vector ('consumer_key', '',
+                    'consumer_secret', '', 
+                    'friends_n_followers_pg_limit', '0',
+                    'friends_n_followers_item_limit', '100',
+                    'favorites_pg_limit', '5',
+                    'user_timeline_pg_limit', '5'));
+
+-- Disable old Twitter cartridge in favour of DB.DBA.RDF_LOAD_TWITTER_V2
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
@@ -3114,6 +3133,23 @@ create index LINKEDIN_ACCESS_TOKENS_USER_ID on DB.DBA.LINKEDIN_ACCESS_TOKENS (LI
 ;
 
 EXEC_STMT(
+'create table DB.DBA.TWITTER_ACCESS_TOKENS (
+    TAT_ACCESS_TOKEN varchar,           -- Twitter access token
+    TAT_ACCESS_TOKEN_SECRET varchar,    -- Twitter access token secret
+    TAT_GRANTOR_ID varchar,             -- Twitter ID of user granting the access token
+    TAT_GRANTOR_NAME varchar,           -- Twitter username of user granting the access token
+    TAT_GRANTOR_URL varchar,            -- Twitter public profile URL of user granting the access token
+    TAT_APP_SITE_URL varchar,           -- Twitter app which is being given access
+    TAT_APP_ID varchar,                 -- Twitter App ID of app being given access
+    TAT_CREATED datetime,               -- Date/Time access token was created
+    TAT_LIFETIME int,                   -- Token lifetime (secs) from creation time, after which token is invalid. null implies a non-expiring token
+    TAT_EXPIRES datetime,       
+    primary key (TAT_ACCESS_TOKEN)
+)
+create index TWITTER_ACCESS_TOKENS_USER_ID on DB.DBA.TWITTER_ACCESS_TOKENS (TAT_GRANTOR_ID)', 0)
+;
+
+EXEC_STMT(
 'create table DB.DBA.OAUTH_TOKEN_REQUESTS (
     OAUTH_REQ_TOKEN varchar,
     OAUTH_REQ_SECRET varchar
@@ -3156,6 +3192,16 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
 	}
+    else if (new_origin_uri like 'http://www.facebook.com/pages/%/%')
+    {
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/pages/%s/%s', 0);
+        id := rtrim(tmp[1], '&/');
+        pos := strchr(id, '?');
+        if (pos > 0)
+			id := left(id, pos);
+		if (id is null)
+			return 0;
+    }
     else if (new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
@@ -3451,6 +3497,27 @@ DB.DBA.VHOST_DEFINE (
 	 is_default_host=>0
 );
 
+-- Define virtual dir /twitter_oauth for use when retrieving Twitter OAuth access tokens
+
+DB.DBA.VHOST_REMOVE (
+	 lhost=>'*ini*',
+	 vhost=>'*ini*',
+	 lpath=>'/twitter_oauth'
+);
+
+DB.DBA.VHOST_DEFINE (
+	 lhost=>'*ini*',
+	 vhost=>'*ini*',
+	 lpath=>'/twitter_oauth',
+	 ppath=>'/DAV/VAD/rdf_mappers/sponger_front_page',
+	 is_dav=>1,
+	 def_page=>'twitter_access_token.vsp',
+	 vsp_user=>'dba',
+	 ses_vars=>0,
+	 opts=>vector ('executable', 'yes', 'browse_sheet', ''),
+	 is_default_host=>0
+);
+
 create procedure DB.DBA.RDF_LOAD_ZOOPLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
     declare xt, xd any;
@@ -3482,10 +3549,10 @@ create procedure DB.DBA.RDF_LOAD_ZOOPLA (in graph_iri varchar, in new_origin_uri
 		else
 			return 0;
     }
-	else if (new_origin_uri like 'http://www.zoopla.co.uk/to-rent/details/%')
+	else if (new_origin_uri like 'http://www.zoopla.co.uk/%/details/%')
     {
-        tmp := sprintf_inverse (new_origin_uri, 'http://www.zoopla.co.uk/to-rent/details/%s', 0);
-		query := trim(tmp[0], '/#?');
+        tmp := sprintf_inverse (new_origin_uri, 'http://www.zoopla.co.uk/%s/details/%s', 0);
+		query := trim(tmp[1], '/#?');
 		test := strchr(query, '#');
 		if (test is not NULL)
 			query := subseq(query, 0, test);
@@ -5656,6 +5723,43 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_BOOK (in graph_iri varchar, in new_origi
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, host_part, xt, url, tmp, hdr, tree any;
+  declare pos int;
+  declare item_id, action varchar;
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    if (new_origin_uri like 'https://plus.google.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'https://plus.google.com/%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+	    url := sprintf('https://www.googleapis.com/buzz/v1/people/%s/@self?alt=atom&pp=1', item_id);
+	}
+	else
+		return 0;
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (hdr[0] not like 'HTTP/1._ 200 %')
+        signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_profile2rdf.xsl', 
+		xd, vector ('baseUri', new_origin_uri));
+    xd := serialize_to_UTF8_xml (xt);
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, hdr, tree any;
@@ -6817,6 +6921,43 @@ create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri va
     return 1;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_XRD_GENERIC (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp any;
+  
+  declare exit handler for sqlstate '*'
+    {
+      -- dbg_printf('Error: [%s]', __SQL_MESSAGE);
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+
+  xt := xtree_doc (_ret_body);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/xrd-generic.xsl', xt, 
+    vector('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    
+  xd:=blob_to_string_output(xt);
+
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, COALESCE(DEST, GRAPH_IRI));
+  DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, COALESCE(DEST, GRAPH_IRI), null);
+	return 1;
+}
+;
+
+create procedure DB.DBA.XSLT_IRISPLIT (in val varchar)
+{
+	-- Split URI VAL into namespace and local part, returns xml fragment
+  declare ns, loc, str varchar;
+  ns:=iri_split (val, loc);
+  
+  return xmlelement('ret', xmlelement('ns', ns), xmlelement('loc', loc));
+}
+;
+
+grant execute on DB.DBA.XSLT_IRISPLIT to public;
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:IRISPLIT', 'DB.DBA.XSLT_IRISPLIT');
+
 
 create procedure DB.DBA.RDF_LOAD_SVG (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -8570,6 +8711,31 @@ create procedure DB.DBA.SYS_URN_SPONGE_UP (in local_iri varchar, in get_uri varc
 }
 ;
 
+-- mailto and acct protocol-scheme support (for WebFinger lookups)
+create procedure DB.DBA.SYS_ACCT_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+	declare aq, ps, _key, opts any; 
+	declare xrd any;
+	xrd:=ODS..WF_USER_XRD_GET(get_uri);
+	
+  DB.DBA.RDF_LOAD_XRD_GENERIC(get_uri, local_iri, get_uri, serialize_to_UTF8_xml(xrd), aq, ps, _key, opts );
+	
+	return local_iri;
+}
+;
+
+create procedure DB.DBA.SYS_MAILTO_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+	declare aq, ps, _key, opts any; 
+	declare xrd any;
+	xrd:=ODS..WF_USER_XRD_GET(get_uri);
+	
+  DB.DBA.RDF_LOAD_XRD_GENERIC(get_uri, local_iri, get_uri, serialize_to_UTF8_xml(xrd), aq, ps, _key, opts );
+	
+	return local_iri;
+}
+;
+
 create procedure DB.DBA.SYS_DOI_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
 {
   if (lower (local_iri) like 'doi:%')
@@ -9722,6 +9888,435 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN_REQUEST_ACCESS_TOKEN (in consumer_key 
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_TWITTER_REQUEST_ACCESS_TOKEN (in consumer_key varchar, in consumer_secret varchar)
+{
+  declare url, cnt, req_token_resp_params any;
+  declare twitter_api_host, request_token_path, user_authorization_path, oauth_server_redirect_url varchar;
+  declare request_callback_confirmed, request_token, request_secret varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    log_message (sprintf ('RDF_LOAD_TWITTER_REQUEST_ACCESS_TOKEN exit handler:\n %s', __SQL_MESSAGE));
+    return 0;
+  };
+
+  twitter_api_host := 'https://api.twitter.com';
+  request_token_path := '/oauth/request_token';
+  user_authorization_path := '/oauth/authorize';
+
+  url := DB.DBA.sign_request ('GET', twitter_api_host || request_token_path, '', consumer_key, consumer_secret, null, null, 1);
+  cnt := http_get (url);
+  req_token_resp_params := split_and_decode (cnt);
+  request_callback_confirmed := get_keyword ('oauth_callback_confirmed', req_token_resp_params);
+  request_token := get_keyword ('oauth_token', req_token_resp_params);
+  request_secret := get_keyword ('oauth_token_secret', req_token_resp_params);
+
+  insert into DB.DBA.OAUTH_TOKEN_REQUESTS (OAUTH_REQ_TOKEN, OAUTH_REQ_SECRET) values (request_token, request_secret);
+  commit work;
+
+  -- Twitter authorization server URL to which user will be forwarded and asked to authorize this application
+  oauth_server_redirect_url := sprintf('%s?oauth_token=%s', twitter_api_host || user_authorization_path, request_token);
+  return oauth_server_redirect_url;
+}
+;
+
+create procedure DB.DBA.TWITTER_SAVE_ACCESS_TOKEN (
+  in tw_user_id varchar,
+  in tw_user_name varchar,
+  in tw_user_public_profile_url varchar,
+  in tw_app_site_url varchar,
+  in tw_app_id varchar,
+  in oauth_token varchar,
+  in oauth_secret varchar,
+  in oauth_token_expiry int
+  )
+{
+  declare dt_expires datetime;
+
+  dt_expires := null;
+  if (oauth_token_expiry is not null and oauth_token_expiry > 0)
+    dt_expires := dateadd ('second', oauth_token_expiry , now ());
+  else
+    oauth_token_expiry := null;
+
+  insert soft DB.DBA.TWITTER_ACCESS_TOKENS (
+    TAT_GRANTOR_ID, TAT_GRANTOR_NAME, TAT_GRANTOR_URL, TAT_APP_SITE_URL, TAT_APP_ID, 
+    TAT_ACCESS_TOKEN, TAT_ACCESS_TOKEN_SECRET, TAT_CREATED, TAT_LIFETIME, TAT_EXPIRES)
+    values (tw_user_id, tw_user_name, tw_user_public_profile_url, tw_app_site_url, tw_app_id, oauth_token, oauth_secret, now (), oauth_token_expiry, dt_expires);
+}
+;
+
+create procedure DB.DBA.TWITTER_GET_ACCESS_TOKEN (in tw_screen_name varchar)
+{
+  declare access_token, secret varchar;
+  declare is_owner_key integer; 
+  
+  -- is_owner_key:
+  -- 1 => returned access token was granted by the owner of the given public profile URL
+  -- 0 => returned access token was granted by some other user
+
+  access_token := null;
+  secret := null;
+  is_owner_key := 1;
+
+  if (tw_screen_name is not null)
+  {
+    -- Find access token by Twitter screen name
+
+    -- First look for a non-expiring access token. 
+    -- (Expiring tokens not supported by Twitter)
+    -- If more than one non-expiring access token exists in TWITTER_ACCESS_TOKENS 
+    -- for the same user, all but the most recent are assumed to have been 
+    -- revoked by the user and hence be invalid.
+    for (select top 1 
+           TAT_ACCESS_TOKEN as _token,
+           TAT_ACCESS_TOKEN_SECRET as _secret
+         from 
+           DB.DBA.TWITTER_ACCESS_TOKENS 
+         where 
+           TAT_GRANTOR_NAME = tw_screen_name and TAT_EXPIRES is null
+         order by TAT_CREATED desc
+        )
+    do
+    {
+      access_token := _token;
+      secret := _secret;
+    }
+
+    if (access_token is not null)
+      goto done;
+  }
+
+  -- Use any available non-expiring access token to sign requests 
+  for (select top 1 
+       TAT_ACCESS_TOKEN as _token,
+       TAT_ACCESS_TOKEN_SECRET as _secret
+     from 
+       DB.DBA.TWITTER_ACCESS_TOKENS 
+     where 
+       TAT_EXPIRES is null
+     order by TAT_CREATED desc
+    )
+  do
+  {
+    access_token := _token;
+    secret := _secret;
+    is_owner_key := 0;
+  }
+
+done:
+  return vector (access_token, secret, is_owner_key);
+}
+;
+
+-- Converts list of Twitter user IDs to Twitter user profiles
+create procedure DB.DBA.RDF_LOAD_TWITTER_V2_ID_TO_USER_PROFILE (
+  in xml_id_list any, 
+  inout next_cursor integer,
+  in item_limit integer, 
+  in screen_name varchar, 
+  in what varchar,
+  in new_origin_uri varchar, 
+  in dest varchar, 
+  in graph_iri varchar, 
+  in consumer_key varchar, 
+  in consumer_secret varchar, 
+  in oauth_token varchar, 
+  in oauth_secret varchar
+  )
+{
+  declare xt, cnt, xd any;
+  declare ids, tw_batch any;
+  declare id_count, id_limit, tw_batch_count, tw_batch_limit integer;
+  declare tw_param varchar;
+  declare url, api_url, api_params any;
+
+  xd := xtree_doc (xml_id_list);
+  next_cursor := atoi (cast (xpath_eval ('//next_cursor', xd) as varchar));
+  ids := xpath_eval ('/id_list/ids/id/text()', xd, 0);
+  id_count := 0;
+  id_limit := length (ids);
+  tw_batch_count := 0;
+  tw_batch_limit := 100; -- Twitter limit of no. of comma separated IDs accepted by API /1/users/lookup.xml
+  tw_param := '';
+
+  if (item_limit > 0 and id_limit > item_limit)  
+    id_limit := item_limit;
+
+  foreach (any id in ids) do
+  {
+    declare id_str varchar;
+
+    id_count := id_count + 1;
+    tw_batch_count := tw_batch_count + 1;
+    id_str := cast (id as varchar);
+    tw_param := tw_param || id_str || ',';
+
+    if (tw_batch_count = tw_batch_limit or id_count = id_limit)
+    {
+      api_url := 'https://api.twitter.com/1/users/lookup.xml';
+      api_params := sprintf ('user_id=%s', trim (tw_param, ','));
+      url := DB.DBA.sign_request ('GET', api_url, api_params, consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+      cnt := http_get (url);
+
+      xd := xtree_doc (cnt);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter_rest_api2rdf.xsl', xd, 
+        vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', what, 'primary_user_screen_name', screen_name));
+      xd := serialize_to_UTF8_xml (xt);
+
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+      tw_param := '';
+      tw_batch_count := 0;
+    }
+
+    if (id_count = id_limit)
+      goto done;
+  }
+done:;
+}
+;
+
+-- Twitter cartridge v2 - Uses Twitter REST API and OAuth.
+-- Twitter cartridge v1 (RDF_LOAD_TWITTER) uses old API and HTTP basic authentication.
+create procedure DB.DBA.RDF_LOAD_TWITTER_V2 (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xt, cnt, xd any;
+  declare url, api_url, api_params any;
+  declare is_owner_key integer;
+  declare tmp any;
+  declare consumer_key, consumer_secret, oauth_token, oauth_secret varchar;
+  declare oauth_keys any;
+  declare twitter_error, tw_screen_name, id, what varchar;
+  declare friends_n_followers_pg_limit, friends_n_followers_item_limit, favorites_pg_limit, user_timeline_pg_limit integer;
+  declare next_cursor, page, empty_test integer;
+
+  declare exit handler for sqlstate '*'
+  {
+    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    log_message (sprintf ('%s Error: %s', current_proc_name (), __SQL_MESSAGE)); 	
+    return 0;
+  };
+
+  consumer_key := get_keyword ('consumer_key', opts);
+  consumer_secret := get_keyword ('consumer_secret', opts);
+  if (length (consumer_key) = 0 or length (consumer_secret) = 0)
+  {
+    log_message (sprintf ('%s: No API keys (consumer key and secret) are configured', current_proc_name()));
+    return 0;
+  }
+
+  -- Limits:
+  -- 
+  -- Because some Twitter API responses can return thousands of items, the following
+  -- cartridge options are available to set configurable limits on the number of items returned.
+  -- A value of 0 indicates no limit.
+  --
+  -- friends_n_followers_pg_limit
+  --     Limits the number of pages of friends or followers returned. 
+  --     Each page can contain up to 5000 items.
+  -- friends_n_followers_item_limit
+  --     Overrides friends_n_followers_pg_limit. 
+  --     Limits the number of friends or followers returned to the specified number
+  --     where 1 < friends_n_followers_limit <= 5000. 0 indicates no limit.
+  -- favorites_pg_limit
+  --     Limits the number of pages of favorites returned.
+  --     Each page can contain up to 20 items.
+  -- user_timeline_pg_limit
+  --     Limits the number of tweets returned as part of a user timeline. 
+  --     Each page can contain up to 20 items.
+
+  friends_n_followers_pg_limit := coalesce (atoi(get_keyword ('friends_n_followers_pg_limit', opts)), 0);
+  if (friends_n_followers_pg_limit < 0)
+    friends_n_followers_pg_limit := 0; 
+
+  friends_n_followers_item_limit := coalesce (atoi(get_keyword ('friends_n_followers_item_limit', opts)), 0);
+  if (friends_n_followers_item_limit < 0 or friends_n_followers_item_limit > 5000)
+    friends_n_followers_item_limit := 0; 
+  if (friends_n_followers_item_limit > 0)
+    friends_n_followers_pg_limit := 1; 
+
+  favorites_pg_limit := coalesce (atoi(get_keyword ('favorites_pg_limit', opts)), 0);
+  if (favorites_pg_limit < 0)
+    favorites_pg_limit := 0; 
+
+  user_timeline_pg_limit := coalesce (atoi(get_keyword ('user_timeline_pg_limit', opts)), 0);
+  if (user_timeline_pg_limit < 0)
+    user_timeline_pg_limit := 0; 
+    
+  if (subseq (new_origin_uri, 0, 5) = 'https')
+    new_origin_uri := 'http' || subseq (new_origin_uri, 5);
+
+  if (new_origin_uri like 'http://twitter.com/%/status/%')
+  {
+    -- Handle this URI format to allow bridging from a tweet to a reply
+    tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/status/%s', 0);
+    tw_screen_name := tmp[0];
+    id := tmp[1];
+    what := 'status';
+  }
+  else if (new_origin_uri like 'http://twitter.com/%')
+  {
+    -- This URI format is intended as the usual starting point for sponging.
+    -- i.e. http://twitter.com/{screen_name}
+    tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s', 0);
+    tw_screen_name := tmp[0];
+    tw_screen_name := subseq (tw_screen_name, 0, strchr (tw_screen_name, '/'));
+    tw_screen_name := subseq (tw_screen_name, 0, strchr (tw_screen_name, '#'));
+    what := 'user';
+  }
+  else
+  {
+    return 0;
+  }
+
+  oauth_keys := DB.DBA.TWITTER_GET_ACCESS_TOKEN (tw_screen_name);
+  oauth_token := oauth_keys[0];
+  oauth_secret := oauth_keys[1];
+  is_owner_key := oauth_keys[2];
+
+  if (oauth_token is null or oauth_secret is null)
+  {
+    log_message ('TWITTER_GET_ACCESS_TOKEN: No access tokens are available to sign Twitter API requests');
+    return 0;
+  }
+
+  --
+  -- Get Tweet details
+  --
+  if (what = 'status')
+  {
+    api_url := sprintf('https://api.twitter.com/1/statuses/show/%s.xml', id);
+    -- Authorization/signed request not needed for Tweets.
+    cnt := http_get (api_url);
+    xd := xtree_doc (cnt);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter_rest_api2rdf.xsl', xd, 
+      vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', what, 'primary_user_screen_name', tw_screen_name));
+    xd := serialize_to_UTF8_xml (xt);
+
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    goto done;
+  }
+
+  --
+  -- Get Twitter user profile
+  --
+  api_url := 'https://api.twitter.com/1/users/show.xml';
+  api_params := sprintf ('screen_name=%s', tw_screen_name);
+  url := DB.DBA.sign_request ('GET', api_url, api_params, consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+  cnt := http_get (url);
+  xd := xtree_doc (cnt);
+  twitter_error := cast (xpath_eval ('/hash/error', xd) as varchar);
+  if (length (twitter_error) <> 0)
+  {
+    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, twitter_error); 	
+    log_message (sprintf ('%s Error: %s', current_proc_name (), twitter_error)); 	
+    return 0;
+  }
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter_rest_api2rdf.xsl', xd, 
+    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', 'user', 'primary_user_screen_name', tw_screen_name));
+  xd := serialize_to_UTF8_xml (xt);
+
+  RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  --
+  -- Get friends: up to 5000 per page
+  --
+  next_cursor := -1;
+  page := 0;
+  api_url := 'https://api.twitter.com/1/friends/ids.xml';
+  while (friends_n_followers_pg_limit = 0 or page < friends_n_followers_pg_limit)
+  {
+    api_params := sprintf ('screen_name=%s&cursor=%d', tw_screen_name, next_cursor);
+    url := DB.DBA.sign_request ('GET', api_url, api_params, consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+    cnt := http_get (url);
+    DB.DBA.RDF_LOAD_TWITTER_V2_ID_TO_USER_PROFILE (cnt, next_cursor, friends_n_followers_item_limit, tw_screen_name, 'friends', new_origin_uri, 
+      dest, graph_iri, consumer_key, consumer_secret, oauth_token, oauth_secret);
+    if (next_cursor = 0)
+      goto friends_done;
+    page := page + 1;
+  }
+
+friends_done:;
+
+  --
+  -- Get followers: up to 5000 per page
+  --
+  next_cursor := -1;
+  page := 0;
+  api_url := 'https://api.twitter.com/1/followers/ids.xml';
+  while (friends_n_followers_pg_limit = 0 or page < friends_n_followers_pg_limit)
+  {
+    api_params := sprintf ('screen_name=%s&cursor=%d', tw_screen_name, next_cursor);
+    url := DB.DBA.sign_request ('GET', api_url, api_params, consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+    cnt := http_get (url);
+    DB.DBA.RDF_LOAD_TWITTER_V2_ID_TO_USER_PROFILE (cnt, next_cursor, friends_n_followers_item_limit, tw_screen_name, 'followers', new_origin_uri, 
+      dest, graph_iri, consumer_key, consumer_secret, oauth_token, oauth_secret);
+    if (next_cursor = 0)
+      goto followers_done;
+    page := page + 1;
+  }
+
+followers_done:;
+
+  --
+  -- Get favorites: up to 20 per page
+  --
+  page := 1;
+  api_url := 'https://api.twitter.com/1/favorites.xml';
+  while (favorites_pg_limit = 0 or page <= favorites_pg_limit)
+  {
+    api_params := sprintf ('id=%s&page=%d', tw_screen_name, page);
+    url := DB.DBA.sign_request ('GET', api_url, api_params, consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+    cnt := http_get (url);
+    xd := xtree_doc (cnt);
+    empty_test := length (cast (xpath_eval ('//status', xd) as varchar));
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter_rest_api2rdf.xsl', xd, 
+      vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', 'favorites', 'primary_user_screen_name', tw_screen_name));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+    if (empty_test = 0)
+      goto favorites_done;
+    page := page + 1;
+  }
+
+favorites_done:;
+
+  --
+  -- Get user timeline: up to 20 tweets per page
+  --
+  page := 1;
+  api_url := 'https://api.twitter.com/1/statuses/user_timeline.xml';
+  -- api_params := sprintf ('id=%s&count=200', tw_screen_name);
+  api_params := sprintf ('id=%s', tw_screen_name);
+  while (user_timeline_pg_limit = 0 or page <= user_timeline_pg_limit)
+  {
+    url := DB.DBA.sign_request ('GET', api_url, api_params, consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+    cnt := http_get (url);
+    xd := xtree_doc (cnt);
+    empty_test := length (cast (xpath_eval ('//status', xd) as varchar));
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter_rest_api2rdf.xsl', xd, 
+      vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', 'user_timeline', 'primary_user_screen_name', tw_screen_name));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+    if (empty_test = 0)
+      goto user_timeline_done;
+    page := page + 1;
+  }
+
+user_timeline_done:;
+
+done:;
+  DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+  return 1;
+}
+;
+
 -- /* import all namespaces to SYS_XML_PERSISTENT_NS_DECL */
 create procedure DB.DBA.RM_LOAD_PREFIXES ()
 {
@@ -10221,3 +10816,41 @@ DB.DBA.VHOST_DEFINE (
 	 opts=>vector ('executable', 'yes', 'browse_sheet', ''),
 	 is_default_host=>0
 );
+
+create procedure lbl_order (in p any)
+{    
+  declare r int;
+  r := vector (
+  'http://www.w3.org/2000/01/rdf-schema#label',
+  'http://xmlns.com/foaf/0.1/name',
+  'http://purl.org/dc/elements/1.1/title',
+  'http://purl.org/dc/terms/title',
+  'http://xmlns.com/foaf/0.1/nick',
+  'http://usefulinc.com/ns/doap#name',
+  'http://rdf.data-vocabulary.org/name',
+  'http://www.w3.org/2002/12/cal/ical#summary',
+  'http://aims.fao.org/aos/geopolitical.owl#nameListEN',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.crunchbase.com/source_description',
+  'http://dbpedia.org/property/name',
+  'http://www.geonames.org/ontology#name',
+  'http://purl.org/ontology/bibo/shortTitle',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#value',
+  'http://xmlns.com/foaf/0.1/accountName',
+  'http://www.w3.org/2004/02/skos/core#prefLabel',
+  'http://rdf.freebase.com/ns/type.object.name',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.w3.org/2008/05/skos#prefLabel',
+  'http://www.w3.org/2002/12/cal/icaltzd#summary',
+  'http://rdf.data-vocabulary.org/name',
+  'http://rdf.freebase.com/ns/common.topic.alias',
+  'http://opengraphprotocol.org/schema/title',
+  'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
+  'http://poolparty.punkt.at/demozone/ont#title'
+   );
+  r := position (id_to_iri (p), r);
+  if (r = 0)
+    return 100;
+  return r;
+}
+;
