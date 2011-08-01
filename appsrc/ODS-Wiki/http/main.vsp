@@ -608,7 +608,8 @@ create_or_view:
   else
    {
      if (WV.WIKI.VSPTOPICVIEW (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust)))
-	   WV.WIKI.VSPFOOTER (path, params, lines);
+        goto make_footer;
+
 	 return;
    }
 make_footer:    

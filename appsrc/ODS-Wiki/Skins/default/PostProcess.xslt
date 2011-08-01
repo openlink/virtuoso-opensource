@@ -80,7 +80,7 @@
       <link rel="alternate"
             type="application/atomserv+xml"
             href="{wv:atom_pub_uri($ti_cluster_name)}/intro"/>
-
+      <xsl:value-of select="wv:rdfLinksHead($ti_cluster_name, $ti_local_name)" disable-output-escaping="yes" />
 	<xsl:copy-of select="$ods-app"/>
     </head>
       <body>
