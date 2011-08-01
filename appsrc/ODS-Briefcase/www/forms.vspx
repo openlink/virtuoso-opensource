@@ -275,7 +275,7 @@
         }
         self.v_step := 'end';
       }
-      else if (self.v_form = 'edit')
+      else if (self.v_form in ('edit', 'view'))
       {
         item := ODRIVE.WA.DAV_INIT (self.v_path);
         returnData := ODRIVE.WA.DAV_RES_UPLOAD (self.v_path, get_keyword ('f_content', params, ''), ODRIVE.WA.DAV_GET (item, 'mimeType'), ODRIVE.WA.DAV_GET (item, 'permissions'), ODRIVE.WA.DAV_GET (item, 'ownerID'), ODRIVE.WA.DAV_GET (item, 'groupID'));
@@ -614,7 +614,7 @@
           </script>
         </v:template>
 
-        <v:template type="simple" enabled="-- case when (self.v_form = 'edit') then 1 else 0 end">
+        <v:template type="simple" enabled="-- case when (self.v_form in ('edit', 'view')) then 1 else 0 end">
           <v:before-data-bind>
             <![CDATA[
               declare item any;
@@ -625,10 +625,10 @@
             ]]>
           </v:before-data-bind>
           <div class="new-form-header">
-            Edit resource <?V self.v_path ?>
+            <?V initcap (self.v_form) ?> resource <?V self.v_path ?>
           </div>
           <div style="padding-right: 12px;">
-            <textarea id="f_content" name="f_content" style="width: 100%; height: 365px"><?vsp http (ODRIVE.WA.DAV_RES_CONTENT (self.v_path)); ?></textarea>
+            <textarea id="f_content" name="f_content" style="width: 100%; height: 360px" disabled="<?V case when self.v_form = 'view' then 'disabled' else 'false' end ?>"><?vsp http (ODRIVE.WA.DAV_RES_CONTENT (self.v_path)); ?></textarea>
             <vm:if test="self.mimeType like 'text/html'">
               <![CDATA[
                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
@@ -639,7 +639,7 @@
             </vm:if>
           </div>
           <div class="new-form-footer">
-            <v:button action="simple" value="Save">
+            <v:button action="simple" value="Save" enabled="--case when self.v_form = 'view' then 0 else 1 end">
               <v:on-post>
                 <![CDATA[
                   self.execPost (e);

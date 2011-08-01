@@ -4570,7 +4570,7 @@ create procedure ODRIVE.WA.aci_load (
         V[3] := 1;
       if (aclMode = 'acl:Write')
         V[4] := 1;
-      if (aclMode = 'acl:Control')
+      if (aclMode = 'acl:Execute')
         V[5] := 1;
     }
     if (not isnull (V))
@@ -4646,7 +4646,7 @@ create procedure ODRIVE.WA.aci_n3 (
       if (aciArray[N][4])
         retValue := retValue || ';\n   acl:mode acl:Write';
       if (aciArray[N][5])
-        retValue := retValue || ';\n   acl:mode acl:Control';
+        retValue := retValue || ';\n   acl:mode acl:Execute';
       retValue := retValue || '.\n';
     }
   }

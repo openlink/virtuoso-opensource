@@ -476,6 +476,9 @@
           if (strchr(dav_name, '/') is not null or strchr(dav_name, '\\') is not null)
             signal('TEST', 'The folder/file name should not contain slash or back-slash symbols!<>');
 
+          if ((self.command_mode = 5) and (self.dav_type = 'R') and (dav_name like '%,acl'))
+            signal('TEST', 'The file names like ''*,acl'' are used for system purposes!<>');
+
           -- validate tags
           self.dav_tags_public := trim (get_keyword ('f_tags_public', params, ''));
           if (not ODRIVE.WA.validate_tags (self.dav_tags_public))
@@ -1880,7 +1883,7 @@
                             <tr>
                               <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
-                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                              <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                               <vm:if test="self.dav_enable">
                               <th width="1%" >Action</th>
                               </vm:if>
@@ -1897,7 +1900,7 @@
                                   aci_values := ODRIVE.WA.aci_load (aci_parents[L]);
                                   for (N := 0; N < length (aci_values); N := N + 1)
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {value: "Inherited"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: true, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {value: "Inherited"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
                                 }
                                 aci_values := ODRIVE.WA.aci_load (self.dav_path);
@@ -1905,9 +1908,9 @@
                                 {
                                   if (self.dav_enable)
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, value: "%s", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, value: "%s", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: true, tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: true, tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
                                   }
                         		    ?>
@@ -1918,7 +1921,7 @@
                         </td>
                         <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>
@@ -2392,9 +2395,18 @@
 		                                  or rowset[0] like '%.htm'
 		                                  or rowset[0] like '%.sql'
 		                                  or rowset[0] like '%.ini'
-		                                  or rowset[4] like 'text/%'))
+		                                  or rowset[4] like 'text/%')
+		                               )
                                 {
-                                  http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="image/dav/item_edit.png" onclick="javascript: ODRIVE.formShow(\'edit\', \'%s\')" />', replace (rowset[8], '\'', '\\\'')));
+                                  declare S varchar;
+
+
+		                              if (rowset[0] like '%,acl')
+		                              {
+                                    http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="/ods/images/icons/docs_16.png" onclick="javascript: ODRIVE.formShow(\'view\', \'%s\')" />', replace (rowset[8], '\'', '\\\'')));
+                                  } else {
+                                    http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="/ods/images/icons/edit_16.png" onclick="javascript: ODRIVE.formShow(\'edit\', \'%s\')" />', replace (rowset[8], '\'', '\\\'')));
+                                  }
                                 }
                               ?>
                           </td>
