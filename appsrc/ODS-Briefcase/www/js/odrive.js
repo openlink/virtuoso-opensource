@@ -813,6 +813,7 @@ var ODRIVE = new Object();
 ODRIVE.forms = new Object();
 ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '700', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 ODRIVE.forms['edit'] = {params: {items: true}, height: '430'};
+ODRIVE.forms['view'] = {params: {items: true}, height: '430'};
 ODRIVE.forms['copy'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 ODRIVE.forms['move'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 ODRIVE.forms['tags'] = {params: {items: true}, height: '360', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};

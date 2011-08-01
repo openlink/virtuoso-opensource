@@ -124,6 +124,55 @@ create procedure ODS.ODS_API.inheritance2string (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."briefcase.list" (
+  in path varchar) __soap_http 'text/xml'
+{
+  declare uname, upassword, instance_iri varchar;
+  declare inst_id, id integer;
+  declare N integer;
+  declare sql, params, state, msg, meta, items any;
+
+  path := ODRIVE.WA.path_normalize (path, 'C');
+
+  inst_id := ODS.ODS_API.briefcase_instance (path);
+  if (not ods_check_auth (uname, inst_id))
+    return ods_auth_failed ();
+
+  instance_iri := SIOC..briefcase_iri (ODRIVE.WA.domain_name (inst_id));
+  upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
+
+  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc (rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? order by c9, c3, c1';
+  params := vector (path, 0, null, null, uname, upassword);
+
+  set_user_id('dba');
+  state := '00000';
+  exec (sql, state, msg, params, 0, meta, items);
+  if (state <> '00000')
+    signal (state, msg);
+
+  http ('<?xml version="1.0"?>\n');
+  http ('<items>\n');
+  foreach (any item in items) do
+  {
+    http (sprintf ('<item path="%V">\n', ODRIVE.WA.utf2wide(item[8])));
+      http (sprintf ('<uri>%V</uri>\n', SIOC..post_iri_ex (instance_iri, DB.DBA.DAV_SEARCH_ID (item[8], item[1]))));
+      http (sprintf ('<name>%V</name>\n', ODRIVE.WA.utf2wide (item[0])));
+      http (sprintf ('<mimeType>%V</mimeType>\n', item[4]));
+      http (sprintf ('<size>%V</size>\n', cast(item[2] as varchar)));
+      http (sprintf ('<owner>%V</owner>\n', item[5]));
+      http (sprintf ('<group>%V</group>\n', item[6]));
+      http (sprintf ('<permissions>%V</permissions>\n', item[7]));
+      http (sprintf ('<modification>%V</modification>\n', item[3]));
+    http ('</item>\n');
+  }
+  http ('</items>\n');
+
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."briefcase.info" (
   in path varchar,
   in "type" varchar) __soap_http 'text/xml'
@@ -1158,6 +1207,7 @@ create procedure ODS.ODS_API."briefcase.options.get" (
 
 grant select on WS.WS.SYS_DAV_RES to ODS_API;
 
+grant execute on ODS.ODS_API."briefcase.list" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.info" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.get" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.store" to ODS_API;
