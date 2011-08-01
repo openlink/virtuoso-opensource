@@ -1029,9 +1029,9 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               </div>
               <ul id="lf_tabs" class="tabs">
                 <li id="lf_tab_0" title="Digest">Digest</li>
+                <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                 <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                 <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
               </ul>
@@ -1088,8 +1088,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 
                 <div id="lf_page_3" class="tabContent" style="display: none;">
                   <table id="lf_table_3" class="form" cellspacing="5">
-                    <tr>
+                    <tr id="lf_table_3_throbber">
+                      <th width="20%">
+                      </th>
                       <td>
+                        <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
                       </td>
                     </tr>
                   </table>

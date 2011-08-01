@@ -315,6 +315,18 @@ function divs_switch ( showhide, divname_a, divname_b)
   }
 }
 
+function readCookie(name) {
+	var cookies = document.cookie.split(';');
+
+	for ( var i = 0; i < cookies.length; i++) {
+		cookies[i] = cookies[i].trim();
+
+		if (cookies[i].indexOf(name + '=') == 0)
+			return cookies[i].substring (name.length + 1, cookies[i].length);
+	}
+	return false;
+}
+
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -495,6 +507,7 @@ function updateGeodata(mode)
 
 function initLoadProfile()
 {
+  def_btn = null;
   if (top.location == self.location)
     return true;
   parent.nav.showUserProfile();

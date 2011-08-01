@@ -21,16 +21,69 @@
  */
 
 var lfTab;
+var lfSslData;
 var lfFacebookData;
 var lfOptions;
 var lfAjaxs = 0;
 var lfNotReturn = true;
 var lfAttempts = 0;
+var lfSslLinks = {"in": [], "up": []};
+
+function lfRowText(tbl, txt, txtCSSText) {
+  var tr = OAT.Dom.create('tr');
+  var td = OAT.Dom.create('td');
+  td.colSpan = 2;
+  td.style.cssText = txtCSSText;
+  td.innerHTML = txt;
+  tr.appendChild(td);
+  tbl.appendChild(tr);
+
+  return td;
+}
+
+function lfRowButtonClick(obj) {
+  var interface = readCookie('interface');
+  if (interface == 'js') {
+    var ssl = $('ssl_link');
+    if (ssl) {
+      if      (obj.href.indexOf('login.vspx') != -1)
+        document.location = ssl.href + '&form=login';
+
+      else if (obj.href.indexOf('register.vspx') != -1)
+        document.location = ssl.href + '&form=register';
+
+      return false;
+    }
+  }
+  return true;
+}
+
+function lfRowButton(td, id) {
+  var a = OAT.Dom.create ("a");
+  a.id = id;
+  a.href = document.location.protocol + '//' + document.location.host + '/ods/login.vspx';
+  a.onclick = function(){return lfRowButtonClick(this);};
+  a.innerHTML = 'Sign In (SSL)';
+
+  td.appendChild(a);
+  lfSslLinks['in'].push(a);
+}
+
+function lfRowButton2(td, id) {
+  var a = OAT.Dom.create ("a");
+  a.id = id;
+  a.href = document.location.protocol + '//' + document.location.host + '/ods/register.vspx';
+  a.onclick = function(){return lfRowButtonClick(this);};
+  a.innerHTML = 'Sign Up (SSL)';
+
+  td.appendChild(a);
+  lfSslLinks['up'].push(a);
+}
 
 function lfRowValue(tbl, label, value, leftTag) {
-  if (!leftTag) {
+  if (!leftTag)
     leftTag = 'th';
-  }
+
   var tr = OAT.Dom.create('tr');
   var th = OAT.Dom.create(leftTag);
   th.width = '20%';
@@ -62,6 +115,8 @@ function lfInit() {
     OAT.Dom.show('lf_tab_1');
   lfTab.add("lf_tab_1", "lf_page_1");
   lfTab.add("lf_tab_2", "lf_page_2");
+  if (regData.sslEnable)
+    OAT.Dom.show('lf_tab_3');
   lfTab.add("lf_tab_3", "lf_page_3");
   if (regData.twitterEnable)
     OAT.Dom.show('lf_tab_4');
@@ -104,44 +159,86 @@ function lfInit() {
     });
   }
 
-  if ((document.location.protocol == 'https:') && regData.sslEnable) {
+  if (regData.sslEnable) {
     var x = function(data) {
-      var sslData;
       try {
-        sslData = OAT.JSON.parse(data);
+        lfSslData = OAT.JSON.parse(data);
       } catch (e) {
-        sslData = null;
+        lfSslData = null;
       }
-      if (sslData && sslData.iri && sslData.certLogin) {
+      if (lfSslData && lfSslData.iri && lfSslData.certLogin) {
         var prefix = 'lf';
         OAT.Dom.show(prefix+"_tab_3");
         var tbl = $(prefix+'_table_3');
         if (tbl) {
-          lfRowValue(tbl, 'WebID', sslData.iri);
-          if (sslData.firstName)
-            lfRowValue(tbl, 'First Name', sslData.firstName);
-          if (sslData.family_name)
-            lfRowValue(tbl, 'Family Name', sslData.family_name);
-          if (sslData.mbox)
-            lfRowValue(tbl, 'E-Mail', sslData.mbox);
+          OAT.Dom.unlink(prefix+'_table_3_throbber');
+          lfRowValue(tbl, 'WebID', lfSslData.iri);
+          if (lfSslData.mbox)
+            lfRowValue(tbl, 'E-Mail', lfSslData.mbox);
+          if (lfSslData.firstName)
+            lfRowValue(tbl, 'First Name', lfSslData.firstName);
+          if (lfSslData.family_name)
+            lfRowValue(tbl, 'Family Name', lfSslData.family_name);
 
+          if (!lfSslData.certLogin) {
+            var td = lfRowText(tbl, 'You have WebID! You can now sign up with it! - ', 'color: red; font-weight: bold;');
+            lfRowButton2(td, 'sign_up_1');
+          }
           lfTab.go(3);
         }
       }
     }
+    if (document.location.protocol == 'https:') {
     OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', '', x);
+    } else {
+      OAT.Dom.show('lf_tab_3');
+      var tbl = $('lf_table_3');
+      if (tbl) {
+        OAT.Dom.unlink('lf_table_3_throbber');
+        var td = lfRowText(tbl, 'You have registered WebID! You can now sign in with it! - ', 'color: red; font-weight: bold;');
+        lfRowButton(td, 'sign_in_2');
+        var td2 = lfRowText(tbl, 'If you have WebID and it is not registered, you can now sign up! - ', 'color: red; font-weight: bold;');
+        lfRowButton2(td2, 'sign_up_2');
+      }
+    }
+  }
+  if (document.location.protocol != 'https:')
+  {
+    var x = function (data) {
+      var o = null;
+      try {
+        o = OAT.JSON.parse(data);
+      } catch (e) { o = null; }
+      if (o && o.sslPort)
+      {
+        var ref = 'https://' + document.location.hostname + ((o.sslPort != '443')? ':' + o.sslPort: '');
+
+        var links = lfSslLinks['in'];
+        for (var i = 0; i < links.length; i++)
+          links[i].href = ref + '/ods/login.vspx';
+
+        var links = lfSslLinks['up'];
+        for (var i = 0; i < links.length; i++)
+          links[i].href = ref + '/ods/register.vspx';
+      }
+    }
+    OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
   }
 }
 
 function lfCallback(oldIndex, newIndex) {
+  $('lf_login').disabled = false;
   if (newIndex == 0)
     $('lf_login').value = 'Login';
   else if (newIndex == 1)
     $('lf_login').value = 'OpenID Login';
   else if (newIndex == 2)
     $('lf_login').value = 'Facebook Login';
-  else if (newIndex == 3)
+  else if (newIndex == 3) {
     $('lf_login').value = 'WebID Login';
+    if ((document.location.protocol == 'http:') || (lfSslData && !lfSslData.certLogin))
+      $('lf_login').disabled = true;
+  }
   else if (newIndex == 4)
     $('lf_login').value = 'Twitter Login';
   else if (newIndex == 5)

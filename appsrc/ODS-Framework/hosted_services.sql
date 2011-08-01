@@ -251,6 +251,8 @@ wa_exec_no_error_log(
     WAU_ANSWER varchar,
     WAU_LAST_IP varchar,
     WAU_TEMPLATE varchar,
+    WAU_LOGON_DISABLE_UNTIL datetime,
+    WAU_PWD_RECOVER_DISABLE_UNTIL datetime,
     primary key (WAU_U_ID)
   )'
 )
@@ -308,7 +310,7 @@ wa_exec_no_error(
     WAT_REALM varchar,
     WAT_DESCRIPTION varchar,
      WAT_OPTIONS long varchar,
-
+    WAT_MAXINST integer,
       primary key (WAT_NAME)
     )'
 )
@@ -428,6 +430,7 @@ wa_exec_no_error(
      WAM_HOME_PAGE varchar,
      WAM_APP_TYPE varchar,
      WAM_DATA any, -- app dependent, e.g. last payment info, other.
+     WAM_STATUS int,
        primary key (WAM_USER, WAM_INST, WAM_MEMBER_TYPE)
     )'
 )
@@ -3337,7 +3340,7 @@ wa_exec_no_error_log(
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
     WAUI_OPENID_URL varchar,
     WAUI_OPENID_SERVER varchar,
-    WAUI_FACEBOOK_ID integer,
+    WAUI_FACEBOOK_ID integer,           -- XXX: obsolete, see WA_USER_OL_ACCOUNTS
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
     WAUI_SPB_ENABLE	int default 0,
@@ -3539,6 +3542,25 @@ create procedure WA_MAKE_NICK (in nick varchar)
 }
 ;
 
+create procedure WA_MAKE_NICK2 (
+  in nick varchar,
+  in name varchar := '',
+  in firstName varchar := '',
+  in familyName varchar := '')
+{
+  if (not is_empty_or_null (nick))
+    return nick;
+
+  nick := replace (name, ' ', '');
+  if (not is_empty_or_null (nick))
+    return nick;
+
+  nick := replace (firstName || familyName, ' ', '');
+
+  return WA_MAKE_NICK (nick);
+}
+;
+
 create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N
 {
   if (N.WAUI_JOIN_DATE is null)
@@ -3709,6 +3731,18 @@ wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_OAUTH_SID', 'varchar');
 
 wa_exec_no_error_log('ALTER TABLE DB.DBA.WA_USER_OL_ACCOUNTS ADD FOREIGN KEY (WUO_U_ID) REFERENCES DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
 
+create procedure WA_USER_OL_ACCOUNTS_FACEBOOK (in ID integer)
+{
+  return sprintf ('http://facebook.com/profile.php?id=%s', cast (ID as varchar));
+}
+;
+
+create procedure WA_USER_OL_ACCOUNTS_TWITTER (in ID integer)
+{
+  return sprintf ('http://twitter.com/%U', cast (ID as varchar));
+}
+;
+
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 {
   if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP') = 'done')
@@ -3727,6 +3761,28 @@ create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 
   update WA_USER_OL_ACCOUNTS set WUO_URI = ODS.ODS_API."user.onlineAccounts.uri"(WUO_URL) where WUO_URI is null;
 };
+WA_USER_OL_ACCOUNTS_SET_UP ();
+
+create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
+{
+  declare url varchar;
+
+  if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP3') = 'done')
+    return;
+
+  registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP3', 'done');
+
+  for (select WAUI_U_ID, WAUI_FACEBOOK_ID from DB.DBA.WA_USER_INFO where DB.DBA.is_empty_or_null (WAUI_FACEBOOK_ID) = 0) do
+  {
+    if (not exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = WAUI_U_ID and WUO_TYPE = 'P' and lcase (WUO_NAME) = 'facebook'))
+    {
+      url := WA_USER_OL_ACCOUNTS_FACEBOOK (WAUI_FACEBOOK_ID);
+      insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE,  WUO_NAME, WUO_URL, WUO_URI)
+        values (WAUI_U_ID, 'P', 'Facebook', url, ODS.ODS_API."user.onlineAccounts.uri" (url));
+    }
+  }
+};
+WA_USER_OL_ACCOUNTS_SET_UP ();
 
 create procedure WA_USER_OL_ACCOUNTS_UPGRADE ()
 {
@@ -3740,8 +3796,6 @@ create procedure WA_USER_OL_ACCOUNTS_UPGRADE ()
   wa_exec_no_error_log ('create unique index WA_USER_OL_ACCOUNTS_URL on DB.DBA.WA_USER_OL_ACCOUNTS (WUO_URL)');
 }
 ;
-
-WA_USER_OL_ACCOUNTS_UPGRADE ();
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_RELATED_RES (
@@ -4266,16 +4320,10 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_OPENID_URL = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_OPENID_SERVER')
     UPDATE WA_USER_INFO SET WAUI_OPENID_SERVER = _data WHERE WAUI_U_ID = _uid;
-  else if (_key = 'WAUI_FACEBOOK_ID')
-    UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_SPB_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_SPB_ENABLE = _data WHERE WAUI_U_ID = _uid;
-  else if (_key = 'WAUI_CERT_LOGIN')
-    UPDATE WA_USER_INFO SET WAUI_CERT_LOGIN = _data WHERE WAUI_U_ID = _uid;
-  else if (_key = 'WAUI_CERT')
-    UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
 
   else if (_key = 'WAUI_ACL')
     UPDATE WA_USER_INFO SET WAUI_ACL = _data WHERE WAUI_U_ID = _uid;
@@ -7021,7 +7069,7 @@ return get_keyword(type_name,arr,'');
 
 -- this function returns the name of the package that has defined a specific WA_TYPE
 -- it will make possible to check if package is installed on the system or the type is for custom applications that do not have package-build script.
--- it includes only the applications  created by Openlink Software developers
+-- it includes only the applications  created by OpenLink Software developers
 
 create procedure wa_get_package_name (in type_name varchar)
 { declare arr any;
@@ -7628,6 +7676,18 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/about');
   DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'), sec=>_sec, auth_opts=>_opts);
+
+  -- mail verification service
+  DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/mv');
+  DB.DBA.VHOST_DEFINE (lhost=>_lhost, vhost=>_host, lpath=>'/mv', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, def_page=>'mv.vsp', vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+  DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/mv/data');
+  DB.DBA.VHOST_DEFINE (lhost=>_lhost, vhost=>_host, lpath=>'/mv/data', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, def_page=>'', vsp_user=>'SPARQL', opts=>vector ('url_rewrite', 'ods_mv_rule_list_1'), sec=>_sec, auth_opts=>_opts);
+  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ods_mv_rule_list_1', 1, vector ('ods_mv_rule_1'));
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_1', 1, '/mv/data/(.*)\x24', vector ('par_1'), 1,
+      '/sparql?query=construct%%20%%7B%%20%%3Fs%%20%%3Fp%%20%%3Fo%%20.%%20%%3Ft%%20%%3Ftp%%20%%3Fto%%20.%%20%%7D%%20%%20from%%20%%3Chttp%%3A%%2F%%2Flocalhost%%2Fmv%%3E%%20where%%20%%7B%%20%%3Fs%%20%%3Fp%%20%%3Fo%%20%%20.%%20%%3Fs%%20foaf%%3AprimaryTopic%%20%%3Ft%%20.%%20%%3Ft%%20%%3Ftp%%20%%3Fto%%20.%%20filter%%20%%28%%3Fs%%20%%3D%%20%%3Chttp%%3A%%2F%%2F^{URIQADefaultHost}^%%2Fmv%%2Fdata%%2F%s%%3E%%20%%29%%20%%7D%%20&format=%U',
+      vector ('par_1', '*accept*'), NULL, NULL, 2, 303, '');
+
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {

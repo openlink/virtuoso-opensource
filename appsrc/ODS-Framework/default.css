@@ -330,8 +330,7 @@ div.w_activity ul li a {
 
 
 /* welcome */
-div.w_welcome {
-  padding: 3px}
+div.w_welcome {}
 
 div.w_welcome p {
   margin: 4px}
@@ -345,13 +344,12 @@ div.w_welcome a {
 /* Application summary on app tab page */
 
 /* Generic sizing overriding widget size */
-
 div.w_app_summary {
-  width: 600px;
-  margin: 5px;
   min-height: 300px;}
+
 div.w_app_summary div.w_title_bar {
   width: 595px}
+
 table.app_summary_listing {
   margin: 3px;
   font-size: 9pt}

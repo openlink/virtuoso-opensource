@@ -25,6 +25,58 @@ var rfFacebookData;
 var rfSslData;
 var rfOptions;
 var rfAjaxs = 0;
+var rfSslLinks = {"in": [], "up": []};
+
+function rfRowText(tbl, txt, txtCSSText) {
+  var tr = OAT.Dom.create('tr');
+  var td = OAT.Dom.create('td');
+  td.colSpan = 2;
+  td.style.cssText = txtCSSText;
+  td.innerHTML = txt;
+  tr.appendChild(td);
+  tbl.appendChild(tr);
+
+  return td;
+}
+
+function rfRowButtonClick(obj) {
+  var interface = readCookie('interface');
+  if (interface == 'js') {
+    var ssl = parent.document.getElementById('ssl_link');
+    if (ssl) {
+      if      (obj.href.indexOf('login.vspx') != -1)
+        parent.document.location = ssl.href + '&form=login';
+
+      else if (obj.href.indexOf('register.vspx') != -1)
+        parent.document.location = ssl.href + '&form=register';
+
+      return false;
+    }
+  }
+  return true;
+}
+
+function rfRowButton(td, id) {
+  var a = OAT.Dom.create ("a");
+  a.id = id;
+  a.href = document.location.protocol + '//' + document.location.host + '/ods/login.vspx';
+  a.onclick = function(){return rfRowButtonClick(this);};
+  a.innerHTML = 'Sign In (SSL)';
+
+  td.appendChild(a);
+  rfSslLinks['in'].push(a);
+}
+
+function rfRowButton2(td, id) {
+  var a = OAT.Dom.create ("a");
+  a.id = id;
+  a.href = document.location.protocol + '//' + document.location.host + '/ods/register.vspx';
+  a.onclick = function(){return rfRowButtonClick(this);};
+  a.innerHTML = 'Sign Up (SSL)';
+
+  td.appendChild(a);
+  rfSslLinks['up'].push(a);
+}
 
 function rfRowValue(tbl, label, value, leftTag) {
   if (!leftTag) {
@@ -48,7 +100,7 @@ function rfRowInput(tbl, label, fName, fOptions) {
   tr.id = 'tr+'+fName;
 
   var th = OAT.Dom.create('th');
-  th.width = '30%';
+  th.width = '20%';
   th.innerHTML = label + '<div style="font-weight: normal; display: inline; color: red;"> *</div>';
   tr.appendChild(th);
 
@@ -81,6 +133,8 @@ function rfInit() {
     OAT.Dom.show('rf_tab_1');
   rfTab.add("rf_tab_1", "rf_page_1");
   rfTab.add("rf_tab_2", "rf_page_2");
+  if (regData.sslEnable)
+    OAT.Dom.show('rf_tab_3');
   rfTab.add("rf_tab_3", "rf_page_3");
   rfTab.add("rf_tab_4", "rf_page_4");
   rfTab.add("rf_tab_5", "rf_page_5");
@@ -98,8 +152,9 @@ function rfInit() {
         if (user && user.getElementsByTagName('id')[0]) {
           hiddenCreate('twitter-data', null, data);
           var tbl = $('rf_table_4');
-          rfRowInput(tbl, 'Login Name', 'rf_twitter_name', {value: OAT.Xml.textValue(user.getElementsByTagName('screen_name')[0])});
-          rfRowInput(tbl, 'E-Mail', 'rf_twitter_email', {width: '300px'});
+          rfRowInput(tbl, 'Login Name', 'rf_uid_4', {value: OAT.Xml.textValue(user.getElementsByTagName('screen_name')[0]), width: '150px'});
+          rfRowInput(tbl, 'E-Mail', 'rf_email_4', {width: '300px'});
+          rfCheckUpdate(4);
         }
         else
         {
@@ -122,8 +177,9 @@ function rfInit() {
         if (user && user.getElementsByTagName('id')[0]) {
           hiddenCreate('linkedin-data', null, data);
           var tbl = $('rf_table_5');
-          rfRowInput(tbl, 'Login Name', 'rf_linkedin_name', {value: OAT.Xml.textValue(user.getElementsByTagName('first-name')[0])});
-          rfRowInput(tbl, 'E-Mail', 'rf_linkedin_email', {width: '300px'});
+          rfRowInput(tbl, 'Login Name', 'rf_uid_5', {value: OAT.Xml.textValue(user.getElementsByTagName('first-name')[0]), width: '150px'});
+          rfRowInput(tbl, 'E-Mail', 'rf_email_5', {width: '300px'});
+          rfCheckUpdate(5);
         }
         else
         {
@@ -180,10 +236,9 @@ function rfInit() {
       if (!data['nick'] || !data['mbox']) {
         hiddenCreate('oid-data', null, OAT.JSON.stringify(data));
         var tbl = $('rf_table_1');
-        if (!data['nick'])
-          rfRowInput(tbl, 'Login Name', 'rf_openid_uid');
-        if (!data['mbox'])
-            rfRowInput(tbl, 'E-Mail', 'rf_openid_email', {width: '300px'});
+          addProfileRowInput(tbl, 'Login Name', 'rf_uid_1', {value: data['nick'], width: '150px'});
+          addProfileRowInput(tbl, 'E-Mail', 'rf_email_1', {value: data['mbox'], width: '300px'});
+          rfCheckUpdate(1);
       } else {
         var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
         OAT.AJAX.POST ("/ods/api/user.register", q, rfAfterSignup);
@@ -215,48 +270,109 @@ function rfInit() {
     OAT.Dom.show("rf_tab_5");
   }
 
-  if ((document.location.protocol == 'https:') && regData.sslEnable) {
+  if (regData.sslEnable) {
     var x = function(data) {
       try {
         rfSslData = OAT.JSON.parse(data);
       } catch (e) {
         rfSslData = null;
       }
-      if (rfSslData && rfSslData.iri && !rfSslData.certLogin) {
+      if (rfSslData && rfSslData.iri) {
         var prefix = 'rf';
         OAT.Dom.show(prefix+"_tab_3");
         var tbl = $(prefix+'_table_3');
         if (tbl) {
+          OAT.Dom.unlink(prefix+'_table_3_throbber');
           rfRowValue(tbl, 'WebID', rfSslData.iri);
+          if ((prefix == "rf") && !rfSslData.certLogin)
+            rfRowInput(tbl, 'Login Name', 'rf_uid_3', {value: rfSslData.loginName, width: '150px'});
+
+          if (rfSslData.mbox && rfSslData.certLogin)
+            rfRowValue(tbl, 'E-Mail', sslData.mbox);
+
+          if (!rfSslData.certLogin)
+            rfRowInput(tbl, 'E-Mail', 'rf_email_3', {value: rfSslData.mbox, width: '300px'});
+
           if (rfSslData.firstName)
             rfRowValue(tbl, 'First Name', rfSslData.firstName);
+
           if (rfSslData.family_name)
             rfRowValue(tbl, 'Family Name', rfSslData.family_name);
-          if (rfSslData.mbox)
-            rfRowValue(tbl, 'E-Mail', rfSslData.mbox);
+
+          if (rfSslData.certLogin) {
+            var td = rfRowText(tbl, 'You have registered WebID. You can now sign in with it! - ', 'color: red; font-weight: bold; ');
+            rfRowButton(td, 'sign_in_1');
+          }
+          rfCheckUpdate(3);
           rfTab.go(3);
         }
       }
     }
+    if (document.location.protocol == 'https:') {
     OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', '', x);
+    } else {
+      OAT.Dom.show('rf_tab_3');
+      var tbl = $('rf_table_3');
+      if (tbl) {
+        OAT.Dom.unlink('rf_table_3_throbber');
+        var td3 = rfRowText(tbl, 'If you have WebID and it is not registered, you can now sign up with it! - ', 'color: red; font-weight: bold;');
+        rfRowButton2(td3, 'sign_up_3');
+      }
+    }
+  }
+  if (document.location.protocol != 'https:') {
+    var x = function (data) {
+      var o = null;
+      try {
+        o = OAT.JSON.parse(data);
+      } catch (e) { o = null; }
+      if (o && o.sslPort)
+      {
+        var ref = 'https://' + document.location.hostname + ((o.sslPort != '443')? ':' + o.sslPort: '');
+
+        var links = rfSslLinks['in'];
+        for (var i = 0; i < links.length; i++)
+          links[i].href = ref + '/ods/login.vspx';
+
+        var links = rfSslLinks['up'];
+        for (var i = 0; i < links.length; i++)
+          links[i].href = ref + '/ods/register.vspx';
+      }
+    }
+    OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
   }
 }
 
 function rfCallback(oldIndex, newIndex) {
+  $('rf_signup').disabled = false;
   if (newIndex == 0)
     $('rf_signup').value = 'Sign Up';
   else if (newIndex == 1)
     $('rf_signup').value = 'OpenID Sign Up';
   else if (newIndex == 2)
     $('rf_signup').value = 'Facebook Sign Up';
-  else if (newIndex == 3)
+  else if (newIndex == 3) {
     $('rf_signup').value = 'WebID Sign Up';
+    if ((document.location.protocol == 'http:') || (rfSslData && rfSslData.certLogin))
+      $('rf_signup').disabled = true;
+  }
   else if (newIndex == 4)
     $('rf_signup').value = 'Twitter Sign Up';
   else if (newIndex == 5)
     $('rf_signup').value = 'LinkedIn Sign Up';
 
+  rfCheckUpdate(newIndex, true);
+
   pageFocus('rf_page_'+newIndex);
+}
+
+function rfCheckUpdate(idx, mode) {
+  if (!mode && (rfTab.selectedIndex != idx))
+    return;
+
+  $('rf_check').disabled = true;
+  if ($('rf_uid_'+idx))
+    $('rf_check').disabled = false;
 }
 
 function rfStart() {
@@ -277,9 +393,9 @@ function rfEnd() {
 
 function rfSignupSubmit(event) {
   if (rfTab.selectedIndex == 0) {
-    if ($v('rf_uid') == '')
+    if ($v('rf_uid_0') == '')
       return showError('Bad username. Please correct!');
-    if ($v('rf_email') == '')
+    if ($v('rf_email_0') == '')
       return showError('Bad mail. Please correct!');
     if ($v('rf_password') == '')
       return showError('Bad password. Please correct!');
@@ -300,52 +416,46 @@ function rfSignupSubmit(event) {
 
   var q = 'mode=' + encodeURIComponent(rfTab.selectedIndex);
   if (rfTab.selectedIndex == 0) {
-    q +='&name=' + encodeURIComponent($v('rf_uid'))
-      + '&password=' + encodeURIComponent($v('rf_password'))
-      + '&email=' + encodeURIComponent($v('rf_email'));
+    q +='&name=' + encodeURIComponent($v('rf_uid_0'))
+      + '&email=' + encodeURIComponent($v('rf_email_0'))
+      + '&password=' + encodeURIComponent($v('rf_password'));
   }
   else if (rfTab.selectedIndex == 1) {
     if (!$('oid-data')) {
       rfOpenIdAuthenticate('rf');
       return false;
     }
-    q += '&data=' + encodeURIComponent($v('oid-data'));
-    if ($('rf_openid_uid'))
-      q +='&name=' + encodeURIComponent($v('rf_openid_uid'));
-    if ($('rf_openid_email'))
-      q +='&email=' + encodeURIComponent($v('rf_openid_email'));
+    q +='&data=' + encodeURIComponent($v('oid-data'))
+      + '&name=' + encodeURIComponent($v('rf_uid_1'))
+      + '&email=' + encodeURIComponent($v('rf_email_1'));
   }
   else if (rfTab.selectedIndex == 2) {
     q += '&data=' + encodeURIComponent(OAT.JSON.stringify(rfFacebookData))
+      + '&name=' + encodeURIComponent($v('rf_uid_2'));
+      + '&email=' + encodeURIComponent($v('rf_email_2'));
   }
   else if (rfTab.selectedIndex == 3) {
-    q +='&data=' + encodeURIComponent(OAT.JSON.stringify(rfSslData));
-    if ($('rf_webid_uid'))
-      q +='&name=' + encodeURIComponent($v('rf_webid_uid'));
-    if ($('rf_webid_email'))
-      q +='&email=' + encodeURIComponent($v('rf_webid_email'));
+    q +='&data=' + encodeURIComponent(OAT.JSON.stringify(rfSslData))
+      + '&name=' + encodeURIComponent($v('rf_uid_3'))
+      + '&email=' + encodeURIComponent($v('rf_email_3'));
   }
   else if (rfTab.selectedIndex == 4) {
     if (!$('twitter-data')) {
       twitterAuthenticate('rf');
       return false;
     }
-    q +='&data=' + encodeURIComponent($v('twitter-data'));
-    if ($('rf_twitter_name'))
-      q +='&name=' + encodeURIComponent($v('rf_twitter_name'));
-    if ($('rf_twitter_email'))
-      q +='&email=' + encodeURIComponent($v('rf_twitter_email'));
+    q +='&data=' + encodeURIComponent($v('twitter-data'))
+      + '&name=' + encodeURIComponent($v('rf_uid_4'));
+      + '&email=' + encodeURIComponent($v('rf_email_4'));
   }
   else if (rfTab.selectedIndex == 5) {
     if (!$('linkedin-data')) {
       linkedinAuthenticate('rf');
       return false;
     }
-    q +='&data=' + encodeURIComponent($v('linkedin-data'));
-    if ($('rf_linkedin_name'))
-      q +='&name=' + encodeURIComponent($v('rf_linkedin_name'));
-    if ($('rf_linkedin_email'))
-      q +='&email=' + encodeURIComponent($v('rf_linkedin_email'));
+    q +='&data=' + encodeURIComponent($v('linkedin-data'))
+      + '&name=' + encodeURIComponent($v('rf_uid_5'))
+      + '&email=' + encodeURIComponent($v('rf_email_5'));
   }
   OAT.AJAX.POST("/ods/api/user.register", q, rfAfterSignup, rfOptions);
   return false;
@@ -359,6 +469,26 @@ function rfAfterSignup(data) {
     hiddenCreate('realm', form, 'wa');
     document.forms['page_form'].submit();
   }
+  return false;
+}
+
+function rfCheckAvalability(event) {
+  var name = $v('rf_uid_'+rfTab.selectedIndex);
+  if (!name)
+    return showError('Bad username. Please correct!');
+
+  var email = $v('rf_email_'+rfTab.selectedIndex);
+  if (!email)
+    return showError('Bad mail. Please correct!');
+
+  var x = function (data) {
+    var xml = OAT.Xml.createXmlDoc(data);
+    if (!hasError(xml))
+      alert('Login name and EMail are available!');
+  }
+
+  var q = '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);
+  OAT.AJAX.POST("/ods/api/user.checkAvalability", q, x);
   return false;
 }
 
@@ -475,6 +605,10 @@ function rfShowFacebookData(skip) {
     rfLabel.innerHTML = '';
     if (rfFacebookData && rfFacebookData.name) {
       rfLabel.innerHTML = 'Connected as <b><i>' + rfFacebookData.name + '</i></b></b>';
+      var tbl = $('rf_table_2');
+      rfRowInput(tbl, 'Login Name', 'rf_uid_2', {value: (rfFacebookData.name).replace(' ', ''), width: '150px'});
+      rfRowInput(tbl, 'E-Mail', 'rf_email_2', {value: '', width: '300px'});
+      rfCheckUpdate(2);
     } else if (!skip) {
       rfLoadFacebookData(function() {self.rfShowFacebookData(true);});
     }

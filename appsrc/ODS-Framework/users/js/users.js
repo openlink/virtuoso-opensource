@@ -501,6 +501,7 @@ var userData;
 var sslData;
 var aclData;
 var facebookData;
+var sslLinks = {"in": [], "up": []};
 var validateSession = false;
 
 // init
@@ -537,6 +538,8 @@ function init()
       OAT.Dom.show('lf_tab_1');
 		lfTab.add("lf_tab_1", "lf_page_1");
 		lfTab.add("lf_tab_2", "lf_page_2");
+    if (regData.sslEnable)
+      OAT.Dom.show('lf_tab_3');
 		lfTab.add("lf_tab_3", "lf_page_3");
     if (regData.twitterEnable)
       OAT.Dom.show('lf_tab_4');
@@ -573,6 +576,8 @@ function init()
       OAT.Dom.show('rf_tab_1');
 		rfTab.add("rf_tab_1", "rf_page_1");
 		rfTab.add("rf_tab_2", "rf_page_2");
+    if (regData.sslEnable)
+      OAT.Dom.show('rf_tab_3');
 		rfTab.add("rf_tab_3", "rf_page_3");
     if (regData.twitterEnable)
       OAT.Dom.show('rf_tab_4');
@@ -595,8 +600,9 @@ function init()
           if (user && user.getElementsByTagName('id')[0]) {
             hiddenCreate('twitter-data', null, data);
             var tbl = $('rf_table_4');
-            addProfileRowInput(tbl, 'Login Name', 'rf_twitter_name', {value: tagValue(user, 'screen_name')});
-            addProfileRowInput(tbl, 'E-Mail', 'rf_twitter_email', {width: '300px'});
+            addProfileRowInput(tbl, 'Login Name', 'rf_uid_4', {width: '150px', value: tagValue(user, 'screen_name')});
+            addProfileRowInput(tbl, 'E-Mail', 'rf_email_4', {width: '300px'});
+            rfCheckUpdate(4);
           }
           else
           {
@@ -620,8 +626,9 @@ function init()
           if (user && user.getElementsByTagName('id')[0]) {
             hiddenCreate('linkedin-data', null, data);
             var tbl = $('rf_table_5');
-            addProfileRowInput(tbl, 'Login Name', 'rf_linkedin_name', {value: OAT.Xml.textValue(user.getElementsByTagName('first-name')[0])});
-            addProfileRowInput(tbl, 'E-Mail', 'rf_linkedin_email', {width: '300px'});
+            addProfileRowInput(tbl, 'Login Name', 'rf_uid_5', {width: '150px', value: OAT.Xml.textValue(user.getElementsByTagName('first-name')[0])});
+            addProfileRowInput(tbl, 'E-Mail', 'rf_email_5', {width: '300px'});
+            rfCheckUpdate(5);
           }
           else
           {
@@ -676,17 +683,12 @@ function init()
 
         $('rf_openId').value = uriParams['openid.identity'];
         $('rf_is_agreed').checked = true;
-        if (!data['nick'] || !data['mbox']) {
           hiddenCreate('oid-data', null, OAT.JSON.stringify(data));
+
           var tbl = $('rf_table_1');
-          if (!data['nick'])
-            addProfileRowInput(tbl, 'Login Name', 'rf_openid_uid');
-          if (!data['mbox'])
-              addProfileRowInput(tbl, 'E-Mail', 'rf_openid_email', {width: '300px'});
-        } else {
-        var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
-        OAT.AJAX.POST ("/ods/api/user.register", q, afterSignup);
-      }
+          addProfileRowInput(tbl, 'Login Name', 'rf_uid_1', {value: data['nick'], width: '150px'});
+          addProfileRowInput(tbl, 'E-Mail', 'rf_email_1', {value: data['mbox'], width: '300px'});
+          rfCheckUpdate(1);
       }
       else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
       {
@@ -695,6 +697,9 @@ function init()
       }
 			}
 		}
+	if (($v('mode') == 'html') && typeof (uriParams['form']) != 'undefined' && uriParams['form'] == 'register')
+    lfRegisterSubmit(null, true);
+
 	if ($("lf") || $("rf") || $("pf")) {
 		loadFacebookData(function() {
 			if (facebookData)
@@ -708,29 +713,49 @@ function init()
 				});
 		});
 	}
-	if (($("lf") || $("rf")) && (document.location.protocol == 'https:') && regData.sslEnable) {
+  if (($("lf") || $("rf")) && regData.sslEnable) {
 		var x = function(data) {
 		  var x2 = function(prefix) {
 		  	OAT.Dom.show(prefix+"_tab_3");
 				var tbl = $(prefix+'_table_3');
 				if (tbl) {
+          OAT.Dom.unlink(prefix+'_table_3_throbber');
 					addProfileRowValue(tbl, 'WebID', sslData.iri);
+          if (sslData.loginName && sslData.certLogin)
+            addProfileRowValue(tbl, 'Login Name', sslData.loginName);
+
+          if ((prefix == "rf") && !sslData.certLogin)
+            addProfileRowInput(tbl, 'Login Name', 'rf_uid_3', {value: sslData.loginName, width: '150px'});
+
+          if (sslData.mbox && ((prefix == "lf") || ((prefix == "rf") && sslData.certLogin)))
+            addProfileRowValue(tbl, 'E-Mail', sslData.mbox);
+
+          if ((prefix == "rf") && !sslData.certLogin)
+            addProfileRowInput(tbl, 'E-Mail', 'rf_email_3', {value: sslData.mbox, width: '300px'});
+
 					if (sslData.firstName)
 						addProfileRowValue(tbl, 'First Name', sslData.firstName);
+
 					if (sslData.family_name)
 						addProfileRowValue(tbl, 'Family Name', sslData.family_name);
-					if (sslData.mbox)
-						addProfileRowValue(tbl, 'E-Mail', sslData.mbox);
+
           if (prefix == "lf") {
+            if (!sslData.certLogin) {
+              var td = addProfileRowText(tbl, 'You have WebID! You can now sign up with it! - ', 'color: red; font-weight: bold;');
+              addProfileRowButton2(td, 'sign_up_1');
+            } else {
             lfTab.go(3);
-          } else if (prefix == "rf") {
-					  if (!sslData.nick && !sslData.name)
-              addProfileRowInput(tbl, 'Login Name', 'rf_webid_uid');
-					  if (!sslData.mbox)
-              addProfileRowInput(tbl, 'E-Mail', 'rf_webid_email');
+            }
+          }
+          else if (prefix == "rf")
+          {
+            if (sslData.certLogin) {
+              var td = addProfileRowText(tbl, 'You have registered WebID. You can now sign in with it! - ', 'color: red; font-weight: bold; ');
+              addProfileRowButton(td, 'sign_in_1');
+            } else {
+              rfCheckUpdate(3);
             rfTab.go(3);
-            if (!$("lf"))
-              rfSSLAutomaticLogin();
+            }
           }
 			  }
 		  }
@@ -741,13 +766,30 @@ function init()
 				sslData = null;
 			}
 			if (sslData && sslData.iri) {
-			  if (sslData.certLogin)
 			  x2('lf');
-			  if (!sslData.certLogin)
 			  x2('rf');
 			}
 		}
+    if (document.location.protocol == 'https:') {
 		OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', '', x);
+    } else {
+      OAT.Dom.show('lf_tab_3');
+      var tbl = $('lf_table_3');
+      if (tbl) {
+        OAT.Dom.unlink('lf_table_3_throbber');
+        var td = addProfileRowText(tbl, 'You have registered WebID! You can now sign in with it! - ', 'color: red; font-weight: bold;');
+        addProfileRowButton(td, 'sign_in_2');
+        var td2 = addProfileRowText(tbl, 'If you have WebID and it is not registered, you can now sign up! - ', 'color: red; font-weight: bold;');
+        addProfileRowButton2(td2, 'sign_up_2');
+      }
+      OAT.Dom.show('rf_tab_3');
+      var tbl = $('rf_table_3');
+      if (tbl) {
+        OAT.Dom.unlink('rf_table_3_throbber');
+        var td3 = addProfileRowText(tbl, 'If you have WebID and it is not registered, you can now sign up with it! - ', 'color: red; font-weight: bold;');
+        addProfileRowButton2(td3, 'sign_up_3');
+      }
+    }
 	}
   if (document.location.protocol != 'https:')
   {
@@ -759,6 +801,7 @@ function init()
       if (o && o.sslPort)
       {
         var a = OAT.Dom.create ("a");
+        a.id = 'span_ssl';
         a.href = 'https://' + document.location.hostname + ((o.sslPort != '443')? ':' + o.sslPort: '') + document.location.pathname;
 
         var img = OAT.Dom.image('/ods/images/icons/lock_16.png');
@@ -766,6 +809,14 @@ function init()
         img.alt = 'ODS Users SSL Link';
 
         OAT.Dom.append([a, img], ['ob_right', a]);
+
+        var links = sslLinks['in'];
+        for (var i = 0; i < links.length; i++)
+          links[i].href = a.href;
+
+        var links = sslLinks['up'];
+        for (var i = 0; i < links.length; i++)
+          links[i].href = a.href + '?form=register';
       }
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
@@ -841,14 +892,18 @@ function init()
 
 function lfCallback(oldIndex, newIndex)
 {
+  $('lf_login').disabled = false;
   if (newIndex == 0)
     $('lf_login').value = 'Login';
   else if (newIndex == 1)
     $('lf_login').value = 'OpenID Login';
   else if (newIndex == 2)
     $('lf_login').value = 'Facebook Login';
-  else if (newIndex == 3)
+  else if (newIndex == 3) {
     $('lf_login').value = 'WebID Login';
+    if ((document.location.protocol == 'http:') || (sslData && !sslData.certLogin))
+      $('lf_login').disabled = true;
+  }
   else if (newIndex == 4)
     $('lf_login').value = 'Twitter Login';
   else if (newIndex == 5)
@@ -859,20 +914,35 @@ function lfCallback(oldIndex, newIndex)
 
 function rfCallback(oldIndex, newIndex)
 {
+  $('rf_signup').disabled = false;
   if (newIndex == 0)
     $('rf_signup').value = 'Sign Up';
   else if (newIndex == 1)
     $('rf_signup').value = 'OpenID Sign Up';
   else if (newIndex == 2)
     $('rf_signup').value = 'Facebook Sign Up';
-  else if (newIndex == 3)
+  else if (newIndex == 3) {
     $('rf_signup').value = 'WebID Sign Up';
+    if ((document.location.protocol == 'http:') || (sslData && sslData.certLogin))
+      $('rf_signup').disabled = true;
+  }
   else if (newIndex == 4)
     $('rf_signup').value = 'Twitter Sign Up';
   else if (newIndex == 5)
     $('rf_signup').value = 'LinkedIn Sign Up';
 
+  rfCheckUpdate(newIndex, true);
+
   pageFocus('rf_page_'+newIndex);
+}
+
+function rfCheckUpdate(idx, mode) {
+  if (!mode && (rfTab.selectedIndex != idx))
+    return;
+
+  $('rf_check').disabled = true;
+  if ($('rf_uid_'+idx))
+    $('rf_check').disabled = false;
 }
 
 function myCancel(prefix)
@@ -1025,8 +1095,7 @@ function myValidateInputs(fld)
   var formTab2 = parseInt($v('formTab2'));
   var div = $(pfPages[formTab][formTab2]);
 
-  for (var i = 0; i < form.elements.length; i++)
-  {
+  for (var i = 0; i < form.elements.length; i++) {
     if (!form.elements[i])
       continue;
 
@@ -1291,7 +1360,7 @@ function pfShowOnlineAccounts(prefix, accountType, showRow)
 		if (o) {
       var tbl = prefix+'_tbl';
     	for (var N = 0; N < o.length; N++) {
-   			showRow(prefix, o[N][0], o[N][1], o[N][2]);
+         showRow(prefix, o[N][0], o[N][1], o[N][2], o[N][3]);
         rowCount++;
     	}
     }
@@ -1582,7 +1651,6 @@ function loadFacebookData(cb) {
 		if (facebookData && regData.facebookEnable) {
 			OAT.Dom.show("lf_tab_2");
 			OAT.Dom.show("rf_tab_2");
-      OAT.Dom.show("pf_tab_2_3");
 		}
 		if (cb) {cb()};
 	}
@@ -1603,8 +1671,13 @@ function showFacebookData(skip) {
   	if (facebookData && facebookData.name) {
       if (lfLabel)
         lfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>';
-      if (rfLabel)
+      if (rfLabel) {
         rfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>';
+        var tbl = $('rf_table_2');
+        addProfileRowInput(tbl, 'Login Name', 'rf_uid_2', {value: (facebookData.name).replace(' ', ''), width: '150px'});
+        addProfileRowInput(tbl, 'E-Mail', 'rf_email_2', {value: '', width: '300px'});
+        rfCheckUpdate(2);
+      }
       if (pfLabel) {
         pfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>'
         hiddenCreate('pf_securityFacebookID', null, facebookData.uid);
@@ -1624,8 +1697,9 @@ function hideFacebookData() {
 	if (label)
   	label.innerHTML = '';
   var label = $('pf_facebookData');
-  if (label)
+  if (label) {
     label.innerHTML = '';
+  }
 	if (facebookData) {
 	var o = {}
 	o.api_key = facebookData.api_key;
@@ -1957,6 +2031,38 @@ function showProfile(user) {
   		OAT.AJAX.POST('/ods_services/Http/connectionsGet?scope=own&sid='+$v('sid'), false, renderConnectionsWidget);
     }
 
+function addProfileRowText(tbl, txt, txtCSSText) {
+  var tr = OAT.Dom.create('tr');
+  var td = OAT.Dom.create('td');
+  td.colSpan = 2;
+  td.style.cssText = txtCSSText;
+  td.innerHTML = txt;
+  tr.appendChild(td);
+  tbl.appendChild(tr);
+
+  return td;
+}
+
+function addProfileRowButton(td, id) {
+  var a = OAT.Dom.create ("a");
+  a.id = id;
+  a.href = document.location.protocol + '//' + document.location.host + document.location.pathname;
+  a.innerHTML = 'Sign In (SSL)';
+
+  td.appendChild(a);
+  sslLinks['in'].push(a);
+}
+
+function addProfileRowButton2(td, id) {
+  var a = OAT.Dom.create ("a");
+  a.id = id;
+  a.href = document.location.protocol + '//' + document.location.host + document.location.pathname + '?form=register';
+  a.innerHTML = 'Sign Up (SSL)';
+
+  td.appendChild(a);
+  sslLinks['up'].push(a);
+}
+
 function addProfileRow(tbl, xml, tagLabel, label) {
   var value = tagValue(xml, tagLabel);
   if (value)
@@ -1964,12 +2070,12 @@ function addProfileRow(tbl, xml, tagLabel, label) {
 }
 
 function addProfileRowValue(tbl, label, value, leftTag) {
-	if (!leftTag) {
+  if (!leftTag)
 		leftTag = 'th';
-	}
+
   var tr = OAT.Dom.create('tr');
   var th = OAT.Dom.create(leftTag);
-  th.width = '30%';
+  th.width = '20%';
   th.innerHTML = label;
   tr.appendChild(th);
 	if (value) {
@@ -1985,7 +2091,7 @@ function addProfileRowInput(tbl, label, fName, fOptions) {
   tr.id = 'tr+'+fName;
 
 	var th = OAT.Dom.create('th');
-	th.width = '30%';
+  th.width = '20%';
 	th.innerHTML = label + '<div style="font-weight: normal; display: inline; color: red;"> *</div>';
 	tr.appendChild(th);
 
@@ -2332,7 +2438,7 @@ function ufProfileCallback(data) {
       fieldUpdate(user, 'homeMobile',             'pf_homeMobile');
 
 			// online accounts
-      pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});
+      pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}, fld_3: {value: val3}});});
 
       // bio events
       pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});
@@ -2408,7 +2514,7 @@ function ufProfileCallback(data) {
       fieldUpdate(user, 'businessMobile',         'pf_businessMobile');
 
 			// online accounts
-      pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});
+      pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}, fld_3: {value: val3}});});
 
 			// contact
 			fieldUpdate(user, 'businessIcq', 'pf_businessIcq', aclData);
@@ -3086,7 +3192,7 @@ function setSecretQuestion() {
 
 // ------------------------------------------
 
-function lfRegisterSubmit(event) {
+function lfRegisterSubmit(event, no) {
   $('sid').value = '';
   $('realm').value = '';
 
@@ -3099,31 +3205,27 @@ function lfRegisterSubmit(event) {
   OAT.Dom.show("rf");
 
   rfResetData();
-  if (document.location.protocol == 'https:')
+  if (!no && (document.location.protocol == 'https:'))
   rfSSLAutomaticLogin();
 
   return false;
 }
 
 function rfResetData() {
-  $('rf_uid').value = '';
-  $('rf_email').value = '';
   $('rf_password').value = '';
   $('rf_password2').value = '';
   $('rf_openId').value = '';
   $('rf_is_agreed').checked = false;
-  if ($('tr_rf_openid_uid'))
-    $('tr_rf_openid_uid').value = '';
-  if ($('rf_openid_email'))
-    $('tr_rf_openid_email').value = '';
-  if ($('tr_rf_webid_uid'))
-    $('tr_rf_webid_uid').value = '';
-  if ($('rf_webid_email'))
-    $('tr_rf_webid_email').value = '';
+  for (var N = 0; N < 5; N++) {
+    if ($('rf_uid_'+N))
+      $('rf_uid_'+N).value = '';
+    if ($('rf_email_'+N))
+      $('rf_email_'+N).value = '';
+  }
 }
 
 function rfSSLAutomaticLogin() {
-  if (regData.sslAutomaticEnable && !$("rf_webid_uid") && !$("rf_webid_email")) {
+  if (regData.sslAutomaticEnable && !$("rf_uid_3") && !$("rf_email_3")) {
     $('rf_is_agreed').checked = true;
     rfTab.go(3);
     rfSignupSubmit();
@@ -3132,9 +3234,9 @@ function rfSSLAutomaticLogin() {
 
 function rfSignupSubmit(event) {
 	if (rfTab.selectedIndex == 0) {
-    if ($v('rf_uid') == '')
+    if ($v('rf_uid_0') == '')
       return showError('Bad username. Please correct!');
-    if ($v('rf_email') == '')
+    if ($v('rf_email_0') == '')
       return showError('Bad mail. Please correct!');
     if ($v('rf_password') == '')
       return showError('Bad password. Please correct!');
@@ -3155,52 +3257,46 @@ function rfSignupSubmit(event) {
 
 	var q = 'mode=' + encodeURIComponent(rfTab.selectedIndex);
 	if (rfTab.selectedIndex == 0) {
-		q +='&name=' + encodeURIComponent($v('rf_uid'))
-			+ '&password=' + encodeURIComponent($v('rf_password'))
-			+ '&email=' + encodeURIComponent($v('rf_email'));
+    q +='&name=' + encodeURIComponent($v('rf_uid_0'))
+      + '&email=' + encodeURIComponent($v('rf_email_0'))
+      + '&password=' + encodeURIComponent($v('rf_password'));
 	}
 	else if (rfTab.selectedIndex == 1) {
     if (!$('oid-data')) {
 	  openIdAuthenticate('rf');
 		return false;
 	}
-    q += '&data=' + encodeURIComponent($v('oid-data'));
-    if ($('rf_openid_uid'))
-      q +='&name=' + encodeURIComponent($v('rf_openid_uid'));
-    if ($('rf_openid_email'))
-      q +='&email=' + encodeURIComponent($v('rf_openid_email'));
+    q +='&data=' + encodeURIComponent($v('oid-data'))
+      + '&name=' + encodeURIComponent($v('rf_uid_1'))
+      + '&email=' + encodeURIComponent($v('rf_email_1'));
   }
 	else if (rfTab.selectedIndex == 2) {
 		q += '&data=' + encodeURIComponent(OAT.JSON.stringify(facebookData))
+      + '&name=' + encodeURIComponent($v('rf_uid_2'))
+      + '&email=' + encodeURIComponent($v('rf_email_2'));
 	}
 	else if (rfTab.selectedIndex == 3) {
-		q +='&data=' + encodeURIComponent(OAT.JSON.stringify(sslData));
-		if ($('rf_webid_uid'))
-		  q +='&name=' + encodeURIComponent($v('rf_webid_uid'));
-		if ($('rf_webid_email'))
-		  q +='&email=' + encodeURIComponent($v('rf_webid_email'));
+    q +='&data=' + encodeURIComponent(OAT.JSON.stringify(sslData))
+      + '&name=' + encodeURIComponent($v('rf_uid_3'))
+      + '&email=' + encodeURIComponent($v('rf_email_3'));
 	}
   else if (rfTab.selectedIndex == 4) {
     if (!$('twitter-data')) {
       twitterAuthenticate('rf');
       return false;
     }
-    q +='&data=' + encodeURIComponent($v('twitter-data'));
-    if ($('rf_twitter_name'))
-      q +='&name=' + encodeURIComponent($v('rf_twitter_name'));
-    if ($('rf_twitter_email'))
-      q +='&email=' + encodeURIComponent($v('rf_twitter_email'));
+    q +='&data=' + encodeURIComponent($v('twitter-data'))
+      + '&name=' + encodeURIComponent($v('rf_uid_4'))
+      + '&email=' + encodeURIComponent($v('rf_email_4'));
   }
   else if (rfTab.selectedIndex == 5) {
     if (!$('linkedin-data')) {
       linkedinAuthenticate('rf');
       return false;
     }
-    q +='&data=' + encodeURIComponent($v('linkedin-data'));
-    if ($('rf_linkedin_name'))
-      q +='&name=' + encodeURIComponent($v('rf_linkedin_name'));
-    if ($('rf_linkedin_email'))
-      q +='&email=' + encodeURIComponent($v('rf_linkedin_email'));
+    q +='&data=' + encodeURIComponent($v('linkedin-data'))
+      + '&name=' + encodeURIComponent($v('rf_uid_5'))
+      + '&email=' + encodeURIComponent($v('rf_email_5'));
   }
 	OAT.AJAX.POST("/ods/api/user.register", q, afterSignup);
 	return false;
@@ -3212,6 +3308,26 @@ function afterSignup(data) {
     rfResetData();
     afterLogin(data, 'rf');
   }
+}
+
+function rfCheckAvalability(event) {
+  var name = $v('rf_uid_'+rfTab.selectedIndex);
+  if (!name)
+    return showError('Bad username. Please correct!');
+
+  var email = $v('rf_email_'+rfTab.selectedIndex);
+  if (!email)
+    return showError('Bad mail. Please correct!');
+
+  var x = function (data) {
+    var xml = OAT.Xml.createXmlDoc(data);
+    if (!hasError(xml))
+      alert('Login name and EMail are available!');
+  }
+
+  var q = '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);
+  OAT.AJAX.POST("/ods/api/user.checkAvalability", q, x);
+  return false;
 }
 
 function openIdLoginURL(uriParams) {

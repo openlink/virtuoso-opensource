@@ -1325,6 +1325,37 @@ create procedure ODS.ODS_API."address.geoData" (
 
 -- User account activity
 
+create procedure ODS.ODS_API."user.checkAvalability" (
+  in name varchar := null,
+	in email varchar := null) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (name is null or length (name) < 1 or length (name) > 20)
+    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+
+  if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
+    signal ('23023', 'The login name contains invalid characters');
+
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
+    signal ('23023', 'This login name is already registered.');
+
+  if (email is null or length (email) < 1 or length (email) > 40)
+    signal ('23023', 'E-mail address cannot be empty or longer then 40 chars');
+
+  if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+', email) is null)
+    signal ('23023', 'Invalid E-mail address');
+
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = email) and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+    signal ('23023', 'This e-mail address is already registered.');
+
+  return ods_serialize_int_res (1);
+}
+;
+
 --! User registration
 --! name: desired user account name
 --! password: desired password
@@ -1336,7 +1367,7 @@ create procedure ODS.ODS_API."user.register" (
 	in mode integer := 0,
 	in data any := null) __soap_http 'text/xml'
 {
-  declare sid, rc, name2, xmlData any;
+  declare sid, rc, tmp, name2, xmlData any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1346,28 +1377,18 @@ create procedure ODS.ODS_API."user.register" (
 	{
 	  -- OpenID
 	  data := json_parse (data);
-	  if (isnull (name))
-    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
-	  if (isnull ("email"))
-    "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}
 	else if (mode = 2)
 	{
 	  -- Facebook
 	  data := json_parse (data);
-    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
-    "email" := null;
     "password" := uuid ();
 	}
 	else if (mode = 3)
 	{
 	  -- FOAF+SSL
 	  data := json_parse (data);
-	  if (isnull (name))
-    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
-	  if (isnull ("email"))
-    "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}
 	else if (mode = 4)
@@ -1417,10 +1438,10 @@ create procedure ODS.ODS_API."user.register" (
   if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
     signal ('23023', 'This OpenID identity is already registered.');
 
-  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_ID = get_keyword ('uid', data)))
+  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Facebook' and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK (get_keyword ('uid', data))))
     signal ('23023', 'This Facebook identity is already registered.');
 
-  if ((mode = 4) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Twitter' and WUO_URL = sprintf ('http://twitter.com/%U', name2)))
+  if ((mode = 4) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Twitter' and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (name2)))
     signal ('23023', 'This Twitter identity is already registered.');
 
   if ((mode = 5) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'LinkedIn' and WUO_URL = cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar)))
@@ -1449,7 +1470,10 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_ID', get_keyword ('uid', data));
+
+    tmp := DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK (get_keyword ('uid', data));
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE,  WUO_NAME, WUO_URL, WUO_URI)
+      values (rc, 'P', 'Facebook', tmp, ODS.ODS_API."user.onlineAccounts.uri" (tmp));
   }
   else if (mode = 3)
   {
@@ -1479,15 +1503,17 @@ create procedure ODS.ODS_API."user.register" (
   else if (mode = 4)
   {
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , xpath_eval ('string(/users/user/name)', xmlData));
+    tmp := DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (name2);
     insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
-      values (rc, 'P', 'Twitter', sprintf ('http://twitter.com/%U', name2), '');
+      values (rc, 'P', 'Twitter', tmp, ODS.ODS_API."user.onlineAccounts.uri" (tmp));
   }
   else if (mode = 5)
   {
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'    , xpath_eval ('string(/person/first-name)', xmlData));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'     , xpath_eval ('string(/person/last-name)', xmlData));
+    tmp := cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar);
     insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
-      values (rc, 'P', 'LinkedIn', cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar), '');
+      values (rc, 'P', 'LinkedIn', tmp, ODS.ODS_API."user.onlineAccounts.uri" (tmp));
   }
 
   sid := DB.DBA.vspx_sid_generate ();
@@ -1606,7 +1632,7 @@ create procedure ODS.ODS_API."user.authenticate" (
   in oauthToken varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare sid, tmp varchar;
+  declare sid, tmp, profile_url varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1620,9 +1646,16 @@ create procedure ODS.ODS_API."user.authenticate" (
   uname := null;
     if (not isnull (facebookUID))
     {
-    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
+    profile_url := DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK (facebookUID);
+    uname := (select U_NAME
+                from DB.DBA.SYS_USERS,
+                     DB.DBA.WA_USER_OL_ACCOUNTS
+               where WUO_U_ID = U_ID
+                 and WUO_TYPE = 'P'
+                 and WUO_URL = profile_url);
+
     if (isnull (uname))
-      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Security/Facebook'' \nfor a successful authentication.<>');
+      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication..<>');
     }
   else if (not isnull (openIdUrl))
     {
@@ -1639,7 +1672,7 @@ create procedure ODS.ODS_API."user.authenticate" (
     }
   else if (not isnull (oauthMode))
   {
-    declare tmp, url, token, result, screen_name, profile_url any;
+    declare tmp, url, token, result, screen_name any;
 
     if (oauthMode = 'twitter')
     {
@@ -1659,7 +1692,8 @@ create procedure ODS.ODS_API."user.authenticate" (
                 from DB.DBA.SYS_USERS,
                      DB.DBA.WA_USER_OL_ACCOUNTS
                where WUO_U_ID = U_ID
-                 and WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
+                   and WUO_TYPE = 'P'
+                   and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (screen_name));
   }
     else if (oauthMode = 'linkedin')
     {
@@ -1680,6 +1714,7 @@ create procedure ODS.ODS_API."user.authenticate" (
                   from DB.DBA.SYS_USERS,
                        DB.DBA.WA_USER_OL_ACCOUNTS
                  where WUO_U_ID = U_ID
+                   and WUO_TYPE = 'P'
                    and WUO_URL = profile_url);
     }
     OAUTH..session_terminate (oauthSid);
@@ -4791,7 +4826,7 @@ create procedure ODS.ODS_API.getFOAFDataArray (
   declare N integer;
   declare S, SQLs, IRI, foafGraph, _identity, _loc_idn varchar;
   declare V, st, msg, rows, meta any;
-  declare certLogin, certLoginEnable any;
+  declare loginName, certLogin, certLoginEnable any;
   declare personUri any;
   declare host, port, arr any;
   declare info any;
@@ -4879,15 +4914,18 @@ create procedure ODS.ODS_API.getFOAFDataArray (
       }
       goto _exit;
   }
+
 _loginIn:
+  loginName := '';
   certLogin := 0;
   certLoginEnable := 0;
   if (is_https_ctx ())
   {
-    for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
+    for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
     {
       certLogin := 1;
       certLoginEnable := coalesce (UC_LOGIN, 0);
+      loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
   }
   }
   V := ODS.ODS_API.extractFOAFDataArray (personUri, foafGraph);
@@ -4907,6 +4945,12 @@ _loginIn:
 
   if (certLogin and length (V))
     appendProperty (V, 'certLogin', cast (certLogin as varchar));
+
+  if (loginName = '')
+    loginName := DB.DBA.WA_MAKE_NICK2 (get_keyword ('nick', V), get_keyword ('name', V), get_keyword ('firstName', V), get_keyword ('family_name', V));
+
+  if (loginName <> '')
+    appendProperty (V, 'loginName', loginName);
 
 _exit:;
   ODS.ODS_API.graph_clear (foafGraph);
@@ -5744,6 +5788,7 @@ grant execute on ODS.ODS_API."twitterVerify" to ODS_API;
 grant execute on ODS.ODS_API."linkedinServer" to ODS_API;
 grant execute on ODS.ODS_API."linkedinVerify" to ODS_API;
 
+grant execute on ODS.ODS_API."user.checkAvalability" to ODS_API;
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
 grant execute on ODS.ODS_API."user.login" to ODS_API;

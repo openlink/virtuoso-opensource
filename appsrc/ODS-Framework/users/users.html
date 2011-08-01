@@ -68,9 +68,9 @@
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
@@ -165,9 +165,9 @@
                 </div>
                 <ul id="rf_tabs" class="tabs">
                   <li id="rf_tab_0" title="Digest">Digest</li>
+                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
                 </ul>
@@ -177,18 +177,18 @@
                     <table id="rf_table_0" class="form" cellspacing="5">
                       <tr>
                         <th>
-                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                          <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
+                          <input type="text" name="rf_uid_0" value="" id="rf_uid_0" style="width: 150px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                          <label for="rf_email_0">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                          <input type="text" name="rf_email_0" value="" id="rf_email_0" style="width: 300px;" />
                         </td>
                       </tr>
                       <tr>
@@ -278,6 +278,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
+                  <input type="button" id="rf_check" name="rf_check" value="Check Availabilty" onclick="javascript: return rfCheckAvalability();" />
                   <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
@@ -813,7 +814,7 @@
                       <div id="pf_page_0_3" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
-                            <td width="600px">
+                            <td width="800px">
                               <table id="x4_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
@@ -822,6 +823,9 @@
                                     </th>
                                     <th>
                                       Member Home Page URI
+                                    </th>
+                                    <th>
+                                      Account URI
                                     </th>
                                     <th width="65px">
                                       Action
@@ -832,7 +836,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -2107,26 +2111,6 @@
                         </table>
                       </div>
                       <div id="pf_page_2_3" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                      <tr>
-                            <th>
-                              Saved Facebook ID
-                        </th>
-                            <td>
-                              <span id="span_facebookName"></span>
-                            </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                            <td>
-                              <span id="pf_facebookData" style="min-height: 20px;"></span>
-                              <br />
-                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                              <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                        </table>
                       </div>
                       <div id="pf_page_2_4" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">

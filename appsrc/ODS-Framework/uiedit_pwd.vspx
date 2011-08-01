@@ -37,8 +37,6 @@
   <v:variable persist="0" name="certificate_content" type="varchar" default="null"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
-  <v:variable persist="0" name="fb" type="DB.DBA.Facebook" default="null" />
-  <v:variable persist="0" name="fbLoginID" type="varchar" default="''"/>
   <v:variable persist="0" name="tab_no" type="int" default="0" param-name="tabNo"/>
   <v:variable persist="temp" name="cert_del"  type="int" default="0" param-name="cert_del"/>
   <v:variable persist="temp" name="key_del"  type="varchar" default="null" param-name="key_del"/>
@@ -50,13 +48,11 @@
       SELECT WAUI_SEC_QUESTION,
              WAUI_SEC_ANSWER,
              pwd_magic_calc (U_NAME, U_PASSWORD, 1),
-	     WAUI_OPENID_URL,
-		         WAUI_FACEBOOK_ID
+             WAUI_OPENID_URL
         INTO self.secretq,
              self.secreta,
              pwd,
-	     self.oid_urlv,
-		   self.fbLoginID
+             self.oid_urlv
         FROM WA_USER_INFO,
              DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID
@@ -78,9 +74,6 @@
 	  self.no_pwd := 1;
         else
 	  self.no_pwd := 0;
-      declare fb_options any;
-      if (_get_ods_fb_settings (fb_options))
-        self.fb := new Facebook(fb_options[0], fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
       ]]>
     </v:before-data-bind>
  <br/>
@@ -89,9 +82,6 @@
       <v:url name="sec_url_0" value="Password" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="sec_url_3" value="Password recovery" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="sec_url_1" value="OpenID" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
-    <vm:if test="not isnull (self.fb)">
-	<v:url name="sec_url_2" value="Facebook" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
-    </vm:if>
       <v:url name="sec_url_4" value="Limits" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
   <?vsp 
        declare ua any;
@@ -269,90 +259,6 @@
               </tr>
       </table>
       </v:template>
-    <vm:if test="not isnull (self.fb)">
-      <v:template name="sec_tmpl_2" type="simple" enabled="-- equ (self.tab_no, 2)">
-	  <input type="hidden" value="2" name="tabNo" /> 
-            <br />
-  			<table>
-        <tr>
-                <th width="135px">
-                  <label>Saved Facebook ID</label>
-                </th>
-          <td nowrap="nowrap">
-            <?vsp
-              if (DB.DBA.is_empty_or_null (self.fbLoginID))
-              {
-                http ('not yet');
-              } else {
-                {
-                  declare exit handler for sqlstate '*'
-                	{
-                    http ('bad connection/user');
-                	  goto _next;
-                	};
-                declare _res any;
-
-                  _res := serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', self.fb.api_client.users_getInfo(self.fbLoginID, 'name')));
-                  if (DB.DBA.is_empty_or_null (_res))
-                    signal ('23023', '');
-
-                  http (_res);
-                }
-              _next:;
-              }
-            ?>
-          </td>
-        </tr>
-        <?vsp
-          if (self.fb is not null and  length (self.fb._user))
-          {
-            declare _res any;
-            _res := self.fb.api_client.users_getInfo(self.fb._user, 'name');
-            http (sprintf ('<tr><th></th><td>Connected as <b><i>%s</i><b></td></tr>', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', _res))));
-          }
-          http (         '<tr><th></th><td>');
-          http (         '<script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>');
-          http (         '<fb:login-button autologoutlink="true" onlogin1="window.location=\'/ods/login.vspx\'"></fb:login-button>');
-          http (sprintf ('<script type="text/javascript">FB.init("%s", "fb_dummy.vsp", {"reloadIfSessionStateChanged": true});</script>', self.fb.api_key));
-          http (         '</td></tr>');
-        ?>
-              <tr>
-          <td colspan="2" class="ctrl">
-            <span class="fm_ctl_btn">
-              <v:button name="bt_fb1" value="Update" action="simple" enabled="--case when isnull (self.fb) then 0 else 1 end">
-                <v:on-post>
-                  <![CDATA[
-                    if (self.vc_is_valid = 0)
-                      return;
-
-                    if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_FACEBOOK_ID = self.fb._user))
-                    {
-                      self.vc_error_message := 'This Facebook identity is already registered.';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
-                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', self.fb._user);
-                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=2');
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button name="bt_fb2" value="Clear" action="simple" enabled="--case when isnull (self.fbLoginID) then 0 else 1 end">
-                <v:on-post>
-                  <![CDATA[
-                    if (self.vc_is_valid = 0)
-                      return;
-
-                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', null);
-                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=2');
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </span>
-                </td>
-              </tr>
-        </table>
-</v:template>
-    </vm:if>
       <v:template name="sec_tmpl_3" type="simple" enabled="-- equ (self.tab_no, 3)">
 	  <input type="hidden" value="3" name="tabNo" /> 
           <h2>Password recovery questions</h2>
