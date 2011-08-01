@@ -303,13 +303,9 @@ href="http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}"
                   "Facebook icon" src="<?=skinpfx?>/i/facebook_icon.jpg" title=
                   "Sponge your Facebook profile"/></a></li>
 
-                  <li><a href="sponge_social_profile.vsp?site=Twitter"><img alt="Twitter icon" src=
+                  <li><a href="twitter_access_token.vsp?site=Twitter"><img alt="Twitter icon" src=
                   "<?=skinpfx?>/i/twitter.jpg" title="Sponge your Twitter profile" /></a></li>
 
-                  <!--
-                  <li><a href="sponge_uri.vsp?site=LinkedIn"><img alt="LinkedIn icon" src=
-                  "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
-                  -->
                   <li><a href="linkedin_access_token.vsp"><img alt="LinkedIn icon" src=
                   "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
 
