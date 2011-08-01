@@ -1694,6 +1694,8 @@ again:
 	return 0;
     }  
 
+  http_rewrite (0);
+
   if (_col_id is not null and http_path () not like '%/')
     {
       http_request_status ('HTTP/1.1 301 Moved Permanently');
