@@ -203,7 +203,8 @@ create procedure fill_ods_addressbook_sioc2 (
 								P_TAGS,
 	              P_FOAF,
                 P_IRI,
-                P_ACL
+                P_ACL,
+                P_CERTIFICATE
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 AB.WA.PERSONS
@@ -273,7 +274,8 @@ create procedure fill_ods_addressbook_sioc2 (
                     P_UPDATED,
 											P_TAGS,
 		                  P_FOAF,
-				  P_IRI);
+                      P_IRI,
+                      P_CERTIFICATE);
 
       cnt := cnt + 1;
 		   if (mod (cnt, 500) = 0)
@@ -428,10 +430,12 @@ create procedure contact_insert (
   inout updated datetime,
 	inout tags varchar,
 	inout foaf varchar,
-	inout ext_iri varchar)
+  inout ext_iri varchar,
+  inout certificate varchar)
 {
   declare iri, iri2, temp_iri varchar;
 	declare person_iri varchar;
+  declare info, modulus, exponent, certificate_iri any;
 
 	declare exit handler for sqlstate '*'
 	{
@@ -663,6 +667,20 @@ create procedure contact_insert (
     }
   }
 
+  -- certificate
+  info := get_certificate_info (9, cast (certificate as varchar), 0);
+  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
+  {
+    modulus := info[2];
+    exponent := info[1];
+    certificate_iri := iri || '#cert';
+    DB.DBA.ODS_QUAD_URI (graph_iri, certificate_iri, cert_iri ('identity'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, certificate_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+
+    DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, certificate_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
+    DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, certificate_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
+  }
+
   -- contact services
   SIOC..ods_object_services_attach (graph_iri, iri2, 'addressbook/contact');
 
@@ -765,7 +783,8 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   N.P_UPDATED,
 									N.P_TAGS,
 									N.P_FOAF,
-									N.P_IRI);
+                  N.P_IRI,
+                  N.P_CERTIFICATE);
 }
 ;
 
@@ -829,7 +848,8 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   N.P_UPDATED,
 									N.P_TAGS,
 									N.P_FOAF,
-									N.P_IRI);
+                  N.P_IRI,
+                  N.P_CERTIFICATE);
 }
 ;
 
