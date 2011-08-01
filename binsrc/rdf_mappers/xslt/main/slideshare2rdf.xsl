@@ -31,16 +31,27 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
-	xmlns:dcterms="http://purl.org/dc/terms/" xmlns:foaf="&foaf;" xmlns:sioc="&sioc;" xmlns:bibo="&bibo;"
+<xsl:stylesheet 
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:skos="http://www.w3.org/2004/02/skos/core#" 
+	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
+	xmlns:foaf="&foaf;" 
+	xmlns:sioc="&sioc;" 
+	xmlns:bibo="&bibo;"
 	xmlns:dcterms="&dcterms;"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"	
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	version="1.0">
+
 	<xsl:output method="xml" indent="yes" />
+
 	<xsl:param name="baseUri" />
+
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
@@ -184,27 +195,6 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:content>
-			<!--dc:content>
-				<xsl:choose>
-					<xsl:when test="Embed">
-						<xsl:value-of select="Embed" />
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="EmbedCode" />
-					</xsl:otherwise>
-				</xsl:choose>
-			</dc:content-->
-			<!--sioc:content>
-				<xsl:choose>
-					<xsl:when test="Embed">
-						<xsl:value-of select="Embed" />
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="EmbedCode" />
-					</xsl:otherwise>
-				</xsl:choose>
-			</sioc:content-->
-
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="Created" />
 			</dcterms:created>
@@ -219,10 +209,17 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:pageEnd>
-			<!--xsl:for-each select="Tags/Tag">
-				<xsl:variable name="res" select="vi:proxyIRI(concat('http://www.slideshare.net/tag/', .))" />
-				<rdfs:seeAlso rdf:resource="{$res}" />
-			</xsl:for-each-->
+			<xsl:variable name="tags" select="vi:split-and-decode(Tags, 0, ' ')"/>
+			<xsl:for-each select="$tags/results/result">
+				<sioc:topic>
+					<skos:Concept rdf:about="{vi:dbpIRI ($baseUri, .)}" >
+						<skos:prefLabel>
+							<xsl:value-of select="."/>
+						</skos:prefLabel>
+					</skos:Concept>
+				</sioc:topic>
+				<rdfs:seeAlso rdf:resource="{vi:proxyIRI(concat('http://www.slideshare.net/tag/', .))}" />
+			</xsl:for-each>
 		</bibo:Slideshow>
 	</xsl:template>
 	<xsl:template match="*|text()" />

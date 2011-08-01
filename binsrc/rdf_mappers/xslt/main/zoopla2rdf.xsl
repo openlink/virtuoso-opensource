@@ -35,6 +35,7 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
     xmlns:rdf="&rdf;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
@@ -53,7 +54,6 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
-    <xsl:param name="currentDateTime"/>
 
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
