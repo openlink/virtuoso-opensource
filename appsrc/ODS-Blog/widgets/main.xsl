@@ -875,6 +875,20 @@ else if (length (self.catid))
       <xsl:text>&#10;</xsl:text>
       <?vsp
           }
+          declare rdf_iri varchar;
+
+          rdf_iri := null;
+          if (not isnull (self.editpost))
+            rdf_iri := SIOC..blog_post_iri (self.blogid, self.editpost);
+
+          if (not isnull (self.postid) and not isnull(self.comm_ref))
+            rdf_iri := SIOC..blog_comment_iri (self.blogid, self.postid, self.comm_ref);
+
+          if (not isnull (rdf_iri))
+          {
+            SIOC..rdf_links_header (rdf_iri);
+            SIOC..rdf_links_head (rdf_iri);
+          }
       ?>
       <![CDATA[
       <script type="text/javascript">
