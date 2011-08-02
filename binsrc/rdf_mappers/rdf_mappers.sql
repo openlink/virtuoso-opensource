@@ -86,6 +86,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_EVENTBRITE', null, 'Eventbrite');
 	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*eventful.com.*',
+    'URL', 'DB.DBA.RDF_LOAD_EVENTFUL', null, 'Eventful');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*plancast.com/.*',
     'URL', 'DB.DBA.RDF_LOAD_PLANCAST', null, 'Plancast');
 	
@@ -6239,6 +6243,77 @@ create procedure DB.DBA.RDF_LOAD_EVENTBRITE (in graph_iri varchar, in new_origin
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_EVENTFUL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, exif any;
+	declare entity_id, app_key_, user_key_ varchar;
+	declare pos int;
+	app_key_ := _key;
+	if (length (app_key_) = 0)
+		return 0;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://eventful.com/%events/%E0-%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://eventful.com/%sevents/%sE0-%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.evdb.com/rest/events/get?id=E0-%s&app_key=%s', entity_id, app_key_);
+	}
+	else if (new_origin_uri like 'http://eventful.com/%venues/%V0-%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://eventful.com/%svenues/%sV0-%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.evdb.com/rest/venues/get?id=V0-%s&app_key=%s', entity_id, app_key_);
+	}
+	else if (new_origin_uri like 'http://eventful.com/users/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://eventful.com/users/%s', 0);
+		entity_id := tmp[0];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.evdb.com/rest/users/get?id=%s&app_key=%s', entity_id, app_key_);
+	}
+	else if (new_origin_uri like 'http://eventful.com/%calendars/%C0-%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://eventful.com/%scalendars/%sC0-%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.evdb.com/rest/calendars/get?id=C0-%s&app_key=%s', entity_id, app_key_);
+	}
+	else if (new_origin_uri like 'http://eventful.com/%performers/%P0-%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://eventful.com/%sperformers/%sP0-%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.evdb.com/rest/performers/get?id=P0-%s&app_key=%s', entity_id, app_key_);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/eventful2rdf.xsl', xd, 
+		vector ('baseUri', new_origin_uri, 'entity', entity_id));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
 create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xd, host_part, xt, url, tmp, hdr, exif any;
