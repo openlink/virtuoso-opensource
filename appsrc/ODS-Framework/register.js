@@ -79,17 +79,36 @@ function rfRowButton2(td, id) {
 }
 
 function rfRowValue(tbl, label, value, leftTag) {
-  if (!leftTag) {
+  if (!leftTag)
     leftTag = 'th';
-  }
+
   var tr = OAT.Dom.create('tr');
-  var th = OAT.Dom.create(leftTag);
+  var th = OAT.Dom.create(leftTag, {verticalAlign: 'top'});
   th.width = '20%';
   th.innerHTML = label;
   tr.appendChild(th);
   if (value) {
     var td = OAT.Dom.create('td');
     td.innerHTML = value;
+    tr.appendChild(td);
+  }
+  tbl.appendChild(tr);
+}
+
+function rfRowImage(tbl, label, value, leftTag) {
+  if (!leftTag)
+    leftTag = 'th';
+
+  var tr = OAT.Dom.create('tr');
+  var th = OAT.Dom.create(leftTag, {verticalAlign: 'top'});
+  th.width = '20%';
+  th.innerHTML = label;
+  tr.appendChild(th);
+  if (value) {
+    var td = OAT.Dom.create('td');
+    var img = OAT.Dom.create('img', {}, 'resize');
+    img.src = value;
+    td.appendChild(img);
     tr.appendChild(td);
   }
   tbl.appendChild(tr);
@@ -284,7 +303,10 @@ function rfInit() {
         if (tbl) {
           OAT.Dom.unlink(prefix+'_table_3_throbber');
           rfRowValue(tbl, 'WebID', rfSslData.iri);
-          if ((prefix == "rf") && !rfSslData.certLogin)
+          if (rfSslData.depiction)
+            rfRowImage(tbl, 'Photo', rfSslData.depiction);
+
+          if (!rfSslData.certLogin)
             rfRowInput(tbl, 'Login Name', 'rf_uid_3', {value: rfSslData.loginName, width: '150px'});
 
           if (rfSslData.mbox && rfSslData.certLogin)
@@ -300,7 +322,7 @@ function rfInit() {
             rfRowValue(tbl, 'Family Name', rfSslData.family_name);
 
           if (rfSslData.certLogin) {
-            var td = rfRowText(tbl, 'You have registered WebID. You can now sign in with it! - ', 'color: red; font-weight: bold; ');
+            var td = rfRowText(tbl, 'You have registered WebID and can sign in with it - ', 'font-weight: bold; ');
             rfRowButton(td, 'sign_in_1');
           }
           rfCheckUpdate(3);
@@ -315,7 +337,7 @@ function rfInit() {
       var tbl = $('rf_table_3');
       if (tbl) {
         OAT.Dom.unlink('rf_table_3_throbber');
-        var td3 = rfRowText(tbl, 'If you have WebID and it is not registered, you can now sign up with it! - ', 'color: red; font-weight: bold;');
+        var td3 = rfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
         rfRowButton2(td3, 'sign_up_3');
       }
     }
@@ -479,12 +501,12 @@ function rfCheckAvalability(event) {
 
   var email = $v('rf_email_'+rfTab.selectedIndex);
   if (!email)
-    return showError('Bad mail. Please correct!');
+    return showError('Bad Email. Please correct!');
 
   var x = function (data) {
     var xml = OAT.Xml.createXmlDoc(data);
     if (!hasError(xml))
-      alert('Login name and EMail are available!');
+      alert('Login name and Email are available!');
   }
 
   var q = '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);

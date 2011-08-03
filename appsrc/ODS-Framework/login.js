@@ -85,13 +85,32 @@ function lfRowValue(tbl, label, value, leftTag) {
     leftTag = 'th';
 
   var tr = OAT.Dom.create('tr');
-  var th = OAT.Dom.create(leftTag);
+  var th = OAT.Dom.create(leftTag, {verticalAlign: 'top'});
   th.width = '20%';
   th.innerHTML = label;
   tr.appendChild(th);
   if (value) {
     var td = OAT.Dom.create('td');
     td.innerHTML = value;
+    tr.appendChild(td);
+  }
+  tbl.appendChild(tr);
+}
+
+function lfRowImage(tbl, label, value, leftTag) {
+  if (!leftTag)
+    leftTag = 'th';
+
+  var tr = OAT.Dom.create('tr');
+  var th = OAT.Dom.create(leftTag, {verticalAlign: 'top'});
+  th.width = '20%';
+  th.innerHTML = label;
+  tr.appendChild(th);
+  if (value) {
+    var td = OAT.Dom.create('td');
+    var img = OAT.Dom.create('img', {}, 'resize');
+    img.src = value;
+    td.appendChild(img);
     tr.appendChild(td);
   }
   tbl.appendChild(tr);
@@ -173,15 +192,23 @@ function lfInit() {
         if (tbl) {
           OAT.Dom.unlink(prefix+'_table_3_throbber');
           lfRowValue(tbl, 'WebID', lfSslData.iri);
+          if (lfSslData.depiction)
+            lfRowImage(tbl, 'Photo', lfSslData.depiction);
+
+          if (lfSslData.loginName)
+            lfRowValue(tbl, 'Login Name', lfSslData.loginName);
+
           if (lfSslData.mbox)
             lfRowValue(tbl, 'E-Mail', lfSslData.mbox);
+
           if (lfSslData.firstName)
             lfRowValue(tbl, 'First Name', lfSslData.firstName);
+
           if (lfSslData.family_name)
             lfRowValue(tbl, 'Family Name', lfSslData.family_name);
 
           if (!lfSslData.certLogin) {
-            var td = lfRowText(tbl, 'You have WebID! You can now sign up with it! - ', 'color: red; font-weight: bold;');
+            var td = lfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
             lfRowButton2(td, 'sign_up_1');
           }
           lfTab.go(3);
@@ -195,9 +222,9 @@ function lfInit() {
       var tbl = $('lf_table_3');
       if (tbl) {
         OAT.Dom.unlink('lf_table_3_throbber');
-        var td = lfRowText(tbl, 'You have registered WebID! You can now sign in with it! - ', 'color: red; font-weight: bold;');
+        var td = lfRowText(tbl, 'Have you registered WebID? Sign in with it - ', 'font-weight: bold;');
         lfRowButton(td, 'sign_in_2');
-        var td2 = lfRowText(tbl, 'If you have WebID and it is not registered, you can now sign up! - ', 'color: red; font-weight: bold;');
+        var td2 = lfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
         lfRowButton2(td2, 'sign_up_2');
       }
     }

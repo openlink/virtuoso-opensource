@@ -589,6 +589,8 @@
             if (vFormTab2 = 0)
             {
               -- Import
+              if (get_keyword ('cb_item_i_photo', params, '') = '1')
+                vParams := vParams || sprintf ('&photo=%U', get_keyword ('i_photo', params, ''));
               if (get_keyword ('cb_item_i_name', params, '') = '1')
                 vParams := vParams || sprintf ('&nickName=%U', get_keyword ('i_nickName', params, ''));
               if (get_keyword ('cb_item_i_title', params, '') = '1')
