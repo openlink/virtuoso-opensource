@@ -721,6 +721,9 @@ function init()
 				if (tbl) {
           OAT.Dom.unlink(prefix+'_table_3_throbber');
 					addProfileRowValue(tbl, 'WebID', sslData.iri);
+          if (sslData.depiction)
+            addProfileRowImage(tbl, 'Photo', sslData.depiction);
+
           if (sslData.loginName && sslData.certLogin)
             addProfileRowValue(tbl, 'Login Name', sslData.loginName);
 
@@ -741,7 +744,7 @@ function init()
 
           if (prefix == "lf") {
             if (!sslData.certLogin) {
-              var td = addProfileRowText(tbl, 'You have WebID! You can now sign up with it! - ', 'color: red; font-weight: bold;');
+              var td = addProfileRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
               addProfileRowButton2(td, 'sign_up_1');
             } else {
             lfTab.go(3);
@@ -750,7 +753,7 @@ function init()
           else if (prefix == "rf")
           {
             if (sslData.certLogin) {
-              var td = addProfileRowText(tbl, 'You have registered WebID. You can now sign in with it! - ', 'color: red; font-weight: bold; ');
+              var td = addProfileRowText(tbl, 'You have registered WebID. You can sign in with it! - ', 'font-weight: bold; ');
               addProfileRowButton(td, 'sign_in_1');
             } else {
               rfCheckUpdate(3);
@@ -777,16 +780,16 @@ function init()
       var tbl = $('lf_table_3');
       if (tbl) {
         OAT.Dom.unlink('lf_table_3_throbber');
-        var td = addProfileRowText(tbl, 'You have registered WebID! You can now sign in with it! - ', 'color: red; font-weight: bold;');
+        var td = addProfileRowText(tbl, 'Have you registered WebID? Sign in with it - ', 'font-weight: bold;');
         addProfileRowButton(td, 'sign_in_2');
-        var td2 = addProfileRowText(tbl, 'If you have WebID and it is not registered, you can now sign up! - ', 'color: red; font-weight: bold;');
+        var td2 = addProfileRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
         addProfileRowButton2(td2, 'sign_up_2');
       }
       OAT.Dom.show('rf_tab_3');
       var tbl = $('rf_table_3');
       if (tbl) {
         OAT.Dom.unlink('rf_table_3_throbber');
-        var td3 = addProfileRowText(tbl, 'If you have WebID and it is not registered, you can now sign up with it! - ', 'color: red; font-weight: bold;');
+        var td3 = addProfileRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
         addProfileRowButton2(td3, 'sign_up_3');
       }
     }
@@ -2074,7 +2077,7 @@ function addProfileRowValue(tbl, label, value, leftTag) {
 		leftTag = 'th';
 
   var tr = OAT.Dom.create('tr');
-  var th = OAT.Dom.create(leftTag);
+  var th = OAT.Dom.create(leftTag, {verticalAlign: 'top'});
   th.width = '20%';
   th.innerHTML = label;
   tr.appendChild(th);
@@ -2086,11 +2089,30 @@ function addProfileRowValue(tbl, label, value, leftTag) {
   tbl.appendChild(tr);
 }
 
+function addProfileRowImage(tbl, label, value, leftTag) {
+  if (!leftTag)
+    leftTag = 'th';
+
+  var tr = OAT.Dom.create('tr');
+  var th = OAT.Dom.create(leftTag, {verticalAlign: 'top'});
+  th.width = '20%';
+  th.innerHTML = label;
+  tr.appendChild(th);
+  if (value) {
+    var td = OAT.Dom.create('td');
+    var img = OAT.Dom.create('img', {}, 'resize');
+    img.src = value;
+    td.appendChild(img);
+    tr.appendChild(td);
+  }
+  tbl.appendChild(tr);
+}
+
 function addProfileRowInput(tbl, label, fName, fOptions) {
 	var tr = OAT.Dom.create('tr');
   tr.id = 'tr+'+fName;
 
-	var th = OAT.Dom.create('th');
+  var th = OAT.Dom.create('th', {verticalAlign: 'top'});
   th.width = '20%';
 	th.innerHTML = label + '<div style="font-weight: normal; display: inline; color: red;"> *</div>';
 	tr.appendChild(th);
@@ -2112,7 +2134,7 @@ function addProfileTableValues(tbl, label, values, headers, delimiters) {
     var tr = OAT.Dom.create('tr');
     var th = OAT.Dom.create('th');
     th.vAlign = 'top';
-    th.width = '30%';
+    th.width = '20%';
     th.innerHTML = label;
     tr.appendChild(th);
 
@@ -2139,9 +2161,9 @@ function addProfileTableValues(tbl, label, values, headers, delimiters) {
 }
 
 function addProfileTableRowValue(tbl, values, delimiters, leftTag) {
-	if (!leftTag) {
+  if (!leftTag)
 		leftTag = 'td';
-	}
+
   var tmpLines = values.split(delimiters[0]);
 	for ( var N = 0; N < tmpLines.length; N++) {
 		if (delimiters.length == 1) {
@@ -2778,6 +2800,8 @@ function pfUpdateSubmit(No) {
       if (formTab2 == 0)
       {
         // Import
+        if ($v('cb_item_i_photo') == '1')
+          S += '&photo=' + encodeURIComponent($v('i_photo'));
         if ($v('cb_item_i_name') == '1')
           S += '&nickName=' + encodeURIComponent($v('i_nickName'));
         if ($v('cb_item_i_title') == '1')
@@ -3070,6 +3094,7 @@ function pfGetFOAFData(iri) {
   	  var tbody = $('i_tbody');
 
 			pfSetFOAFValue(tbody, o.iri,                  'Personal WebID',        'i_iri');
+      pfSetFOAFValue(tbody, o.depiction,            'Photo',                        'i_photo');
 			pfSetFOAFValue(tbody, o.nick,                 'Nick Name',             'i_nickName');
 			pfSetFOAFValue(tbody, o.title,                'Title',                 'i_title');
 			pfSetFOAFValue(tbody, o.firstName,            'First Name',            'i_firstName');
@@ -3167,7 +3192,13 @@ function pfSetFOAFValue(tbody, fValue, fTitle, fName, fHeaders, fLabels) {
       	}
       fValue = tmp;
     } else {
+      if (fName == 'i_photo') {
+        var img = OAT.Dom.create('img', {}, 'resize');
+        img.src = fValue;
+        td.appendChild(img);
+      } else {
       td.appendChild(OAT.Dom.text(fValue));
+    }
     }
     var fld = OAT.Dom.create('input');
     fld.type = 'hidden';
@@ -3317,12 +3348,12 @@ function rfCheckAvalability(event) {
 
   var email = $v('rf_email_'+rfTab.selectedIndex);
   if (!email)
-    return showError('Bad mail. Please correct!');
+    return showError('Bad Email. Please correct!');
 
   var x = function (data) {
     var xml = OAT.Xml.createXmlDoc(data);
     if (!hasError(xml))
-      alert('Login name and EMail are available!');
+      alert('Login name and Email are available!');
   }
 
   var q = '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);

@@ -63,6 +63,8 @@ create procedure ods_serialize_int_res (in rc any, in msg varchar := '')
 
 create procedure ods_serialize_sql_error (in state varchar, in message varchar)
 {
+  message := substring (message, 1, coalesce (strstr (message, '<>'), length (message)));
+  message := substring (message, 1, coalesce (strstr (message, '\nin'), length (message)));
   return sprintf ('<failed><code>%s</code><message>%V</message></failed>', state, message);
 }
 ;
@@ -1341,7 +1343,7 @@ create procedure ODS.ODS_API."user.checkAvalability" (
     signal ('23023', 'The login name contains invalid characters');
 
   if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
-    signal ('23023', 'This login name is already registered.');
+    signal ('23023', 'This login name is already registered');
 
   if (email is null or length (email) < 1 or length (email) > 40)
     signal ('23023', 'E-mail address cannot be empty or longer then 40 chars');
@@ -1350,7 +1352,7 @@ create procedure ODS.ODS_API."user.checkAvalability" (
     signal ('23023', 'Invalid E-mail address');
 
   if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = email) and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
-    signal ('23023', 'This e-mail address is already registered.');
+    signal ('23023', 'This e-mail address is already registered');
 
   return ods_serialize_int_res (1);
 }
@@ -1430,22 +1432,22 @@ create procedure ODS.ODS_API."user.register" (
       signal ('23023', 'Invalid E-mail address');
   }
   if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = "email") and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
-    signal ('23023', 'This e-mail address is already registered.');
+    signal ('23023', 'This e-mail address is already registered');
 
   if ("password" is null or length ("password") < 1 or length ("password") > 40)
     signal ('23023', 'Password cannot be empty or longer then 40 chars');
 
   if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
-    signal ('23023', 'This OpenID identity is already registered.');
+    signal ('23023', 'This OpenID identity is already registered');
 
   if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Facebook' and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK (get_keyword ('uid', data))))
-    signal ('23023', 'This Facebook identity is already registered.');
+    signal ('23023', 'This Facebook identity is already registered');
 
   if ((mode = 4) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Twitter' and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (name2)))
-    signal ('23023', 'This Twitter identity is already registered.');
+    signal ('23023', 'This Twitter identity is already registered');
 
   if ((mode = 5) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'LinkedIn' and WUO_URL = cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar)))
-    signal ('23023', 'This LinkedIn identity is already registered.');
+    signal ('23023', 'This LinkedIn identity is already registered');
 
   rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
   if (not isinteger (rc))
@@ -1636,12 +1638,12 @@ create procedure ODS.ODS_API."user.authenticate" (
   declare exit handler for sqlstate '*'
   {
     rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, substring(__SQL_MESSAGE, 1, coalesce(strstr(__SQL_MESSAGE, '<>'), length(__SQL_MESSAGE))));
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
   tmp := (select WAB_DISABLE_UNTIL from DB.DBA.WA_BLOCKED_IP where WAB_IP = http_client_ip ());
   --if (tmp is not null and tmp > now ())
-  --  signal ('22023', 'Too many failed attempts. Try again in an hour.<>');
+  --  signal ('22023', 'Too many failed attempts. Try again in an hour<>');
 
   uname := null;
     if (not isnull (facebookUID))
@@ -1655,7 +1657,7 @@ create procedure ODS.ODS_API."user.authenticate" (
                  and WUO_URL = profile_url);
 
     if (isnull (uname))
-      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication..<>');
+      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication<>');
     }
   else if (not isnull (openIdUrl))
     {
@@ -1664,11 +1666,11 @@ create procedure ODS.ODS_API."user.authenticate" (
       commit work;
       vResult := http_client (openIdUrl);
       if (vResult not like '%is_valid:%true\n%')
-      signal ('22023', 'OpenID Authentication Failed.<>');
+      signal ('22023', 'OpenID Authentication Failed<>');
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     if (isnull (uname))
-      signal ('22023', 'The OpenID account is not registered.\nPlease enter your OpenID account data in ODS ''Edit Profile/Security/OpenID'' \nfor a successful authentication.<>');
+      signal ('22023', 'The OpenID account is not registered.\nPlease enter your OpenID account data in ODS ''Edit Profile/Security/OpenID'' \nfor a successful authentication<>');
     }
   else if (not isnull (oauthMode))
   {
@@ -1720,10 +1722,10 @@ create procedure ODS.ODS_API."user.authenticate" (
     OAUTH..session_terminate (oauthSid);
 
     if (isnull (uname) and (oauthMode = 'twitter'))
-      signal ('22000', 'The Twitter account is not registered.\n Please enter your Twitter account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+      signal ('22000', 'The Twitter account is not registered.\nPlease enter your Twitter account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication<>');
 
     if (isnull (uname) and (oauthMode = 'linkedin'))
-      signal ('22000', 'The LinkedIn account is not registered.\n Please enter your LinkedIn account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+      signal ('22000', 'The LinkedIn account is not registered.\nPlease enter your LinkedIn account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication<>');
   }
   else
   {
@@ -2036,7 +2038,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   if (not DB.DBA.is_empty_or_null (securityFacebookID))
   {
     if (exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID <> uid and WAUI_FACEBOOK_ID = securityFacebookID))
-      signal ('23023', 'This Facebook identity is already registered.');
+      signal ('23023', 'This Facebook identity is already registered');
   }
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_ID', securityFacebookID);
 
@@ -2252,7 +2254,7 @@ create procedure ODS.ODS_API."user.upload.internal" (
 
     ext := split_and_decode (photo, 0, '\0\0.');
     if (ext is not null and ext[length(ext)-1] is not null and lcase(ext[length(ext)-1]) not in ('jpg', 'png', 'gif'))
-      signal ('23023', 'Invalid image type. Please use jpg, png or gif for browser compatibility.');
+      signal ('23023', 'Invalid image type. Please use jpg, png or gif for browser compatibility');
 
     uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
     dir := rtrim (DB.DBA.DAV_HOME_DIR (uname), '/')||'/wa/images/';
@@ -2291,6 +2293,10 @@ create procedure ODS.ODS_API."user.upload.internal" (
     if (path like '/DAV/%')
       path := subseq (path, 4);
     ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', path);
+  }
+  else if (length(photo))
+  {
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', photo);
   }
   else if (photo = '')
   {
@@ -2870,7 +2876,7 @@ create procedure ODS.ODS_API."user.invite" (
 	    {
 	      rollback work;
 	      if (__SQL_STATE not like 'WA%')
-		msg := 'The e-mail address(es) is not valid and mail cannot be sent.';
+      		msg := 'The e-mail address(es) is not valid and mail cannot be sent';
 	      else
 		msg := __SQL_MESSAGE;
               rc := -1;

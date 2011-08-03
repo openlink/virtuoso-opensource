@@ -1149,3 +1149,10 @@ table.ODS_grid tfoot td {
   border: solid #7f94a5;
   border-width: 1px 0px 0px 0px;
 }
+
+img.resize {
+  width: auto;
+  height: auto;
+  max-height: 200px;
+  max-width: 150px;
+}

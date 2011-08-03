@@ -532,6 +532,8 @@
             if ($_formTab2 == 0)
             {
               // Import
+              if ($_REQUEST['cb_item_i_photo'] == '1')
+                $_params .= '&photo' . myUrlencode ($_REQUEST['i_photo']);
               if ($_REQUEST['cb_item_i_name'] == '1')
                 $_params .= '&nickName' . myUrlencode ($_REQUEST['i_nickName']);
               if ($_REQUEST['cb_item_i_title'] == '1')
@@ -958,6 +960,13 @@
                   </div>
                   <div id="lf_page_3" class="tabContent" style="display: none">
                     <table id="lf_table_3" class="form" cellspacing="5">
+                      <tr id="lf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
                   <div id="lf_page_4" class="tabContent" style="display: none">
@@ -1075,6 +1084,13 @@
                   </div>
                   <div id="rf_page_3" class="tabContent" style="display: none">
                     <table id="rf_table_3" class="form" cellspacing="5">
+                      <tr id="rf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
                   <div id="rf_page_4" class="tabContent" style="display: none">

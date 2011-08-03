@@ -145,6 +145,7 @@
             self.vc_is_valid := 0;
             return;
           }
+          self.iPhoto := get_keyword ('depiction', data);
           self.iTitle := get_keyword ('title', data);
           self.iName := get_keyword ('name', data);
           self.iFirstName := coalesce (get_keyword ('firstName', data), get_keyword ('givenName', data));
@@ -259,6 +260,8 @@
           return;
         }
         --DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
+        if (get_keyword ('cb_item_iPhoto', params, '0') = '1')
+          ODS.ODS_API."user.update.field" (self.u_name, 'WAUI_PHOTO_URL', self.iPhoto);
         if (get_keyword ('cb_item_iTitle', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.iTitle);
         if (get_keyword ('cb_item_iFirstName', params, '0') = '1')
@@ -358,6 +361,7 @@
   <v:variable name="iMode" type="integer" default="0"/>
   <v:variable name="iLDAP" type="integer" default="0"/>
 
+  <v:variable name="iPhoto" type="varchar" default="null" />
   <v:variable name="iTitle" type="varchar" default="null" />
   <v:variable name="iName" type="varchar" default="null" />
   <v:variable name="iFirstName" type="varchar" default="null" />
@@ -457,6 +461,13 @@
             <th>Field</th>
             <th>Value</th>
           </tr>
+          <v:template name="iTemplate_01_0" type="simple" condition="length (self.iPhoto)">
+            <tr>
+              <td valign="top"><input type="checkbox" name="cb_item_iPhoto" id="cb_item_iPhoto" value="1" /></td>
+              <td valign="top">Photo</td>
+              <td><img src="<?V self.iPhoto ?>"/></td>
+            </tr>
+          </v:template>
           <v:template name="iTemplate_01" type="simple" condition="length (self.iTitle)">
             <tr>
               <td><input type="checkbox" name="cb_item_iTitle" id="cb_item_iTitle" value="1" /></td>

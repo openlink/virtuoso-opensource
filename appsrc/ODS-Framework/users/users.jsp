@@ -635,6 +635,8 @@
                 if ($_formTab2 == 0)
                 {
                   // Import
+                  if ("1".equals(getParameter(items, request, "cb_item_i_photo")))
+                    params += httpParam ("&", "photo", getParameter(items, request, "i_photo"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_name")))
                     params += httpParam ("&", "nickName", getParameter(items, request, "i_nickName"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_title")))
@@ -1133,6 +1135,13 @@
                   </div>
                   <div id="lf_page_3" class="tabContent" style="display: none">
                     <table id="lf_table_3" class="form" cellspacing="5">
+                      <tr id="lf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
                   <div id="lf_page_4" class="tabContent" style="display: none">
@@ -1250,6 +1259,13 @@
                   </div>
                   <div id="rf_page_3" class="tabContent" style="display: none">
                     <table id="rf_table_3" class="form" cellspacing="5">
+                      <tr id="rf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
                   <div id="rf_page_4" class="tabContent" style="display: none">
