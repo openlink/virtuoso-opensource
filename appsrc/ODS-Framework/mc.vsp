@@ -1,0 +1,68 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2011 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+   declare sid, mbox, digest, id, mu, rc, webid, accept, fmt any;
+   rc := 0;
+   accept := http_request_header_full (lines, 'Accept', '*/*');
+   fmt := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept); 
+   if (fmt = 'application/json')
+     http_header ('Content-Type: application/json\r\n');
+   if (not is_https_ctx ())
+     goto failed;
+   sid := {?'confirm'};
+   webid := FOAF_SSL_WEBID_GET ();
+   rc := WEBID_AUTH_GEN (null, 0, '', 1, 0);
+   mbox := (select VS_UID from VSPX_SESSION where VS_SID = sid and VS_REALM = 'mv');
+   if (rc and mbox is not null)
+     {
+       digest := sha1_digest (mbox);
+       id := sprintf ('http://%{URIQADefaultHost}s/mv/data/') || bin2hex (cast (decode_base64 (digest) as varbinary));
+       mu := 'mailto:' || mbox;
+       sparql insert into graph iri ('http://localhost/mv') { `iri (?:id)` foaf:primaryTopic `iri(?:webid)` . `iri(?:webid)` foaf:mbox_sha1sum ?:digest . };
+       if (fmt = 'application/json')
+	 {
+	   http (sprintf ('{"status":"verified", "document_url":"%s"}', id));
+           return;
+	 }
+     }
+failed:
+   if (fmt = 'application/json') -- failure
+     {
+        http_status_set (400);
+        http ('{"status":"failed"}');
+        return;
+     } 	
+?>
+<html>
+    <head>
+	<title>Mail confirmation service</title>
+    </head>
+    <body>
+	<?vsp if (rc and mbox is not null) { ?>
+	<h1>Your e-mail is confirmed</h1><div>The document descriptor can be seen at <a href="<?V id ?>"><?V id ?></a></div>
+	<?vsp } else { ?>
+	<h1>You are not authenticated.</h1>
+	<?vsp }?>
+    </body>
+</html>
+
