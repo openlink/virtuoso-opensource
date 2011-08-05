@@ -23,13 +23,14 @@
    odd_position := 0;
    do_refresh := null;
    sponge_type := '';
+   rdf_link := '';
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    host := http_request_header (http_request_header (), 'Host');
    ua :=   http_request_header (http_request_header (), 'User-Agent');
    if (not isstring (ua))
      ua := null;
    langs := rdfdesc_get_lang_acc (lines);
-   gr := get_keyword ('g', params, '');
+   gr := rtrim (get_keyword ('g', params, ''));
    if (gr like '%?debug=on' or gr like '%&debug=on')
      gr := subseq (gr, 0, length (gr) - 9);
    if (gr like '%?@Lookup@=%' or gr like '%&@Lookup@=%')
