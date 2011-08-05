@@ -28,6 +28,7 @@
 <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -41,6 +42,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
+    xmlns:geo="&geo;"
     xmlns:gr="&gr;"
     xmlns:opl="&opl;"
     xmlns:pto="&pto;" 
@@ -152,8 +154,8 @@
 		<oplzllw:state><xsl:value-of select="translate (state, $lc, $uc)"/></oplzllw:state>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', city)}"/>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
-		<oplzllw:longitude><xsl:value-of select="longitude"/></oplzllw:longitude>
-		<oplzllw:latitude><xsl:value-of select="latitude"/></oplzllw:latitude>
+		<geo:long><xsl:value-of select="longitude"/></geo:long>
+		<geo:lat><xsl:value-of select="latitude"/></geo:lat>
     </xsl:template>
 
     <xsl:template match="localRealEstate" />

@@ -74,6 +74,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_FOURSQUARE', null, 'Foursquare');
 	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*simplegeo.com/.*)|(https://.*simplegeo.com/.*)',
+    'URL', 'DB.DBA.RDF_LOAD_SIMPLEGEO', null, 'SimpleGeo');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*hyperpublic.com',
     'URL', 'DB.DBA.RDF_LOAD_HYPERPUBLIC', null, 'Hyperpublic');
 	
@@ -6314,6 +6318,47 @@ create procedure DB.DBA.RDF_LOAD_EVENTFUL (in graph_iri varchar, in new_origin_u
 	return 1;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_SIMPLEGEO (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, tree any;
+	declare entity_id, consumer_key, consumer_secret, lat, lon, epoch varchar;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	consumer_key := get_keyword ('consumer_key', opts, null);
+	consumer_secret := get_keyword ('consumer_secret', opts, null);
+	if (( length (consumer_key) * length (consumer_secret) ) = 0)
+		return 0;
+	if (new_origin_uri like 'https://simplegeo.com/SG_%_%_%@%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'https://simplegeo.com/SG_%s_%s_%s@%s', 0);
+		entity_id := tmp[0];
+		lat := tmp[1];
+		lon := tmp[2];
+		epoch := tmp[3];
+		url := sprintf('http://api.simplegeo.com/1.0/places/%s,%s.json', lat, lon);
+		url := DB.DBA.sign_request ('GET', url, '', consumer_key, consumer_secret, '', '', 0);
+	}
+	else
+		return 0;
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	tree := json_parse (tmp);
+	xd := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/simplegeo2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'entity', entity_id));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xd, host_part, xt, url, tmp, hdr, exif any;

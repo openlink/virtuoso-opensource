@@ -44,7 +44,7 @@
 <!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
 <!ENTITY virtrdf "http://www.openlinksw.com/schemas/virtrdf#">
-<!ENTITY wgs84 "http://www.w3.org/2003/01/geo/wgs84_pos#">
+  <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:a="&a;"
@@ -67,7 +67,7 @@
     xmlns:vcard="&vcard;"
     xmlns:vi="&vi;"
     xmlns:virtrdf="&virtrdf;"
-    xmlns:wgs84="&wgs84;"
+  xmlns:geo="&geo;"
     xmlns:xsd="&xsd;"
     xmlns:xsl="&xsl;"
 	extension-element-prefixes="vi"
@@ -426,15 +426,15 @@
     </xsl:template>
 
     <xsl:template match="g:latitude">
-    <wgs84:lat>
+    <geo:lat>
       <xsl:value-of select="."/>
-    </wgs84:lat>
+    </geo:lat>
     </xsl:template>
 
     <xsl:template match="g:longitude">
-    <wgs84:long>
+    <geo:long>
       <xsl:value-of select="."/>
-    </wgs84:long>
+    </geo:long>
     </xsl:template>
 
   <xsl:template match="g:price" />
