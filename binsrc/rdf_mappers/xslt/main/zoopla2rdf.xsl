@@ -28,6 +28,7 @@
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplzllw "http://www.openlinksw.com/schemas/zillow#">
@@ -40,6 +41,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:geo="&geo;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:pto="&pto;" 
@@ -145,10 +147,10 @@
 				<rdfs:seeAlso rdf:resource="{refine_estimate_url}"/>
 			</xsl:if>
 			<xsl:if test="longitude">
-				<oplzllw:longitude><xsl:value-of select="longitude"/></oplzllw:longitude>
+				<geo:long><xsl:value-of select="longitude"/></geo:long>
 			</xsl:if>
 			<xsl:if test="latitude">
-				<oplzllw:latitude><xsl:value-of select="latitude"/></oplzllw:latitude>
+				<geo:lat><xsl:value-of select="latitude"/></geo:lat>
 			</xsl:if>
 			<xsl:if test="postcode">
 				<oplzllw:postalCode><xsl:value-of select="postcode"/></oplzllw:postalCode>

@@ -30,17 +30,18 @@
 
       function validate_sponge_url()
       {
-        var el_g, sponge_uri;
+         var localuri = $('#g').attr('value').replace (/\:\/\//ig,'/');
 
-        el_g = document.getElementById('g');
-        sponge_uri = el_g.value;
-        if (sponge_uri.length == 0 || !/^http/.test(sponge_uri))
+        if (localuri.length == 0 || !/^http/.test(localuri))
         {
           alert ('Please enter a valid URI');
           return false;
         }
+
+        window.location.href = 'http://linkeddata.uriburner.com/about/html/' + localuri;
         return true;
       }
+
     </script>
   </head>
 
@@ -365,12 +366,12 @@ href="http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}"
               <div id="sponge_uri_form">
                 <p><span class="span_starting_point">Transform a document or Web service into Linked Data!</span></p>
                 <p>Enter the URL to sponge:</p>
-                <form id="frm_sponge_uri" action="/rdfdesc/description.vsp" method="get">
+                <div id="frm_sponge_uri">
                   <div>
                     <input type="text" size="40" id="g" name="g" />
-                    <input type="submit" value="Sponge" onclick="return validate_sponge_url();" />
+                    <button onclick="validate_sponge_url();">Sponge!</button>
                   </div>
-                </form>
+                  </div>
               </div>
 
             </div> <!-- social_web -->
