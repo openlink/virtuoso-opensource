@@ -31,13 +31,13 @@
 ]>
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
-    xmlns:foaf ="http://xmlns.com/foaf/0.1/"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:oai="http://www.openarchives.org/OAI/2.0/"
     xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:dcterms="&dcterms;"	
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"

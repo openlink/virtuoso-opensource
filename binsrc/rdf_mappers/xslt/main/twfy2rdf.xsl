@@ -42,6 +42,7 @@
 	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:twfy="http://www.openlinksw.com/schemas/twfy#"
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
+	xmlns:sioc="&sioc;"
 	version="1.0">
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />

@@ -35,6 +35,7 @@
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY ff "http://api.friendfeed.com/2008/03">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
 <!ENTITY picasa "http://schemas.google.com/photos/2007#">
@@ -50,6 +51,7 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
+  xmlns:opl="&opl;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
@@ -61,7 +63,6 @@
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
   xmlns:media="http://search.yahoo.com/mrss/"
   xmlns:georss="http://www.georss.org/georss"
-  xmlns:sioc="http://rdfs.org/sioc/ns#"
   xmlns:ff="&ff;"
   xmlns:foaf="&foaf;"
   xmlns:bibo="&bibo;"

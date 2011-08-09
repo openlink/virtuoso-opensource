@@ -28,6 +28,8 @@
 <!ENTITY mo "http://purl.org/ontology/mo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY audio "http://purl.org/media/audio#">
@@ -40,6 +42,8 @@
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
+    xmlns:opl="&opl;"
+    xmlns:dcterms="&dcterms;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
     xmlns:atom="&atom;"

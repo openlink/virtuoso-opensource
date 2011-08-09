@@ -27,7 +27,9 @@
 <!ENTITY stock "http://xbrlontology.com/ontology/finance/stock_market#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -37,10 +39,12 @@
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:stock="&stock;"
+    xmlns:opl="&opl;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
+    xmlns:owl="&owl;"
     >
 
     <xsl:output method="xml" indent="yes" />

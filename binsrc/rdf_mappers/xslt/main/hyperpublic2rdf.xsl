@@ -33,6 +33,7 @@
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY gn "http://www.geonames.org/ontology#">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -41,6 +42,7 @@
     xmlns:pto="&pto;" 
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
+    xmlns:opl="&opl;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"

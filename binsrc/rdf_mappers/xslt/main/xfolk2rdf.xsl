@@ -28,6 +28,7 @@
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:sioc="http://rdfs.org/sioc/ns#"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     >
     <xsl:output method="xml" indent="yes"/>

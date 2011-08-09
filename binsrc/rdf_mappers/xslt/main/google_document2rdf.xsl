@@ -37,6 +37,7 @@
 	<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 	<!ENTITY ff "http://api.friendfeed.com/2008/03">
 	<!ENTITY gs "http://schemas.google.com/spreadsheets/2006">
+	<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -46,6 +47,7 @@
     xmlns:gs="&gs;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:foaf="&foaf;"
     xmlns:dcterms="&dcterms;"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"

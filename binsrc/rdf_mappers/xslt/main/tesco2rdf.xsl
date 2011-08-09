@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
@@ -42,6 +43,7 @@
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:oplbb="&oplbb;"

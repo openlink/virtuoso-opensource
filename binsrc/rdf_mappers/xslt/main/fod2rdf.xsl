@@ -25,6 +25,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 
 <xsl:stylesheet version="1.0"

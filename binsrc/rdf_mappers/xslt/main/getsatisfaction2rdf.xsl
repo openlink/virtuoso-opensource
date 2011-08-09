@@ -27,7 +27,9 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -41,7 +43,9 @@
     xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/"
     xmlns:gr="&gr;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:opl="&opl;"
     xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
     version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />

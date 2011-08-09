@@ -64,6 +64,7 @@
   xmlns:georss="&georss;"
   xmlns:gphoto="http://schemas.google.com/photos/2007"
   xmlns:ff="&ff;"
+    xmlns:dcterms="&dcterms;"
   xmlns:foaf="&foaf;"
   version="1.0">
 

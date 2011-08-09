@@ -34,6 +34,7 @@
 <!ENTITY moat "http://moat-project.org/ns#">
 <!ENTITY scot "http://scot-project.org/scot/ns#">
 <!ENTITY skos "http://www.w3.org/2004/02/skos/core#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY bookmark "http://www.w3.org/2002/01/bookmark#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -57,6 +58,7 @@
     xmlns:moat="&moat;"
     xmlns:skos="&skos;"
     xmlns:bookmark="&bookmark;"
+    xmlns:opl="&opl;"
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
     version="1.0">

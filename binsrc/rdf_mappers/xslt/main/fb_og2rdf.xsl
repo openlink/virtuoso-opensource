@@ -41,6 +41,7 @@
 <!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
 <!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 ]>
 <xsl:stylesheet
     xmlns:bibo="&bibo;"
@@ -67,6 +68,7 @@
     xmlns:xhv="&xhv;"
 	xmlns:fb="http://www.facebook.com/2008/fbml"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:geo="&geo;"
     version="1.0"
 	>
 

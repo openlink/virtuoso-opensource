@@ -29,12 +29,14 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY guardian "http://www.openlinksw.com/schemas/guardian#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet
 	version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
+    xmlns:opl="&opl;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"

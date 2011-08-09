@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="Windows-1252"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY rnews "http://iptc.org/std/rnews/20110202/rnews.owl#">
+]>
 <!--
  -
  -  $Id$

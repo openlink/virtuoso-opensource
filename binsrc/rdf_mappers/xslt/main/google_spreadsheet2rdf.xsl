@@ -33,6 +33,7 @@
 	<!ENTITY rss "http://purl.org/rss/1.0/">
 	<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 	<!ENTITY dcterms "http://purl.org/dc/terms/">
+	<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 	<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 	<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 	<!ENTITY ff "http://api.friendfeed.com/2008/03">
@@ -46,6 +47,7 @@
     xmlns:xn="http://www.ning.com/atom/1.0"
     xmlns:gs="&gs;"
     xmlns:bibo="&bibo;"
+    xmlns:opl="&opl;"
     xmlns:sioc="&sioc;"
     xmlns:foaf="&foaf;"
     xmlns:dcterms="&dcterms;"

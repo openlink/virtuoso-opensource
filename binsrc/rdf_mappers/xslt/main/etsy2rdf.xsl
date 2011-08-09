@@ -31,6 +31,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -47,6 +48,7 @@
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:opl="&opl;"
     xmlns:etsy="http://www.etsy.com/">
 
     <xsl:output method="xml" indent="yes" />
@@ -191,7 +193,7 @@
     </xsl:template>
 
     <xsl:template match="tag">
-		<sioc:topic rdf:resource="{concat ('http://www.etsy.com/search_results.php?search_type=all&includes[]=tags&search_query=', .)}"/>
+		<sioc:topic rdf:resource="{concat ('http://www.etsy.com/search_results.php?search_type=all&amp;includes[]=tags&amp;search_query=', .)}"/>
     </xsl:template>
 
     <xsl:template match="description">

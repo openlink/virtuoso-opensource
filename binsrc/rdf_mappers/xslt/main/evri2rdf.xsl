@@ -36,6 +36,7 @@
   <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
   <!ENTITY evri "http://www.openlinksw.com/schemas/evri#">
   <!ENTITY review "http:/www.purl.org/stuff/rev#">
+  <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
   <!ENTITY geonames "http://www.geonames.org/ontology#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -57,6 +58,7 @@ xmlns:geonames="&geonames;"
 xmlns:bestbuy="http://remix.bestbuy.com/"
 xmlns:dc="http://purl.org/dc/elements/1.1/"
 xmlns:cl="&cl;"
+xmlns:opl="&opl;"
 xmlns:oplbb="&oplbb;">
 
   <xsl:output method="xml" indent="yes" />

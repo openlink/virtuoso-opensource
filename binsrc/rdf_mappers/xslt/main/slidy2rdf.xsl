@@ -28,6 +28,7 @@
 <!ENTITY sioct 'http://rdfs.org/sioc/types#'>
 <!ENTITY sioc 'http://rdfs.org/sioc/ns#'>
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
@@ -39,6 +40,7 @@
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:sioct="&sioct;"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:dcterms="&dcterms;"

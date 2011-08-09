@@ -30,6 +30,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rss "http://purl.org/rss/1.0/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
@@ -44,6 +45,7 @@
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioc="&sioc;"
     xmlns:foaf="&foaf;"
+    xmlns:opl="&opl;"
     xmlns:g="http://base.google.com/ns/1.0"
     xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"

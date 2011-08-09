@@ -26,6 +26,7 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 
@@ -33,6 +34,7 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:opl="&opl;"
   xmlns:wfw="http://wellformedweb.org/CommentAPI/"
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
