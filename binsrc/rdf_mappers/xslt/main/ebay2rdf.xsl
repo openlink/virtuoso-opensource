@@ -38,6 +38,7 @@
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY ebay "urn:ebay:apis:eBLBaseComponents">
 <!ENTITY oplebay "http://www.openlinksw.com/schemas/ebay#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -50,6 +51,7 @@
     xmlns:pto="&pto;" 
     xmlns:gr="&gr;"
     xmlns:book="&book;"
+    xmlns:opl="&opl;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:review="&review;"

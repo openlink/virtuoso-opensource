@@ -27,6 +27,7 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
@@ -38,6 +39,7 @@
     xmlns:foaf ="&foaf;"
     xmlns:sioc ="&sioc;"
     xmlns:bibo ="&bibo;"
+    xmlns:opl="&opl;"
     xmlns:v    ="http://www.openlinksw.com/xsltext/"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:exif ="http://www.w3.org/2003/12/exif/ns/"

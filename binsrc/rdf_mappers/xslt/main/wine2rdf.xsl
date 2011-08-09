@@ -31,20 +31,24 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
+    xmlns:vcard="&vcard;"	
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:owl="&owl;"
+    xmlns:opl="&opl;"
     xmlns:pto="&pto;" 
     xmlns:dcterms="&dcterms;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"  

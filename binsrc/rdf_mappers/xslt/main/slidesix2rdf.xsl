@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
@@ -37,6 +38,7 @@
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:foaf="&foaf;"
 	xmlns:sioc="&sioc;"
+	xmlns:opl="&opl;"
 	xmlns:bibo="&bibo;"
 	xmlns:dcterms="&dcterms;"
 	xmlns:owl="http://www.w3.org/2002/07/owl#"

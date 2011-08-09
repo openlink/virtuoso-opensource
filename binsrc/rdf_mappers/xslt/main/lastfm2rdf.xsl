@@ -36,6 +36,7 @@
 <!ENTITY event "http://purl.org/NET/c4dm/event.owl#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY time "http://www.w3.org/2006/time#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY audio "http://purl.org/media/audio#">
 <!ENTITY media "http://purl.org/media#">
 ]>
@@ -60,6 +61,7 @@
     xmlns:time="&time;"
     xmlns:c="http://www.w3.org/2002/12/cal/icaltzd#"
     xmlns:audio="&audio;"
+    xmlns:opl="&opl;"
     xmlns:media="&media;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     >

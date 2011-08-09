@@ -27,6 +27,7 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY book "http://purl.org/NET/book/vocab#">
 ]>
@@ -41,6 +42,7 @@
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:address="http://schemas.talis.com/2005/address/schema#"
+  xmlns:opl="&opl;"
   xmlns:foaf="&foaf;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"

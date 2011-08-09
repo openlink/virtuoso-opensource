@@ -31,6 +31,7 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY oplustream "http://www.openlinksw.com/schemas/ustream#">
 <!ENTITY media "http://purl.org/media#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 
 <xsl:stylesheet version="1.0"
@@ -40,6 +41,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:dcterms="&dcterms;"
     xmlns:media="&media;"
     xmlns:oplustream="&oplustream;"

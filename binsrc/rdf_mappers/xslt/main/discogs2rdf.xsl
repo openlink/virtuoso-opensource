@@ -33,6 +33,8 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY audio "http://purl.org/media/audio#">
 <!ENTITY media "http://purl.org/media#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY v "http://www.w3.org/2006/vcard/ns#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -49,6 +51,8 @@
     xmlns:audio="&audio;"
     xmlns:media="&media;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:v="&v;"
+    xmlns:opl="&opl;"
     >
 
     <xsl:output method="xml" indent="yes" />

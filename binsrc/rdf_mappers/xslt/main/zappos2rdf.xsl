@@ -33,6 +33,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 ]>
@@ -53,6 +54,7 @@
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"	
+    xmlns:opl="&opl;"
     xmlns:oplbb="&oplbb;">
 
     <xsl:output method="xml" indent="yes" />

@@ -27,6 +27,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -44,6 +45,7 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
+    xmlns:opl="&opl;"
     xmlns:review="&review;"
     xmlns:geo="&geo;"
     xmlns:vcard="&vcard;"

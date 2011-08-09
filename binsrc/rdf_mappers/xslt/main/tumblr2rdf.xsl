@@ -28,6 +28,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
@@ -41,6 +42,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"    
+    xmlns:opl="&opl;"
     xmlns:owl="&owl;"
     xmlns:dcterms="&dcterms;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"

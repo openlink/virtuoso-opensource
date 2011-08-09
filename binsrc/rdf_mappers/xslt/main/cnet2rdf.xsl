@@ -31,6 +31,7 @@
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cnet "http://api.cnet.com/restApi/v1.0/ns">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY oplcn "http://www.openlinksw.com/schemas/cnet#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -47,6 +48,7 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:cnet="&cnet;"
+  xmlns:opl="&opl;"
   xmlns:oplcn="&oplcn;">
 
   <xsl:output method="xml" indent="yes" />

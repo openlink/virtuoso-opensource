@@ -29,6 +29,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
@@ -51,6 +52,7 @@
     xmlns:gr="&gr;"
     xmlns:pto="&pto;" 
     xmlns:oplamz="&oplamz;"	
+    xmlns:opl="&opl;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"

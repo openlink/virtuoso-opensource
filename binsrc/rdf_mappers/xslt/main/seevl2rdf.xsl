@@ -25,6 +25,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
@@ -40,6 +41,7 @@
     xmlns:bibo="&bibo;"
     xmlns:mo="&mo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:opl="&opl;"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"

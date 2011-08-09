@@ -33,6 +33,7 @@
 <!ENTITY audio "http://purl.org/media/audio#">
 <!ENTITY media "http://purl.org/media#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -46,6 +47,7 @@
     xmlns:foaf="&foaf;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
+    xmlns:opl="&opl;"
     xmlns:dc="&dc;"
     xmlns:bibo="&bibo;"
     xmlns:audio="&audio;"
