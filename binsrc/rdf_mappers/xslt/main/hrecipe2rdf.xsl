@@ -21,6 +21,12 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY moat "http://moat-project.org/ns#">
+<!ENTITY scot "http://scot-project.org/scot/ns#">
+<!ENTITY skos "http://www.w3.org/2004/02/skos/core#">
+]>
+
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
@@ -29,6 +35,9 @@ xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 xmlns:foaf="http://xmlns.com/foaf/0.1/"
 xmlns:dc="http://purl.org/dc/elements/1.1/"
 xmlns:sioc="http://rdfs.org/sioc/ns#"
+xmlns:scot="&scot;"
+xmlns:moat="&moat;"
+xmlns:skos="&skos;"
 xmlns:wdrs="http://www.w3.org/2007/05/powder-s#"
 xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
   <xsl:output method="xml" encoding="utf-8" indent="yes" />
@@ -63,7 +72,7 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
       </rdf:Description>
       <dv:Recipe rdf:about="{vi:proxyIRI ($baseUri, '', 'hrecipe')}">
 	<foaf:page rdf:resource="{$baseUri}"/>
-	<wdrs:describedBy rdf:resource="{$resourceURL}"/>
+				<wdrs:describedby rdf:resource="{$resourceURL}"/>
         <xsl:apply-templates mode="extract-recipe" />
       </dv:Recipe>
     </xsl:if>
@@ -184,13 +193,23 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
 		  </xsl:call-template>
 		</xsl:variable>
 		<xsl:choose>
-			<xsl:when test="$ing_name">
+				<xsl:when test="string-length($ing_name) &gt; 0">
 			  <dv:ingredient>
-				<dv:Ingredient rdf:about="{vi:proxyIRI ($baseUri, '', concat('hrecipe', .))}">
+						<dv:Ingredient rdf:about="{vi:proxyIRI ($baseUri, '', replace(concat('hrecipe', .), ' ', '_')) }">
 					<dv:name>
+								<xsl:choose>
+									<xsl:when test="*[@class = 'name' or starts-with(@class,concat('name', ' ')) or contains(@class,concat(' ','name',' ')) or substring(@class, string-length(@class)-string-length('name')) = concat(' ','name')]">
 						<xsl:value-of select="*[@class = 'name' or starts-with(@class,concat('name', ' ')) or contains(@class,concat(' ','name',' ')) 
 						or substring(@class, string-length(@class)-string-length('name')) = concat(' ','name')]" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="." />
+									</xsl:otherwise>
+								</xsl:choose>
 					</dv:name>
+							<rdfs:label>
+								<xsl:value-of select="." />
+							</rdfs:label>
 					<dv:amount>
 						<xsl:choose>
 							<xsl:when test="*[@class = 'amount' or starts-with(@class,concat('amount', ' ')) or contains(@class,concat(' ','amount',' ')) 
@@ -216,10 +235,12 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
     </xsl:if>
 
 	<xsl:if test="$ingredients != 0">
+			<xsl:if test="string-length(.) &gt; 0">
       <dv:ingredient>
         <xsl:value-of select="." />
       </dv:ingredient>
     </xsl:if>
+		</xsl:if>
 	
     <xsl:if test="$yield != 0">
       <dv:yield>
@@ -227,15 +248,19 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
       </dv:yield>
     </xsl:if>
     <xsl:if test="$instructions != 0">
+			<xsl:if test="string-length(normalize-space(.)) &gt; 0">
       <dv:instructions>
         <xsl:value-of select="." />
       </dv:instructions>
     </xsl:if>
+		</xsl:if>
     <xsl:if test="$directions != 0">
+			<xsl:if test="string-length(normalize-space(.)) &gt; 0">
       <dv:instructions>
         <xsl:value-of select="." />
       </dv:instructions>
     </xsl:if>
+		</xsl:if>
     <xsl:if test="$duration != 0">
       <dv:duration>
         <xsl:value-of select="." />
@@ -303,9 +328,33 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
     </xsl:if>
     </xsl:if>
     <xsl:if test="$tag != 0">
-      <dv:tag>
+			<scot:hasScot>
+				<scot:Tagcloud rdf:about="{vi:proxyIRI($baseUri, '', 'tagcloud')}">
+					<scot:hasTag rdf:resource="{vi:proxyIRI ($baseUri, '', concat ('tag_', .))}"/>
+				</scot:Tagcloud>
+			</scot:hasScot>
+			<sioc:topic>
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat ('tag_', .))}">
+					<rdf:type rdf:resource="&skos;Concept"/>
+					<rdf:type rdf:resource="&scot;Tag "/>
+					<rdf:type rdf:resource="&moat;Tag"/>
+					<skos:prefLabel>
+						<xsl:value-of select="."/>
+					</skos:prefLabel>
+					<scot:name>
+						<xsl:value-of select="."/>
+					</scot:name>
+					<dc:description>
+						Tag: <xsl:value-of select="."/>
+					</dc:description>
+					<skos:isSubjectOf rdf:resource="{vi:proxyIRI ($baseUri, '', 'hrecipe')}"/>
+					<foaf:topic rdf:resource="{vi:dbpIRI ($baseUri, .)}"/>
+					<moat:name>
         <xsl:value-of select="." />
-      </dv:tag>
+					</moat:name>
+					<foaf:topic rdf:resource="{vi:dbpIRI ($baseUri, .)}"/>
+				</rdf:Description>
+			</sioc:topic>
     </xsl:if>
     <xsl:apply-templates mode="extract-recipe" />
   </xsl:template>
