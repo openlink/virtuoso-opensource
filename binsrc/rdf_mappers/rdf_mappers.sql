@@ -5732,13 +5732,56 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE (in graph_iri varchar, in new_or
 {
   declare xd, host_part, xt, url, tmp, hdr, tree any;
   declare pos int;
-  declare item_id, action varchar;
+  declare item_id, item_id2, action varchar;
   declare exit handler for sqlstate '*'
     {
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
       return 0;
     };
-    if (new_origin_uri like 'https://plus.google.com/%')
+	
+	if (new_origin_uri like 'https://plus.google.com/%/buzz' or new_origin_uri like 'https://plus.google.com/%/buzz/owner')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'https://plus.google.com/%s/buzz%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);		
+	    url := sprintf('https://www.googleapis.com/buzz/v1/activities/%s/@self?key=%s', item_id, _key);
+		action := 'buzz';
+		DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(url, action, opts, graph_iri, new_origin_uri, dest);
+	}
+	else if (new_origin_uri like 'https://plus.google.com/%/about')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'https://plus.google.com/%s/about', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);		
+	    url := sprintf('https://www.googleapis.com/buzz/v1/people/%s/@self?alt=atom&pp=1&key=%s', item_id, _key);
+		action := 'about';
+		DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(url, action, opts, graph_iri, new_origin_uri, dest);
+	}
+	else if (new_origin_uri like 'https://plus.google.com/%/photos')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'https://plus.google.com/%s/photos', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);		
+	    url := sprintf('https://www.googleapis.com/buzz/v1/photos/%s/@self?key=%s', item_id, _key);
+		action := 'photos';
+		DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(url, action, opts, graph_iri, new_origin_uri, dest);
+	}
+    else if (new_origin_uri like 'https://plus.google.com/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'https://plus.google.com/%s', 0);
 		item_id := trim(tmp[0], '/');
@@ -5746,22 +5789,44 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE (in graph_iri varchar, in new_or
 			return 0;
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
+		{
+			if (subseq(item_id, pos+1) = 'about')
 			item_id := left(item_id, pos);
-	    url := sprintf('https://www.googleapis.com/buzz/v1/people/%s/@self?alt=atom&pp=1', item_id);
+			else
+				return 0;
+		}
+		RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);		
+	    
+		url := sprintf('https://www.googleapis.com/buzz/v1/people/%s/@self?alt=atom&pp=1&key=%s', item_id, _key);
+		action := 'about';
+		DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(url, action, opts, graph_iri, new_origin_uri, dest);
+		
+		url := sprintf('https://www.googleapis.com/buzz/v1/people/%s/@groups/@following?key=%s', item_id, _key);
+		action := 'following';
+		DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(url, action, opts, graph_iri, new_origin_uri, dest);
+
+		url := sprintf('https://www.googleapis.com/buzz/v1/people/%s/@groups/@followers?key=%s', item_id, _key);
+		action := 'followers';
+		DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(url, action, opts, graph_iri, new_origin_uri, dest);
 	}
 	else
 		return 0;
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action varchar, inout opts any, in graph_iri varchar, in new_origin_uri varchar,  in dest varchar)
+{
+  declare xd, xt, tmp, hdr any;
 	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
     if (hdr[0] not like 'HTTP/1._ 200 %')
         signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
     xd := xtree_doc (tmp);
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_profile2rdf.xsl',
-		xd, vector ('baseUri', new_origin_uri));
+		xd, vector ('baseUri', new_origin_uri, 'action', action));
     xd := serialize_to_UTF8_xml (xt);
-    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
-	return 1;
 }
 ;
 
