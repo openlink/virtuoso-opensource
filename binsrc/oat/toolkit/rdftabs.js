@@ -1035,13 +1035,19 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		iid = atom; // this is a plain IID value
 	}
 
-	var a = OAT.Dom.create("a");
+
+	try { 	// Dirty data does exist, you see...
 	var iri = decodeURIComponent(OAT.IRIDB.getIRI(iid));
-	a.innerHTML = self.parent.store.getCIRIorSplit(iid);
-	a.href = iri;
+            var col_v_elm = OAT.Dom.create("a");
+	    col_v_elm.innerHTML = self.parent.store.getCIRIorSplit(iid);
+	    col_v_elm.href = iri;
+	    self.parent.processLink(col_v_elm, iri);
+        } catch (e) {
+	    col_v_elm = OAT.Dom.create("span",{className:"error_col"});
+            col_v_elm.innerHTML = OAT.IRIDB.getIRI(iid) + " (invalid URI)";
+	}
 	OAT.Dom.clear(v);
-	v.appendChild(a);
-	self.parent.processLink(a,iri);
+	v.appendChild(col_v_elm);
     }
 
     this.redraw = function() {
@@ -1425,11 +1431,20 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	return (coords);
     }
 
-    this.tryItem = function(item) {
+    this.tryItem = function(item, s_item, max_d) {
 	var preds = item.preds;
 	var pointResource = false;
 	var locValue = false;
 	var coords = [0,0];
+
+	if (typeof max_d == 'undefined') 
+	    max_d = 5;                   // "magic" max recursion depth value. XXX May need to adjust
+	else {
+	    max_d--;                     // Okay we're in recursion, check if we want to give up
+	    if (max_d < 0) return;
+	}
+
+	if (typeof s_item == 'undefined') s_item = item; // first call, save original node
 
 	if (item.type) {
 	    for (var i=0;i<item.type.length;i++)
@@ -1441,9 +1456,14 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		var pred = preds[p];
 	    if (!!(p = parseInt(p))) {	    
 		if (self.keyProperties.indexOf(p) != -1) { 
+		    if (pred[0] instanceof OAT.RDFAtom) {
 		    pointResource = pred[0].getValue(); 
+		    } else {
+			if (typeof pred[0] == 'Object') {
+	  		    self.tryItem (pred[0], s_item, max_d); // Recurse
+			} else return;
+		    }
 		} /* resource containing geo coordinates */
-		
 		if (self.locProperties.indexOf(p) != -1) { 
 		    locValue = pred[0].getValue(); 
 		} /* resource containing geo coordinates */
@@ -1458,7 +1478,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	if (coords[0] != 0 && coords[1] != 0) {
 	    if (!!window.console) window.console.log ('found coords :' + coords[0] + ' ' + coords[1]);
-	    self.attachMarker(coords, item);
+	    self.attachMarker(coords, s_item);
 	    return;
 	}
 
@@ -1468,7 +1488,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	
 	if (!pointResource && locValue) { /* geocode location */
 	    if (!!window.console) window.console.log ('geocoding: '+locValue);
-		self.geoCode(locValue,item);
+	    self.geoCode(locValue,s_item);
 		return;
 	    }
 	
@@ -1478,7 +1498,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		    coords[0] = cmatches[2];
 		    coords[1] = cmatches[1];
 		    if (coords[0] == 0 || coords[1] == 0) { return; }
-		    self.attachMarker(coords,item);
+		self.attachMarker(coords,s_item);
 		    return;
 		}
 	    
@@ -1487,7 +1507,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		coords[0] = cmatches[2];
 		coords[1] = cmatches[1];
 		if (coords[0] == 0 || coords[1] == 0) { return; }
-		self.attachMarker(coords,item);
+		self.attachMarker(coords,s_item);
 		return;
 	    }
 	    }
@@ -1501,7 +1521,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	if (coords[0] == 0 || coords[1] == 0) { return; }
 
-	self.attachMarker(coords,item);
+	self.attachMarker(coords, s_item);
     } /* tryItem */
 
     this.trySimple = function(item) {

@@ -68,6 +68,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.labelProps = {
 	"http://www.w3.org/2000/01/rdf-schema#label": 0,
 	"http://www.w3.org/2004/02/skos/core#prefLabel": 1,
+        "http://www.openlinksw.com/schemas/virtrdf#label": 1,
 	"http://xmlns.com/foaf/0.1/name": 2,
 	"http://xmlns.com/foaf/0.1/nick": 3,
 	"http://purl.org/dc/elements/1.1/title": 4,
