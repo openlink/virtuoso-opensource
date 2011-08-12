@@ -211,6 +211,7 @@ var QueryExec = function(optObj) {
 	this.mini = false;
     	this.miniplnk = false;
     	this.mRDFCtr = false;
+	this.anchor_pref_ctr = false;
 
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
@@ -226,6 +227,23 @@ var QueryExec = function(optObj) {
 		self.dom.tab = OAT.Dom.create("div",{padding:"5px",backgroundColor:"#fff"});
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
 		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
+
+		self.anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
+		self.anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
+		self.anchor_label.innerHTML = "Dereferencing:";
+		self.anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
+		self.anchor_pref_sel.options.add (new Option ("SPARQL Describe",0));
+		self.anchor_pref_sel.options.add (new Option ("SELECT IRI as S or O",1));
+		self.anchor_pref_sel.options.add (new Option ("GET Page",2));
+		self.anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
+		self.anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
+
+		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
+			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
+		});
+
+        OAT.Dom.append ([self.anchor_pref_ctr, self.anchor_label, self.anchor_pref_sel]);
+
 		for (var i=0;i<tabs1.length;i++) {
 			var li = OAT.Dom.create("li");
 			self.dom.ul.appendChild(li);
@@ -534,7 +552,7 @@ var QueryExec = function(optObj) {
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 		xparm += "&view=" + opts.view;
-
+		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
 		var plnk_a = OAT.Dom.create("a");
 
 		plnk_a.target = "_blank";
@@ -776,6 +794,7 @@ var QueryExec = function(optObj) {
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 		xparm += "&view=" + opts.view;
+		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
 
 	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 	
@@ -797,20 +816,7 @@ var QueryExec = function(optObj) {
 
 		self.makeExecPermalink (self.dom.plnk_ctr);
 
-		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
-		anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
-		anchor_label.innerHTML = "Anchor behavior:";
-		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
-		anchor_pref_sel.options.add (new Option ("Describe",0));
-		anchor_pref_sel.options.add (new Option ("Get Data Items",1));
-		anchor_pref_sel.options.add (new Option ("Open Web Page",2));
-
-		OAT.Event.attach(anchor_pref_sel, 'change', function () {
-			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
-		});
-
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr, anchor_pref_ctr]);
-        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
+		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr, self.anchor_pref_ctr]);
 
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
@@ -1144,8 +1150,6 @@ var QueryExec = function(optObj) {
 
 				item.mini.processLink = self.processLink;
 
-				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, mini_c]);
-				
 				//		self.tab.go(0); // got to do here or maps won't resize properly.
 				//		self.cache[self.cacheIndex].mini.store.addXmlDoc(data);
 				
@@ -1153,6 +1157,7 @@ var QueryExec = function(optObj) {
 				item.mini.redraw();
 				
 				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
+				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, self.anchor_pref_ctr, mini_c]);
 				
 				var ua = navigator.userAgent;
 				
@@ -1207,9 +1212,9 @@ var QueryExec = function(optObj) {
 			var q = 'define get:soft "replacing" \n'+
 					'define input:same-as "yes" \n'+
 					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
-		            'DESCRIBE <'+href+'> FROM <' + href + '>';
+		        'DESCRIBE <'+ encodeURI(href) +'> FROM <' + encodeURI(href) + '>';
 //			var q  = 'DESCRIBE <'+href+'>';
-			var bq = 'DESCRIBE <'+href+'>';
+			var bq = 'DESCRIBE <'+ encodeURI(href) +'>';
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.defaultGraph = false;
@@ -1223,6 +1228,17 @@ var QueryExec = function(optObj) {
 			self.execute(o);
  	};
 
+		var describeRef = function (event) {
+			var loc = window.location;
+			var go_to = loc.protocol + "//" + loc.hostname;
+			
+			if (loc.protocol == "https:" && loc.port != "443") go_to += ":" + loc.port;
+			if (loc.protocol == "http:" && loc.port != "80") go_to += ":" + loc.port;
+			
+			go_to += "/describe/?url=" + encodeURI(href); 
+			window.open (go_to);
+		}
+		
 		var selectRef = function(event) {
 			var cache = self.cache[self.cacheIndex];
 			var o = {};
@@ -1232,7 +1248,7 @@ var QueryExec = function(optObj) {
 
 			var q = 'SELECT DISTINCT * \n';
 			if (graph) { q += 'FROM <' + graph + '> \n'; }
-			q += 'WHERE { { <'+href+'> ?p ?o } UNION { ?s ?p <'+href+'> } }';
+			q += 'WHERE { { <'+ encodeURI(href)+'> ?p ?o } UNION { ?s ?p <'+ encodeURI(href) +'> } }';
 
 			o.query = q;
 			self.execute(o);
@@ -1286,8 +1302,12 @@ var QueryExec = function(optObj) {
 			case 1:
 				selectRef(event);
 				break;
-			default:
+			case 2:
 				window.open(href);
+				break;
+			default:
+				describeRef(event);
+				break;
 			}
 		});
 
