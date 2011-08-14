@@ -2454,7 +2454,11 @@ nt_http_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t
 {
   caddr_t uri = ti->uri;
   if (NULL == uri)
-    uri = dflt_uri;
+    {
+      uri = dflt_uri;
+      if (NULL == uri)
+        sqlr_new_error ("22023", "SR645", "NT serialization of RDF data has got NULL instead of an URI");
+    }
   if (ti->is_bnode)
     {
       session_buffered_write (ses, uri, strlen (uri));
