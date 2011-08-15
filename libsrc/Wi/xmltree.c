@@ -10060,8 +10060,6 @@ again:
       }
     case DV_XML_ENTITY:
       return uname_rdf_ns_uri_XMLLiteral;
-    case DV_GEO:
-      return uname_virtrdf_ns_uri_Geometry;
     default:
       return (ccaddr_t)((ptrlong)1);
     }
