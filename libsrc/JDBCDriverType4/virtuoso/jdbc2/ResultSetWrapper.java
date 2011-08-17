@@ -85,7 +85,10 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       if (wstmt == null) //DBMetaDataResultSet
         wconn.removeObjFromClose(this);
       else
-        wstmt.removeObjFromClose(this);
+        {
+          wstmt.removeObjFromClose(this);
+          wstmt.close();
+        }
       rs = null;
       wstmt = null;
       wconn = null;
@@ -468,11 +471,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
   public ResultSetMetaData getMetaData() throws SQLException {
     check_close();
     try {
-      ResultSetMetaData rsmd = rs.getMetaData();
-      if (rsmd != null)
-        return new ResultSetMetaDataWrapper(rsmd, wconn);
-      else
-        return null;
+      return rs.getMetaData();
     } catch (SQLException ex) {
       exceptionOccurred(ex);
       throw ex;
