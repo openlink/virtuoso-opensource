@@ -492,11 +492,7 @@ public class PreparedStatementWrapper
   public java.sql.ParameterMetaData getParameterMetaData() throws SQLException {
     check_close();
     try {
-      java.sql.ParameterMetaData prmd = ((PreparedStatement)stmt).getParameterMetaData();
-      if (prmd != null)
-        return new ParameterMetaDataWrapper(prmd, wconn);
-      else
-        return null;
+      return ((PreparedStatement)stmt).getParameterMetaData();
     } catch (SQLException ex) {
       exceptionOccurred(ex);
       throw ex;
