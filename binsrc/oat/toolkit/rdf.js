@@ -242,7 +242,7 @@ OAT.IRIDB = {
     }, 
 
     makeNSPrefix:function() {
-	return 'isparql'+this._ns_cnt++;
+	return 'ns'+this._ns_cnt++;
     },
 
     //
