@@ -1009,6 +1009,7 @@ var QueryExec = function(optObj) {
 		iSPARQL.dataObj.pragmas      = item.opts.pragmas;
 		iSPARQL.dataObj.endpoint     = item.opts.endpoint;
 
+		if (typeof iSPARQL.endpointOpts != 'undefined') 
 		iSPARQL.endpointOpts.setEndpoint (null, item.opts.endpoint);
 
 		if (item.resType == iSPARQL.ResultType.GRAPH) 
@@ -1016,7 +1017,8 @@ var QueryExec = function(optObj) {
 		else 
 			OAT.Dom.hide('data_links');
 
-		adv.redraw();
+		if (typeof adv != 'undefined') adv.redraw();
+
 //		if (!item.wasError && qbe) qbe.loadFromString(iSPARQL.dataObj.query);
 
 		self.refreshNav();
