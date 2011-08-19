@@ -44,7 +44,7 @@ iSPARQL.Defaults = {
     queryTimeout: 60000, // ms
     auth:         {user:'dav',password:'dav'},
     tab:          0,
-    anchorMode:   3, /* 0:Exec SPARQL describe, 1:get data items,2:Open in new window,3:Open "describe" page */
+    anchorMode:   0, /* 0:Exec SPARQL describe, 1:get data items,2:Open in new window,3:Open "describe" page */
     maxrows:      50,
     view:         1,
     endpoint:     '/sparql',
