@@ -1309,6 +1309,10 @@ OAT.RDFTabs.PointList = function (opts) {
     }
 }
 
+//
+// Sends MAP_NOTHING_TO_SHOW if there's nothing to show on map
+//
+
 OAT.RDFTabs.map = function(parent,optObj) {
     var self = this;
     OAT.RDFTabs.parent(self);
@@ -1431,38 +1435,27 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	return (coords);
     }
 
-    this.tryItem = function(item, s_item, max_d) {
+    this.tryItem = function(item) {
 	var preds = item.preds;
 	var pointResource = false;
 	var locValue = false;
 	var coords = [0,0];
 
-	if (typeof max_d == 'undefined') 
-	    max_d = 5;                   // "magic" max recursion depth value. XXX May need to adjust
-	else {
-	    max_d--;                     // Okay we're in recursion, check if we want to give up
-	    if (max_d < 0) return;
-	}
-
-	if (typeof s_item == 'undefined') s_item = item; // first call, save original node
-
 	if (item.type) {
-	    for (var i=0;i<item.type.length;i++)
+	    for (var i=0;i<item.type.length;i++) {
 		if (self.pointTypes.indexOf(item.type[i].getValue()) != -1)
 	    coords = self.extractCoords (item.preds);
+	}
 	}
 
 	    for (var p in preds) {
 		var pred = preds[p];
 	    if (!!(p = parseInt(p))) {	    
 		if (self.keyProperties.indexOf(p) != -1) { 
-		    if (pred[0] instanceof OAT.RDFAtom) {
+		    if (pred[0] instanceof OAT.RDFAtom && pred[0].isLit())
 		    pointResource = pred[0].getValue(); 
-		    } else {
-			if (typeof pred[0] == 'Object') {
-	  		    self.tryItem (pred[0], s_item, max_d); // Recurse
-			} else return;
-		    }
+		    else
+			return; // IRI reference, will be handled later
 		} /* resource containing geo coordinates */
 		if (self.locProperties.indexOf(p) != -1) { 
 		    locValue = pred[0].getValue(); 
@@ -1478,7 +1471,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	if (coords[0] != 0 && coords[1] != 0) {
 	    if (!!window.console) window.console.log ('found coords :' + coords[0] + ' ' + coords[1]);
-	    self.attachMarker(coords, s_item);
+	    self.attachMarker(coords, item);
 	    return;
 	}
 
@@ -1488,7 +1481,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	
 	if (!pointResource && locValue) { /* geocode location */
 	    if (!!window.console) window.console.log ('geocoding: '+locValue);
-	    self.geoCode(locValue,s_item);
+	    self.geoCode(locValue,item);
 		return;
 	    }
 	
@@ -1498,7 +1491,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		    coords[0] = cmatches[2];
 		    coords[1] = cmatches[1];
 		    if (coords[0] == 0 || coords[1] == 0) { return; }
-		self.attachMarker(coords,s_item);
+		self.attachMarker(coords,item);
 		    return;
 		}
 	    
@@ -1507,13 +1500,11 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		coords[0] = cmatches[2];
 		coords[1] = cmatches[1];
 		if (coords[0] == 0 || coords[1] == 0) { return; }
-		self.attachMarker(coords,s_item);
+		self.attachMarker(coords,item);
 		return;
 	    }
 	    }
 	
-	if (pointResource.isLit()) { return; } /* not a reference */
-
 	    self.usedBlanknodes.push(pointResource);
 
 	    /* normal marker add */
@@ -1521,7 +1512,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	if (coords[0] == 0 || coords[1] == 0) { return; }
 
-	self.attachMarker(coords, s_item);
+	self.attachMarker(coords, item);
     } /* tryItem */
 
     this.trySimple = function(item) {
@@ -1612,6 +1603,47 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	return false;
 	}
 
+    // an item isCoordinateContainer if it's referred by another item and
+    // its type property values are all geo point types and/or it only has geo coordinate properties
+
+    this.isCoordinateContainer = function (item) {
+	type_iid = OAT.IRIDB.getIRIID("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	if (!item.back.length) 
+	    return false;
+	var preds = item.preds;
+	var nc_cnt = 0;
+	for (var p in preds) {
+	    var pVal = parseInt(p);
+	    if (pVal == type_iid) { // go through types - pointTypes don't count
+		for (var i=0;i<preds[p].length;i++) {
+		    if (self.pointTypes.find(preds[p][i].getIID()) == -1)
+			return false;
+		}
+	    } else {
+		if (self.lonProperties.find(pVal) != -1 ||
+		    self.latProperties.find(pVal) != -1 || 
+		    self.keyProperties.find(pVal) != -1) {
+		    continue;
+		}
+		else return false; // got a non-geo-property
+	    }
+	}
+	return true;
+    }
+
+    this.drawReferences = function (item, container) {
+        var p_table = OAT.Dom.create ("table");
+	for (i=0;i<item.back.length;i++) { // include backreferences;
+	    var predC = OAT.Dom.create("tr",{className:"predicate"});
+	    var predT = OAT.Dom.create("td",{className:"pred_title"});
+	    predT.innerHTML = "Referenced by";
+	    var predV = OAT.Dom.create("td",{className:"pred_value"});
+	    var content = self.parent.getContent(item.back[i], "replace");
+	    OAT.Dom.append([predV,content],[predC,predT,predV], [p_table,predC]);
+	}
+	OAT.Dom.append ([container,p_table]);
+    }
+
 //
 // Return marker content for item
 //    
@@ -1650,9 +1682,14 @@ OAT.RDFTabs.map = function(parent,optObj) {
         
     }
     this.drawMarker = function (item) {
+	if (self.isCoordinateContainer(item))
+	    var s_item = item.back[0];
+	else 
+	    s_item = false;
+
 	var titleH = OAT.Dom.create("h2",{className:"markerTitle"});
 
-	var title = self.parent.getTitle(item);
+	var title = self.parent.getTitle(s_item ? s_item : item);
 	var titleHref='';
 	var popup_ctr;
 
@@ -1667,7 +1704,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		titleA.innerHTML = title;
 		OAT.Dom.append ([titleH, titleA]);		
 	} else {
-	    var titleHref = self.parent.getURI(item);
+		var titleHref = self.parent.getURI(s_item ? s_item : item);
 	    if (titleHref) {
 		var titleA = OAT.Dom.create("a",{href:titleHref,target:"_blank"});
 		    self.parent.processLink(titleA, titleHref);
@@ -1678,8 +1715,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    }
 	}
 
-	var ctr = OAT.Dom.create("div",{overflow:"auto",className:'marker_ctr'});
-	var abstr = self.getAbstract(item);
+	    var ctr = OAT.Dom.create("div",{className:'marker_ctr'});
+	    var abstr = self.getAbstract(s_item ? s_item : item);
 
 	if (abstr) {
 	var abstrC = OAT.Dom.create("div",{className:'abstract'});
@@ -1690,13 +1727,15 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	//	if (self.parent.store.itemHasType (item, "")) { }
 	//	if (self.parent.store.itemHasType (item, "")) { }
 
+	var props_ctr = OAT.Dom.create("div", {className: "props_ctr"});
+
 	if (abstr)
-	    OAT.Dom.append([ctr,titleH,abstrC]);
+	    OAT.Dom.append([ctr,titleH,abstrC,props_ctr]);
 	else 
-	    OAT.Dom.append([ctr,titleH]);
+	    OAT.Dom.append([ctr,titleH,props_ctr]);
 
-	self.drawAllProps (item, ctr);
-
+	self.drawAllProps (s_item ? s_item : item, props_ctr);
+	self.drawReferences (s_item ? s_item : item, props_ctr);
 
 	return ctr;
     }
@@ -1789,6 +1828,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		    var note = new OAT.Notify();
 		    var msg = "Current data set contains nothing that could be displayed on the map.";
 		    note.send(msg);
+		    OAT.MSG.send (self, "MAP_NOTHING_TO_SHOW", false);
 		}
 		self.map.optimalPosition(self.pointList.makePointsArray(false));
  	    } else {
