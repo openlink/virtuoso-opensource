@@ -115,6 +115,8 @@ OAT.RDFMini = function(div,optObj) {
 			self.tabs.push(obj);
 		}
 
+	OAT.MSG.attach ("*","MAP_NOTHING_TO_SHOW", function (_s,_m,_e) { s.selectedIndex = 0;self.redraw() })
+	
 	var ua = navigator.userAgent;
 
 	if (ua.indexOf('iPhone') != -1 || ua.indexOf('Android') != -1 ) {
@@ -174,13 +176,20 @@ OAT.RDFMini = function(div,optObj) {
 	    var data;
 	var label = false;
 	var ciri;
+	var _type;
 
 	    if (data_.constructor == OAT.RDFAtom)
 		switch (data_.getTag()) {
 		case OAT.RDFTag.IRI:
 		    data = data_.getIRI();
 		ciri = OAT.IRIDB.resolveCIRI(data_.getValue());
-		    break;
+		content = OAT.Dom.create("span");
+		var a = OAT.Dom.create("a");
+		a.innerHTML = (label ? label : ciri);
+		a.href = data;
+		content.appendChild(a);
+		self.processLink(a,data,disabledActions);
+		return content;
 		case OAT.RDFTag.LIT:
 		    data = data_.getValue();
 		    break;
@@ -189,12 +198,18 @@ OAT.RDFMini = function(div,optObj) {
 	    ciri = OAT.IRIDB.resolveCIRI(data_.iid);
 	    data = OAT.IRIDB.getIRI(data_.iid);
 	    label = data_.label;
+	    content = OAT.Dom.create("span");
+	    var a = OAT.Dom.create("a");
+	    a.innerHTML = (label ? label : ciri);
+	    a.href = data;
+	    content.appendChild(a);
+	    self.processLink(a,data,disabledActions);
+	    return content;
 	}
 	
+	_type = self.getContentType(data); // Only literals should be left something that may be deref'd?
 
-		var type = self.getContentType(data);
-
-		switch (type) {
+	switch (_type) { // XXX this should be pruned with extreme prejudice
 			case 3:
 				content = OAT.Dom.create("img");
 	    content.title = (label ? label : data);
