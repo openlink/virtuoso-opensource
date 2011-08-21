@@ -39,9 +39,6 @@ function init() {
   OAT.Event.attach("throbber","click",OAT.AJAX.cancelAll);
   OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 
-  var qe = new QueryExec({div:"result"});
-  OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result") });
-
   iSPARQL.Defaults.init();
 
   for (i in iSPARQL.Defaults)
@@ -50,6 +47,10 @@ function init() {
   iSPARQL.Defaults.handlePageParams();
 
   iSPARQL.StatusUI.init();
+
+  var qe = new QueryExec({div:"result"});
+
+  OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result"); OAT.Dom.show("foot"); });
 
   var opts = OAT.Dom.uriParams();
 
@@ -82,7 +83,7 @@ function init() {
   } else {
       iSPARQL.StatusUI.statMsg ("Executing query&#8230;")
       qe.execute(iSPARQL.Settings);
-      OAT.Dom.show('foot');
+
   }   
 }
   </script>

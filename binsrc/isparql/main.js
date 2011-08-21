@@ -1511,13 +1511,14 @@ iSPARQL.Common = {
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$('throbber').src = OAT.Preferences.imagePath + "Dav_throbber.gif";
 
+		// FIXME: only shows triple_count, etc. stats on the latest rdfstore.
+
 	OAT.MSG.attach ("*", 
 			"OAT_RDF_STORE_LOADED", 
 			function (m,s,l) {	
 			    var iridbstats = OAT.IRIDB.getStats();
 			    $('iridb_stats').innerHTML = iridbstats.iriCount;
 			    $('triple_count').innerHTML = m.getTripleCount();
-							$('item_count').innerHTML = m.getGraphCount();
 			    $('label_count').innerHTML = m.getLabelCount();
 			    $('label_proc_count').innerHTML = m.getLabelProcCount();
 			});
@@ -2083,6 +2084,9 @@ iSPARQL.Common = {
 		if (qp) iSPARQL.Settings.qp_override = qp;
 		if (p['__DEBUG']) iSPARQL.Settings.debug = true;
 		if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
+		if (p['timeout']) iSPARQL.Settings.queryTimeout = parseInt(p['timeout']);
+		if (p['amode']) iSPARQL.Settings.anchorMode = parseInt(p['amode']);
+
     },
 
 
