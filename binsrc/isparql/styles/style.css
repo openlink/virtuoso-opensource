@@ -193,9 +193,9 @@ fieldset.deref_opts h4 {
   text-align: right;
   float: left;
   clear: both;
-  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
-  background: -moz-linear-gradient(top,#ccdde0,#577);
-  background-color: #FFFFFF;
+/*  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#fff));
+  background: -moz-linear-gradient(top,#ccdde0,#fff); */
+  background-color: #fdfdfd;
   height: 30px;
   padding-top: 10px;
   padding-bottom:30px;

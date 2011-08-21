@@ -179,9 +179,10 @@ div.pager div {
   text-align: right;
   float: left;
   clear: both;
-  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
+/*  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
   background: -moz-linear-gradient(top,#ccdde0,#577);
-  background-color: #FFFFFF;
+*/
+  background-color: #fdfdfd;
   height: 30px;
   padding-top: 10px;
   padding-bottom:30px;
