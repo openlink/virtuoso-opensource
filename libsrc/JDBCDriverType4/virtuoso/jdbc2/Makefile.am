@@ -86,12 +86,8 @@ in3files = \
 	CallableStatementWrapper.java \
 	Closeable.java \
 	ConnectionWrapper.java \
-	DatabaseMetaDataWrapper.java \
-	ParameterMetaDataWrapper.java \
 	PreparedStatementWrapper.java \
-	ResultSetMetaDataWrapper.java \
 	ResultSetWrapper.java \
-	SavepointWrapper.java \
 	StatementWrapper.java \
 	VirtuosoConnectionPoolDataSource.java \
 	VirtuosoDataSource.java \
