@@ -425,11 +425,7 @@ public class PreparedStatementWrapper
   public ResultSetMetaData getMetaData() throws SQLException {
     check_close();
     try {
-      ResultSetMetaData rsmd = ((PreparedStatement)stmt).getMetaData();
-      if (rsmd != null)
-        return new ResultSetMetaDataWrapper(rsmd, wconn);
-      else
-        return null;
+      return ((PreparedStatement)stmt).getMetaData();
     } catch (SQLException ex) {
       exceptionOccurred(ex);
       throw ex;
