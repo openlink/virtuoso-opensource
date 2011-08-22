@@ -1632,7 +1632,7 @@ public class VirtuosoConnection implements Connection
    protected byte[] charsetBytes1(String source, String from, String to) throws VirtuosoException
     {
        byte ans[] = new byte[0];
-       System.err.println ("charsetBytes1(" + from + " , " + to);
+       //System.err.println ("charsetBytes1(" + from + " , " + to);
        //System.err.println ("charsetBytes1 src len=" + source.length());
        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream( source.length() );
        try
