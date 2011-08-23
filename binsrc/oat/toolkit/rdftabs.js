@@ -1454,8 +1454,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		if (self.keyProperties.indexOf(p) != -1) { 
 		    if (pred[0] instanceof OAT.RDFAtom && pred[0].isLit())
 		    pointResource = pred[0].getValue(); 
-		    else
-			return; // IRI reference, will be handled later
 		} /* resource containing geo coordinates */
 		if (self.locProperties.indexOf(p) != -1) { 
 		    locValue = pred[0].getValue(); 
