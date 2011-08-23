@@ -74,6 +74,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_FOURSQUARE', null, 'Foursquare');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*seatgeek.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_SEATGEEK', null, 'Seatgeek');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*simplegeo.com/.*)|(https://.*simplegeo.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_SIMPLEGEO', null, 'SimpleGeo');
 
@@ -130,6 +134,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('https://plus.google.com/.*',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE', null, 'Google (Profile)');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://maps.google.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLACES', null, 'Google (Places)');
+	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://docs.google.com/.*)|'||
     '(https://docs.google.com/.*)',
@@ -1123,6 +1131,19 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_TRIM (in val varchar, in tr varchar)
+{
+	if (val is not null and length(val) > 0)
+	{
+		if (tr is not null and length(tr) > 0)
+			return trim(val, tr);
+		else
+			return trim(val);
+	}
+	return null;
+}
+;
+
 create procedure DB.DBA.XSLT_REPLACE1 (in val varchar)
 {
   val := replace (val, '(', '%28');
@@ -1717,6 +1738,7 @@ grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_REPLACE1 to public;
+grant execute on DB.DBA.XSLT_TRIM to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
@@ -1758,6 +1780,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html5md_namespace', 'DB
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:replace1', 'DB.DBA.XSLT_REPLACE1');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:trim', 'DB.DBA.XSLT_TRIM');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
@@ -1807,8 +1830,6 @@ create procedure DB.DBA.RDF_APERTURE_INIT ()
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, tmp, fn any;
---  if (graph_iri like \'%.odt\' or graph_iri like \'%.ods\')
---    return 0;
   tmp := null;
   declare exit handler for sqlstate \'*\'
     {
@@ -1926,7 +1947,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 		}
 		else
 		{
-                    http (sprintf ('<%U>\n', replace(tag, ' ', '_')), ses);
+            http (sprintf ('<%U>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
                 }
 		for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
 		{
@@ -1936,7 +1957,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 			http ('</Document>\n',	ses);
 		else
                 {
-			http (sprintf ('</%U>\n', replace(tag, ' ', '_')),	ses);
+			http (sprintf ('</%U>\n', replace(replace(tag, ' ', '_'), '@', '')),	ses);
                 }
 	}
 	else if (length (tree) > 0)
@@ -1955,6 +1976,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
+string_to_file('res.xml', ses, 0);  
   ses := xtree_doc (ses);
   return ses;
 }
@@ -5728,6 +5750,51 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_BOOK (in graph_iri varchar, in new_origi
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PLACES (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, tree any;
+	declare pos int;
+	declare lat, lng, name, reference varchar;
+	declare exit handler for sqlstate '*'
+    {
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+    };
+	if (length (_key) = 0)
+		return 0;
+	if (new_origin_uri like 'http://maps.google.com/maps/place?cid=%')
+	{
+		tmp := cast (xpath_eval ('//div[@id="pp-marker-json"]', xtree_doc (_ret_body, 2)) as varchar);
+		tmp := sprintf_inverse (tmp, '%s{lat:%s,lng:%s}%s,name:"%s"%s', 0);
+		lat := tmp[1];
+		lng := tmp[2];
+		name := replace(tmp[4], ' ', '+');
+		if (lat is null or lng is null)
+			return 0;
+		url := sprintf('https://maps.googleapis.com/maps/api/place/search/xml?location=%s,%s&radius=500&name=%U&sensor=false&key=%s', lat, lng, name, _key);
+		tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+		xd := xtree_doc (tmp);
+		reference := cast (xpath_eval ('/PlaceSearchResponse/result/reference', xd) as varchar);
+		if (reference is null)
+			return 0;
+		url := sprintf('https://maps.googleapis.com/maps/api/place/details/xml?reference=%s&sensor=true&key=%s', reference, _key);
+		tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+		if (hdr[0] not like 'HTTP/1._ 200 %')
+			signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_place2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+		xd := serialize_to_UTF8_xml (xt);
+		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+		DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+		return 1;
+	}
+	else
+		return 0;
+	return 1;
+}
+;
+
+
 create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, hdr, tree any;
@@ -5941,10 +6008,10 @@ create procedure DB.DBA.RDF_LOAD_SEEVL (in graph_iri varchar, in new_origin_uri 
 		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	if (new_origin_uri like 'http://seevl.net/entity/%')
+	if (new_origin_uri like 'http://%seevl.net/entity/%')
 	{
-		tmp := sprintf_inverse (new_origin_uri, 'http://seevl.net/entity/%s', 0);
-		item_id := trim(tmp[0], '/');
+		tmp := sprintf_inverse (new_origin_uri, 'http://%sseevl.net/entity/%s', 0);
+		item_id := trim(tmp[1], '/');
 		if (item_id is null)
 			return 0;
 		pos := strchr(item_id, '/');
@@ -5962,7 +6029,7 @@ create procedure DB.DBA.RDF_LOAD_SEEVL (in graph_iri varchar, in new_origin_uri 
 	methods := vector('infos', 'facts', 'topics', 'links', 'related');
 	foreach (any method in methods) do
 	{
-		url := concat('http://seevl.net/entity/', item_id, '/', method);
+		url := concat('http://data.seevl.net/entity/', item_id, '/', method);
 		auth_header := 'Accept: application/json\r\nX_APP_ID: ' || app_id || '\r\nX_APP_KEY: ' || app_key;
 		tmp := http_get (url, null, 'GET', auth_header, null, proxy=>get_keyword_ucase ('get:proxy', opts));
 		tree := json_parse (tmp);
@@ -6421,6 +6488,38 @@ create procedure DB.DBA.RDF_LOAD_SIMPLEGEO (in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_SEATGEEK (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, hdr, exif any;
+	declare entity_id, email_, password_ varchar;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http%://%seatgeek.com/%-tickets/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%seatgeek.com/%s-tickets/%s', 0);
+		entity_id := tmp[2];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('http://api.seatgeek.com/1/events/upcoming_for_teamband.xml?slug=%s', entity_id);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/seatgeek2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xd, host_part, xt, url, tmp, hdr, exif any;
@@ -6750,10 +6849,7 @@ create procedure DB.DBA.sign_hmac_sha1 (
 {
   declare str, k, kname, ret varchar;
   str := meth || '&' || replace (sprintf ('%U', url), '/', '%2F') || '&' || sprintf ('%U', params);
-  -- dbg_obj_print ('str=',str);
   k := sprintf ('%U', consumer_secret) || '&' || sprintf ('%U', coalesce (token_secret, ''));
-  -- dbg_printf ('k=[%s]', k);
-  -- dbg_printf ('s=[%s]', str);
   kname := md5 (cast (now () as varchar));
   xenc_key_RAW_read (kname, encode_base64 (k));
   ret := xenc_hmac_sha1_digest (str, kname);
@@ -8600,6 +8696,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 				goto next_prof;
 			};
 			xd := DB.DBA.RDF_MAPPER_XSLT (xslt_style, xt, vector ('baseUri', new_origin_uri));
+			
 			if (xpath_eval ('count(/RDF/*)', xd) > 0)
 			{
 				mdta := mdta + 1;
@@ -11010,3 +11107,100 @@ create procedure lbl_order (in p any)
   return r;
 }
 ;
+
+-- /* selective sponging api */
+create procedure 
+RM_SPONGE_BY_ID (in graph varchar, in url varchar, in content any, in ctype varchar, in ids any, in opts any)
+{
+  declare mime_type, _graph, _base, out_arr, tmp varchar;
+  declare html_start, xd any;
+  declare rc, deadl int;
+
+  html_start := null;
+
+  _graph := get_keyword ('rdf-graph', opts, graph);
+  _base := url;
+
+  commit work;
+  deadl := 6;
+
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    __SQL_STATE := cast (__SQL_STATE as varchar);
+    if (__SQL_STATE = '40001')
+      {
+	deadl := deadl - 1;
+	if (deadl > 0)
+	  goto again;
+      }
+    resignal;
+  };
+
+  if (url like '*.gz')
+    {
+      if (length (content) > 2)
+	{
+	  declare magic varchar;
+	  magic := subseq (content, 0, 2);
+	  if (magic[0] = 0hex1f and magic[1] = 0hex8b) 
+	    content := gzip_uncompress (content);
+	}
+    }
+  -- RDF/XML or RDF/N3 depends on option
+  mime_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (url, ctype, content);
+again:
+  -- RDF formats 
+    {
+      if (strstr (mime_type, 'application/rdf+xml') is not null)
+        DB.DBA.RDF_LOAD_RDFXML (content, _base, _graph);
+      else if (
+       strstr (mime_type, 'text/rdf+n3') is not null or
+       strstr (mime_type, 'text/rdf+ttl') is not null or
+       strstr (mime_type, 'application/rdf+n3') is not null or
+       strstr (mime_type, 'application/rdf+turtle') is not null or
+       strstr (mime_type, 'application/turtle') is not null or
+       strstr (mime_type, 'application/x-turtle') is not null
+      )
+        DB.DBA.TTLP (content, _base, _graph);
+    }
+
+  -- The rest is mappers work
+  for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_PID in (ids) order by RM_ID do
+   {
+     declare val_match, pcols, new_opts, aq any;
+      if (RM_TYPE = 'MIME')
+	{
+	  val_match := mime_type;
+	}
+      else if (RM_TYPE = 'URL' or RM_TYPE = 'HTTP')
+	{
+	  val_match := _base;
+	}
+      else
+	val_match := null;
+      aq := null;
+      if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
+	{
+	  if (__proc_exists (RM_HOOK) is null)
+	    goto try_next_mapper;
+
+	  declare exit handler for sqlstate '*'
+	    {
+	      goto try_next_mapper;
+	    };
+
+	  new_opts := vector_concat (RM_OPTIONS, vector ('disable-clean', 'Y'));
+	  if (RM_TYPE <> 'HTTP')
+	    {
+	      rc := call (RM_HOOK) (_graph, _base, null, content, aq, aq, RM_KEY, new_opts);
+	    }
+	  if (rc < 0 or rc > 0)
+	    return;
+	}
+      try_next_mapper:;
+   }
+
+}
+;
+
