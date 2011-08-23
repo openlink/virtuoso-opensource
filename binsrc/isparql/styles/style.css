@@ -71,15 +71,18 @@ td.cachingOpts label.unit { float: right; clear: none; width: 40px; margin-left:
 td.cachingOpts input { float: left;}
 
 div.controls {
+  float: left;
+  clear: both;
+  width: 99%;
   background-color: #eee;
   background: -moz-linear-gradient (top, #eee, #eff);
   background: -webkit-gradient (linear,left top,left bottom,from(#eee), to(#eff));
-  border: 2px solid #dff;
-  -moz-border-radius: 10px 10px 0px 0px;
-  -webkit-border-radius: 10px 10px 0px 0px;
-  margin: 0px 10px 10px 10px;
-  
+  border: 1px solid #ddd;
+  margin: 5px 5px 0px 5px;  
 }
+
+/*  -moz-border-radius: 10px 10px 0px 0px; */
+/*  -webkit-border-radius: 10px 10px 0px 0px; */
 
 div.controls h3:hover { cursor: pointer;}
 div.controls h3 {margin: 0;padding:0}
@@ -90,13 +93,29 @@ div.controls fieldset { }
 
 #pathTravSchemesPreds { width: 100%; }
 
-fieldset.queryopts {
-  display: block;
-  margin: 0 8px 3px 10px
+#queryopts_ctl {
+  float: left;
+  clear: both;
+  margin: 0 5px 5px 5px;
 }
 
-#qry_type_ctls { display: inline; }
-span.maxrows_expln { font-size: smaller;}
+div.fm_rw span.maxrows_expln { float: left; font-size: smaller;}
+
+div.fm_rw {
+  float: left;
+  clear: both;
+}
+
+div.fm_rw label {
+  width: 15em;
+  float: left;
+  clear: left;
+  margin-top: 3px;
+}
+
+#queryopts_ctl div.fm_rw input {
+  float: left;
+}
 
 fieldset.endpoint {
   margin-top: 10px;
@@ -139,8 +158,8 @@ h3#endpoint_opts_toggler,h3#mdtoggler {
   cursor: hand;
   cursor: pointer;
   border:none;
-  -moz-border-radius: 10px 10px 0px 0px;
-  -webkit-border-radius: 10px 10px 0px 0px;
+/*  -moz-border-radius: 10px 10px 0px 0px;
+  -webkit-border-radius: 10px 10px 0px 0px; */
 }
 
 span.tgl_indicator {

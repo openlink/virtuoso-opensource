@@ -201,6 +201,7 @@ var QueryExec = function(optObj) {
 		namedGraphs:[],
 		sponge:false,
 	maxrows:false,
+		timeout:false,
 	sourceQuery:false /* before macro expansion */
     };
 
@@ -367,6 +368,7 @@ var QueryExec = function(optObj) {
 		cache.opts.endpoint != opts.endpoint || 
 		cache.opts.defaultGraph != opts.defaultGraph ||
 	        cache.opts.maxrows != opts.maxrows ||
+				cache.opts.timeout != opts.timeout ||
 	        cache.opts.namedGraphs != opts.namedGraphs ||
 	        cache.opts.pragmas != opts.pragmas);
     };
@@ -374,8 +376,15 @@ var QueryExec = function(optObj) {
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
 
-		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
-	if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { paramsObj["maxrows"] = opts.maxrows; }
+		if (opts.defaultGraph && !opts.query.match(/from *</i)) { 
+          paramsObj["default-graph-uri"] = opts.defaultGraph; 
+        }
+
+		if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { 
+          paramsObj["maxrows"] = opts.maxrows; 
+        }
+
+		if (opts.timeout) { paramsObj["timeout"] = opts.timeout; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var pragmas = [];
@@ -515,6 +524,7 @@ var QueryExec = function(optObj) {
 				"//" + nloca.host + "/sparql/?query=" + encodeURIComponent(opts.query);
 			
 			resUriBase += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+			resUriBase += "&timeout=" + (opts.timeout ? opts.timeout : "");
 			resUriBase += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 			resUriBase += "&format=";
 
@@ -551,6 +561,7 @@ var QueryExec = function(optObj) {
 
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		xparm += "&view=" + opts.view;
 		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
 		var plnk_a = OAT.Dom.create("a");
@@ -581,6 +592,7 @@ var QueryExec = function(optObj) {
 
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 		xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		
 		plnk.target = "_blank";
 
@@ -766,6 +778,7 @@ var QueryExec = function(optObj) {
 	    "/sparql/?query=" + encodeURIComponent(opts.query) + 
 	    "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 	xparm += "&format=text/cxml";
 	a.href = document.location.protocol + '//' + document.location.host + 
@@ -792,6 +805,7 @@ var QueryExec = function(optObj) {
 
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 		xparm += "&view=" + opts.view;
 		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
@@ -1005,6 +1019,7 @@ var QueryExec = function(optObj) {
 		iSPARQL.dataObj.query        = item.opts.query;
 		iSPARQL.dataObj.defaultGraph = item.opts.defaultGraph;
 		iSPARQL.dataObj.maxrows      = item.opts.maxrows;
+		iSPARQL.dataObj.timeout      = item.opts.timeout;
 		iSPARQL.dataObj.namedGraphs  = item.opts.namedGraphs;
 		iSPARQL.dataObj.pragmas      = item.opts.pragmas;
 		iSPARQL.dataObj.endpoint     = item.opts.endpoint;
@@ -1051,6 +1066,7 @@ var QueryExec = function(optObj) {
 		a.innerHTML = "Query Permalink";
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 		xparm += "&view=" + opts.view;
 	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;

@@ -234,7 +234,8 @@ iSPARQL.Advanced = function () {
 	    pragmas:iSPARQL.endpointOpts.pragmas,
 	    namedGraphs:iSPARQL.dataObj.namedGraphs,
 	    callback:iSPARQL.Common.setData,
-			maxrows:iSPARQL.dataObj.maxrows,
+			maxrows:iSPARQL.Settings.maxrows,
+			timeout:iSPARQL.Settings.timeout,
 			view:1
 	}
 	
@@ -305,6 +306,7 @@ iSPARQL.Advanced = function () {
 	dataObj.endpointOpts.useProxy = iSPARQL.endpointOpts.useProxy;
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.maxrows = iSPARQL.dataObj.maxrows;
+		dataObj.timeout = iSPARQL.dataObj.timeout;
 	dataObj.defaultGraph = $v('default-graph-uri');
 		dataObj.metaDataOpts = iSPARQL.mdOpts.getMetaDataObj();
 		
@@ -685,7 +687,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     this.setEpOptCtl = function () {
 	self.epCombo.input.value = self.opts.endpointPath;
 
-	if (self.opts.verType == iSPARQL.SERVER_TYPE_VIRTUOSO)
+		if (self.opts.serverType == iSPARQL.SERVER_TYPE_VIRTUOSO)
 	    $("endpointTypeInd").innerHtml = "(Virtuoso)";
 	else
 	    $("endpointTypeInd").innerHtml = "(Generic)";
@@ -881,11 +883,13 @@ iSPARQL.EndpointOpts = function (optsObj) {
     }
 
     this.endpointDetectCB = function (data, headers) {
-	if (headers["Server"].match(/Virtuoso.*/)) {
+		var srv = headers["Server"];
+		if (srv && srv.match (/Virtuoso.*/)) {
 	    self.serverType = iSPARQL.SERVER_TYPE.VIRTUOSO;
 	} else { 
 	    self.serverType = iSPARQL.SERVER_TYPE.GENERIC;
 	}
+		OAT.MSG.send ("*", "ISPARQL_SERVER_DETECTED", self.serverType);
 	OAT.Observer.notify (self.observers, null, 'detectEndpoint');
     }
 
@@ -898,8 +902,10 @@ iSPARQL.EndpointOpts = function (optsObj) {
 			type:OAT.AJAX.TYPE_TEXT
 	};
 
-//		OAT.AJAX.GET (self.endpointPath, 
-//                      '?query='+encodeURIComponent("ASK where {?s ?p ?o}"), 
+		// FIXME: Webkit origin policies clash with detection of Server from headers :(
+		
+//		OAT.AJAX.HEAD (self.endpointPath, 
+//                      false,
 //                      self.endpointDetectCB, o);
     }
 
@@ -1715,11 +1721,29 @@ iSPARQL.Common = {
 		$('query').value = iSPARQL.Settings.query;
 
 		$('maxrows').value = iSPARQL.Settings.maxrows;
-	OAT.Event.attach ('maxrows', 'change',
+
+		OAT.Event.attach ('maxrows', 'blur',
 					function () {
 						var n = parseInt($v('maxrows'));
 							  iSPARQL.Settings.maxrows = isNaN(n) ? 0 : n; 
 						});
+
+		OAT.MSG.attach ("*", "iSPARQL_SERVER_DETECTED", 
+						function (m,s,l) { 
+							if (l == iSPARQL.SERVER_TYPE_VIRTUOSO) {
+								$('timeout').disabled=false;
+							}
+							else {
+								$('timeout').disabled=true;
+							}
+						});
+
+		$('timeout').value = iSPARQL.Settings.timeout ? iSPARQL.Settings.timeout : '';
+		OAT.Event.attach ('timeout', 'blur',
+						  function () {
+							  var n = parseInt($v('timeout'));
+							  iSPARQL.Settings.timeout = isNaN(n) ? false : n;
+						  });
 
 		enable_if_ubiq ($('ubiq_gem'));
 		
@@ -2084,7 +2108,7 @@ iSPARQL.Common = {
 		if (qp) iSPARQL.Settings.qp_override = qp;
 		if (p['__DEBUG']) iSPARQL.Settings.debug = true;
 		if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
-		if (p['timeout']) iSPARQL.Settings.queryTimeout = parseInt(p['timeout']);
+		if (p['timeout']) iSPARQL.Settings.timeout = parseInt(p['timeout']);
 		if (p['amode']) iSPARQL.Settings.anchorMode = parseInt(p['amode']);
 
     },
@@ -2132,6 +2156,7 @@ iSPARQL.Common = {
 		iSPARQL.dataObj.prefixes = []; // XXX
 	iSPARQL.dataObj.pragmas = [];
 		iSPARQL.dataObj.maxrows = iSPARQL.Settings.maxrows;
+		iSPARQL.dataObj.timeout = iSPARQL.Settings.timeout;
 	iSPARQL.dataObj.canvas = false;
 		iSPARQL.dataObj.sponge = iSPARQL.Settings.sponge;
 		iSPARQL.dataObj.tab = iSPARQL.Settings.tab;

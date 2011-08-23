@@ -41,7 +41,7 @@ iSPARQL.Defaults = {
     grabDepth:    2,
     grabAll:      false,
     graph:        "",
-    queryTimeout: 60000, // ms
+    timeout:      false, // ms
     auth:         {user:'dav',password:'dav'},
     tab:          0,
     anchorMode:   0, /* 0:Exec SPARQL describe, 1:get data items,2:Open in new window,3:Open "describe" page */
@@ -101,7 +101,7 @@ iSPARQL.Defaults = {
 	if (qp) iSPARQL.Settings.qp_override = qp;
 	if (p['__DEBUG']) iSPARQL.Settings.debug = true;
 	if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
-	if (p['timeout']) iSPARQL.Settings.queryTimeout = parseInt(p['timeout']);
+	if (p['timeout']) iSPARQL.Settings.timeout = parseInt(p['timeout']);
 	if (p['amode']) iSPARQL.Settings.anchorMode = parseInt(p['amode']);
     },
 
