@@ -178,6 +178,13 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
     </xsl:variable>
     <!-- ============================================================ -->
     <xsl:if test="$fn != 0">
+			<xsl:variable name="is_author">
+				<xsl:call-template name="testclass">
+					<xsl:with-param name="class" select="../@class" />
+					<xsl:with-param name="val" select="'author'" />
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:if test="$is_author = 0">
       <dc:title>
         <xsl:value-of select="." />
       </dc:title>
@@ -185,6 +192,7 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:value-of select="." />
       </dv:name>
     </xsl:if>
+		</xsl:if>
 	
     <xsl:if test="$ingredient != 0">
 		<xsl:variable name="ing_name">

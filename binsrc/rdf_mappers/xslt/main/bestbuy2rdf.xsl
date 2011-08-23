@@ -117,7 +117,7 @@
 								<vcard:Extadd>
 									<xsl:value-of select="/stores/store/address"/>
 								</vcard:Extadd>
-								<rdfs:label><xsl:value-of select="concat(/stores/store/address, ', ', /stores/store/city, ', ', /stores/store/postalCode, ', ', /stores/store/country)"/></rdfs:label>
+								<rdfs:label><xsl:value-of select="vi:trim(concat(/stores/store/address, ', ', /stores/store/city, ', ', /stores/store/postalCode, ', ', /stores/store/country), ', ')"/></rdfs:label>
 							</rdf:Description>
 						</vcard:ADR>
 					</gr:LocationOfSalesOrServiceProvisioning>

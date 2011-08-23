@@ -46,7 +46,6 @@
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
-    xmlns:xml   ="xml"
     version="1.0"
     >
 
