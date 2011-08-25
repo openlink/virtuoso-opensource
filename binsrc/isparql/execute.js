@@ -214,6 +214,27 @@ var QueryExec = function(optObj) {
     	this.mRDFCtr = false;
 	this.anchor_pref_ctr = false;
 
+	
+	this.makeAnchorPrefs = function () {
+		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
+		var anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
+		anchor_label.innerHTML = "Dereferencing:";
+		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
+		anchor_pref_sel.options.add (new Option ("SPARQL Describe",0));
+		anchor_pref_sel.options.add (new Option ("SELECT IRI as S or O",1));
+		anchor_pref_sel.options.add (new Option ("GET Page",2));
+		anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
+		anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
+
+		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
+			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
+		});
+
+        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
+
+		return anchor_pref_ctr;
+	}
+
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
 		this.dom.request = OAT.Dom.create("div", {className:'ep_request'}); 
@@ -229,32 +250,19 @@ var QueryExec = function(optObj) {
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
 		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
 
-		self.anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
-		self.anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
-		self.anchor_label.innerHTML = "Dereferencing:";
-		self.anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
-		self.anchor_pref_sel.options.add (new Option ("SPARQL Describe",0));
-		self.anchor_pref_sel.options.add (new Option ("SELECT IRI as S or O",1));
-		self.anchor_pref_sel.options.add (new Option ("GET Page",2));
-		self.anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
-		self.anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
-
-		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
-			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
-		});
-
-        OAT.Dom.append ([self.anchor_pref_ctr, self.anchor_label, self.anchor_pref_sel]);
-
 		for (var i=0;i<tabs1.length;i++) {
 			var li = OAT.Dom.create("li");
 			self.dom.ul.appendChild(li);
 			li.innerHTML = tabs1[i];
 			self.tab.add(li,tabs2[i]);
 		}
+
+		self.deref_prefs = self.makeAnchorPrefs();
+
 		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
 	    OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
-			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]);
+			OAT.Dom.append([self.options.div,self.dom.ul,self.deref_prefs,self.dom.tab]); 
 		}
 		self.initNav();
 
@@ -442,7 +450,6 @@ var QueryExec = function(optObj) {
 			return iSPARQL.ResultType.ERROR;
 		}
     };
-	
     //
     // Cache incoming result set or graph
     //
@@ -830,7 +837,7 @@ var QueryExec = function(optObj) {
 
 		self.makeExecPermalink (self.dom.plnk_ctr);
 
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr, self.anchor_pref_ctr]);
+		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr]);
 
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
@@ -1175,7 +1182,7 @@ var QueryExec = function(optObj) {
 				item.mini.redraw();
 				
 				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
-				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, self.anchor_pref_ctr, mini_c]);
+				OAT.Dom.append ([item.dom.result_c, self.plnk_ctr, mini_c]);
 				
 				var ua = navigator.userAgent;
 				
