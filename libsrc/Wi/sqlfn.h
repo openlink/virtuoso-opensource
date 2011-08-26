@@ -1004,7 +1004,7 @@ caddr_t  sf_make_new_log_name(dbe_storage_t * dbs);
 
 dk_set_t srv_get_logons (void);
 
-srv_stmt_t * cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode);
+srv_stmt_t * cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode, caddr_t * err_ret);
 caddr_t stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 		stmt_options_t * opts);
 query_t * cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli,

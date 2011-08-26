@@ -1409,7 +1409,7 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_st
 cr_done:
   if (use_stmt_cache)
     {
-      sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE);
+      sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE, NULL);
       err = stmt_set_query (sst, lt->lt_client, text, opts);
       LEAVE_CLIENT (lt->lt_client);
       if (err != NULL)

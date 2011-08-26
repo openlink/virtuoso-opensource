@@ -1392,15 +1392,21 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 
 }
 
-
+int32 cli_max_cached_stmts = 10000;
 
 srv_stmt_t *
-cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode)
+cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode, caddr_t * err_ret)
 {
   caddr_t place;
   srv_stmt_t *stmt;
   IN_CLIENT (cli);
   place = id_hash_get (cli->cli_statements, (caddr_t) & id);
+  if (!place && cli->cli_statements->ht_count >= cli_max_cached_stmts)
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("HY013", "SR491", "Too many open statements");
+      return NULL;
+    }
   if (!place)
     {
       NEW_VARZ (srv_stmt_t, stmt);
@@ -1446,7 +1452,7 @@ cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli, caddr_t *e
   caddr_t stmt_boxed = box_dv_short_string (query_text);
 
   stmt_id = box_dv_short_string (stmt_id_name);
-  sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
   old_log_val = cli->cli_is_log;
   cli->cli_is_log = 1;
   err = stmt_set_query (sst, cli, stmt_boxed, NULL);
@@ -1466,16 +1472,19 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
 {
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  caddr_t err;
+  caddr_t err = NULL;
 
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
+  if (!stmt && err)
+    goto report_error;
   cli->cli_terminate_requested = 0;
   cli->cli_start_time = time_now_msec;
   if (!stmt || stmt->sst_cursor_state)
     {
       /* There's an instance. can't do it */
-      mutex_leave (cli->cli_mtx);
       err = srv_make_new_error ("S1010", "SR209", "Statement active");
+report_error:
+      mutex_leave (cli->cli_mtx);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
 
@@ -1662,7 +1671,9 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       goto report_rpc_format_error;
     }
 
-  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
+  if (err)
+    goto report_error;
   if (params)
     n_params = BOX_ELEMENTS (params);
 
@@ -1685,6 +1696,7 @@ report_error:
       mutex_leave (cli->cli_mtx);
     report_rpc_format_error:
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+      DKST_RPC_DONE (client);
       dk_free_tree (err);
 
       dk_free_box (text);
@@ -2282,7 +2294,7 @@ sf_sql_fetch (caddr_t stmt_id, long cond_no)
   dk_session_t *client = IMMEDIATE_CLIENT;
   caddr_t err;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
 
   CHANGE_THREAD_USER(cli->cli_user);
 
@@ -2340,7 +2352,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   query_instance_t *qi = NULL;
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
   dbg_printf (("sf_sql_free_stmt %s %d\n", stmt->sst_id, op));
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
@@ -2861,7 +2873,7 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *lt;
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
   if (stmt->sst_inst)
     {
       query_instance_t *qi = stmt->sst_inst;
