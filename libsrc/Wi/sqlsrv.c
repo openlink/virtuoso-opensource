@@ -3904,8 +3904,8 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 0);
       sec_read_tb_rls (NULL, NULL, NULL);
       sinv_read_sql_inverses (NULL, bootstrap_cli);
-      read_proc_tables (1);
-      read_proc_tables (0);
+      read_proc_and_trigger_tables (1);
+      read_proc_and_trigger_tables (0);
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
     }
@@ -3919,6 +3919,7 @@ srv_global_init (char *mode)
   /* and a third time to process grants over the sqls_define procs */
   if (!strchr (mode, 'a'))
     sec_read_grants (NULL, NULL, NULL, 1);
+  read_utd_method_tables ();
   if (ddl_init_hook)
     ddl_init_hook (bootstrap_cli);
   local_commit (bootstrap_cli);

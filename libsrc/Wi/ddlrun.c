@@ -4588,10 +4588,9 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
 
 
 void
-read_proc_tables (int remotes)
+read_proc_and_trigger_tables (int remotes)
 {
   user_t *org_user = bootstrap_cli->cli_user;
-
   caddr_t org_qual = bootstrap_cli->cli_qualifier;
   query_t *proc_qr;
   /* Procedure's calls published for replication */
@@ -4817,8 +4816,22 @@ scan_SYS_PROCEDURES:
   lc_free (lc);
   qr_free (rdproc);
 
+end:;
   bootstrap_cli->cli_user = org_user;
   CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
+  local_commit (bootstrap_cli);
+}
+
+void
+read_utd_method_tables (void)
+{
+  user_t *org_user = bootstrap_cli->cli_user;
+  caddr_t org_qual = bootstrap_cli->cli_qualifier;
+  query_t *proc_qr;
+  /* Procedure's calls published for replication */
+  caddr_t err;
+  query_t *rdproc;
+  local_cursor_t *lc;
   rdproc = sql_compile_static (
       "select blob_to_string (M_TEXT), M_QUAL, M_OWNER from DB.DBA.SYS_METHODS",
       bootstrap_cli, NULL, SQLC_DEFAULT);
