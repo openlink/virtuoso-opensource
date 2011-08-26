@@ -2595,9 +2595,8 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n_args = BOX_ELEMENTS (args);
   caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "trim");
-  caddr_t skip_str = NULL; /*((n_args > 1)
-			     ? bif_string_arg (qst, args, 1, "trim")
-			     : (caddr_t) " "); */ /* If second arg is not present it's a space by default. */
+  caddr_t skip_str_orig = NULL;
+  caddr_t skip_str = NULL;
   long len;
   long from;
   long to;
@@ -2608,41 +2607,26 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t to_free = NULL;
 
   if (NULL == str)
-    {
       return (NEW_DB_NULL);
-    }
 
   if (n_args > 1)
+    skip_str_orig = bif_string_or_wide_or_null_arg (qst, args, 1, "trim");
+  if (NULL == skip_str_orig)
+    skip_str = ((IS_WIDE_STRING_DTP (dtp1)) ? (caddr_t)L" " : " ");
+  else if (IS_WIDE_STRING_DTP (dtp1) && !DV_WIDESTRINGP (skip_str_orig))
     {
-      caddr_t x = bif_string_or_wide_or_null_arg (qst, args, 1, "trim");
-      if (IS_WIDE_STRING_DTP (dtp1) && !DV_WIDESTRINGP (x))
-	{
-	  to_free = (caddr_t) box_narrow_string_as_wide ((unsigned char *) x, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+      to_free = (caddr_t) box_narrow_string_as_wide ((unsigned char *) skip_str_orig, NULL, 0, QST_CHARSET (qst), err_ret, 1);
 	  if (!to_free)
 	    return NULL;
 	  skip_str = to_free;
 	}
-      else if (!IS_WIDE_STRING_DTP (dtp1) && DV_WIDESTRINGP (x))
+  else if (!IS_WIDE_STRING_DTP (dtp1) && DV_WIDESTRINGP (skip_str_orig))
 	{
-	  to_free = box_wide_string_as_narrow (x, NULL, 0, QST_CHARSET (qst));
+      to_free = box_wide_string_as_narrow (skip_str_orig, NULL, 0, QST_CHARSET (qst));
 	  skip_str = to_free;
 	}
       else
-	{
-	  skip_str = x;
-	}
-    }
-  else
-    {
-      if (IS_WIDE_STRING_DTP (dtp1))
-	{
-	  skip_str = (caddr_t) L" ";
-	}
-      else
-	{
-	  skip_str = " ";
-	}
-    }
+    skip_str = skip_str_orig;
 
   len = (box_length (str) / sizeof_char - 1); /* box_length returns a length + 1 */
 
