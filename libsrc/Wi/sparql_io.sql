@@ -2355,7 +2355,7 @@ http('</html>\n');
       else if ('timeout' = pname and length (pvalue))
         {
           declare t integer;
-          t := cast (pvalue as integer) * 1000;
+          t := cast (pvalue as integer);
           if (t is not null and t >= 1000)
             {
               if (hard_timeout >= 1000)
