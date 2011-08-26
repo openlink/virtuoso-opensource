@@ -3552,6 +3552,12 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   desc = xqf_str_parser_descs + desc_idx;
   if (DV_DB_NULL == arg_dtp)
     return NEW_DB_NULL;
+  /* if we have wide and we want typed string we do utf8, cast do to default charset so we do not do it */
+  if (DV_WIDE == arg_dtp && desc->p_dest_dtp == DV_STRING)
+    {
+      res = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_STRING);
+      goto res_ready;
+    }
   if (DV_STRING != arg_dtp)
     {
       caddr_t err = NULL;
