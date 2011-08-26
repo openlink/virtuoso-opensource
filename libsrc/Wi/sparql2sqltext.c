@@ -3891,7 +3891,7 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
     }
   if (!strncmp (name, "bif:", 4))
     {
-      caddr_t iduqname = sqlp_box_id_upcase (name+4);
+      caddr_t iduqname = t_sqlp_box_id_upcase (name+4);
       bif_type_t ** bt = (bif_type_t **) id_hash_get (name_to_bif_type, (char *) &iduqname);
       if (NULL != bt)
         {
