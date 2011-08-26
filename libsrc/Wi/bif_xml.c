@@ -5185,6 +5185,9 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 	elem_is_writeable = 0;
         to_be_deleted = NULL;
 #endif
+	if (BOX_ELEMENTS (elem) < 1)
+	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
+
 	  if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
 	    { /* XMLATTRIBUTES */
 	      int inx, attr_length = BOX_ELEMENTS (elem);
@@ -5204,6 +5207,8 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 		}
               goto array_arg_done;
 	    }
+	if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (((caddr_t *)elem)[0]) || BOX_ELEMENTS (((caddr_t *)elem)[0]) < 1)
+	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
         if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (elem))))
           {
             if (!elem_is_writeable)
