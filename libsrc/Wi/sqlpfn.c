@@ -641,14 +641,14 @@ casemode_strncmp (const char *s1, const char *s2, size_t n)
 }
 
 caddr_t
-sqlp_box_id_upcase (const char *str)
+DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str)
 {
   /* nothing in 2 */
   caddr_t s;
   size_t len = strlen (str);
   if (len > MAX_NAME_LEN - 2)
     len = MAX_NAME_LEN - 2;
-  s = box_dv_short_nchars (str, len);
+  s = DBG_NAME (box_dv_short_nchars) (DBG_ARGS str, len);
   box_tag_modify (s, DV_SYMBOL);
   if (CM_UPPER == case_mode)
     sqlp_upcase (s);

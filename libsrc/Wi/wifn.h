@@ -658,7 +658,11 @@ extern int case_mode;
 int casemode_strcmp (const char *s1, const char *s2);
 int casemode_strncmp (const char *s1, const char *s2, size_t n);
 
-caddr_t sqlp_box_id_upcase (const char *str);
+caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
+#ifdef MALLOC_DEBUG
+#define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
+#endif
+caddr_t t_sqlp_box_id_upcase (const char *str);
 void sqlp_upcase (char *str);
 caddr_t sqlp_box_upcase (const char *str);
 

@@ -61,7 +61,10 @@ ST ** asg_col_list (ST ** asg_list);
 
 ST ** sqlp_local_variable_decls (caddr_t * names, ST * dtp);
 
-caddr_t sqlp_box_id_upcase (const char * str);
+caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
+#ifdef MALLOC_DEBUG
+#define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
+#endif
 caddr_t t_sqlp_box_id_upcase (const char * str);
 caddr_t sqlp_box_upcase (const char * str);
 caddr_t t_sqlp_box_upcase (const char * str);
