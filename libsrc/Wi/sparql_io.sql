@@ -2460,7 +2460,7 @@ http('</html>\n');
        spt_ns := DB.DBA.SPARQL_PT_NS ();
        ns_decl := '[ xmlns:soap="'||soap_ns||'" xmlns:sp="'||spt_ns||'" ] ';
        content := http_body_read ();
-       if (registry_get ('__sparql_endpoint_debug') = '1')
+       if (__debug_mode)
          dbg_printf ('content=[%s]', string_output_string (content));
        xt := xtree_doc (content);
        query := charset_recode (xpath_eval (ns_decl||'string (/soap:Envelope/soap:Body/sp:query-request/query)', xt), '_WIDE_', 'UTF-8');
@@ -2620,7 +2620,7 @@ host_found:
   state := '00000';
   metas := null;
   rset := null;
-  if (registry_get ('__sparql_endpoint_debug') = '1')
+  if (__debug_mode)
     dbg_printf ('query=[%s]', full_query);
 
   declare sc_max int;
@@ -2689,7 +2689,7 @@ host_found:
     {
       declare state2, msg2 varchar;
       state2 := '00000';
-      exec ('isnull (sparql_to_sql_text (?))', state2, msg2, vector (full_query));
+      exec ('isnull (sparql_to_sql_text (''define sql:big-data-const 0 '' || ?))', state2, msg2, vector (full_query));
       if (state2 <> '00000')
         {
           DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
