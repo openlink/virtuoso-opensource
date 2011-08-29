@@ -89,6 +89,12 @@
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+					<opl:providedBy>
+						<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+							<foaf:name>Google Buzz</foaf:name>
+							<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+						</foaf:Organization>
+					</opl:providedBy>				
 			<rdf:type rdf:resource="&foaf;Person"/>
 			<rdfs:label>
 				<xsl:value-of select="displayName"/>
@@ -102,7 +108,7 @@
 			<sioc:link rdf:resource="{profileUrl}" />			
 			<foaf:depiction rdf:resource="{thumbnailUrl}"/>			
 			<xsl:for-each select="urls">
-				<rdfs:seeAlso rdf:resource="{value}"/>
+						<foaf:onlineAccount rdf:resource="{value}"/>
 			</xsl:for-each>
 			<xsl:for-each select="photos">
 				<foaf:depiction rdf:resource="{value}"/>
@@ -110,6 +116,12 @@
 			<xsl:for-each select="organizations">
 				<cv:employedIn>
 					<cv:Company>
+								<opl:providedBy>
+									<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+										<foaf:name>Google Buzz</foaf:name>
+										<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+									</foaf:Organization>
+								</opl:providedBy>				
 						<xsl:attribute name="rdf:about">
 							<xsl:value-of select="vi:proxyIRI($baseUri, '', name )" />
 						</xsl:attribute>
@@ -147,6 +159,12 @@
 			</rdf:Description>
 			<xsl:if test="$action = 'buzz'">
 				<rdf:Description rdf:about="{$resourceURL}">
+					<opl:providedBy>
+						<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+							<foaf:name>Google Buzz</foaf:name>
+							<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+						</foaf:Organization>
+					</opl:providedBy>				
 					<rdf:type rdf:resource="&sioct;MessageBoard"/>
 					<rdfs:label>
 						<xsl:value-of select="title"/>
@@ -160,6 +178,12 @@
 					<xsl:for-each select="entry">
 						<sioc:container_of>
 							<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', id)}">
+								<opl:providedBy>
+									<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+										<foaf:name>Google Buzz</foaf:name>
+										<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+									</foaf:Organization>
+								</opl:providedBy>				
 								<rdf:type rdf:resource="&sioct;BoardPost"/>
 								<sioc:has_container rdf:resource="{$resourceURL}"/>
 								<rdfs:label>
@@ -177,6 +201,12 @@
 								<sioc:link rdf:resource="{link[@rel='alternate']/@href}" />
 								<dcterms:creator>
 									<foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', author/poco:id)}">
+										<opl:providedBy>
+											<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+												<foaf:name>Google Buzz</foaf:name>
+												<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+											</foaf:Organization>
+										</opl:providedBy>				
 										<rdfs:label>
 											<xsl:value-of select="author/name"/>
 										</rdfs:label>
@@ -195,6 +225,12 @@
 								<xsl:for-each select="activity:object/buzz:attachment">
 									<sioc:attachment>
 										<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat(../../id, '_attachment_', position()))}">
+											<opl:providedBy>
+												<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+													<foaf:name>Google Buzz</foaf:name>
+													<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+												</foaf:Organization>
+											</opl:providedBy>				
 											<rdf:type rdf:resource="&sioc;Item"/>
 											<xsl:if test="string-length(title) &gt; 0">
 												<rdfs:label>
@@ -241,10 +277,22 @@
 			<xsl:if test="$action = 'following'">
 				<rdf:Description rdf:about="{$resourceURL}">
 					<rdf:type rdf:resource="&foaf;Person"/>
+					<opl:providedBy>
+						<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+							<foaf:name>Google Buzz</foaf:name>
+							<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+						</foaf:Organization>
+					</opl:providedBy>				
 					<xsl:for-each select="entry">
 						<sioc:subscriber_of rdf:resource="{vi:proxyIRI($baseUri, '', concat('following_', id))}"/>
 						<sioc:follows>
 							<foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', concat('following_', id))}">
+								<opl:providedBy>
+									<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+										<foaf:name>Google Buzz</foaf:name>
+										<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+									</foaf:Organization>
+								</opl:providedBy>				
 								<rdfs:label>
 									<xsl:value-of select="displayName"/>
 								</rdfs:label>
@@ -265,6 +313,12 @@
 					<xsl:for-each select="entry">
 						<sioc:has_subscriber>
 							<foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', concat('follower_', id))}">
+								<opl:providedBy>
+									<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+										<foaf:name>Google Buzz</foaf:name>
+										<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+									</foaf:Organization>
+								</opl:providedBy>				
 								<sioc:follows rdf:resource="{$resourceURL}"/>
 								<rdfs:label>
 									<xsl:value-of select="displayName"/>
@@ -297,6 +351,12 @@
 			</rdf:Description>
 			<xsl:if test="$action = 'photos'">
 				<rdf:Description rdf:about="{$resourceURL}">
+					<opl:providedBy>
+						<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+							<foaf:name>Google Buzz</foaf:name>
+							<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+						</foaf:Organization>
+					</opl:providedBy>				
 					<rdf:type rdf:resource="&sioct;ImageGallery" />
 					<rdfs:label>Collection of photos</rdfs:label>
 					<dc:title>Collection of photos</dc:title>
@@ -304,6 +364,12 @@
 						<sioc:container_of>
 							<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('album_', id))}">
 								<rdf:type rdf:resource="&sioct;ImageGallery" />							
+								<opl:providedBy>
+									<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+										<foaf:name>Google Buzz</foaf:name>
+										<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+									</foaf:Organization>
+								</opl:providedBy>				
 								<rdfs:label>
 									<xsl:value-of select="title"/>
 								</rdfs:label>
@@ -318,6 +384,12 @@
 								</dcterms:modified>
 								<dcterms:creator>
 									<foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', owner/poco:id)}">
+										<opl:providedBy>
+											<foaf:Organization rdf:about="http://www.google.com/buzz#this">
+												<foaf:name>Google Buzz</foaf:name>
+												<foaf:homepage rdf:resource="http://www.google.com/buzz"/>
+											</foaf:Organization>
+										</opl:providedBy>				
 										<rdfs:label>
 											<xsl:value-of select="owner/name"/>
 										</rdfs:label>

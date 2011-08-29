@@ -133,7 +133,11 @@
 			<bibo:uri rdf:resource="{url}" />
 			<sioc:link rdf:resource="{url}" />
 			<foaf:depiction rdf:resource="{icon}"/>
-			<review:rating><xsl:value-of select="rating"/></review:rating>
+			<xsl:if test="string-length(rating) &gt; 0">
+				<review:rating>
+					<xsl:value-of select="rating"/>
+				</review:rating>
+			</xsl:if>
 			<xsl:for-each select="type">
 				<sioc:topic rdf:resource="{vi:dbpIRI ($baseUri, .)}"/>
 			</xsl:for-each>

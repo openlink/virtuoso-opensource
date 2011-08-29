@@ -71,6 +71,22 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hrecipe')}" />
       </rdf:Description>
       <dv:Recipe rdf:about="{vi:proxyIRI ($baseUri, '', 'hrecipe')}">
+				<opl:providedBy>
+					<xsl:variable name="home1" select="substring-after($baseUri, '//')"/>
+					<xsl:variable name="home2" select="substring-before($home1, '/')"/>
+					<xsl:variable name="home" select="concat('http://', $home2)"/>
+					<xsl:if test="string-length($home) &lt; 8">
+						<xsl:variable name="home2" select="$baseUri"/>
+						<xsl:variable name="home" select="$baseUri"/>
+					</xsl:if>
+					<foaf:Organization rdf:about="{concat($home, '#this')}">
+						<foaf:name>
+							<xsl:value-of select="$home2" />
+						</foaf:name>
+						<foaf:homepage rdf:resource="{$home}"/>
+					</foaf:Organization>
+				</opl:providedBy>
+			
 	<foaf:page rdf:resource="{$baseUri}"/>
 				<wdrs:describedby rdf:resource="{$resourceURL}"/>
         <xsl:apply-templates mode="extract-recipe" />
