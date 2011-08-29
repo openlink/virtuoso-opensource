@@ -1101,9 +1101,9 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	var cnt = self.parent.data.triples.length;
 
 	if (cnt > self.options.limit) {
-	    var note = new OAT.Notify();
+	    var note = new OAT.Notify(false, {notifyType: 2});
 	    var msg = "Note: Display limited to " + self.options.limit + " triples."
-	    note.send (msg,{delayIn:10,width:350,height:50,timeout:5000});
+	    note.send (msg,{delayIn:10,timeout:5000});
 	    cnt = self.options.limit;
 	}
 
@@ -1825,9 +1825,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	function tryList() {
 	    if (!self.pointListLock && self.map_loaded) {
 		if (!self.pointList.length()) {
-		    var note = new OAT.Notify();
+		    var note = new OAT.Notify (false, {notifyType: 2});
 		    var msg = "Current data set contains nothing that could be displayed on the map.";
-		    note.send(msg);
+		    note.send(msg, {timeout: 4000});
 		    OAT.MSG.send (self, "MAP_NOTHING_TO_SHOW", false);
 		}
 		self.map.optimalPosition(self.pointList.makePointsArray(false));
@@ -1953,7 +1953,7 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	if (!uris.length) {
 	    var note = new OAT.Notify();
 	    var msg = "Current data set contains nothing that could be displayed on the timeline.";
-	    note.send(msg);
+	    note.send(msg, {timeout: 4000});
 	}
     }
 }

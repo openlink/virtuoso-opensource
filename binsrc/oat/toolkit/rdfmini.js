@@ -32,8 +32,10 @@ OAT.RDFMini = function(div,optObj) {
 		showSearch:true,
 		imagePath:OAT.Preferences.imagePath,
 	endpoint:"/sparql?query=",
-	store: false
+	store: false,
+	sel_ctr: false // optional place view selector in custom place
 	}
+
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 
 	this.parent = $(div);
@@ -104,7 +106,13 @@ OAT.RDFMini = function(div,optObj) {
 			OAT.Event.attach(s,"change",self.redraw);
 			self.select = s;
 
-	    var sel_ctr = OAT.Dom.create("div",{className:"rdfmini_view_sel_ctr"});
+	    var sel_ctr;
+
+	    if (!self.options.sel_ctr) 
+		sel_ctr = OAT.Dom.create("div",{className:"rdfmini_view_sel_ctr"});
+	    else
+		sel_ctr = self.options.self_ctr;
+
 	    var sel_lbl = OAT.Dom.create("label");
 
 	    OAT.Dom.append([self.parent,sel_ctr],[sel_ctr,sel_lbl,s]);
