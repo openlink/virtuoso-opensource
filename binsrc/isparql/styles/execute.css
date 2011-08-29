@@ -196,3 +196,19 @@ div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
 #data_links {
   margin: 10px;
 }
+
+.notify_bar_ctr {
+  background-color: #577;
+  color: #eef;
+  z-index: 5000;
+}
+
+.notify_bar_inner {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.notify_content {
+  margin-left: 8px;
+  margin-right: 8px;
+}

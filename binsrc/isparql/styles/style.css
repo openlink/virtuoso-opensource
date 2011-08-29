@@ -280,7 +280,6 @@ ul#nav_bar {
 /* tabs */
 
 #tabs {
-	margin-top: 21px;
 	padding-top:10px;
 	list-style-type: none;
 	padding-bottom: 1px;
@@ -566,3 +565,19 @@ ul#tabgrph {
 }
 
 #qbe_query_div {margin-top: 5px;}
+
+.notify_bar_ctr {
+  background-color: #577;
+  color: #eef;
+  z-index: 10000;
+}
+
+.notify_bar_inner {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.notify_content {
+  margin-left: 8px;
+  margin-right: 8px;
+}
