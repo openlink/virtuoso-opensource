@@ -131,7 +131,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET', null, 'Google (Spreadsheets)');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('https://plus.google.com/.*',
+    values ('(http://plus.google.com/.*)|'||
+		'(https://plus.google.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE', null, 'Google (Profile)');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -363,7 +364,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('secret', '', 'session', ''));
+	values ('.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('app_secret', '', 'app_id', '', 'offline_access', '1'));
 
 -- Force an update to the Facebook cartridge name if its already registered
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '.*', RM_DESCRIPTION = 'Facebook (Graph API)'
@@ -3200,6 +3201,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     declare og_err, og_headers any;
     declare retries integer;
     declare og_timeout integer; -- Timeout when accessing Open Graph collections
+    declare http_new_origin_uri varchar;
 
     og_timeout := 60;
 
@@ -3209,12 +3211,13 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
         return 0;
     };
 
+    http_new_origin_uri := new_origin_uri;
     if (subseq (new_origin_uri, 0, 5) = 'https')
-      new_origin_uri := 'http' || subseq (new_origin_uri, 5);
+      http_new_origin_uri := 'http' || subseq (new_origin_uri, 5);
 
-    if (new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
+    if (http_new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
     {
-		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
+		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
 		id := rtrim(tmp[0], '&/');
 		pos := strchr(id, '&');
 		if (pos > 0)
@@ -3222,9 +3225,9 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
     }
-    else if (new_origin_uri like 'http://www.facebook.com/pages/%/%')
+    else if (http_new_origin_uri like 'http://www.facebook.com/pages/%/%')
     {
-		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/pages/%s/%s', 0);
+		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/pages/%s/%s', 0);
         id := rtrim(tmp[1], '&/');
         pos := strchr(id, '?');
         if (pos > 0)
@@ -3232,9 +3235,9 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
     }
-    else if (new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
+    else if (http_new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
     {
-		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
+		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
         id := rtrim(tmp[1], '&/');
         pos := strchr(id, '?');
         if (pos > 0)
@@ -3242,9 +3245,9 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
     }
-    else if (new_origin_uri like 'http://www.facebook.com/%')
+    else if (http_new_origin_uri like 'http://www.facebook.com/%')
     {
-		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/%s', 0);
+		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/%s', 0);
 		id := rtrim(tmp[0], '&/');
 		pos := strchr(id, '?');
 		if (pos > 0)
@@ -3252,9 +3255,9 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
     }
-    else if (new_origin_uri like 'http://graph.facebook.com/%')
+    else if (http_new_origin_uri like 'http://graph.facebook.com/%')
     {
-		tmp := sprintf_inverse (new_origin_uri, 'http://graph.facebook.com/%s', 0);
+		tmp := sprintf_inverse (http_new_origin_uri, 'http://graph.facebook.com/%s', 0);
 		id := rtrim(tmp[0], '&/');
 		pos := strchr(id, '?');
 		if (pos > 0)
@@ -5754,7 +5757,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLACES (in graph_iri varchar, in new_ori
 {
 	declare xd, host_part, xt, url, tmp, hdr, tree any;
 	declare pos int;
-	declare lat, lng, name, reference varchar;
+	declare lat, lng, name, reference, item_id, ret_body varchar;
 	declare exit handler for sqlstate '*'
     {
 		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -5762,9 +5765,27 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLACES (in graph_iri varchar, in new_ori
     };
 	if (length (_key) = 0)
 		return 0;
-	if (new_origin_uri like 'http://maps.google.com/maps/place?cid=%')
+	ret_body := _ret_body;
+	if (new_origin_uri like 'http://maps.google.com/maps?cid=%')
 	{
-		tmp := cast (xpath_eval ('//div[@id="pp-marker-json"]', xtree_doc (_ret_body, 2)) as varchar);
+		tmp := sprintf_inverse (new_origin_uri, 'http://maps.google.com/maps?cid=%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		url := concat('http://maps.google.com/maps/place?cid=', item_id);
+		ret_body := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+		if (length(ret_body) > 0)
+			goto next_procedure;
+		else
+			return 0;
+	}
+	else if (new_origin_uri like 'http://maps.google.com/maps/place?cid=%')
+	{
+next_procedure:	
+		tmp := cast (xpath_eval ('//div[@id="pp-marker-json"]', xtree_doc (ret_body, 2)) as varchar);
 		tmp := sprintf_inverse (tmp, '%s{lat:%s,lng:%s}%s,name:"%s"%s', 0);
 		lat := tmp[1];
 		lng := tmp[2];
@@ -5784,6 +5805,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLACES (in graph_iri varchar, in new_ori
 		xd := xtree_doc (tmp);
 		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_place2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
 		xd := serialize_to_UTF8_xml (xt);
+		RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 		DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 		return 1;
@@ -6522,17 +6544,20 @@ create procedure DB.DBA.RDF_LOAD_SEATGEEK (in graph_iri varchar, in new_origin_u
 
 create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-	declare xd, host_part, xt, url, tmp, hdr, exif any;
-	declare entity_id, email_, password_ varchar;
+	declare xd, host_part, xt, url, tmp, hdr, tree any;
+	declare entity_id, oauth_token varchar;
 	declare pos int;
 	declare exit handler for sqlstate '*'
 	{
 		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	email_ := get_keyword ('email', opts);
-	password_ := get_keyword ('password', opts);
-	if (( length (email_) * length (password_) ) = 0)
+	--email_ := get_keyword ('email', opts);
+	--password_ := get_keyword ('password', opts);
+	oauth_token := get_keyword ('oauth_token', opts);
+	--if (( length (email_) * length (password_) ) = 0)
+	--	return 0;
+	if ( length (oauth_token) = 0)
 		return 0;
 	if (new_origin_uri like 'http%://%foursquare.com/venue/%')
 	{
@@ -6541,7 +6566,7 @@ create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin
 		pos := strchr(entity_id, '/');
 		if (pos is not null)
 			entity_id := left(entity_id, pos);
-		url := sprintf('https://api.foursquare.com/v1/venue?vid=%s', entity_id);
+		url := sprintf('https://api.foursquare.com/v2/venues/%s?oauth_token=%s', entity_id, oauth_token);
 	}
 	else if (new_origin_uri like 'http%://%foursquare.com/user/%')
 	{
@@ -6550,7 +6575,7 @@ create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin
 		pos := strchr(entity_id, '/');
 		if (pos is not null)
 			entity_id := left(entity_id, pos);
-		url := sprintf('https://api.foursquare.com/v1/user?uid=%s', entity_id);
+		url := sprintf('https://api.foursquare.com/v2/users/%s?oauth_token=%s', entity_id, oauth_token);			
 	}
 	else if (new_origin_uri like 'http%://%foursquare.com/%')
 	{
@@ -6561,18 +6586,17 @@ create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin
 			entity_id := left(entity_id, pos);
 		if (entity_id = 'item')
 			return 0;
-		url := sprintf('https://api.foursquare.com/v1/user?twitter=%s', entity_id);
+		url := sprintf('https://api.foursquare.com/v2/users/search?twitter=%s&oauth_token=%s', entity_id, oauth_token);	
 	}
 	else
 		return 0;
-	declare bas, auth_header varchar;
-	bas := encode_base64 (concat(email_, ':', password_));
-    auth_header := 'Authorization: Basic '||bas;
-	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
-	if (hdr[0] not like 'HTTP/1._ 200 %')
-		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
-	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/foursquare2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'entity', entity_id));
+	--declare bas, auth_header varchar;
+	--bas := encode_base64 (concat(email_, ':', password_));
+    --auth_header := 'Authorization: Basic '||bas;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	tree := json_parse (tmp);
+	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/foursquare2rdf.xsl', xt, vector ('baseUri', new_origin_uri, 'entity', entity_id));
 	xd := serialize_to_UTF8_xml (xt);
 	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
