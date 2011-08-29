@@ -82,6 +82,14 @@ OAT.AJAX = {
 		return xhr;
 	},
 
+    HEAD:function(url,dta,callback,optObj) {
+	var options = OAT.AJAX.options(optObj);
+	var xhr = OAT.AJAX.init(url,callback,options);
+	xhr.open("HEAD",url,options.async,options.user,options.password);
+	OAT.AJAX.send(xhr,dta);
+	return xhr;
+    },
+    
     POST:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
