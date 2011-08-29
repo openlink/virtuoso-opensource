@@ -96,6 +96,7 @@ dv:photo rdfs:subPropertyOf virtrdf:image .
 <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> rdfs:subPropertyOf virtrdf:label .
 <http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name> rdfs:subPropertyOf virtrdf:label .
 <http://rdf.freebase.com/ns/common.topic.alias> rdfs:subPropertyOf virtrdf:label .
+<http://commontag.org/ns#label> rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');

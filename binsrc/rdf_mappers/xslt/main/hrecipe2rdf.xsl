@@ -71,6 +71,22 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hrecipe')}" />
       </rdf:Description>
       <dv:Recipe rdf:about="{vi:proxyIRI ($baseUri, '', 'hrecipe')}">
+				<opl:providedBy>
+					<xsl:variable name="home1" select="substring-after($baseUri, '//')"/>
+					<xsl:variable name="home2" select="substring-before($home1, '/')"/>
+					<xsl:variable name="home" select="concat('http://', $home2)"/>
+					<xsl:if test="string-length($home) &lt; 8">
+						<xsl:variable name="home2" select="$baseUri"/>
+						<xsl:variable name="home" select="$baseUri"/>
+					</xsl:if>
+					<foaf:Organization rdf:about="{concat($home, '#this')}">
+						<foaf:name>
+							<xsl:value-of select="$home2" />
+						</foaf:name>
+						<foaf:homepage rdf:resource="{$home}"/>
+					</foaf:Organization>
+				</opl:providedBy>
+			
 	<foaf:page rdf:resource="{$baseUri}"/>
 				<wdrs:describedby rdf:resource="{$resourceURL}"/>
         <xsl:apply-templates mode="extract-recipe" />
@@ -178,6 +194,13 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
     </xsl:variable>
     <!-- ============================================================ -->
     <xsl:if test="$fn != 0">
+			<xsl:variable name="is_author">
+				<xsl:call-template name="testclass">
+					<xsl:with-param name="class" select="../@class" />
+					<xsl:with-param name="val" select="'author'" />
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:if test="$is_author = 0">
       <dc:title>
         <xsl:value-of select="." />
       </dc:title>
@@ -185,6 +208,7 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
         <xsl:value-of select="." />
       </dv:name>
     </xsl:if>
+		</xsl:if>
 	
     <xsl:if test="$ingredient != 0">
 		<xsl:variable name="ing_name">

@@ -18,7 +18,7 @@
 <head>
   <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-  <title><?=fp_title?> - Sponge Your Social Profile</title>
+  <title><?=fp_title?> - Sponge Your Profile</title>
   <script type="text/javascript">
     var el_user_id;
     var el_about_sponge_uri;
@@ -39,7 +39,7 @@
       // TO DO - Check the entered user ID is valid
       if (user_id.length == 0)
       {
-        alert ('Please enter your ' + site_name + ' user ID');
+        alert ('Please enter your ' + site_name + ' ID');
         el_fb_ds_links_no_token.style.display = 'none';
         return false;
       }
@@ -58,6 +58,13 @@
           describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
           el_describe_sponge_uri.href = describe_href;
           break;
+        case 'Google+':
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/http\/twitter.com\/.*@Lookup@/, 
+                'https/plus.google.com/' + user_id + '?@Lookup@');
+          entity_uri = entity_uri.replace(/http\/twitter.com\/.*/, 'https/plus.google.com/' + user_id);
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
+          el_describe_sponge_uri.href = describe_href;
+          break;
       }
       el_about_sponge_uri.innerHTML = el_describe_sponge_uri.innerHTML = site_name + " ID: " + user_id;
       el_fb_ds_links_no_token.style.display = 'inline';
@@ -68,33 +75,21 @@
 <?vsp
   declare _host varchar;
   declare site_name varchar;
-  declare rm_hook varchar;
-  declare api_key_mandatory, api_key_missing integer;
+  declare rm_key varchar;
+  declare api_key_missing integer;
 
   site_name := http_param ('site');
   _host := registry_get ('URIQADefaultHost');
   if (is_http_ctx ()) _host := http_request_header(http_request_header (), 'Host', null, _host);
 
-  api_key_mandatory := 0;
   api_key_missing := 0;
-  rm_hook := '';
 
-  if (site_name = 'XXXX')
+  if (site_name = 'Google+')
   {
-    api_key_mandatory := 1;
-    rm_hook := 'DB.DBA.RDF_LOAD_YYYY';
-  }
-
-  if (api_key_mandatory)
-  {
-    declare rm_key varchar;
-    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = rm_hook);
-    if (rm_key is null)
+    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE');
+    if (length(rm_key) = 0)
       api_key_missing := 1;
   }
-
-    
-
 ?>
 </head>
 
@@ -119,6 +114,7 @@
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
         <a href= "sponger_architecture.vsp">Architecture</a> | 
         <a href= "sponger_setup.vsp">Sponger Setup</a> | 
         <a href= "examples.vsp">Live Sponger Examples</a> | 
@@ -155,8 +151,22 @@
 
   <form action="#" method="post">
     <div>
-      <label for="fld_user_id"><?=site_name?> username:&nbsp;</label><input type="text" maxlength="20" id="fld_user_id" name="fld_user_id" />
+<?vsp
+  if (site_name = 'Google+')
+    http (sprintf ('<label for="fld_user_id">Google+ ID*:&nbsp;</label>'));
+  else
+    http (sprintf ('<label for="fld_user_id">%s username:&nbsp;</label>', site_name));
+?>
+      <input type="text" maxlength="40" size="42" id="fld_user_id" name="fld_user_id" />
       <input type="submit" name="cmd_submit_FB_ID" id="cmd_submit_user_id" value="Submit" onclick="return build_sponge_links('<?=site_name?>', '<?=_host?>', '<?=entity_uri?>');"/>
+<?vsp
+  if (site_name = 'Google+')
+  {
+    http (sprintf ('<div style="font-size: 0.9em"><p/>*The highlighted part in the following URL shows a Google+ user ID:<br/>
+                   &nbsp;&nbsp;http://plus.google.com/<span style="color:gray">110272002170841199999</span>/...<br/> 
+                   View <a href="https://plus.google.com/u/0/me/about">your Google+ profile</a>, and copy the ID from your profile URL.</div>'));
+  }
+?>
     </div>
   </form>
 

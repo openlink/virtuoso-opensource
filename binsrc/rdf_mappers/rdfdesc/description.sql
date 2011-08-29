@@ -145,6 +145,14 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 	    }
 	}
     }
+   if (__tag of rdf_box = __tag (best_str))
+     {
+       __rdf_box_make_complete (best_str);
+       best_str := rdf_box_data (best_str);
+     }
+   if (not isstring (best_str))
+     best_str := cast (best_str as varchar);
+   best_str := cast (xtree_doc (best_str, 2) as varchar);
   return best_str;
 }
 ;
@@ -187,6 +195,35 @@ create procedure rdfdesc_label_1 (in _S any, in lines any := null)
    if (not isstring (label))
      label := cast (label as varchar);
     label := cast (xtree_doc (label, 2) as varchar);
+   return label;
+}
+;
+
+create procedure rdfdesc_label_get (inout data any, in langs any)
+{
+  declare q, best_q, label any;
+  label := '';
+   if (length (data))
+     {
+       best_q := 0;
+       for (declare i,l int, i := 0, l := length (data); i < l; i := i + 1)
+         {
+	  q := rdfdesc_get_lang_by_q (langs, data[i][1]);
+          if (q > best_q)
+	    {
+	      label := data[i][0];
+	      best_q := q;
+	    }
+	 }
+     }
+   if (__tag of rdf_box = __tag (label))
+     {
+       __rdf_box_make_complete (label);
+       label := rdf_box_data (label);
+     }
+   if (not isstring (label))
+     label := cast (label as varchar);
+   label := cast (xtree_doc (label, 2) as varchar);
    return label;
 }
 ;

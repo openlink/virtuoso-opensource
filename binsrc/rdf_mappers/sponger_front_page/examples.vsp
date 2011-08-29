@@ -39,6 +39,7 @@
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
         <a href="sponger_architecture.vsp">Architecture</a> | 
         <a href="sponger_setup.vsp">Sponger Setup</a> | 
         <a href="examples.vsp">Live Sponger Examples</a> | 

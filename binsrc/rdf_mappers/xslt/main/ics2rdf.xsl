@@ -41,7 +41,6 @@
     xmlns:sioc="&sioc;"
     xmlns     ="http://www.w3.org/2002/12/cal/ical#"
     xmlns:vi   ="http://www.openlinksw.com/virtuoso/xslt/"
-    xmlns:xml   ="xml"
     xmlns:rdfs="&rdfs;"    
     version="1.0"
     xmlns:owl="http://www.w3.org/2002/07/owl#"

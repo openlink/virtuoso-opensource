@@ -584,7 +584,7 @@
       <v:homeAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
 					<rdfs:label>
-						<xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/>
+						<xsl:value-of select="vi:trim(concat($fields/v:extended-address, ', ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/>
 					</rdfs:label>
       </v:homeAdr>
     </xsl:when>
@@ -592,7 +592,7 @@
       <v:workAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
 					<rdfs:label>
-						<xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/>
+						<xsl:value-of select="vi:trim(concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/>
 					</rdfs:label>
       </v:workAdr>
     </xsl:when>
@@ -601,10 +601,10 @@
 					<rdf:Description>
 	<xsl:copy-of select="$fields"/>
 						<rdfs:label>
-							<xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/>
+							<xsl:value-of select="vi:trim(concat($fields/v:extended-address, ', ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/>
 						</rdfs:label>
 						<xsl:attribute name="rdf:about">
-							<xsl:value-of select="vi:proxyIRI($baseUri, '', replace(., ' ', ''))" />
+							<xsl:value-of select="vi:proxyIRI($baseUri, '', concat('adr_', position()))" />
 						</xsl:attribute>
 					</rdf:Description>
       </v:adr>

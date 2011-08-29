@@ -123,7 +123,8 @@
 	    arr[1] := nhost;
 	    arr[2] := npath;
 	    
-	    if(lower(arr[0]) in ('acct', 'mailto')) {
+	    if (lower(arr[0]) in ('acct', 'mailto')) 
+	      {
 	      arr[2]:=arr[1];
 	      arr[1]:='';
       }
@@ -143,8 +144,10 @@
 	    arr[2] := npath;
 	    
 	    if(sch in ('acct', 'mailto'))
+	      {
 	      arr[2]:=arr[1];
 	      arr[1]:='';
+	      }
 	    
 	    _G := DB.DBA.vspx_uri_compose (arr);
 	    --do_sponge := 0;
@@ -241,8 +244,8 @@
    iri_type := rdfdesc_type (_G, _S, iri_uri);
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
-	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-   if (length (data)) _subject := data[0][0];
+	select ?o lang(?o) where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+   if (length (data)) _subject := rdfdesc_label_get (data, http_request_header_full (lines, 'Accept-Language', 'en'));
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
    rdfdesc_links_hdr (_S, rdf_link);
