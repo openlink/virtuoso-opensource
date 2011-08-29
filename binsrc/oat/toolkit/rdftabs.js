@@ -1101,9 +1101,9 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	var cnt = self.parent.data.triples.length;
 
 	if (cnt > self.options.limit) {
-	    var note = new OAT.Notify();
+	    var note = new OAT.Notify(false, {notifyType: 2});
 	    var msg = "Note: Display limited to " + self.options.limit + " triples."
-	    note.send (msg,{delayIn:10,width:350,height:50,timeout:5000});
+	    note.send (msg,{delayIn:10,timeout:5000});
 	    cnt = self.options.limit;
 	}
 
@@ -1366,7 +1366,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/latitude", 
 						     "http://www.w3.org/2006/vcard/ns#latitude",
 						     "http://www.w3.org/2001/vcard-rdf/3.0#latitude",
-						     "http://dbpedia.org/property/lat"]);
+						     "http://dbpedia.org/property/lat",
+						     "http://www.openlinksw.com/schemas/zillow#latitude"]);
 
     this.lonProperties    = OAT.IRIDB.insertIRIArr (["http://www.w3.org/2003/01/geo/lng",
 						     "http://www.w3.org/2003/01/geo/wgs84_pos#long",
@@ -1375,7 +1376,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/longitude",
 						     "http://www.w3.org/2006/vcard/ns#longitude",
 						     "http://www.w3.org/2001/vcard-rdf/3.0#longitude",
-						     "http://dbpedia.org/property/long"]);
+						     "http://dbpedia.org/property/long",
+						     "http://www.openlinksw.com/schemas/zillow#longitude"]);
 
     this.lookupProperties = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/name",
 						     "http://xmlns.com/foaf/0.1/location"]); /* interesting to be put into lookup pin */
@@ -1454,8 +1456,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		if (self.keyProperties.indexOf(p) != -1) { 
 		    if (pred[0] instanceof OAT.RDFAtom && pred[0].isLit())
 		    pointResource = pred[0].getValue(); 
-		    else
-			return; // IRI reference, will be handled later
 		} /* resource containing geo coordinates */
 		if (self.locProperties.indexOf(p) != -1) { 
 		    locValue = pred[0].getValue(); 
@@ -1825,9 +1825,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	function tryList() {
 	    if (!self.pointListLock && self.map_loaded) {
 		if (!self.pointList.length()) {
-		    var note = new OAT.Notify();
+		    var note = new OAT.Notify (false, {notifyType: 2});
 		    var msg = "Current data set contains nothing that could be displayed on the map.";
-		    note.send(msg);
+		    note.send(msg, {timeout: 4000});
 		    OAT.MSG.send (self, "MAP_NOTHING_TO_SHOW", false);
 		}
 		self.map.optimalPosition(self.pointList.makePointsArray(false));
@@ -1953,7 +1953,7 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	if (!uris.length) {
 	    var note = new OAT.Notify();
 	    var msg = "Current data set contains nothing that could be displayed on the timeline.";
-	    note.send(msg);
+	    note.send(msg, {timeout: 4000});
 	}
     }
 }
