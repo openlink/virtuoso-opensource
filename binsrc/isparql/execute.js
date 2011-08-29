@@ -201,6 +201,7 @@ var QueryExec = function(optObj) {
 		namedGraphs:[],
 		sponge:false,
 	maxrows:false,
+		timeout:false,
 	sourceQuery:false /* before macro expansion */
     };
 
@@ -212,6 +213,27 @@ var QueryExec = function(optObj) {
     	this.miniplnk = false;
     	this.mRDFCtr = false;
 	this.anchor_pref_ctr = false;
+
+	
+	this.makeAnchorPrefs = function () {
+		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
+		var anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
+		anchor_label.innerHTML = "Dereferencing:";
+		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
+		anchor_pref_sel.options.add (new Option ("SPARQL Describe",0));
+		anchor_pref_sel.options.add (new Option ("SELECT IRI as S or O",1));
+		anchor_pref_sel.options.add (new Option ("GET Page",2));
+		anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
+		anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
+
+		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
+			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
+		});
+
+        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
+
+		return anchor_pref_ctr;
+	}
 
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
@@ -228,32 +250,19 @@ var QueryExec = function(optObj) {
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
 		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
 
-		self.anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
-		self.anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
-		self.anchor_label.innerHTML = "Dereferencing:";
-		self.anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
-		self.anchor_pref_sel.options.add (new Option ("SPARQL Describe",0));
-		self.anchor_pref_sel.options.add (new Option ("SELECT IRI as S or O",1));
-		self.anchor_pref_sel.options.add (new Option ("GET Page",2));
-		self.anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
-		self.anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
-
-		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
-			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
-		});
-
-        OAT.Dom.append ([self.anchor_pref_ctr, self.anchor_label, self.anchor_pref_sel]);
-
 		for (var i=0;i<tabs1.length;i++) {
 			var li = OAT.Dom.create("li");
 			self.dom.ul.appendChild(li);
 			li.innerHTML = tabs1[i];
 			self.tab.add(li,tabs2[i]);
 		}
+
+		self.deref_prefs = self.makeAnchorPrefs();
+
 		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
 	    OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
-			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]);
+			OAT.Dom.append([self.options.div,self.dom.ul,self.deref_prefs,self.dom.tab]); 
 		}
 		self.initNav();
 
@@ -367,6 +376,7 @@ var QueryExec = function(optObj) {
 		cache.opts.endpoint != opts.endpoint || 
 		cache.opts.defaultGraph != opts.defaultGraph ||
 	        cache.opts.maxrows != opts.maxrows ||
+				cache.opts.timeout != opts.timeout ||
 	        cache.opts.namedGraphs != opts.namedGraphs ||
 	        cache.opts.pragmas != opts.pragmas);
     };
@@ -374,8 +384,15 @@ var QueryExec = function(optObj) {
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
 
-		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
-	if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { paramsObj["maxrows"] = opts.maxrows; }
+		if (opts.defaultGraph && !opts.query.match(/from *</i)) { 
+          paramsObj["default-graph-uri"] = opts.defaultGraph; 
+        }
+
+		if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { 
+          paramsObj["maxrows"] = opts.maxrows; 
+        }
+
+		if (opts.timeout) { paramsObj["timeout"] = opts.timeout; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var pragmas = [];
@@ -433,7 +450,6 @@ var QueryExec = function(optObj) {
 			return iSPARQL.ResultType.ERROR;
 		}
     };
-	
     //
     // Cache incoming result set or graph
     //
@@ -515,6 +531,7 @@ var QueryExec = function(optObj) {
 				"//" + nloca.host + "/sparql/?query=" + encodeURIComponent(opts.query);
 			
 			resUriBase += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+			resUriBase += "&timeout=" + (opts.timeout ? opts.timeout : "");
 			resUriBase += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 			resUriBase += "&format=";
 
@@ -551,6 +568,7 @@ var QueryExec = function(optObj) {
 
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		xparm += "&view=" + opts.view;
 		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
 		var plnk_a = OAT.Dom.create("a");
@@ -581,6 +599,7 @@ var QueryExec = function(optObj) {
 
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 		xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		
 		plnk.target = "_blank";
 
@@ -766,6 +785,7 @@ var QueryExec = function(optObj) {
 	    "/sparql/?query=" + encodeURIComponent(opts.query) + 
 	    "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 	xparm += "&format=text/cxml";
 	a.href = document.location.protocol + '//' + document.location.host + 
@@ -792,6 +812,7 @@ var QueryExec = function(optObj) {
 
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 		xparm += "&view=" + opts.view;
 		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
@@ -816,7 +837,7 @@ var QueryExec = function(optObj) {
 
 		self.makeExecPermalink (self.dom.plnk_ctr);
 
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr, self.anchor_pref_ctr]);
+		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr]);
 
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
@@ -1005,6 +1026,7 @@ var QueryExec = function(optObj) {
 		iSPARQL.dataObj.query        = item.opts.query;
 		iSPARQL.dataObj.defaultGraph = item.opts.defaultGraph;
 		iSPARQL.dataObj.maxrows      = item.opts.maxrows;
+		iSPARQL.dataObj.timeout      = item.opts.timeout;
 		iSPARQL.dataObj.namedGraphs  = item.opts.namedGraphs;
 		iSPARQL.dataObj.pragmas      = item.opts.pragmas;
 		iSPARQL.dataObj.endpoint     = item.opts.endpoint;
@@ -1051,6 +1073,7 @@ var QueryExec = function(optObj) {
 		a.innerHTML = "Query Permalink";
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 		xparm += "&view=" + opts.view;
 	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
@@ -1159,7 +1182,7 @@ var QueryExec = function(optObj) {
 				item.mini.redraw();
 				
 				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
-				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, self.anchor_pref_ctr, mini_c]);
+				OAT.Dom.append ([item.dom.result_c, self.plnk_ctr, mini_c]);
 				
 				var ua = navigator.userAgent;
 				

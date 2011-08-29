@@ -241,8 +241,7 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
           </div> <!-- #qbe_props -->
           <div id="schemas"> <!#-- schemas (sub)window -->
 	    <div id="schemas_tree_container">
-	      <ul id="schemas_tree">
-	      </ul>
+	      <ul id="schemas_tree"></ul>
 	    </div>
 	    <div id="schema_div"></div>
 	    <button id="schema_import">Import</button>
@@ -389,6 +388,8 @@ WHERE     {	?thing a ?type;
 	  </div> <!-- #query_div -->
         <div id="res_area"></div> <!-- #res_area -->
       </div> <!-- page_query -->
+      <div id="queryopts_outer">
+        <div id="queryopts_ctr">
       <fieldset class="queryopts" id="queryopts">
 	  	<legend>Query options</legend>
 	  	<div id="qry_type_ctls">
@@ -405,9 +406,16 @@ WHERE     {	?thing a ?type;
 	  	  </select>
         &nbsp;|&nbsp;
 	  	</div> <!-- qry_type_ctls -->
+	    <div class="fm_rw">
 	  	<label for="maxrows">Result size limit: </label>
         <input type="text" id="maxrows" size="4"/> rows
-        <span class="maxrows_expln">Leave empty for server maximum setting.</span>
+              <span class="expln">Leave empty for server maximum setting.</span>
+            </div>
+            <div class="fm_rw" id="qry_tout_ctls">
+              <label for="timeout">Query timeout: </label>
+	      <input type="text" id="timeout" size="4" />
+              <span class="expln" id="tout_expln">msec - leave blank for server default, or when not querying a Virtuoso endpoint.</span>
+	    </div>
       </fieldset>
         <div class="controls" id="controls">
         <h3 id="endpoint_opts_toggler" class="ctl_tgl">
@@ -418,13 +426,13 @@ WHERE     {	?thing a ?type;
               <table>
                 <tr>
 	          <td class="cachingOpts" style="padding-right: 8px;">
-		    <label for="cachingSchemesCtl" title="(re)set get:soft pragma value">Caching Scheme</label><!-- XXX -->
+		    <label for="cachingSchemesCtl" title="(re)set get:soft pragma value">Caching Scheme:</label><!-- XXX -->
 		    <select id="cachingSchemesCtl">
                       <option value="none">Don't Sponge</option>
 		      <option value="replacing">None (replacing)</option>
 		      <option value="soft">Automatic (soft)</option>
 		    </select><br/>
-		    <label for="nodesRetrievedCtl" title="(re)set input:grab-limit pragma value">Limit Sponging To</label>
+		    <label for="nodesRetrievedCtl" title="(re)set input:grab-limit pragma value">Limit Sponging To:</label>
 		    <select id="nodesRetrievedCtl"> <!-- XXX should be text input -->
 		      <option value="">Default</option>
 		      <option value="100">100</option>
@@ -433,7 +441,7 @@ WHERE     {	?thing a ?type;
 		      <option value="400">400</option>
 		      <option value="500">500</option>
 		    </select><label class="unit">nodes</label><br/>
-		    <label for="nodesCrawledCtl" title="(re)set input:grab-depth pragma value">Sponge No Deeper Than</label>
+		    <label for="nodesCrawledCtl" title="(re)set input:grab-depth pragma value">Sponge No Deeper Than:</label>
                     <select id="nodesCrawledCtl">
 		      <option value="">Default</option>
 		      <option value="1">1</option>
@@ -457,7 +465,7 @@ WHERE     {	?thing a ?type;
 			   checked="checked"/>
 		    <label for="pathTravSchemesDefault"
 		           id="pathTravSchemesDefaultLabel"
-			   class="ckb">Server Default</label><br/> <!-- XXX should have list to show -->
+			   class="ckb">Server Default:</label><br/> <!-- XXX should have list to show -->
 
 		    <input type="radio"
 		           name="pathTraversalSchemes"
@@ -518,6 +526,9 @@ WHERE     {	?thing a ?type;
           </fieldset>
         </div> <!-- #mdopts_ctr -->
       </div> <!-- #queryMetaData -->
+        <br style="clear:both;" />
+        </div> <!-- queryopts_ctr -->
+      </div> <!-- #queryopts_outer -->
 	<div class="main_col_page" id="page_results"></div>
         <div id="foot">
 	      <div id="data_links" style="display:none">Raw Linked Data formats: 
@@ -566,7 +577,7 @@ WHERE     {	?thing a ?type;
       <label for="auth_dlg_user">Username:</label>
       <input type="text" id="auth_dlg_user" value="demo" /><br/>
       <label for="auth_dlg_pass" class="align">Password:</label>
-      <input type="password" id="auth_dlg_pass" value="demo"><br/>
+      <input type="password" id="auth_dlg_pass" value="demo" /><br/>
       <!--input type="checkbox" id="auth_dlg_save"><label class="ckb">Save in browser</label-->
       <div id="auth_dlg_error"></div>
       <div id="auth_buttons"><button id="auth_login_b">Login</button><button id="auth_cancel_b">Cancel</button></div>
@@ -675,6 +686,10 @@ WHERE     {	?thing a ?type;
       <div id="prefs_tab_services_ct" class="prefs_tab_ctr">
         <h2>Services</h2>
 		<div id="endpoint"><label for="service">SPARQL Endpoint:</label></div> <!-- endpoint combo box container -->
+	<!--div id="episvirtctr">
+	  <input type="checkbox" id="episvirt" checked="true" />
+	  <label class="ckb" for="episvirt">Use Virtuoso-specific options</label>
+        </div-->
         <div id="shortener">
 		  <input type="checkbox" id="shortener_ep_ckb">
 		  <label for="shortener_ep_ckb" class="ckb">Shorten URIs using:<br/><span class="expln">Virtuoso curi endpoint</span></label><input id="shortener_ep"></div>
