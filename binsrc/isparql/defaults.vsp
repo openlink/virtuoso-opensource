@@ -82,6 +82,9 @@
   if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
       pivot_installed := 'true';
 
+  declare isparql_version varchar;
+  isparql_version := DB.DBA.VAD_CHECK_VERSION('iSPARQL');
+
   declare curi_installed varchar;
   curi_installed := 'false';
 
@@ -116,6 +119,7 @@
    "curiInstalled":<?= curi_installed ?>,
    "rdfMappersInstalled":<?= rdf_mappers_installed ?>,
    "setup_done":<?= setup_done ?>,
+   "isparql_version":"<?= isparql_version ?>",
    "namespaces":[
 <?vsp
   declare _fst integer;

@@ -1498,7 +1498,7 @@ iSPARQL.Common = {
 							  OAT.MSG.send (self,"iSPARQL_USER_PREF_CHANGE",false);
 						  });
 
-		if (iSPARQL.serverConn.isConnected) {
+/*		if (iSPARQL.serverConn.isConnected) {
 	if (iSPARQL.serverConn.isVirtuoso) {
 	    $('about_version').innerHTML = iSPARQL.serverConn.serverVersion;
 	    $('about_date').innerHTML = iSPARQL.serverConn.serverBuildDate;
@@ -1511,11 +1511,16 @@ iSPARQL.Common = {
 		else {
 			$('about_version').innerHTML = 'unknown';
 			$('about_date').innerHTML = 'unknown';
-		}
+		} */
 
+        $('about_version').innerHTML = iSPARQL.Settings.isparql_version;
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$('throbber').src = OAT.Preferences.imagePath + "Dav_throbber.gif";
+
+		var iridbstats = OAT.IRIDB.getStats();
+		$('iridb_stats').innerHTML = iridbstats.iriCount;
+
 
 		// FIXME: only shows triple_count, etc. stats on the latest rdfstore.
 
@@ -1714,8 +1719,7 @@ iSPARQL.Common = {
 	// Help menu dismiss button
 
 	/* build info */
-	$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
-
+//		$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
 		$('default-graph-uri').value = iSPARQL.Settings.graph;
 		$('query').value = iSPARQL.Settings.query;
