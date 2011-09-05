@@ -1513,6 +1513,10 @@ iSPARQL.Common = {
 			$('about_date').innerHTML = 'unknown';
 		} */
 
+		if (iSPARQL.Settings.sparqlCxmlInstalled) {
+			OAT.Dom.show ('cxml_raw_lnk_c');
+		}
+
         $('about_version').innerHTML = iSPARQL.Settings.isparql_version;
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;

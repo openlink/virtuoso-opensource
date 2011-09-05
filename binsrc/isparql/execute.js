@@ -212,11 +212,10 @@ var QueryExec = function(optObj) {
 	this.mini = false;
     	this.miniplnk = false;
     	this.mRDFCtr = false;
-	this.anchor_pref_ctr = false;
-
+	this.anchor_pref_c = false;
 	
 	this.makeAnchorPrefs = function () {
-		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
+		var anchor_pref_c = OAT.Dom.create("div", {className: "anchor_pref_c"});
 		var anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
 		anchor_label.innerHTML = "Dereferencing:";
 		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
@@ -226,27 +225,29 @@ var QueryExec = function(optObj) {
 		anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
 		anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
 
-		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
+		OAT.Event.attach(anchor_pref_sel, 'change', function () {
 			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
 		});
 
-        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
+        OAT.Dom.append ([anchor_pref_c, anchor_label, anchor_pref_sel]);
 
-		return anchor_pref_ctr;
+		return anchor_pref_c;
 	}
 
 	this.init = function() {
-		this.dom.result = OAT.Dom.create("div");
+		this.dom.result =   OAT.Dom.create("div", {className:'ep_result'});
 		this.dom.request = OAT.Dom.create("div", {className:'ep_request'}); 
 		this.dom.response = OAT.Dom.create("pre",{className:'ep_response'});
-		this.dom.query = OAT.Dom.create("pre");
+		this.dom.query =    OAT.Dom.create("pre", {className:'ep_query'});
+
 //	this.dom.select = OAT.Dom.create("select");
 //	OAT.Dom.option("Machine-readable","1",this.dom.select);
 //	OAT.Dom.option("Human-readable","0",this.dom.select);
 
 		var tabs1 = ["Result","SPARQL Params","Response","Query"];
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
-		self.dom.tab = OAT.Dom.create("div",{padding:"5px",backgroundColor:"#fff"});
+
+		self.dom.tab = OAT.Dom.create ("div",{className:'res_tab_ctr',id: 'res_tab_ctr'});
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
 		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
 
@@ -257,12 +258,10 @@ var QueryExec = function(optObj) {
 			self.tab.add(li,tabs2[i]);
 		}
 
-		self.deref_prefs = self.makeAnchorPrefs();
-
 		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
 	    OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
-			OAT.Dom.append([self.options.div,self.dom.ul,self.deref_prefs,self.dom.tab]); 
+			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]); 
 		}
 		self.initNav();
 
@@ -487,6 +486,15 @@ var QueryExec = function(optObj) {
 			cacheItem.dom.request_c  = OAT.Dom.create ("div",{className: "request_c"});
 			cacheItem.dom.response_c = OAT.Dom.create ("div",{className: "response_c"});
 			
+     	cacheItem.dom.result_opts_c = OAT.Dom.create ("div",{className:"result_opts_c"}); 
+		cacheItem.dom.plnk_c = OAT.Dom.create("div", {className: "result_plnk_c"});
+
+		cacheItem.dom.deref_prefs = self.makeAnchorPrefs();
+		var clrfix = OAT.Dom.create ("div", {className: "clearfix"})
+		OAT.Dom.append([cacheItem.dom.result_opts_c, cacheItem.dom.plnk_c, cacheItem.dom.deref_prefs], 
+					   [cacheItem.dom.result_c, cacheItem.dom.result_opts_c, clrfix]);
+
+
 		var req_href;
 		
 		// FIXME (ghard) this is wrong
@@ -830,14 +838,11 @@ var QueryExec = function(optObj) {
 
     this.drawSparqlResultSet = function (resSet) {
 		var item = self.cache[self.cacheIndex];
-		self.dom.plnk_ctr = OAT.Dom.create("div", {className: "result_plnk_ctr"});
 
 		if (iSPARQL.Settings.pivotInstalled) 
-			self.makePivotPermalink(self.dom.plnk_ctr);
+			self.makePivotPermalink(self.dom.plnk_c);
 
-		self.makeExecPermalink (self.dom.plnk_ctr);
-
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr]);
+		self.makeExecPermalink (item.dom.plnk_c);
 
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
@@ -1146,8 +1151,7 @@ var QueryExec = function(optObj) {
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
 				var c_i = self.cacheIndex;
 				
-				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
-				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_ctr"});
+				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_c"});
 
 /*					self.addthis_ctr.innerHtml = '<div id="sharelink" class="addthis_toolbox addthis_default_style "' + 
 						'addthis:url=""' + 
@@ -1165,9 +1169,9 @@ var QueryExec = function(optObj) {
 				
 
 				if (iSPARQL.Settings.pivotInstalled) 
-					self.makePivotPermalink(self.plnk_ctr);
+					self.makePivotPermalink(self.result_opts_c);
 
-				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_ctr"});
+				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_c"});
 				
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,
@@ -1181,8 +1185,8 @@ var QueryExec = function(optObj) {
 				item.mini.select.selectedIndex = lastIndex;
 				item.mini.redraw();
 				
-				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
-				OAT.Dom.append ([item.dom.result_c, self.plnk_ctr, mini_c]);
+				OAT.Dom.append ([item.dom.plnk_c, self.miniplnk]);
+				OAT.Dom.append ([item.dom.result_c, mini_c]);
 				
 				var ua = navigator.userAgent;
 				

@@ -96,8 +96,9 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
           <img src="/isparql/images/stop_32.png" alt="error"/>
           <div class="error statMsgError">
             iSPARQL is a JavaScript application.<br/>
-	        JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
-            or JavaScript is disabled. Please use a browser that supports JavaScript, or enable JavaScript for this page.
+	    It turns out that JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
+            or JavaScript is disabled.<br/>
+            To use iSPARQL, please switch to a browser that has JavaScript, or enable JavaScript for this page, if it's been disabled.
 	  </div>
         </noscript>
 
@@ -532,7 +533,7 @@ WHERE     {	?thing a ?type;
 	<div class="main_col_page" id="page_results"></div>
         <div id="foot">
 	      <div id="data_links" style="display:none">Raw Linked Data formats: 
-            <a id="cxml_raw_lnk">CXML</a>|<a id="csv_raw_lnk">CSV</a> |
+            <span id="cxml_raw_lnk_c" style="display:none"><a id="cxml_raw_lnk">CXML</a>|></span><a id="csv_raw_lnk">CSV</a> |
 		    RDF (<a id="nt_raw_lnk">N-Triples</a> <a id="n3_raw_lnk">N3/Turtle</a> <a id="json_raw_lnk">JSON</a> <a id="rdfxml_raw_lnk">XML</a>) |
             ODATA (<a id="odata_atom_lnk">Atom</a> | <a id="odata_json_lnk">JSON</a>)
           </div>
