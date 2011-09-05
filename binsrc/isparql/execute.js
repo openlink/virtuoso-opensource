@@ -212,11 +212,10 @@ var QueryExec = function(optObj) {
 	this.mini = false;
     	this.miniplnk = false;
     	this.mRDFCtr = false;
-	this.anchor_pref_ctr = false;
-
+	this.anchor_pref_c = false;
 	
 	this.makeAnchorPrefs = function () {
-		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
+		var anchor_pref_c = OAT.Dom.create("div", {className: "anchor_pref_c"});
 		var anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
 		anchor_label.innerHTML = "Dereferencing:";
 		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
@@ -226,27 +225,29 @@ var QueryExec = function(optObj) {
 		anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
 		anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
 
-		OAT.Event.attach(self.anchor_pref_sel, 'change', function () {
+		OAT.Event.attach(anchor_pref_sel, 'change', function () {
 			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
 		});
 
-        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
+        OAT.Dom.append ([anchor_pref_c, anchor_label, anchor_pref_sel]);
 
-		return anchor_pref_ctr;
+		return anchor_pref_c;
 	}
 
 	this.init = function() {
-		this.dom.result = OAT.Dom.create("div");
+		this.dom.result =   OAT.Dom.create("div", {className:'ep_result'});
 		this.dom.request = OAT.Dom.create("div", {className:'ep_request'}); 
 		this.dom.response = OAT.Dom.create("pre",{className:'ep_response'});
-		this.dom.query = OAT.Dom.create("pre");
+		this.dom.query =    OAT.Dom.create("pre", {className:'ep_query'});
+
 //	this.dom.select = OAT.Dom.create("select");
 //	OAT.Dom.option("Machine-readable","1",this.dom.select);
 //	OAT.Dom.option("Human-readable","0",this.dom.select);
 
 		var tabs1 = ["Result","SPARQL Params","Response","Query"];
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
-		self.dom.tab = OAT.Dom.create("div",{padding:"5px",backgroundColor:"#fff"});
+
+		self.dom.tab = OAT.Dom.create ("div",{className:'res_tab_ctr',id: 'res_tab_ctr'});
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
 		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
 
@@ -257,12 +258,10 @@ var QueryExec = function(optObj) {
 			self.tab.add(li,tabs2[i]);
 		}
 
-		self.deref_prefs = self.makeAnchorPrefs();
-
 		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
 	    OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
-			OAT.Dom.append([self.options.div,self.dom.ul,self.deref_prefs,self.dom.tab]); 
+			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]); 
 		}
 		self.initNav();
 
@@ -281,6 +280,44 @@ var QueryExec = function(optObj) {
 	    for (var i=0;i<window.defaultPrefixes.length;i++)
 		OAT.IRIDB.insertIRI (window.defaultPrefixes[i].uri, window.defaultPrefixes[i].label);
 	}
+
+		self.load_notify = new OAT.Notify (false, {notifytype: 2});
+		self.error_notify = new OAT.Notify (false, {notifytype: 2});
+
+		self.request_count = 0;
+
+		OAT.MSG.attach ('*',
+						'iSPARQL_QE_START', 
+						function () { 
+							var msg = 'Executing query (' + self.request_count;
+
+							if (self.request_count > 1) msg += ' requests pending.)';
+							else msg += ' request pending.)';
+
+							self.load_notify.send (msg, {image: "images/notify-throbber.gif", timeout: false});
+						});
+		
+		OAT.MSG.attach ('*',
+						'iSPARQL_QE_DONE',
+						function () {
+							if (self.request_count < 1)
+								self.load_notify.hide();
+							else {
+								var msg = 'Executing query (' + self.request_count;
+
+								if (self.request_count > 1) msg += ' requests pending.)';
+								else msg += ' request pending.)';
+
+								self.load_notify.send (msg, {image: "images/notify-throbber.gif", timeout: false});
+							}
+						});
+
+		OAT.MSG.attach ('*', 
+						'iSPARQL_QE_ERROR',
+						function (m,s,l) {
+							var msg = 'Query returned error.';
+							self.error_notify.send (msg, {timeout: 3000});
+						});
 
     };
 
@@ -466,8 +503,12 @@ var QueryExec = function(optObj) {
 		}
 		else {
 			rt = iSPARQL.ResultType.ERROR;
-			if (data.match (/Error SR171/))
+			if (data.match (/Error SR171/)) {
+				iSPARQL.StatusUI.errMsg = 'Query Engine Timeout on Server Detected';
 				to = true;
+		}
+			else 
+				iSPARQL.StatusUI.errMsg = 'Error executing query';
 		}
 		
 			var cacheItem = {
@@ -487,6 +528,15 @@ var QueryExec = function(optObj) {
 			cacheItem.dom.request_c  = OAT.Dom.create ("div",{className: "request_c"});
 			cacheItem.dom.response_c = OAT.Dom.create ("div",{className: "response_c"});
 			
+     	cacheItem.dom.result_opts_c = OAT.Dom.create ("div",{className:"result_opts_c"}); 
+		cacheItem.dom.plnk_c = OAT.Dom.create("div", {className: "result_plnk_c"});
+
+		cacheItem.dom.deref_prefs = self.makeAnchorPrefs();
+		var clrfix = OAT.Dom.create ("div", {className: "clearfix"})
+		OAT.Dom.append([cacheItem.dom.result_opts_c, cacheItem.dom.plnk_c, cacheItem.dom.deref_prefs], 
+					   [cacheItem.dom.result_c, cacheItem.dom.result_opts_c, clrfix]);
+
+
 		var req_href;
 		
 		// FIXME (ghard) this is wrong
@@ -830,14 +880,11 @@ var QueryExec = function(optObj) {
 
     this.drawSparqlResultSet = function (resSet) {
 		var item = self.cache[self.cacheIndex];
-		self.dom.plnk_ctr = OAT.Dom.create("div", {className: "result_plnk_ctr"});
 
 		if (iSPARQL.Settings.pivotInstalled) 
-			self.makePivotPermalink(self.dom.plnk_ctr);
+			self.makePivotPermalink(self.dom.plnk_c);
 
-		self.makeExecPermalink (self.dom.plnk_ctr);
-
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr]);
+		self.makeExecPermalink (item.dom.plnk_c);
 
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
@@ -1146,8 +1193,7 @@ var QueryExec = function(optObj) {
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
 				var c_i = self.cacheIndex;
 				
-				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
-				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_ctr"});
+				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_c"});
 
 /*					self.addthis_ctr.innerHtml = '<div id="sharelink" class="addthis_toolbox addthis_default_style "' + 
 						'addthis:url=""' + 
@@ -1165,10 +1211,11 @@ var QueryExec = function(optObj) {
 				
 
 				if (iSPARQL.Settings.pivotInstalled) 
-					self.makePivotPermalink(self.plnk_ctr);
+					self.makePivotPermalink(self.result_opts_c);
 
-				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_ctr"});
+				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_c"});
 				
+				if (item.store.getTripleCount() > 0) {
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,
 													store: item.store});
@@ -1181,10 +1228,18 @@ var QueryExec = function(optObj) {
 				item.mini.select.selectedIndex = lastIndex;
 				item.mini.redraw();
 				
-				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
-				OAT.Dom.append ([item.dom.result_c, self.plnk_ctr, mini_c]);
+					self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
+					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
+					self.makeDataLinks();
 				
-				var ua = navigator.userAgent;
+				} else {
+					mini_c.innerHTML = 
+						'<h2>No Data</h2>' +
+						'<p>This query returned an empty graph.</p>';
+				}
+
+				OAT.Dom.append ([item.dom.plnk_c, self.miniplnk]);
+				OAT.Dom.append ([item.dom.result_c, mini_c]);
 				
 				//				if (iSPARQL.Settings.addthis_key && !OAT.Browser.isScreenOnly) {
 				//					self.addthis_ctr = OAT.Dom.create ("a",{id: "addthis_ctr",
@@ -1195,9 +1250,6 @@ var QueryExec = function(optObj) {
 				//					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeAddThisURL);
 				//				}
 				
-		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
-				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
-				self.makeDataLinks();
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
@@ -1391,12 +1443,14 @@ var QueryExec = function(optObj) {
 		var request = self.buildRequest(opts);
 
 		var callback = function(data) {
+			self.request_count--;
 			self.addResponse(request,optObj,0,data);
 			if (opts.callback) { opts.callback(data); }
 	    OAT.MSG.send (self,"iSPARQL_QE_DONE",self);
 	};
 
 		var onerror = function(xhr) {
+			self.request_count--;
 			var txt = xhr.getResponseText();
 			if (txt.match(/SP031/) && optObj.backupQuery) {
 				var newO = {};
@@ -1408,6 +1462,8 @@ var QueryExec = function(optObj) {
 				self.addResponse(request,optObj,1,txt);
 				if (opts.onerror) { opts.onerror(txt); }
 			}
+			OAT.MSG.send (self, "iSPARQL_QE_DONE", self);
+			OAT.MSG.send (self, "iSPARQL_QE_ERROR", self);
 	};
 
 		var o = {
@@ -1420,6 +1476,9 @@ var QueryExec = function(optObj) {
 
 		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
 
+		self.request_count++;
+		OAT.MSG.send (self, "iSPARQL_QE_START", self);
+		
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}
 

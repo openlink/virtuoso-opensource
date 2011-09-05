@@ -149,8 +149,22 @@ body {
   margin:0px;
 }
 
-.result_plnk_ctr { width: 20em; float: left; }
-.anchor_pref_ctr { width: 20%; float: right;}
+.result_c { background-color: #fff}
+
+.ep_query,.ep_response,.ep_request, .ep_result {
+  margin: 0;
+  background-color: white;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.ep_request pre { margin: 0; padding: 0 } 
+.ep_query pre { margin: 0; padding: 0 } 
+.ep_response pre { margin: 0; padding: 0 } 
+
+.result_opts_c { background-color: white}
+.result_plnk_c { padding-top: 3px;width: 20em; float: left; }
+.anchor_pref_c { width: 30em; float: right;}
 
 p.copyright {
 font-size: 8pt;
@@ -158,12 +172,11 @@ text-align: right;
 margin-right: 10px}
 
 #mini_rdf_ctr { width: 100% }
-/*div.rdf_mini { width: 100%; height: 70%; }*/
-div.rdf_tab { width: 100%; height: 100%; }
+.rdf_mini_c { margin: 5px;}
 
-table.grid {
-  clear: both;
-}
+/*div.rdf_mini { width: 100%; height: 70%; }*/
+
+div.rdf_tab { width: 100%; height: 100%; }
 
 div.rdf_data div.pager {
   background-color: #ddd;
@@ -212,3 +225,5 @@ div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
   margin-left: 8px;
   margin-right: 8px;
 }
+
+.clearfix { clear:both }

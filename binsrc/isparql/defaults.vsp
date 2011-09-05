@@ -82,6 +82,15 @@
   if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
       pivot_installed := 'true';
 
+  declare sparql_cxml_installed varchar;
+  sparql_cxml_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('sparql_cxml') is not NULL)
+      sparql_cxml_installed := 'true';
+
+  declare isparql_version varchar;
+  isparql_version := DB.DBA.VAD_CHECK_VERSION('iSPARQL');
+
   declare curi_installed varchar;
   curi_installed := 'false';
 
@@ -115,7 +124,9 @@
    "pivotInstalled":<?= pivot_installed ?>,
    "curiInstalled":<?= curi_installed ?>,
    "rdfMappersInstalled":<?= rdf_mappers_installed ?>,
+   "sparqlCxmlInstalled":<?= sparql_cxml_installed ?>,
    "setup_done":<?= setup_done ?>,
+   "isparql_version":"<?= isparql_version ?>",
    "namespaces":[
 <?vsp
   declare _fst integer;

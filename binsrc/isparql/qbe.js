@@ -2153,7 +2153,7 @@ iSPARQL.QBE = function (def_obj) {
 	} else { OAT.Dom.hide("qbe_return_btn");}
 
     } else {
-	if (self.svgsparql) { self.loadFromString(self.defaults.query); }
+	if (self.svgsparql) { self.loadFromString(self.defaults.query); self.svgsparql.reposition();}
 	$('qbe_graph').value = self.defaults.graph;
 	OAT.Dom.hide("qbe_return_btn");
     }

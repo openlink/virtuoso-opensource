@@ -96,8 +96,9 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
           <img src="/isparql/images/stop_32.png" alt="error"/>
           <div class="error statMsgError">
             iSPARQL is a JavaScript application.<br/>
-	        JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
-            or JavaScript is disabled. Please use a browser that supports JavaScript, or enable JavaScript for this page.
+	    It turns out that JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
+            or JavaScript is disabled.<br/>
+            To use iSPARQL, please switch to a browser that has JavaScript, or enable JavaScript for this page, if it's been disabled.
 	  </div>
         </noscript>
 
@@ -219,7 +220,7 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
 	    </div> <!-- #qbe_props_node -->
 	    <div id="qbe_props_edge" style="display:none;">
 	      <input type="checkbox" id="qbe_edge_type" /><label class="ckb" for="qbe_edge_type">Optional</label><br/>
-	      <label for="qbe_edge_value">Res Type: </label><input type="text" id="qbe_edge_value" />
+	          <label for="qbe_edge_value">Name: </label><input type="text" id="qbe_edge_value" />
 	    </div>
             <div id="qbe_props_group" style="display:none;">
               <label for="qbe_group_type">Group Type: </label>
@@ -532,7 +533,7 @@ WHERE     {	?thing a ?type;
 	<div class="main_col_page" id="page_results"></div>
         <div id="foot">
 	      <div id="data_links" style="display:none">Raw Linked Data formats: 
-            <a id="cxml_raw_lnk">CXML</a>|<a id="csv_raw_lnk">CSV</a> |
+            <span id="cxml_raw_lnk_c" style="display:none"><a id="cxml_raw_lnk">CXML</a>|></span><a id="csv_raw_lnk">CSV</a> |
 		    RDF (<a id="nt_raw_lnk">N-Triples</a> <a id="n3_raw_lnk">N3/Turtle</a> <a id="json_raw_lnk">JSON</a> <a id="rdfxml_raw_lnk">XML</a>) |
             ODATA (<a id="odata_atom_lnk">Atom</a> | <a id="odata_json_lnk">JSON</a>)
           </div>
@@ -661,17 +662,17 @@ WHERE     {	?thing a ?type;
       <h1>OpenLink iSPARQL</h1>
       <pre>
       Version: <span id="about_version">N/A</span>
-      Build Date: <span id="about_date">N/A</span>
+<!--      Build Date:   <span id="about_date">N/A</span> -->
       Built using <a target="_blank" href="http://sourceforge.net/projects/oat">OpenLink Ajax Toolkit (OAT)</a>
       OAT version: <span id="about_oat_version">N/A</span>
       OAT build: <span id="about_oat_build">N/A</span>
       IRI DB count: <span id="iridb_stats">N/A</span> IRI IDs
-      STORE:        <span style="display:none" id="store_count">N/A</span> graphs
+<!--      STORE:        <span style="display:none" id="store_count">N/A</span> graphs
                     <span id="triple_count">N/A</span> triples
                     <span style="display:none" id="item_count">N/A</span> items
                     <span id="label_count">N/A</span> labels chosen
-                    <span id="label_proc_count">N/A</span> labels processed
-      LOCATION:     <span id="about_loc"></span>
+                      <span id="label_proc_count">N/A</span> labels processed -->
+      Last known Loc: <span id="about_loc">Unknown</span>
 
       </pre>
       <div class="btn_row"><button id="about_dlg_b_ok">OK</button></div>

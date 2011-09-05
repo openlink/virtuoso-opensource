@@ -181,8 +181,8 @@ iSPARQL.Advanced = function () {
 	$("query").value = iSPARQL.dataObj.query;
 
 	/* default graph */
+		if (iSPARQL.dataObj.defaultGraph) 
 	$("default-graph-uri").value = iSPARQL.dataObj.defaultGraph;
-
 	}
 
     this.func_load = function() {
@@ -1429,6 +1429,7 @@ iSPARQL.Common = {
 	if (toolkitImagesPath.match(/[^\/]$/)) { toolkitImagesPath += "/"; }
 
 	OAT.Preferences.imagePath = toolkitImagesPath;
+		OAT.Preferences.showAjax = 0;
 	OAT.AJAX.imagePath = toolkitImagesPath;
 	OAT.Anchor.imagePath = toolkitImagesPath;
 	OAT.WebDav.options.imagePath = toolkitImagesPath;
@@ -1498,7 +1499,7 @@ iSPARQL.Common = {
 							  OAT.MSG.send (self,"iSPARQL_USER_PREF_CHANGE",false);
 						  });
 
-		if (iSPARQL.serverConn.isConnected) {
+/*		if (iSPARQL.serverConn.isConnected) {
 	if (iSPARQL.serverConn.isVirtuoso) {
 	    $('about_version').innerHTML = iSPARQL.serverConn.serverVersion;
 	    $('about_date').innerHTML = iSPARQL.serverConn.serverBuildDate;
@@ -1511,11 +1512,20 @@ iSPARQL.Common = {
 		else {
 			$('about_version').innerHTML = 'unknown';
 			$('about_date').innerHTML = 'unknown';
+		} */
+
+		if (iSPARQL.Settings.sparqlCxmlInstalled) {
+			OAT.Dom.show ('cxml_raw_lnk_c');
 		}
 
+        $('about_version').innerHTML = iSPARQL.Settings.isparql_version;
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$('throbber').src = OAT.Preferences.imagePath + "Dav_throbber.gif";
+
+		var iridbstats = OAT.IRIDB.getStats();
+		$('iridb_stats').innerHTML = iridbstats.iriCount;
+
 
 		// FIXME: only shows triple_count, etc. stats on the latest rdfstore.
 
@@ -1714,8 +1724,7 @@ iSPARQL.Common = {
 	// Help menu dismiss button
 
 	/* build info */
-	$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
-
+//		$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
 		$('default-graph-uri').value = iSPARQL.Settings.graph;
 		$('query').value = iSPARQL.Settings.query;
