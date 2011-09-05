@@ -181,8 +181,8 @@ iSPARQL.Advanced = function () {
 	$("query").value = iSPARQL.dataObj.query;
 
 	/* default graph */
+		if (iSPARQL.dataObj.defaultGraph) 
 	$("default-graph-uri").value = iSPARQL.dataObj.defaultGraph;
-
 	}
 
     this.func_load = function() {
@@ -1429,6 +1429,7 @@ iSPARQL.Common = {
 	if (toolkitImagesPath.match(/[^\/]$/)) { toolkitImagesPath += "/"; }
 
 	OAT.Preferences.imagePath = toolkitImagesPath;
+		OAT.Preferences.showAjax = 0;
 	OAT.AJAX.imagePath = toolkitImagesPath;
 	OAT.Anchor.imagePath = toolkitImagesPath;
 	OAT.WebDav.options.imagePath = toolkitImagesPath;

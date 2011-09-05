@@ -172,7 +172,10 @@ text-align: right;
 margin-right: 10px}
 
 #mini_rdf_ctr { width: 100% }
+.rdf_mini_c { margin: 5px;}
+
 /*div.rdf_mini { width: 100%; height: 70%; }*/
+
 div.rdf_tab { width: 100%; height: 100%; }
 
 div.rdf_data div.pager {

@@ -281,6 +281,44 @@ var QueryExec = function(optObj) {
 		OAT.IRIDB.insertIRI (window.defaultPrefixes[i].uri, window.defaultPrefixes[i].label);
 	}
 
+		self.load_notify = new OAT.Notify (false, {notifytype: 2});
+		self.error_notify = new OAT.Notify (false, {notifytype: 2});
+
+		self.request_count = 0;
+
+		OAT.MSG.attach ('*',
+						'iSPARQL_QE_START', 
+						function () { 
+							var msg = 'Executing query (' + self.request_count;
+
+							if (self.request_count > 1) msg += ' requests pending.)';
+							else msg += ' request pending.)';
+
+							self.load_notify.send (msg, {image: "images/notify-throbber.gif", timeout: false});
+						});
+		
+		OAT.MSG.attach ('*',
+						'iSPARQL_QE_DONE',
+						function () {
+							if (self.request_count < 1)
+								self.load_notify.hide();
+							else {
+								var msg = 'Executing query (' + self.request_count;
+
+								if (self.request_count > 1) msg += ' requests pending.)';
+								else msg += ' request pending.)';
+
+								self.load_notify.send (msg, {image: "images/notify-throbber.gif", timeout: false});
+							}
+						});
+
+		OAT.MSG.attach ('*', 
+						'iSPARQL_QE_ERROR',
+						function (m,s,l) {
+							var msg = 'Query returned error.';
+							self.error_notify.send (msg, {timeout: 3000});
+						});
+
     };
 
 	this.initNav = function() {
@@ -465,8 +503,12 @@ var QueryExec = function(optObj) {
 		}
 		else {
 			rt = iSPARQL.ResultType.ERROR;
-			if (data.match (/Error SR171/))
+			if (data.match (/Error SR171/)) {
+				iSPARQL.StatusUI.errMsg = 'Query Engine Timeout on Server Detected';
 				to = true;
+		}
+			else 
+				iSPARQL.StatusUI.errMsg = 'Error executing query';
 		}
 		
 			var cacheItem = {
@@ -1173,6 +1215,7 @@ var QueryExec = function(optObj) {
 
 				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_c"});
 				
+				if (item.store.getTripleCount() > 0) {
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,
 													store: item.store});
@@ -1185,10 +1228,18 @@ var QueryExec = function(optObj) {
 				item.mini.select.selectedIndex = lastIndex;
 				item.mini.redraw();
 				
+					self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
+					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
+					self.makeDataLinks();
+				
+				} else {
+					mini_c.innerHTML = 
+						'<h2>No Data</h2>' +
+						'<p>This query returned an empty graph.</p>';
+				}
+
 				OAT.Dom.append ([item.dom.plnk_c, self.miniplnk]);
 				OAT.Dom.append ([item.dom.result_c, mini_c]);
-				
-				var ua = navigator.userAgent;
 				
 				//				if (iSPARQL.Settings.addthis_key && !OAT.Browser.isScreenOnly) {
 				//					self.addthis_ctr = OAT.Dom.create ("a",{id: "addthis_ctr",
@@ -1199,9 +1250,6 @@ var QueryExec = function(optObj) {
 				//					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeAddThisURL);
 				//				}
 				
-		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
-				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
-				self.makeDataLinks();
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
@@ -1395,12 +1443,14 @@ var QueryExec = function(optObj) {
 		var request = self.buildRequest(opts);
 
 		var callback = function(data) {
+			self.request_count--;
 			self.addResponse(request,optObj,0,data);
 			if (opts.callback) { opts.callback(data); }
 	    OAT.MSG.send (self,"iSPARQL_QE_DONE",self);
 	};
 
 		var onerror = function(xhr) {
+			self.request_count--;
 			var txt = xhr.getResponseText();
 			if (txt.match(/SP031/) && optObj.backupQuery) {
 				var newO = {};
@@ -1412,6 +1462,8 @@ var QueryExec = function(optObj) {
 				self.addResponse(request,optObj,1,txt);
 				if (opts.onerror) { opts.onerror(txt); }
 			}
+			OAT.MSG.send (self, "iSPARQL_QE_DONE", self);
+			OAT.MSG.send (self, "iSPARQL_QE_ERROR", self);
 	};
 
 		var o = {
@@ -1424,6 +1476,9 @@ var QueryExec = function(optObj) {
 
 		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
 
+		self.request_count++;
+		OAT.MSG.send (self, "iSPARQL_QE_START", self);
+		
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}
 
