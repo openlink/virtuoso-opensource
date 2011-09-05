@@ -27,7 +27,8 @@ OAT.Notify = function(parentDiv,optObj) {
 	this.container = false;
 	this.cx = 0;
 	this.cy = 0;
-
+    this.visible = false;
+    this.content = false;
 
 	this.update = function() {
 		var scroll = OAT.Dom.getScroll();
@@ -73,7 +74,7 @@ OAT.Notify = function(parentDiv,optObj) {
 	var pos = OAT.Dom.getLT(self.parentDiv);
 	var dim = OAT.Dom.getWH(self.parentDiv);
 	
-	var c = OAT.Dom.create("div", {className: "notify_bar_ctr",
+	c = OAT.Dom.create("div", {className: "notify_bar_ctr",
 				       position: "fixed",
 				       top: 0,
 				       left: 0,
@@ -109,6 +110,18 @@ OAT.Notify = function(parentDiv,optObj) {
 			height:50
 		}
 
+	if (self.visible) { 
+	    var c = $(content);
+	    if (!c) { // new text
+		self.content.innerHTML = content;
+	    }
+	    else { // DOM frag as content. Need to replace existing
+		OAT.Dom.unlink(self.content);
+		self.content = c;
+	    }
+	    return;
+	}
+
 		for (var p in optObj) { options[p] = optObj[p]; }
 
 	switch (self.options.notifyType) {
@@ -116,9 +129,9 @@ OAT.Notify = function(parentDiv,optObj) {
 	    if (!self.container) {
 		var c = self.createPopupContainer (options.width, options.height); 
 		self.container = c;
-		self.parentDiv.appendChild(c);
+		self.parentDiv.appendChild(self.container);
 	    }
-	    var inner = OAT.Dom.create ("div", {width: options.width + "px", 
+	    self.inner = OAT.Dom.create ("div", {width: options.width + "px", 
 						height: options.height + "px", 
 						cursor: "pointer",
 						overflow: "hidden",
@@ -132,10 +145,10 @@ OAT.Notify = function(parentDiv,optObj) {
 	    if (!self.container) {
 		var c = self.createBarContainer (options.height);
 		self.container = c;
-		self.parentDiv.appendChild(c);
+		self.parentDiv.appendChild(self.container);
 	    }
 	    
-	    var inner = OAT.Dom.create ("div", {className: "notify_bar_inner",
+	    self.inner = OAT.Dom.create ("div", {className: "notify_bar_inner",
 						width:    "100%", // should be same width as the container
 						cursor:   "pointer",
 						overflow: "hidden",
@@ -146,10 +159,10 @@ OAT.Notify = function(parentDiv,optObj) {
 	    if (!self.container) {
 		var c = self.createPushBarContainer (options.height);
 		self.container = c;
-		self.parentDiv.insertBefore (c,self.parentDiv.firstChild);
+		self.parentDiv.insertBefore (self.container,self.parentDiv.firstChild);
 	    }
 	    
-	    var inner = OAT.Dom.create ("div", {className: "notify_bar_inner",
+	    self.inner = OAT.Dom.create ("div", {className: "notify_bar_inner",
 						width:    "100%", // should be same width as the container
 						cursor:   "pointer",
 						overflow: "hidden",
@@ -163,52 +176,53 @@ OAT.Notify = function(parentDiv,optObj) {
 					      styleFloat:"left", 
 					      marginRight: "2px"});
 	    img.src = options.image;
-	    inner.appendChild(img);
+	    self.inner.appendChild(img);
 	}
 
-		var c = $(content);
-		if (!c) {
-	    c = OAT.Dom.create("div", {className: "notify_content"});
-			c.innerHTML = content;
+	var ct = $(content);
+	if (!ct) {
+	    self.content = OAT.Dom.create("div", {className: "notify_content"});
+	    self.content.innerHTML = content;
 		}
 	
-		if (options.style) { OAT.Style.set(c,options.style); }
+	if (options.style) { OAT.Style.set (self.c, options.style); }
 
-	inner.appendChild(c);
+	self.inner.appendChild(self.content);
 
 	if (options.close) {
 	    var close_img = OAT.Dom.create ("img", {cssFloat:"right", styleFloat:"right"});
 	    img.src = options.close;
-	    inner.appendChild(close_img);
+	    self.inner.appendChild(close_img);
 		}
 
-	OAT.Style.set(inner, {opacity:0});
+	OAT.Style.set(self.inner, {opacity:0});
 
 		var afterAppear = function() {
 			if (!options.timeout) { return; }
 			setTimeout(function() {
-		if (inner.parentNode) { self.aDisappear.start(); }
+		if (self.inner.parentNode) { self.aDisappear.start(); }
 			},options.timeout);
 		}
 
-	self.aAppear =    new OAT.AnimationOpacity (inner, {opacity:options.opacity, speed:0.1, delay:options.delayIn});
-	self.aDisappear = new OAT.AnimationOpacity (inner, {opacity:0, speed:0.1, delay:options.delayOut});
-	self.aRemove =    new OAT.AnimationSize (inner, {height:0, speed:10, delay:options.delayOut});
+	self.aAppear =    new OAT.AnimationOpacity (self.inner, {opacity:options.opacity, speed:0.1, delay:options.delayIn});
+	self.aDisappear = new OAT.AnimationOpacity (self.inner, {opacity:0, speed:0.1, delay:options.delayOut});
+	self.aRemove =    new OAT.AnimationSize (self.inner, {height:0, speed:10, delay:options.delayOut});
 	
-	OAT.MSG.attach (self.aRemove.animation, "ANIMATION_STOP", function() { OAT.Dom.unlink (inner); OAT.Dom.hide (self.container)});
+	OAT.MSG.attach (self.aRemove.animation, "ANIMATION_STOP", function() { OAT.Dom.unlink (self.inner); OAT.Dom.hide (self.container)});
 	OAT.MSG.attach (self.aAppear.animation, "ANIMATION_STOP", afterAppear);
 	OAT.MSG.attach (self.aDisappear.animation, "ANIMATION_STOP", self.aRemove.start);
 
-	OAT.Event.attach (inner,"click",function() {
+	OAT.Event.attach (self.inner,"click",function() {
 			if (options.delayOut) {
 		self.aRemove.start();
 			} else {
-		OAT.Dom.unlink(inner);
+		OAT.Dom.unlink(self.inner);
 			}
 		});
 
 		var start = function() {
-	    self.container.appendChild (inner);
+	    self.visible = true;
+	    self.container.appendChild (self.inner);
 	    OAT.Dom.show (self.container);
 			if (options.delayIn) {
 		self.aAppear.start();
@@ -226,6 +240,7 @@ OAT.Notify = function(parentDiv,optObj) {
 	}
 
     this.hide = function () {
+	self.visible = false;
 	self.aDisappear.start();
     }
 }
