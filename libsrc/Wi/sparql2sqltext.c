@@ -1963,10 +1963,62 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
       switch (tree->_.builtin.btype)
         {
         case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L:
-        case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: case BOUND_L:
           return SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
-        case IRI_L: return SPART_VARR_IS_REF ;
-        case DATATYPE_L: return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
+        case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: case BOUND_L:
+          {
+            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+            ptrlong res_bits = (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL);
+            if (!(arg_bits & SPART_VARR_NOT_NULL))
+              return res_bits;
+            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+              return (res_bits | SPART_VARR_FIXED);
+            switch (tree->_.builtin.btype)
+              {
+                case isIRI_L:
+                case isURI_L:
+                case isBLANK_L:
+                  if ((arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
+                    || (arg_bits & SPART_VARR_ALWAYS_NULL) )
+                    return (res_bits | SPART_VARR_FIXED);
+                case isREF_L:
+                case isLITERAL_L:
+                  if ((arg_bits & SPART_VARR_IS_REF) || (arg_bits & SPART_VARR_IS_LIT)
+                    || (arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
+                    || (arg_bits & SPART_VARR_ALWAYS_NULL))
+                    return (res_bits | SPART_VARR_FIXED);
+                case BOUND_L: break;
+              }
+            return res_bits;
+          }
+        case IRI_L:
+          {
+            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+            if (SPART_VARR_ALWAYS_NULL & arg_bits)
+              return (SPART_VARR_ALWAYS_NULL);
+            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+              return (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+            return SPART_VARR_IS_REF ;
+          }
+        case DATATYPE_L:
+          {
+            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+            if (SPART_VARR_ALWAYS_NULL & arg_bits)
+              return (SPART_VARR_ALWAYS_NULL);
+            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+              return (SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_FIXED);
+            return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
+          }
+        case STR_L:
+          {
+            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+            if (SPART_VARR_ALWAYS_NULL & arg_bits)
+              return (SPART_VARR_ALWAYS_NULL);
+            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+              return (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+            if (SPART_VARR_NOT_NULL & arg_bits)
+              return (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL);
+            return SPART_VARR_IS_LIT ;
+          }
         case COALESCE_L:
           {
             ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
@@ -1983,7 +2035,14 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           {
             ptrlong t_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[1]);
             ptrlong f_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[2]);
-            return t_bits & f_bits;
+            ptrlong res_bits = t_bits & f_bits;
+            if (res_bits & SPART_VARR_FIXED)
+              {
+                ptrlong cond_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+                if (!((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (cond_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL))))
+                  res_bits &= ~ SPART_VARR_FIXED;
+              }
+            return res_bits;
           }
         default: return 0;
         }
@@ -8710,16 +8769,49 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     }
   if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || has_limofs))
     {
-      ssg_newline (0);
-      ssg_puts ("ORDER BY");
-      ssg->ssg_indent++;
+/* Bug 14357 had shown a funny problem. If one of ORDER BY expressions can be opimized to an integer
+and thus the integer is printed instead of the original expression then the generated SQL has wrong meaning.
+The SQL will contain an integer that is interpreted as a column number.
+Simple example is
+SELECT ?s ?p ?o WHERE { ?s ?p ?o . FILTER (?o = 12345) } ORDER BY ?o
+that is optimized into SQL equivalent of
+SELECT ?s ?p 12345 WHERE { ?s ?p 12345 } ORDER BY 12345
+The fix is to avoid printing constant expressions at all, with only exception for plain integers that were written in SPARQL as such.
+*/
+      int oby_printed = 0;
       DO_BOX_FAST(SPART *, oby_itm, oby_ctr, tree->_.req_top.order)
         {
-	  if (oby_ctr > 0)
+          SPART *expn = oby_itm->_.oby.expn;
+          if (SPAR_IS_BLANK_OR_VAR (expn))
+            {
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (expn->_.var.rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                continue;
+            }
+          else if (SPAR_IS_LIT_OR_QNAME (expn))
+            {
+              int expn_is_plain_int = ((DV_ARRAY_OF_POINTER == DV_TYPE_OF(expn)) && (SPAR_LIT == expn->type)
+                && (uname_xmlschema_ns_uri_hash_integer == expn->_.lit.datatype) );
+              if (!expn_is_plain_int)
+                continue;
+            }
+          else
+            {
+              ptrlong restr = sparp_restr_bits_of_expn (ssg->ssg_sparp, expn);
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (restr & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                continue;
+            }
+          if (oby_printed++)
             ssg_putchar (',');
+          else
+            {
+              ssg_newline (0);
+              ssg_puts ("ORDER BY");
+              ssg->ssg_indent++;
+            }
           ssg_print_orderby_item (ssg, tree->_.req_top.pattern, oby_itm);
         }
       END_DO_BOX_FAST;
+      if (oby_printed)
       ssg->ssg_indent--;
     }
   if (NULL != limofs_alias)
