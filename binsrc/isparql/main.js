@@ -435,6 +435,9 @@ iSPARQL.RecentQueriesUI = function () {
 //
 // Observes SpongerOpts
 //
+ // EndPointOptsUI
+	
+
 
 iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     var self = this;
@@ -554,6 +557,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     this.grabAllChangeCB = function (elm) {
 	if (elm.target.checked) {
 	    self.opts.setGrabAll (self);
+			self.hideSeeAlsoControls();
 	}
     }
 
@@ -583,7 +587,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     }
 
     this.grabPredsChangeCB = function (elm) {
-	return 0;
+		self.opts.setSeeAlso(self);
     }
 
     this.hideSeeAlsoControls = function() {
@@ -675,11 +679,11 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	    || window.confirm("This will remove custom added predicates. Really restore?")) {
 
 	    $("pathTravSchemesPreds").options.length = 0;
-	    $("pathTravSchemesPreds").options[0] = new Option('foaf:knows','http://xmlns.com/foaf/0.1/',true);
-	    $("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','http://rdfs.org/sioc/ns#',true);
-	    $("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','http://www.w3.org/2000/01/rdf-schema#',true);
-	    $("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','http://www.w3.org/2000/01/rdf-schema#',true);
-	    $("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','http://www.w3.org/2002/07/owl#',true);
+			$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','http://xmlns.com/foaf/0.1/knows',true);
+			$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','http://rdfs.org/sioc/ns#links_to',true);
+			$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','http://www.w3.org/2000/01/rdf-schema#isDefinedBy',true);
+			$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','http://www.w3.org/2000/01/rdf-schema#seeAlso',true);
+			$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','http://www.w3.org/2002/07/owl#sameAs',true);
 	    }
 	setGrabPragma();
     }
@@ -791,7 +795,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 
     self._init ();
 
-} // EndPointOptsUI
+}
 
 //
 // EndpointOpts holds global endpoint-related options, it is observed by the EndpointOptsUI
@@ -801,6 +805,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 //
 //
 
+	
 iSPARQL.EndpointOpts = function (optsObj) {
     var self = this;
 
@@ -903,7 +908,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	};
 
 		// FIXME: Webkit origin policies clash with detection of Server from headers :(
-		
+//		
 //		OAT.AJAX.HEAD (self.endpointPath, 
 //                      false,
 //                      self.endpointDetectCB, o);
@@ -1027,10 +1032,10 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	for (var i=0;i<preds.length;i++) {
 	    var p = preds[i];
 
-	    if (p.selected) { v.push("<" + p.text + ">"); pref.push(p.text + " = " + p.value); }
+			if (p.selected) v.push("<" + p.value +">");
 	}
 
-	iSPARQL.Common.addPrefix (p);
+//		iSPARQL.Common.addPrefix (p);
 
 	a.push(['define input:grab-all',[false]]);
 	a.push(['define input:grab-seealso',v]);

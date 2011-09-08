@@ -432,18 +432,7 @@ var QueryExec = function(optObj) {
 		if (opts.timeout) { paramsObj["timeout"] = opts.timeout; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
-		var pragmas = [];
-	
-		if (opts.pragmas) {
-			for (var i=0;i<opts.pragmas.length;i++) {
-				var pragma = opts.pragmas[i];
-				var name = pragma[0];
-				var values = pragma[1];
-				for(var j=0;j<values.length;j++) { pragmas.push(name+" "+values[j]); }
-			}
-		}
-
-		paramsObj["query"] = pragmas.join('\n') + '\n' + opts.query;
+		paramsObj["query"] = self.getPragmas(opts) + '\n' + opts.query;
 
 		var arr = [];
 		for (var p in paramsObj) {
@@ -601,6 +590,21 @@ var QueryExec = function(optObj) {
 
 	}
 
+	this.getPragmas = function (opts) {
+		var pragmas = [];
+		
+		if (opts.pragmas) { 
+			for (var i=0;i<opts.pragmas.length;i++) {
+				var pragma = opts.pragmas[i];
+				var name = pragma[0];
+				var values = pragma[1];
+				for(var j=0;j<values.length;j++) { pragmas.push(name+" "+values[j]); }
+			}
+			return (pragmas.join('\n'));
+		}
+		return false;
+	}
+
     this.makeMiniRDFPlinkURI = function (caller,msg,o) {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
@@ -611,7 +615,13 @@ var QueryExec = function(optObj) {
 
 	var nloca = document.location;
 
-	var xparm = "?query=" + encodeURIComponent(opts.query);
+		var pragmas = self.getPragmas(opts);
+		
+		var xparm = "?query=";
+
+		if (pragmas) xparm += encodeURIComponent(pragmas);
+
+		xparm += encodeURIComponent(opts.query);
 
 	if (opts.endpoint)
 	    xparm = xparm + "&endpoint="  + opts.endpoint;
@@ -831,13 +841,20 @@ var QueryExec = function(optObj) {
 
 	a = OAT.Dom.create("a");
 	a.innerHTML = "Make Pivot";
+
+		var pragmas = self.getPragmas(opts);
+
 	var xparm = document.location.protocol + '//' + document.location.host + 
-	    "/sparql/?query=" + encodeURIComponent(opts.query) + 
-	    "&endpoint=" + opts.endpoint;
+			"/sparql/?query=";
+
+		if (pragmas) xparm += encodeURIComponent(pragmas);
+
+		xparm += encodeURIComponent(opts.query);
+		xparm += "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
-	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
-	xparm += "&format=text/cxml";
+		xparm += "&default-graph-uri=" + (opts.defaultGraph ? encodeURIComponent(opts.defaultGraph) : "");
+		xparm += "&format=text%2Fcxml";
 	a.href = document.location.protocol + '//' + document.location.host + 
 	    '/PivotViewer/' + "?url=" + encodeURIComponent(xparm);
 	a.target = "_blank";
@@ -858,12 +875,22 @@ var QueryExec = function(optObj) {
 	
 	var execURIa = OAT.Dom.create ("a");
 	execURIa.innerHTML = "Execute Permalink";
+
 	var nloca = document.location;
 
-	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
+		var pragmas = self.getPragmas(opts);
+		
+		var xparm = "?query=";
+
+		if (pragmas) xparm += encodeURIComponent(pragmas);
+
+		xparm += encodeURIComponent(opts.query);
+
+		xparm += "&endpoint="  + encodeURIComponent(opts.endpoint);
+		
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
-	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+		xparm += "&default-graph-uri=" + (opts.defaultGraph ? encodeURIComponent(opts.defaultGraph) : "");
 		xparm += "&view=" + opts.view;
 		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
 
