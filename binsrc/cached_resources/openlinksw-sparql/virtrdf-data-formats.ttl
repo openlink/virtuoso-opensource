@@ -32,6 +32,7 @@ virtrdf:loadAs virtrdf:item virtrdf:jsoTriple .
 virtrdf:isSubclassOf virtrdf:loadAs virtrdf:jsoTriple .
 virtrdf:version virtrdf:loadAs virtrdf:jsoTriple .
 virtrdf:isSpecialPredicate virtrdf:loadAs virtrdf:jsoTriple .
+virtrdf:isGcResistantType virtrdf:loadAs virtrdf:jsoTriple .
 
 bif:contains virtrdf:isSpecialPredicate bif:contains .
 bif:xcontains virtrdf:isSpecialPredicate bif:xcontains .
@@ -39,9 +40,12 @@ bif:xpath_contains virtrdf:isSpecialPredicate bif:xpath_contains .
 bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 bif:spatial_contains virtrdf:isSpecialPredicate bif:spatial_contains .
 
+virtrdf:QuadMapFormat virtrdf:isGcResistantType "2" .
+virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
+
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2011-05-21 0001v6g' ;
+  virtrdf:version '2011-09-01 0001v6g' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
