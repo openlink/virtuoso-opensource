@@ -8499,6 +8499,32 @@ void ssg_print_limofs_expn (spar_sqlgen_t *ssg)
    ssg_puts (")");
 }
 
+int
+ssg_expn_is_not_int_const_but_printed_as_some_const (spar_sqlgen_t *ssg, SPART *expn)
+{
+  if (SPAR_IS_BLANK_OR_VAR (expn))
+    {
+      if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (expn->_.var.rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+        return 1;
+    }
+  else if (SPAR_IS_LIT_OR_QNAME (expn))
+    {
+      int expn_dtp = DV_TYPE_OF(expn);
+      int expn_is_plain_int = ((DV_LONG_INT == expn_dtp)
+        || ((DV_ARRAY_OF_POINTER == expn_dtp) && (SPAR_LIT == expn->type)
+          && (uname_xmlschema_ns_uri_hash_integer == expn->_.lit.datatype) ) );
+      if (!expn_is_plain_int)
+        return 1;
+    }
+  else
+    {
+      ptrlong restr = sparp_restr_bits_of_expn (ssg->ssg_sparp, expn);
+      if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (restr & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+        return 1;
+    }
+  return 0;
+}
+
 void
 ssg_print_tail_query_options (spar_sqlgen_t *ssg)
 {
@@ -8737,14 +8763,30 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     top_retval_flags, retvalmode );
   if (0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.groupings))
     {
-      ssg_newline (0);
-      ssg_puts ("GROUP BY");
-      ssg->ssg_indent++;
+/* Bug 14357, part 2 (see ORDER BY below for more explaination) */
+      int gby_printed = 0;
+      int fake_gby_expn_printed = 0;
       DO_BOX_FAST(SPART *, grouping, gby_ctr, tree->_.req_top.groupings)
         {
           ssg_valmode_t native, needed;
-	  if (gby_ctr > 0)
+          int grouping_is_weird = ssg_expn_is_not_int_const_but_printed_as_some_const (ssg, grouping);
+          if (grouping_is_weird && fake_gby_expn_printed)
+            continue;
+          if (gby_printed)
             ssg_putchar (',');
+          else
+            {
+              ssg_newline (0);
+              ssg_puts ("GROUP BY");
+              gby_printed = 1;
+              ssg->ssg_indent++;
+            }
+          if (grouping_is_weird)
+            {
+              ssg_puts (" 0.0 /* fake, instead of grouping by other const */");
+              fake_gby_expn_printed = 1;
+              continue;
+            }
           native = sparp_expn_native_valmode (ssg->ssg_sparp, grouping);
           if (IS_BOX_POINTER (native) && native->qmfIsBijection)
             needed = native;
@@ -8753,6 +8795,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_print_retval_simple_expn (ssg, tree->_.req_top.pattern, grouping, needed, NULL_ASNAME);
         }
       END_DO_BOX_FAST;
+      if (gby_printed)
       ssg->ssg_indent--;
     }
   if (NULL != tree->_.req_top.having)
@@ -8782,30 +8825,15 @@ The fix is to avoid printing constant expressions at all, with only exception fo
       DO_BOX_FAST(SPART *, oby_itm, oby_ctr, tree->_.req_top.order)
         {
           SPART *expn = oby_itm->_.oby.expn;
-          if (SPAR_IS_BLANK_OR_VAR (expn))
-            {
-              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (expn->_.var.rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+          if (ssg_expn_is_not_int_const_but_printed_as_some_const (ssg, expn))
                 continue;
-            }
-          else if (SPAR_IS_LIT_OR_QNAME (expn))
-            {
-              int expn_is_plain_int = ((DV_ARRAY_OF_POINTER == DV_TYPE_OF(expn)) && (SPAR_LIT == expn->type)
-                && (uname_xmlschema_ns_uri_hash_integer == expn->_.lit.datatype) );
-              if (!expn_is_plain_int)
-                continue;
-            }
-          else
-            {
-              ptrlong restr = sparp_restr_bits_of_expn (ssg->ssg_sparp, expn);
-              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (restr & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
-                continue;
-            }
-          if (oby_printed++)
+          if (oby_printed)
             ssg_putchar (',');
           else
             {
               ssg_newline (0);
               ssg_puts ("ORDER BY");
+              oby_printed = 1;
               ssg->ssg_indent++;
             }
           ssg_print_orderby_item (ssg, tree->_.req_top.pattern, oby_itm);
