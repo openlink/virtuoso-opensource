@@ -942,7 +942,7 @@ create function DB.DBA.SYS_FILE_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare inx int;
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
   inx := 5;
-  base_uri := local_iri;
+  base_uri := new_origin_uri;
   base_uri := charset_recode (base_uri, 'UTF-8', NULL);
   while (length (base_uri) > inx + 1 and aref (base_uri, inx) = ascii ('/'))
     inx := inx + 1;
