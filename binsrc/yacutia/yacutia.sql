@@ -444,7 +444,7 @@ create procedure adm_menu_tree ()
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="RDF" url="sparql_input.vspx"  id="189" tip="RDF " allowed="yacutia_message">',
+ <node name="Linked Data" url="sparql_input.vspx"  id="189" tip="Linked Data " allowed="yacutia_message">',
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
@@ -467,16 +467,16 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
    <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />
-   <node name="RDF Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="RDF Views" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="RDF Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
-   <node name="RDF Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+   <node name="Linked Data Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="Linked Data Views" url="db_rdf_class.vspx"  id="272" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
+   <node name="Linked Data Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
+   <node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
    '<node name="RDF Subscriptions" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
        else
@@ -5933,8 +5933,12 @@ create procedure y_make_tb_from_query (in tb any, in q any)
 }
 ;
 
-create procedure yac_syncml_detect (in _name any)
+create procedure Y_SYNCML_DETECT (
+  in path varchar)
 {
+  if (__proc_exists ('DB.DBA.yac_syncml_detect') is not null)
+    return DB.DBA.yac_syncml_detect (path);
+
    return 0;
 }
 ;

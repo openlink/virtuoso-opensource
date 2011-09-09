@@ -36,9 +36,9 @@
     <v:variable name="db_ds_state" persist="session" type="any" default="null" />
   </vm:variables>
   <vm:menu>
-    <vm:menuitem value="RDF Views Management"/>
+    <vm:menuitem value="Linked Data Views Management"/>
   </vm:menu>
-  <vm:header caption="RDF Views"/>
+  <vm:header caption="Linked Data Views"/>
   <vm:pagebody>
 	<v:on-init>
 	  if (self.db_ds_state is null)
