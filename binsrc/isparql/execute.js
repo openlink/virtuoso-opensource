@@ -432,7 +432,9 @@ var QueryExec = function(optObj) {
 		if (opts.timeout) { paramsObj["timeout"] = opts.timeout; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
-		paramsObj["query"] = self.getPragmas(opts) + '\n' + opts.query;
+		var pragmas = self.getPragmas(opts);
+		if (!pragmas) pragmas = "";
+		paramsObj["query"] = pragmas + '\n' + opts.query;
 
 		var arr = [];
 		for (var p in paramsObj) {
@@ -613,6 +615,9 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.clear(ctr);
 
+		if (iSPARQL.Settings.pivotInstalled) 
+			self.makePivotPermalink(ctr);
+		
 	var nloca = document.location;
 
 		var pragmas = self.getPragmas(opts);
@@ -909,7 +914,7 @@ var QueryExec = function(optObj) {
 		var item = self.cache[self.cacheIndex];
 
 		if (iSPARQL.Settings.pivotInstalled) 
-			self.makePivotPermalink(self.dom.plnk_c);
+			self.makePivotPermalink(item.dom.plnk_c);
 
 		self.makeExecPermalink (item.dom.plnk_c);
 
@@ -1236,9 +1241,6 @@ var QueryExec = function(optObj) {
 				}*/
 //				item.content = OAT.Dom.create ("div",{className: "rdf_mini_ctr"});
 				
-
-				if (iSPARQL.Settings.pivotInstalled) 
-					self.makePivotPermalink(self.result_opts_c);
 
 				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_c"});
 				
