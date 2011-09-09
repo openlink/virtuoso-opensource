@@ -2116,7 +2116,7 @@ text_split_complete:
   declare i int;
   i := 0;
   while( i < length(parsed_text) ) {
-    aset(parsed_text, i, trim(parsed_text[i], '\r\n ') );
+    --aset(parsed_text, i, trim(parsed_text[i], '\r\n ') );
     err_sqlstate := '00000'; err_msg := '';
    -- dbg_obj_print('self.isql_explain',self.isql_explain);
     result := null;
