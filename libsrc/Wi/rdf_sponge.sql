@@ -82,7 +82,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
     {
       declare final_dest, final_gdest varchar;
       final_dest := get_keyword ('get:destination', env, dest);
-      final_gdest := get_keyword ('get:group-destination', env, dest);
+      final_gdest := get_keyword ('get:group-destination', env);
       opts := vector (
         'get:soft', get_keyword_ucase ('get:soft', env, 'soft'),
         'get:refresh', get_keyword_ucase ('get:refresh', env),
@@ -1501,9 +1501,9 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
     signal ('RDFZZ', sprintf (
       'This version of Virtuoso supports only "soft" and "replacing" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
-  if (not bit_and (perms, 8))
+  if (not bit_and (perms, 4))
     {
-       -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP due to lack of read permission for user ', uid);
+       -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP due to lack of sponge permission for user ', uid);
        return null;
     }
   -- if requested iri is immutable, do not try to get it at all
