@@ -27,7 +27,7 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>RDF View definition</vm:pagetitle>
+  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
@@ -54,7 +54,7 @@
       <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
   </vm:variables>
 
-  <vm:header caption="RDF View definition"/>
+  <vm:header caption="Linked Data View definition"/>
   <vm:pagebody>
   <script type="text/javascript"><![CDATA[
     function saveSQL ()
@@ -506,7 +506,7 @@
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>
 	    <td>
-	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF View definition is exported successfully.
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition is exported successfully.
 	    </td>
           </tr>
         </v:template>

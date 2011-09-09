@@ -65,7 +65,10 @@
           <v:script><![CDATA[
 	        if ( get_keyword ('remove', params, '') <> '' )
 		   {
+                     declare _graph any;
+		     _graph := self.graph_name;
 		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
+                     SPARQL DROP SILENT GRAPH iri (?:_graph) ; 
 		   }
 		self.mode := '';
           ]]></v:script>
