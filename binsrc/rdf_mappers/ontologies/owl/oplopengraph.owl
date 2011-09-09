@@ -7,6 +7,7 @@
 
 <rdf:RDF xmlns="http://www.openlinksw.com/schemas/opengraph#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:like="http://ontologi.es/like#"
     xmlns:log="http://www.w3.org/2000/10/swap/log#"
     xmlns:og="http://ogp.me/ns#"
     xmlns:oplog="http://www.openlinksw.com/schemas/opengraph#"
@@ -380,6 +381,7 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes activity</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Activity"/>
+        <owl:equivalentProperty rdf:resource="http://ontologi.es/like#likes"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_book">
@@ -388,6 +390,7 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes book</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Book"/>
+        <owl:equivalentProperty rdf:resource="http://ontologi.es/like#likes"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_game">
@@ -396,6 +399,7 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes game</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Game"/>
+        <owl:equivalentProperty rdf:resource="http://ontologi.es/like#likes"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_movie">
@@ -404,6 +408,7 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes movie</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Movie"/>
+        <owl:equivalentProperty rdf:resource="http://ontologi.es/like#likes"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_music">
@@ -412,6 +417,7 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes music</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#Music"/>
+        <owl:equivalentProperty rdf:resource="http://ontologi.es/like#likes"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#likes_tv_programme">
@@ -420,6 +426,7 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>likes TV programme</rdfs:label>
         <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/opengraph#TVProgramme"/>
+        <owl:equivalentProperty rdf:resource="http://ontologi.es/like#likes"/>
     </owl:ObjectProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#link">

@@ -39,6 +39,7 @@ TTLP (
 @prefix og: <http://opengraphprotocol.org/schema/> .
 @prefix dv: <http://rdf.data-vocabulary.org/> .
 @prefix c: <http://www.w3.org/2002/12/cal/icaltzd#> .
+@prefix oplzllw: <http://www.openlinksw.com/schemas/zillow#> .
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -97,6 +98,8 @@ dv:photo rdfs:subPropertyOf virtrdf:image .
 <http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name> rdfs:subPropertyOf virtrdf:label .
 <http://rdf.freebase.com/ns/common.topic.alias> rdfs:subPropertyOf virtrdf:label .
 <http://commontag.org/ns#label> rdfs:subPropertyOf virtrdf:label .
+oplzllw:latitude owl:equivalentProperty geo:lat .
+oplzllw:longitude owl:equivalentProperty geo:long .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
