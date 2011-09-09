@@ -1853,7 +1853,7 @@ DAV_AUTHENTICATE_SSL_WEBID ()
       }
     }
   _break:;
-    exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+    SPARQL clear graph ?:foafGraph;
   }
 _exit:
   return retIRI;
@@ -2468,10 +2468,9 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
     -- dbg_obj_princ ('fine, DAV_RES_UPLOAD_STRSES_INT returns ', rc, ' for ', path);
 
 
-  declare c_id integer;
- 	declare is_rdf integer;
-  declare rdf_graph, rdf_graph2, rdf_sponger any;
-  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host any;
+  declare c_id, this_c_id, is_rdf, depth integer;
+  declare rdf_iri, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
+  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, _col_p_id, _inherit any;
 
   -- delete RDF data from separate (file) graph (if exists)
   RDF_SINK_DELETE (path);
@@ -2480,10 +2479,24 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
   is_rdf := 0;
 
   -- get parent collection id
-  c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
+  this_c_id := c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
 
   -- is rdf_sink folder?
+  rdf_graph := null;   
+  depth := 0; 
+  {
+     whenever not found goto rdfg_found;
+look_again:  
+      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
   rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
+      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
+	goto rdfg_found;
+      c_id := _col_p_id;
+      depth := depth + 1;
+      rdf_graph := null;
+      goto look_again;
+  }
+  rdfg_found:; 
   if (not DB.DBA.is_empty_or_null (rdf_graph))
   {
     declare exit handler for sqlstate '*'
@@ -2491,15 +2504,18 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
       goto _bad_content;
     };
 
+    rdf_iri := WS.WS.DAV_IRI (path);
     rdf_graph2 := 'http://local.virt' || path;
     -- get sponger parameter?
     content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
     rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_sponger'), 'on');
+    rdf_cartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_cartridges'), '');
+    rdf_metaCartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_metaCartridges'), '');
     -- upload into first (rdf_sink) graph
-    if (RDF_SINK_UPLOAD (content, type, rdf_graph, rdf_graph2, rdf_sponger))
+    if (RDF_SINK_UPLOAD (content, type, rdf_iri, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
     {
       rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
-      rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
+      rdf_graph_resource_path := WS.WS.COL_PATH (this_c_id) || rdf_graph_resource_name;
       if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
       {
         -- RDF content
@@ -2512,7 +2528,7 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
         }
         rdf_graph_resource_id := WS.WS.GETID ('R');
         insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
-          values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+          values (rdf_graph_resource_id, rdf_graph_resource_name, this_c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
         DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
       }
     }
@@ -2534,15 +2550,24 @@ unhappy_upload:
 create procedure RDF_SINK_UPLOAD (
   inout content any,
   inout type varchar,
+  in rdf_iri varchar,
   in rdf_graph varchar,
   in rdf_graph2 varchar,
-  in rdf_sponger varchar)
+  in rdf_sponger varchar,
+  in rdf_cartridges varchar,
+  in rdf_metaCartridges varchar)
 {
+  -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
   if (
        strstr (type, 'application/rdf+xml') is not null or
        strstr (type, 'application/foaf+xml') is not null
      )
   {
+    {
+      declare exit handler for sqlstate '*'
+      {
+        goto _grddl;
+      };
     if (rdf_sponger = 'on')
     {
       declare xt any;
@@ -2552,6 +2577,7 @@ create procedure RDF_SINK_UPLOAD (
         goto _grddl;
     }
     DB.DBA.RDF_LOAD_RDFXML (blob_to_string (content), rdf_graph2, rdf_graph2);
+    }
     goto _exit;
   }
   if (
@@ -2563,50 +2589,34 @@ create procedure RDF_SINK_UPLOAD (
        strstr (type, 'application/x-turtle') is not null
      )
   {
-    DB.DBA.TTLP (content, rdf_graph2, rdf_graph2);
+    {
+      declare exit handler for sqlstate '*'
+      {
+        goto _grddl;
+      };
+      DB.DBA.TTLP (blob_to_string (content), rdf_graph2, rdf_graph2);
+    }
     goto _exit;
   }
 
 _grddl:;
   if (rdf_sponger = 'on')
   {
-    declare aq, ps, xrc any;
+    declare rc, rcMeta integer;
     declare ret_body varchar;
-
-    ret_body := cast (content as varchar);
-    ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
-    aq := case when (length (ps)) then async_queue (1) else null end;
-    for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
-    {
-      declare val_match, pcols, npars any;
-
-      val_match := case when (RM_TYPE = 'MIME') then type else rdf_graph2 end;
-      if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
-      {
-        if (__proc_exists (RM_HOOK) is null)
-          goto try_next_mapper;
-
         declare exit handler for sqlstate '*'
         {
-          goto try_next_mapper;
+      goto _exit;
         };
 
-        pcols := DB.DBA.RDF_PROC_COLS (RM_HOOK);
-        npars := case when (isarray (pcols)) then length (pcols) else 8 end;
-	      if (npars = 7)
-	      {
-		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY);
-	      } else {
-		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY, RM_OPTIONS);
-	      }
-	      if (__tag(xrc) = 193 or xrc < 0 or xrc > 0)
-	      {
+    ret_body := cast (content as varchar);
+    -- dbg_obj_print ('extractor');
+    rc := RDF_SINK_UPLOAD_CARTRIDGES (ret_body, type, 'select RM_ID, RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID', rdf_iri, rdf_graph2, rdf_cartridges);
+    -- dbg_obj_print ('meta');
+    rcMeta := 0; --RDF_SINK_UPLOAD_CARTRIDGES (ret_body, type, 'select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ, MC_ID', rdf_iri, rdf_graph2, rdf_metaCartridges);
+    if (rc or rcMeta)
 	        goto _exit;
 	      }
-      }
-    try_next_mapper:;
-    }
-  }
   return 0;
 
 _exit:
@@ -2615,35 +2625,80 @@ _exit:
 }
 ;
 
+create procedure RDF_SINK_UPLOAD_CARTRIDGES (
+  inout content any,
+  inout type varchar,
+  in S varchar,
+  in rdf_iri varchar,
+  in rdf_graph varchar,
+  in rdf_cartridges varchar)
+{
+  declare cnt, hasSelection integer;
+  declare cname, pname varchar;
+  declare cartridges, aq, ps any;
+  declare xrc, val_match any;
+  declare st, msg, meta, rows any;
+
+  st := '00000';
+  exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
+  if ('00000' <> st)
+    return 0;
+
+    cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
+  hasSelection := length (cartridges);
+  ps := null;
+  aq := null;
+  foreach (any row in rows) do
+    {
+    cname := cast (row[0] as varchar);
+    if (hasSelection)
+      {
+	    if (position (cname, cartridges))
+            goto _try;
+
+        goto _try_next;
+      }
+
+    _try:
+    val_match := case when (row[2] = 'MIME') then type else rdf_graph end;
+    if (isstring (val_match) and regexp_match (row[1], val_match) is not null)
+  {
+      pname := row[3];
+	    if (__proc_exists (pname) is null)
+          goto _try_next;
+
+        declare exit handler for sqlstate '*'
+    {
+          goto _try_next;
+        };
+	    xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], row[5]);
+	    -- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
+	    -- when no selection we stop processing when a given cartridge indicate to stop
+	    if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
+        return 1;
+    }
+    _try_next:;
+    }
+  return 1;
+  }
+;
+
 create procedure RDF_SINK_DELETE (
-  in path2 any)
+  in path any)
 {
   declare c_id integer;
-  declare parts, path, rdf_graph, rdf_graph2 any;
+  declare rdf_graph, rdf_graph2 any;
 
-  parts := split_and_decode (path2, 0, '\0\0/');
-  if (length (parts) <>  6)
-    return;
-  if (parts[0] <> '')
-    return;
-  if (parts[length (parts) - 1] = '')
-    return;
-  if (parts[length (parts) - 2] <> 'rdf_sink')
+  c_id := DB.DBA.DAV_SEARCH_ID (subseq (path, 0, strrchr (path, '/') + 1), 'C');
+  if (not isinteger (c_id) or (c_id < 0))
     return;
 
-  rdf_graph2 := 'http://local.virt' || path2;
-
-  path := replace (path2, parts[length (parts) - 1], '');
-  c_id := DAV_SEARCH_ID (path, 'C');
-  if (isinteger (c_id) and (c_id > 0))
-  {
     rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
-    if (not DB.DBA.is_empty_or_null (rdf_graph))
-    {
-      SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-    }
-  }
+  if (DB.DBA.is_empty_or_null (rdf_graph))
+    return;
 
+  rdf_graph2 := 'http://local.virt' || path;
+  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
   SPARQL clear graph ?:rdf_graph2;
 }
 ;
@@ -4572,7 +4627,7 @@ create procedure WS.WS.WAC_DELETE (
     DAV_DELETE_INT (rtrim (path, '/') || ',acl', 1, null, null, 0, 0);
       connection_set ('dav_acl_sync', null);
     }
-  exec (sprintf ('sparql clear graph <%s>', graph), st, msg);
+  SPARQL clear graph ?:graph;
   }
 ;
 
