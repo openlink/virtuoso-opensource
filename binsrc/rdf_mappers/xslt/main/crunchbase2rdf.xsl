@@ -358,7 +358,23 @@
 		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'offices'">
-		    <rdfs:label><xsl:value-of select="concat(address1, ', ', city, ', ', state_code, ', ', zip_code, ', ', country_code, ' - ', description)"/></rdfs:label>
+			<xsl:variable name="offices_label" select="address1"/>
+			<xsl:if test="string-length(city) &gt; 0">
+				<xsl:variable name="offices_label" select="concat($offices_label, ', ', city)"/>
+			</xsl:if>
+			<xsl:if test="string-length(state_code) &gt; 0">
+				<xsl:variable name="offices_label" select="concat($offices_label, ', ', state_code)"/>
+			</xsl:if>
+			<xsl:if test="string-length(zip_code) &gt; 0">
+				<xsl:variable name="offices_label" select="concat($offices_label, ', ', zip_code)"/>
+			</xsl:if>
+			<xsl:if test="string-length(country_code) &gt; 0">
+				<xsl:variable name="offices_label" select="concat($offices_label, ', ', country_code)"/>
+			</xsl:if>
+			<xsl:if test="string-length(description) &gt; 0">
+				<xsl:variable name="offices_label" select="concat($offices_label, ' - ', description)"/>
+			</xsl:if>
+		    <rdfs:label><xsl:value-of select="vi:trim($offices_label, ', ')"/></rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'video_embeds'">
 		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
