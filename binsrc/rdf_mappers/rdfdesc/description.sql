@@ -130,7 +130,7 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
     }
   --exec (sprintf ('sparql define input:inference "virtrdf-label" '||
   --'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (o) , lbl_order (P) from RDF_QUAD table option (with ''virtrdf-label'') 
+  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (o) , lbl_order (P) from RDF_QUAD table option (with ''virtrdf-label'')
   	where G = __i2id (?) and S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) order by 3', null, null, vector (_G, _S), 0, meta, data);
   best_str := '';
   best_q := 0;
@@ -233,8 +233,8 @@ create procedure rdfdesc_label_get (inout data any, in langs any)
 create procedure rdfdesc_buy_link (in _G varchar, in _S varchar)
 {
   declare ret any;
-  ret := (sparql 
-  define input:storage "" 
+  ret := (sparql
+  define input:storage ""
   prefix gr: <http://purl.org/goodrelations/v1#>
   prefix owl: <http://www.w3.org/2002/07/owl#>
   select ?sas { graph `iri(?:_G)` { ?s a gr:Offering ; owl:sameAs ?sas }});
@@ -312,7 +312,7 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
   nsPrefix := null;
   if (length (label))
     return label;
-    label := null;
+  label := null;
   ret := uri;
   while (nsPrefix is null and delim <> 0)
     {
@@ -531,8 +531,8 @@ again:
 	 _href := rdfdesc_http_url (_object);
 	 if (http_mime_type (_object) like 'image/%')
 	   http (sprintf ('<a class="uri" href="%s"><img src="%s" height="160" style="border-width:0"/></a>', _href, _object));
-	    else
-         http (sprintf ('<a class="uri" href="%s">%s</a>', _href, _object));
+	 else
+	   http (sprintf ('<a class="uri" href="%s">%s</a>', _href, _object));
        }
        else
        -- CMSB
@@ -687,12 +687,12 @@ create procedure DB.DBA.RDF_SPONGE_AUTH (in realm varchar)
   declare auth_func, agent varchar;
   if (__proc_exists ('DB.DBA.FOAF_SSL_AUTH_GEN') is null)
     return 1;
-  if (http_acl_get ('Sponger', '*', '*') = -1)
+  if (http_acl_get ('Sponger', '*', '*') in (-1, 0))
     return 1;
   if (0 = DB.DBA.FOAF_SSL_AUTH_GEN (realm, 1))
     return 0;
   agent := DB.DBA.FOAF_SSL_WEBID_GET ();
-  if (agent is null) 
+  if (agent is null)
     return 0;
   if (http_acl_get ('Sponger', agent, '*') = 1)
     return 0;
@@ -747,7 +747,7 @@ create procedure virt_proxy_init_about ()
 	  	'ext_about_http_proxy_rule_1',
 	  	'ext_about_http_proxy_rule_2',
 	  	'ext_about_http_proxy_rule_3',
-	  	'ext_about_http_proxy_rule_3_am', 
+	  	'ext_about_http_proxy_rule_3_am',
 	  	'ext_about_http_proxy_rule_4',
 	  	'ext_about_http_proxy_rule_5',
 	  	'ext_about_http_proxy_rule_6',
@@ -778,7 +778,7 @@ create procedure virt_proxy_init_about ()
       '/about/id/(http|https|acct|mailto|webcal|feed|nodeID)[/:](.*)', vector ('sch', 'g'), 2,
       '/about/data/%s/%s', vector ('sch', 'g'), null,
       '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|'||
-      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(\\*/\\*)', 
+      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(\\*/\\*)',
       2, 303, null);
 
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ext_ahp_rule_list_new';
@@ -812,7 +812,7 @@ create procedure virt_proxy_init_about ()
       '/about/id/entity/(http|https|acct|mailto|webcal|feed|nodeID)/(.*)', vector ('sch', 'g'), 2,
       '/about/data/entity/%s/%s', vector ('sch', 'g'), null,
       '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|'||
-      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(\\*/\\*)', 
+      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(\\*/\\*)',
       2, 303, null);
 
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'sp_entity_rll';
@@ -844,56 +844,56 @@ create procedure virt_proxy_init_about ()
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_2', 1,
       '/about/data/turtle/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: text/turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_2_am', 1,
       '/about/data/turtle/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: text/turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_3', 1,
       '/about/data/ttl/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/x-turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_3_am', 1,
       '/about/data/ttl/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/x-turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
-      
+
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_4', 1,
       '/about/data/jrdf/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/rdf+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_4_am', 1,
       '/about/data/jrdf/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/rdf+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_5', 1,
       '/about/data/json/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_5_am', 1,
       '/about/data/json/(acct|mailto)[:/]+(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_6', 1,
       '/about/data/atom/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/atom+xml\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_6_am', 1,
       '/about/data/atom/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/atom+xml\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_7', 1,
       '/about/data/jsod/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/odata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_7_am', 1,
       '/about/data/jsod/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/odata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_data', 1,
@@ -921,65 +921,65 @@ create procedure virt_proxy_init_about ()
   --# information resources for /about/id/entity/x
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_1', 1,
       '/about/data/entity/(xml|n3|nt|ttl|text|turtle|json)/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
-      '/about?url=%s://%U&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2, null,
       '^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_1_am', 1,
       '/about/data/entity/(xml|n3|nt|ttl|text|turtle|json)/(acct|mailto)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
-      '/about?url=%s:%U&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2, null,
       '^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_2', 1,
       '/about/data/entity/turtle/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: text/turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_2_am', 1,
       '/about/data/entity/turtle/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: text/turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_3', 1,
       '/about/data/entity/ttl/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/x-turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_3_am', 1,
       '/about/data/entity/ttl/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/x-turtle\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_4', 1,
       '/about/data/entity/json/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_4_am', 1,
       '/about/data/entity/json/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_5', 1,
       '/about/data/entity/jrdf/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/rdf+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_5_am', 1,
       '/about/data/entity/jrdf/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/rdf+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_6', 1,
       '/about/data/entity/atom/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/atom+xml\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_6_am', 1,
       '/about/data/entity/atom/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fatom%%2Bxml', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/atom+xml\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_7', 1,
       '/about/data/entity/jsod/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/odata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_7_am', 1,
       '/about/data/entity/jsod/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s:%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/odata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_ent_data_rll', 1,
@@ -1008,7 +1008,7 @@ create procedure virt_proxy_init_about ()
   EXEC_STMT ('grant execute on  DB.DBA.HTTP_RDF_ACCEPT to PROXY', 0);
   if (__proc_exists ('WS.WS.host_meta_add') is not null)
     {
-      WS.WS.host_meta_add ('SPONGER.service', 
+      WS.WS.host_meta_add ('SPONGER.service',
      	'<Link rel="http://openlinksw.com/virtuoso/sponger" template="http://%{WSHost}s/about/{uri}"/>');
     }
 
@@ -1052,7 +1052,7 @@ create procedure RM_LINK_HDR (in path varchar)
   for (declare i,l int, i := 0, l := length (exts); i < l; i := i + 1)
     {
       if (ext <> exts[i][0])
-        h := h || sprintf (' <http://%s'||fmt||'>;\r\n rel="alternate"; type="%s"; title="%s",\r\n', host, exts[i][0], exts[i][1], exts[i][2]); 
+        h := h || sprintf (' <http://%s'||fmt||'>;\r\n rel="alternate"; type="%s"; title="%s",\r\n', host, exts[i][0], exts[i][1], exts[i][2]);
     }
   h := rtrim (h, ',\r\n');
   return h;
@@ -1098,12 +1098,12 @@ create procedure rdfdesc_make_qr_code (in data_to_qrcode any, in src_width int :
 
 create procedure rdfdesc_virt_info ()
 {
-  http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); 
-  http (sys_stat ('st_dbms_ver')); 
+  http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version ');
+  http (sys_stat ('st_dbms_ver'));
   http (', on ');
-  http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ())); 
+  http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
   http (case when sys_stat ('cl_run_local_only') = 1 then 'Single' else 'Cluster' end); http (' Edition ');
-  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end); 
+  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
 }
 ;
 
@@ -1116,10 +1116,10 @@ create procedure RDF_CARTRIDGES_SECURE_VD (in vhost varchar, in lhost varchar)
 
   DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about');
   DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/rdfdesc');
-  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/sparql'); 
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/sparql');
   DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/id');
-  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/id/entity'); 
-  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/data'); 
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/id/entity');
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/data');
   DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/data/entity');
 
   DB.DBA.VHOST_DEFINE (
@@ -1234,7 +1234,7 @@ create procedure rdfdesc_links_hdr (in subj any, in desc_link any)
   vec := rdfdesc_links_formats ();
   foreach (any elm in vec) do
     {
-  links := links || 
+      links := links ||
       sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
     }
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
@@ -1253,7 +1253,7 @@ create procedure rdfdesc_links_mup (in subj any, in desc_link any)
   vec := rdfdesc_links_formats ();
   foreach (any elm in vec) do
     {
-  links := links || repeat (' ', 5) ||
+      links := links || repeat (' ', 5) ||
       sprintf ('<link href="%V&amp;output=%U" rel="alternate" type="%s"  title="Structured Descriptor Document (%s format)" />\n', desc_link, elm[0], elm[0], elm[1]);
     }
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
