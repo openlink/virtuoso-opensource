@@ -2,12 +2,13 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
   <?vsp
-  declare skinpfx, banner_txt, strapline, banner_logo, fp_title varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
     skinpfx := registry_get ('_sponger_fp_SkinPrefix');
     banner_txt := registry_get ('_sponger_fp_Banner');
   banner_logo := registry_get ('_sponger_fp_Logo');
     strapline := registry_get ('_sponger_fp_Strapline');
   fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
     if (skinpfx = 0) skinpfx := 'skin';
     if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
     if (strapline = 0) strapline := '';
@@ -18,6 +19,9 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title><?=fp_title?> - Setup</title>
     <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+    <?vsp if (fp_favicon <> 0) { ?>
+    <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+    <?vsp } ?>
   </head>
 
   <body>
