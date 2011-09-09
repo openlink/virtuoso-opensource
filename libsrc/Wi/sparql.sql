@@ -8483,7 +8483,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:array-of-QuadMapFormat } ) do
             {
-              if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 1) is null)
+              if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 3) is null)
                 result ('00000', 'Quad map format array <' || "s" || '> is not used, removed');
             }
           for (sparql define input:storage ""
@@ -8815,8 +8815,8 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_IS_FLAGGED (in storage varchar)
 }
 ;
 
-create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in quick_gc_only integer := 0) returns integer
-{
+create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in gc_flags integer := 0) returns integer
+{ -- gc_flags: 0x1 = quick gc only, 0x2 = override virtrdf:isGcResistantType
   declare graphiri varchar;
   declare seed_id, graphiri_id, subjs, objs any;
   declare o_to_s, s_to_o any;
@@ -8837,6 +8837,18 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in quick_gc_only integer 
       -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') found virtrdf:item subject ', "s");
       return "s";
     }
+  if (not bit_and (gc_flags, 2))
+    {
+      for (sparql define input:storage ""
+        define output:valmode "LONG"
+        select ?t ?n
+        from <http://www.openlinksw.com/schemas/virtrdf#>
+        where { ?:seed_id a ?t . ?t virtrdf:isGcResistantType ?n } ) do
+        {
+          -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') has gc-resistant type ', "t", ' resistance ', "n");
+          return "t";
+        }
+    }
   for (sparql define input:storage ""
     define output:valmode "LONG"
     select ?s
@@ -8844,7 +8856,7 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in quick_gc_only integer 
     where { ?s a [] ; ?p ?:seed_id } ) do
     {
       -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') found use case ', "s");
-      if (quick_gc_only)
+      if (bit_and (gc_flags, 1))
         return "s";
       goto do_full_gc;
     }
@@ -8950,7 +8962,7 @@ nop_nod: ;
 }
 ;
 
-create function DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (in mapname any, in quick_gc integer) returns any
+create function DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (in mapname any, in gc_flags integer) returns any
 {
   declare gc_res, submaps any;
   submaps := (select DB.DBA.VECTOR_AGG (s1."subm") from (
@@ -8959,13 +8971,13 @@ create function DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (in mapname any, in quick_gc in
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:mapname)` virtrdf:qmUserSubMaps ?submlist .
                     ?submlist ?p ?subm } } ) as s1 );
-  gc_res := DB.DBA.RDF_QM_GC_SUBTREE (mapname, quick_gc);
+  gc_res := DB.DBA.RDF_QM_GC_SUBTREE (mapname, gc_flags);
   if (gc_res is not null)
     return gc_res;
   commit work;
   foreach (any submapname in submaps) do
     {
-      DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (submapname, quick_gc);
+      DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (submapname, gc_flags);
     }
   return NULL;
 }
@@ -9295,6 +9307,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           `iri(?:superformatsid)`
             rdf:_1 `iri(bif:concat (?:classiri, "-nullable"))` };
     }
+  commit work;
   return vector_concat (res, vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
 }
 ;
@@ -9458,6 +9471,7 @@ fheaders is, say,
                 `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff };
         }
     }
+  commit work;
   return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ') using ' || uriprintname)));
 }
 ;
@@ -9661,6 +9675,7 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_TYPED };
     }
+  commit work;
   return vector_concat (res, vector_concat (res, vector (vector ('00000', 'Literal class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
 }
 ;
@@ -9778,6 +9793,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_TYPED };
     }
+  commit work;
   return vector_concat (res, vector (vector ('00000', 'LITERAL class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ') using ' || uriprintname)));
 }
 ;
@@ -9932,6 +9948,7 @@ create function DB.DBA.RDF_QM_DEFINE_SUBCLASS (in subclassiri varchar, in superc
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:subclassiri)` virtrdf:isSubclassOf `iri(?:superclassiri)` };
+  commit work;
   return vector (vector ('00000', 'IRI class <' || subclassiri || '> is now known as a subclass of <' || superclassiri || '>'));
 }
 ;
@@ -9953,6 +9970,7 @@ create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar, in silent integer
       if (side_s is not null)
         signal ('22023', 'Can not drop class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
     }
+  commit work;
   return vector (vector ('00000', 'Previous definition of class <' || classiri || '> has been dropped'));
 }
 ;
@@ -9975,6 +9993,7 @@ create function DB.DBA.RDF_QM_DROP_QUAD_STORAGE (in storage varchar, in silent i
       `iri(?:storage)` ?p ?o
     }
   where { graph ?:graphiri { `iri(?:storage)` ?p ?o } };
+  commit work;
   return vector (vector ('00000', 'Quad storage <' || storage || '> is removed from the quad mapping schema'));
 }
 ;
@@ -10003,6 +10022,7 @@ create function DB.DBA.RDF_QM_DEFINE_QUAD_STORAGE (in storage varchar) returns a
         virtrdf:qsUserMaps `iri(?:qsusermaps)` .
       `iri(?:qsusermaps)`
         rdf:type virtrdf:array-of-QuadMap };
+  commit work;
   return vector (vector ('00000', 'A new empty quad storage <' || storage || '> is added to the quad mapping schema'));
 }
 ;
@@ -10016,6 +10036,7 @@ create function DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE (in storage varchar) retu
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:storage)` virtrdf:qsAlterInProgress `bif:now NIL` };
+  commit work;
   return vector (vector ('00000', 'Quad storage <' || storage || '> is flagged as being edited'));
 }
 ;
@@ -10031,6 +10052,7 @@ create function DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE (in storage varchar) return
       `iri(?:storage)` virtrdf:qsAlterInProgress ?dtstart }
   where { graph ?:graphiri {
           `iri(?:storage)` virtrdf:qsAlterInProgress ?dtstart } };
+  commit work;
   return vector (vector ('00000', 'Quad storage <' || storage || '> is unflagged and can be edited by other transactions'));
 }
 ;
@@ -10639,10 +10661,12 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
             `iri (bif:sprintf ("%s%d", str (rdf:_), ?:condctr+1))` ?:sqlcond };
     }
   DB.DBA.RDF_ADD_qmAliasesKeyrefdByQuad (qmid);
+  commit work;
   if (qm_is_default is not null)
     DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (storage, qmid);
   else
     DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (storage, qmparentid, qmid, qm_order);
+  commit work;
   return vector (vector ('00000', 'Quad map <' || qmid || '> has been created and added to the <' || storage || '>'));
 }
 ;
@@ -10686,6 +10710,7 @@ create function DB.DBA.RDF_QM_ATTACH_MAPPING (in storage varchar, in source varc
     DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (storage, qmid);
   else
     DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (storage, NULL, qmid, NULL /* !!!TBD: place real value instead of constant NULL */);
+  commit work;
   return vector (vector ('00000', 'Quad map <' || qmid || '> is added to the storage <' || storage || '>'));
 }
 ;
@@ -10873,6 +10898,7 @@ create procedure DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (in storage varchar, in qmid 
     }
   sparql define input:storage ""
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` . };
+  commit work;
 }
 ;
 
@@ -10947,6 +10973,7 @@ create procedure DB.DBA.RDF_UPGRADE_METADATA ()
     {
       DB.DBA.RDF_UPGRADE_QUAD_MAP ("qm_iri");
     }
+  commit work;
 }
 ;
 
@@ -12541,7 +12568,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2011-05-21 0001v6g';
+  ver := '2011-09-01 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
