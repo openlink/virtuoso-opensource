@@ -3057,6 +3057,7 @@ graph_processing:
     {
       declare res_file, res_content_type varchar;
       declare full_graph_uri varchar;
+      declare graph_exists integer;
       set_user_id (user_id, 1);
       res_file := get_keyword ('res-file', params, '');
       -- dbg_obj_princ ('res_file/1=', cast (res_file as varchar));
@@ -3086,6 +3087,7 @@ graph_processing:
       else
         full_graph_uri := graph_uri;
       commit work;
+      graph_exists := (sparql define input:storage "" ask where { graph `iri(?:full_graph_uri)` { ?s ?p ?o }});
       if (res_content_type = 'text/rdf+n3')
         {
           if (reqbegin like 'PUT%')
@@ -3106,17 +3108,31 @@ graph_processing:
         }
       else
         signal ('22023', 'The PUT request for graph <' || full_graph_uri || '> is rejected: the submitted resource is of unsupported type ' || coalesce (res_content_type, ''));
+      if (graph_exists is null)
+        http_request_status ('HTTP/1.1 201 Created');
+      else if (length (res_file) <= 2)
+        http_request_status ('HTTP/1.1 204 No Content');
       return;
     }
   else if (reqbegin like 'DELETE%')
     {
       set_user_id (user_id, 1);
+      if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:graph_uri)` { ?s ?p ?o }})))
+        {
+          http_request_status ('HTTP/1.1 404 Not Found');
+          return;
+        }
       sparql clear graph ?:graph_uri;
       commit work;
       return;
     }
   else if (reqbegin like 'GET%')
     {
+      if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:graph_uri)` { ?s ?p ?o }})))
+        {
+          http_request_status ('HTTP/1.1 404 Not Found');
+          return;
+        }
       connection_set ('SPARQL_crud_graph', graph_uri);
       WS.WS."/!sparql/" (path,
         vector_concat (
