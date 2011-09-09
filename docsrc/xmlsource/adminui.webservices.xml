@@ -156,22 +156,22 @@ to any WebDAV server. WebDAV methods assume that the target is publicly availabl
 <itemizedlist mark="bullet">
   <listitem>Enter a name of choice in the "Target description" text box:
 <programlisting><![CDATA[
-Basic Sitemap Crawling Example 	
+Virtuoso Sample Example	
 ]]></programlisting>  	
 </listitem>
   <listitem>Enter the URL of the site to be crawled in the "Target URL" text box: 
 <programlisting><![CDATA[
-http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp	
+http://virtuoso.openlinksw.com/
 ]]></programlisting>  	
 </listitem>
   <listitem>Enter the location in the Virtuoso WebDAV repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
 <programlisting><![CDATA[
-/DAV/home/demo/basic_sitemap/	
+/DAV/home/demo/VirtSample/	
 ]]></programlisting>  	
 </listitem>
   <listitem>Choose the  "Local resources owner" for the collection from the list box available, for ex: user demo.</listitem>
-  <listitem>Select the "Ask for RDF" check box.</listitem>      
-  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Select the "Accept RDF" check box.</listitem>      
+  <listitem>Optionally you can select "Convert Links" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the "Create" button to create the import.</listitem>        
 </itemizedlist>
     <figure id="cr11" float="1">

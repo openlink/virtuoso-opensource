@@ -1,4 +1,4 @@
-<sect1 id="rdfviewsenterpr"><title>Examples of RDF Views</title>
+<sect1 id="rdfviewsenterpr"><title>Examples of Linked Data Views</title>
 <sect2 id="rdfviewnorthwindexample1"><title>Simple Mapping Example -- Northwind RDF View</title>
 <para>Here is example of the basic Northwind RDF Views deployment. The sequence of operations is very common for adding SPARQL access to existing application.</para>
 <para>There exist few important questions to answer. Who should have access to data behind RDF View? Should someone have access to other sorts of RDF data but not to the new View? What are applications that should be interoperable with the new RDF data source? Are there any applications that produce similar data but that data sould be kept apart from data made by view? How to ensure that deployment the view will not cause problems for other applications?</para>

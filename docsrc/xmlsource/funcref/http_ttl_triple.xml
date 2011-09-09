@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_http_ttl_triple">
+  <refmeta>
+    <refentrytitle>http_ttl_triple</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_ttl_triple</refname>
+    <refpurpose>outputs next triple to ses in TTL serialization.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_ttl_triple">
+      <funcprototype id="fproto_http_ttl_triple">
+        <funcdef><function>http_ttl_triple</function></funcdef>
+	        <paramdef>in <parameter>env</parameter> any</paramdef>
+	        <paramdef>in <parameter>arg1</parameter> any</paramdef>
+	        <paramdef>in <parameter>arg2</parameter> any</paramdef>
+	        <paramdef>in <parameter>arg3</parameter> any</paramdef>
+          <paramdef>in <parameter>ses </parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_ttl_triple">
+    <title>Description</title>
+    <para>Outputs next triple to ses in TTL serialization. This function does not terminate the printed 
+    	triple in hope that the next triple will has same "s" or pair of "s" and "p". So "intermediate" 
+    	semicolon or comma can be used instead of "trailing" dot.</para>
+  </refsect1>
+  <refsect1 id="params_http_ttl_triple">
+    <title>Parameters</title>
+    <refsect2><title>env</title>
+      <para>An array of special format:</para>
+<programlisting><![CDATA[
+# vector (dict_new (some big size), 0, '', '', '', 0, 0, 0, 0), for ex.:
+vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);	
+]]></programlisting>      
+      <para>The first item of the vector is dictionary of declared namespaces. Its size should be big 
+      	enough, but not greater than 16000 because the function will never try to create more than 
+      	8000 of namespaces for S and O and more than 8000 of namespaces for P and types. Thus 
+      	16000 max is possible grand total for all four.
+      </para>
+    </refsect2>
+    <refsect2><title>arg1</title>
+      <para>Triple subject.</para>
+    </refsect2>
+    <refsect2><title>arg2</title>
+      <para>Triple predicate.</para>
+    </refsect2>
+    <refsect2><title>arg3</title>
+      <para>Triple object.</para>
+    </refsect2>
+    <refsect2><title>ses</title>
+      <para>Session output.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_http_ttl_triple"><title>Return Types</title>
+    <para>Any</para>
+  </refsect1>
+  <refsect1 id="examples_http_ttl_triple">
+    <title>Examples</title>
+    <example id="ex_http_ttl_triple"><title></title>
+<para><emphasis>Example 1</emphasis></para>    
+<programlisting><![CDATA[
+CREATE PROCEDURE dump_one_graph 
+  ( IN  srcgraph           VARCHAR  , 
+    IN  out_file           VARCHAR  , 
+    IN  file_length_limit  INTEGER  := 1000000000
+  )
+  {
+    DECLARE  file_name  varchar;
+    DECLARE  env, ses      any;
+    DECLARE  ses_len, 
+             max_ses_len, 
+             file_len, 
+             file_idx      integer;
+    SET ISOLATION = 'uncommitted';
+    max_ses_len := 10000000;
+    file_len := 0;
+    file_idx := 1;
+    file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+    string_to_file ( file_name || '.graph', 
+                     srcgraph, 
+                     -2
+                   );
+    string_to_file ( file_name, 
+                     sprintf ( '# Dump of graph <%s>, as of %s\n', 
+                               srcgraph, 
+                               CAST (NOW() AS VARCHAR)
+                             ), 
+                     -2
+                   );
+    env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
+    ses := string_output ();
+    FOR (SELECT * FROM ( SPARQL DEFINE input:storage "" 
+                         SELECT ?s ?p ?o { GRAPH `iri(?:srcgraph)` { ?s ?p ?o } } 
+                       ) AS sub OPTION (LOOP)) DO
+      {
+        http_ttl_triple (env, "s", "p", "o", ses);
+        ses_len := length (ses);
+        IF (ses_len > max_ses_len)
+          {
+            file_len := file_len + ses_len;
+            IF (file_len > file_length_limit)
+              {
+                http (' .\n', ses);
+                string_to_file (file_name, ses, -1);
+                file_len := 0;
+                file_idx := file_idx + 1;
+                file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+                string_to_file ( file_name, 
+                                 sprintf ( '# Dump of graph <%s>, as of %s (part %d)\n', 
+                                           srcgraph, 
+                                           CAST (NOW() AS VARCHAR), 
+                                           file_idx), 
+                                 -2
+                               );
+                 env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
+              }
+            ELSE
+              string_to_file (file_name, ses, -1);
+            ses := string_output ();
+          }
+      }
+    IF (LENGTH (ses))
+      {
+        http (' .\n', ses);
+        string_to_file (file_name, ses, -1);
+      }
+  }
+;
+
+]]></programlisting>
+<para><emphasis>Example 2</emphasis></para>    
+<programlisting><![CDATA[
+create procedure dump_rdftriples_to_ttl(inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('# Empty TURTLE\n', ses);
+      return;
+    }
+  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+  { whenever sqlstate '*' goto end_pred_sort;
+    rowvector_subj_sort (triples, 1, 1);
+end_pred_sort: ;
+  }
+  { whenever sqlstate '*' goto end_subj_sort;
+    rowvector_subj_sort (triples, 0, 1);
+end_subj_sort: ;
+  }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+    }
+  http (' .', ses);
+}
+;	
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_http_ttl_triple">
+    <title>See Also</title>
+    <para><link linkend="fn_http_nt_triple"><function>http_nt_triple</function></link></para>        
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>TTLP_MT</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>TTLP_MT_LOCAL_FILE</function></link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_http_nt_triple">
+  <refmeta>
+    <refentrytitle>http_nt_triple</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_nt_triple</refname>
+    <refpurpose>outputs next triple to ses in NT serialization.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_nt_triple">
+      <funcprototype id="fproto_http_nt_triple">
+        <funcdef><function>http_nt_triple</function></funcdef>
+	        <paramdef>in <parameter>env</parameter> any</paramdef>
+	        <paramdef>in <parameter>arg1</parameter> any</paramdef>
+	        <paramdef>in <parameter>arg2</parameter> any</paramdef>
+	        <paramdef>in <parameter>arg3</parameter> any</paramdef>
+          <paramdef>in <parameter>ses </parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_nt_triple">
+    <title>Description</title>
+    <para>Outputs next triple to ses in NT serialization.</para>
+  </refsect1>
+  <refsect1 id="params_http_nt_triple">
+    <title>Parameters</title>
+    <refsect2><title>env</title>
+      <para>An array of special format:</para>
+<programlisting><![CDATA[
+vector (0, 0, 0);	
+]]></programlisting>      
+      <para>It is used solely as storage for intermediate data that should be freed 
+      	by the interpreter in case of any error.
+      </para>
+    </refsect2>
+    <refsect2><title>arg1</title>
+      <para>Triple subject.</para>
+    </refsect2>
+    <refsect2><title>arg2</title>
+      <para>Triple predicate.</para>
+    </refsect2>
+    <refsect2><title>arg3</title>
+      <para>Triple object.</para>
+    </refsect2>
+    <refsect2><title>ses</title>
+      <para>Session output.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_http_nt_triple"><title>Return Types</title>
+    <para>Any</para>
+  </refsect1>
+  <refsect1 id="examples_http_nt_triple">
+    <title>Examples</title>
+    <example id="ex_http_nt_triple"><title></title>
+<programlisting><![CDATA[
+create procedure dump_rdftriples_to_nt(inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('# Empty NT\n', ses);
+      return;
+    }
+  env := vector (0, 0, 0);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      http_nt_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+    }
+}
+;
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_http_nt_triple">
+    <title>See Also</title>
+    <para><link linkend="fn_http_ttl_triple"><function>http_ttl_triple</function></link></para>    
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>TTLP_MT</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>TTLP_MT_LOCAL_FILE</function></link></para>
+  </refsect1>
+</refentry>

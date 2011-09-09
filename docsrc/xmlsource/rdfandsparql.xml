@@ -319,7 +319,7 @@ FROM .... OPTION (QUIETCAST)
 <listitem>Parameters can be passed to the query from outside, using <emphasis>?:variablename</emphasis> syntax.</listitem>
 <listitem>Aggregate functions are supported.</listitem>
 <listitem>Subqueries may appear where group patterns are allowed.</listitem>
-<listitem>A set of operators has been added to configure the mapping of relational data to RDF (aka RDF Views).</listitem>
+<listitem>A set of operators has been added to configure the mapping of relational data to RDF (aka Linked Data Views).</listitem>
 </itemizedlist>
 <para>The following listing shows the SPARQL grammar expressed in BNF, including all Virtuoso extensions but excluding rules for the syntax of each lexical element. 
 Rule numbers in square brackets are from W3C normative SPARQL grammar. An asterisk indicates that the rule differs from the W3C grammar due to Virtuoso extensions -
@@ -605,7 +605,8 @@ xsd:integer (in strg varchar) returns integer
 <sect2 id="rdfpredicatessparql"><title>Query Constructs</title>
   <para>Starting from Version 5.0, Virtuoso supports filtering RDF objects triples by a given predicate.</para>
   <sect3 id="rdfpredicatessparqlexamples"><title>Examples</title>
-    <para>The boolean functions bif:contains, bif:xcontains, bif:xpath_contains and bif:xquery_contains can be used for objects that come from RDF Views as well
+    <para>The boolean functions bif:contains, bif:xcontains, bif:xpath_contains and bif:xquery_contains 
+    	can be used for objects that come from Linked Data Views as well
 as for regular "physical" triples. Each of these functions takes two arguments and returns a boolean value.
 The first argument is a local variable which should also be used as an object field in
 the group pattern where the filter condition is placed.
@@ -696,6 +697,20 @@ At present this uses additional query parameters.</para>
 <listitem>Support for a <emphasis>default-graph-uri</emphasis> parameter</listitem>
 <listitem>Support for a variety of query types including CONSTRUCT and DESCRIBE</listitem>
 </itemizedlist>
+<para>Virtuoso also supports /sparql-graph-crud/ web service endpoint that
+implements the current draft of <ulink url="http://www.w3.org/TR/sparql11-http-rdf-update/">W3C SPARQL Graph Update protocol</ulink>. 
+Both /sparql /sparql-graph-crud/ endpoints use the same SPARQL user account, 
+so this user should be member of SPARQL_UPDATE group in order to modify data via Graph Update protocol.
+Note that /sparql/ endpoint has /sparql-auth/ variant that uses web authentication.
+Similarly, /sparql-graph-crud/ has /sparql-graph-crud-auth/ variant. As
+soon as user is member of SPARQL_UPDATE group, she/he can modify the stored
+data via /sparql-graph-crud-auth/ as well as via /sparql-auth/ .
+
+The /sparql-graph-crud/ endpoint is primarily for serving requests from applications, not for manual interactions via browser.
+
+See more information in our <link linkend="sparqloauthendpointauth">SPARQL Authentication</link> section.
+
+</para>
 </sect3>
 
 <sect3 id="rdfsupportedprotocolendpoint"><title>Service Endpoint</title>
@@ -1268,6 +1283,7 @@ Each of these authentication methods is associated with a purpose specific defau
 <itemizedlist mark="bullet">
   <listitem>http://&lt;cname&gt;/sparql-auth (SQL authentication)</listitem>
   <listitem>http://&lt;cname&gt;/sparql-oauth (OAuth)</listitem>
+  <listitem>http://&lt;cname&gt;/sparql-graph-crud-auth (OAuth CRUD)</listitem>
   <listitem>https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (WebID Protocol)</listitem>
 </itemizedlist>
 <para>The Virtuoso Authentication Server offers a UI with options for managing:</para>
@@ -2967,7 +2983,7 @@ QUAD MAP quad-map-name { group-pattern }
 
 <note><para>Although it is technically possible to use <emphasis>QUAD
 MAP</emphasis> to improve the performance of a query that tries to
-access redundant RDF Views, it is much better to achieve the same
+access redundant Linked Data Views, it is much better to achieve the same
 effect by providing a more restrictive query or by changing/extending
 the RDF View. If an application relies on this trick then interoperable third-party SPARQL
 clients may experience problems because they cannot use Virtuoso-specific
@@ -4548,7 +4564,7 @@ input:named-graph-exclude works like "NOT FROM NAMED" clause.
   contains all X ?p ?o and all ?s ?p X triples for each given X. In "SPO" mode, the result contains 
   X ?p ?o triples only. In "CBD" mode, the result contains concise bound descriptions of given 
   subjects. Application developers may add more modes.</listitem>
-  <listitem><code>sql:signal-void-variables</code>: the most useful debugging variable if RDF Views 
+  <listitem><code>sql:signal-void-variables</code>: the most useful debugging variable if Linked Data Views 
   are in use. It tells the SPARQL compiler to signal an error if it can prove that some variable can 
   never be bound. Usually it means error in query, like typo in IRI or totally wrong triple 
   pattern.</listitem> 
@@ -4883,7 +4899,7 @@ This will make free-text index data incomplete.
 Calling procedure <emphasis>DB.DBA.RDF_OBJ_FT_RECOVER ()</emphasis> will insert all missing free-text index items by dropping and re-inserting every existing free-text index rule.
 </para>
 </sect3>
-<sect3 id="rdfviewsandfreetext"><title>Free-Text Indexes on RDF Views</title>
+<sect3 id="rdfviewsandfreetext"><title>Free-Text Indexes on Linked Data Views</title>
 <para>
 If an <emphasis>O</emphasis> field of a quad map pattern gets its value from a database column that has a free text index then this index can be used in SPARQL for efficient text searching. As a variation of this facility, the free-text index of another table may be used.
 </para>
@@ -4949,7 +4965,8 @@ Adding a free-text predicate will add <emphasis>DB.DBA.RDF_OBJ</emphasis> to the
 As a result, &quot;you pay only for what you use&quot;: adding free-text index to the declaration does not add tables to the query unless the index is actually used.
 </para>
 <para>
-Boolean functions <function>bif:contains</function> and <function>bif:xcontains</function> are used for objects that come from RDF Views as well as for regular &quot;physical&quot; triples.
+Boolean functions <function>bif:contains</function> and <function>bif:xcontains</function> are used 
+for objects that come from Linked Data Views as well as for regular &quot;physical&quot; triples.
 Every function takes two arguments and returns a boolean value. The first argument is an local variable.
 The argument variable should be used as an object field in the group pattern where the filter condition is placed.
 Moreover, the occurrence of the variable in an object field should be placed <emphasis>before</emphasis> the filter.
@@ -5095,7 +5112,7 @@ Insert into <http://mygraph.com>, 1 triples -- done
 1 Rows. -- 20 msec.
 ]]></programlisting>
 </sect4>
-<sect4 id="rdfsparulexamples2"><title>Example for delete graph equivalents</title>
+<sect4 id="rdfsparulexamples2"><title>Example for delete graph equivalence</title>
        <para>The following two statements are equivalent but the latter may work faster, especially
 if there are many RDF views in the system or if the graph in question contains triples from RDF views.
 Note that neither of these two statements affects data coming from RDF views.
@@ -5119,6 +5136,37 @@ Clear <http://mygraph.com> -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
+   <para>DROP GRAPH is equivalent of CLEAR GRAPH. It requires initially the graph to be 
+   	created explicitly.</para>
+   <para>Note: All SPARQL commands should work via SPARUL ( i.e. executed from the /sparql endpoint) 
+   	as soon as "SPARQL" user has "SPARQL_UPDATE" privilege.</para>
+   <para>Assume the following sequence of commands to be executed from the /sparql endpoint:</para>
+   <itemizedlist mark="bullet">
+     <listitem>Create explicitly a graph:
+<programlisting><![CDATA[
+CREATE GRAPH <qq>
+	
+callret-0
+Create graph <qq> -- done
+]]></programlisting>     	
+     </listitem>
+     <listitem>If you don't know whether the graph is created explicitly or not, use <emphasis>DROP SILENT GRAPH</emphasis>:
+<programlisting><![CDATA[
+DROP SILENT	GRAPH <qq> 
+	
+callret-0	
+Drop silent graph <qq> -- done	
+]]></programlisting>     	
+     </listitem>
+     <listitem>If you know the graph is created explicitly, use <emphasis>DROP GRAPH</emphasis>:
+<programlisting><![CDATA[
+DROP GRAPH <qq> 	
+	
+callret-0
+Drop graph <qq> -- done	
+]]></programlisting>     	
+     </listitem>
+   </itemizedlist>
 </sect4>
 <sect4 id="rdfsparulexamples3"><title>Example for deleting all triples for given subject</title>
 <para>The following statement deletes all records with &lt;http://myopenlink.net/dataspace/Kingsley#this&gt; as the subject:</para>
@@ -5282,8 +5330,31 @@ http://dbpedia.org/resource/Poverty 	         http://dbpedia.org/resource/Tanzan
        <para>'Modify graph' may be used as a form of 'update' operation.
        </para>
 <programlisting><![CDATA[
-SQL>SPARQL MODIFY GRAPH <http://mygraph.com> DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+-- update a graph with insert scoped on the same graph	
+SQL>SPARQL 
+MODIFY GRAPH <http://mygraph.com> 
+DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } 
+INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } 
+FROM <http://mygraph.com> 	
+WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
 
+-- update a graph with insert scoped on another graph	
+SQL>SPARQL 
+MODIFY GRAPH <http://mygraph.com> 
+DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } 
+INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } 
+FROM <http://mytest.com> 	
+WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+	
+
+-- update a graph with insert scoped over the whole RDF Quad Store
+SQL>SPARQL 
+MODIFY GRAPH <http://mygraph.com> 
+DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } 
+INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } 
+WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+	
+-- update a graph with delete of particular tripple
 SQL>SPARQL
 DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
 
@@ -5386,6 +5457,7 @@ SQL>SPARQL
 MODIFY GRAPH <http://mygraph.com>
 DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o }
 INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o }
+FROM <http://mygraph.com>	
 WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
 
 SQL>DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
@@ -5393,6 +5465,9 @@ SQL>DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Ca
 SQL>SPARQL
 load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/n3_collection/kidehen.n3") INTO GRAPH <http://mygraph.com>;
 ]]></programlisting>
+  <tip><title>See Also:</title>
+    <para><link linkend="rdfsparulexamples7">Examples for Modify used as Update</link></para>
+  </tip>
 </sect4>
 <sect4 id="rdfsparulexamples10"><title>Example for Dropping graph</title>
 <para>When handling very large RDF data collections (e.g. 600 million triples ) loaded into Virtuoso
@@ -5973,6 +6048,9 @@ Modify <http://BookStore.com>, delete 1 and insert 1 triples -- done
 
 1 Rows. -- 20 msec.
 ]]></programlisting>
+  <tip><title>See Also:</title>
+    <para><link linkend="rdfsparulexamples7">Examples for Modify used as Update</link></para>
+  </tip>
 </sect4>
 <sect4 id="rdfsparulexamples14"><title>Example for Deleting triples from graph</title>
 <para>The example below has a request to delete all records of old books (dated before year 2000)
@@ -7229,7 +7307,7 @@ SELECT ?g ?s WHERE { ?s <p> ?o }
 </sect2>
 </sect1>
 
-<sect1 id="rdfviews"><title>RDF Views over RDBMS Data Source</title>
+<sect1 id="rdfviews"><title>Linked Data Views over RDBMS Data Source</title>
 <para>
 RDF Views map relational data into RDF and allow customizing RDF representation of locally stored RDF data.
 To let SPARQL clients access relational data as well as physical RDF graphs in a single query, we introduce a declarative Meta Schema Language for mapping SQL Data to RDF Ontologies.
@@ -8271,9 +8349,9 @@ These steps may be largely automated (the "One-Click" Deployment below), or perf
     <orderedlist>
   <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
   <listitem>Log in as user dba (or another user with DBA privileges)</listitem>
-  <listitem>Follow menu path Database -> RDF Views
+  <listitem>Follow menu path Linked Data -> Linked Data Views
     <figure id="rd1" float="1">
-      <title>RDF Views</title>
+      <title>Linked Data Views</title>
       <graphic fileref="ui/rd1.png"/>
     </figure>
 </listitem>
@@ -8287,16 +8365,16 @@ that exposes the Tables / Views for this exercise </listitem>
   <listitem>Click the "Generate &amp; Publish" button</listitem>
     </orderedlist>
     <figure id="rd2" float="1">
-      <title>RDF Views Generate and Publish</title>
+      <title>Linked Data Views Generate and Publish</title>
       <graphic fileref="ui/rd2.png"/>
     </figure>
 </listitem>
   <listitem>Virtuoso will perform the entire process of ontology generation, instance data generation, and
 linked data deployment (re-write rules generation and application).</listitem>
   <listitem>Error messages will be presented if the Wizard encounters problems. If there are no error
-messages, your RDF view declarations and Linked Data publishing activities will have completed successfully.
+messages, your Linked Data View declarations and Linked Data publishing activities will have completed successfully.
     <figure id="rd13" float="1">
-      <title>RDF View declarations and Linked Data publishing activities</title>
+      <title>Linked Data View declarations and Linked Data publishing activities</title>
       <graphic fileref="ui/rd13.png"/>
     </figure>
       </listitem>
@@ -8304,7 +8382,7 @@ messages, your RDF view declarations and Linked Data publishing activities will 
 <orderedlist>
   <listitem>Save Data Mappings: when clicked, offers to save the generated Definitions to local file system</listitem>
   <listitem>Save Ontology Mappings: when clicked, offers to save the generated Ontology to local file system</listitem>
-  <listitem>Click on the "Cancel" should you want to return to the initial RDF View Generation form.</listitem>
+  <listitem>Click on the "Cancel" should you want to return to the initial Linked Data View Generation form.</listitem>
 </orderedlist>
   </listitem>
 </orderedlist>
@@ -8316,9 +8394,9 @@ data in RDF Linked Data form, using the Conductor's HTML-based wizard:
 <orderedlist>
   <listitem>Go to http://&lt;cname&gt;:port/conductor</listitem>
   <listitem>Log in as user dba (or another user with DBA privileges)</listitem>
-  <listitem>Follow menu path Database -> RDF Views
+  <listitem>Follow menu path Linked Data -> Linked Data Views
     <figure id="rd1" float="1">
-      <title>RDF Views</title>
+      <title>Linked Data Views</title>
       <graphic fileref="ui/rd1.png"/>
     </figure>
 </listitem>
@@ -8359,7 +8437,7 @@ You can:
   <listitem>After finishing with your changes click the Save button, or cancel the changes and go back by
 clicking the Cancel button.</listitem>
   <listitem>Make sure you click the "Next" button.</listitem>
-  <listitem>At this point, the RDF View Definition form will let you Select Generation Targets options:
+  <listitem>At this point, the Linked Data View Definition form will let you Select Generation Targets options:
     <orderedlist>
       <listitem>Data Source Ontology Mappings</listitem>
       <listitem>Instance Data View Mappings</listitem>
@@ -8371,7 +8449,7 @@ clicking the Cancel button.</listitem>
     </figure>
 </listitem>
   <listitem>Make sure you click the "Next" button.</listitem>
-  <listitem>Based on your selections in the prior form, the RDF View Definition Deployment Options form will be offered:
+  <listitem>Based on your selections in the prior form, the Linked Data View Definition Deployment Options form will be offered:
     <orderedlist>
       <listitem>Data Source Ontology Rules</listitem>
       <listitem>Instance Data Rules
@@ -8431,7 +8509,7 @@ system</listitem>
       <graphic fileref="ui/rd9.png"/>
     </figure>
 </listitem>
-  <listitem>Click on Cancel to return to the initial RDF View Generation form.</listitem>
+  <listitem>Click on Cancel to return to the initial Linked Data View Generation form.</listitem>
 </orderedlist>
 </sect2>
 </sect1>
@@ -8470,7 +8548,7 @@ multiple streams and load these in parallel using this function.</listitem>
       </itemizedlist>
       <para>See <link linkend="rdfperfloading">more details</link> for loading Performance Tuning specifics.</para>
     </sect2>
-    <sect2 id="rdfinsertmethodshttppost"><title>HTTP Post using Content-Type: application/sparql-query</title>
+    <sect2 id="rdfinsertmethodshttppost"><title>SPARQL endpoint REST API</title>
 	<para>With POST can be accomplished SPARQL Insert/Update etc.</para>
 	<para>The result is in the rdf_quad.</para>
 	<para>With GET Methods you can get the triples which are saved.</para>
@@ -8657,9 +8735,20 @@ curl -F "query=SELECT distinct ?Concept FROM <http://openlinksw.com/dataspace/or
 ]]></programlisting>
     </sect2>
      <sect2 id="rdfinsertmethodsload"><title>SPARQL Insert using LOAD</title>
-        <para>SPARQL INSERT operation can be done using the LOAD feature.</para>
-        <para><emphasis>Example:</emphasis></para>
-        <para>Execute from ISQL:</para>
+        <para>SPARQL INSERT operation can be done using the LOAD features:</para>
+<programlisting><![CDATA[        
+	
+SPARQL INSERT INTO <..> { .... } [[FROM ...] { ... }]
+	
+SPARQL LOAD <x> [INTO <y>]
+
+-- <ResourceURL> will be the Graph IRI of the loaded data:
+SPARQL LOAD <ResourceURL> 
+	
+]]></programlisting> 
+        <para>Examples:</para>               
+<orderedlist>
+   <listitem>Load from ISQL:
 <programlisting><![CDATA[
 SPARQL insert in graph <http://mygraph.com>
     {
@@ -8695,8 +8784,11 @@ SPARQL insert in graph <http://mygraph.com>
   <http://rdfs.org/sioc/ns#id>
   <demo> .};
 ]]></programlisting>
-        <para>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</para>
-        <para>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:</para>
+   </listitem>
+   <listitem>Load from .rq file:
+     <itemizedlist mark="bullet">
+       <listitem>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</listitem>
+       <listitem>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:
 <programlisting><![CDATA[
 SPARQL
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -8713,7 +8805,8 @@ WHERE
   }
 ORDER BY ?x
 ]]></programlisting>
-        <para>Now from ISQL execute the following command:</para>
+       </listitem>
+       <listitem>Execute from ISQL the following command:
 <programlisting><![CDATA[
 SQL>SPARQL
 load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://myNewGraph.com>;
@@ -8728,6 +8821,24 @@ Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.co
 
 1 Rows. -- 321 msec.
 ]]></programlisting>
+       </listitem>       
+     </itemizedlist>	
+   </listitem>
+   <listitem>Load from Resource URL:
+<programlisting><![CDATA[   	
+SQL> SPARQL LOAD <http://www.w3.org/People/Berners-Lee/card#i>;
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Load <http://www.w3.org/People/Berners-Lee/card#i> into graph <http://www.w3.org/People/Berners-Lee/card#i> -- done
+
+1 Rows. -- 703 msec.
+SQL>
+
+]]></programlisting>	
+   </listitem>
+</orderedlist>
     </sect2>
      <sect2 id="rdfindertmethodsparqlendpoint"><title>SPARQL Insert via /sparql endpoint</title>
         <para>SPARQL INSERT operation can be sent to a web service endpoint as a single statement and executed in sequence.</para>
@@ -8813,7 +8924,7 @@ http://www.dajobe.org/foaf.rdf#i              http://purl.org/dc/elements/1.1/da
    </listitem>
 </itemizedlist>
 </sect2>
-     <sect2 id="rdfinsertmethodsparqlqueryandodswiki"><title>SPARQL Insert via HTTP Post using Content-Type: application/sparql-query and ODS wiki</title>
+     <sect2 id="rdfinsertmethodsparqlqueryandodswiki"><title>SPARQL Insert via SPARQL endpoint REST API and ODS wiki</title>
         <para>With HTTP Post and ODS wiki can be written an rdf document and respectively to be performed over it INSERT/UPDATE action.</para>
         <para>You can write to a file using SIOC terms for ODS-Wiki</para>
         <para>You can check with sparql the inserted / updated triples in the Quad Store.</para>
@@ -9906,7 +10017,7 @@ example: http://www.google.com/base/feeds/snippets/17891817243016304554
   </tgroup>
 </table>
 <sect3 id="virtuosospongerrdfmappers"><title>SPARQL IRI Dereferencing</title>
-<para>The Virtuoso SPARQL engine (called for brevity just SPARQL bellow) supports IRI Dereferencing,
+<para>The Virtuoso SPARQL engine (called for brevity just SPARQL below) supports IRI Dereferencing,
 however it understands only RDF data, that is it can retrieve only files containing RDF/XML, turtle
 or N3 serialized RDF data, if format is unknown it will try mapping with built-in WebDAV metadata
 extractor. In order to extend this feature with dereferencing web or file resources which naturally
@@ -11374,7 +11485,7 @@ basically the value of RM_KEY column of the DB.DBA.SYS_RDF_MAPPERS table.</listi
 </itemizedlist>
 <para>Note: the names of the parameters are not important, but their order and presence are!</para>
 <para><emphasis>Example Implementation:</emphasis></para>
-<para>In the example script bellow we implement a basic mapper, which maps a text/plain mime type to an
+<para>In the example script below we implement a basic mapper, which maps a text/plain mime type to an
 imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
 and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
 <programlisting><![CDATA[
@@ -12183,6 +12294,72 @@ Only then does it make sense to query for campaign finance data from the NYTCF d
         <para>Only if this is the case is the RDF_NYTCF_LOOKUP routine called to query for and return campaign finance data for the candidate. The form of the query and the resulting XML output from the Campaign Finance service were presented earlier.</para>
       </sect4>
     </sect3>
+    <sect3 id="virtuosospongequeue">
+       <title>Sponger Queue API</title>
+       <sect4 id="virtuosospongequeuefn"> 
+         <title>Functions</title>	
+         <itemizedlist mark="bullet">
+           <listitem><emphasis>DB.DBA.RDF_SPONGER_QUEUE_ADD</emphasis>: This function is available when 
+           rdf cartridges vad is installed.
+<programlisting><![CDATA[
+DB.DBA.RDF_SPONGER_QUEUE_ADD  (url, options);	
+]]></programlisting>           
+             <itemizedlist mark="bullet">
+               <listitem><emphasis>url</emphasis>: the URI to sponge </listitem>
+               <listitem><emphasis>options</emphasis>: an array usually typical sponger pragmas, for ex:
+<programlisting><![CDATA[
+vector ('get:soft',  'soft',  'refresh_free_text',  1);	
+]]></programlisting>               	
+               	</listitem>
+             </itemizedlist>
+           </listitem>
+         </itemizedlist>
+       </sect4> 
+       <sect4 id="virtuosospongequeuerwebs"> 
+         <title>REST Web service</title>	
+         <para>The Sponger REST Web service has the following characteristics:</para>
+         <itemizedlist mark="bullet">
+           <listitem>endpoint: http://cname/about/service</listitem>
+           <listitem>parameters:
+             <itemizedlist mark="bullet">
+               <listitem>op=add: type of operation, for now addition to the queue is supported</listitem>
+               <listitem>uris=[json array]: an array of URIs to be added to the sponger queue, the format is JSON array, for example:
+<programlisting><![CDATA[
+ { "uris":["http://www.amazon.co.uk/Hama-Stylus-Input-Apple-iPad/dp/B003O0OM0C", "http://www.amazon.co.uk/Krusell-GAIA-Case-Apple-iPad/dp/B003QHXWWC" ] }	
+]]></programlisting>               	
+               </listitem>
+             </itemizedlist>           	
+           </listitem>
+         </itemizedlist>         
+         <para>The service will return a json encoded result of the number of items added, for example:</para>
+<programlisting><![CDATA[
+{ "result":2 }	
+]]></programlisting>  
+         <para>In case of error a JSON with error text will be returned and http status 500.</para>       
+         <emphasis>cURL example</emphasis>
+         <orderedlist>
+           <listitem>Assume file.txt which contains URL encoded JSON string:
+<programlisting><![CDATA[
+uris=%7B%20%22uris%22%3A%5B%22http%3A%2F%2Fwww.amazon.co.uk%2FHama-Stylus-Input-Apple-iPad%2Fdp%2FB003O0OM0C%22%2C%20%22http%3A%2F%2Fwww.amazon.co.uk%2FKrusell-GAIA-Case-Apple-iPad%2Fdp%2FB003QHXWWC%22%20%5D%20%7D	
+]]></programlisting>
+           </listitem>
+           <listitem>Execute the following command:
+<programlisting><![CDATA[
+curl -i -d@file.txt http://cname/about/service?op=add
+HTTP/1.1 200 OK
+Server: Virtuoso/06.02.3129 (Darwin) i686-apple-darwin10.0.0  VDB
+Connection: Keep-Alive
+Date: Thu, 05 May 2011 12:06:24 GMT
+Accept-Ranges: bytes
+Content-Type: applcation/json; charset="UTF-8"
+Content-Length: 14
+
+{ "result":2 }	
+]]></programlisting>
+           </listitem>
+         </orderedlist>
+       </sect4>             	
+    </sect3>
     <sect3 id="virtuosospongerelatedfunc">
     <title>Virtuoso functions usage examples</title>
     <sect4 id="virtuosospongerelatedfuncstring">
@@ -12615,7 +12792,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       <listitem>Build the latest Python hosting module. It will introduce a new function <code>python_exec ()</code>
 <para>The parameters of python_exec are :</para>
 <itemizedlist mark="bullet">
-  <listitem>string containing a python code, it should define one or more functions, see remarks bellow</listitem>
+  <listitem>string containing a python code, it should define one or more functions, see remarks below</listitem>
   <listitem>string containing name of function to be called</listitem>
   <listitem>list of parameters for the function </listitem>
   </itemizedlist>
@@ -12721,8 +12898,8 @@ sparql define get:soft "soft" select * from <http://www.amazon.com/Apple-touch-G
 <itemizedlist mark="bullet">
 	<listitem><link linkend="virtuosospongerusageprocessorex">SPARQL Processor Usage Example</link></listitem>
 	<listitem><link linkend="virtuosospongerusageproxyex2">RDF Proxy Service Example</link></listitem>
-	<listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtDeployingLinkedDataGuide_BrowsingNorthwindRdfView#AncMozToc2">Browsing &amp; Exploring RDF View Example Using ODE</ulink></listitem>
-	<listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtDeployingLinkedDataGuide_BrowsingNorthwindRdfView#AncMozToc3">Browsing &amp; Exploring RDF View Example Using iSPARQL</ulink></listitem>
+	<listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtDeployingLinkedDataGuide_BrowsingNorthwindRdfView#AncMozToc2">Browsing &amp; Exploring Linked Data View Example Using ODE</ulink></listitem>
+	<listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtDeployingLinkedDataGuide_BrowsingNorthwindRdfView#AncMozToc3">Browsing &amp; Exploring Linked Data View Example Using iSPARQL</ulink></listitem>
 	<listitem><link linkend="rdfinsertmethodplapissimpleexample">Basic Sponger Cartridge Example</link></listitem>
   <listitem><link linkend="virtuosospongerusagebriefex">HTTP Example for Extracting Metadata using CURL</link></listitem>
   <listitem><link linkend="virtuosospongercartridgetypesmetarestexamples">RESTFul Interaction Examples</link></listitem>
@@ -17174,8 +17351,8 @@ WHERE
 </sect1>
 
 <sect1 id="rdfsparqlgeospat"><title>RDF and Geometry</title>
-<para>A geometry may occur as an object of an RDF quad. The SQL MM functions can then be used for
-querying for geometries.
+<para>A geometry may occur as an object of an RDF quad. The SQL MM functions can then 
+	be used for geospatial queries.
 </para>
 <para>
 For geometry functions, see the <link linkend="sqlrefgeospatial">SQL Geometry support section</link>.
@@ -18507,65 +18684,92 @@ built-in function.</para>
 In order to dump all graphs with extension exclude those graphs of a certain type by using a
 sparql ask query, you may use the following script sequence:
 <programlisting><![CDATA[
-create procedure dump_graphs (in dir varchar := 'dumps', in file_length_limit integer := 1000000000)
+CREATE PROCEDURE dump_graphs 
+  ( IN  dir               VARCHAR  :=  'dumps'   , 
+    IN  file_length_limit INTEGER  :=  1000000000
+  )
 {
-  declare inx int;
+    DECLARE inx INT;
   inx := 1;
-  set isolation = 'uncommitted';
-  for (select * from (sparql define input:storage "" select distinct ?g { graph ?g { ?s ?p ?o } . filter ( ?g != virtrdf: ) } ) as sub option (loop)) do
-    {
-
-      if (exists (sparql define input:storage "" ask where { ?:g <http://www.strigi.org/fields#indexGraphFor> ?r . }))
-	{
-      dump_one_graph ("g", sprintf ('%s/graph%06d_', dir, inx), file_length_limit);
-        }
-      else
-	{
-	  dump_one_graph ("g", sprintf ('%s/graph%06d_', dir, inx), file_length_limit);
-	}
+    SET ISOLATION = 'uncommitted';
+    FOR ( SELECT * 
+            FROM ( SPARQL DEFINE input:storage "" 
+                   SELECT DISTINCT ?g { GRAPH ?g { ?s ?p ?o } . 
+                                        FILTER ( ?g != virtrdf: ) 
+                                      } 
+                 ) AS sub OPTION ( LOOP )) DO
+      {
+        dump_one_graph ( "g", 
+                         sprintf ('%s/graph%06d_', dir, inx), 
+                         file_length_limit
+                       );
       inx := inx + 1;
     }
 }
 ;
 
-create procedure dump_one_graph (in srcgraph varchar, in out_file_prefix varchar, in file_length_limit integer := 1000000000)
+
+CREATE PROCEDURE dump_one_graph 
+  ( IN  srcgraph           VARCHAR  , 
+    IN  out_file           VARCHAR  , 
+    IN  file_length_limit  INTEGER  := 1000000000
+  )
 {
-  declare file_name varchar;
-  declare env, ses any;
-  declare ses_len, max_ses_len, file_len, file_idx integer;
-  set isolation = 'uncommitted';
+    DECLARE  file_name  varchar;
+    DECLARE  env, ses      any;
+    DECLARE  ses_len, 
+             max_ses_len, 
+             file_len, 
+             file_idx      integer;
+    SET ISOLATION = 'uncommitted';
   max_ses_len := 10000000;
   file_len := 0;
   file_idx := 1;
-  file_name := sprintf ('%s%06d.ttl', out_file_prefix, file_idx);
-  string_to_file (file_name || '.graph', srcgraph, -2);
-  string_to_file (file_name, sprintf ('# Dump of graph <%s>, as of %s\n', srcgraph, cast (now() as varchar)), -2);
-  --env := vector (dict_new (16000), 0, '', '', '', 0, 0);
+    file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+    string_to_file ( file_name || '.graph', 
+                     srcgraph, 
+                     -2
+                   );
+    string_to_file ( file_name, 
+                     sprintf ( '# Dump of graph <%s>, as of %s\n', 
+                               srcgraph, 
+                               CAST (NOW() AS VARCHAR)
+                             ), 
+                     -2
+                   );
   env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
   ses := string_output ();
-  for (select * from (sparql define input:storage "" select ?s ?p ?o { graph `iri(?:srcgraph)` { ?s ?p ?o } } ) as sub option (loop)) do
+    FOR (SELECT * FROM ( SPARQL DEFINE input:storage "" 
+                         SELECT ?s ?p ?o { GRAPH `iri(?:srcgraph)` { ?s ?p ?o } } 
+                       ) AS sub OPTION (LOOP)) DO
     {
       http_ttl_triple (env, "s", "p", "o", ses);
       ses_len := length (ses);
-      if (ses_len > max_ses_len)
+        IF (ses_len > max_ses_len)
         {
           file_len := file_len + ses_len;
-          if (file_len > file_length_limit)
+            IF (file_len > file_length_limit)
             {
               http (' .\n', ses);
               string_to_file (file_name, ses, -1);
               file_len := 0;
               file_idx := file_idx + 1;
-              file_name := sprintf ('%s%06d.ttl', out_file_prefix, file_idx);
-              string_to_file (file_name, sprintf ('# Dump of graph <%s>, as of %s (part %d)\n', srcgraph, cast (now() as varchar), file_idx), -2);
+                file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+                string_to_file ( file_name, 
+                                 sprintf ( '# Dump of graph <%s>, as of %s (part %d)\n', 
+                                           srcgraph, 
+                                           CAST (NOW() AS VARCHAR), 
+                                           file_idx), 
+                                 -2
+                               );
 	      env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
             }
-          else
+            ELSE
             string_to_file (file_name, ses, -1);
           ses := string_output ();
         }
     }
-  if (length (ses))
+    IF (LENGTH (ses))
     {
       http (' .\n', ses);
       string_to_file (file_name, ses, -1);
@@ -20502,10 +20706,11 @@ the <ulink url="http://jena.sourceforge.net/">Jena 2.5.5</ulink> version current
     <sect3 id="rdfnativestorageprovidersjenasetup"><title>Setup</title>
     <sect4 id="rdfnativestorageprovidersjenareqfiles"><title>Required Files</title>
     <itemizedlist mark="bullet">
-      <listitem>Virtuoso Jena Provider JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virt_jena.jar">virt_jena.jar</ulink></listitem>
-      <listitem>Virtuoso JDBC Driver JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
-      <listitem>Jena Framework and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/jenajars.zip">jenajars.zip</ulink></listitem>
-      <listitem>Sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjenasamples.zip">virtjenasamples.zip</ulink></listitem>
+      <listitem>Virtuoso Jena Provider JAR file, <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload/virt_jena.jar">virt_jena.jar</ulink></listitem>
+      <listitem>Virtuoso JDBC Driver 3 JAR file, <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
+      <listitem>Virtuoso JDBC Driver 4 JAR file, <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload/virtjdbc4.jar">virtjdbc4.jar</ulink></listitem>      
+      <listitem>Jena Framework and associated classes, <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload/jenajars.zip">jenajars.zip</ulink></listitem>
+      <listitem>Sample programs, <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload/virtjenasamples.zip">virtjenasamples.zip</ulink></listitem>
     </itemizedlist>
     </sect4>
     <sect4 id="rdfnativestorageprovidersjenacmsmpr"><title>Compiling Jena Sample Programs</title>

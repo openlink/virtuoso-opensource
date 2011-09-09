@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_strstr">
     <title>Description</title>
-    <para><function>strcasestr</function> performs a
+    <para><function>strstr</function> performs a
     substring search, returning a zero-based index pointing to
     beginning of first occurrence of <parameter>sub</parameter> or
     NULL if not found.</para></refsect1>

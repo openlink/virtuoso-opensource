@@ -124,7 +124,7 @@ list.</para>
 <para>Use the <emphasis>Add</emphasis>/<emphasis>Remove</emphasis> to add 
 or remove selected resolvers.</para>
 
-<para>Click on <emphasis>New Resolver</emphasis> to add a new resolver. You have the
+<para>Click on Publication Item -&gt; <emphasis>New Resolver</emphasis> to add a new resolver. You have the
 following details to contend with:</para>
 
 <itemizedlist>
@@ -163,31 +163,21 @@ following details to contend with:</para>
           <graphic fileref="ui/repltranspub006.png"/></figure>
 
 
-
+    <para>Click on Publication -&gt; <emphasis>Advanced Options</emphasis> to set additional settings such as split size, default copy mode of publication item, etc.</para>
 		<figure float="1"><title>Transaction Replication - Advanced</title>
           <graphic fileref="ui/repltranspub005.png"/></figure>
 
 		</sect4>
 		<sect4 id="subscriptions">
 			<title>Subscriptions</title>
-		<para>
-To add new subscription click at New Subscription and follow the wizard.
-</para>
-		<para>
-Click Edit to change properties.
-</para>
-		<para>
-To drop subscription click at link Drop.
-</para>
-		<para>
-To synchronize subscription click the Sync button.
-</para>
-		<para>
-To disconnect all subscriptions click at Disconnect all button.
-</para>
-		<para>
-To load image file click at Load image button and follow the wizard
-</para>
+			<itemizedlist mark="bullet">
+  <listitem>To add new subscription click at New Subscription and follow the wizard.</listitem>
+  <listitem>Click Edit to change properties.</listitem>
+  <listitem>To drop subscription click at link Drop.</listitem>
+  <listitem>To synchronize subscription click the Sync button.</listitem>
+  <listitem>To disconnect all subscriptions click at Disconnect all button.</listitem>
+  <listitem>To load image file click at Load image button and follow the wizard.</listitem>
+</itemizedlist>
         <figure float="1"><title>Transaction Replication - Subscription</title>
           <graphic fileref="ui/replt_trans_sub_01.png"/></figure>
         <figure float="1"><title>Transaction Replication - Subscription</title>

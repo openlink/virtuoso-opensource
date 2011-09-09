@@ -68,7 +68,7 @@
   <refsect1 id="examples_xenc_SPKI_read">
     <title>Examples</title>
     <example id="ex_xenc_SPKI_read"><title>SPKI reading</title>
-      <para>The example bellow creates a temp key.</para>
+      <para>The example below creates a temp key.</para>
       <screen><![CDATA[
        kname := xenc_SPKI_read (null, replace (get_keyword ('key', params), '\r\n', ''));
 ]]>

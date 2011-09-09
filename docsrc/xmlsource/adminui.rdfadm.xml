@@ -22,10 +22,10 @@
  -
 -->
 
-<sect2 id="rdfadm"><title>Conductor RDF Administration</title>
-  <para>From Conductor the RDF tab allows you to execute/save/load SPARQL queries, 
+<sect2 id="rdfadm"><title>Conductor Linked Data Administration</title>
+  <para>From Conductor the Linked Data tab allows you to execute/save/load SPARQL queries, 
 	to add/edit RDF Mapping, to perform statistics and manage graphs, 
-	to import schemas and define namespaces, to generated RDF views and to upload to the RDF Store.
+	to import schemas and define namespaces, to generated Linked Data views and to upload to the Quad Store.
 	</para>
   <sect3 id="rdfadmsparql"><title>SPARQL</title>  
     <sect4 id="rdfadmsparqlex"><title>Query</title>  
@@ -135,9 +135,16 @@
 		    <graphic fileref="rdf12.png"/>
 	    </figure>	  	  
 	</sect3>
-	<sect3 id="rdfadmviews"><title>RDF Views</title>
+	<sect3 id="rdfadmviews"><title>Linked Data Views</title>
 	  <para>Virtuoso uses a SPARQL-based Meta Schema Language to provide RDBMS-to-RDF mapping 
-	  	functionality (also described as, RDF Views of SQL data). The language is an extension of the SPARQL query language meshed with Virtuoso's SPASQL (SPARQL-inside-SQL) functionality. The language enables you to declaratively map relational database schema tables, columns, rows, and foreign key relationships to Classes, Attributes, Relationships, and Instances (Objects/Entities/Individuals) defined by RDF Schemas or OWL Ontologies. The mapping process uses a special built-in Virtuoso function to generate IRIs / URIs in "Subject" or "Object" position of a SPARQL graph pattern, en route to building a set of SQL compiler rules and optimizations for translating SPARQL queries into SQL on the fly.</para>
+	  	functionality (also described as, RDF Views of SQL data). The language is an extension of the 
+	  	SPARQL query language meshed with Virtuoso's SPASQL (SPARQL-inside-SQL) functionality. The 
+	  	language enables you to declaratively map relational database schema tables, columns, rows, 
+	  	and foreign key relationships to Classes, Attributes, Relationships, and Instances 
+	  	(Objects/Entities/Individuals) defined by RDF Schemas or OWL Ontologies. The mapping 
+	  	process uses a special built-in Virtuoso function to generate IRIs / URIs in "Subject" 
+	  	or "Object" position of a SPARQL graph pattern, en route to building a set of SQL compiler 
+	  	rules and optimizations for translating SPARQL queries into SQL on the fly.</para>
 	  	<figure id="adminuirdf16" float="1">
         <title>RDF</title>
 		    <graphic fileref="rdf13.png"/>
@@ -149,8 +156,8 @@
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtRdb2RDFViewsGeneration">Automated Generation of RDF Views over Relational Data Sources with Virtuoso.</ulink></para>	      	      
 	    </tip>
 	</sect3>
-	<sect3 id="rdfadm"><title>RDF Store Upoload</title>
-	  <para>Offers upload to RDF Quad Store from file or Resource URL:</para>
+	<sect3 id="rdfadm"><title>Quad Store Upoload</title>
+	  <para>Offers upload to Quad Store from file or Resource URL:</para>
 	  	<figure id="adminuirdf17" float="1">
         <title>RDF</title>
 		    <graphic fileref="rdf16.png"/>

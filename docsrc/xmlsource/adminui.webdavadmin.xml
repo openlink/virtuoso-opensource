@@ -78,8 +78,8 @@ Add new types by typing the details into the fields provided and pressing the <e
   <sect4 id="davcontresperm"><title>Resource Permissions</title>
   <para>Unlike Unix, the Repository does not use the designation 'd' for 
   directories, which in DAV are more commonly referred to as collections.  
-  Collections are distinguished by a different icon &mdash; a folder-like icon 
-  &mdash; and by having the type named &quot;collection&quot;.</para>
+  Collections are distinguished by a different icon - a folder-like icon
+  - and by having the type named &quot;collection&quot;.</para>
 
   <para>In addition, the permissions string has a trailing letter designating
   the indexing status of the resource.  This letter is 'n' to designate 
@@ -196,13 +196,13 @@ Name.</para>
 
 <example id="ex_davsymlincs"><title>Examples:</title>
 
-<para>If I wish to keep a link to the article found at &lt;URL:
-http://www.xml.com/pub/a/2001/10/17/slippery-soap.html&gt;  I would
+<para>If one wishes to keep a link to the article found at &lt;URL:
+http://www.xml.com/pub/a/2001/10/17/slippery-soap.html&gt;  he/she would
 simply click the Add Link button, type a useful local name, such as
 &quot;Slippery SOAP article&quot; and paste the URL into the Link to
 field.</para>
 
-<para>More interesting, I could set up a Web Data Import for the
+<para>More interesting, he/she could set up a Web Data Import for the
 target &lt;URL:
 http://news.cnet.com/news/0-1277-210-7545619-1.html?tag=bt_bh&gt;</para>
 

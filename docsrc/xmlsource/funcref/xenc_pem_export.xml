@@ -68,7 +68,7 @@
   <refsect1 id="examples_xenc_pem_export">
     <title>Examples</title>
     <example id="ex_xenc_pem_export"><title>Creating a certificate and exporting it in PEM format</title>
-      <para>The example bellow imports a client public key, then it creates a certificate and sign it with CA's private key and finally it exports the generated certificate in PEM format.</para>
+      <para>The example below imports a client public key, then it creates a certificate and sign it with CA's private key and finally it exports the generated certificate in PEM format.</para>
       <screen><![CDATA[
        kname := xenc_SPKI_read (null, replace (get_keyword ('key', params), '\r\n', ''));
        xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), 365, 

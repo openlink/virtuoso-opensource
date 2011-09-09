@@ -87,7 +87,9 @@ perform WSDL Import/Export, manage your BPEL processes.
 		<title>Replication</title>
 		<graphic fileref="replication.png"/>
         </figure>
-      <para>From "RDF" you can execute/save/load SPARQL queries, add/edit RDF Mapping, make statistics, manage graphs, import schemas and define namespaces, generated RDF views, upload to the RDF Store:</para>
+      <para>From "Linked Data" you can execute/save/load SPARQL queries, add/edit RDF Mapping, make 
+      	statistics, manage graphs, import schemas and define namespaces, generated Linked Data RDF views, 
+      	upload to the Quad Store:</para>
 	<figure id="adminuirdf" float="1">
                 <title>RDF</title>
 		<graphic fileref="rdf.png"/>

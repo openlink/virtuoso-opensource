@@ -84,7 +84,9 @@
   <refsect1 id="examples_xenc_x509_generate">
     <title>Examples</title>
     <example id="ex_xenc_x509_generate"><title>Issuing a certificate</title>
-      <para>The example bellow decode a public key sent from client and then issue a certificate and sign it with CA's key 'id_rsa'. The client's key is create as temp key.</para>
+      <para>The example below decodes a public key sent from client and 
+      	then issue a certificate and sign it with CA's key 'id_rsa'. 
+      	The client's key is create as temp key.</para>
       <screen><![CDATA[
        declare kname, cvalue varchar; 
        kname := xenc_SPKI_read (null, replace (get_keyword ('key', params), '\r\n', ''));
