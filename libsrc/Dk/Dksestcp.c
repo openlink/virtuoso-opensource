@@ -2425,6 +2425,7 @@ sslses_to_tcpses (session_t * ses)
   ses->ses_device->dev_funs->dfp_write = tcpses_write;
   ses->ses_device->dev_funs->dfp_free = tcpdev_free;
   ses->ses_device->dev_connection->ssl = NULL;
+  ses->ses_device->dev_connection->ssl_ctx = NULL;
 }
 
 
