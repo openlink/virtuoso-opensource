@@ -6323,12 +6323,15 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
   name := replace (name, ':', '_');
   name := replace (name, '/', '_');
   name := replace (name, '.', '_');
+  name := replace (name, '&', '_');
   -- collect HTTP header block
   content := http_full_request (0);
   if (registry_get ('__save_http_history_on_disk') = '1')
     {
       if (file_stat ('./sys_http_recording') = 0)
 	signal ('VSPX9', 'Can not upload resource into sys_http_recording/ directory');
+      if (length (name) > 200)
+	name := subseq (name, 0, 200);
       string_to_file ('./sys_http_recording/' || name, content, -2);
     }
   else
