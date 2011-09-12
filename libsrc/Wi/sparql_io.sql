@@ -1781,16 +1781,17 @@ create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_q
   {
     format := (
       case lower(format)
-        when 'json' then 'application/sparql-results+json'
-        when 'js' then 'application/javascript'
-        when 'html' then 'text/html'
-        when 'sparql' then 'application/sparql-results+xml'
-        when 'xml' then 'application/sparql-results+xml'
-        when 'rdf' then 'application/rdf+xml'
-        when 'n3' then 'text/rdf+n3'
-        when 'cxml' then 'text/cxml'
-        when 'cxml+qrcode' then 'text/cxml+qrcode'
-        when 'csv' then 'text/csv'
+        when 'json' 		then 'application/sparql-results+json'
+        when 'js' 		then 'application/javascript'
+        when 'html' 		then 'text/html'
+        when 'sparql' 		then 'application/sparql-results+xml'
+        when 'xml' 		then 'application/sparql-results+xml'
+        when 'rdf' 		then 'application/rdf+xml'
+        when 'n3' 		then 'text/rdf+n3'
+        when 'cxml' 		then 'text/cxml'
+        when 'cxml+qrcode' 	then 'text/cxml+qrcode'
+        when 'csv' 		then 'text/csv'
+	when 'json-ld'		then 'application/ld+json'
         else format
       end);
   }
@@ -1801,36 +1802,36 @@ create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_q
       )
     {
       opts := vector (
-      		vector ('text/rdf+n3', 'N3/Turtle'),
-      		vector ('application/rdf+json', 'RDF/JSON'),
-      		vector ('application/rdf+xml', 'RDF/XML'),
-      		vector ('text/plain', 'NTriples'),
-      		vector ('application/xhtml+xml', 'XHTML+RDFa'),
-      		vector ('application/atom+xml', 'ATOM+XML'),
-      		vector ('application/odata+json', 'ODATA/JSON'),
-      		vector ('application/x-json+ld', 'JSON-LD'),
-      		vector ('text/html', 'HTML+Microdata'),
-      		vector ('application/microdata+json', 'Microdata/JSON')
+      		vector ('text/rdf+n3',			'N3/Turtle'),
+      		vector ('application/rdf+json',		'RDF/JSON'),
+      		vector ('application/rdf+xml',		'RDF/XML'),
+      		vector ('text/plain',			'NTriples'),
+      		vector ('application/xhtml+xml',	'XHTML+RDFa'),
+      		vector ('application/atom+xml',		'ATOM+XML'),
+      		vector ('application/odata+json',	'ODATA/JSON'),
+      		vector ('application/ld+json',		'JSON-LD'),
+      		vector ('text/html',			'HTML+Microdata'),
+      		vector ('application/microdata+json',	'Microdata/JSON')
       );
     }
   else
     {
       if (not length (format)) format := 'text/html';
       opts := vector (
-      		vector ('auto', 'Auto'),
-      		vector ('text/html', 'HTML'),
-      		vector ('application/vnd.ms-excel', 'Spreadsheet'),
-      		vector ('application/sparql-results+xml', 'XML'),
-      		vector ('application/sparql-results+json', 'JSON'),
-      		vector ('application/javascript', 'Javascript'),
-      		vector ('text/plain', 'NTriples'),
-      		vector ('application/rdf+xml', 'RDF/XML')
+      		vector ('auto',					'Auto'),
+      		vector ('text/html',				'HTML'),
+      		vector ('application/vnd.ms-excel',		'Spreadsheet'),
+      		vector ('application/sparql-results+xml',	'XML'),
+      		vector ('application/sparql-results+json',	'JSON'),
+      		vector ('application/javascript',		'Javascript'),
+      		vector ('text/plain',				'NTriples'),
+      		vector ('application/rdf+xml',			'RDF/XML')
 		);
     }
   foreach (any x in opts) do
     {
       http(sprintf ('<option value="%V" %s>%V</option>\n',
-	  x[0], case when format = x[0] then 'selected' else '' end , x[1]));
+	  x[0], case when format = x[0] then 'selected="selected"' else '' end , x[1]));
     }
   http('			    <option value="text/csv">CSV</option>\n');
   if (can_cxml)
@@ -2129,7 +2130,7 @@ http('    format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
 http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
 http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-http('    format.options[8] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+http('    format.options[8] = new Option(\'JSON-LD\',\'application/ld+json\');\n');
 http('    format.options[9] = new Option(\'HTML+Microdata\',\'text/html\');\n');
 http('    format.options[10] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
 http('    format.options[11] = new Option(\'CSV\',\'text/csv\');\n');
@@ -3271,6 +3272,8 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
       else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
       else if ('application/x-json+ld' = mime)
+        DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
+      else if ('application/ld+json' = mime)
         DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
       else if ('application/xhtml+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, out_ses);
