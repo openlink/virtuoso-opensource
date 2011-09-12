@@ -686,32 +686,46 @@ spar_tr_fields_are_similar (sparp_t *sparp, SPART *fld1, SPART *fld2)
   return 0; /* to keep compiler happy */
 }
 
+SPART *
+spar_dealias (sparp_t *sparp, SPART *expn, int expected_type)
+{
+  if (SPAR_ALIAS == SPART_TYPE (expn))
+    expn = expn->_.alias.arg;
+  if ((expected_type > 0) && (expected_type != SPART_TYPE (expn)))
+    spar_internal_error (sparp, "spar_" "deailas(): unexpected type of expression");
+  return expn;
+}
+
 int
 spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
 {
   SPART *triple;
-  SPART *ctor;
+  SPART *emu;
   SPART **known_vars;
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
   SPART **var_triples, **args;
-  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return 0; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   triple = spar_find_single_physical_triple_pattern (sparp, top->_.req_top.pattern);
   if (NULL == triple)
     return 0; /* nontrivial pattern, can not be optimized this way */
-  graph_expn		= retvals[0]->_.funcall.argtrees[0];
-  ctor			= retvals[0]->_.funcall.argtrees[1];
-  uid_expn		= retvals[0]->_.funcall.argtrees[2];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
+  arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
+  graph_expn		= arg0->_.funcall.argtrees[0];
+  ctor			= arg0->_.funcall.argtrees[1];
+  uid_expn		= arg0->_.funcall.argtrees[2];
+  log_mode_expn		= arg0->_.funcall.argtrees[3];
+  compose_report_expn	= arg0->_.funcall.argtrees[4];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   dbg_assert (DELETE_L == top->_.req_top.subtype);
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *known_vars_vector = spar_dealias (sparp, retvals [retvals_count-1], SPAR_FUNCALL);
+      known_vars = known_vars_vector->_.funcall.argtrees;
+    }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
   if (1 != BOX_ELEMENTS (var_triples))
@@ -722,15 +736,18 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
     (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
     return 0; /* bnodes in constructor can not be optimized this way (BTW that is blab when inside DELETE) */
   if (!spar_tr_fields_are_similar (sparp, graph_expn,
-      triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX] ) ||
-    !spar_tr_fields_are_similar (sparp,
-      spar_emulate_ctor_field (sparp, args[0], args[1], known_vars),
-      triple->_.triple.tr_fields[SPART_TRIPLE_SUBJECT_IDX] ) ||
-    !spar_tr_fields_are_similar (sparp,
-      spar_emulate_ctor_field (sparp, args[2], args[3], known_vars),
-      triple->_.triple.tr_fields[SPART_TRIPLE_PREDICATE_IDX] ) ||
-    !spar_tr_fields_are_similar (sparp,
-      spar_emulate_ctor_field (sparp, args[4], args[5], known_vars),
+      triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX] ) )
+    return 0;
+  emu = spar_emulate_ctor_field (sparp, args[0], args[1], known_vars);
+  if (!spar_tr_fields_are_similar (sparp, emu,
+      triple->_.triple.tr_fields[SPART_TRIPLE_SUBJECT_IDX] ) )
+    return 0;
+  emu = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
+  if (!spar_tr_fields_are_similar (sparp, emu,
+      triple->_.triple.tr_fields[SPART_TRIPLE_PREDICATE_IDX] ) )
+    return 0;
+  emu = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
+  if (!spar_tr_fields_are_similar (sparp, emu,
       triple->_.triple.tr_fields[SPART_TRIPLE_OBJECT_IDX] ) )
     return 0;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_DELETE_CTOR",
@@ -748,7 +765,6 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
 void
 spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
 {
-  SPART *ctor;
   SPART **known_vars;
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
@@ -759,23 +775,22 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dk_set_t bad_triples = NULL;
   int all_triple_count, bad_triple_count, tctr;
   const char *fname;
-  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
-  graph_expn		= retvals[0]->_.funcall.argtrees[0];
-  ctor			= retvals[0]->_.funcall.argtrees[1];
-  uid_expn		= retvals[0]->_.funcall.argtrees[2];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
+  arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
+  graph_expn		= arg0->_.funcall.argtrees[0];
+  ctor			= arg0->_.funcall.argtrees[1];
+  uid_expn		= arg0->_.funcall.argtrees[2];
+  log_mode_expn		= arg0->_.funcall.argtrees[3];
+  compose_report_expn	= arg0->_.funcall.argtrees[4];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
     {
-      SPART *call = retvals [retvals_count-1];
-      if (SPAR_ALIAS == SPART_TYPE (call))
-        call = call->_.alias.arg;
-      known_vars = call->_.funcall.argtrees;
+      SPART *known_vars_vector = spar_dealias (sparp, retvals [retvals_count-1], SPAR_FUNCALL);
+      known_vars = known_vars_vector->_.funcall.argtrees;
     }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
@@ -835,7 +850,6 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
 void
 spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
 {
-  SPART *del_ctor, *ins_ctor;
   SPART **known_vars;
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
@@ -848,16 +862,17 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   dk_set_t bad_ins_triples = NULL;
   int all_del_triple_count, bad_del_triple_count, del_const_count, del_tctr;
   int all_ins_triple_count, bad_ins_triple_count, ins_tctr;
-  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *del_ctor, *ins_ctor, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (6 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
-  graph_expn		= retvals[0]->_.funcall.argtrees[0];
-  del_ctor		= retvals[0]->_.funcall.argtrees[1];
-  ins_ctor		= retvals[0]->_.funcall.argtrees[2];
-  uid_expn		= retvals[0]->_.funcall.argtrees[3];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[4];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[5];
+  arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
+  graph_expn		= arg0->_.funcall.argtrees[0];
+  del_ctor		= arg0->_.funcall.argtrees[1];
+  ins_ctor		= arg0->_.funcall.argtrees[2];
+  uid_expn		= arg0->_.funcall.argtrees[3];
+  log_mode_expn		= arg0->_.funcall.argtrees[4];
+  compose_report_expn	= arg0->_.funcall.argtrees[5];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (4 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (4 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));
   del_var_triples = del_ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
@@ -865,7 +880,10 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   del_const_triples = del_ctor->_.funcall.argtrees[2]->_.funcall.argtrees;
   del_const_count = BOX_ELEMENTS (del_const_triples);
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *known_vars_vector = spar_dealias (sparp, retvals [retvals_count-1], SPAR_FUNCALL);
+      known_vars = known_vars_vector->_.funcall.argtrees;
+    }
   else
     known_vars = ins_ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
 /* Part 1. Collecting optimized data for DELETE ctor */
