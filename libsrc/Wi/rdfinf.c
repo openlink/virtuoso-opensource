@@ -2262,7 +2262,7 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
   sql_comp_t * sc = so->so_sc;
   outer_seq_end_node_t * ose;
   dk_hash_t * res = hash_table_allocate (11);
-  data_source_t * first1 = qn_next (first);
+  data_source_t * first1 = first ? qn_next (first) : NULL;
   data_source_t * org_first = first1;
   void * dp;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, res);
