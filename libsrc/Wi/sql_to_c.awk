@@ -455,7 +455,7 @@ BEGIN   {
 		        dep_col = _deps[3]
 			if (dep_tb == "__PROCEDURE__")
 			  {
-			    _text = "\n if (sch_proc_def_exists (bootstrap_cli, \"" dep_col "\"))"
+			    _text = "\n if (sch_proc_def_exists (bootstrap_cli, \"" dep_col "\", 0))"
 			  }
 			else
 			  {
@@ -695,21 +695,23 @@ END 	{
 		print ""
 	    }
 
-           print "static int\nsch_proc_def_exists (client_connection_t *cli, const char *proc_name)\n{"
+           print "static int\nsch_proc_def_exists (client_connection_t *cli, const char *proc_name, const int report)\n{"
 	   print "  query_t *proc = NULL;"
 	   print "  char *full_name = sch_full_proc_name (isp_schema(NULL), proc_name,"
 	   print "	cli->cli_qualifier, CLI_OWNER (cli));"
 	   print "  if (full_name)"
 	   print "    proc = sch_proc_def (isp_schema(NULL), full_name);"
+	   print "  if (report && proc != NULL)"
+	   print "     log_debug (\"built-in procedure \\\"%s\\\" overruled by the RDBMS\", proc_name);"
 	   print "  return (proc != NULL);"
 	   print "}\n"
 
 	   print "#define DEFINE_PROC(name, proc) \\"
-	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name))) \\"
+	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name), log_proc_overwrite)) \\"
 	   print "     ddl_std_proc_1 (proc, 0x0, 1)\n\n"
 
 	   print "#define DEFINE_PUBLIC_PROC(name, proc) \\"
-	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name))) \\"
+	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name), log_proc_overwrite)) \\"
 	   print "     ddl_std_proc_1 (proc, 0x1, 1)\n\n"
 
 	   print "#define DEFINE_OVERWRITE_PROC(name, proc) \\"
@@ -717,7 +719,7 @@ END 	{
 	   if (stored_proc > 0)
 	   {
 	   print "#define DEFINE_STORED_PROC(name, proc) \\"
-	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name))) \\"
+	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name), log_proc_overwrite)) \\"
            print "     ddl_ensure_table (\"do this always\", proc);\n\n"
 	   }
            if (nudt > 0)

@@ -1290,5 +1290,6 @@ void itc_assert_no_reg (it_cursor_t * itc);
 #endif
 
 caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
+extern int32 log_proc_overwrite;
 
 #endif /* _SQLFN_H */

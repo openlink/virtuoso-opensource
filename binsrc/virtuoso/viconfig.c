@@ -111,6 +111,7 @@ extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
+extern int32 log_proc_overwrite;
 
 #ifdef _SSL
 extern char *https_port;
@@ -905,6 +906,10 @@ cfg_setup (void)
     em_ra_startup_threshold = 0;
   if (cfg_getlong (pconfig, section, "ExtentReadStartupWindow", &em_ra_startup_window) == -1)
    em_ra_startup_window = 40000;
+
+  if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
+    log_proc_overwrite = 1;
+
 
   {
     int nbdirs;
