@@ -115,6 +115,14 @@
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="photo"/>
             </xsl:when>
+            <xsl:when test="$og_object_type = 'status'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="status"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'link'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="link"/>
+            </xsl:when>
             <xsl:when test="$og_object_type = 'user_activities'">
 	            <xsl:apply-templates mode="user_activities"/>
             </xsl:when>
@@ -183,6 +191,12 @@
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_television'">
 	            <xsl:apply-templates mode="user_television"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'status_comments'">
+	            <xsl:apply-templates mode="status_comments"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'link_comments'">
+	            <xsl:apply-templates mode="status_comments"/>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:apply-templates />
@@ -363,7 +377,7 @@
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:for-each select="comments/data">
-					<sioc:topic>
+					<sioc:has_reply>
 						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdfs:label>
@@ -389,7 +403,7 @@
 							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 						</sioct:Comment>
-					</sioc:topic>
+					</sioc:has_reply>
 				</xsl:for-each>
                 <!--xsl:for-each select="metadata/connections/*">
 					<foaf:focus rdf:resource="{.}"/>
@@ -495,7 +509,7 @@
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:for-each select="comments/data">
-					<sioc:topic>
+					<sioc:has_reply>
 						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdfs:label>
@@ -521,7 +535,7 @@
 							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 						</sioct:Comment>
-					</sioc:topic>
+					</sioc:has_reply>
 				</xsl:for-each>
 				<!--xsl:for-each select="metadata/connections/*">
 					<foaf:focus rdf:resource="{.}"/>
@@ -825,7 +839,7 @@
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
 	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
@@ -851,7 +865,7 @@
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 						</rdf:Description>
                     </sioc:container_of>
@@ -871,6 +885,7 @@
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Link_', $id))}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Link" />
+                            <rdf:type rdf:resource="&sioc;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
 							<xsl:if test="picture">
@@ -902,7 +917,7 @@
                               </xsl:choose>
 					        </dcterms:created>
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
@@ -928,7 +943,7 @@
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 	                        <!--foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" /-->
 		                </rdf:Description>
@@ -992,7 +1007,7 @@
 								<oplog:album_type><xsl:value-of select="type"/></oplog:album_type>
 							</xsl:if>
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
@@ -1018,7 +1033,7 @@
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1210,7 +1225,7 @@
                               </xsl:choose>
 					        </dcterms:modified>
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
@@ -1236,7 +1251,7 @@
 										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1443,6 +1458,97 @@
 		</rdf:RDF>
 	</xsl:template>
 
+	<xsl:template match="/results" mode="status">
+		<xsl:variable name="id" select="id" />
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <rdf:type rdf:resource="&oplog;Post" />
+                <rdf:type rdf:resource="&sioc;Post" />
+                <oplog:id><xsl:value-of select="id"/></oplog:id>
+                <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
+                <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+    	        <dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                            <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="created_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+		        </dcterms:created>
+    			<dcterms:modified rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                             <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+				</dcterms:modified>
+                <xsl:if test="message">
+                    <oplog:message><xsl:value-of select="message"/></oplog:message>
+                </xsl:if>
+                <xsl:if test="actions/link">
+		            <xsl:variable name="link" select="actions/link" />
+                    <oplog:link rdf:resource="{$link}" />
+                </xsl:if>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="/results" mode="link">
+		<xsl:variable name="id" select="id" />
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <rdf:type rdf:resource="&oplog;Link" />
+                <rdf:type rdf:resource="&sioc;Post" />
+                <oplog:id><xsl:value-of select="id"/></oplog:id>
+                <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
+                <rdfs:label><xsl:value-of select="concat ('Link ', $id)"/></rdfs:label>
+    	        <dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                            <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="created_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+		        </dcterms:created>
+    			<dcterms:modified rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                             <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+				</dcterms:modified>
+                <xsl:if test="message">
+                    <oplog:message><xsl:value-of select="message"/></oplog:message>
+                </xsl:if>
+                <xsl:if test="link">
+		            <xsl:variable name="link" select="link" />
+                    <oplog:link rdf:resource="{$link}" />
+                </xsl:if>
+                <xsl:if test="description">
+                    <dc:description><xsl:value-of select="description"/></dc:description>
+                </xsl:if>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
+
     <!-- Process output from: http://graph.facebook.com/<id>/posts?access_token=... -->
 	<xsl:template match="/results" mode="user_posts">
 	    <rdf:RDF>
@@ -1455,6 +1561,7 @@
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Post_', $id))}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Post" />
+                            <rdf:type rdf:resource="&sioc;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
@@ -1514,6 +1621,7 @@
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Post_', $id))}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Post" />
+                            <rdf:type rdf:resource="&sioc;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
                             <oplog:to><xsl:value-of select="concat (to/data/name, ' (', to/data/id, ')')"/></oplog:to>
@@ -1558,6 +1666,46 @@
 	    </rdf:RDF>
 	</xsl:template>
 	
+	<xsl:template match="/results" mode="status_comments">
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <xsl:for-each select="data">
+					<sioc:has_reply>
+						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+							<rdfs:label>
+								<xsl:value-of select="message" />
+							</rdfs:label>
+							<dc:title>
+								<xsl:value-of select="message" />
+							</dc:title>
+							<dc:description>
+                                <!--
+								<xsl:value-of select="message" />
+                                -->
+								<xsl:value-of select="concat ('Comment from ', from/name)" />
+							</dc:description>
+							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
+    				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                  <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
+					        </dcterms:created>
+						</sioct:Comment>
+					</sioc:has_reply>
+                </xsl:for-each>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
 
     <xsl:template match="*|text()"/>
 

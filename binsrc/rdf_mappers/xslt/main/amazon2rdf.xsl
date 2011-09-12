@@ -26,6 +26,7 @@
 <!ENTITY book "http://purl.org/NET/book/vocab#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dbpedia "http://dbpedia.org/ontology/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -51,6 +52,7 @@
     xmlns:gr="&gr;"
     xmlns:pto="&pto;" 
     xmlns:book="&book;"
+    xmlns:dbpedia="&dbpedia;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:review="&review;"
@@ -705,6 +707,11 @@
 
     <xsl:template match="amz:ItemAttributes/amz:Author" mode="bibo">
       <dcterms:creator><xsl:value-of select="."/></dcterms:creator>
+      <dbpedia:author>
+        <foaf:Person rdf:about="{vi:proxyIRI ($base, '', translate(., ' ', '_'))}">
+          <foaf:name><xsl:value-of select="."/></foaf:name>
+        </foaf:Person>
+      </dbpedia:author>
     </xsl:template>
 
     <xsl:template match="text()|@*"/>
