@@ -34,6 +34,7 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:opl="http://www.openlinksw.com/schema/attribution#"
     xmlns:mql="http://www.freebase.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms= "http://purl.org/dc/terms/"
@@ -125,6 +126,12 @@
 		    <xsl:call-template name="space-name"/>
 		</xsl:variable>
 		<rdf:Description rdf:about="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}">
+			<opl:providedBy>
+				<foaf:Organization rdf:about="http://www.crunchbase.com#this">
+					<foaf:name>Crunchbase</foaf:name>
+					<foaf:homepage rdf:resource="http://www.crunchbase.com"/>
+				</foaf:Organization>
+			</opl:providedBy>
 		    <foaf:page rdf:resource="{$baseUri}"/>
 		    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		    <xsl:variable name="type">
@@ -339,6 +346,10 @@
 			<xsl:apply-templates select="@*|node()"/>
 		    </xsl:element>
 		</xsl:element>
+	    </xsl:when>
+	    <xsl:when test="name() like 'competitions'">
+                <!-- Use only the child competitor elements, don't create an oplcb:competitions property -->
+                <xsl:apply-templates />
 	    </xsl:when>
 	    <xsl:otherwise>
 		<xsl:element namespace="{$ns}" name="{name()}">

@@ -3373,7 +3373,8 @@ got_picture_url:
 		{
 			declare og_msg varchar;
 			og_msg := cast (xpath_eval('results/error/message', xt) as varchar);
-			if (retries = 0 and og_err = 'OAuthException' and strstr (og_msg, 'Invalid OAuth access token') is not null)
+			if (retries = 0 and og_err = 'OAuthException' and 
+                                (strstr (og_msg, 'Invalid OAuth access token') is not null or strstr (og_msg, 'Error validating access token') is not null))
 			{
 				-- Access token is invalid
 				-- Even public connections will fail if tried with an invalid access token
@@ -3476,6 +3477,23 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
        where
          OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES > now()
       )
+  do
+  {
+    access_token := _token;
+  }
+
+  if (access_token is not null)
+    return access_token;
+
+  -- Use any available non-expiring access token to sign requests 
+  for (select top 1 
+       OGAT_ACCESS_TOKEN as _token
+     from 
+       DB.DBA.OPENGRAPH_ACCESS_TOKENS 
+     where 
+       OGAT_EXPIRES is null 
+     order by OGAT_CREATED desc
+    )
   do
   {
     access_token := _token;
@@ -7216,7 +7234,7 @@ create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri va
   xt := xtree_doc (xt);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/csvxml2rdf.xsl', xt,
     vector ('baseUri', new_origin_uri));
-  xd := serialize_to_UTF8_xml (xt);
+  xd := blob_to_string_output (xt);
   RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), null);
