@@ -1622,6 +1622,7 @@ create procedure __INT_REPL_ALTER_DROP_COL (in tb varchar, in col varchar,
 }
 ;
 
+--!AWK OVERWRITE
 create procedure __INT_REPL_ALTER_REDO_TRIGGERS (in tb varchar)
 {
   for (select

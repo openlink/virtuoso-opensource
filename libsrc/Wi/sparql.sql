@@ -1574,27 +1574,28 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 }
 ;
 
-create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any, in g_iid IRI_ID, inout old_g_iid IRI_ID, in ro_id_dict any := null) returns any
-{
-  declare t int;
-  t := __tag (longobj);
-  if (__tag of rdf_box <> t)
-    {
-      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
-        return longobj;
-      if (__tag of nvarchar = t)
-        longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
-      else if (t in (126, 217))
-        longobj := cast (longobj as varchar);
-      else if (bit_and (1, __box_flags (longobj)))
-        return iri_to_id (longobj);
-      return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
-    }
-  if (0 = rdf_box_needs_digest (longobj))
-    return longobj;
-  return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
-}
-;
+-- The below is a duplicated code with different signature
+--create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any, in g_iid IRI_ID, inout old_g_iid IRI_ID, in ro_id_dict any := null) returns any
+--{
+--  declare t int;
+--  t := __tag (longobj);
+--  if (__tag of rdf_box <> t)
+--    {
+--      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+--        return longobj;
+--      if (__tag of nvarchar = t)
+--        longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
+--      else if (t in (126, 217))
+--        longobj := cast (longobj as varchar);
+--      else if (bit_and (1, __box_flags (longobj)))
+--        return iri_to_id (longobj);
+--      return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
+--    }
+--  if (0 = rdf_box_needs_digest (longobj))
+--    return longobj;
+--  return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
+--}
+--;
 
 create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
 {
@@ -13506,15 +13507,15 @@ create procedure cl_inx_recov_fill_1 ()
 }
 ;
 
-create procedure AQ_EXEC_SRV (in cmd varchar)
-{
-  declare st, msg any;
-  st := '00000';
-  exec (cmd, st, msg, vector ());
-  if ('00000' <> st)
-    signal (st, msg);
-}
-;
+--create procedure AQ_EXEC_SRV (in cmd varchar)
+--{
+--  declare st, msg any;
+--  st := '00000';
+--  exec (cmd, st, msg, vector ());
+--  if ('00000' <> st)
+--    signal (st, msg);
+--}
+--;
 
 
 create procedure exec_from_daq (in cmd varchar)
