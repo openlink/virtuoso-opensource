@@ -3618,7 +3618,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   int flags = bif_long_arg (qst, args, 2, "sparql_iri_split_rdfa_qname");
   const char *tail;
   int iri_strlen;
-  caddr_t ns_iri, prefix, *prefix_ptr, res;
+  caddr_t ns_iri, prefix, *prefix_ptr, res, to_free;
   switch (DV_TYPE_OF (raw_iri))
     {
       case DV_IRI_ID:
@@ -3663,7 +3663,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
     }
   if (tail > iri && tail[-1] == '%' && (tail < (iri + iri_strlen - 2)))
     tail += 2;
-  ns_iri = box_dv_short_nchars (iri, tail-iri);
+  to_free = ns_iri = box_dv_short_nchars (iri, tail-iri);
   prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
   if (NULL != prefix_ptr)
     prefix = prefix_ptr[0];
@@ -3673,6 +3673,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
       sprintf (buf, "n%ld", (long)(ht->ht_count));
       prefix = box_dv_short_string (buf);
       id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
+      to_free = NULL; /* to be released when hash table is free */
     }
   else
     prefix = NULL;
@@ -3680,6 +3681,8 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 res_done:
   if (iri != raw_iri)
     dk_free_tree (iri);
+  if (to_free)
+    dk_free_box (to_free);
   return res;
 }
 
