@@ -2669,6 +2669,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	  caddr_t id_box = box_iri_id (iri_id_no);
 	  caddr_t ret = cl_id_to_iri (qi, id_box);
 	  dk_free_box (id_box);
+	  dk_free_box (local);
 	  return ret;
 	}
       else

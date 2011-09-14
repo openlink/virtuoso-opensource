@@ -855,6 +855,6 @@ set_ctr_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state)
 void
 set_ctr_free (set_ctr_node_t * sctr)
 {
-
+  dk_set_free (sctr->sctr_continuable);
   clb_free (&sctr->clb);
 }

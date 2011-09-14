@@ -293,7 +293,7 @@ sqlg_non_index_ins (df_elt_t * tb_dfe)
 	  && sqlo_in_list (cp, NULL, NULL))
 	{
 	  if (tb_dfe->_.table.join_test)
-	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
+	    tb_dfe->_.table.join_test = (df_elt_t **) t_list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
 	  else
 	    tb_dfe->_.table.join_test = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
 	  cp->dfe_is_placed = DFE_GEN;
