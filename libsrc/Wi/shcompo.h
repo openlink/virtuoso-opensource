@@ -121,8 +121,8 @@ typedef struct shcompo_s
     } while (0)
 #define SHC_LEAVE(s) \
     do { \
-      mutex_leave ((s)->shcompo_comp_mutex); \
       (s)->shcompo_owner = NULL; \
+      mutex_leave ((s)->shcompo_comp_mutex); \
     } while (0)
 #define SHC_COMP_MTX_CHECK(s) \
     if ((s)->shcompo_comp_mutex && (s)->shcompo_owner != NULL) GPF_T

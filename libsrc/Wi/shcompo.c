@@ -324,6 +324,9 @@ shcompo_alloc__default (void *env)
 {
   shcompo_t *res = (shcompo_t *)dk_alloc (sizeof (shcompo_t));
   res->shcompo_data = NULL;
+#ifndef NDEBUG
+  res->shcompo_owner = NULL;
+#endif
   return res;
 }
 
