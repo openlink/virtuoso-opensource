@@ -2319,6 +2319,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
             {
               session_buffered_write_char ('@', ses);
               session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
+	      dk_free_box (lang_id);
             }
         }
       if (rb->rb_type > RDF_BOX_MIN_TYPE && RDF_BOX_DEFAULT_TYPE != rb->rb_type)
@@ -2572,6 +2573,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
             {
               session_buffered_write_char ('@', ses);
               session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
+	      dk_free_box (lang_id);
             }
         }
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
@@ -2796,7 +2798,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
-  ccaddr_t type_uri = NULL;
+  ccaddr_t type_uri = NULL, to_free = NULL;
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
@@ -2806,7 +2808,9 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
-        type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+	{
+	  to_free = type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+	}
     }
   else
     {
@@ -2872,10 +2876,9 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
           if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
             {                            /* 012.34567.8901.23 */
               session_buffered_write (ses, " , \"lang\" : \"", 13);
-              lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
-              if (NULL != lang_id)
                 dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
               session_buffered_write_char ('\"', ses);
+	      dk_free_box (lang_id);
             }
         }
     }
@@ -2889,6 +2892,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       session_buffered_write_char ('\"', ses);
     }
   session_buffered_write (ses, " }", 2);
+  dk_free_box (to_free);
 }
 
 caddr_t
