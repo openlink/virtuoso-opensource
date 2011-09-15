@@ -1,3 +1,1356 @@
+2011-09-15 16:02  source
+
+	* Updated version to 6.1.4-rc1
+
+2011-09-15 10:42  source
+
+	* Fixed mem leaks
+
+2011-09-14 19:06  source
+
+	* Fixed uninitialized variable
+
+2011-09-14 15:38  source
+
+	* Fixed memory leaks
+
+2011-09-14 15:38  source
+
+	* Fixed valgrind warning when using DEBUG
+
+2011-09-13 14:50  source
+
+	* Fixed memory leaks
+
+2011-09-12 21:05  source
+
+	* Fixed GPF on optimization of DELETE/INSERT/MODIFY due to lists
+	  of known vars that were not deALIASed properly
+
+2011-09-12 20:08  source
+
+	* Added log when built-in procedure has duplicate in the db
+
+2011-09-12 20:04  source
+
+	* Fixed removed duplicate procedures
+
+2011-09-12 20:01  source
+
+	* Fixed crash
+
+2011-09-12 12:30  source
+
+	* Fixed mime type of JSON-ld to application/ld+json
+
+2011-09-12 11:02  source
+
+	* Updated documentation
+
+2011-09-12 10:52  source
+
+	* Fixed use available non-expiring access token
+	* Fixed drilldown through Posts (including posted links) to show
+	  associated comments
+	* Fixed removed oplcb:competitor property from its oplcb:competition
+	  wrapper and dropped latter
+	* Fixed use dbpedia:author property when handling books
+	* Fixed use string session with serialized XML for large csv files
+
+2011-09-12 10:47  source
+
+	* Added initial support for PHP 5.3
+
+2011-09-12 10:36  source
+
+	* Fixed indentation
+
+2011-09-12 10:28  source
+
+	* Fixed use shorter names
+
+2011-09-12 10:21  source
+
+	* Fixed WebID demo pages
+
+2011-09-09 14:09  source
+
+	* Updated documentation
+
+2011-09-09 13:30  source
+
+	* Fixed warning about uninitialized data
+
+2011-09-09 13:21  source
+
+	* Added option for explicit graph
+	* Fixed SyncML Folder Types in drop-down list
+	* Fixed labels
+
+2011-09-09 13:20  source
+
+	* Fixed do not remove trailing cr/lf
+
+2011-09-09 13:19  source
+
+	* Fixed issue when dirname is a blob
+
+2011-09-09 13:12  source
+
+	* Added dbpedia:author property when handling books
+	* Fixed ACL rule */* allows everybody
+	* Fixed Facebook auth
+	* Fixed use string session with serialized XML for large csv files
+	* Fixed map OpenLink Zillow ontology to geo:lat/long
+	* Fixed map oplog:likes_XXX property to like:likes
+
+2011-09-09 13:11  source
+
+	* Added support for switchable favicon to Sponger front page
+
+2011-09-09 12:51  source
+
+	* Fixed issues with linked data upload
+
+2011-09-09 11:16  source
+
+	* Added HTTP status codes in SPARQL graph store protocol
+
+2011-09-09 11:13  source
+
+	* Fixed issue with SPARUL LOAD INTO command creating duplicate graphs
+
+2011-09-09 00:10  source
+
+	* Fixed issue when pragma list was empty
+	* Fixed issues generating Pivot Permalink
+	* Fixed whitespace and stray > char from Raw formats line
+
+2011-09-08 18:54  source
+
+	* Fixed handling of GROUP BY and ORDER BY using expressions
+
+2011-09-08 15:29  source
+
+	* Fixed re-definition of a quad map that is a single user of a quad
+	  map format
+
+2011-09-08 15:28  source
+
+	* Fixed codegeneration issue with awk 4.0
+
+2011-09-08 12:51  source
+
+	* Fixed UI for sponger options
+
+2011-09-08 12:19  source
+
+	* Fixed issue with sparql LOAD from file
+
+2011-09-07 22:44  source
+
+	* Fixed crash running FILTER query containing IN clause with only
+	  one item in it
+	* Fixed issue with ORDER BY expression optimization
+
+2011-09-05 15:27  source
+
+	* Added test for empty graph result
+	* Added margins for RDF mini browser container
+	* Added check for existence of sparql_cxml to enable display of CXML
+	  result link
+	* Replaced default AJAX throbber with new OAT Notify
+	* Fixed undef variable causing dereference control malfunction
+	* Fixed layout bug causing the dereference mode control hiding behind
+	  a block
+
+2011-09-05 15:26  source
+
+	* Added support for replacing existing content on OAT.Notify.send
+
+2011-09-05 15:23  source
+
+	file notify-throbber.gif was added on branch V6_0_0-DEVEL on 2011-09-05 15:27:50 +0000
+
+2011-08-30 15:02  source
+
+	* Fixed issue with code generation using gawk 4
+
+2011-08-29 10:37  source
+
+	* Added Google Place cartridge
+	* Added Seatgeek cartridge
+	* Added API for selective sponging
+	* Added Google+ button
+	* Added menu item linking direct to 'How it Works'
+	* Fixed bug when offline_access=1 not present in OpenGraph cartridge
+	* Fixed access token requests now request permission to read user and
+	  friend checkins
+	* Fixed complete rdf boxes when looking for label
+	* Fixed lang use for comment
+	* Fixed missing block op
+	* Fixed minor issues
+
+2011-08-29 10:27  source
+
+	* Added support for anytime query (timeout) on virtuoso
+	* Added CSS for pushbar notify
+	* Fixed bug with updated maxrow value not being passed
+	* Fixed dereferencing preference dropdown disappearing when paging
+	  between results
+	* Fixed cosmetics
+
+2011-08-29 10:23  source
+
+	* Added support for oplzilw:latitude and longitude
+	* Fixed rdftabs notification to use PUSHBAR
+	* Fixed problem in geo coordinates detection
+
+2011-08-29 10:22  source
+
+	* Added new option to rdfmini to facilitate placing of view control
+	  outside its container
+
+2011-08-29 10:21  source
+
+	* Added new notification widget types PUSHBAR and BAR
+	* Added target class for notify content for skinning
+
+2011-08-29 10:19  source
+
+	* Added support for HEAD requests in AJAX
+
+2011-08-29 10:18  source
+
+	* Added limit to number of open statements
+
+2011-08-26 19:34  source
+
+	* Fixed if we have a wide string and want typed string we cast to utf-8
+
+2011-08-26 18:04  source
+
+	* Fixed /sparql/ endpoint to produce more accurate diagnostics for
+	  failed INSERT DATA statements
+
+2011-08-26 18:03  source
+
+	* Fixed timeout should be specified in miliseconds according to docs
+
+2011-08-26 17:59  source
+
+	* Added limit to number of open statements
+
+2011-08-26 17:57  source
+
+	* Added mem debug support for sqlp_box_id_upcase
+
+2011-08-26 17:55  source
+
+	* Fixed memory leak
+
+2011-08-26 10:58  source
+
+	* Fixed crash when un-expected array is passed as argument
+
+2011-08-26 10:57  source
+
+	* Fixed loading member functions of UDT that refer to XML namespace
+	  declarations and other items loaded after the loading of the UTD
+	  declaration
+
+2011-08-26 10:54  source
+
+	* Fixed issue with trim('test', null)
+
+2011-08-23 12:24  source
+
+	file google_place2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-08-29 10:37:48 +0000
+
+2011-08-23 12:24  source
+
+	file seatgeek2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-08-29 10:37:48 +0000
+
+2011-08-21 12:54  source
+
+	* Added initial code for timeout handling
+	* Added param to control the anchor mode, persisted in permalinks.
+	* Added anchor mode to pass the URL to /describe
+	* Added missing URI encoding in some generated links/queries
+	* Fixed "aliased" qtxt URL param
+	* Fixed re-enabled anchor mode to control what to do when dereferencing links.
+	* Fixed try to set values of nonexisting UI objects in /view
+	* Fixed visibility of footer in /view
+
+2011-08-21 12:52  source
+
+	* Fixed display of RDF store stats
+
+2011-08-21 12:51  source
+
+	* Fixed set default anchorMode back to 0
+
+2011-08-21 12:50  source
+
+	* Fixed footer background
+
+2011-08-21 12:50  source
+
+	* Added MSG MAP_NOTHING_TO_SHOW to rdftabs Map widget
+	* Added MAP_NOTHING_TO_SHOW to rdfmini by switching to default viewer
+	* Added references in map popups
+	* Added function to detect nodes that only contain coordinates
+	* Fixed bugs in getContent link generation
+	* Fixed removed attempt to resolve item references throught recursion
+	* Fixed drawMarker to extract properties from referencing node when node contains only
+	  coordinate data
+	* Fixed structure of rdftabs marker popups
+	* Fixed make properties list scrollable instead of whole window
+
+2011-08-21 12:34  source
+
+	* Rebuild drivers
+
+2011-08-21 12:33  source
+
+	* Removed deprecated functions and files
+
+2011-08-18 09:16  source
+
+	* Fixed connection leak in connection pool during long checkpoints
+
+2011-08-17 17:46  source
+
+	* Fixed memory leak in statement when using connectionpooling
+
+2011-08-17 17:36  source
+
+	* Rebuild drivers
+
+2011-08-17 17:20  source
+
+	* Rebuild driver
+
+2011-08-17 17:20  source
+
+	* Updated hibernate support to work with Hibernate 3.6.6-Final
+
+2011-08-15 15:30  source
+
+	* Fixed bad merge
+
+2011-08-14 14:48  source
+
+	* Fixed check for NULL IRI before printing
+
+2011-08-09 11:19  source
+
+	* Fixed indentation and whitespace
+
+2011-08-09 11:17  source
+
+	* Fixed missing namespave declarations
+
+2011-08-09 11:11  source
+
+	* Fixed minor issue
+
+2011-08-09 10:58  source
+
+	* Added SimpleGeo cartridge
+	* Added Eventful cartridge
+	* Fixed use standard properties for Latitude and Longitude
+	* Fixed use /about to sponge URL
+
+2011-08-05 21:33  source
+
+	file simplegeo2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-08-09 10:58:33 +0000
+
+2011-08-03 11:36  source
+
+	* Added show photo in WebID login/registrer
+	* Fixed typo in messages
+	* Fixed facebook accounts
+
+2011-08-03 11:34  source
+
+	* Added missing files
+
+2011-08-03 11:34  source
+
+	file mc.vsp was added on branch V6_0_0-DEVEL on 2011-08-03 11:42:19 +0000
+
+2011-08-03 11:34  source
+
+	file mv.vsp was added on branch V6_0_0-DEVEL on 2011-08-03 11:42:19 +0000
+
+2011-08-02 12:05  source
+
+	file eventful2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-08-09 10:58:33 +0000
+
+2011-08-01 14:19  source
+
+	* Added Twitter cartridge using OAuth and Twitter REST api
+	* Added XRD cartridge
+	* Added Google Profile cartridge
+	* Fixed use OG community page as starting point for facebook OpenGraph
+	  cartridge
+	* Fixed minor issues
+
+2011-08-01 14:17  source
+
+	* Added check for XML
+	* Fixed update must do delta and remove all entries which are not
+	  from this source
+
+2011-08-01 14:15  source
+
+	* Fixed SIOC data
+
+2011-08-01 14:13  source
+
+	* Updated CKeditor to version 3.6.1
+
+2011-08-01 14:12  source
+
+	* Added RDF links in header and head
+
+2011-08-01 14:12  source
+
+	* FIxed Delicious publish
+
+2011-08-01 14:09  source
+
+	* Fixed undefined function
+
+2011-08-01 14:08  source
+
+	* Added user/mail availablitiy action
+	* Added mail verification service
+	* Fixed WebID login and registration
+	* Fixed Facebook accounts
+	* Fixed order tabs and labels
+	* Fixed SIOC RDF links API functions
+
+2011-08-01 14:05  source
+
+	* Added ACL eXecute flag
+	* Fixed ACl issue with editing .acl file
+	* Fixed API functions
+
+2011-08-01 14:04  source
+
+	* Fixed encryption and signing
+	* Fixed security properties
+	* Fixed mail parameters
+
+2011-08-01 13:18  source
+
+	* Fixed throw away old content before starting execute
+
+2011-08-01 13:14  source
+
+	file google_profile2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-08-01 14:19:28 +0000
+
+2011-08-01 13:14  source
+
+	file xrd-generic.xsl was added on branch V6_0_0-DEVEL on 2011-08-01 14:19:28 +0000
+
+2011-08-01 13:11  source
+
+	file opltwitter.owl was added on branch V6_0_0-DEVEL on 2011-08-01 14:19:28 +0000
+
+2011-08-01 13:11  source
+
+	file twitter_access_token.vsp was added on branch V6_0_0-DEVEL on 2011-08-01 14:19:28 +0000
+
+2011-08-01 13:11  source
+
+	file twitter_rest_api2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-08-01 14:19:28 +0000
+
+2011-07-29 10:04  source
+
+	* Fixed debug code
+
+2011-07-29 10:03  source
+
+	* Fixed must redirect on OPTIONS
+
+2011-07-29 10:03  source
+
+	* Fixed calculate lenght before inserting the row
+
+2011-07-29 10:00  source
+
+	* Fixed unnamed GPF
+
+2011-07-20 15:56  source
+
+	* Added check for %nn
+
+2011-07-20 09:50  source
+
+	* Added Idp
+	* Added Domain check
+	* Added WebID
+
+2011-07-20 09:26  source
+
+	file idp_s_1.xml was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 09:26  source
+
+	file webid_demo.html was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 09:26  source
+
+	file webid_demo.html was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:20 +0000
+
+2011-07-20 09:26  source
+
+	file webid_demo.php was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:20 +0000
+
+2011-07-20 09:26  source
+
+	file webid_demo.vsp was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:20 +0000
+
+2011-07-20 09:26  source
+
+	file dc_s_1.sql was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 09:26  source
+
+	file dc_s_1.xml was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 09:26  source
+
+	file dc_s_1_sample.vsp was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 09:26  source
+
+	file idp_s_1.vsp was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 09:26  source
+
+	file options.xml was added on branch V6_0_0-DEVEL on 2011-07-20 09:50:19 +0000
+
+2011-07-20 08:58  source
+
+	* Added Hyperpublic cartridge
+
+2011-07-20 08:58  source
+
+	file hyperpublic2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-07-20 09:55:07 +0000
+
+2011-07-20 08:56  source
+
+	* Added configuration option for page title
+
+2011-07-20 08:51  source
+
+	* Added webid_check option to control execution flag
+
+2011-07-20 08:51  source
+
+	* Fixed problems with big tokens
+
+2011-07-20 08:29  source
+
+	* Added support for dumping v5 in v6 log format
+
+2011-07-20 00:01  source
+
+	* Reverted merge from wrong branch
+
+2011-07-19 23:58  source
+
+	* Fixed DV_RDF serialization
+
+2011-07-19 23:43  source
+
+	* Fixed small issue for single engine
+
+2011-07-19 23:40  source
+
+	* Added new aggregate DB.DBA.GROUP_DIGEST which makes it possible
+	  to return part of big output of DB.DBA.GROUP_CONCAT without
+	  running out of row length limits
+
+2011-07-19 23:38  source
+
+	* Added support to call XPath/XQuery functions in SPARQL
+	* Added bif functions xpath_funcall and xpath_apply
+
+2011-07-19 23:34  source
+
+	* Fixed moved macros isdatechar, isfloatchar and inplainURIchar
+
+2011-07-19 23:33  source
+
+	* Added option 'exec_as_get' to http map
+	* Added support for SPARQL Graph CRUD
+
+2011-07-19 23:30  source
+
+	* Added function isfinitenumeric()
+
+2011-07-19 23:30  source
+
+	* Fixed memleak
+
+2011-07-19 23:29  source
+
+	* Fixed compiler warnings
+
+2011-07-19 23:27  source
+
+	* Added optimized codegen for built-in aggregate functions
+
+2011-07-19 23:26  source
+
+	* Fixed DV_RDF serializationo
+	* Added upgrade procedure for RDF_QUAD
+
+2011-07-19 19:36  source
+
+	* Added generic function to describe objects
+	* Fixed check to see if ssl is in effect
+	* Fixed use proper case as sparql is always using quoted identifiers
+
+2011-07-19 19:27  source
+
+	* Fixed bug in endpoint setting persistence
+	* Fixed visibility of pager in navigator
+	* Improved recovery from some proxy-AJAX-related errors
+
+2011-07-19 19:25  source
+
+	* Changed handling of anchors in map bubbles
+
+2011-07-15 11:17  source
+
+	* Added missing opl:provided by property
+
+2011-07-15 11:16  source
+
+	* Added option to set site logo in banner text
+	* Added new serialization format examples
+
+2011-07-15 11:15  source
+
+	* Added Seevl cartridge
+	* Added Guardian cartridge
+
+2011-07-15 11:15  source
+
+	* Fixed minor issue
+
+2011-07-15 11:07  source
+
+	* Added new export formats
+
+2011-07-15 11:06  source
+
+	* Added generation of CV from LinkedIn using the oplcv ontology
+
+2011-07-15 11:05  source
+
+	file guardian2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-07-15 11:15:47 +0000
+
+2011-07-15 11:05  source
+
+	file seevl2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-07-15 11:15:47 +0000
+
+2011-07-15 11:02  source
+
+	* Added OpenLink CV/Resume ontology
+
+2011-07-15 11:02  source
+
+	file oplcv.owl was added on branch V6_0_0-DEVEL on 2011-07-15 11:14:01 +0000
+
+2011-07-14 19:14  source
+
+	* Fixed use the actual length of the string in cli_utf82narrow not max len
+
+2011-07-13 19:09  source
+
+	* Added check for cert
+
+2011-07-12 14:46  source
+
+	* Fixed extra debugging
+
+2011-07-08 13:44  source
+
+	* Merged first part of V7
+
+2011-07-05 21:09  source
+
+	* Fixed GPF as stmt not available at this point
+
+2011-07-04 09:59  source
+
+	* Fixed XML escape data
+	* Fixed issues with mail addresses and encrypted mails
+
+2011-07-04 09:57  source
+
+	* Added header and head links for IRIs
+
+2011-07-04 09:56  source
+
+	* Added header and head procedures for IRI URLs
+	* Added new ODS rewrite rules
+	* Fixed get CA from connection if not set
+	* Fixed ACL using patterns
+	* Fixed default cert login
+	* FIxed take relevant webid
+	* Fixed Offers
+
+2011-07-04 09:54  source
+
+	* Added LinkedIn cartridge
+	* Added linkedIn access token
+	* Added Zoopla cartridge
+	* Added new pattern for Eventbrite
+	* Added support for acct scheme
+	* Adjustments to OpenGraph RDF mappings and additions to OpenGraph ontology
+	* Fixed Yelp cartridge
+	* Fixed minor issuesdded additional checks for RDFa
+	* Fixed use origin as a base, not graph
+	* Fixed protection against bad datetime offsets returned by OpenGraph
+	CV: ----------------------------------------------------------------------
+
+2011-07-04 09:33  source
+
+	* Added loading NS prefixes into IRIDB through virtuoso defaults page
+
+2011-07-04 09:31  source
+
+	file linkedin2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-07-04 09:54:06 +0000
+
+2011-07-04 09:31  source
+
+	file linkedin_access_token.vsp was added on branch V6_0_0-DEVEL on 2011-07-04 09:54:05 +0000
+
+2011-07-04 09:31  source
+
+	file opllinkedin.owl was added on branch V6_0_0-DEVEL on 2011-07-04 09:54:04 +0000
+
+2011-07-04 09:31  source
+
+	file zoopla2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-07-04 09:54:06 +0000
+
+2011-06-29 10:10  source
+
+	* Fixed cannot perform file_stat as it runs on a different node
+
+2011-06-27 19:45  source
+
+	* Added nsprefix and rulelist pages
+
+2011-06-27 11:24  source
+
+	* Fixed do not perform keyset update on non pk ref
+
+2011-06-24 19:05  source
+
+	* Added initial support for HTML+Microformat, Microformat/JSON and
+	  JSON-LD output formats
+
+2011-06-24 11:25  source
+
+	* Added result type detection
+	* Fixed SVG capability detection
+
+2011-06-24 11:25  source
+
+	* Fixed .isparql serialization in FF4 and IE9
+
+2011-06-24 11:24  source
+
+	* Fixed JSON output for native parsers
+
+2011-06-24 11:22  source
+
+	* Added prefix for http://www.w3.org/2002/07/owl# (owl:)
+	* Added prefix for http://www.openlinksw.com/schemas/rdfs/ (oplrdfs:)
+	* Fixed prefix handling in IRIDB, rdfstore and rdftabs
+
+2011-06-24 11:20  source
+
+	* Fixed MSIE detection in opacity anim
+
+2011-06-24 11:20  source
+
+	* Fixed handling of decoding url values with + instead of spaces
+
+2011-06-22 13:30  source
+
+	* Fixed no not crash when key is empty
+
+2011-06-22 13:29  source
+
+	* Fixed check for NULL pred
+
+2011-06-21 18:11  source
+
+	* Fixed make sure all required dfe are placed before making a decision
+
+2011-06-20 19:27  source
+
+	* Fixed replay as we need to take into account non txn mode
+
+2011-06-20 19:25  source
+
+	* Fixed memory leak
+
+2011-06-20 14:15  source
+
+	* Fixed cast to uint32 instead of long as this is a serialized type
+
+2011-06-17 15:21  source
+
+	* Fixed when sas, O is considered to be an iri
+
+2011-06-17 15:20  source
+
+	* Fixed if result is empty but input is same variable as input then
+	  pesumable we have distinct and have to send input
+
+2011-06-17 00:11  source
+
+	* Fixed placement of ifdef
+
+2011-06-16 22:53  source
+
+	* Added check for errors on bitmap insert
+
+2011-06-13 14:25  source
+
+	* Fixed if too many cursors, do not crash server, just kill txn
+
+2011-06-13 09:31  source
+
+	* Fixed "delayed" filters like
+	  ?x p1 ?o1 ; p2 ?o2 . optional { ... } . filter (?o1 = ?o2)
+
+2011-06-13 09:29  source
+
+	* Added function to backup index to log
+	 CVS: ----------------------------------------------------------------------
+
+2011-06-11 16:41  source
+
+	* Added support for SQLQUERY syntax in declaration of RDF views
+	* Fixed SQL codegen bug in SPARQL queries of R2RML rewriter
+
+2011-06-11 16:39  source
+
+	* Fixed issue with variable argument list
+
+2011-06-11 16:28  source
+
+	* Fixed fill can get out of bounds
+
+2011-06-10 22:45  source
+
+	* Fixed disable debug code from standard binary
+
+2011-06-10 22:44  source
+
+	* Fixed skip rules which perform http redirect when doing a POST
+
+2011-06-10 21:39  source
+
+	* Fixed check if instance has trx and it has thread, else we do not
+	  run
+
+2011-06-09 17:41  source
+
+	* Fixed problem with non-existing item and get API function
+	* Fixed myA JS error
+
+2011-06-09 17:39  source
+
+	* Added tooltop for 'Language' property
+	* Fixed 'My Offers' typo
+	* Fixex get CA from connection if not set
+	* Fixed myA JS error
+	* Fixed error message
+	* Fixed check name when uload private key
+
+2011-06-09 17:26  source
+
+	* Fixed crash when trying to unbox non-boxed item from tree
+
+2011-06-09 15:32  source
+
+	* Added sponger splash page
+
+2011-06-09 15:29  source
+
+	file linked_data_gen_opts3a.png was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file linkeddata.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file linkedin.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file openlinklogo_wstrap_2008_100h.png was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file sponger_frontpage.css was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file twitter.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file webfinger.png was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file webid_icon.png was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file cartridge_config.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file delicious.png was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file facebook_icon.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file flickr.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file google.jpg was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file help_button.gif was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:38 +0000
+
+2011-06-09 15:29  source
+
+	file sponge_uri.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file sponger_architecture.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file sponger_setup.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	file examples.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:36 +0000
+
+2011-06-09 15:29  source
+
+	file fb_access_token_popup.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:36 +0000
+
+2011-06-09 15:29  source
+
+	file index.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:36 +0000
+
+2011-06-09 15:29  source
+
+	file jquery.js was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:36 +0000
+
+2011-06-09 15:29  source
+
+	file sponge_flickr.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:36 +0000
+
+2011-06-09 15:29  source
+
+	file sponge_social_profile.vsp was added on branch V6_0_0-DEVEL on 2011-06-09 15:35:37 +0000
+
+2011-06-09 15:29  source
+
+	* Added sponger splash page
+	* Fixed minor issues
+
+2011-06-09 13:27  source
+
+	* Added option to enable/disable ?P statistics
+
+2011-06-09 13:25  source
+
+	* FIxed added option to enable/disable ?P statistics
+
+2011-06-09 13:24  source
+
+	* Fixed memory leak
+
+2011-06-07 18:53  source
+
+	* Fixed compiler warning
+
+2011-06-07 18:52  source
+
+	* Added new functions
+
+2011-06-07 18:51  source
+
+	* Fixed if cannot ensure sas then return proper error not null
+
+2011-06-07 12:30  source
+
+	* Fixed print ins options
+
+2011-06-07 12:29  source
+
+	* Fixed issue with int32 stats
+
+2011-06-06 08:06  source
+
+	* Added function to create certificate from CSR
+
+2011-06-06 08:02  source
+
+	* Fixed memory leaks
+
+2011-06-03 15:13  source
+
+	* Fixed memory leak
+
+2011-06-02 12:32  source
+
+	* Fixed bad URL in typeahead.css
+	* Fixed issue with external ccount creation
+	* Fixed WebDAV selection
+
+2011-06-02 12:25  source
+
+	* Fixed iCalendar parser
+
+2011-06-02 12:24  source
+
+	* Added daylight saving time
+	* Fixed issue with validation
+	* Fixed WebDAV selection
+
+2011-06-02 12:22  source
+
+	* Fixed WebDAV selection
+
+2011-06-02 12:22  source
+
+	* Fixed issue with validation
+	* Fixed WebDAV selection
+
+2011-06-02 12:21  source
+
+	* Fixed issue with validation
+	* Fixed WebDAV selection
+	* Fixed uninstall some views
+
+2011-06-02 12:20  source
+
+	* Added user's rewrite rules
+	* Added WebID verify service
+
+2011-06-02 12:20  source
+
+	file webid_verify.vsp was added on branch V6_0_0-DEVEL on 2011-06-02 12:34:01 +0000
+
+2011-06-02 12:08  source
+
+	* Added ProgrammableWeb cartridge
+
+2011-06-02 12:08  source
+
+	file programmableweb2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-06-02 12:30:21 +0000
+
+2011-06-02 12:08  source
+
+	* Fixed minor issue
+
+2011-06-02 11:18  source
+
+	* Fixed check vdb col for nullable
+
+2011-06-01 09:20  source
+
+	* Fixed signal error instead of GPF in normal build
+
+2011-05-31 15:34  source
+
+	* Fixed set rehash factor if expecting large number of inserts in hash
+
+2011-05-31 15:33  source
+
+	* Added function for CSR generation
+
+2011-05-31 15:32  source
+
+	* Fixed use max number to avoid buffer overrun
+
+2011-05-30 20:19  source
+
+	* Fixed translation from nodeiD://xxx to _:xxx
+
+2011-05-30 20:17  source
+
+	* Fixed issue with cost based optimizer
+
+2011-05-24 18:57  source
+
+	* Fixed when iri exceeds 2KB limit and flag is enabled then shorten
+	  the iri, instead of rejecting it
+
+2011-05-24 18:56  source
+
+	* Fixed loop so it only uses local files
+
+2011-05-23 13:44  source
+
+	* Added initial support for SPARQL 1.1. build-in IF and COALISCE
+
+2011-05-23 11:24  source
+
+	* Fixed minor issue
+
+2011-05-23 11:23  source
+
+	* Fixed LastFM cartridge
+
+2011-05-23 09:02  source
+
+	* Added support for CREATE LITERAL CLASS "format string" ...
+
+2011-05-20 16:20  source
+
+	* Fixed WebID selection
+
+2011-05-20 16:20  source
+
+	* Fixed use certificate to verify the signature as an option
+	* Fixed use ldap&webid login
+
+2011-05-20 16:11  source
+
+	* Fixed add sponger ACL when installed
+
+2011-05-20 12:01  source
+
+	* Fixed comments
+
+2011-05-20 12:00  source
+
+	file webid_check.vsp was added on branch V6_0_0-DEVEL on 2011-05-20 12:02:32 +0000
+
+2011-05-20 12:00  source
+
+	* Added support for WebID idp
+	* Fixed WebID selection
+
+2011-05-20 11:51  source
+
+	* Added csv bulk loader script
+
+2011-05-20 11:46  source
+
+	* Fixed CSV import failed importing NULL values
+
+2011-05-20 11:44  source
+
+	* Fixed dav_enable should not be touched for dba account
+
+2011-05-19 18:32  source
+
+	* Fixed NULL value is not an error in lax mode
+
+2011-05-19 18:22  source
+
+	* Fixed wrong arg
+
+2011-05-19 13:34  source
+
+	* Added ldap schema support to WebID
+
+2011-05-19 13:15  source
+
+	* Added version and timeout argument
+
+2011-05-19 13:11  source
+
+	* Fixed duplicate symbol
+
+2011-05-19 10:17  source
+
+	* Fixed API contact edit function
+
+2011-05-19 09:58  source
+
+	* Fixed compiler warning
+
+2011-05-19 09:57  source
+
+	* Fixed add user to bootstrap as it can run procs in this context
+
+2011-05-18 21:15  source
+
+	* Fixed SIOC object services
+
+2011-05-18 21:12  source
+
+	* Fixed install/uninstall bugs
+
+2011-05-18 09:19  source
+
+	* Added Eventbrite cartridge
+	* Fixed guard against using revoked long-lived FB access token
+
+2011-05-18 09:10  source
+
+	* Added instructions on revoking access tokens to FB on retrieval
+	  confirmation page
+
+2011-05-18 09:09  source
+
+	* Fixed issue with properties
+
+2011-05-18 09:06  source
+
+	file eventbrite2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-05-18 09:19:11 +0000
+
+2011-05-18 09:01  source
+
+	* Added Upcoming cartridge
+	* Added Plancast cartridge
+	* Fixed use labels by default
+	* Fixed remove pro
+	* Fixed minor issues
+
+2011-05-17 22:53  source
+
+	* Added SIOC object services
+	* Fixed problem with edit command and Wiki version folders
+	* Fixed version history properties
+	* Fixed move/copy API with wrong source/destination
+	* Fixed problems with WebID
+
+2011-05-17 22:51  source
+
+	* Added SIOC object services
+	* Fixed IE JS problems
+	* Fixed UI bug
+
+2011-05-17 22:50  source
+
+	* Added SIOC object services
+	* Fixed changing/deleting events does not trigger re-sync with publication
+	* Fixed import/export bug
+	* Fixed IE JS problems
+
+2011-05-17 22:48  source
+
+	* Added SIOC object services
+	* Added annotation rules
+	* Fixed navigation and UI
+	* Fixed css
+	* Fixed IE bug
+	* Fixed UI bug
+
+2011-05-17 22:46  source
+
+	* Added SIOC object services
+	* Fixed IE bug
+	* Fixed UI bug
+
+2011-05-17 22:45  source
+
+	* Fixed IE JS problems
+	* Fixed UI bugs
+
+2011-05-17 22:44  source
+
+	* Added SIOC object services
+
+2011-05-17 22:43  source
+
+	* Fixed issue with Wiki after delete and restore VVC folder
+
+2011-05-17 22:42  source
+
+	* Added SIOC object services
+	* Fixed a++
+
+2011-05-17 21:14  source
+
+	* Fixed compiler warnings
+
+2011-05-17 14:06  source
+
+	* Added optimization for %g specifier for "Decimal" types in RDFViews
+
+2011-05-17 13:51  source
+
+	* Rebuild drivers
+
+2011-05-17 13:48  source
+
+	* Added function to get/set Query timeout (default = 0 = unlimited)
+
+2011-05-16 23:12  source
+
+	file upcoming2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-05-18 09:01:49 +0000
+
+2011-05-16 09:04  source
+
+	* Added initial support for SPARQL 1.1 Graph Store HTTP Protocol
+
+2011-05-16 08:51  source
+
+	* Fixed usage of http_request_header
+	* Fixed useage of last modified
+
+2011-05-16 08:50  source
+
+	* Fixed empty subject
+	* Fixed WebID selection
+	* Fixed problem with certificate generation using Safari on windows
+	* Fixed topic of interests
+	* Fixed a++
+
+2011-05-16 08:42  source
+
+	file plancast2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-05-18 09:01:49 +0000
+
+2011-05-16 08:35  source
+
+	* Fixed setting name
+
+2011-05-16 08:34  source
+
+	* Fixed entry page for sponged Facebook user's profile to top level
+	  container document
+
+2011-05-12 20:53  source
+
+	* Fixed compiler warning
+
+2011-05-12 20:53  source
+
+	* Added more system unames
+
 2011-05-11 14:49  source
 
 	* Fixed small issue
