@@ -13243,6 +13243,8 @@ bif_byte_order_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *qi = QST_INSTANCE (qst);
   if (!QI_IS_DBA (qi))
     return 0;
+  if (f_read_from_rebuilt_database) /* doing a replay from backup dump must be possible on a different architecture */
+    return 0;
   if (order != DB_ORDER_UNKNOWN && order != DB_SYS_BYTE_ORDER)
     {
       log_error ("The transaction log file has been produced with wrong byte order. You can not replay it on this machine. "
