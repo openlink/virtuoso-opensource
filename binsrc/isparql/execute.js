@@ -848,14 +848,17 @@ var QueryExec = function(optObj) {
 	a.innerHTML = "Make Pivot";
 
 		var pragmas = self.getPragmas(opts);
+		var xparm;
 
-	var xparm = document.location.protocol + '//' + document.location.host + 
+		if (opts.endpoint != '/sparql')
+			xparm = opts.endpoint + "?query=";
+		else 
+			xparm = document.location.protocol + '//' + document.location.host + 
 			"/sparql/?query=";
 
 		if (pragmas) xparm += encodeURIComponent(pragmas);
 
 		xparm += encodeURIComponent(opts.query);
-		xparm += "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		xparm += "&default-graph-uri=" + (opts.defaultGraph ? encodeURIComponent(opts.defaultGraph) : "");
