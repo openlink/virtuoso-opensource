@@ -2144,7 +2144,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		} else {
 		    /* look for predicates that are/contain image links */
 		    for (var j=0;j<pred.length;j++) {
-			if (item.constructor != OAT.RDFAtom ||
+			if (pred[j].constructor != OAT.RDFAtom ||
 			    pred[j].getTag() != OAT.RDFTag.IRI) { continue; }
 			var value = pred[j].getIRI();
 			if (self.parent.getContentType(value) == 3) {
