@@ -272,6 +272,12 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	    SES_PRINT (ses, "}\n");
 	  }
 	break;
+	case DV_BIN:
+	  {
+	    snprintf (tmp, sizeof (tmp), " LEN %ld", box_length (box));
+	    SES_PRINT (ses, tmp);
+	  }
+	break;
       default:
 	    {
 	      caddr_t err_ret = NULL;
