@@ -4020,6 +4020,7 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
   char ord = so->so_sc->sc_order;
   update_node_t * kset = sc->sc_update_keyset;
   state_slot_t * set_no = sc->sc_set_no_ssl;
+  dk_set_t prev_in_iters = so->so_in_list_nodes;
   sc->sc_update_keyset = NULL;
   sc->sc_set_no_ssl = new_set_no;
   sqlg_set_ts_order (so, dt_dfe);
@@ -4032,6 +4033,7 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
   sc->sc_update_keyset = kset;
   sc->sc_set_no_ssl = set_no;
   so->so_sc->sc_order = ord;
+  so->so_in_list_nodes = prev_in_iters;
   return qr;
 }
 
