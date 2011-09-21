@@ -769,7 +769,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 		   {
 		     caddr_t raw = t_strliteral (yytext + 5 /* == strlen("UNAME")*/);
 		     caddr_t tmp = box_dv_uname_nchars (raw, box_length (raw) - 1);
-		     box_dv_uname_make_immortal (tmp);
+		     /*box_dv_uname_make_immortal (tmp); -- No longer needed because memory pools keep lists of UNAMEs in use and can free them on destroy */
 		     yylval.box = tmp;
 		     RETURN_CODE (UNAME_LITERAL);
 		   }
