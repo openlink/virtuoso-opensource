@@ -1479,16 +1479,15 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
     case XQ_STARTSWITH:
       {
 	utf8char *tail, c;
-	int len = 0;
+	int len = 0, wide_len;
+	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
+
+	wide_len = box_length (wide_box) / sizeof (wchar_t) - 1;
 	n = utf8_strlen ((utf8char *)str2);
-	for (tail = (utf8char *)str1; '\0' != tail[0]; tail++)
-	  {
-	    if (len == n)
-	      break;
-	    c = tail[0];
-	    if (UTF8_IS_HEADCHAR(c))
-	      len++;
-	  }
+	utf8_box = box_wide_as_utf8_char (wide_box, MIN (n, wide_len), DV_SHORT_STRING);
+	len = strlen (utf8_box);
+	dk_free_box (wide_box);
+	dk_free_box (utf8_box);
 	if (DVC_MATCH == compare_utf8_with_collation (str1, len, str2, (long) strlen (str2), coll))
 	  XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 1L);
 	else
