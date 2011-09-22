@@ -66,6 +66,11 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
             <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}" />
             <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}" />
             <dcterms:subject rdf:resource="{$resourceURL}" />
+            <gr:hasBrand rdf:resource="{vi:proxyIRI ($baseUri, '', 'Brand')}" />
+          </rdf:Description>
+
+          <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Brand')}">
+            <xsl:apply-templates select="deal/merchant" mode="grbrand" />
           </rdf:Description>
           
 		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
@@ -185,6 +190,11 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
 		</geo:long>
     </xsl:template>
 	
+    <xsl:template match="merchant" mode="grbrand">
+      <rdf:type rdf:resource="&gr;Brand" />
+      <gr:name><xsl:value-of select="normalize-space(name)" /></gr:name>
+      <foaf:page><xsl:value-of select="websiteUrl"/></foaf:page>
+    </xsl:template>
 
   <xsl:template match="text()|@*" />
   <xsl:template match="text()|@*" mode="offering" />

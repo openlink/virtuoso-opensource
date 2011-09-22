@@ -45,6 +45,7 @@
     xmlns:gr="&gr;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:oplcb="http://www.openlinksw.com/schemas/crunchbase#"
+    xmlns:oplmny="http://www.openlinksw.com/schemas/money#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:foaf="&foaf;">
 
@@ -423,6 +424,30 @@
 
     <xsl:template match="*">
 	<xsl:if test="* or . != ''">
+            <xsl:choose>
+	        <xsl:when test="name() like 'total_money_raised'">
+		    <xsl:element namespace="{$ns}" name="{name()}">
+			<xsl:variable name="cur_suffix" select="name()"/>
+			<xsl:variable name="totalFundsRaised" select="."/>
+			<oplmny:MonetaryValue rdf:about="{vi:proxyIRI($baseUri, '', concat ($cur_suffix, '-', position()))}">
+		            <rdfs:label><xsl:value-of select='$totalFundsRaised'/></rdfs:label>
+                            <oplmny:hasCurrencyValue rdf:datatype="&xsd;decimal">
+                                <xsl:value-of select="vi:crunchbase_moneystring2decimal(.)" />
+                            </oplmny:hasCurrencyValue>
+                            <oplmny:hasCurrencyCode>
+                                <xsl:choose>
+                                    <xsl:when test="starts-with(., '$')">
+                                        USD
+                                    </xsl:when>
+                                    <xsl:otherwise>
+                                       Unknown
+                                    </xsl:otherwise>
+                                </xsl:choose>
+                            </oplmny:hasCurrencyCode>
+                        </oplmny:MonetaryValue>
+		    </xsl:element>
+	        </xsl:when>
+	        <xsl:otherwise>
 	    <xsl:element namespace="{$ns}" name="{name()}">
 		<xsl:if test="name() like 'date_%'">
 		    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
@@ -432,6 +457,8 @@
 		</xsl:if>
 		<xsl:apply-templates select="@*|node()"/>
 	    </xsl:element>
+	        </xsl:otherwise>
+            </xsl:choose>
 	</xsl:if>
     </xsl:template>
 </xsl:stylesheet>
