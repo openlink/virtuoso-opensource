@@ -136,6 +136,184 @@ function resize_handler ()
       }
 }
 
+// Handle click in property values
+
+function prop_val_click_h (e) {
+}
+
+function prop_a_compare_fun (a, b) {
+    return b[1]-a[1];
+}
+
+numeric_s = {
+    'http://www.w3.org/2001/XMLSchema#double': true,
+    'http://www.w3.org/2001/XMLSchema#float': true,
+    'http://www.w3.org/2001/XMLSchema#decimal': true,
+    'http://www.w3.org/2001/XMLSchema#integer': true,
+};
+
+date_s = {
+    'http://www.w3.org/2001/XMLSchema#date': true,
+    'http://www.w3.org/2001/XMLSchema#dateTime': true,
+};
+
+g_dtp_s = {
+    'http://www.w3.org/2001/XMLSchema#boolean':  0,
+    'http://www.w3.org/2001/XMLSchema#string':   0,
+    'http://www.w3.org/2001/XMLSchema#double':   0,
+    'http://www.w3.org/2001/XMLSchema#float':    0,
+    'http://www.w3.org/2001/XMLSchema#decimal':  0,
+    'http://www.w3.org/2001/XMLSchema#integer':  0,
+    'http://www.w3.org/2001/XMLSchema#date':     0,
+    'http://www.w3.org/2001/XMLSchema#dateTime': 0,
+};
+
+function shorten_dt (dt_val) {
+    var i = dt_val.indexOf('#')+1;
+    if (i == -1 || i >= dt_val.length) return dt_val;
+    return dt_val.substring(i);
+}
+
+function is_numeric_dt (dt) {
+    return (dt in numeric_s);
+}
+
+function is_date_dt (dt) {
+    return (dt in date_s);
+}
+
+// Not great but speedy enough for 20 or so items at a time
+//
+// Datatype selector with most frequent (on current page) first.
+//
+
+function prop_val_dt_sel_init () {
+    var xsd_pfx = 'http://www.w3.org/2001/XMLSchema#';
+
+    dt_s = g_dtp_s;
+
+    var dv_v_a = $$('val_dt','result_t');
+
+    var fnd = false;
+
+    // Dear future me: I'm sorry.
+
+    for (var i=0;i<dv_v_a.length;i++) {
+	var v = dv_v_a[i].innerHTML;
+
+	if (v in dt_s)
+	    dt_s[v]++;
+	else 
+	    dt_s[v]=1;
+    }
+
+    var dt_a = [];
+
+    for (i in dt_s) {
+	dt_a.push ([i, dt_s[i]]);
+    };
+
+    dt_a.sort(prop_a_compare_fun);
+
+    var opts_a=[];
+
+    for (i=0;i<dt_a.length;i++) {
+	opts_a.push(new Option(shorten_dt (dt_a[i][0]), dt_a[i][0], false));
+    }
+
+    var num_opt  = new Option ('Numeric', '##numeric', false);
+    var none_opt = new Option ('No datatype', '##none', false);
+
+    if (is_numeric_dt (dt_a[0][0])) {
+	opts_a.unshift (num_opt);
+	opts_a.push (none_opt);
+    }
+    else {
+	opts_a.push (num_opt);
+	opts_a.push (none_opt);
+    }
+
+    for (i=0;i<opts_a.length;i++)
+	$('cond_dt').options[i] = opts_a[i];
+
+    $('cond_dt').options[0].selected = true;
+
+    OAT.Event.attach ('set_val_range','click', function (e) {
+	var ct = $v('cond_type');
+
+	var v_l = $v('cond_lo');
+	var v_h = $v('cond_hi');
+
+	if (v_l == '') return;
+
+	if (ct == 'cond_range' && (v_h == '' || v_l == '')) return;
+
+	var out_hi = $v('cond_hi');
+	var out_lo = $v('cond_lo');
+
+	if ($('cond_dt').value != '##numeric' && $('cond_dt').value != '##none') {
+	    out_hi = '"' + out_hi + '"^^<' + $v('cond_dt') + '>';
+	    out_lo = '"' + out_lo + '"^^<' + $v('cond_dt') + '>';
+	}
+
+	if (ct == 'cond_gt' || ct == 'cond_lt') {
+	    out_hi = '';
+	}
+
+	if (ct != "select_value") {
+	    $("out_iri").value = '';
+	    $("out_dtp").value = '';
+	    $('out_hi').value = out_hi;
+	    $('out_lo').value = out_lo;
+	}
+
+	$('valrange_form').submit();
+    });
+
+    OAT.Dom.show ('valrange_form');
+}
+
+function handle_val_anchor_click (e) {
+    var val = decodeURIComponent(e.target.href.split('?')[1].match(/&iri=(.*)/)[1].split('&')[0]);
+    var dtp = decodeURIComponent(e.target.href.split('?')[1].match(/&datatype=(.*)/)[1].split('&')[0]);
+    var lang = e.target.href.split('?')[1].match(/&lang=(.*)/)[1].split('&')[0];
+
+    switch($('cond_type').value) {
+    case "cond_none":
+	return;
+    case "select_value":
+	OAT.Event.prevent(e);
+	$('cond_lo').value = val;
+	break;
+    case "cond_lt":
+        OAT.Event.prevent(e);
+	$('cond_lo').value = val;
+	break;
+    case "cond_gt":
+        OAT.Event.prevent(e);
+	$('cond_lo').value = val;
+	break;
+    case "cond_range":
+        OAT.Event.prevent(e);
+	if ($v('cond_lo') != '')
+	    $('cond_hi').value = val;
+	else 
+	    $('cond_lo').value = val;
+	break;
+    }
+    $('out_dtp').value = dtp;
+    $('out_iri').value = val;
+    $('out_lang').value = lang;
+}
+
+function prop_val_anchors_init () {
+    var val_a = $$('sel_val','result_t');
+
+    for (var i=0;i<val_a.length;i++) {
+	OAT.Event.attach (val_a[i],'click', handle_val_anchor_click);
+    }
+}
+
 function init()
 {
     resize_handler ();
@@ -179,6 +357,37 @@ function init()
     if ($('fct_ft')) {
         var ct = $('fct_ft_fm');
 	OAT.Anchor.assign ('fct_ft', {content: ct});
+    }
+
+    if ($$('list', 'result_t').length > 0) {
+	prop_val_dt_sel_init();
+	prop_val_anchors_init();
+
+	OAT.Dom.hide('cond_hi_ctr');
+
+	OAT.Event.attach('cond_type', 'change', function (e) {
+	    switch (this.selectedIndex) {
+	    case 0:
+		OAT.Dom.hide ('cond_inp_ctr');
+		break;
+	    case 1:
+		OAT.Dom.show ('cond_inp_ctr');
+		OAT.Dom.hide ('cond_hi_ctr');
+		break;
+	    case 2:
+		OAT.Dom.show ('cond_inp_ctr');
+		OAT.Dom.hide ('cond_hi_ctr');
+		break;
+	    case 3:
+		OAT.Dom.show ('cond_inp_ctr');
+		OAT.Dom.hide ('cond_hi_ctr');
+		break;
+	    case 4:
+		OAT.Dom.show ('cond_inp_ctr');
+		OAT.Dom.show ('cond_hi_ctr');
+		break;
+	    }
+        });
     }
 }
 
@@ -365,6 +574,8 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 function fct_sel_neg (cb)
 {
   var a = $('a_' + cb.value);
+  if (0 == a.href.length)
+    return;
   if (cb.checked == true)
     {
       var pos = a.href.lastIndexOf ('&exclude=yes');

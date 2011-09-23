@@ -61,6 +61,11 @@ For your convenience we have a set of <a href="nspref.vsp">predefined name space
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/LoDLogo.gif" border="0"></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="http://dbpedia.org/statics/sw-sparql-blue.png" border="0"></a> &nbsp;  &nbsp;
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/od_80x15_red_green.png" border="0"></a>
+        <br />
+	This work is licensed under a 
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
+	<?vsp fct_virt_info (); ?><br /> 
+	Copyright &copy; 2009-2011 OpenLink Software 
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
   </body>

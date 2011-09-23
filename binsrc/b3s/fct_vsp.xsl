@@ -170,16 +170,6 @@ function init(){
         </xsl:for-each>
       </xsl:when> <!-- multiple results -->
       <xsl:otherwise>
-        <xsl:if test="/facets/result/@type='propval-list'">
-          <!--form>
-            <input type="hidden" name="cmd" value="value_range"/>
-            <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
-            Value range between <input name="lo" type="text"/>
-            and <input name="hi" type="text"/>
-            <input type="submit" value="set"/>
-            <span class="info">Plain integer, or RDF datatype (Ex: "1988-01-01"^^xsd:date, "Neubauten"@de)</span>
-          </form-->                
-        </xsl:if>
         <xsl:for-each select="/facets/result">
 	  <xsl:call-template name="render-result">
 	    <xsl:with-param name="view-type"><xsl:value-of select="$type"/></xsl:with-param>
@@ -281,7 +271,8 @@ function init(){
 </xsl:template> <!-- render-pager -->
 
 <xsl:template name="render-result">
-<table class="result">
+<table id="result_t">
+  <xsl:attribute name="class">result <xsl:value-of select="$view-type"/></xsl:attribute>
   <thead>
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
@@ -312,6 +303,10 @@ function init(){
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
 	<tr><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Text excerpt</th></tr>
       </xsl:when>
+      <xsl:when test="$view-type = 'text' or $view-type = 'propval-list'">
+	<div class="dbg"><xsl:value-of select="$view-type"/></div>
+	<tr><th>Value</th><th>Datatype</th></tr>
+      </xsl:when>
     </xsl:choose>
   </thead>
   <tbody>
@@ -341,6 +336,7 @@ function init(){
 		  <!--xsl:message terminate="no"><xsl:value-of select="$query/query/class/@iri"/><xsl:value-of select="column[1]"/></xsl:message-->  
 	      <xsl:variable name="current_iri" select="column[1]"/> 
 	      <xsl:if test="not $query/query/class[@iri = $current_iri]" > 
+                  <xsl:attribute name="class">sel_val</xsl:attribute>
 		<xsl:attribute name="href">/fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:choose>
                     <xsl:when test="column[1]/@sparql_ser != ''">
                       <xsl:value-of select="urlify(column[1]/@sparql_ser)"/>
@@ -366,6 +362,11 @@ function init(){
 		</xsl:choose>
 	      </a>
 	    </td>
+            <xsl:if test="$view-type = 'list'">
+              <td class="val_dt">
+                <xsl:value-of select="column[1]/@datatype"/>
+              </td>
+            </xsl:if>
 	    <!--td>
 	      <xsl:choose>
 		  <xsl:when test="'' != ./@shortform">
@@ -380,6 +381,14 @@ function init(){
 	      <xsl:apply-templates select="column[3]"/>
 	    </td>
 	  </xsl:when>
+          <!--xsl:when test="$view-type = 'propval-list'">
+            <td class="val">
+              <xsl:value-of select="column[1]" />
+            </td>
+            <td class="val_dt">
+              <xsl:value-of select="column[1]/@datatype" />
+            </td>
+          </xsl:when-->
 	  <xsl:otherwise>
             <td class="rnk">
               <xsl:for-each select="column[@datatype='trank' or @datatype='erank']">
@@ -431,6 +440,31 @@ function init(){
     </xsl:for-each>
   </tbody>
 </table>
+
+<xsl:if test="/facets/result/@type='propval-list' or /facets/result/@type='list'">
+  <form id="valrange_form" style="display:none"> 
+    <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
+    <input type="hidden" name="hi" id="out_hi"/>
+    <input type="hidden" name="lo" id="out_lo"/>
+    <input type="hidden" name="lang" id="out_lang"/>
+    <input type="hidden" name="datatype" id="out_dtp"/>
+    <input type="hidden" name="iri" id="out_iri"/>
+    Add condition: 
+    <select id="cond_type" name="cmd">
+      <option value="cond_none">None</option>
+      <option value="select_value">==</option>
+      <option value="cond_gt">&gt;=</option> 
+      <option value="cond_lt">&lt;=</option>
+      <option value="cond_range">between</option>
+    </select>
+    <span id="cond_inp_ctr" style="display:none">
+      <input id="cond_lo" type="text"/>
+      <span id="cond_hi_ctr"> and <input id="cond_hi" type="text"/></span> <select id="cond_dt"></select>
+      <input type="button" id="set_val_range" value="Set Condition"/>
+    </span>
+  </form>                
+</xsl:if>
+
 </xsl:template>
 
 <xsl:template match="@* | node()">

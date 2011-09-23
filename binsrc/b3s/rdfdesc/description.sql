@@ -400,8 +400,13 @@ create procedure b3s_label_get (inout data any, in langs any)
 	    }
 	 }
      }
-   if (__tag of rdf_box = __tag (label))
+   if (not isstring (label))
+     {
+       if (__tag of rdf_box = __tag (label)  and rdf_box_is_complete (label))
      label := rdf_box_data (label);
+       else  
+	 label := __rdf_strsqlval (label);
+     }
    if (not isstring (label))
      label := cast (label as varchar);
    --label := regexp_replace (label, '<[^>]+>', '', 1, null);  
@@ -538,12 +543,14 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 };
 
 create procedure 
-b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid varchar := null)
+b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid varchar := null, in langs any := null)
 {
    declare short_p, p_prefix, int_redirect, url any;
 
    odd_position :=  odd_position + 1;
-   p_prefix := b3s_prop_label (p_text);
+   p_prefix := b3s_label (p_text, langs);
+   if (not length (p_prefix))
+     p_prefix := b3s_uri_curie (p_text);
    url := b3s_http_url (p_text, sid);
 
    if (not length (p_text))
@@ -655,7 +662,7 @@ again:
 	 {
 	   declare lbl any;
 	   lbl := '';
-	   if (registry_get ('fct_desc_value_labels') = '1' and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
+	   if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
 	     lbl := b3s_label (_url, langs);
 	   if ((not isstring(lbl)) or length (lbl) = 0)
 	     lbl := b3s_uri_curie(_url);
@@ -693,6 +700,7 @@ again:
    else if (__tag (_object) = 182)
      {
        http (sprintf ('<span %s>', rdfa));
+       _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
        http (_object);
        http ('</span>');
        lang := '';
@@ -771,25 +779,35 @@ create procedure b3s_page_get_short (in val any)
 }
 ;
 
+create procedure fct_links_formats ()
+{
+  return vector (
+  	   vector ('application/rdf+xml','RDF/XML'),
+  	   vector ('text/n3','N3/Turtle'),
+  	   vector ('application/rdf+json','RDF/JSON'),
+  	   vector ('application/atom+xml','OData/Atom'),
+  	   vector ('application/odata+json','OData/JSON'),
+  	   vector ('text/cxml','CXML'),
+  	   vector ('text/csv','CSV'),
+  	   vector ('application/microdata+json','Microdata/JSON'),
+  	   vector ('text/html','HTML+Microdata'),
+  	   vector ('application/ld+json','JSON-LD')
+  	);
+}
+;
+
 create procedure fct_links_hdr (in subj any, in desc_link any)
 {
   declare links varchar;
+  declare vec any;
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := 'Link: ';
+  vec := fct_links_formats ();
+  foreach (any elm in vec) do
+    {
   links := links || 
-  sprintf ('<%s&output=application%%2Frdf%%2Bxml>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=text%%2Fn3>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=application%%2Frdf%%2Bjson>; rel="alternate"; type="application/rdf+json"; title="Structured Descriptor Document (RDF/JSON format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="Structured Descriptor Document (OData/Atom format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=application%%2Fodata%%2Bjson>; rel="alternate"; type="application/odata+json"; title="Structured Descriptor Document (OData/JSON format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=text%%2Fcxml>; rel="alternate"; type="text/cxml"; title="Structured Descriptor Document (CXML format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=text%%2Fcsv>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)",', desc_link);
+      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
+    }
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
@@ -800,22 +818,15 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
 create procedure fct_links_mup (in subj any, in desc_link any)
 {
   declare links varchar;
+  declare vec any;
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := '';
+  vec := fct_links_formats ();
+  foreach (any elm in vec) do
+    {
   links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml"  title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bjson" rel="alternate" type="application/rdf+json" title="Structured Descriptor Document (RDF/JSON format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bxml" rel="alternate" type="application/atom+xml" title="Structured Descriptor Document (OData/Atom format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bjson" rel="alternate" type="application/atom+json" title="Structured Descriptor Document (OData/JSON format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=text%%2Fcxml" rel="alternate" type="text/cxml" title="Structured Descriptor Document (CXML format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=text%%2Fcsv" rel="alternate" type="text/csv" title="Structured Descriptor Document (CSV format)" />\n', desc_link);
+      sprintf ('<link href="%V&amp;output=%U" rel="alternate" type="%s"  title="Structured Descriptor Document (%s format)" />\n', desc_link, elm[0], elm[0], elm[1]);
+    }
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rev="describedby" />\n', subj);
   http (links);
@@ -932,3 +943,40 @@ create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, i
 grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
 grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 
+create procedure b3s_lbl_order (in p any)
+{    
+  declare r int;
+  r := vector (
+  'http://www.w3.org/2000/01/rdf-schema#label',
+  'http://xmlns.com/foaf/0.1/name',
+  'http://purl.org/dc/elements/1.1/title',
+  'http://purl.org/dc/terms/title',
+  'http://xmlns.com/foaf/0.1/nick',
+  'http://usefulinc.com/ns/doap#name',
+  'http://rdf.data-vocabulary.org/name',
+  'http://www.w3.org/2002/12/cal/ical#summary',
+  'http://aims.fao.org/aos/geopolitical.owl#nameListEN',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.crunchbase.com/source_description',
+  'http://dbpedia.org/property/name',
+  'http://www.geonames.org/ontology#name',
+  'http://purl.org/ontology/bibo/shortTitle',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#value',
+  'http://xmlns.com/foaf/0.1/accountName',
+  'http://www.w3.org/2004/02/skos/core#prefLabel',
+  'http://rdf.freebase.com/ns/type.object.name',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.w3.org/2008/05/skos#prefLabel',
+  'http://www.w3.org/2002/12/cal/icaltzd#summary',
+  'http://rdf.data-vocabulary.org/name',
+  'http://rdf.freebase.com/ns/common.topic.alias',
+  'http://opengraphprotocol.org/schema/title',
+  'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
+  'http://poolparty.punkt.at/demozone/ont#title'
+   );
+  r := position (id_to_iri (p), r);
+  if (r = 0)
+    return 100;
+  return r;
+}
+;

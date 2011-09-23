@@ -139,7 +139,7 @@ fct_long_uri (in x any)
 cl_exec ('registry_set (''fct_label_iri'', ?)',
          vector (cast (iri_id_num (__i2id ('http://www.openlinksw.com/schemas/virtrdf#label')) as varchar)));
 
-cl_exec ('registry_set (''fct_timeout_min'',''2000'')');
+cl_exec ('registry_set (''fct_timeout_min'',''8000'')');
 cl_exec ('registry_set (''fct_timeout_max'',''40000'')');
 
 create procedure
@@ -154,7 +154,9 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
   best_l := 0;
-  for select o, p from rdf_quad table option (index primary key) where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
+  for select o, p 
+    from rdf_quad table option (index primary key) 
+    where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
       if (is_rdf_box (o) or isstring (o))
 	{
@@ -235,6 +237,46 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   return vector (best_str, 1);
 }
 ;
+
+
+create procedure
+FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en')
+{
+  declare best_str any;
+  declare best_l, l int;
+  declare label_iri iri_id_8;
+  declare q, best_q, str_lang, lang_id any;
+
+  if (not isiri_id (x))
+    return null;
+  rdf_check_init ();
+  label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
+  best_str := '';
+  best_l := 0;
+  best_q := 0;
+  for select __ro2sq (o) as o
+        from rdf_quad table option (index rdf_quad)
+        where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
+    {
+      lang_id := rdf_box_lang (o);
+      if (lang_id > 257)
+	str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lang_id);
+      else
+        str_lang := 'en';	
+      q := cmp_get_lang_by_q (lng, str_lang);
+      if (is_rdf_box (o) or isstring (o))
+	{
+	  if (q > best_q)
+	    {
+	      best_str := o;
+	      best_q := q;
+	    }
+	}
+    }
+  return best_str;
+}
+;
+
 
 create procedure
 FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
@@ -358,6 +400,7 @@ og:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasCategory> rdfs:subPropertyOf rdf:type .
 <http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
+<http://purl.uniprot.org/core/scientificName> rdfs:subPropertyOf virtrdf:label .
 ', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
@@ -520,7 +563,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                              fct_short_form(__ro2sq("c1")) as "shortform"),
                                                               __ro2sq ("c1")),
                                                   xmlelement ("column",
-                                                              fct_label ("c1", 0, ''facets'' )),
+                                                              fct_label_np ("c1", 0, ''facets'' )),
                                                   xmlelement ("column",
                                                               fct_bold_tags("c2")))))
              from (sparql define output:valmode "LONG" ', view_type), ntxt);
@@ -543,7 +586,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                          fct_short_form(__ro2sq("c1")) as "shortform"),
                                                           __ro2sq ("c1")),
                                               xmlelement ("column",
-                                                          fct_label ("c1", 0, ''facets'' )))))
+                                                          fct_label_np ("c1", 0, ''facets'' )))))
               from (sparql define output:valmode "LONG" ', view_type), ntxt);
         }
       else
@@ -556,7 +599,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                              fct_short_form(__ro2sq("c1")) as "shortform"),
                                                               __ro2sq ("c1")),
                                                   xmlelement ("column",
-                                                              fct_label ("c1", 0, ''facets'' )),
+                                                              fct_label_np ("c1", 0, ''facets'' )),
                                                   xmlelement ("column",
                                                               fct_bold_tags("c2")))))
              from (sparql define output:valmode "LONG" ', view_type), ntxt);
@@ -572,7 +615,7 @@ fct_xml_wrap (in tree any, in txt any)
 							       fct_short_form(__ro2sq("c1")) as "shortform",
                                                                fct_sparql_ser ("c1") as "sparql_ser"),
 							       __ro2sq ("c1")),
-				xmlelement ("column", fct_label ("c1", 0, ''facets'' )))))
+				xmlelement ("column", fct_label_np ("c1", 0, ''facets'' )))))
 	     from (sparql define output:valmode "LONG"', view_type), ntxt);
   if (n_cols = 3)
     http ('select xmlelement ("result", xmlattributes ('''' as "type"),
@@ -583,7 +626,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                              fct_short_form(__ro2sq("c1")) as "shortform"),
                                                               __ro2sq ("c1")),
                                                   xmlelement ("column",
-                                                              fct_label ("c1", 0, ''facets'' )),
+                                                              fct_label_np ("c1", 0, ''facets'' )),
                                                   xmlelement ("column", __ro2sq ("c2")),
                                                   xmlelement ("column", __ro2sq ("c3"))
 						  	)))
@@ -799,7 +842,7 @@ fct_literal (in tree any)
 create procedure
 fct_cond (in tree any, in this_s int, in txt any)
 {
-  declare lit, op varchar;
+  declare lit, op any;
 
   lit := fct_literal (tree);
 
@@ -833,7 +876,10 @@ fct_cond_range (in tree any, in this_s int, in txt any)
   {
     http(sprintf (' filter (?s%d <= %s) .', this_s, hi), txt);
   }
-  else return;
+
+--  dbg_printf ('fct_cond_range: got lo: %s, hi: %s', lo, hi);
+
+  return;
 }
 ;
 
@@ -943,6 +989,8 @@ fct_text (in tree any,
 
       v := cast (xpath_eval ('//view/@type', tree) as varchar);
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
+
+--      dbg_printf ('prop: %s', coalesce(prop, 'NULL'));
 
       if ('text' = v or 'text-d' = v)
         sc_opt := ' option (score ?sc) ';
@@ -1082,12 +1130,6 @@ fct_test (in str varchar, in timeout int := 0)
 }
 ;
 
-create procedure _min (in n1 int, in n2 int) {
-  if (n1 < n2) return n1;
-  else return n2;
-}
-;
-
 create procedure
 fct_exec (in tree any, 
           in timeout int)
@@ -1098,7 +1140,7 @@ fct_exec (in tree any,
   declare tmp any;
   declare offs, lim int;
 
-  set result_timeout = _min (timeout, atoi (registry_get ('fct_timeout_max')));
+  set result_timeout = __min (timeout, atoi (registry_get ('fct_timeout_max')));
 
   offs := xpath_eval ('//view/@offset', tree);
   lim := xpath_eval ('//view/@limit', tree);
@@ -1140,7 +1182,7 @@ fct_exec (in tree any,
       qr := fct_query (xpath_eval ('//query', tree, 1));
       qr2 := fct_xml_wrap (tree, qr);
       sqls := '00000';
-      set result_timeout = _min (timeout, atoi (registry_get ('fct_timeout_max')));
+      set result_timeout = __min (timeout, atoi (registry_get ('fct_timeout_max')));
       exec (qr2, sqls, msg, vector (), 0, md, res);
       n_rows := row_count ();
       act := db_activity ();
@@ -1161,7 +1203,7 @@ fct_exec (in tree any,
   res := xmlelement ("facets", xmlelement ("sparql", query), 
                                xmlelement ("time", msec_time () - start_time),
 		               xmlelement ("complete", case when sqls = 'S1TAT' then 'no' else 'yes' end),
-		               xmlelement ("timeout", _min (timeout * 2, atoi (registry_get ('fct_timeout_max')))),
+		               xmlelement ("timeout", __min (timeout * 2, atoi (registry_get ('fct_timeout_max')))),
 		               xmlelement ("db-activity", act),
 		               xmlelement ("processed", n_rows), 
                                xmlelement ("view", xmlattributes (offs as "offset", lim as "limit")),

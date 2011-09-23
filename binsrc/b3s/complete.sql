@@ -193,6 +193,7 @@ cmp_uri (in str varchar)
 	return cmp_find_iri (with_ns);
 
       -- no protocol and no known prefix
+      if (strstr (str, ':') is null)
 	str := 'http://' || str;
     }
 

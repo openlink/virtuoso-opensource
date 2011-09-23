@@ -97,6 +97,10 @@ fct_view_info (in tree any, in ctx int, in txt any)
     {
       http ('Displaying Ranked Entity Names and Text summaries', txt);
     }
+  if ('propval-list' = mode) 
+    {
+      http ('Displaying property values', txt);
+    }
 --  if (offs)
 --    http (sprintf ('  values %d - %d', 1 + offs, lim), txt);
   
@@ -316,9 +320,7 @@ fct_query_info (in tree any,
       lo := xpath_eval ('./@lo', tree);
 
       if (hi <> '' and lo <> '') {
---	http (sprintf (' %s is between <a class="edit_lo" href="#">%s</a> and <a href="edit_hi" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
-
-	http (sprintf (' %s is between <a class="edit_lo" href="#">%s</a> and <a href="edit_hi" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+	http (sprintf (' %s is between <a class="edit_lo" href="#">%V</a> and <a href="edit_hi" href="#">%V</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
                        fct_var_tag (this_s, ctx), 
                        cast (lo as varchar),
                        cast (hi as varchar),
@@ -327,7 +329,7 @@ fct_query_info (in tree any,
               txt);
       }
       else if (hi <> '') {
-       	http (sprintf (' %s <= <a class="edit_lo" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+       	http (sprintf (' %s <= <a class="edit_lo" href="#">%V</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
                        fct_var_tag (this_s, ctx), 
                        cast (hi as varchar),
 		       connection_get ('sid'),
@@ -336,7 +338,7 @@ fct_query_info (in tree any,
 	
       }
       else if (lo <> '') {
-       	http (sprintf (' %s >= <a class="edit_lo" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+       	http (sprintf (' %s >= <a class="edit_lo" href="#">%V</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
                        fct_var_tag (this_s, ctx), 
                        cast (lo as varchar),
 		       connection_get ('sid'),
@@ -559,6 +561,108 @@ fct_set_default_qry (inout tree any)
 }
 ;
 
+create procedure fct_print_space_1 (inout ses any, in n int)
+{
+  for (declare i int, i := 0; i < n;  i := i + 1)
+    http (' ', ses);
+}
+;
+
+create procedure fct_pretty_sparql_1 (inout arr any, inout inx int, in len int, inout ses any, in lev int := 0)
+{
+  declare nbsp, was_open, was_close, num_open int;
+  nbsp := 0;
+  was_open := 0;
+  was_close := 0;
+  num_open := 0;
+  for (;inx < len; inx := inx + 1)
+    {
+      declare elm varchar;
+      elm := arr[inx];
+      if (elm = 'sparql')
+        goto skipit;
+
+      if (elm = '(')
+	num_open := num_open + 1;
+      if (elm = ')')
+	num_open := num_open - 1;
+
+      if (num_open = 0)
+        {
+	  if (elm = '{')
+	    {
+	      nbsp := nbsp + 2;
+	      http ('\n', ses);
+	      fct_print_space_1 (ses, nbsp);
+	      was_open := 1;
+	      was_close := 0;
+	    }
+	  else if (was_open = 1)
+	    {
+	      was_open := 0;
+	      was_close := 0;
+	      http ('\n', ses);
+	      fct_print_space_1 (ses, nbsp + 2);
+	    }
+	  else if (elm = '}')
+	    {
+	      if (not was_close)
+		{
+		  http ('\n', ses);
+		  fct_print_space_1 (ses, nbsp);
+		}
+	    }
+	  else
+	    was_close := 0;
+	}
+
+
+      http (elm, ses);
+
+      if (num_open = 0)
+        {
+	  if (elm = '}')
+	    {
+	      was_close := 1;
+	      nbsp := nbsp - 2;
+	      http ('\n', ses);
+	      fct_print_space_1 (ses, nbsp);
+	    }
+	  else if (elm = '.')
+	    {
+	      http ('\n', ses);
+	      fct_print_space_1 (ses, nbsp + 1);
+	    }
+	}
+
+      if (elm = 'sparql')
+	http ('\n');
+      http (' ', ses);
+      skipit:;
+    }
+}
+;
+
+create procedure fct_pretty_sparql (in q varchar, in lev int := 0)
+{
+  declare ses, arr any;
+  declare inx int;
+  ses := string_output ();
+  --q := sprintf ('%V', q);
+  q := replace (q, '\n', ' ');
+  q := replace (q, '}', ' } ');
+  q := replace (q, '{', ' { ');
+  q := replace (q, ')', ' ) ');
+  q := replace (q, '(', ' ( ');
+  q := regexp_replace (q, '\\s\\s+', ' ', 1, null);
+  arr := split_and_decode (q, 0, '\0\0 ');
+  inx := 0;
+  fct_pretty_sparql_1 (arr, inx, length (arr), ses, lev);
+  return string_output_string (ses);
+}
+;
+
+
 create procedure
 fct_web (in tree any)
 {
@@ -585,6 +689,7 @@ fct_web (in tree any)
 
   reply := fct_exec (tree, timeout);
   p_qry := fct_query (tree, 1); -- get "plain" query text
+  p_qry := fct_pretty_sparql (p_qry);
 
 --  dbg_obj_print (reply);
 
@@ -664,8 +769,10 @@ fct_set_text_property (in tree any, in sid int, in iri varchar)
   declare new_tree, txt any;
 
   txt := cast (xpath_eval ('//text', tree) as varchar);
-  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', tree, vector ('text', txt, 'prop', iri));
-  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', new_tree, vector ('pos', 0, 'type', 'text-d', 'limit', 20, 'op', 'view'));
+  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', 
+                    tree, vector ('text', txt, 'prop', iri));
+  new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', 
+                    new_tree, vector ('pos', 0, 'type', 'text-d', 'limit', 20, 'op', 'view'));
 
   update fct_state set fct_state = new_tree where fct_sid = sid;
   commit work;
@@ -689,10 +796,12 @@ fct_set_focus (in tree any, in sid int, in pos int)
 create procedure 
 fct_drop (in tree any, in sid int, in pos int)
 {
-  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, vector ('pos', pos - 1, 'op', 'close'));
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', 
+                tree, vector ('pos', pos - 1, 'op', 'close'));
 
   if (xpath_eval ('//view', tree) is null)
-    tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+    tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', 
+                  tree, vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
@@ -827,7 +936,7 @@ fct_open_property  (in tree any,
 		        'op', 'prop',
 			'name', name,
 			'iri', iri,
-			'type', 'propval-list',
+			'type', 'list', 
 			'limit', 20,
 			'offset', 0,
 			'exclude', exclude));
@@ -1607,8 +1716,10 @@ fct_value_range (in tree any,
 
   pos := fct_view_pos (tree);
 
-  lo := fct_validate_cond_input (lo);
-  hi := fct_validate_cond_input (hi);
+--  lo := fct_validate_cond_input (lo);
+--  hi := fct_validate_cond_input (hi);
+
+--  dbg_printf ('value_range: %s, %s', lo, hi);
 
   if (lo is null and hi is null) 
   {
@@ -1725,6 +1836,7 @@ exec:;
   if ('' = c_term) c_term := 'class';
   connection_set ('c_term', c_term);
 
+  if (registry_get ('fct_log_enable') = 1)
   insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
          values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
   commit work;
@@ -1783,20 +1895,42 @@ exec:;
     }
   else if ('set_inf' = cmd)
     fct_set_inf (tree, sid);
-  else if ('select_value' = cmd)
+  else if ('select_value' = cmd) {
     fct_select_value (tree,
     		      sid,
 		      http_param ('iri'),
 		      http_param ('lang'),
 		      http_param ('datatype'),
 		      http_param ('op'));
-  else if ('value_range' = cmd)
+--    dbg_printf ('select_value: %s', http_param('iri'));
+  }
+  else if ('cond_lt' = cmd) {
+    fct_value_range (tree, 
+                     sid, 
+                     http_param('lang'),
+                     http_param('datatype'),
+                     '',
+                     http_param('lo'));
+--    dbg_printf ('cond_lt: %s', http_param ('lo'));
+  }
+  else if ('cond_gt' = cmd) {
+    fct_value_range (tree, 
+                     sid, 
+                     http_param('lang'),
+                     http_param('datatype'),
+                     http_param('lo'),
+                     '');
+--    dbg_printf ('cond_gt: %s', http_param('lo'));
+  }
+  else if ('cond_range' = cmd) {
     fct_value_range (tree, 
                      sid, 
                      http_param('lang'),
                      http_param('datatype'),
                      http_param('lo'),
                      http_param('hi'));
+--    dbg_printf ('cond_range: %s', http_param('lo'));
+  }
   else if ('save' = cmd)
     fct_save (tree, 
 	      sid,
@@ -1816,8 +1950,10 @@ exec:;
 
   select fct_state into _state from fct_state where fct_sid = sid;
 
+  if (registry_get ('fct_log_enable') = 1)
   insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd, fl_msec)
          values (sid, http_client_ip(), 'RETURN', _state, cmd, msec_time () - start_time);
+
   commit work;
 
   return;

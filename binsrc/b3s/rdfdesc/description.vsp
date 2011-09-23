@@ -45,7 +45,7 @@
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
-  declare dt1, dt2, count_str, tbinf, tbsas, ua varchar;
+  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc varchar;
 
 
   n_per_page := 100;
@@ -140,6 +140,10 @@
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
      gr := 'http://' || gr;
 
+  arr := rfc1808_parse_uri (gr);
+  arr [5] := '';
+  doc := vspx_uri_compose (arr);
+  
    page_resource_uri := gr;
    page_resource_uri := replace (page_resource_uri, '%23', '#');
   page_resource_uri := replace (page_resource_uri, ' ', '%20');
@@ -151,7 +155,14 @@
 
   if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
-      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', gr), 'SPARQL');
+      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', doc), 'SPARQL');
+      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+    }
+  else if (get_keyword ('sr', params) is not null and 0 = length (_F))
+    {
+      declare refr varchar;
+      refr := atoi (get_keyword ('sr', params, '0'));		
+      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', refr, doc), 'SPARQL');
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
 
@@ -161,12 +172,14 @@
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    label := ''; _subject := '';
 
-  qry_str := sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) %s where { <%S> virtrdf:label ?o }', _F, _S);
-   b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
-
+  --qry_str := sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) %s where { <%S> virtrdf:label ?o }', _F, _S);
+  --b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
 --dbg_obj_print (qry_str);
+  --exec (qry_str, null, null, vector (), 0, meta, data);
 
-   exec (qry_str, null, null, vector (), 0, meta, data);
+  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'') 
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) order by 3', 
+	null, null, vector (_S), 0, meta, data);
 
    label := b3s_label_get (data, langs);
    true_label := label;
@@ -265,7 +278,7 @@
       <?vsp } ?>
       <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?V _S ?><?V ses_parms ?>" class="sel">Description</a></li>
       <li id="mnu_usage">
-        <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Usage Statistics</a>
+        <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
       </li>
       <li id="mnu_settings"><a href="settings.vsp?g=<?U _S ?><?V ses_parms ?>">Settings</a>
         <div id="settings_popup" style="display: none">
@@ -292,8 +305,8 @@
 <?vsp 
   declare _ciri varchar;
 
-  if (c_iri = 'http://www.w3.org/2000/01/rdf-schema#Class') {
-    _ciri := gr;
+  if (c_iri = 'http://www.w3.org/2000/01/rdf-schema#Class' or c_iri = 'http://www.w3.org/2002/07/owl#Class') {
+    _ciri := page_resource_uri;
   }
   else {
     _ciri := c_iri;
@@ -396,7 +409,7 @@ if (_subject <> '') {
 	   if (curr_pred <> pred)
 	     {
                if (curr_pred <> '') http ('</ul></td></tr>');
-	       b3s_http_print_l (PRED, odd_position, flag, sid);
+	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
 	     }
            vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from);
@@ -489,7 +502,10 @@ if (_subject <> '') {
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> )
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> ) | Microdata (
+	<a href="<?=rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |  
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a> 
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">

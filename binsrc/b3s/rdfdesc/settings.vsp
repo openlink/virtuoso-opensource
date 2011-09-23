@@ -47,7 +47,7 @@
         <?vsp } ?>      
         <li id="mnu_descr"><a href="/describe/?uri=<?U _S ?><?V ses_parms ?>">Description</a></li>
         <li id="mnu_usage" class="sel">
-          <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Usage Statistics</a>
+          <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
         </li>
         <li id="mnu_settings"><a href="settings.vsp?uri=<?V page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
       </ul>

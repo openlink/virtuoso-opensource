@@ -155,11 +155,19 @@
 </xsl:template>
 
 <xsl:template match="view">
-  <xsl:if test="'class' = $op or 'value' = $op or '' = $op" >
+    <xsl:choose>
+	<xsl:when test="'class' = $op" >
+	    <xsl:copy>
+		<xsl:attribute name="offset"><xsl:value-of select="$offset"/></xsl:attribute>
+		<xsl:apply-templates select="@*[local-name () != 'offset'] | node()" />
+	    </xsl:copy>
+	</xsl:when>
+	<xsl:when test="'value' = $op or '' = $op" >
   <xsl:copy>
     <xsl:apply-templates select="@* | node()" />
   </xsl:copy>
-</xsl:if>
+	</xsl:when>
+    </xsl:choose>
 </xsl:template>
 
 <xsl:template match="@* | node()">
