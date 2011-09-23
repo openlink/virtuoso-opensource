@@ -531,48 +531,44 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t unit = bif_string_arg (qst, args, 0, "datediff");
   caddr_t dt1 = bif_date_arg (qst, args, 1, "datediff");
   caddr_t dt2 = bif_date_arg (qst, args, 2, "datediff");
-  TIMESTAMP_STRUCT ts1;
-  TIMESTAMP_STRUCT ts2;
-  boxint s1 = (boxint)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  boxint s2 = (boxint)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
-  int tz_tweak = DT_TZ (dt1);
-
+  boxint s1 =
+      (boxint) DT_DAY (dt1) * 24 * 60 * 60 + (boxint) DT_HOUR (dt1) * 60 * 60 + (boxint) DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+  boxint s2 =
+      (boxint) DT_DAY (dt2) * 24 * 60 * 60 + (boxint) DT_HOUR (dt2) * 60 * 60 + (boxint) DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  int frac1, frac2;
+  int diffyear, diffmonth;
   if (0 == stricmp (unit, "day"))
-    return box_num ((boxint)DT_DAY (dt2) - (boxint)DT_DAY (dt1));
-
+    return box_num ((boxint) DT_DAY (dt2) - (boxint) DT_DAY (dt1));
   if (0 == stricmp (unit, "hour"))
     return box_num ((s2 - s1) / (60 * 60));
-
   if (0 == stricmp (unit, "minute"))
     return box_num ((s2 - s1) / 60);
-
   if (0 == stricmp (unit, "second"))
     return box_num (s2 - s1);
-
-  dt_to_GMTimestamp_struct (dt2, &ts2);
-  dt_to_GMTimestamp_struct (dt1, &ts1);
-
-  if (0 == stricmp (unit, "month"))
+  diffyear = !stricmp (unit, "year");
+  diffmonth = (diffyear ? 0 : !stricmp (unit, "month"));
+  if (diffyear || diffmonth)
     {
+      TIMESTAMP_STRUCT ts1;
+      TIMESTAMP_STRUCT ts2;
+      int tz_tweak = DT_TZ (dt1);
+      dt_to_GMTimestamp_struct (dt2, &ts2);
+      dt_to_GMTimestamp_struct (dt1, &ts1);
       ts_add (&ts1, tz_tweak, "minute");
       ts_add (&ts2, tz_tweak, "minute");
-      return box_num ((boxint)(ts2.year * 12 + ts2.month) - (boxint)(ts1.year * 12 + ts1.month));
+      if (diffyear)
+	return box_num ((boxint) ts2.year - (boxint) ts1.year);
+      if (diffmonth)
+	return box_num ((boxint) (ts2.year * 12 + ts2.month) - (boxint) (ts1.year * 12 + ts1.month));
     }
-
-  if (0 == stricmp (unit, "year"))
-    {
-      ts_add (&ts1, tz_tweak, "minute");
-      ts_add (&ts2, tz_tweak, "minute");
-      return box_num ((boxint)ts2.year - (boxint)ts1.year);
-    }
-
+  frac1 = DT_FRACTION (dt1);
+  frac2 = DT_FRACTION (dt2);
   if (0 == stricmp (unit, "millisecond"))
-    return box_num ((s2 - s1) * 1000 + (ts2.fraction / 1000000 - ts1.fraction / 1000000));
+    return box_num ((s2 - s1) * (boxint) 1000 + (frac2 / 1000000 - frac1 / 1000000));
   if (0 == stricmp (unit, "microsecond"))
-    return box_num ((s2 - s1) * (boxint)1000000 + (ts2.fraction / 1000 - ts1.fraction / 1000));
+    return box_num ((s2 - s1) * (boxint) 1000000 + (frac2 / 1000 - frac1 / 1000));
   if (0 == stricmp (unit, "nanosecond"))
-    return box_num ((s2 - s1) * (boxint)1000000000 + (ts2.fraction - ts1.fraction));
-
+    return box_num ((s2 - s1) * (boxint) 1000000000 + (frac2 - frac1));
   sqlr_new_error ("22023", "DT002", "Bad unit in datediff: %s.", unit);
   return NULL;
 }
