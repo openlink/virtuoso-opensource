@@ -742,7 +742,7 @@ perform_actual_load:
       -- then it may return rdf instead of html
       req_hdr := req_hdr || case when length (req_hdr) > 0 then '\r\n' else '' end
         || 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
-	|| 'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, application/xml; q=0.2, */*; q=0.1';
+	|| 'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, text/turtle; q=0.5, application/xml; q=0.2, */*; q=0.1';
 	--|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
       -- dbg_obj_princ (get_method, ' method with ', req_hdr);
       {
