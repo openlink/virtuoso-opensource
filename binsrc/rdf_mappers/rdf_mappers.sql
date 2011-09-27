@@ -2023,7 +2023,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
-string_to_file('res.xml', ses, 0);  
+  --string_to_file('res.xml', ses, 0);  
   ses := xtree_doc (ses);
   return ses;
 }
