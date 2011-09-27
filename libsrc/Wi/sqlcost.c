@@ -1363,6 +1363,8 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
   return res;
 }
 
+int32 ric_samples_sz = 10000;
+int32 ric_rnd_seed;
 
 void
 ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est)
@@ -1372,6 +1374,16 @@ ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est)
   tc.tc_estimate = est;
   tc.tc_time = approx_msec_real_time ();
   mutex_enter (ctx->ric_mtx);
+  if (ctx->ric_samples->ht_count > ric_samples_sz)
+    {
+      caddr_t key = NULL;
+      text_count_t old_tc;
+      int32 rnd  = sqlbif_rnd (&ric_rnd_seed);
+      if (id_hash_remove_rnd (ctx->ric_samples, rnd, (caddr_t)&key, (caddr_t)&old_tc))
+	{
+	  dk_free_tree (key);
+	}
+    }
   id_hash_set (ctx->ric_samples, (caddr_t)&sc_key, (caddr_t)&tc);
   mutex_leave (ctx->ric_mtx);
 }
