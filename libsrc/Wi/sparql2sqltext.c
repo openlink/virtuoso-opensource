@@ -4916,6 +4916,33 @@ print_asname:
 }
 
 void
+ssg_print_service_rset_item (spar_sqlgen_t *ssg, SPART *service_gp, caddr_t selid, caddr_t e_varname)
+{
+  int pos = -1;
+  char buf[50];
+  SPART *sinv = sparp_get_option (ssg->ssg_sparp, service_gp->_.gp.options, SPAR_SERVICE_INV);
+  DO_BOX_FAST_REV (caddr_t, vname, pos, sinv->_.sinv.rset_varnames)
+    {
+      if (!strcmp (e_varname, vname))
+break;
+    }
+  END_DO_BOX_FAST_REV;
+  if (0 > pos)
+    spar_internal_error (ssg->ssg_sparp, "ssg_" "print_service_rset_item(): service retval not in rset_varnames");
+#ifdef NDEBUG
+  ssg_putchar (' ');
+#else
+  ssg_puts (" /*sinv[*/ ");
+#endif
+  ssg_prin_id (ssg, selid);
+  sprintf (buf, ".rset[%d] ", pos);
+  ssg_puts (buf);
+#ifndef NDEBUG
+  ssg_puts ("/*]sinv*/ ");
+#endif
+}
+
+void
 ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const char *asname)
 {
   caddr_t e_varname = NULL, full_vname = NULL;
@@ -4940,28 +4967,7 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
         }
       if (SERVICE_L == tree->_.retval.gp->_.gp.subtype)
     {
-      int pos = -1;
-      char buf[50];
-      SPART *sinv = sparp_get_option (ssg->ssg_sparp, tree->_.retval.gp->_.gp.options, SPAR_SERVICE_INV);
-      DO_BOX_FAST_REV (caddr_t, vname, pos, sinv->_.sinv.rset_varnames)
-        {
-          if (!strcmp (e_varname, vname))
-            break;
-        }
-      END_DO_BOX_FAST_REV;
-      if (0 > pos)
-        spar_internal_error (ssg->ssg_sparp, "ssg_" "print_retval(): service retval not in rset_varnames");
-#ifdef NDEBUG
-      ssg_putchar (' ');
-#else
-      ssg_puts (" /*sinv[*/ ");
-#endif
-      ssg_prin_id (ssg, tree->_.retval.selid);
-      sprintf (buf, ".rset[%d] ", pos);
-      ssg_puts (buf);
-#ifndef NDEBUG
-      ssg_puts ("/*]sinv*/ ");
-#endif
+          ssg_print_service_rset_item (ssg, tree->_.retval.gp, tree->_.retval.selid, e_varname);
       goto print_asname; /* see below */
     }
     }
@@ -5694,11 +5700,13 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
   switch (gp->_.gp.subtype)
     {
     case SELECT_L:
+      if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, gp->_.gp.selid))
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equiv_retval_expn(): select selid is out of scope");
+      /* no break */
+    case SERVICE_L:
       {
         SPART_buf rv_buf;
         SPART *rv;
-        if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, gp->_.gp.selid))
-          spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equiv_retval_expn(): select selid is out of scope");
         SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
         rv->_.retval.equiv_idx = eq->e_own_idx;
         sparp_rvr_copy (ssg->ssg_sparp, &(rv->_.retval.rvr), &(eq->e_rvr));
@@ -5716,6 +5724,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           }
         if (flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)
           rv->_.retval.optional_makes_nullable = 1;
+        if (SERVICE_L == gp->_.gp.subtype)
+          rv->_.retval.gp = gp;
         ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);
         return 1;
       }
