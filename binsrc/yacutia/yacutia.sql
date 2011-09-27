@@ -193,8 +193,9 @@ yacutia_http_log_ui_labels ()
 
 create procedure adm_menu_tree ()
 {
-  declare wa_available integer;
+  declare wa_available, rdf_available integer;
   wa_available := gt (DB.DBA.VAD_CHECK_VERSION ('Framework'), '1.02.13');
+  rdf_available := DB.DBA.VAD_CHECK_VERSION('rdf_mappers');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
@@ -215,11 +216,8 @@ create procedure adm_menu_tree ()
      </node>
      <node name="Access Control" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
       <node name="ACL List" url="sec_auth_serv.vspx" id="25" place="1" allowed="yacutia_acl_page"/>
-      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>',
-      case when wa_available then 
-      '<node name="SPARQL ACL" url="sparql_acl.vspx" id="26" place="1" allowed="yacutia_acl_page"/>'
-      else '' end,
-     '</node>
+      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+     </node>
    </node>
    <node name="User Accounts" url="accounts_page.vspx"  id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
@@ -466,16 +464,28 @@ case when 0 and check_package('rdf_mappers') then
    '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
-   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />
-   <node name="Linked Data Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="Linked Data Views" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="Linked Data Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
+   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
+      case when (wa_available is not null and rdf_available is null) then
+      ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
+        <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>'
+      else 
+      '<node name="Access Control" url="sec_auth_serv_sp.vspx" id="274" allowed="yacutia_acls">
+      <node name="ACL List" url="sec_auth_serv_sp.vspx" id="275" place="1" allowed="yacutia_acls"/>' 
+      end,      
+   ' <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>',
+      case when (wa_available is not null) then
+      '<node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>'
+      else '' end,
+   '</node>     
+   <node name="Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="Views" url="db_rdf_class.vspx"  id="272" place="1"/>
+   <node name="Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
    <node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
    '<node name="RDF Subscriptions" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'

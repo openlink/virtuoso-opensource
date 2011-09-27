@@ -38,7 +38,7 @@
   <vm:menu>
     <vm:menuitem value="Linked Data Views Management"/>
   </vm:menu>
-  <vm:header caption="Linked Data Views"/>
+  <vm:header caption="Generating Linked Data Views from Relational Data Sources"/>
   <vm:pagebody>
 	<v:on-init>
 	  if (self.db_ds_state is null)

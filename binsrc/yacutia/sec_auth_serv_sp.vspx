@@ -31,7 +31,7 @@
   <vm:pagetitle>Virtuoso Access Control Lists</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
-      <v:variable persist="0" name="acl_name" type="varchar" default="'HTTP'" param-name="acl"/>
+      <v:variable persist="0" name="acl_name" type="varchar" default="'Sponger'" param-name="acl"/>
       <v:variable persist="0" name="acl_list" type="any" default="null" />
       <v:variable persist="0" name="acl_list_mta" type="any" default="null" />
       <v:variable persist="0" name="edit" type="int" default="0" />
@@ -50,7 +50,7 @@
       <vm:menuitem name="HTTP" value="Access Control Lists"/>
     </vm:menu>
     <vm:header caption="Access Control Lists">
-     <vm:help id="sec_auth_serv" sect=""/>
+     <!--vm:help id="sec_auth_serv_sp" sect=""/-->
     </vm:header>
     <vm:pagebody>
   <v:method name="astyle" arglist="in cmp varchar">
@@ -102,11 +102,11 @@
       {
         declare dta, mta any;
 	exec ('select HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE, HA_LIMIT
-	from HTTP_ACL where HA_LIST = ? order by HA_ORDER',
-	null, null, vector (self.acl_name), 0, mta, dta);
+	from HTTP_ACL where HA_LIST = ? order by HA_ORDER',	null, null, vector ('Sponger'), 0, mta, dta);
 	self.acl_list := dta;
 	self.acl_list_mta := mta;
       }
+      
     </v:on-init>
     <v:form name="page_form" type="simple" method="POST">
 	<!-- top of security layout -->
@@ -118,10 +118,10 @@
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
-		      <td class="page_tab" align="center">
+		      <!--td class="page_tab" align="center">
 			  	
 			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
-		      </td>
+		      </td-->
 		      <td class="page_tab_selected" align="center">
 			Access Control
 		      </td>
@@ -141,65 +141,23 @@
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
-		      <td class="<?V self.astyle ('HTTP') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=HTTP" value="HTTP" render-only="1"/>
-		      </td>
-		      <td class="<?V self.astyle ('NEWS') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=NEWS" value="NEWS" render-only="1"/>
-		      </td>
-		      <td class="<?V self.astyle ('PROXY') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PROXY" value="PROXY" render-only="1"/>
-		      </td>
-                      <?vsp
-		        if (vad_check_version ('pubsubhub') is not null)
+
+		      <?vsp
+		        if (vad_check_version ('rdf_mappers') is not null)
 			  {
 		      ?>
-		      <td class="<?V self.astyle ('PSH') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PSH" value="PSH" render-only="1"/>
-		      </td>
-		      <td class="<?V self.astyle ('PSH-SSL') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PSH-SSL" value="PSH-SSL" render-only="1"/>
+		      <td class="<?V self.astyle ('Sponger') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
 		      </td>
                       <?vsp
 		          }
-                        declare i, fnd integer;
-                        i := 0; fnd := 0;
-			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY', 'Sponger','PSH','PSH-SSL') do
-                        {
-			  if (self.acl_name not in ('HTTP','NEWS','PROXY','PSH','PSH-SSL') and HA_LIST = self.acl_name)
-			    fnd := 1;
-			  ?>
-			  <td class="<?V self.astyle (HA_LIST) ?>" align="center">
-			    <v:url xhtml_style="page_tab" url="--sprintf ('sec_auth_serv.vspx?acl=%V', HA_LIST)"
-			      value="--HA_LIST" render-only="1"/>
-			  </td>
-			  <?vsp
-                          i := i + 1;
-                        }
-
-			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY', 'Sponger','PSH','PSH-SSL'))
-			  {
-			  ?>
-			  <td class="<?V self.astyle (self.acl_name) ?>" align="center">
-			    <v:url xhtml_style="page_tab" url="--sprintf ('sec_auth_serv.vspx?acl=%V', self.acl_name)"
-			      value="--self.acl_name" render-only="1"/>
-			  </td>
-			  <?vsp
-			  }
                       ?>
-		      <!--?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?-->
-		      <!--td class="<?V self.astyle ('SPARQL-SSL') ?>" align="center">
+		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?>
+		      <td class="<?V self.astyle ('SPARQL-SSL') ?>" align="center">
 			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
-		      </td-->
-		      <!--?vsp } ?-->
-                        <!--td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-			      <td width="100%" align="right">
-                              </td>
-                            </tr>
-                          </table>
-                        </td-->
+		      </td>
+		      <?vsp } ?>
+                        
 			<td class="page_tab_empty" align="right" width="100%">
                         </td>
                     </tr>
@@ -427,7 +385,7 @@
 				  </v:on-post>
 				</v:button>
 			      </td>
-			      <td colspan="6">
+			      <!--td colspan="6">
 				<v:form name="add_acl_list_f" method="POST" type="simple">
 				<v:text name="n_acl_nam" value="" xhtml_size="10" error-glyph="*">
 				  <v:validator test="length" min="1" max="255" message="Enter a valid ACL name"/>
@@ -436,13 +394,13 @@
 				  <v:on-post>
 				    if (self.vc_is_valid)
 				      {
-				        self.vc_redirect (sprintf ('sec_auth_serv.vspx?acl=%U',
+				        self.vc_redirect (sprintf ('sec_auth_serv_sp.vspx?acl=%U',
 				          self.n_acl_nam.ufl_value));
 				      }
 				  </v:on-post>
 				</v:button>
 			        </v:form>
-			      </td>
+			      </td-->
 			    </tr>
 			</v:template>
 			</table>
@@ -595,7 +553,7 @@
 			    enabled="--case when self.edit = 0 and self.ch = 1 then 1 else 0 end">
 			    <v:button name="cancel" value="Cancel" action="simple">
 			      <v:on-post>
-				self.vc_redirect (sprintf ('sec_auth_serv.vspx?acl=%U', self.acl_name));
+				self.vc_redirect (sprintf ('sec_auth_serv_sp.vspx?acl=%U', self.acl_name));
 			      </v:on-post>
 			    </v:button>
 			    <v:button name="apply" value="Apply" action="simple">
@@ -624,7 +582,7 @@
 				if (i = 1)
 				  self.acl_name := 'HTTP';
 
-				self.vc_redirect (sprintf ('sec_auth_serv.vspx?acl=%U', self.acl_name));
+				self.vc_redirect (sprintf ('sec_auth_serv_sp.vspx?acl=%U', self.acl_name));
 			      </v:on-post>
 			    </v:button>
 			  </v:form>
