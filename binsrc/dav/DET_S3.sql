@@ -645,12 +645,13 @@ create function DB.DBA."S3_DAV_DELETE" (
 --| There's a special problem, known as 'Transaction deadlock after reading from HTTP session'.
 --| The DET function should do only one INSERT of the 'content' into the table and do it as late as possible.
 --| The function should return -29 if deadlocked or otherwise broken after reading blob from HTTP.
-create function DB.DBA."S3_DAV_RES_UPLOAD" (in detcolID any, in pathParts any, inout content any, in type varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
-{
+-- XXX: this as built-in stops the actual code to be used
+--create function DB.DBA."S3_DAV_RES_UPLOAD" (in detcolID any, in pathParts any, inout content any, in type varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+--{
   -- dbg_obj_princ ('S3_DAV_RES_UPLOAD (', detcolID, pathParts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
-  return -20;
-}
-;
+--  return -20;
+--}
+--;
 
 --| When DAV_PROP_REMOVE_INT calls DET function, authentication and check for locks are performed before the call.
 --| The check whether it's a system name or not (when an error in returned if name is system) is _not_ permitted.
