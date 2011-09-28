@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2011 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1771,7 +1771,253 @@ create procedure DB.DBA.rdf_find_str (in x any)
 grant execute on DB.DBA.rdf_find_str to public
 ;
 
-create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_qrcode varchar, in params varchar, in qr varchar)
+
+create procedure WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE()
+{
+    http('<?xml version="1.0" encoding="UTF-8" ?>\n');
+    http('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n');
+    http('<html version="-//W3C//DTD XHTML 1.1//EN"\n');
+    http('    xmlns="http://www.w3.org/1999/xhtml"\n');
+    http('    xml:lang="en"\n');
+    http('>\n');
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD(in title varchar)
+{
+    http('    <title>' || title || '</title>\n');
+    http(sprintf('    <meta name="Copyright" content="Copyright &copy; %d OpenLink Software" />\n', year(now())));
+    http('    <meta name="Keywords" content="OpenLink Virtuoso Sparql" />\n');
+    http('    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />\n');
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_STYLE ()
+{
+    http('\n');
+    http('
+    <style type="text/css">
+    /*<![CDATA[*/
+	html { padding: 0; }
+	body {
+	    padding: 0;
+	    margin: 0;
+    	    font-family:Gill Sans, Arial, Helvetica, sans-serif;
+	    font-size: 9pt;
+	    color: #333;
+	    background-color: #FDFDFD;
+	}
+	#header {
+	    padding: 0;
+	    margin: 0;
+	    background-color: #86B9D9;
+	    color: #FFFFFF;
+	    border-bottom: 1px solid #AAA;
+	}
+	#header h1 {
+	    font-size: 16pt;
+	    font-weight: normal;
+	    text-align: left;
+	    vertical-align: middle;
+	    padding: 4px 8px 4px 8px;
+	    margin: 0px 0px 0px 0px;
+	}
+	#menu {
+	    margin-left: 8px;
+	    margin-right: 8px;
+ 	    margin-top: 0px;
+	    clear: right;
+	    float: right;
+	}
+	#intro,#main {
+	    margin-left: 8px;
+	    margin-right: 8px;
+	}
+	#help {
+	    margin-left: 8px;
+	    margin-right: 8px;
+	    width: 80%
+	}
+	#footer {
+	    width: 100%;
+	    float: left;
+	    clear: left;
+	    margin: 2em 0 0;
+	    padding-top: 0.7ex;
+	    border-top: 1px solid #AAA;
+	    font-size: 8pt;
+	    text-align: center;
+	}
+	fieldset {
+	    border: 0;
+	    padding: 0;
+	    margin: 0;
+	}
+	fieldset label {
+	    font-weight: normal;
+	    white-space: nowrap;
+	    font-size: 11pt;
+	    color: #000;
+	}
+	fieldset label.n {
+	    display: block;
+	    vertical-align: bottom;
+	    margin-top:5px;
+	    width: 160px;
+	    float:left;
+	    white-space: nowrap;
+	}
+	fieldset label.n:after { content: ":"; }
+	fieldset label.n1 {
+	    display: block;
+	    vertical-align: bottom;
+	    margin-top:5px;
+	    width: 160px;
+	    float:left;
+	    white-space: nowrap;
+	}
+	fieldset label.ckb {
+	    width: 160px;
+	    font-weight: normal;
+	    font-size: 10pt;
+	}
+	fieldset label.ckb:after { content: ""; }
+	fieldset textarea {
+	    width: 99%;
+	    font-family: monospace;
+	    font-size: 10pt;
+	}
+	#cxml {
+	    clear: both;
+	    display: block;
+	}
+	#savefs {
+	    clear: both;
+	    display: block;
+	}
+	span.info {
+	    font-size: 9pt;
+	    white-space: nowrap;
+	    height: 2em;
+	}
+	br { clear: both; }
+    /*]]>*/
+    </style>
+    ');
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_qrcode integer)
+{
+    http('\n');
+    http('    <script type="text/javascript">\n');
+    http('    /*<![CDATA[*/\n');
+    http('	var last_format = 1;\n');
+    http('	function format_select(query_obg)\n');
+    http('	{\n');
+    http('		var query = query_obg.value; \n');
+    http('		var format = query_obg.form.format;\n');
+    http('\n');
+    http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 1) {\n');
+    http('			for(var i = format.options.length; i > 0; i--)\n');
+    http('				format.options[i] = null;\n');
+    http('			format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
+    http('			format.options[2] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
+    http('			format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+    http('			format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
+    http('			format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
+    http('			format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
+    http('			format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
+    http('			format.options[8] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+    http('			format.options[9] = new Option(\'HTML+Microdata\',\'text/html\');\n');
+    http('			format.options[10] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+    http('			format.options[11] = new Option(\'CSV\',\'text/csv\');\n');
+    if (can_cxml)
+      {
+	http('			format.options[12] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	if (can_qrcode)
+	  http('		format.options[13] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+      }
+    http('			format.selectedIndex = 1;\n');
+    http('			last_format = 2;\n');
+    http('		}\n');
+    http('\n');
+    http('		if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 2) {\n');
+    http('			for(var i = format.options.length; i > 0; i--)\n');
+    http('				format.options[i] = null;\n');
+    http('			format.options[1] = new Option(\'HTML\',\'text/html\');\n');
+    http('			format.options[2] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
+    http('			format.options[3] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
+    http('			format.options[4] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
+    http('			format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
+    http('			format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
+    http('			format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+    http('			format.options[8] = new Option(\'N-Triples\',\'text/plain\');\n');
+    http('			format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
+    if (can_cxml)
+      http('			format.options[10] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+    http('			format.selectedIndex = 1;\n');
+    http('			last_format = 1;\n');
+    http('		}\n');
+    http('	}\n');
+    http('
+	function format_change(e)
+	{
+		var format = e.value;
+		var cxml = document.getElementById("cxml");
+		if (!cxml) return;
+		if ((format.match (/\\bCXML\\b/i)))
+		{
+			cxml.style.display="block";
+		} else {
+			cxml.style.display="none";
+		}
+	}
+	function savedav_change(e)
+	{
+		var savefs = document.getElementById("savefs");
+		if (!savefs) return;
+		if (e.checked)
+		{
+			savefs.style.display = "block";
+		}
+		else
+		{
+			savefs.style.display = "none";
+		}
+	}
+	function sparql_endpoint_init()
+	{
+		var cxml = document.getElementById("cxml");
+		if (cxml) cxml.style.display="none";
+		var savefs = document.getElementById("savefs");
+		if (savefs) savefs.style.display="none";
+	}
+    ');
+    http('    /*]]>*/\n');
+    http('    </script>\n');
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_FOOTER()
+{
+    http('    <div id="footer">\n');
+    http(sprintf('	Copyright &copy; %d <a href="http://www.openlinksw.com/virtuoso">OpenLink Software</a>', year(now())));
+    http(sprintf('<br />Virtuoso version %s on %s (%s), ', sys_stat('st_dbms_ver'), sys_stat('st_build_opsys_id'), host_id()));
+    if (1 = sys_stat('cl_run_local_only'))
+	http('Single Server Edition\n');
+    else
+	http(sprintf('Cluster Edition (%d server processes)\n', sys_stat('cl_n_hosts')));
+    http('    </div>\n');
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_qrcode integer, in params varchar, in qr varchar)
 {
   declare opts any;
   declare format varchar;
@@ -1843,101 +2089,314 @@ create procedure WS.WS.sparql_enpoint_format_opts (in can_cxml varchar, in can_q
 }
 ;
 
+create procedure WS.WS.SPARQL_ENDPOINT_SPONGE_OPTS (in params varchar)
+{
+  declare s_param varchar;
+  declare opts any;
+
+  s_param := get_keyword ('should-sponge', params, '');
+  opts := vector (
+      vector ('', 		  'Use only local data (including data retrieved before), but do not retrieve more'),
+      vector ('soft', 		  'Retrieve remote RDF data for all missing source graphs'),
+      vector ('grab-all',	  'Retrieve all missing remote RDF data that might be useful'),
+      vector ('grab-all-seealso', 'Retrieve all missing remote RDF data that might be useful, including seeAlso references'),
+      vector ('grab-everything',  'Try to download all referenced resources (this may be very slow and inefficient)')
+      );
+
+  foreach (any x in opts) do
+    {
+      http(sprintf ('			<option value="%V" %s>%V</option>\n',
+	  x[0], case when s_param = x[0] then 'selected="selected"' else '' end , x[1]));
+    }
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in params varchar, in lbl varchar)
+{
+  declare val varchar;
+  declare opts varchar;
+
+  if ('CXML_redir_for_subjs' = lbl)
+    {
+      val := get_keyword (lbl, params, '121');
+      http ('		<label for="CXML_redir_for_subjs" class="n">External resource link</label>\n');
+      http ('		<select name="CXML_redir_for_subjs" id="CXML_redir_for_subjs">\n');
+      opts := vector (
+	  vector ('',			'No link out'),
+	  vector ('121',		'External resource link'),
+	  vector ('LOCAL_TTL', 		'External description resource (TTL)'),
+	  vector ('LOCAL_NTRIPLES', 	'External description resource (NTRIPLES)'),
+	  vector ('LOCAL_JSON', 	'External description resource (JSON)'),
+	  vector ('LOCAL_XML', 		'External description resource (RDF/XML)')
+      );
+    } else {
+      val := get_keyword (lbl, params, '');
+      http ('		<label for="CXML_redir_for_hrefs" class="n">Facet link behavior</label>\n');
+      http ('		<select name="CXML_redir_for_hrefs" id="CXML_redir_for_hrefs">\n');
+      opts := vector (
+	  vector ('',			'Local faceted navigation link'),
+	  vector ('121',		'External resource link'),
+	  vector ('LOCAL_PIVOT',	'External faceted navigation link'),
+	  vector ('LOCAL_TTL', 		'External description resource (TTL)'),
+	  vector ('LOCAL_CXML',		'External description resource (CXML)'),
+	  vector ('LOCAL_NTRIPLES', 	'External description resource (NTRIPLES)'),
+	  vector ('LOCAL_JSON', 	'External description resource (JSON)'),
+	  vector ('LOCAL_XML', 		'External description resource (RDFXML)')
+      );
+    }
+
+  foreach (any x in opts) do
+    {
+      if ('LOCAL_PIVOT' <> x[0] or can_pivot)
+	  http(sprintf ('			<option value="%V" %s>%V</option>\n',
+	       x[0], case when val = x[0] then 'selected="selected"' else '' end , x[1]));
+    }
+
+  http ('		</select><br />\n');
+}
+;
+
+
 create procedure WS.WS.sparql_predefined_nsdecl ()
 {
-  http ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">');
-  http ('<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">');
-
   declare label varchar;
-  label := 'Predefined name space prefixes';
+  label := 'Predefined Namespace Prefixes';
 
-  http ('  <head>');
-  http (sprintf ('    <title>%V</title>', label));
-  WS.WS.sparql_style ();
-  http ('  </head>');
-  http ('  <body>');
-  http ('    <div id="header">');
-  http ('      <div id="hd_l">');
-  http ('        <h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>');
-  http ('      </div>');
-  http ('    </div>');
-  http ('    <div id="content">');
-  http ('      <table class="tableresult" border="1">');
-  	  http (sprintf ('<tr><th>Prefix</th><th>URI</th></tr>'));
+  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+
+  http('<head>\n');
+  WS.WS.SPARQL_ENDPOINT_HTML_HEAD(label);
+  WS.WS.SPARQL_ENDPOINT_STYLE();
+  http('</head>\n');
+
+  http ('<body>\n');
+  http ('    <div id="header">\n');
+  http ('	<h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>\n');
+  http ('    </div>\n\n');
+  http ('    <div id="main">\n');
+  http ('    <br />\n');
+  http ('    <table class="tableresult" border="1">\n');
+  http (sprintf ('	<tr><th>Prefix</th><th>URI</th></tr>\n'));
   	  for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
   	    {
-  	       http (sprintf ('<tr><td>%V</td><td>%V</td></tr>', NS_PREFIX, NS_URL));
+       http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', NS_PREFIX, NS_URL));
   	    }
-  http ('      </table>');
-  http ('    </div>');
-  http('		<div id="footer">\n');
-  http('		<div id="ft_b">\n');
-  http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
-  http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-  http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
-  http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
-  http('		</div>\n');
-  http('		</div>\n');
+  http ('    </table>\n');
+  http ('    </div>\n\n');
+
+  http('<p>');
+  http ('<button type="button" name="back" value="Back" onclick="javascript:history.go(-1);">Back</button>\n');
+  http('</p>\n');
+
+  WS.WS.SPARQL_ENDPOINT_FOOTER();
   http('	</body>\n');
   http('</html>\n');
 }
 ;
+
 
 create procedure WS.WS.sparql_predefined_rdfinf ()
 {
-  http ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">');
-  http ('<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">');
-
   declare label varchar;
-  label := 'Predefined inference rules';
+  label := 'Predefined Inference Rules';
 
-  http ('  <head>');
-  http (sprintf ('    <title>%V</title>', label));
-  WS.WS.sparql_style ();
-  http ('  </head>');
-  http ('  <body>');
-  http ('    <div id="header">');
-  http ('      <div id="hd_l">');
-  http ('        <h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>');
-  http ('      </div>');
-  http ('    </div>');
-  http ('    <div id="content">');
-  http ('      <table class="tableresult" border="1">');
-  	  http (sprintf ('<tr><th>Name</th><th>URI</th></tr>'));
+  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+
+  http('<head>\n');
+  WS.WS.SPARQL_ENDPOINT_HTML_HEAD(label);
+  WS.WS.SPARQL_ENDPOINT_STYLE();
+  http('</head>\n');
+
+  http ('<body>\n');
+  http ('    <div id="header">\n');
+  http ('	<h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>\n');
+  http ('    </div>\n\n');
+  http ('    <div id="main">\n');
+  http ('    <br />\n');
+  http ('    <table class="tableresult" border="1">\n');
+  http (sprintf ('	<tr><th>Name</th><th>URI</th></tr>\n'));
   	  for select * from SYS_RDF_SCHEMA order by 1 do
   	    {
-  	       http (sprintf ('<tr><td>%V</td><td>%V</td></tr>', RS_NAME, RS_URI));
+      http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', RS_NAME, RS_URI));
   	    }
-  http ('      </table>');
-  http ('    </div>');
-  http('		<div id="footer">\n');
-  http('		<div id="ft_b">\n');
-  http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
-  http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-  http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
-  http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
-  http('		</div>\n');
-  http('		</div>\n');
+  http ('    </table>\n');
+  http ('    </div>\n\n');
+
+  http('<p>');
+  http ('<button type="button" name="back" value="Back" onclick="javascript:history.go(-1);">Back</button>\n');
+  http('</p>\n');
+
+  WS.WS.SPARQL_ENDPOINT_FOOTER();
   http('	</body>\n');
   http('</html>\n');
 }
 ;
 
-create procedure WS.WS.sparql_style ()
+create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
+    in params any,
+    in ini_dflt_graph varchar,
+    in def_qry varchar,
+    in timeout integer,
+    in debug integer,
+    in save_mode integer,
+    in dav_refresh varchar)
 {
-http('		<style type="text/css">\n');
-http('		label.n { display: inline; margin-top: 10pt; }\n');
-http('		body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }\n');
-http('		fieldset { border: 2px solid #86b9d9; }\n');
-http('		legend { font-size: 12pt; color: #86b9d9; }\n');
-http('		label { font-weight: bold; }\n');
-http('		h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
-http('		textarea { width: 100%; padding: 3px; }\n');
-http('          #footer { width: 100%; float: left; clear: left; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}\n');
-http('          #ft_r { float: right; clear: right;}\n');
-http('          #ft_t { text-align: center; }\n');
-http('          #ft_b { text-align: center; margin-top: 0.7ex }\n');
-http('		</style>\n');
+    declare can_cxml, can_pivot, can_qrcode, can_sponge integer;
+    can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
+    can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
+    can_qrcode := isstring (__proc_exists ('QRcode encodeString8bit', 2));
+    can_sponge := coalesce ((select top 1 1
+      from DB.DBA.SYS_USERS as sup
+        join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
+        join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
+      where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
+
+    declare endpoint_xsl any;
+    endpoint_xsl := registry_get ('sparql_endpoint_xsl');
+    if (0 = endpoint_xsl) endpoint_xsl := '';
+    if ('' <> endpoint_xsl) http_xslt(endpoint_xsl);
+
+    declare user_id varchar;
+    user_id := connection_get ('SPARQLUserId', 'SPARQL');
+
+    declare save_dir varchar;
+    declare save_dir_id any;
+    save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
+    if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
+	save_dir := null;
+    else
+{
+	save_dir := save_dir || 'saved-sparql-results/';
+	save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
+	if (DAV_HIDE_ERROR (save_dir_id) is null)
+	    save_dir := null;
+    }
+
+    http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+    if (http_request_get ('REQUEST_METHOD') = 'OPTIONS')
+	http_header (http_header_get () || 'MS-Author-Via: SPARQL\r\n');
+
+    WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+
+    http('<head>\n');
+    WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor');
+    WS.WS.SPARQL_ENDPOINT_STYLE ();
+    WS.WS.SPARQL_ENDPOINT_JAVASCRIPT(can_cxml, can_qrcode);
+    http('</head>\n');
+
+    http('<body onload="sparql_endpoint_init()">\n');
+
+    http('    <div id="header">\n');
+    http('	<h1>Virtuoso SPARQL Query Editor</h1>\n');
+    http('    </div>\n\n');
+
+    http('    <div id="menu">\n');
+    http('	  <a href="/sparql?help=intro">About</a>\n');
+    http('	| <a href="/sparql?nsdecl">Namespace Prefixes</a>\n');
+    http('	| <a href="/sparql?rdfinf">Inference rules</a>\n');
+    if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is not null)
+	http('	| <a href="/isparql">iSPARQL</a>\n');
+    http('    </div>\n\n');
+
+    http('    <div id="main">\n');
+    http('    <br />\n');
+    http('	<form action="" method="get">\n');
+    http('	<fieldset>\n');
+    http('		<label for="default-graph-uri">Default Data Source Name (Graph IRI)</label><br />\n');
+    http('		<input type="text" name="default-graph-uri" id="default-graph-uri"');
+    http(sprintf (' value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
+    http('		<br /><br />\n');
+
+    http('		<label for="query">Query Text</label><br />\n');
+    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">'|| def_qry ||'</textarea>\n');
+
+    http('		<br /><br />\n');
+    if (can_sponge)
+    {
+	http('		<label for="should-sponge" class="n">Sponging</label>\n');
+	http('		<select name="should-sponge" id="should-sponge">\n');
+	WS.WS.SPARQL_ENDPOINT_SPONGE_OPTS (params);
+	http('		</select>\n');
+    }
+    else
+    {
+	http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="/sparql?help=enable_sponge">details</a>.)</i></span>\n');
+    }
+
+    http('		<br />\n');
+    http('		<label for="format" class="n">Results Format</label>\n');
+    http('		<select name="format" id="format" onchange="format_change(this)">\n');
+    WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (can_cxml, can_qrcode, params, def_qry);
+    http('		</select>\n');
+    if (sys_stat('st_has_vdb'))
+    {
+	if (not can_cxml)
+	    http('		<span class="info"><i>(The CXML output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	else if (not can_qrcode)
+	    http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+    }
+    http('		<br />\n');
+
+    if (can_cxml)
+    {
+	http ('		<fieldset id="cxml">\n');
+	WS.WS.SPARQL_ENDPOINT_CXML_OPTION (can_pivot, params, 'CXML_redir_for_subjs');
+
+	WS.WS.SPARQL_ENDPOINT_CXML_OPTION (can_pivot, params, 'CXML_redir_for_hrefs');
+	http ('		</fieldset>\n');
+    }
+
+    http('		<label for="timeout" class="n">Execution timeout</label>\n');
+    http('		<input name="timeout" id="timeout" type="text" value="' || coalesce (cast (timeout as varchar), '') || '" /> milliseconds\n');
+    http('		<span class="info"><i>(values less than 1000 are ignored)</i></span>');
+    http('		<br />\n');
+
+    --http('		<li>\n');
+    --http('		<label for="maxrows">Max Rows</label>\n');
+    --http('		<input type="text" name="maxrows" id="maxrows"\n');
+    --http( sprintf('		value="%d"/>\n',maxrows));
+    --http('		<br />\n');
+
+    http('		<label class="n" for="options">Options</label>\n');
+    http('		<fieldset id="options">\n');
+    http('		<input name="debug" id="debug" type="checkbox"' || case (debug) when '' then '' else ' checked="checked"' end || '/>\n');
+    http('		<label for="debug" class="ckb">Strict checking of void variables</label>\n');
+
+
+    if (save_dir is not null)
+    {
+	http('		<br />\n');
+	http('		<input name="save" id="save" onclick="savedav_change(this)" type="checkbox"' || case when (save_mode is null) then '' else ' checked="checked"' end || ' />\n');
+	http('		<label for="save" class="ckb">Save resultset to WebDAV folder on the server</label>\n');
+	http('		<fieldset id="savefs">\n');
+	http('		    <label for="fname">File name:</label>\n');
+	http('		    <input type="text" id="fname" name="fname" />\n');
+	http('		    <input type="checkbox" name="dav_refresh" id="dav_refresh"' || case when (dav_refresh is null) then '' else ' checked="checked"' end || ' />\n');
+	http('		    <label class="ckb" for="dav_refresh">Refresh periodically</label>\n');
+	http('		</fieldset>\n');
+    }
+
+    http('		</fieldset>\n');
+    http('		<br />\n');
+
+    if (save_dir is null)
+    {
+	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="/sparql?help=enable_det">details</a>)</i></span>\n');
+        http('		<br />\n');
+    }
+
+    http('		<br />\n');
+    http('		<input type="submit" value="Run Query"/>\n');
+    http('		<input type="reset" value="Reset"/>\n');
+    http('	</fieldset>\n');
+    http('	</form>\n');
+    http('    </div>\n\n');
+    WS.WS.SPARQL_ENDPOINT_FOOTER();
+    http('</body>\n');
+    http('</html>\n');
+
+    return;
 }
 ;
 
@@ -1947,7 +2406,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
   declare dflt_graphs, named_graphs any;
-  declare paramctr, paramcount, qry_params, maxrows, can_sponge, can_cxml, can_pivot, can_qrcode, start_time integer;
+  declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
@@ -1957,7 +2416,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare exec_time, exec_db_activity any;
   declare __debug_mode integer;
   declare qtxt, deadl integer;
-  declare save_mode, save_dir, fname varchar;
+  declare save_mode, save_dir, dav_refresh, fname varchar;
   declare save_dir_id any;
   declare help_topic varchar;
   -- dbg_obj_princ ('===============');
@@ -2010,30 +2469,37 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     goto brief_help;
 
   def_qry := get_keyword('qtxt', params, '');
+  ini_dflt_graph := get_keyword ('default-graph-uri', params, ini_dflt_graph);
+  timeout := atoi (get_keyword ('timeout', params, cast (timeout as varchar)));
 
   if ('' <> def_qry)
     qtxt := 1;
   def_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
-  save_mode := get_keyword ('save', params, null);
-  if (save_mode is not null and save_mode = 'display')
-    save_mode := null;
-  else if (save_mode is not null)
-    {
-      save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
-      if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
-        save_dir := null;
-      else
-        {
-          save_dir := save_dir || 'saved-sparql-results/';
-          save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
-          if (DAV_HIDE_ERROR (save_dir_id) is null)
-            save_dir := null;
-        }
-    }
+
+
   fname := trim (get_keyword ('fname', params, ''));
   if (fname = '')
     fname := null;
+
+  dav_refresh := get_keyword ('dav_refresh', params, '');
+  if (dav_refresh = '')
+    dav_refresh := null;
+
+  save_mode := get_keyword ('save', params, '');
+
+  if (save_mode = '' OR save_mode = 'display') {
+    save_mode := null;
+    dav_refresh := null;
+    fname := null;
+  } else if (save_mode = 'dynamic' OR dav_refresh is not null) {
+    save_mode := 'dynamic';
+    dav_refresh := '1';
+  } else {
+    save_mode := 'tmpstatic';
+    dav_refresh := null;
+  }
+
   get_user := '';
   soap_ver := 0;
   soap_action := http_request_header (lines, 'SOAPAction', null, null);
@@ -2085,9 +2551,6 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
         join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
       where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
-  can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
-  can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
-  can_qrcode := isstring (__proc_exists ('QRcode encodeString8bit', 2));
 
   paramcount := length (params);
 
@@ -2109,190 +2572,9 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
           if (def_qry is null)
             def_qry := 'SELECT * WHERE {?s ?p ?o}';
         }
-http('<html xmlns="http://www.w3.org/1999/xhtml">\n');
-http('	<head>\n');
-http('		<title>Virtuoso SPARQL Query Form</title>\n');
-WS.WS.sparql_style ();
-http('		<script language="JavaScript">\n');
-http('var last_format = 1;\n');
-http('function format_select(query_obg)\n');
-http('{\n');
-http('  var query = query_obg.value; \n');
-http('  var format = query_obg.form.format;\n');
-http('\n');
-http('  if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 1) {\n');
-http('    for(var i = format.options.length; i > 0; i--)\n');
-http('      format.options[i] = null;');
-http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
-http('    format.options[2] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
-http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-http('    format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
-http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
-http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
-http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-http('    format.options[8] = new Option(\'JSON-LD\',\'application/ld+json\');\n');
-http('    format.options[9] = new Option(\'HTML+Microdata\',\'text/html\');\n');
-http('    format.options[10] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-http('    format.options[11] = new Option(\'CSV\',\'text/csv\');\n');
-if (can_cxml)
-  {
-    http('    format.options[12] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
-    if (can_qrcode)
-      http('    format.options[13] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
-  }
-http('    format.selectedIndex = 1;\n');
-http('    last_format = 2;\n');
-http('  }\n');
-http('\n');
-http('  if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 2) {\n');
-http('    for(var i = format.options.length; i > 0; i--)\n');
-http('      format.options[i] = null;\n');
-http('    format.options[1] = new Option(\'HTML\',\'text/html\');\n');
-http('    format.options[2] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
-http('    format.options[3] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
-http('    format.options[4] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
-http('    format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
-http('    format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
-http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-http('    format.options[8] = new Option(\'N-Triples\',\'text/plain\');\n');
-http('    format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
-if (can_cxml)
-  http('    format.options[10] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
-http('    format.selectedIndex = 1;\n');
-http('    last_format = 1;\n');
-http('  }\n');
-http('}\n');
-http('		</script>\n');
-http('	</head>\n');
-http('	<body>\n');
-http('		<div id="header">\n');
-http('			<h1>OpenLink Virtuoso SPARQL Query</h1>\n');
-http('		</div>\n');
-http('		<div id="main">\n');
-http('			<p>This query page is designed to help you test OpenLink Virtuoso SPARQL protocol endpoint. <br/>\n');
-http('			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service \n');
-http('			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>\n');
-http('			<p>There is also a rich Web based user interface with sample queries. \n');
-if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
-  http('			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>\n');
-else
-  http('			You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
-  http('		<p>For your convenience we have a set of <a href="/sparql?nsdecl">predefined name space prefixes</a> and <a href="/sparql?rdfinf">inference rules</a></p>\n');
-http('			<form action="" method="GET">\n');
-http('			<fieldset>\n');
-http('			<legend>Query</legend>\n');
-http('			  <label for="default-graph-uri">Default Graph URI</label>\n');
-http('			  <br />\n');
-http('			  <input type="text" name="default-graph-uri" id="default-graph-uri"\n');
-http(sprintf ('				  	value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
-http('			  <br /><br />\n');
-if (can_sponge)
-  {
-    declare s_param varchar;
-    s_param := get_keyword ('should-sponge', params, '');
-http('<select name="should-sponge" id="should-sponge">');
-http('  <option' ||
-  case (s_param) when '' then ' selected="selected"' else '' end ||
-  ' value="">Use only local data (including data retrieved before), but do not retrieve more</option>\n');
-http('  <option' ||
-  case (s_param) when 'soft' then ' selected="selected"' else '' end ||
-  ' value="soft">Retrieve remote RDF data for all missing source graphs</option>\n');
-http('  <option' ||
-  case (s_param) when 'grab-all' then ' selected="selected"' else '' end ||
-  ' value="grab-all">Retrieve all missing remote RDF data that might be useful</option>\n');
-http('  <option' ||
-  case (s_param) when 'grab-all-seealso' then ' selected="selected"' else '' end ||
-  ' value="grab-all-seealso">Retrieve all missing remote RDF data that might be useful, including seeAlso references</option>\n');
-http('  <option' ||
-  case (s_param) when 'grab-everything' then ' selected="selected"' else '' end ||
-  ' value="grab-everything">Try to download all referenced resources (this may be very slow and inefficient)</option>\n');
-http('</select>\n');
-http('			  <br />\n');
-  }
-else
-  {
-    http('			  <font size="-1"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data.
-    Database administrator can change them, accodring to these <a href="/sparql?help=enable_sponge">instructions</a>.)</i></font>\n');
-  }
-http('<br /><br />\n');
-http('			  <label for="query">Query text</label>\n');
-http('			  <br />\n');
-http('			  <textarea rows="10" cols="80" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">'|| def_qry ||'</textarea>\n');
-http('			  <br /><br />\n');
---http('			  <label for="maxrows">Max Rows:</label>\n');
---http('			  <input type="text" name="maxrows" id="maxrows"\n');
---http(sprintf('				  	value="%d"/>',maxrows));
---http('			  <br />\n');
-http('<label for="debug" class="n"><nobr>Rigorous check of the query:</nobr></label>');
-http('&nbsp;<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>');
-http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
-http('<label for="timeout" class="n"><nobr>Execution timeout, in milliseconds, values less than 1000 are ignored:</nobr></label>');
-http('&nbsp;<input name="timeout" type="text"' || case (isnull (timeout)) when 0 then cast (timeout as varchar) else '' end || '/>');
-http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
-http('			  <label for="format" class="n">Format Results As:</label>\n');
-http('			  <select name="format">\n');
-	WS.WS.sparql_enpoint_format_opts (can_cxml, can_qrcode, params, def_qry);
-http('			  </select>\n');
-if (can_cxml)
-  {
-http('<div style="display:none">\n');
-http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
-http('			  <label for="redir_for_subjs" class="n">Style&nbsp;for&nbsp;RDF&nbsp;subjects:</label>\n');
-http('			  <select name="CXML_redir_for_subjs">\n');
-http('			    <option value="" selected="selected">Convert to string facets</option>\n');
-http('			    <option value="121">Make Plain Links</option>\n');
-if (can_pivot is not null)
-  http('			    <option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\n');
-http('			    <option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\n');
-http('			    <option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\n');
-http('			  </select>\n');
-http('</div>\n');
-http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
--- http('			  <label for="redir_for_hrefs" class="n">Style&nbsp;for&nbsp;other&nbsp;links:</label>\n');
-http('			  <label for="redir_for_hrefs" class="n">CXML&nbsp;link&nbsp;behavior:</label>\n');
-http('			  <select name="CXML_redir_for_hrefs">\n');
-http('			    <option value="" selected="selected">Local faceted navigation links</option>\n');
-http('			    <option value="121">External resource links</option>\n');
-if (can_pivot is not null)
-  http('			    <option value="LOCAL_PIVOT">External faceted navigation links</option>\n');
-http('			    <option value="LOCAL_TTL">External description resource (TTL)</option>\n');
-http('			    <option value="LOCAL_CXML">External description resource (CXML)</option>\n');
-http('			  </select>\n');
-  }
-if (not can_cxml)
-  http('&nbsp;<font size="-1"><i>(The&nbsp;CXML&nbsp;output&nbsp;is&nbsp;disabled,&nbsp;see&nbsp;<a href="/sparql?help=enable_cxml">details</a>)</i></font>\n');
-else if (not can_qrcode)
-  http('&nbsp;<font size="-1"><i>(The&nbsp;QRcode&nbsp;output&nbsp;is&nbsp;disabled,&nbsp;no&nbsp;&quot;qrcode&quot;&nbsp;plugin&nbsp;found</a>)</i></font>\n');
-http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
-if (save_dir is not null)
-{
---http('			  <label for="save" class="n">Save Results As:</label>\n');
-http('			  <select name="save">\n');
-http('			    <option value="display" selected="selected">Display the result and not save</option>\n');
-http('			    <option value="tmpstatic">Save the result to the DAV as a temporary document with the specified name:</option>\n');
-http('			    <option value="dynamic">Save the result to the DAV and refresh it periodically with the specified name:</option>\n');
-http('			  </select>');
-http('&nbsp;<input name="fname" type="text" />');
-http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
-}
-else
-  http('&nbsp;<font size="-1"><i>(The&nbsp;result&nbsp;can&nbsp;only&nbsp;be&nbsp;sent&nbsp;back&nbsp;to&nbsp;browser,&nbsp;but&nbsp;not&nbsp;saved&nbsp;on&nbsp;the&nbsp;server,&nbsp;see&nbsp;<a href="/sparql?help=enable_det">details</a>)</i></font>\n');
-http('<br /><br />\n');
-http('			  <input type="submit" value="Run Query"/>');
-http('&nbsp;<input type="reset" value="Reset"/>\n');
-http('			</fieldset>\n');
-http('			</form>\n');
-http('		</div>\n');
-http('		<div id="footer">\n');
-http('		<div id="ft_b">\n');
-http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
-http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
-http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
-http('		</div>\n');
-http('		</div>\n');
-http('	</body>\n');
-http('</html>\n');
+
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, save_mode, dav_refresh);
+
        return;
     }
   qry_params := dict_new (7);
@@ -2644,6 +2926,17 @@ host_found:
   metas := null;
   rset := null;
 
+  save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
+  if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
+    save_dir := null;
+  else
+    {
+      save_dir := save_dir || 'saved-sparql-results/';
+      save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
+      if (DAV_HIDE_ERROR (save_dir_id) is null)
+	save_dir := null;
+    }
+
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);
@@ -2765,16 +3058,29 @@ write_results:
           refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (hard_timeout, 1000)/100) end;
           ttl_sec := 172800;
           full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
-          "DynaRes_INSERT_RESOURCE" (detcol_id => save_dir_id, fname => fname,
+          "DynaRes_INSERT_RESOURCE" (
+	      detcol_id => save_dir_id,
+	      fname => fname,
             owner_uid => sparql_uid,
             refresh_seconds => refresh_sec,
             ttl_seconds => ttl_sec,
             mime => accept,
             exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
             exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
-            exec_uname => user_id, content => ses );
-          http ('<html><head><title>The SPARQL result is successfully saved</title></head><body>');
-          http ('<h3>Done!</h3>');
+	      exec_uname => user_id,
+	      content => ses
+	  );
+
+	  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+	  http ('<head>\n');
+	  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | Save to DAV');
+	  WS.WS.SPARQL_ENDPOINT_STYLE();
+	  http ('</head>\n');
+	  http ('<body>\n');
+	  http ('    <div id="header">\n');
+	  http ('	<h1 id="title">Virtuoso SPARQL Query Editor</h1>\n');
+	  http ('    </div>\n\n');
+	  http ('<h3>Saved to DAV</h3>');
           http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
           http_value (full_uri);
           http ('">');
@@ -2786,8 +3092,8 @@ write_results:
             http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
           if (accept <> 'text/html')
             http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
-If the browser is unable to open the link itself it can prompt for action like lauching an additional program.
-The program may let you to edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
+	  If the browser is unable to open the link itself it can prompt for action like launching an additional program.
+	  The program may let you edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
           http ('</body></html>');
         }
     }
@@ -2804,54 +3110,90 @@ The program may let you to edit the loaded resource, in this case save the chang
 return;
 
 brief_help:
-  http ('<html><head><title>SPARQL Web Service Endpoint | Quick Help</title></head><body>');
-  if (help_topic='enable_sponge')
+  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+
+  http('<head>\n');
+  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | About');
+  WS.WS.SPARQL_ENDPOINT_STYLE ();
+  http('</head>\n');
+
+  http('<body>\n');
+  http ('    <div id="header">\n');
+  http('	<h1 id="title">Virtuoso SPARQL Query Editor | About</h1>\n');
+  http ('    </div>\n\n');
+
+  http ('    <div id="help">\n');
+  if (help_topic='intro')
     {
-      declare host_ur varchar; host_ur := registry_get ('URIQADefaultHost');
+      http('<h3>Intro</h3>');
+      http('	<p>This page is designed to help you test the OpenLink Virtuoso SPARQL protocol endpoint.<br/>\n');
+      http('	Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service \n');
+      http('	or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>\n');
+      http('	<p>There is also a rich Web based user interface with sample queries. \n');
+      if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
+	  http('	In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>\n');
+      else
+	  http('	You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
+      http('	<p>For your convenience we have a set of <a href="/sparql?nsdecl">predefined name space prefixes</a> and <a href="/sparql?rdfinf">inference rules</a></p>\n');
+
+      http('	<h3>What is SPARQL?</h3>\n');
+      http('	<p>SPARQL is the W3C''s declaritive query-language for Graph Model Databases and Stores.</p>\n');
+      http('    <p>As is the case with regards to SQL for relational databases and XQUERY for XML databases, ');
+      http('    SPARQL is database and host operating system independent.<p>\n');
+      http('	<p>The development and evolution of this standard is overseen by the\n');
+      http('	<a href="http://www.w3.org/2009/sparql/wiki/Main_Page">SPARQL Working Group</a> within W3C and\n');
+      http('	while parts of the language are still in active <a href="http://www.w3.org/TR/2011/WD-sparql11-query-20110512/">development</a>, it is fully <a href="http://www.w3.org/TR/rdf-sparql-query/">documented</a> and <a href="http://www.w3.org/2009/05/sparql-phase-II-charter">publicly</a> available.</p>\n');
+    }
+  else if (help_topic='enable_sponge')
+    {
+      declare host_ur varchar;
+      host_ur := registry_get ('URIQADefaultHost');
+      host_ur := http_request_header (lines, 'Host', null, host_ur);
       http('<h3>How To Enable Sponge?</h3>
-      <p>When a new Virtuoso server is installed, default security restrictions do not allow SPARQL endpoint users to retrieve remote RDF data.
-      To remove the restriction, DBA should grant "SPARQL_SPONGE" privilege to "SPARQL" account.
-      If you are the administrator, you can perform the following steps:</p>\n');
+      <p>When a new Virtuoso server is installed, the default security restrictions do not allow SPARQL endpoint users to retrieve remote RDF data.
+      To remove this restriction, the DBA should grant "SPARQL_SPONGE" privilege to "SPARQL" account.
+      If you are the Database Administrator and want to enable this feature, you can perform the following steps:</p>\n');
       http('<ol>\n');
       http('<li>Go to the Virtuoso Administration Conductor i.e. \n');
       if (not isstring (host_ur))
           http('http://host:port/conductor .');
       else
           http( sprintf('<a href="http://%s/conductor">http://%s/conductor</a>.', host_ur, host_ur));
-      http('</li>\n<li>Login as dba user.');
-      http('</li>\n<li>Go to System Admin->User Accounts->Roles\n');
-      http('</li>\n<li>Click the link "Edit" for "SPARQL_SPONGE"\n');
-      http('</li>\n<li>Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.\n');
-      http('</li>\n<li>Click the button "Update"\n');
-      http('</li>\n<li>Access again the sparql endpoint in order to be able to retrieve remote data.\n');
-      http('</li></ol>\n');
+      http('</li>\n');
+      http('<li>Login as dba user.</li>\n');
+      http('<li>Go to System Admin->User Accounts->Roles</li>\n');
+      http('<li>Click the link "Edit" for "SPARQL_SPONGE"</li>\n');
+      http('<li>Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.\n</li>');
+      http('<li>Click the button "Update"</li>\n');
+      http('<li>Access again the sparql endpoint in order to be able to retrieve remote data.</li>\n');
+      http('</ol>\n');
     }
   else if (help_topic='enable_cxml')
     {
       http('<h3>How To Enable CXML Support</h3>');
-      http('<p>CXML is data exchange format for so-called "faceted view". It can be displayed by programs like Microsoft Pivot.
-For best results, the result of the query should contain links to images associated with described data and follow some rules, described in the User&apos;s Guide.</p>
-<p>This feature is supported by combination of three components:</p>\n');
+      http('<p>CXML is data exchange format for so-called "faceted view". It can be displayed by programs like Microsoft Pivot.</p>');
+      http('<p>For best results, the result of the query should contain links to images associated with described data and follow some rules, described in the User&apos;s Guide.</p>');
+      http('<p>This feature is supported by combination of four components:</p>\n');
       http('<ol>\n');
-      http('<li>Virtuoso Universal Server (Virtuoso Open Source does not contain some required functions)\n');
-      http('</li>\n<li>ImageMagick plugin of version 0.6 or newer\n');
-      http('</li>\n<li>sparql_cxml VAD package (it will in turn require &quot;RDF mappers&quot; package)\n');
-      http('</li></ol>\n');
-      http('<p>As soon as all components are installed, SPARQL web service endpoint will contain &quot;CXML&quot; option to the list of available formats.</p>\n');
+      http('<li>The Virtuoso Universal Server (Virtuoso Open Source does not contain some required functions)</li>\n');
+      http('<li>The ImageMagick plugin (version 0.6 or newer) and optionally the QRcode plugin</li>\n');
+      http('<li>The QRcode plugin (version 0.1 or newer)</li>\n');
+      http('<li>The sparql_cxml VAD package (which in turn requires the &quot;RDF mappers&quot; package)</li>\n');
+      http('</ol>\n');
+      http('<p>As soon as all these components are installed, the SPARQL web service endpoint will add the &quot;CXML&quot; option to the list of available formats.</p>\n');
     }
   else if (help_topic='enable_det')
     {
-      declare host_ur varchar; host_ur := registry_get ('URIQADefaultHost');
-      http('<h3>How To Let the SPARQL Endpoint Save Results In DAV?</h3>
-<p>By default, SPARQL endpoint can only sent the result back to the client. That can be inconvenient if the result should be accessible for programs like file managers and archivers.</p>
-<p>The solution is to let the endpoint create &quot;dynamic&quot;resources in DAV storage of the Virtuoso server. A DAV client, e.g., the boilt-in client of Windows Explorer, can connect to that storage and access these resources as if they are plain local files.</p>
-<p>If you are the administrator and want to enable this feature, you can perform the following steps:</p>\n');
+      http('<h3>How To Let the SPARQL Endpoint Save Results In WebDAV?</h3>');
+      http('<p>By default, the SPARQL endpoint can only sent the result back to the client. This can be inconvenient if the result should be accessible for programs like file managers and archivers.</p>');
+      http('<p>The solution is to let the endpoint create &quot;dynamic&quot;resources in a WebDAV folder on the Virtuoso server. A WebDAV client, e.g. the built-in client of Windows Explorer, can connect to that storage and access these resources as if they are plain local files.</p>');
+      http('<p>If you are the Database Administrator and want to enable this feature, you can perform the following steps:</p>\n');
       http('<ol>\n');
-      http( sprintf('<li>This web service endpoint runs under &quot;%.100s&quot; account. This user should have an access to DAV (U_DAV_ENABLE=1 in DB.DBA.SYS_USERS)\n', user_id));
-      http( sprintf('</li>\n<li>The DAV home directory (e.g., <a href="/DAV/home/%.100s/">/DAV/home/%.100s/</a>) should be created and the path to it should be remembered in DB.DBA.SYS_USERS (U_HOME field; do not forget the leading and the trailing slash chars).\n', user_id, user_id));
-      http( sprintf('</li>\n<li>The home directory should contain a subdirectory named &quot;saved-sparql-results&quot;, and the subdirectory should be of &quot;DynaRes&quot; DAV Extension Type.'));
-      http('</li></ol>\n');
-      http('<p>As soon as the appropriated directory exists, SPARQL web service endpoint will show additional controls to choose how to save results.</p>\n');
+      http( sprintf('<li>This web service endpoint runs under the &quot;%.100s&quot; account. This user should have an access to WebDAV (U_DAV_ENABLE=1 in DB.DBA.SYS_USERS)</li>\n', user_id));
+      http( sprintf('<li>A WebDAV home directory (e.g. <a href="/DAV/home/%.100s/">/DAV/home/%.100s/</a>) should be created and the path to it should be remembered in DB.DBA.SYS_USERS (U_HOME) field;<br />(do not forget the leading and the trailing slash chars).</li>\n', user_id, user_id));
+      http( sprintf('<li>This home directory should contain a subdirectory named &quot;saved-sparql-results&quot;, and the subdirectory should be of &quot;DynaRes&quot; DAV Extension Type.</li>\n'));
+      http('</ol>\n');
+      http('<p>As soon as the appropriate directory exists, the SPARQL web service endpoint will show additional controls to choose how to save results.</p>\n');
     }
   else if (help_topic='enable_det')
     {
@@ -2859,7 +3201,14 @@ For best results, the result of the query should contain links to images associa
         '500', 'Request Failed',
         'Invalid help topic', format);
     }
-  http('<p><font size="-1">To close this help, press the &quot;back&quot; button of the browser.</font></p>\n');
+  http('');
+  http('<p>To close this help, press ');
+  http ('<button type="button" name="back" value="Back" onclick="javascript:history.go(-1);">Back</button>\n');
+  http(' or use the &quot;back&quot; button of the browser.</p>\n');
+  http('</div>\n\n');
+  WS.WS.SPARQL_ENDPOINT_FOOTER();
+  http('</body>\n');
+  http('</html>\n');
 }
 ;
 
@@ -2996,32 +3345,24 @@ good_host_found:
   if (graph_uri <> '')
     goto graph_processing;
   http_methods_set ('GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH');
-  http('<html xmlns="http://www.w3.org/1999/xhtml">\n');
+
+  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+
   http('	<head>\n');
-  http('		<title>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</title>\n');
-  http('		<style type="text/css">\n');
-  http('		label.n { display: inline; margin-top: 10pt; }\n');
-  http('		body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }\n');
-  http('		fieldset { border: 2px solid #86b9d9; }\n');
-  http('		legend { font-size: 12pt; color: #86b9d9; }\n');
-  http('		label { font-weight: bold; }\n');
-  http('		h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
-  http('		textarea { width: 100%; padding: 3px; }\n');
-  http('          #footer { width: 100%; float: left; clear: left; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}\n');
-  http('          #ft_r { float: right; clear: right;}\n');
-  http('          #ft_t { text-align: center; }\n');
-  http('          #ft_b { text-align: center; margin-top: 0.7ex }\n');
-  http('		</style>\n');
+  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form');
+  WS.WS.SPARQL_ENDPOINT_STYLE ();
   http('	</head>\n');
+
   http('	<body>\n');
   http('		<div id="header">\n');
   http('			<h1>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</h1>\n');
-  http('		</div>\n');
-  http('		<div id="main">\n');
+  http('    </div>\n\n');
+  http('    <div id="intro">\n');
   http('			<p>This page is designed to help you test support for <a href="http://www.w3.org/TR/sparql11-http-rdf-update">SPARQL 1.1 Graph Store HTTP Protocol</a> in OpenLink Virtuoso.</p>\n');
-  http('			<form action="" method="POST" enctype="multipart/form-data">\n');
+  http('    </div>\n\n');
+  http('    <div id="main">\n');
+  http('	<form action="" method="post" enctype="multipart/form-data">\n');
   http('			<fieldset>\n');
-  http('			<legend>RDF Upload</legend>\n');
   http('			  <label for="graph-uri">Graph URI</label>\n');
   http('			  <br />\n');
   http('			  <input type="text" name="graph-uri" id="graph-uri" ');
@@ -3029,20 +3370,13 @@ good_host_found:
   http('			  <br /><br />\n');
   http('			  <label for="res-file">File to upload</label>\n');
   http('			  <br />\n');
-  http('			  <input type="file" name="res-file" id="res-file"\n');
+  http('		<input type="file" name="res-file" id="res-file"/>\n');
   http('			  <br /><br />\n');
   http('<input type="submit" value="Upload the resource"/>');
   http('			</fieldset>\n');
   http('			</form>\n');
-  http('		</div>\n');
-  http('		<div id="footer">\n');
-  http('		<div id="ft_b">\n');
-  http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
-  http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-  http(case when sys_stat ('cl_run_local_only') = 1 then 'Single Server' else 'Cluster' end); http (' Edition ');
-  http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
-  http('		</div>\n');
-  http('		</div>\n');
+  http('    </div>\n\n');
+  WS.WS.SPARQL_ENDPOINT_FOOTER();
   http('	</body>\n');
   http('</html>\n');
   return;
