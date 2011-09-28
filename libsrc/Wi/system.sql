@@ -5552,7 +5552,7 @@ create procedure view_from_tbl (in _dir varchar, in _tbls any)
    ret := make_array (2, 'any');
    prefix := 'SPARQL\n';
 
-   ns := sprintf ('prefix %s: <http://%s/%s#>\n', _dir, cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost'), _dir);
+   ns := sprintf ('prefix %s: <http://%s/%s#>\n', _dir, virtuoso_ini_item_value ('URIQA', 'DefaultHost'), _dir);
    ns := ns || 'prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix demo: <http://www.openlinksw.com/schemas/demo#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
@@ -5560,7 +5560,7 @@ prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n';
 
-   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+   uriqa_str := virtuoso_ini_item_value ('URIQA','DefaultHost');
 
    create_class_stmt := '';
 
@@ -5586,7 +5586,7 @@ create procedure view_create_view (in _tbls any, in _dir varchar)
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
    declare sufix, tname, tbl any;
 
-   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+   uriqa_str := virtuoso_ini_item_value ('URIQA','DefaultHost');
    qual := name_part (_tbls[0], 0);
    qual_l := lcase (qual);
 

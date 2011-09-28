@@ -332,7 +332,7 @@ DAV_HOME_DIR_CREATE (in uid varchar) returns any
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
-    host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
     if (host is null) {
       host := sys_stat ('st_host_name');
       if (server_http_port () <> '80')
@@ -1807,7 +1807,7 @@ DAV_AUTHENTICATE_SSL_WEBID ()
   localIRI := foafIRI;
   V := rfc1808_parse_uri (localIRI);
   if (is_https_ctx () and
-      cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and
+      virtuoso_ini_item_value ('URIQA', 'DynamicLocal') = '1' and
       V[1] = registry_get ('URIQADefaultHost'))
   {
     V [0] := 'local';
@@ -2519,7 +2519,7 @@ look_again:
       if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
       {
         -- RDF content
-        host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+        host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
         if (host is null)
         {
           host := sys_stat ('st_host_name');
@@ -4640,7 +4640,7 @@ create procedure WS.WS.DAV_IRI (
   http_dav_url (path, null, S);
   S := string_output_string (S);
 
-  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
   if (host is null)
   {
     host := sys_stat ('st_host_name');

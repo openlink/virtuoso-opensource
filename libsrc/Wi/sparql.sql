@@ -9062,7 +9062,7 @@ create function DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (in iritmpl varchar) returns 
       host := registry_get ('URIQADefaultHost');
       if (not isstring (host))
         signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if there is no DefaultHost parameter in [URIQA] section of Virtuoso configuration file');
---      if (atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0')))
+--      if (atoi (coalesce (virtuoso_ini_item_value ('URIQA', 'DynamicLocal'), '0')))
 --        signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if DynamicLocal is not set to 1 in [URIQA] section of Virtuoso configuration file');
       if ((pos > 0) and (pos < 10) and strchr (subseq (iritmpl, 0, pos), ':') is not null)
         signal ('22023', 'Misplaced ^{DynamicLocalFormat}^: its expansion will contain protocol prefix but the template contains one already');
@@ -12950,8 +12950,8 @@ create procedure DB.DBA.RDF_QUAD_OUTLINE_ALL (in force integer := 0)
   log_message ('');
   log_message ('An update is required.');
 
-  c_check := coalesce (cfg_item_value (virtuoso_ini_path (), 'Parameters', 'AnalyzeFixQuadStore'), '0');
-  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'Parameters', 'LiteMode'), '0') <> '0') c_check := '1';
+  c_check := coalesce (virtuoso_ini_item_value ('Parameters', 'AnalyzeFixQuadStore'), '0');
+  if (coalesce (virtuoso_ini_item_value ('Parameters', 'LiteMode'), '0') <> '0') c_check := '1';
   if (c_check <> '1')
     {
 	log_message ('');
@@ -13116,7 +13116,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = http_nobody_uid () );
   fake := (select count (__rdf_graph_specific_perms_of_user (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> http_nobody_uid () and not (RGU_GRAPH_IID in (#i0, #i8192)) );
-  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'RecoveryMode'), '0') > '0')
+  if (coalesce (virtuoso_ini_item_value ('SPARQL', 'RecoveryMode'), '0') > '0')
     {
       log_message ('Switching to RecoveryMode as set in [SPARQL] section of the configuration.');
       log_message ('For safety, the use of SPARQL_UPDATE role is restricted.');
@@ -13445,7 +13445,7 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
   for (declare i int, i := 0; i < item_cnt; i := i + 1)
     {
       item_name := cfg_item_name (virtuoso_ini_path (), 'SPARQL', i);
-      item_value := cfg_item_value (virtuoso_ini_path (), 'SPARQL', item_name);
+      item_value := virtuoso_ini_item_value ('SPARQL', item_name);
       http (sprintf ('<http://www.openlinksw.com/schemas/virtini#SPARQL> <http://www.openlinksw.com/schemas/virtini#%U> "%s" .\r\n',
 	    item_name, item_value), tmp);
     }

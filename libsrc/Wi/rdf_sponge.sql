@@ -630,7 +630,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   explicit_refresh := get_keyword_ucase ('get:refresh', options);
   if (explicit_refresh is null)
     {
-      max_refresh := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxCacheExpiration');
+      max_refresh := virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration');
       if (max_refresh is not null)
         {
           max_refresh := atoi (max_refresh);
@@ -640,7 +640,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   else if (isstring (explicit_refresh))
     explicit_refresh := atoi (explicit_refresh);
-  min_expiration := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MinExpiration'), '-1'));
+  min_expiration := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MinExpiration'), '-1'));
   if (min_expiration < 0)
     min_expiration := null;
   set isolation='serializable';
@@ -841,7 +841,7 @@ resp_received:
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
 
-  max_sz := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxDataSourceSize'), '20971520'));
+  max_sz := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxDataSourceSize'), '20971520'));
 
   if (max_sz < new_download_size)
     {
@@ -1142,7 +1142,7 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
   err := '';
   msg := 'n/a';
   xt := null;
-  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'RestPingService') = '1')
+  if (virtuoso_ini_item_value ('SPARQL', 'RestPingService') = '1')
     {
       rc := http_get (endp||sprintf ('?url=%U', url));
       xt := xtree_doc (rc);
@@ -1182,7 +1182,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   declare xd, xt any;
   declare saved_log_mode, only_rdfa integer;
   aq := null;
-  ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
+  ps := virtuoso_ini_item_value ('SPARQL', 'PingService');
   if (length (ps))
     {
       aq := async_queue (1);
@@ -1395,7 +1395,7 @@ create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_o
 {
   declare dest varchar;
   declare deadl int;
-  deadl := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxDeadlockRetries'), '5'));
+  deadl := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxDeadlockRetries'), '5'));
   declare exit handler for sqlstate '40001'
     {
       deadl := deadl - 1;
@@ -1419,7 +1419,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
   declare aq, cookie varchar;
   declare dest, local_iri varchar;
 
-  if (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'AsyncQueue'), '0') = '0' or get_keyword ('__rdf_sponge_queue', options) = 1)
+  if (coalesce (virtuoso_ini_item_value ('SPARQL', 'AsyncQueue'), '0') = '0' or get_keyword ('__rdf_sponge_queue', options) = 1)
     {
       return DB.DBA.RDF_SPONGE_UP_1 (graph_iri, options, uid);
     }
@@ -1508,7 +1508,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
     }
   -- if requested iri is immutable, do not try to get it at all
   -- this is to preserve rdf storage in certain cases
-  immg := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ImmutableGraphs');
+  immg := virtuoso_ini_item_value ('SPARQL', 'ImmutableGraphs');
   if (immg is not null and user <> 'dba')
     {
       immg := split_and_decode (immg, 0, '\0\0,');

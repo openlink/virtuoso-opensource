@@ -118,7 +118,7 @@ create procedure WS.WS.FTP_SRV (in path any, in params any, in lines any)
 
   if (FTP_ANONYMOUS_CHECK (ftp_user))
     {
-       home_dir := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerAnonymousHome');
+       home_dir := virtuoso_ini_item_value ('HTTPServer', 'FTPServerAnonymousHome');
        if (home_dir is NULL)
 	 home_dir := '/DAV/';
        else if (DAV_HIDE_ERROR (DAV_SEARCH_ID (home_dir, 'C')) is null)
@@ -208,7 +208,7 @@ create procedure FTP_GET_COMMAND (in _in varchar, inout command varchar, inout a
 create procedure FTP_ANONYMOUS_CHECK (in _user varchar)
 {
   if (upper (_user) = 'ANONYMOUS' and
-      cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerAnonymousLogin') = '1')
+      virtuoso_ini_item_value ('HTTPServer', 'FTPServerAnonymousLogin') = '1')
     return 1;
 
   return 0;
@@ -223,7 +223,7 @@ FTP_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
     {
       if (upper (a_uname) = 'ANONYMOUS')
         {
-          if (cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'FTPServerAnonymousLogin') = '1')
+          if (virtuoso_ini_item_value ('HTTPServer', 'FTPServerAnonymousLogin') = '1')
             return DAV_AUTHENTICATE (id, what, req, 'anonymous', a_pwd, 1);
           return -12;
         }
@@ -1325,8 +1325,8 @@ create procedure GET_FREE_PORT ()
 {
    declare _last, _min, _max any;
 
-   _min := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerMinFreePort');
-   _max := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerMaxFreePort');
+   _min := virtuoso_ini_item_value ('HTTPServer', 'FTPServerMinFreePort');
+   _max := virtuoso_ini_item_value ('HTTPServer', 'FTPServerMaxFreePort');
 
    if (_min is NULL) _min := 20000;
    if (_max is NULL) _max := 30000;
@@ -1433,7 +1433,7 @@ create procedure FTP_WRITE (in l_user varchar, in w_str varchar, in command varc
   declare log_file varchar;
   -- dbg_obj_princ ('FTP_WRITE (', l_user, w_str, command, len, ')');
 
-  log_file := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerLogFile');
+  log_file := virtuoso_ini_item_value ('HTTPServer', 'FTPServerLogFile');
 
   if (log_file is NULL)
     goto finish;

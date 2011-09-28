@@ -600,7 +600,7 @@ create procedure DB.DBA.URLREWRITE_APPLY (
   -- dbg_obj_princ('bbb5', _lpath, _lhost_port, _lhost);
   whenever not found goto no_rec;
   select top 1 HP_HOST, HP_LISTEN_HOST, HP_LPATH, get_keyword ('url_rewrite', deserialize (HP_OPTIONS), NULL) into db_host, db_lhost, db_lpath, top_rulelist_iri from HTTP_PATH where
-    (HP_LISTEN_HOST = _lhost or HP_LISTEN_HOST = _lhost_port or (HP_LISTEN_HOST = '*ini*' and _lhost_port = cfg_item_value (virtuoso_ini_path (), 'HTTPServer','ServerPort'))) and
+    (HP_LISTEN_HOST = _lhost or HP_LISTEN_HOST = _lhost_port or (HP_LISTEN_HOST = '*ini*' and _lhost_port = virtuoso_ini_item_value ('HTTPServer','ServerPort'))) and
     HP_OPTIONS is not null and deserialize (HP_OPTIONS) is not null and
     left (_lpath, length (HP_LPATH)) = HP_LPATH order by HP_LPATH desc;
   if (db_host is null and db_lhost is null and db_lpath is null)

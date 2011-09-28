@@ -600,7 +600,7 @@ pop_spam_filter_init ()
 {
    declare _from_ini varchar;
 
-   _from_ini := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'SpamFilter');
+   _from_ini := virtuoso_ini_item_value ('HTTPServer', 'SpamFilter');
 
    if (_from_ini is NULL or _from_ini <> '1')
      registry_set ('__spam_filtering', '0');

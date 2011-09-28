@@ -2284,7 +2284,7 @@ nxt:;
 		      </Error>', __SQL_STATE, __SQL_MESSAGE));
 	goto err;
       };
-      if (atoi (cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'ServerThreads')) < 2)
+      if (atoi (virtuoso_ini_item_value ('HTTPServer', 'ServerThreads')) < 2)
 	{
 	    result := xml_tree_doc (sprintf ('<Error>
 			  <Code>%V

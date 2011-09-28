@@ -1521,7 +1521,7 @@ create procedure WS.WS.GET_DAV_CHUNKED_QUOTA () returns integer
 
   dav_chunked_quota := atoi (
    coalesce (
-    cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'DAVChunkedQuota'),
+    virtuoso_ini_item_value ('HTTPServer', 'DAVChunkedQuota'),
     '1000000'));
   if (dav_chunked_quota < 1)
     dav_chunked_quota := 1000000;
@@ -2213,7 +2213,7 @@ create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
   declare stat, msg, meta, data any;
   ses := http_body_read ();
   qr := string_output_string (ses);
-  cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  cname := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
   if (cname is null)
     {
       declare tmp any;
@@ -4388,7 +4388,7 @@ create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path v
 --WS.WS.DAV_CHECK_QUOTA ()
 --{
 --  declare tot, quota, _uid, globalf int;
---  globalf := cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'DAVQuotaEnabled');
+--  globalf := virtuoso_ini_item_value ('HTTPServer', 'DAVQuotaEnabled');
 --  if (globalf is null or 0 = atoi (globalf))
 --    return 1;
 --  quota := connection_get ('DAVQuota');

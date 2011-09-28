@@ -76,7 +76,7 @@ create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := n
     ses := src;
   if (to_graph_name is null)
     {
-      host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+      host := virtuoso_ini_item_value ('URIQA','DefaultHost');
       to_graph_name := 'http://' || host || '/stats/void#';
     }
   exec (sprintf ('sparql delete from <%s> { ?s1 ?p1 ?s2 } from <%s> where { <%s#Dataset> void:statItem ?s1 . ?s1 ?p1 ?s2 }',
@@ -99,7 +99,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
   if (host is null)
-    host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    host := virtuoso_ini_item_value ('URIQA','DefaultHost');
   if (host is null)
     {
       hf := WS.WS.PARSE_URI (target_graph);
@@ -216,7 +216,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
   if (host is null)
-    host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    host := virtuoso_ini_item_value ('URIQA','DefaultHost');
   -- if (host is null)
   --  host := 'lod.openlinksw.com';
 

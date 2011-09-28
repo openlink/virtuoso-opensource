@@ -1043,7 +1043,7 @@ create procedure
 	if (fp is null)
 	  goto normal_auth;
 
-        ext_oid := cfg_item_value (virtuoso_ini_path(), 'Parameters', 'X509ExtensionOID');
+        ext_oid := virtuoso_ini_item_value ('Parameters', 'X509ExtensionOID');
 
         if (ext_oid is not null)
           new_user := get_certificate_info (7, null, null, null, ext_oid);

@@ -174,7 +174,7 @@ RDF_VIEW_DROP_STMT (in qualifier varchar)
    declare  mask varchar;
 
    drop_map := '';
-   mask := sprintf ('http://%s/schemas/%s/qm-%%', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   mask := sprintf ('http://%s/schemas/%s/qm-%%', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
    for select "o" from (sparql define input:storage ""
    select ?o from virtrdf:
    {
@@ -200,7 +200,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    cols := rdf_view_tbl_opts (_tbls, cols);
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
-   sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
 
    --for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
    --   drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-%s\n;\n', ns, qualifier, rdf_view_tb (name_part (_tbls[xx], 2)));
@@ -210,7 +210,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    -- ## voID
    if (gen_stat)
      {
-       ns := ns || sprintf ('prefix %s-stat: <http://%s/%s/stat#> \n', lcase (qualifier), cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'),
+       ns := ns || sprintf ('prefix %s-stat: <http://%s/%s/stat#> \n', lcase (qualifier), virtuoso_ini_item_value ('URIQA','DefaultHost'),
 			    qualifier);
        ns := ns || 'prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n';
        ns := ns || 'prefix void: <http://rdfs.org/ns/void#> \n';
@@ -531,7 +531,7 @@ rdf_view_create_void_view (in qualifier varchar, in _tbls any, in gen_stat int :
    ret := ret || rdf_view_sp (6) || '# voID Statistics \n';
    ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: a void:Dataset as %s:dataset-%s ; \n', pref_l, qualifier, qual_l);
    ret := ret || rdf_view_sp (6) || sprintf (' void:sparqlEndpoint <http://%s/sparql> as %s:dataset-sparql-%s ; \n',
-		    cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier, qual_l);
+		    virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier, qual_l);
 
    ret := ret || rdf_view_sp (6) ||	sprintf ('void:statItem %s-stat:Stat . \n', pref_l);
    ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:Stat a scovo:Item ; \n', pref_l);
@@ -803,7 +803,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
 
   rdf_view_tbl_pk_cols (_tbls, pkcols);
   cols := rdf_view_tbl_opts (_tbls, cols);
-  ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual);
+  ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, virtuoso_ini_item_value ('URIQA','DefaultHost'), qual);
   ses := string_output ();
   http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n', ses);
@@ -1128,7 +1128,7 @@ RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0)
 
    tbls := vector ();
    err_ret := vector ();
-   mask := sprintf ('http://%s/schemas/%s/qm-%%', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   mask := sprintf ('http://%s/schemas/%s/qm-%%', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
    for select "o" from
    (sparql define input:storage "" select ?o from virtrdf:
      {

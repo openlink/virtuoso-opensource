@@ -2000,9 +2000,9 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   maxrows := 1024*1024; -- More than enough for web-interface.
   deadl := 0;
   http_meth := http_request_get ('REQUEST_METHOD');
-  ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
-  hard_timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
-  timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout'), '0')) * 1000;
+  ini_dflt_graph := virtuoso_ini_item_value ('SPARQL', 'DefaultGraph');
+  hard_timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
+  timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ExecutionTimeout'), '0')) * 1000;
   client_supports_partial_res := 0;
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
   help_topic := get_keyword ('help', params, null);
@@ -2013,7 +2013,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   if ('' <> def_qry)
     qtxt := 1;
-  def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
+  def_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   save_mode := get_keyword ('save', params, null);
   if (save_mode is not null and save_mode = 'display')
@@ -2105,7 +2105,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
          }
       if (not qtxt)
         {
-          def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
+          def_qry := virtuoso_ini_item_value ('SPARQL', 'DefaultQuery');
           if (def_qry is null)
             def_qry := 'SELECT * WHERE {?s ?p ?o}';
         }
@@ -2372,7 +2372,7 @@ http('</html>\n');
 	}
       else if (query is null and 'query-uri' = pname and length (pvalue))
 	{
-	  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExternalQuerySource') = '1')
+	  if (virtuoso_ini_item_value ('SPARQL', 'ExternalQuerySource') = '1')
 	    {
 	      declare uri varchar;
 	      declare hf, hdr, charset any;
@@ -2402,7 +2402,7 @@ http('</html>\n');
 	}
       else if ('xslt-uri' = pname and length (pvalue))
 	{
-	  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExternalXsltSource') = '1')
+	  if (virtuoso_ini_item_value ('SPARQL', 'ExternalXsltSource') = '1')
 	    {
 	      add_http_headers := 0;
 	      http_xslt (pvalue);
@@ -2626,9 +2626,9 @@ host_found:
 
   declare sc_max int;
   declare sc decimal;
-  sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryCostEstimationTime'), '-1'));
+  sc_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryCostEstimationTime'), '-1'));
   if (sc_max < 0)
-    sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxExecutionTime'), '-1'));
+    sc_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxExecutionTime'), '-1'));
   if (sc_max > 0)
     {
       state := '00000';

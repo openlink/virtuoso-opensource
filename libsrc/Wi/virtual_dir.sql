@@ -675,7 +675,7 @@ return rc;
 --HP_SSL_DEFAULT ()
 --{
 --  declare port, nam varchar;
---  port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
+--  port := virtuoso_ini_item_value ('HTTPServer', 'SSLPort');
 --  nam := port;
 --  if (strrchr (port, ':') is null and atoi (port) <> 0)
 --    {
