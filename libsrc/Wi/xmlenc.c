@@ -6900,11 +6900,17 @@ bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pem_export");
   long pkey = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "xenc_pem_export") : 0;
+  caddr_t cipher_name = BOX_ELEMENTS (args) > 2 ? bif_string_arg (qst, args, 2, "xenc_pem_export") : NULL;
+  caddr_t pass = BOX_ELEMENTS (args) > 2 ? bif_string_arg (qst, args, 3, "xenc_pem_export") : NULL;
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   BIO * b;
   char *data_ptr;
   int len;
   caddr_t ret = NULL;
+  const EVP_CIPHER *enc = pass && strlen (pass) ? EVP_get_cipherbyname (cipher_name) : NULL;
+
+  if (!enc && pass && strlen (pass))
+    sqlr_new_error ("42000", "CR006", "Cannot find cipher");
 
   if (!key)
     goto err;
@@ -6914,12 +6920,12 @@ bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
   PEM_write_bio_X509 (b, key->xek_x509);
   if (pkey && key->xek_evp_private_key)
-    PEM_write_bio_PrivateKey (b, key->xek_evp_private_key, NULL, NULL, 0, NULL, NULL);
+	PEM_write_bio_PrivateKey (b, key->xek_evp_private_key, enc, NULL, 0, NULL, pass);
     }
   else if (key->xek_type == DSIG_KEY_RSA)
-    PEM_write_bio_RSAPrivateKey (b, key->xek_private_rsa, NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_RSAPrivateKey (b, key->xek_private_rsa, enc, NULL, 0, NULL, pass);
   else if (key->xek_type == DSIG_KEY_DSA)
-    PEM_write_bio_DSAPrivateKey (b, key->xek_private_dsa, NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_DSAPrivateKey (b, key->xek_private_dsa, enc, NULL, 0, NULL, pass);
   else
     {
       BIO_free (b);
