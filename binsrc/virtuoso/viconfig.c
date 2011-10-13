@@ -175,6 +175,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern int32 ric_samples_sz;
 extern int32 enable_p_stat;
 extern int aq_max_threads;
 
@@ -1055,6 +1056,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "RdfFreeTextRulesSize", &c_rdf_obj_ft_rules_size) == -1)
     c_rdf_obj_ft_rules_size = 0;
+
+  if (cfg_getlong (pconfig, section, "RdfInferenceSampleCacheSize", &ric_samples_sz) == -1)
+    ric_samples_sz = 0;
 
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
