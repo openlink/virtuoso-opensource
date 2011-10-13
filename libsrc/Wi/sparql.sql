@@ -6016,6 +6016,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer,
   exec (sprintf ('
   delete from DB.DBA.RDF_QUAD
   where G = __i2id (''%S'') ', g));
+  cl_exec ('delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only, no cluster) where G = ? option (index RDF_QUAD_GS)', vector (g_iid));
   delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
   where VT_WORD = rdf_graph_keyword (g_iid);
   if (not inside_sponge)
