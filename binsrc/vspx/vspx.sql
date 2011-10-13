@@ -2272,8 +2272,12 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
 	    }
 	  else
 	    {
+	      declare res any; 
+	      res := 0;
 	      if (__tag (res_col) = 182 and cset is not null)
-		res_col := charset_recode (res_col, cset, '_WIDE_');
+		res := charset_recode (res_col, cset, '_WIDE_');
+              if (res <> 0)
+	        res_col := res;		
 	      http_value (coalesce (res_col, '<DB NULL>'));
 	    }
 	  next:
