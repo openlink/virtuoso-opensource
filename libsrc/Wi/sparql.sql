@@ -55,21 +55,18 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (in qname any) returns IRI_ID
 }
 ;
 
---!AFTER
-DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (null)
-;
-
---!AFTER
-DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (null)
-;
-
 create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar -- DEPRECATED
 {
   return id_to_iri_nosignal (iid);
 }
 ;
 
---!AFTER
+DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (null)
+;
+
+DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (null)
+;
+
 DB.DBA.RDF_QNAME_OF_IID (null)
 ;
 
