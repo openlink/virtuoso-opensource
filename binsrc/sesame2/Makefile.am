@@ -36,13 +36,15 @@ SESAME_SRC= \
 	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
+	virtuoso_driver/VirtuosoOperation.java \
 	virtuoso_driver/VirtuosoQuery.java \
 	virtuoso_driver/VirtuosoRepositoryConfig.java \
 	virtuoso_driver/VirtuosoRepositoryConnection.java \
 	virtuoso_driver/VirtuosoRepositoryFactory.java \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoRepositorySchema.java \
-	virtuoso_driver/VirtuosoTupleQuery.java
+	virtuoso_driver/VirtuosoTupleQuery.java \
+	virtuoso_driver/VirtuosoUpdate.java
 
 SESAME_XSL = \
 	create.xsl \

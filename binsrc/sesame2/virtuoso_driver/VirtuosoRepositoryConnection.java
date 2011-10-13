@@ -73,6 +73,7 @@ import org.openrdf.query.GraphQuery;
 import org.openrdf.query.GraphQueryResult;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.Query;
+import org.openrdf.query.Update;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQuery;
@@ -82,7 +83,8 @@ import org.openrdf.query.TupleQueryResultHandlerException;
 import org.openrdf.query.algebra.evaluation.QueryBindingSet;
 import org.openrdf.query.impl.GraphQueryResultImpl;
 import org.openrdf.query.impl.TupleQueryResultImpl;
-import org.openrdf.query.QueryEvaluationException;
+import org.openrdf.query.UnsupportedQueryLanguageException;
+import org.openrdf.query.UpdateExecutionException;
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
@@ -265,6 +267,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		StringTokenizer st = new StringTokenizer(query);
 		String type = null;
 
@@ -328,7 +333,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * @throws UnsupportedQueryLanguageException
 	 *         If the supplied query language is not supported.
 	 */
-	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
+	public TupleQuery prepareTupleQuery(QueryLanguage language, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
+
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleQueryResult evaluate() throws QueryEvaluationException {
 				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred(), getBindings());
@@ -381,6 +390,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         If the supplied query language is not supported.
 	 */
 	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
+
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphQueryResult evaluate() throws QueryEvaluationException {
 				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred(), getBindings());
@@ -433,6 +446,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         If the supplied query language is not supported.
 	 */
 	public BooleanQuery prepareBooleanQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
+
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean evaluate() throws QueryEvaluationException {
 				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred(), getBindings());
@@ -441,6 +458,25 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return q;
 	}
 
+	public Update prepareUpdate(QueryLanguage language, String update) throws RepositoryException, MalformedQueryException
+	{
+	        return prepareUpdate(language, update, null);
+	}
+
+	public Update prepareUpdate(QueryLanguage language, final String update, String baseURI) throws RepositoryException, MalformedQueryException
+	{
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
+		Update u = new VirtuosoUpdate() {
+			public void execute() throws UpdateExecutionException {
+				executeSPARUL(update, getDataset(), getIncludeInferred(), getBindings());
+			}
+		};
+		return u;
+	}
+
+	
 	/**
 	 * Gets all resources that are used as content identifiers. Care should be
 	 * taken that the returned {@link RepositoryResult} is closed to free any
@@ -1582,7 +1618,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1608,7 +1644,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1629,7 +1665,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			while(rs.next())
 			{
@@ -1652,7 +1688,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 			// begin at onset one
@@ -1686,7 +1722,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 			ResultSetMetaData rsmd = rs.getMetaData();
 	                int col_g = -1;
         	        int col_s = -1;
@@ -1737,6 +1773,23 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 	
+
+        protected void executeSPARUL(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws UpdateExecutionException
+        {
+		try {
+			verifyIsOpen();
+			flushDelayAdd();
+			java.sql.Statement stmt = createStatement();
+			stmt.execute(fixQuery(true, query, dataset, includeInferred, bindings));
+			stmt.close();
+
+		}
+		catch (Exception e) {
+			throw new UpdateExecutionException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+		}
+	}
+
+
 	/**
 	 * Execute SPARUL query on this repository.
 	 * 
@@ -1749,15 +1802,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public int executeSPARUL(String query) throws RepositoryException {
 
+		java.sql.Statement stmt = null;
 		try {
 			verifyIsOpen();
 			flushDelayAdd();
-			java.sql.Statement stmt = createStatement();
+			stmt = createStatement();
 			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
 			return stmt.getUpdateCount();
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+		}
+		finally {
+			try {
+			  if (stmt != null)
+				stmt.close();
+			} catch (Exception e) {}
 		}
 	}
 
@@ -1848,12 +1908,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return buf.toString();
 	}
 	
-	private String fixQuery(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
+	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
 	{
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = "";
 		StringBuffer ret = new StringBuffer("sparql\n ");
 
+		if (!isSPARUL) 
+		{
 		while(tok.hasMoreTokens()) {
 		    s = tok.nextToken().toLowerCase();
 		    if (s.equals("describe") || s.equals("construct") || s.equals("ask") || s.equals("select")) 
@@ -1863,10 +1925,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
 		    ret.append("define output:format '_JAVA_'\n ");
 
+		} else {
+		  ret.append("define output:format '_JAVA_'\n ");
+		}
+
 		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
 		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
-
-		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{
