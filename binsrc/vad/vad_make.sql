@@ -885,7 +885,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_LT" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version less than %s hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('This package requires %s version less than %s', s2, s3));
     }
     s3 := cast (xpath_eval ('version/@package', aref (items, j)) as varchar);
     if (s2 is not null and length(s3))
@@ -896,7 +896,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_EQ" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version equal to %s hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('This package requires %s version %s', s2, s3));
     }
     s3 := cast (xpath_eval ('versions_later/@package', aref (items, j)) as varchar);
     if (s2 is not null and length(s3))
@@ -907,7 +907,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_GT" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version greater than %s hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('This package requires %s version greater than %s', s2, s3));
     }
     j := j + 1;
   }
