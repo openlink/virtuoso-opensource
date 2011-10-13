@@ -569,6 +569,8 @@ namespace OpenLink.Data.Virtuoso
 
         protected override void Dispose (bool disposing)
         {
+	    try
+	    {
             if (disposed)
                 return;
 
@@ -582,6 +584,12 @@ namespace OpenLink.Data.Virtuoso
             options = null;
 
             base.Dispose (disposing);
+        }
+	    catch (Exception e)
+	    {
+	        Debug.WriteLineIf(CLI.FnTrace.Enabled,
+		    "VirtuosoConnection.Dispose caught exception: " + e.Message);
+	    }
         }
 
         private ConnectionOptions ParseConnectionString (string connectionString)

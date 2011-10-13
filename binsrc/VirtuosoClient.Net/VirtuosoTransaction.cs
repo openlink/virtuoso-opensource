@@ -135,7 +135,19 @@ namespace OpenLink.Data.Virtuoso
 			if (disposing)
 			{
 				if (!ended)
+                {
+                    try
+                    {
 					Rollback ();
+			}
+                    catch (Exception e)
+                    {
+                        // Dispose method should never throw an exception.
+                        // So just log any messages.
+                        Debug.WriteLineIf(CLI.FnTrace.Enabled, 
+                            "VirtuosoTransaction.Dispose caught exception: " + e.Message);
+                    }
+                }
 			}
 			connection = null;
 #if ADONET2

@@ -815,6 +815,17 @@ namespace OpenLink.Data.Virtuoso
 				CloseCursor ();
 			}
 			*/
+			Future future = new Future (Service.FreeStmt, GetId (), (int) CLI.FreeStmtOption.SQL_DROP);
+			try
+			{
+			        connection.futures.Add (future);
+			        future.SendRequest (connection.Session);
+			        future.GetResult (connection.Session, connection.futures);
+			}
+			finally
+			{
+			        connection.futures.Remove (future);
+			}
 		}
 	}
 }

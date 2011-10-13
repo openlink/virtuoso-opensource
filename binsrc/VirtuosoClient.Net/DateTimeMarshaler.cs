@@ -181,7 +181,7 @@ namespace OpenLink.Data.Virtuoso
 			int hour = bytes[3];
 			int minute = bytes[4] >> 2;
 			int second = ((bytes[4] & 0x03) << 4) | (bytes[5] >> 4);
-			int fraction = ((bytes[5] & 0x0f) << 16) | (bytes[6] << 8) | bytes[7];
+			long fraction = ((bytes[5] & 0x0f) << 16) | (bytes[6] << 8) | bytes[7];
 			DateTimeType type = (DateTimeType) (bytes[8] >> 5);
 			int tz_offset_minutes = ((bytes[8] & 0x03) << 8) | bytes[9];
 			if ((bytes[8] & 0x04) != 0)
@@ -191,18 +191,17 @@ namespace OpenLink.Data.Virtuoso
 
 			if (type == DateTimeType.DT_TYPE_TIME)
 			{
-				TimeSpan ts = new TimeSpan (0, hour, minute, second, fraction / Values.MicrosPerMilliSec);
+				VirtuosoTimeSpan ts = new VirtuosoTimeSpan (0, hour, minute, second, fraction);
 				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "TimeSpan: " + ts);
 				return ts;
 			}
-			else if (type == DateTimeType.DT_TYPE_DATETIME || type == DateTimeType.DT_TYPE_DATE)
+                        else if (type == DateTimeType.DT_TYPE_DATETIME || type == DateTimeType.DT_TYPE_DATE)
 			{
 				int year, month, day_of_month;
 				GetDate (days, out year, out month, out day_of_month);
-				TimeSpan tz_offset = new TimeSpan (0, tz_offset_minutes, 0);
 
-				DateTime dt = new DateTime (year, month, day_of_month, hour, minute, second, fraction / Values.MicrosPerMilliSec);
-				dt += tz_offset;
+				VirtuosoDateTime dt = new VirtuosoDateTime (year, month, day_of_month, hour, minute, second, fraction);
+				dt = dt.AddMinutes(tz_offset_minutes);
 				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
 				return dt;
 			}
