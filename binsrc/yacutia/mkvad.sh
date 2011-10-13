@@ -322,7 +322,7 @@ echo "  <ddls>" >> $STICKER
 echo "    <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
+#echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER

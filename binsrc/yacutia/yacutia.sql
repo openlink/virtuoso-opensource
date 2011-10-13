@@ -1091,117 +1091,7 @@ disk_stat_meta(in par integer)
 }
 ;
 
-create procedure
-adm_next_checkbox (in keyw varchar, inout params varchar, inout spos integer)
-{
-  declare pos integer;
-  declare len integer;
-  declare klen integer;
-  declare s varchar;
-
-  len := length (params);
-  klen := length (keyw);
-
-  while (spos < len)
-    {
-      s := aref (params, spos);
-      if (keyw = "LEFT" (s, klen) and
-    'on' = lcase (coalesce (aref (params, spos + 1),'')))
-  {
-    spos := spos + 2;
-    return "RIGHT" (s, length (s) - klen);
-  }
-      spos := spos + 2;
-    }
-}
-;
-
-create procedure
-adm_get_file_dsn ()
-{
-  declare idx, len integer;
-  declare name, s_root varchar;
-  declare ret, _all any;
-  declare _err_code, _err_message varchar;
-  declare exit handler for sqlstate '*'
-    {
-      _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error;
-    };
-
-  _all := sys_dirlist ('.', 1);
-  s_root := server_root ();
-
-  idx := 0;
-  len := length (_all);
-  ret := vector ();
-
-  while (idx < len)
-    {
-       name := aref (_all, idx);
-
-       if (strstr (name, '.dsn'))
-         ret := vector_concat (ret, vector (concat (s_root, name)));
-
-       idx := idx + 1;
-    }
-
-  return ret;
-
-error:
-  return vector ();
-}
-;
-
-create procedure
-adm_lt_dsn_options (in dsn varchar)
-{
-  declare dsns, f_dsns any;
-  declare len, len_f, idx integer;
-
-  dsns := sql_data_sources(1);
-
-  idx := 0;
-  len := length (dsns);
-  len_f := 0;
-
-  if (sys_stat('st_build_opsys_id') = 'Win32')
-    {
-       f_dsns := adm_get_file_dsn ();
-       len_f := length (f_dsns);
-    }
-
-  if (len = 0 and len_f = 0)
-    {
-      http('<option value=NONE>No pre-defined DSNs</option>');
-    }
-  else
-    {
-      while (idx < len)
-  {
-    http (sprintf ('<option value="%s" %s>%s</option>' ,
-       aref (aref (dsns, idx), 0),
-       select_if (aref (aref (dsns, idx), 0), dsn),
-       aref (aref ( dsns, idx), 0)));
-    idx := idx + 1;
-  }
-
-      if (sys_stat('st_build_opsys_id') = 'Win32' and len_f > 0)
-  {
-    idx := 0;
-    while (idx < len_f)
-      {
-        http (sprintf ('<option value="%s" %s>%s</option>' ,
-           aref (f_dsns, idx), select_if (aref (f_dsns, idx), dsn),
-           aref (f_dsns, idx)));
-        idx := idx + 1;
-      }
-  }
-    }
-}
-;
-
-create procedure
-true_if (in sel varchar, in val varchar)
+create procedure true_if (in sel varchar, in val varchar)
 {
   if (sel = val)
       return ('true');
@@ -1209,9 +1099,7 @@ true_if (in sel varchar, in val varchar)
 }
 ;
 
-create procedure
-make_full_name (in cat varchar, in sch varchar, in name varchar, in quoted integer := 0)
-returns varchar
+create procedure make_full_name (in cat varchar, in sch varchar, in name varchar, in quoted integer := 0) returns varchar
 {
     declare ret, quote varchar;
     if (quoted <> 0) quote := '"';
@@ -1228,45 +1116,6 @@ returns varchar
 }
 ;
 
-create procedure
-adm_lt_make_dsn_part (in dsn varchar)
-{
-  declare inx, c integer;
-  dsn := ucase (dsn);
-  inx :=0;
-  while (inx < length (dsn)) {
-    c := aref (dsn, inx);
-    if (not ((c >= aref ('A', 0) and c <= aref ('Z', 0))
-       or (c >= aref ('0', 0) and c <= aref ('9', 0))))
-      aset (dsn, inx, aref ('_', 0));
-    inx := inx + 1;
-  }
-  return dsn;
-}
-;
-
-create procedure
-adm_make_option_list (in opts any, in name varchar, in val varchar, in spare integer)
-{
-  declare i, l, j, k integer;
-  declare ch varchar;
-  l := length (opts); i := 0;
-  j := 0; k := 1;
-  if (spare > 0) {
-      j := 1;
-      k := 2;
-  }
-  http (sprintf ('<select name="%s">', name));
-  while (i < l) {
-      ch := '';
-      if (opts[i] = val)
-  ch := 'selected="true"';
-      http (sprintf ('<option value="%s" %s>%s</option>', opts[i+j], ch, opts[i]));
-      i := i + k;
-  }
-  http ('</select>');
-}
-;
 
 create procedure
 adm_lt_getRPKeys2 (in dsn varchar,
@@ -1345,33 +1194,6 @@ next:
 	}
     }
   return my_pkeys;
-}
-;
-
-create procedure
-vector_print (in in_vector any)
-{
-  declare len, idx integer;
-  declare temp varchar;
-  declare res varchar;
-
-  if (isstring (in_vector))
-    in_vector := vector (in_vector);
-
-  len := length (in_vector);
-  res:='';
-  idx := 0;
-  while ( idx < len ) {
-    if (idx > 0 )
-      res := concat (res, ', ');
-    temp := aref (in_vector, idx);
-    if (__tag(temp) = 193)
-      res := concat (res, 'vector');
-    else
-      res := concat (res, temp);
-    idx := idx+1;
-  }
-  return (res);
 }
 ;
 
@@ -1603,163 +1425,6 @@ sequence_set ('dbpump_temp', 0, 0)
 sequence_set ('dbpump_id', 1, 0)
 ;
 
-create procedure "PUMP"."DBA"."__GET_TEMPORARY" (  )
-{
-  return  sprintf('./tmp/dbpump%d.tmp', sequence_next('dbpump_temp'));
-}
-;
-
-create procedure "PUMP"."DBA"."__GET_KEYWORD" ( in name varchar, in arr any, in def varchar )
-{
-  if (arr is not null)
-    return get_keyword(name,arr,def);
-  return '';
-}
-;
-
-create procedure "PUMP"."DBA"."URLIFY_STRING" (in val varchar)
-{
-  declare i,n,c integer;
-  declare s varchar;
-  s := '';
-  if (val is not null and length(val)>0) {
-      n := length(val);
-      i := 0;
-      while (i<n) {
-          c := aref(val,i);
-          if (c = 32)
-              s := concat(s,'+');
-          else {
-              if ((c>=48 and c<=57) or (c>=97 and c<=122) or (c>=65 and c<=90))
-                  s := concat(s,sprintf('%c',c));
-              else
-                  s := concat(s,sprintf('%%%02X',c));
-          }
-          i := i + 1;
-      }
-  }
-  return s;
-}
-;
-
-create procedure "PUMP"."DBA"."DBPUMP_START_COMPONENT" (  in pars any,
-              in name varchar,
-              in arg varchar )
-{
-  declare i,n integer;
-  declare str,allt,s,argsfile varchar;
-  declare outarr any;
-
-  allt := 'all_together_now';
-  argsfile := sprintf('./tmp/%s.cmd-line',name);
-  if (arg is null or length(arg)=0)
-    arg := 'DUMMY';
-  str := sprintf('%s %s ', name, arg);
-  n := length(pars);
-  str := concat (str, sprintf (' %s=%s ', allt,
-  "PUMP"."DBA"."URLIFY_STRING" (
-    "PUMP"."DBA"."__GET_KEYWORD" (allt,pars,''))));
-  i := n - 2;
-  while (i>=0)
-  {
-    s := aref(pars,i);
-    if (neq (allt, s))
-      str := concat (str, sprintf (' %s=%s ', s,"PUMP"."DBA"."URLIFY_STRING" (aref(pars,i+1))));
-    i := i - 2;
-  }
-  string_to_file (argsfile,str,-2);
-  str := sprintf ('@%s', argsfile);
---  str := concat (str, ' > ');
---  str := concat (str, tmp);
-  commit work;
-  run_executable ('dbpump', 1, str);
-  return str;
-}
-;
-
-create procedure "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (  inout pars any,
-              in name varchar,
-              in arg varchar,
-              in outerr integer := 1 )
-{
-  declare i,n integer;
-  declare str,allt,s,argsfile varchar;
-  declare tmp,errstr varchar;
-  declare outarr any;
-
-  allt := 'all_together_now';
-  tmp := "PUMP"."DBA"."__GET_TEMPORARY" ();
-  argsfile := sprintf('./tmp/%s.cmd-line',name);
-  if (arg is null or length(arg)=0)
-    arg := 'DUMMY';
-  str := sprintf('%s %s %s', name, arg, tmp);
-  n := length(pars);
-  str := concat (str, sprintf (' %s=%s ', allt,
-  "PUMP"."DBA"."URLIFY_STRING" (
-    "PUMP"."DBA"."__GET_KEYWORD" (allt,pars,''))));
-  i := n - 2;
-  while (i>=0)
-  {
-    s := aref(pars,i);
-    if (neq (allt, s))
-      str := concat (str, sprintf (' %s=%s ', s,"PUMP"."DBA"."URLIFY_STRING" (aref(pars,i+1))));
-    i := i - 2;
-  }
-
-  declare exit handler for sqlstate '*' { errstr := sprintf ('Temporary file creation error:\n%s %s\nprobably permissions were revoked for temporary folder\nor it doesn\'t exist', __SQL_STATE, __SQL_MESSAGE); goto error_gen; };
-
-  string_to_file(argsfile,str,-2);
-  str := sprintf ('@%s', argsfile);
---  str := concat (str, ' > ');
---  str := concat (str, tmp);
-  commit work;
-  declare exit handler for sqlstate '*' { errstr := sprintf ('Dbpump running error:\n%s %s\nProbably the executable \'dbpump\' doesn\'t exist in \'bin\' folder', __SQL_STATE, __SQL_MESSAGE); goto error_gen; };
-  run_executable('dbpump', 1, str);
-  declare str varchar;
-
-  declare exit handler for sqlstate '*' { errstr := sprintf ('Results obtaining error:\n%s %s\nProbably the executable \'dbpump\' crashed during the work', __SQL_STATE, __SQL_MESSAGE); goto error_gen; };
-  str := file_to_string(tmp);
-  string_to_file(sprintf('./tmp/%s.cmd-out',name),str,-2);
-  "PUMP"."DBA"."DBPUMP_START_COMPONENT" (pars, 'remove_temporary', tmp);
---  run_executable('rm',0,'-f',tmp);
-  return str;
-
-error_gen:
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'last_error', errstr);
-  if (outerr)
-    return sprintf ('last_error=%s', errstr);
-  else
-    return '';
-}
-;
-
-
-create procedure "PUMP"."DBA"."HTML_RETRIEVE_TABLES" (  inout arr any )
-{
-  declare str varchar;
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (arr,'retrieve_tables','*');
-  if (str is null)
-    return '';
-  return str;
-}
-;
-
-create procedure "PUMP"."DBA"."HTML_RETRIEVE_QUALIFIERS_VIA_PLSQL" ( in arr any )
-{
-  declare str, s varchar;
-  str := '%=None&custom=Advanced';
-whenever not found goto fin;
-
-  for (select distinct name_part (KEY_TABLE, 0, 'DB') as qual from DB.DBA.SYS_KEYS) do
-    {
-      str := concat (str, '&', qual, '=', qual);
-    }
-fin:
-  return str;
-}
-;
-
-
 create procedure "PUMP"."DBA"."RETRIEVE_TABLES_VIA_PLSQL" ( in qual_mask varchar, in owner_mask varchar, in table_mask varchar, in out_type integer := 1 )
 {
 
@@ -1886,71 +1551,6 @@ create procedure "DB"."DBA"."BACKUP_VIA_DBPUMP" (
   "PUMP"."DBA"."CHANGE_VAL" (pars, 'choice_sav',  sel_tables);
   res := "PUMP"."DBA"."DUMP_TABLES_AND_PARS_RETRIEVE" (pars);
 
-  declare str varchar;
-  str := get_keyword ('result_txt', res, NULL);
-  if(str is null)
-    str := get_keyword ('last_error', res, '');
-
-  return str;
-}
-;
-
-create procedure "PUMP"."DBA"."DUMP_TABLES_AND_PARS_RETRIEVE" ( inout pars any )
-{
-  declare n integer;
-  declare str varchar;
-  declare outarr any;
-
---  checkpoint;
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (pars,'dump_tables','*');
-  outarr := split_and_decode(str,0);
---  n := length(outarr);
-  return outarr;
-}
-;
-
---drop procedure restore_tables_and_pars_retrieve;
-create procedure "PUMP"."DBA"."RESTORE_TABLES_AND_PARS_RETRIEVE" ( inout pars any )
-{
-  declare n integer;
-  declare str varchar;
-  declare outarr any;
-
---  checkpoint;
-
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (pars,'restore_tables','*');
-  outarr := split_and_decode(str,0);
---  n := length(outarr);
-  return outarr;
-}
-;
-
-create procedure "DB"."DBA"."RESTORE_DBPUMP'S_FOLDER" (
-                        in username varchar,
-                        in passwd varchar,
-                        in datasource varchar,
-                        in dump_path varchar,
-                        in dump_dir varchar,
-                        in dump_items varchar,
-                        in chqual varchar,
-                        in chuser varchar
-                        ) returns varchar
-{
-  declare pars, res any;
-  pars:= null;
-
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'user', username);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'password', passwd);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'datasource', datasource);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'dump_path', dump_path);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'dump_dir', dump_dir);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'restore_users', case dump_items[7] when 1 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'restore_grants', case dump_items[8] when 1 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'change_rqualifier', case when length(chqual) > 0 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'new_rqualifier', chqual );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'change_rowner', case when length(chuser) > 0 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'new_rowner', chuser );
-  res := "PUMP"."DBA"."RESTORE_TABLES_AND_PARS_RETRIEVE" (pars);
   declare str varchar;
   str := get_keyword ('result_txt', res, NULL);
   if(str is null)
@@ -4280,32 +3880,6 @@ yacutia_exec_no_error('create procedure view Y_SYS_SCHEDULED_EVENT as adm_get_sc
 --select indirect_grants( 'WS.SOAP.countTheEntities', vector(103));
 --select G_OP from SYS_GRANTS where G_USER = 103 and G_OBJECT = 'WS.SOAP.countTheEntities' and G_COL in ('_all', '_all');
 
-create procedure
-adm_get_init_name ()
-{
-  declare _all varchar;
-
-  _all := virtuoso_ini_path();
-
-  if (sys_stat ('st_build_opsys_id') = 'Win32')
-    {
-      while (length (_all) > 0)
-        {
-          declare pos integer;
-
-          pos := strstr (_all, '\\');
-
-          if (pos is NULL)
-            return _all;
-
-          _all := subseq (_all, pos + 1);
-        }
-    }
-  else
-    return _all;
-}
-;
-
 
 create procedure
 YACUTIA_DAV_COPY (in path varchar,
@@ -4983,19 +4557,6 @@ get_sql_procedures (in dsn varchar, in cat varchar, in sch varchar, in table_mas
 
 create procedure get_vdb_data_types() {
     return vector('INTEGER','NUMERIC','DECIMAL','DOUBLE PRECISION','REAL','CHAR','CHARACTER','VARCHAR','NVARCHAR','ANY','NCHAR','SMALLINT','FLOAT','DATETIME','DATE','TIME','BINARY');
-}
-;
-
-create procedure adm_is_hosted ()
-{
-  declare ret integer;
-
-  ret := 0;
-
-  if (__proc_exists ('aspx_get_temp_directory', 2) is not NULL) ret := 1;
-  if (__proc_exists ('java_load_class', 2) is not NULL) ret := ret + 2;
-
-  return ret;
 }
 ;
 

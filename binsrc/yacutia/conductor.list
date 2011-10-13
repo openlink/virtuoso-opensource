@@ -9,7 +9,6 @@ conductor/account_remove_inc.vspx
 conductor/account_remove.vspx
 conductor/accounts_page.vspx
 conductor/accounts.vspx
-conductor/admin_dav_browser.sql
 conductor/admin_utils.js
 conductor/adm_login.vspx
 conductor/adm_navigation_bar.vspx
