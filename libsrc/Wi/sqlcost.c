@@ -1196,7 +1196,7 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
     }
   else
     {
-      sp->sp_min_op = bop_to_dvc (lower->_.bin.op);
+      sp->sp_min_op = in_list ? CMP_EQ : bop_to_dvc (lower->_.bin.op);
       sp->sp_max_op = bop_to_dvc (upper->_.bin.op);
       res = dfe_const_rhs (sp, upper, itc, v_fill);
 	  sp->sp_max = *v_fill - 1;
