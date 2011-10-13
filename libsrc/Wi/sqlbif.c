@@ -14146,7 +14146,7 @@ caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** arg
   dk_set_t hit_res_set = 0;
   if (DV_RDF == DV_TYPE_OF (original_text))
     original_text = ((rdf_box_t*)original_text)->rb_box;
-  if (!DV_STRINGP (original_text))
+  if (!DV_STRINGP (original_text) && !DV_WIDESTRINGP (original_text))
     return dk_alloc_box (0, DV_DB_NULL); /* if not a string, can happen in weird join orders with any columns */
   memset (hit_sets, 0, sizeof (hit_sets));
 
@@ -14174,7 +14174,9 @@ caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** arg
     }
   END_DO_BOX;
 
-  if (box_length (original_text) > within_first)
+  if (DV_WIDESTRINGP (original_text))
+    text = box_wide_as_utf8_char (original_text, MIN (within_first, (box_length (original_text) / sizeof (wchar_t) - 1)), DV_LONG_STRING);
+  else if (box_length (original_text) > within_first)
     text = box_dv_short_nchars (original_text, within_first);
   else
     text = original_text;
