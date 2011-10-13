@@ -50,6 +50,16 @@
 #include "srvstat.h"
 #include "recovery.h"
 #include "zlib.h"
+#ifdef _SSL
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final  MD5_Final
+#else
+#include "util/md5.h"
+#endif /* _SSL */
+
+
 
 #ifdef BYTE_ORDER_REV_SUPPORT
 
