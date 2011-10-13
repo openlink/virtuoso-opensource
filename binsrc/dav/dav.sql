@@ -25,16 +25,17 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
-  declare headers, ctype any;
+  declare headers, ctype, msauthor any;
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
   WS.WS.GET (path, params, lines);
   headers := http_header_array_get ();
   ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
+  msauthor := http_request_header (headers, 'MS-Author-Via', null, 'DAV');
   http_status_set (200);
   http_rewrite ();
   http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
 	'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
-	'MS-Author-Via: DAV\r\n'));
+	sprintf ('MS-Author-Via: %s\r\n', msauthor)));
 }
 ;
 
@@ -1292,7 +1293,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
 
   if (content_type = 'application/sparql-query')
     {
-      WS.WS.SPARQL_QUERY_POST (full_path, ses);
+      WS.WS.SPARQL_QUERY_POST (full_path, ses, uname);
       is_sparql := 1;
     }
 
@@ -2207,7 +2208,7 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
 }
 ;
 
-create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
+create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar, in uname varchar)
 {
   declare def_gr, full_qr, qr, cname any;
   declare stat, msg, meta, data any;
@@ -2229,6 +2230,8 @@ create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
     full_qr := 'SPARQL ';
   full_qr := full_qr || qr;
   stat := '00000';
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE = 1))
+    set_user_id (uname);
   exec (full_qr, stat, msg, vector (), 0, meta, data);
   if (stat <> '00000')
     signal (stat, msg);
