@@ -567,8 +567,8 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
   __atomic (1);
   iri_id_cache_flush ();
   __rdf_obj_ft_rule_zap_all ();
-  for select rs_name from sys_rdf_schema do
-    rdf_inf_clear (rs_name);
+  for select RS_NAME from DB.DBA.SYS_RDF_SCHEMA do
+    rdf_inf_clear (RS_NAME);
   delete from sys_rdf_schema;
   delete from DB.DBA.RDF_QUAD;
   delete from DB.DBA.RDF_OBJ_FT_RULES;
@@ -13295,9 +13295,9 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
   res := 0;
   if (gn is null)
     {
-      for (select rs_uri from sys_rdf_schema where rs_name=ri_name) do
+      for (select RS_URI from DB.DBA.SYS_RDF_SCHEMA where RS_NAME=ri_name) do
         {
-          from_text := from_text || sprintf (' from <%s>', rs_uri);
+          from_text := from_text || sprintf (' from <%s>', RS_URI);
         }
     }
   else
@@ -13432,6 +13432,8 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
       rules_count := rules_count + length (v);
     }
   jso_mark_affected (ri_name);
+--  if (not rules_count)
+    rdf_inf_dir (ri_name, null, null, 0);
   return rules_count + 1;
 }
 ;
@@ -13441,7 +13443,7 @@ create procedure rdf_schema_ld ()
 {
   if (1 <> sys_stat ('cl_run_local_only'))
     return 0;
-  return (select count (*) from (select distinct s.rs_name from sys_rdf_schema s) sub where 0 = rdfs_load_schema (sub.rs_name));
+  return (select count (*) from (select distinct s.RS_NAME from DB.DBA.SYS_RDF_SCHEMA s) sub where 0 = rdfs_load_schema (sub.RS_NAME));
 }
 ;
 
@@ -13472,10 +13474,10 @@ create procedure CL_RDF_INF_CHANGED (in name varchar)
 
 create function rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0) returns integer
 {
-    delete from sys_rdf_schema where rs_name = name and rs_uri = gn;
+  delete from DB.DBA.SYS_RDF_SCHEMA where RS_NAME = name and RS_URI = gn;
   if (not remove)
     {
-      insert into sys_rdf_schema (rs_name, rs_uri) values (name, gn);
+      insert into DB.DBA.SYS_RDF_SCHEMA (RS_NAME, RS_URI) values (name, gn);
     }
   commit work;
   if (0 = sys_stat ('cl_run_local_only'))
