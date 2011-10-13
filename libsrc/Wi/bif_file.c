@@ -1850,6 +1850,27 @@ bif_cfg_item_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+static PCONFIG _bif_pconfig = NULL;
+
+caddr_t
+bif_virtuoso_ini_item_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *pszSection, *pszItemName;
+  char *pItemValue = NULL;
+
+  pszSection = bif_string_arg (qst, args, 0, "virtuoso_ini_item_value");
+  pszItemName = bif_string_arg (qst, args, 1, "virtuoso_ini_item_value");
+
+  if (!_bif_pconfig || cfg_refresh (_bif_pconfig) != 0)
+    sqlr_new_error ("39000", "FA055", "Could not open %s ", f_config_file);
+
+  if (cfg_find (_bif_pconfig, pszSection, pszItemName) == 0)
+    pItemValue = box_dv_short_string (_bif_pconfig->value);
+
+  return pItemValue ? pItemValue : NEW_DB_NULL;
+}
+
+
 /* sets the value of the named setting in the selected section	  */
 /* arguments :							  */
 /*			  String FileName - the file to parse		 */
@@ -6339,6 +6360,7 @@ bif_file_init (void)
   bif_define_typed ("file_append_to_string_output", bif_file_append_to_string_session, &bt_integer);
   bif_define_typed ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, &bt_integer);
   bif_define_typed ("virtuoso_ini_path", bif_virtuoso_ini_path, &bt_varchar);
+  bif_define_typed ("virtuoso_ini_item_value", bif_virtuoso_ini_item_value, &bt_varchar);
   bif_define_typed ("cfg_section_count", bif_cfg_section_count, &bt_integer);
   bif_define_typed ("cfg_item_count", bif_cfg_item_count, &bt_integer);
   bif_define_typed ("cfg_section_name", bif_cfg_section_name, &bt_varchar);
@@ -6414,5 +6436,8 @@ bif_file_init (void)
   init_file_acl_set ("/usr/bin/mdimport", &dba_execs_set);
 #endif
   set_ses_tmp_dir ();
+
+  cfg_init (&_bif_pconfig, f_config_file);
+
   dk_mem_hooks(DV_FD, box_non_copiable, (box_destr_f) filep_destroy, 0);
 }
