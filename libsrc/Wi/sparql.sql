@@ -5411,16 +5411,19 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
 {
   declare is_text, ctr, old_log_enable, l integer;
   declare ro_id_dict, dp any;
-  if ('1' = registry_get ('cl_rdf_text_index'))
-    is_text := 1;
   if (not isiri_id (graph_iri))
     graph_iri := iri_to_id (graph_iri);
+  if (__rdf_obj_ft_rule_count_in_graph (graph_iri) or '1' = registry_get ('cl_rdf_text_index'))
+    is_text := 1;
   if (__rdf_graph_is_in_enabled_repl (graph_iri))
     DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iri), triples);
-  connection_set ('g_iid', graph_iri);
-  ro_id_dict := dict_new ();
+  if (is_text)
+    ro_id_dict := dict_new (length (triples));
+  else
+    ro_id_dict := null;
   connection_set ('g_dict', ro_id_dict);
-  dp := dpipe (0, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+  connection_set ('g_iid', graph_iri);
+  dp := dpipe (0, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1');
   dpipe_set_rdf_load (dp);
  l := length (triples);
   for (ctr := 0; ctr < l; ctr := ctr + 1)
@@ -5437,19 +5440,25 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
               o_val_2 := rdf_box (o_val, 300, 257, 0, 1);
               rdf_box_set_is_text (o_val_2, 1);
               rdf_box_set_type (o_val_2, 257);
-              -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text1 ', r[0], r[1], null, o_val_2, null);
-              dpipe_input (dp, r[0], r[1], null, o_val_2, null);
+              -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text1 ', r[0], r[1], null, o_val_2);
+              dpipe_input (dp, r[0], r[1], null, o_val_2);
             }
           else
             {
-              -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text0 ', r[0], r[1], null, o_val, null);
-              dpipe_input (dp, r[0], r[1], null, o_val, null);
+              -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text0 ', r[0], r[1], null, o_val);
+              dpipe_input (dp, r[0], r[1], null, o_val);
             }
+        }
+      else if ((__tag (o_val) = __tag of rdf_box) and is_text and rdf_box_data_tag(o_val) in (__tag of varchar, __tag of XML))
+        {
+          rdf_box_set_is_text (o_val, 1);
+          -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text rdf box', r[0], r[1], null, o_val);
+          dpipe_input (dp, r[0], r[1], null, o_val);
         }
       else
         {
           -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts ', r[0], r[1], null, o_val);
-          dpipe_input (dp, r[0], r[1], null, o_val, null);
+          dpipe_input (dp, r[0], r[1], null, o_val);
         }
       if (mod (ctr + 1, 40000) = 0 and l > 60000)
 	{
@@ -5460,6 +5469,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
     }
   dpipe_next (dp, 0);
   dpipe_next (dp, 1);
+  dpipe_reuse (dp);
   if (ro_id_dict is not null)
     DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (graph_iri, ro_id_dict);
 }
