@@ -1662,7 +1662,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   aq_max_threads = c_aq_max_threads;
   if (aq_max_threads > 100)
     aq_max_threads = 100;
-  if (aq_max_threads < 10)
+  if (aq_max_threads < 10 && aq_max_threads > 0)
     aq_max_threads = 10;
 #ifdef _SSL
   https_port = c_https_port;
