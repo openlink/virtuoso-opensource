@@ -61,10 +61,10 @@
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
-		      <td class="page_tab" align="center">
+		      <!--td class="page_tab" align="center">
 			  	
 			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
-		      </td>
+		      </td-->
 		      <td class="page_tab_selected" align="center">
 			Access Control
 		      </td>
@@ -84,54 +84,18 @@
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
-		      <td class="<?V self.astyle ('HTTP') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=HTTP" value="HTTP" render-only="1"/>
-		      </td>
-		      <td class="<?V self.astyle ('NEWS') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=NEWS" value="NEWS" render-only="1"/>
-		      </td>
-		      <td class="<?V self.astyle ('PROXY') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PROXY" value="PROXY" render-only="1"/>
-		      </td>
-                      <?vsp
-                        declare i, fnd integer;
-                        i := 0; fnd := 0;
-			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY') do
-                        {
-			  if (self.acl_name not in ('HTTP','NEWS','PROXY') and HA_LIST = self.acl_name)
-			    fnd := 1;
-			  ?>
-			  <td class="<?V self.astyle (HA_LIST) ?>" align="center">
-			    <v:url xhtml_style="page_tab" url="--sprintf ('sec_auth_serv.vspx?acl=%V', HA_LIST)"
-			      value="--HA_LIST" render-only="1"/>
+		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>
+		      <td class="<?V self.astyle ('Sponger') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
 			  </td>
-			  <?vsp
-                          i := i + 1;
-                        }
+          <?vsp } ?>          
 
-			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY'))
-			  {
-			  ?>
-			  <td class="<?V self.astyle (self.acl_name) ?>" align="center">
-			    <v:url xhtml_style="page_tab" url="--sprintf ('sec_auth_serv.vspx?acl=%V', self.acl_name)"
-			      value="--self.acl_name" render-only="1"/>
-			  </td>
-			  <?vsp
-			  }
-                      ?>
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?>
 		      <td class="page_tab_selected" align="center">
 			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
-                        <!--td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-			      <td width="100%" align="right">
-                              </td>
-                            </tr>
-                          </table>
-                        </td-->
+                        
 			<td class="page_tab_empty" align="right" width="100%">
                         </td>
                     </tr>

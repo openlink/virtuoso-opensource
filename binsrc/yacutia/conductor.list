@@ -9,7 +9,6 @@ conductor/account_remove_inc.vspx
 conductor/account_remove.vspx
 conductor/accounts_page.vspx
 conductor/accounts.vspx
-conductor/admin_dav_browser.sql
 conductor/admin_utils.js
 conductor/adm_login.vspx
 conductor/adm_navigation_bar.vspx
@@ -313,7 +312,9 @@ conductor/role_remove_inc.vspx
 conductor/role_remove.vspx
 conductor/roles_inc.vspx
 conductor/roles.vspx
+conductor/sec_acl_edit_sp.vspx
 conductor/sec_acl_edit.vspx
+conductor/sec_auth_serv_sp.vspx
 conductor/sec_auth_serv.vspx
 conductor/sec_pki_1.vspx
 conductor/sec_pki_2_conf.vspx
