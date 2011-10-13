@@ -73,6 +73,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
   caddr_t box;
   ptrlong token_type;
   void *nothing;
+  ptrlong lexlineno;
 }
 
 %token __TTL_PUNCT_BEGIN	/* Delimiting value for syntax highlighting */
@@ -365,7 +366,10 @@ verb
 	| _LSQBRA_RSQBRA
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[]') can not be used as a predicate");
-		  $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
+		  $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, NULL);
+		}
 	| BLANK_NODE_LABEL
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
@@ -373,15 +377,33 @@ verb
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
                   else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, $1);
 		}
         | _LSQBRA
 		{
-		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[...]' block) can not be used as a predicate"); }
-		blank_block_subj { $$ = $3; }
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[...]' block) can not be used as a predicate");
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    $<lexlineno>$ = ttlp_arg->ttlp_lexlineno;
+		}
+	    blank_block_subj
+		{
+		  $$ = $3;
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, $<lexlineno>2, NULL);
+		}
         | _LPAR
 		{
-		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Sequence blank node (written as list in parenthesis) can not be used as a predicate"); }
-		blank_block_seq { $$ = $3; }
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Sequence blank node (written as list in parenthesis) can not be used as a predicate");
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    $<lexlineno>$ = ttlp_arg->ttlp_lexlineno;
+		}
+	    blank_block_seq
+		{
+		  $$ = $3;
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, $<lexlineno>2, NULL);
+		}
 	;
 
 rev_verb
@@ -472,11 +494,48 @@ blank
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
                   else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, $1);
 		}
-	| _LSQBRA_RSQBRA	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
-        | _LSQBRA blank_block_subj	{ $$ = $2; }
-        | _LPAR	blank_block_seq		{ $$ = $2; }
-        | _LBRA	blank_block_formula	{ $$ = $2; }
+	| _LSQBRA_RSQBRA
+		{
+		  $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, NULL);
+		}
+	| _LSQBRA
+		{
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    $<lexlineno>$ = ttlp_arg->ttlp_lexlineno;
+		}
+	    blank_block_subj
+		{
+		  $$ = $3;
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, $<lexlineno>2, NULL);
+		}
+	| _LPAR
+		{
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    $<lexlineno>$ = ttlp_arg->ttlp_lexlineno;
+		}
+	    blank_block_seq
+		{
+		  $$ = $3;
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, $<lexlineno>2, NULL);
+		}
+	| _LBRA
+		{
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    $<lexlineno>$ = ttlp_arg->ttlp_lexlineno;
+		}
+	    blank_block_formula
+		{
+		  $$ = $3;
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, $<lexlineno>2, NULL);
+		}
 	;
 
 blank_block_subj

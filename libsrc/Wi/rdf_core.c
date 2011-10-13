@@ -985,6 +985,18 @@ ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t
   tf_triple_l (ttlp_arg[0].ttlp_tf, s, p, o_sqlval, o_dt, o_lang);
 }
 
+void
+ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, const char *label)
+{
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  if (NULL != ttlp_arg->ttlp_base_uri)
+    tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_bnode_base, ttlp_arg->ttlp_base_uri, NULL, NULL);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_bnode_row, box_num_nonull (lineno), NULL, NULL);
+  if (NULL != label)
+    tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_bnode_label, label, NULL, NULL);
+}
+
+
 #ifdef DEBUG
 #define TF_TRIPLE_PROGRESS_MESSAGE_MOD 25
 #else

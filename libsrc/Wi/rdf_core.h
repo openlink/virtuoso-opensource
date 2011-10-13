@@ -157,6 +157,7 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ERROR_RECOVERY		0x0080	/*!< Try to recover from lexical errors as much as it is possible. */
 #define TTLP_ALLOW_TRIG			0x0100	/*!< Allows TriG syntax, thus loading data in more than one graph. */
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
+#define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -174,7 +175,7 @@ typedef struct ttlp_s
   xml_read_abend_func_t ttlp_iter_abend;
   void *ttlp_iter_data;
   encoding_handler_t *ttlp_enc;	/*!< Encoding of the source */
-  long ttlp_flags;		/*!< Flags for dirty load */
+  long ttlp_flags;		/*!< TTLP_xxx Flags for dirty load, enabling TriG or NQuad, debugging */
   /* lexer */
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
@@ -241,6 +242,7 @@ extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_ch
 
 extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
 extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, const char *label);
 
 #define RDFXML_COMPLETE		0
 #define RDFXML_OMIT_TOP_RDF	1
