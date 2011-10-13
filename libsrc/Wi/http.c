@@ -1533,7 +1533,7 @@ ws_path_and_params (ws_connection_t * ws)
   else if (ws->ws_method == WM_UNKNOWN)
     ws->ws_method = WM_ERROR;
 #endif
-  if (strcmp (ws->ws_method_name, "PUT"))
+  if (strcmp (ws->ws_method_name, "PUT") || !IS_DAV_DOMAIN(ws, path1))
     ws_http_body_read (ws, &ws->ws_req_body);
   return rc;
 }
