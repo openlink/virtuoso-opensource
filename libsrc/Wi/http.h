@@ -382,12 +382,6 @@ typedef enum {
 	HTTPS_VERIFY_OPTIONAL_NO_CA = 3
 } https_verify_t;
 
-typedef struct https_ctx_info_s
-{
-  int32 hci_depth;
-  int32 hci_verify;
-  char *hci_name;
-} https_ctx_info_t;
 #endif
 extern char * http_cli_proxy_server;
 int http_cli_target_is_proxy_exception (char *);

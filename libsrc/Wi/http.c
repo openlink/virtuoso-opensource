@@ -8126,17 +8126,17 @@ https_cert_verify_callback (int ok, void *_ctx)
   X509_STORE_CTX *ctx;
   SSL *ssl;
   X509 *xs;
-  int errnum, verify;
+  int errnum, verify, depth;
   int errdepth;
   char *cp, cp_buf[1024];
   char *cp2, cp2_buf[1024];
   SSL_CTX *ssl_ctx;
-  https_ctx_info_t *app_ctx;
+  uptrlong ap;
 
   ctx = (X509_STORE_CTX *)_ctx;
   ssl  = (SSL *)X509_STORE_CTX_get_app_data(ctx);
   ssl_ctx = SSL_get_SSL_CTX (ssl);
-  app_ctx = (https_ctx_info_t *) SSL_CTX_get_app_data (ssl_ctx);
+  ap = (uptrlong) SSL_CTX_get_app_data (ssl_ctx);
 
   xs       = X509_STORE_CTX_get_current_cert(ctx);
   errnum   = X509_STORE_CTX_get_error(ctx);
@@ -8145,7 +8145,8 @@ https_cert_verify_callback (int ok, void *_ctx)
   cp  = X509_NAME_oneline(X509_get_subject_name(xs), cp_buf, sizeof (cp_buf));
   cp2 = X509_NAME_oneline(X509_get_issuer_name(xs),  cp2_buf, sizeof (cp2_buf));
 
-  verify = app_ctx->hci_verify;
+  verify = (int) ((0xff000000 & ap) >> 24);
+  depth =  (int) (0xffffff & ap);
 
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
@@ -8162,17 +8163,15 @@ https_cert_verify_callback (int ok, void *_ctx)
 
   if (!ok)
     {
-      log_error ("%s Certificate Verification: Error (%d): %s",
-	  app_ctx->hci_name,
+      log_error ("HTTPS Certificate Verification: Error (%d): %s",
 	  errnum, X509_verify_cert_error_string(errnum));
     }
 
-  if (errdepth > app_ctx->hci_depth)
+  if (errdepth > depth)
     {
-      log_error ("%s Certificate Verification: Certificate Chain too long "
+      log_error ("HTTPS Certificate Verification: Certificate Chain too long "
 	  "(chain has %d certificates, but maximum allowed are only %ld)",
-	  app_ctx->hci_name,
-	  errdepth, app_ctx->hci_depth);
+	  errdepth, depth);
       ok = 0;
     }
   return (ok);
@@ -8309,21 +8308,16 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (https_client_verify > 0)
     {
       int verify = SSL_VERIFY_NONE, session_id_context = srv_pid;
-      https_ctx_info_t * https_callback_info = (https_ctx_info_t *) dk_alloc (sizeof (https_ctx_info_t));
+      uptrlong ap;
 
       if (HTTPS_VERIFY_REQUIRED == https_client_verify)
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
       if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-
       SSL_CTX_set_verify (ssl_ctx, verify, (int (*)(int, X509_STORE_CTX *)) https_cert_verify_callback);
       SSL_CTX_set_verify_depth (ssl_ctx, https_cvdepth);
-
-      https_callback_info->hci_depth = https_cvdepth;
-      https_callback_info->hci_verify = https_client_verify;
-      https_callback_info->hci_name  = "HTTPS";
-
-      SSL_CTX_set_app_data (ssl_ctx, https_callback_info);
+      ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_cvdepth);
+      SSL_CTX_set_app_data (ssl_ctx, ap);
       SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char *)&session_id_context, sizeof session_id_context);
     }
 
@@ -10462,20 +10456,16 @@ http_init_part_two ()
       if (https_client_verify > 0)
 	{
 	  int verify = SSL_VERIFY_NONE, session_id_context = srv_pid;
-	  https_ctx_info_t * https_callback_info = (https_ctx_info_t *) dk_alloc (sizeof (https_ctx_info_t));
+	  uptrlong ap;
 
 	  if (HTTPS_VERIFY_REQUIRED == https_client_verify)
 	    verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
 	  if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
 	    verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-
 	  SSL_CTX_set_verify (ssl_ctx, verify , (int (*)(int, X509_STORE_CTX *)) https_cert_verify_callback);
 	  SSL_CTX_set_verify_depth (ssl_ctx, https_client_verify_depth);
-
-	  https_callback_info->hci_depth = https_client_verify_depth;
-	  https_callback_info->hci_verify = https_client_verify;
-	  https_callback_info->hci_name = "HTTPS";
-	  SSL_CTX_set_app_data (ssl_ctx, https_callback_info);
+	  ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_client_verify_depth);
+	  SSL_CTX_set_app_data (ssl_ctx, ap);
 	  SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char  *)&session_id_context, sizeof session_id_context);
 	}
 
