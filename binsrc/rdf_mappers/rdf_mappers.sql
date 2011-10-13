@@ -144,6 +144,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     '(https://docs.google.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT', null, 'Google (Documents)');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+     values ('http://.*jigsaw.com/.*',
+     'URL', 'DB.DBA.RDF_LOAD_JIGSAW', null, 'Jigsaw');
+
 --insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
 --	values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
@@ -207,7 +211,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_OHLOH', null, 'Ohloh');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://www.groupon.com/.*)',
+	values ('(https?://www.groupon.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_GROUPON', null, 'Groupon');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -341,7 +345,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('.+\\.xrd\x24', 'URL', 'RDF_LOAD_XRD_GENERIC', null, 'XRD');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)',
+	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)|(http://www.ebay.co.uk/.*)|(http://www.ebay.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -416,8 +420,13 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
                     'favorites_pg_limit', '5',
                     'user_timeline_pg_limit', '5'));
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('https?://plus.google.com/.*', 'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLUS', null, 'Google+');
+
 -- Disable old Twitter cartridge in favour of DB.DBA.RDF_LOAD_TWITTER_V2
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
+-- Disable old Google profile cartridge in favour of DB.DBA.RDF_LOAD_GOOGLE_PLUS
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
@@ -432,7 +441,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
     '(http://reviews.cnet.com/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
 
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)'
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)|(http://www.ebay.co.uk/.*)|(http://www.ebay.com/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_EBAY_ARTICLE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
@@ -450,6 +459,10 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 update DB.DBA.SYS_RDF_MAPPERS
 	set RM_PATTERN = '(http://.*delicious.com/.*)|(http://del.icio.us/.*)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
+
+update DB.DBA.SYS_RDF_MAPPERS 
+	set RM_PATTERN = '(https?://www.groupon.com/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_GROUPON';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('http://(www\\.)?overstock.com/.*\\.(html|htm)(\\?.*)?',
@@ -949,8 +962,21 @@ create procedure DB.DBA.RM_ADD_PRV (in proc varchar, in base varchar, in graph v
 
 create procedure RM_CLEAN_DEST (in dest varchar, in graph_iri varchar, in new_origin_uri varchar, inout opts any)
 {
+  declare deadl int;
   if (get_keyword ('disable-clean', opts, '') = 'Y')
     return;
+  deadl := 5;
+  declare exit handler for sqlstate '40001' 
+    {
+      rollback work;
+      deadl := deadl - 1;
+      if (deadl >= 0)
+	{
+	  goto again;
+	}
+      resignal;
+    };
+  again:;
   DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1, 0);
 }
 ;
@@ -1732,6 +1758,42 @@ create procedure DB.DBA.FORMAT_AMOUNT (in val varchar) returns varchar
 }
 ;
 
+-- Convert string money values like $1.6M, $230k, $2B into decimals
+create procedure DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL (in val varchar)
+{
+  declare vec any;
+  declare unit, base_sval, converted_sval varchar;
+  declare base_dval decimal;
+  declare multiplier integer;
+
+  if (val is null)
+    return null;
+
+  multiplier := 1;
+  converted_sval := null;
+  
+  val := upper (val);
+  vec := regexp_parse ('([0-9\.]+)([BMK]?$)', val, 0);
+  if (vec is not null and length (vec) = 6)
+  {
+    base_sval := subseq (val, vec[2], vec[3]);
+    if (vec[4] < vec[5])
+    {
+      unit := subseq (val, vec[4]);
+      multiplier := case (unit) when 'B' then 1000000000 when 'M' then 1000000 when 'K' then 1000 else 1 end;
+      base_dval := atof (base_sval);
+    }
+     
+    if (multiplier > 1)
+      converted_sval := sprintf('%.lf', base_dval * multiplier);
+    else
+      converted_sval := base_sval; 
+  }
+
+  return converted_sval;
+}
+;
+
 grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
@@ -1765,6 +1827,7 @@ grant execute on DB.DBA.RDF_SPONGE_URI_HASH to public;
 grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 grant execute on DB.DBA.RDF_CONVERT_TO_XTREE to public;
 grant execute on DB.DBA.OPENGRAPH_OBJ_CONNECTIONS to public;
+grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1799,6 +1862,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docIRI', 'DB.DBA.RM_SPO
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:http_string_date', 'DB.DBA.XSLT_HTTP_STRING_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:uri_hash', 'DB.DBA.RDF_SPONGE_URI_HASH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:convert_to_xtree', 'DB.DBA.RDF_CONVERT_TO_XTREE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:crunchbase_moneystring2decimal', 'DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
@@ -1977,7 +2041,6 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
-string_to_file('res.xml', ses, 0);  
   ses := xtree_doc (ses);
   return ses;
 }
@@ -3945,7 +4008,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), now ()) as varchar);
+	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), stringdate(datestring_GMT(now ()))) as varchar);
 	hash1 := slideshare_hex_sha1_digest(concat(SharedSecret, ts));
 	if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%&%' or
 		new_origin_uri like 'http://www.slideshare.net/search/slideshow?%&q=%&%')
@@ -3959,7 +4022,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 			if (query is null)
 				return 0;
 		}
-		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%')
 	{
@@ -3967,7 +4030,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/tag/%')
 	{
@@ -3975,7 +4038,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_tag?api_key=%U&ts=%U&hash=%U&tag=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow_by_tag?api_key=%U&ts=%U&hash=%U&tag=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/group/%')
 	{
@@ -3983,7 +4046,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_group?api_key=%U&ts=%U&hash=%U&group_name=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow_by_group?api_key=%U&ts=%U&hash=%U&group_name=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/%/%')
 	{
@@ -3998,7 +4061,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 			itemname := new_origin_uri;
 		if (username is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_info?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, itemname);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, itemname);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/%')
 	{
@@ -4006,7 +4069,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_user?api_key=%U&ts=%U&hash=%U&username_for=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow_by_user?api_key=%U&ts=%U&hash=%U&username_for=%U', ApiKey, ts, hash1, query);
 	}
 	else
 		return 0;
@@ -5360,20 +5423,27 @@ create procedure DB.DBA.RDF_LOAD_GROUPON (in graph_iri varchar, in new_origin_ur
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
+	
 	if (not isstring (_key))
 		return 0;
-	if (new_origin_uri like 'http://www.groupon.com/deals/%')
+		
+	if (new_origin_uri like 'http://www.groupon.com/deals/%' or new_origin_uri like 'https://www.groupon.com/deals/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.groupon.com/deals/%s', 0);
+		if(tmp is null OR length(tmp)=0)
+		  tmp := sprintf_inverse (new_origin_uri, 'https://www.groupon.com/deals/%s', 0);
 		entity := trim(tmp[0], '/');
 		if (entity is null)
 			return 0;
+			
 		pos := strchr(entity, '/');
 		if (pos is not null and pos <> 0)
 			entity := left(entity, pos);
+			
 		pos := strchr(entity, '?');
 		if (pos is not null and pos <> 0)
 			entity := left(entity, pos);
+			
 		url := sprintf('http://api.groupon.com/v2/deals/%s.xml?client_id=%s', entity, _key);
 	}
 	else
@@ -5937,6 +6007,115 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, api_urls, tmp any;
+  declare url, people_api_url, activity_api_url any;
+  declare uid, post_id, api_mode varchar;
+  declare first_pass integer;
+  
+  declare exit handler for sqlstate '*'
+  {
+    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    return 0;
+  };
+
+  if (length (_key) = 0)
+  {
+    log_message (sprintf ('%s: An API key has not been configured for Google+', current_proc_name()));
+    return 0;
+  }
+
+  --
+  -- Sponge G+ post/Activity directly
+  --
+  post_id := regexp_replace (new_origin_uri, 'https?://plus.google.com(/u/0)?/([0-9]{8,})/posts/([a-zA-Z0-9]+)$', '\\3'); 
+  if (post_id <> new_origin_uri)
+  {
+    declare item_kind, item_url, activity_id, params varchar;
+
+    -- Get the Activity ID from the post ID:
+    -- It isn't possible to get the Activity ID directly from the post URL or post ID.
+    -- Using the search API https://developers.google.com/+/api/latest/activities/search to search
+    -- on the post ID is unreliable - often nothing is returned.
+    -- The approach used here is to retrieve and search the user's Activity collection for the
+    -- required post. Without paging support, a maximum of 100 Activities is returned. An old 
+    -- post may not be contained in the list of the 100 most recent.
+
+    uid := regexp_replace (new_origin_uri, '^https?://plus.google.com(/u/0)?/([0-9]{8,})(/.*)?', '\\2');
+    if (uid = new_origin_uri)
+      return 0;
+    url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+    {
+      log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+      return 0;
+    }
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    activity_id := cast (xpath_eval (sprintf('/results/items/id[../url = "%s"]', new_origin_uri), xd) as varchar);
+    if (activity_id is null)
+    {
+      log_message (sprintf ('%s: Couldn''t find post ID %s amongst the user''s 100 most recent', current_proc_name(), post_id));
+      return 0;
+    }
+    url := sprintf ('https://www.googleapis.com/plus/v1/activities/%s?key=%s', activity_id, _key);
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+    {
+      log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+      return 0;
+    }
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
+      vector ('baseUri', new_origin_uri, 'mode', 'activity'));
+    xd := serialize_to_UTF8_xml (xt);
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+    return 1;
+  }
+
+  --
+  -- Sponge G+ user profile and child posts/Activities
+  --
+  uid := regexp_replace (new_origin_uri, '^https?://plus.google.com(/u/0)?/([0-9]{8,})(/.*)?', '\\2');
+  if (uid = new_origin_uri)
+    return 0;
+  people_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s?key=%s', uid, _key);
+  activity_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
+  api_urls := vector (vector (people_api_url, 'people'), vector (activity_api_url, 'activity'));
+
+  first_pass := 1;
+  foreach (any pair in api_urls) do
+  {
+    url := pair[0];
+    api_mode := pair[1];
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+      return 0;
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
+      vector ('baseUri', new_origin_uri, 'mode', api_mode));
+    xd := serialize_to_UTF8_xml (xt);
+    if (first_pass)
+    {
+      RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+      first_pass := 0;
+    }
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+  }
+  return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, hdr, tree any;
@@ -5956,7 +6135,7 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
 			item_id := left(item_id, pos);
-	    url := sprintf('http://beta-api.etsy.com/v1/users/%s?api_key=%s&detail_level=high', item_id, _key);
+	    url := sprintf('http://openapi.etsy.com/v2/users/%s?api_key=%s&detail_level=high', item_id, _key);
 	    action := 'user';
 	}
     else if (new_origin_uri like 'http://www.etsy.com/view_listing.php?listing_id=%')
@@ -5968,7 +6147,7 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
 			item_id := left(item_id, pos);
-	    url := sprintf('http://beta-api.etsy.com/v1/listings/%s?api_key=%s&detail_level=high', item_id, _key);
+	    url := sprintf('http://openapi.etsy.com/v2/listings/%s?api_key=%s&detail_level=high', item_id, _key);
 		action := 'prod';
 	}
     else if (new_origin_uri like 'http://www.etsy.com/listing/%')
@@ -5980,7 +6159,7 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
 			item_id := left(item_id, pos);
-	    url := sprintf('http://beta-api.etsy.com/v1/listings/%s?api_key=%s&detail_level=high', item_id, _key);
+	    url := sprintf('http://openapi.etsy.com/v2/listings/%s?api_key=%s&detail_level=high', item_id, _key);
 		action := 'prod';
 	}
 	else
@@ -6577,7 +6756,16 @@ create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin
 	--	return 0;
 	if ( length (oauth_token) = 0)
 		return 0;
-	if (new_origin_uri like 'http%://%foursquare.com/venue/%')
+	if (new_origin_uri like 'http%://%foursquare.com/v/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/v/%s/%s', 0);
+		entity_id := tmp[3];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('https://api.foursquare.com/v2/venues/%s?oauth_token=%s', entity_id, oauth_token);
+	}
+	else if (new_origin_uri like 'http%://%foursquare.com/venue/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/venue/%s', 0);
 		entity_id := tmp[2];
@@ -6818,7 +7006,7 @@ create procedure DB.DBA.RDF_LOAD_GOWALLA (in graph_iri varchar, in new_origin_ur
 		return 0;
 	declare bas, auth_header varchar;
 	bas := encode_base64 (concat(user_, ':', password_));
-    auth_header := 'Accept: application/json, Authorization: Basic '|| bas || ', X-Gowalla-API-Key: ' || _key;
+	auth_header := 'Accept: application/json\r\nContent-Type: application/json\r\nAuthorization: Basic '|| bas || '\r\nX-Gowalla-API-Key: ' || _key || '\r\n';
 	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
 	tree := json_parse (tmp);
 	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
@@ -7997,12 +8185,16 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
   declare product_id varchar;
   declare exit handler for sqlstate '*'
     {
+      -- dbg_printf('Error: [%s]', __SQL_MESSAGE);
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
       return 0;
     };
 
   use_sandbox := 0;
 
+  tmp:='';
+  tmp:=regexp_replace(new_origin_uri, '^http://www.ebay.[^/]+/itm/[^/]*/([0-9]+).*', '\\1');
+  if(tmp='') {
   if (new_origin_uri like 'http://cgi.sandbox.ebay.com/%&item=%&%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://cgi.sandbox.ebay.com/%s&item=%s&%s', 0);
@@ -8023,12 +8215,16 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
   else
     return 0;
 
-  api_key := ser_key;
-
-  if (tmp is null or not isstring (api_key))  -- length (tmp) <> 3
+    if (tmp is null or not isstring (api_key)) { -- length (tmp) <> 3
     return 0;
-
+    }
   item_id := tmp[2];
+  } else {
+    item_id:=tmp;
+  }
+
+  api_key := ser_key;
+  
   url := sprintf ('http://open.api.ebay.com/shopping?callname=GetSingleItem&responseencoding=XML&appid=%s&siteid=0&version=515&ItemID=%s&IncludeSelector=Description,Details,ItemSpecifics', api_key, item_id);
 
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
@@ -10612,6 +10808,153 @@ done:;
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_JIGSAW (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, 
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare api_key, hdr, ret_body, tmp, jgsw_params, xd, xt any;
+  declare vec any;
+  declare jgsw_id, jgsw_name, contact_name, first_name, last_name, company_name, url varchar;
+  declare total_hits, retries, pos integer;
+
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+
+  api_key := _key;
+  if (not isstring (api_key))
+    return 0;
+
+  -- Sample URIs
+  -- 
+  -- Business:
+  --   http://www.jigsaw.com/id173663/openlink_software_inc_company.xhtml
+  -- 
+  -- Contact: (Both identify the same person)
+  --   http://www.jigsaw.com/BC.xhtml?contactId=13697357
+  --   http://www.jigsaw.com/scid13697357/vinod_khosla.xhtml
+
+  jgsw_id := null;
+  jgsw_name := null;
+
+
+  if (new_origin_uri like 'http://www.jigsaw.com/%/%.xhtml')
+  {
+    tmp := sprintf_inverse (new_origin_uri, 'http://www.jigsaw.com/%sid%s/%s.xhtml', 0);
+    jgsw_id := tmp[1];
+    jgsw_name := tmp[2];
+  }
+  else if (new_origin_uri like 'http://www.jigsaw.com/BC.xhtml?contactId=%')
+  {
+    -- Jigsaw API doesn't currently support searching by ID, only search by (company or contact) name
+    -- tmp := sprintf_inverse (new_origin_uri, 'http://www.jigsaw.com/BC.xhtml?contactId=%s', 0);
+    -- jgsw_id := tmp[0];
+    return 0;
+  }
+  else
+    return 0;
+
+
+  if (jgsw_name is null)
+    return 0;
+
+  company_name := jgsw_name;
+  contact_name := jgsw_name;
+  retries := 0;
+
+searchForContact: 
+
+  pos := strchr (contact_name, '_');
+  if (pos is null or (pos = length (contact_name) - 1))
+    goto searchForCompany;
+
+  first_name := subseq (contact_name, 0, pos);
+  last_name := subseq (contact_name, pos + 1);
+
+  -- The Jigsaw search API doesn't appear capable of handling multi-part surnames
+  -- e.g. http://www.jigsaw.com/scid13249678/william_van_dyke.xhtml"
+  -- even when 'van dyke' is URL-encoded.
+  -- As a workaround, search on 'van' then filter the results.
+  pos := strchr (last_name, '_');
+  if (pos is not null)
+  {
+    last_name := subseq (last_name, 0, pos);
+  }
+
+  jgsw_params := sprintf ('firstname=%U&lastname=%U', first_name, last_name);
+  url := sprintf ('https://www.jigsaw.com/rest/searchContact.xml?token=%s&%s', api_key, jgsw_params);
+  ret_body := http_client_ext (url, headers=>hdr, timeout=>30, proxy=>get_keyword_ucase ('get:proxy', opts));
+
+
+  xd := xtree_doc (ret_body);
+  total_hits := atoi (cast (xpath_eval ('//totalHits', xd) as varchar));
+
+  if (total_hits > 1)
+  {
+    -- The Jigsaw API doesn't currently support searching by ID, only search by 
+    -- (company or contact) name. Until Jigsaw supports search by ID, the possibility 
+    -- remains of a query returning several contacts with the same name, either 
+    -- several people with the same name, or the same person holding positions
+    -- in different companies. e.g. Vinod Khosla
+
+    -- In the absence of search-by-ID, in the stylesheet, we filter the result 
+    -- based on the contactId extracted from the URL
+    ;
+  }
+
+  if (total_hits > 0) -- The Jigsaw URL identifies a contact, not a company
+    goto load_rdf;
+
+searchForCompany: 
+  company_name := replace (company_name, '_', ',');
+
+  url := sprintf ('https://www.jigsaw.com/rest/searchCompany.xml?token=%s&name=%s', api_key, company_name);
+  ret_body := http_client_ext (url, headers=>hdr, timeout=>30, proxy=>get_keyword_ucase ('get:proxy', opts));
+
+
+  xd := xtree_doc (ret_body);
+  total_hits := atoi (cast (xpath_eval ('//totalHits', xd) as varchar));
+
+  if (total_hits > 1)
+  {
+    -- Shouldn't happen, but see above.
+    -- Filter the result in the stylesheet based on the companyId extracted from the URL
+    ;
+  }
+
+  if (total_hits = 0)
+  {
+    if (retries = 0)
+    {
+      -- The company name embedded in the Jigsaw URL, when broken down, isn't always accepted by the Jigsaw API
+      -- e.g. With http://www.jigsaw.com/id173663/openlink_software_inc_company.xhtml
+      --   "/rest/searchCompany.xml?...&name=openlink,software" - Works
+      --   "/rest/searchCompany.xml?...&name=openlink,software,inc" - Works
+      --   "/rest/searchCompany.xml?...&name=openlink,software,inc,company" - Fails
+      -- Not all Jigsaw company URLs include a _company suffix.
+      -- Retry without the trailing "_company"
+      retries := 1;
+      company_name := jgsw_name;
+      vec := regexp_parse('.*(_company)$', company_name, 0);
+      if (vec is not null)
+        company_name := subseq (company_name, 0, vec[2]);
+      goto searchForCompany;
+    }
+    else
+      return 0;
+  }
+
+load_rdf:
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/jigsaw2rdf.xsl', xd, 
+          vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'jgsw_id', jgsw_id));
+  xd := serialize_to_UTF8_xml (xt);
+  RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
 -- /* import all namespaces to SYS_XML_PERSISTENT_NS_DECL */
 create procedure DB.DBA.RM_LOAD_PREFIXES ()
 {
@@ -10967,7 +11310,7 @@ create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refres
   };
 again:
   if (do_refresh is null)
-    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft',  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type));
+    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft',  'refresh_free_text' ,  0, 'meta-cartridges-mode', sp_type));
   else
     DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft',  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type, 'get:refresh', do_refresh));
 }

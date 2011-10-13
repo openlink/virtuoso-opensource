@@ -1218,7 +1218,7 @@ create procedure rdfdesc_links_formats ()
   	   vector ('text/csv','CSV'),
   	   vector ('application/microdata+json','Microdata/JSON'),
   	   vector ('text/html','HTML+Microdata'),
-  	   vector ('application/x-json+ld','JSON-LD')
+  	   vector ('application/ld+json','JSON-LD')
   	);
 }
 ;

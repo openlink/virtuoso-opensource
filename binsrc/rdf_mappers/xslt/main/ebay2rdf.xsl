@@ -169,6 +169,8 @@
                          	</opl:providedBy>
 
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+			    <rdf:type rdf:resource="&gr;ProductOrService" />
+			    
 			    <rdf:type rdf:resource="&oplebay;Product" />
 
                 <foaf:page rdf:resource="{$baseUri}"/>
@@ -179,6 +181,12 @@
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']/ebay:Value"/>
 					<xsl:variable name="model"
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Model']/ebay:Value"/>
+						
+		<xsl:if test="string-length($brand) &gt; 0">
+		  <gr:hasBrand rdf:resource="{vi:proxyIRI ($docproxyIRI, '', 'Brand')}" />
+		</xsl:if>
+						
+						
                 <xsl:if test="string-length(concat($brand, $make, $model)) &gt; 0">
 	
                     <xsl:if test="string-length($make) &gt; 0">
@@ -243,9 +251,19 @@
 			   -->
 			   <xsl:apply-templates select="ebay:Item" />
 			</rdf:Description>
+			
+			
+			<rdf:Description rdf:about="{vi:proxyIRI ($docproxyIRI, '', 'Brand')}">
+				<xsl:apply-templates select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value" mode="grbrand" />
+			</rdf:Description>
 		</rdf:RDF>
     </xsl:template>
 
+    <xsl:template match="ebay:Value" mode="grbrand">
+      <rdf:type rdf:resource="&gr;Brand" />
+      <gr:name><xsl:value-of select="." /></gr:name>
+    </xsl:template>
+    
     <xsl:template match="ebay:Item">
         <xsl:apply-templates select="*"/>
     </xsl:template>

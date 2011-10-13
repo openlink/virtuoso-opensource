@@ -269,9 +269,9 @@
    	     select ?vo { graph `iri(?:_G)` { ?s ?p hh:content-location ; h:fieldValue ?v . ?v h:elementName ?vo } } LIMIT 1);
    if (dsn is null)
      {
-       if (strchr (_G, '#') is null)
-	 dsn := _G || '#';
-       else
+       --if (strchr (_G, '#') is null)
+       --  dsn := _G || '#';
+       --else
 	 dsn := _G;
      }
    else
@@ -493,7 +493,7 @@
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> ) | Microdata (
 	<a href="<?=rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/x-json+ld')?>">JSON-LD</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a> 
 
       </div> <!-- #ft_t -->
       <?vsp } ?>
