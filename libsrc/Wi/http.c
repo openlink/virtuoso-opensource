@@ -7137,6 +7137,8 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	  dk_session_t *ses = NULL;
 	  DO_BOX (caddr_t, line, inx, lines)
 	    {
+	      if (!DV_STRINGP (line))
+		continue;
 	      p = strchr (line, ':');
 	      len = p - line;
 	      if (p && !strncasecmp (line, name, len) && !name[len])
