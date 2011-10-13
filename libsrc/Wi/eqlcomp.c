@@ -1711,6 +1711,7 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
     return;
   om = (out_map_t *) dk_alloc_box (sizeof (out_map_t) * n_out, DV_BIN);
   memset (om, 0, n_out * sizeof (out_map_t));
+  ks->ks_out_map = om;
   DO_SET (dbe_column_t *, col, &ks->ks_out_cols)
     {
       if (ks->ks_key->key_bit_cl && col->col_id == ks->ks_key->key_bit_cl->cl_col_id)
@@ -1727,7 +1728,6 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
 	}
     }
   END_DO_SET();
-  ks->ks_out_map = om;
 }
 
 
