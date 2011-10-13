@@ -151,7 +151,7 @@
 
 			<xsl:choose>
 				<xsl:when test="Embed">
-					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', Owner))" />
+					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', Username))" />
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', UserLogin))" />
@@ -159,7 +159,7 @@
 			</xsl:choose>
 			<xsl:choose>
 				<xsl:when test="Embed">
-					<xsl:variable name="thumbnail" select="Thumbnail" />
+					<xsl:variable name="thumbnail" select="ThumbnailURL" />
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:variable name="thumbnail" select="ThumbnailURL" />
@@ -198,6 +198,9 @@
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="Created" />
 			</dcterms:created>
+			<dcterms:modified rdf:datatype="&xsd;dateTime">
+				<xsl:value-of select="Updated" />
+			</dcterms:modified>
 			<bibo:pageStart>1</bibo:pageStart>
 			<bibo:pageEnd>
 				<xsl:choose>
@@ -205,7 +208,7 @@
 						<xsl:value-of select="NumSlides" />
 					</xsl:when>
 					<xsl:otherwise>
-						<xsl:value-of select="TotalSlides" />
+						<xsl:value-of select="1" />
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:pageEnd>

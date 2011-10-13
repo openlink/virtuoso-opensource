@@ -420,8 +420,13 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
                     'favorites_pg_limit', '5',
                     'user_timeline_pg_limit', '5'));
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('https?://plus.google.com/.*', 'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLUS', null, 'Google+');
+
 -- Disable old Twitter cartridge in favour of DB.DBA.RDF_LOAD_TWITTER_V2
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
+-- Disable old Google profile cartridge in favour of DB.DBA.RDF_LOAD_GOOGLE_PLUS
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
@@ -957,8 +962,21 @@ create procedure DB.DBA.RM_ADD_PRV (in proc varchar, in base varchar, in graph v
 
 create procedure RM_CLEAN_DEST (in dest varchar, in graph_iri varchar, in new_origin_uri varchar, inout opts any)
 {
+  declare deadl int;
   if (get_keyword ('disable-clean', opts, '') = 'Y')
     return;
+  deadl := 5;
+  declare exit handler for sqlstate '40001' 
+    {
+      rollback work;
+      deadl := deadl - 1;
+      if (deadl >= 0)
+	{
+	  goto again;
+	}
+      resignal;
+    };
+  again:;
   DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1, 0);
 }
 ;
@@ -2023,7 +2041,6 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
-  --string_to_file('res.xml', ses, 0);  
   ses := xtree_doc (ses);
   return ses;
 }
@@ -3991,7 +4008,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), now ()) as varchar);
+	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), stringdate(datestring_GMT(now ()))) as varchar);
 	hash1 := slideshare_hex_sha1_digest(concat(SharedSecret, ts));
 	if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%&%' or
 		new_origin_uri like 'http://www.slideshare.net/search/slideshow?%&q=%&%')
@@ -4005,7 +4022,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 			if (query is null)
 				return 0;
 		}
-		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%')
 	{
@@ -4013,7 +4030,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/tag/%')
 	{
@@ -4021,7 +4038,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_tag?api_key=%U&ts=%U&hash=%U&tag=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow_by_tag?api_key=%U&ts=%U&hash=%U&tag=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/group/%')
 	{
@@ -4029,7 +4046,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_group?api_key=%U&ts=%U&hash=%U&group_name=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow_by_group?api_key=%U&ts=%U&hash=%U&group_name=%U', ApiKey, ts, hash1, query);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/%/%')
 	{
@@ -4044,7 +4061,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 			itemname := new_origin_uri;
 		if (username is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_info?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, itemname);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, itemname);
 	}
 	else if (new_origin_uri like 'http://www.slideshare.net/%')
 	{
@@ -4052,7 +4069,7 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 		query := tmp[0];
 		if (query is null)
 			return 0;
-		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_user?api_key=%U&ts=%U&hash=%U&username_for=%U', ApiKey, ts, hash1, query);
+		url := sprintf ('http://www.slideshare.net/api/2/get_slideshow_by_user?api_key=%U&ts=%U&hash=%U&username_for=%U', ApiKey, ts, hash1, query);
 	}
 	else
 		return 0;
@@ -5990,6 +6007,115 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, api_urls, tmp any;
+  declare url, people_api_url, activity_api_url any;
+  declare uid, post_id, api_mode varchar;
+  declare first_pass integer;
+  
+  declare exit handler for sqlstate '*'
+  {
+    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    return 0;
+  };
+
+  if (length (_key) = 0)
+  {
+    log_message (sprintf ('%s: An API key has not been configured for Google+', current_proc_name()));
+    return 0;
+  }
+
+  --
+  -- Sponge G+ post/Activity directly
+  --
+  post_id := regexp_replace (new_origin_uri, 'https?://plus.google.com(/u/0)?/([0-9]{8,})/posts/([a-zA-Z0-9]+)$', '\\3'); 
+  if (post_id <> new_origin_uri)
+  {
+    declare item_kind, item_url, activity_id, params varchar;
+
+    -- Get the Activity ID from the post ID:
+    -- It isn't possible to get the Activity ID directly from the post URL or post ID.
+    -- Using the search API https://developers.google.com/+/api/latest/activities/search to search
+    -- on the post ID is unreliable - often nothing is returned.
+    -- The approach used here is to retrieve and search the user's Activity collection for the
+    -- required post. Without paging support, a maximum of 100 Activities is returned. An old 
+    -- post may not be contained in the list of the 100 most recent.
+
+    uid := regexp_replace (new_origin_uri, '^https?://plus.google.com(/u/0)?/([0-9]{8,})(/.*)?', '\\2');
+    if (uid = new_origin_uri)
+      return 0;
+    url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+    {
+      log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+      return 0;
+    }
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    activity_id := cast (xpath_eval (sprintf('/results/items/id[../url = "%s"]', new_origin_uri), xd) as varchar);
+    if (activity_id is null)
+    {
+      log_message (sprintf ('%s: Couldn''t find post ID %s amongst the user''s 100 most recent', current_proc_name(), post_id));
+      return 0;
+    }
+    url := sprintf ('https://www.googleapis.com/plus/v1/activities/%s?key=%s', activity_id, _key);
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+    {
+      log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+      return 0;
+    }
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
+      vector ('baseUri', new_origin_uri, 'mode', 'activity'));
+    xd := serialize_to_UTF8_xml (xt);
+    RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+    return 1;
+  }
+
+  --
+  -- Sponge G+ user profile and child posts/Activities
+  --
+  uid := regexp_replace (new_origin_uri, '^https?://plus.google.com(/u/0)?/([0-9]{8,})(/.*)?', '\\2');
+  if (uid = new_origin_uri)
+    return 0;
+  people_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s?key=%s', uid, _key);
+  activity_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
+  api_urls := vector (vector (people_api_url, 'people'), vector (activity_api_url, 'activity'));
+
+  first_pass := 1;
+  foreach (any pair in api_urls) do
+  {
+    url := pair[0];
+    api_mode := pair[1];
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+      return 0;
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
+      vector ('baseUri', new_origin_uri, 'mode', api_mode));
+    xd := serialize_to_UTF8_xml (xt);
+    if (first_pass)
+    {
+      RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
+      first_pass := 0;
+    }
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+  }
+  return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, hdr, tree any;
@@ -6009,7 +6135,7 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
 			item_id := left(item_id, pos);
-	    url := sprintf('http://beta-api.etsy.com/v1/users/%s?api_key=%s&detail_level=high', item_id, _key);
+	    url := sprintf('http://openapi.etsy.com/v2/users/%s?api_key=%s&detail_level=high', item_id, _key);
 	    action := 'user';
 	}
     else if (new_origin_uri like 'http://www.etsy.com/view_listing.php?listing_id=%')
@@ -6021,7 +6147,7 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
 			item_id := left(item_id, pos);
-	    url := sprintf('http://beta-api.etsy.com/v1/listings/%s?api_key=%s&detail_level=high', item_id, _key);
+	    url := sprintf('http://openapi.etsy.com/v2/listings/%s?api_key=%s&detail_level=high', item_id, _key);
 		action := 'prod';
 	}
     else if (new_origin_uri like 'http://www.etsy.com/listing/%')
@@ -6033,7 +6159,7 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 		pos := strchr(item_id, '/');
 		if (pos is not null and pos <> 0)
 			item_id := left(item_id, pos);
-	    url := sprintf('http://beta-api.etsy.com/v1/listings/%s?api_key=%s&detail_level=high', item_id, _key);
+	    url := sprintf('http://openapi.etsy.com/v2/listings/%s?api_key=%s&detail_level=high', item_id, _key);
 		action := 'prod';
 	}
 	else
@@ -6630,7 +6756,16 @@ create procedure DB.DBA.RDF_LOAD_FOURSQUARE (in graph_iri varchar, in new_origin
 	--	return 0;
 	if ( length (oauth_token) = 0)
 		return 0;
-	if (new_origin_uri like 'http%://%foursquare.com/venue/%')
+	if (new_origin_uri like 'http%://%foursquare.com/v/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/v/%s/%s', 0);
+		entity_id := tmp[3];
+		pos := strchr(entity_id, '/');
+		if (pos is not null)
+			entity_id := left(entity_id, pos);
+		url := sprintf('https://api.foursquare.com/v2/venues/%s?oauth_token=%s', entity_id, oauth_token);
+	}
+	else if (new_origin_uri like 'http%://%foursquare.com/venue/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sfoursquare.com/venue/%s', 0);
 		entity_id := tmp[2];
@@ -6871,7 +7006,7 @@ create procedure DB.DBA.RDF_LOAD_GOWALLA (in graph_iri varchar, in new_origin_ur
 		return 0;
 	declare bas, auth_header varchar;
 	bas := encode_base64 (concat(user_, ':', password_));
-    auth_header := 'Accept: application/json, Authorization: Basic '|| bas || ', X-Gowalla-API-Key: ' || _key;
+	auth_header := 'Accept: application/json\r\nContent-Type: application/json\r\nAuthorization: Basic '|| bas || '\r\nX-Gowalla-API-Key: ' || _key || '\r\n';
 	tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
 	tree := json_parse (tmp);
 	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);

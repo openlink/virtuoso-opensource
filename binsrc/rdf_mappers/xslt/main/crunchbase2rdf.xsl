@@ -102,7 +102,9 @@
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
-		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+				<dc:title>
+					<xsl:value-of select="$baseUri"/>
+				</dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 		<xsl:variable name="res_num" select="count(/results)"/>
 		<xsl:for-each select="/results">
@@ -176,7 +178,9 @@
 				<xsl:value-of select="name"/>
 			    </xsl:when>
 			    <xsl:otherwise>
-				<xsl:value-of select="first_name"/> <xsl:text>_</xsl:text> <xsl:value-of select="last_name"/>
+								<xsl:value-of select="first_name"/>
+								<xsl:text>_</xsl:text>
+								<xsl:value-of select="last_name"/>
 			    </xsl:otherwise>
 			</xsl:choose>
 		    </xsl:variable>
@@ -233,7 +237,9 @@
 	  <xsl:for-each select="$res/results/result">
 	      <sioc:topic>
 		  <skos:Concept rdf:about="{vi:dbpIRI ($baseUri, .)}" >
-		      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
+					<skos:prefLabel>
+						<xsl:value-of select="."/>
+					</skos:prefLabel>
 		  </skos:Concept>
 	      </sioc:topic>
 	  </xsl:for-each>
@@ -253,7 +259,11 @@
 	    <xsl:value-of select="."/>
 	</foaf:firstName>
 	<xsl:if test="not ../name">
-	    <foaf:name><xsl:value-of select="."/><xsl:text> </xsl:text><xsl:value-of select="../last_name"/></foaf:name>
+			<foaf:name>
+				<xsl:value-of select="."/>
+				<xsl:text/>
+				<xsl:value-of select="../last_name"/>
+			</foaf:name>
 	</xsl:if>
     </xsl:template>
 
@@ -360,14 +370,20 @@
 			    <xsl:if test="name() like 'funding_round'">
 				<xsl:variable name="cur_suffix" select="concat(name(), '_', company/permalink, '_', funded_year, '_', funded_month, '_', funded_day)"/>
 		            </xsl:if>
+							<xsl:if test="name() like 'investments'">
+								<xsl:variable name="cur_suffix" select="concat(name(), '_', company/permalink, '_', financial_org/permalink)"/>
+							</xsl:if>
 			    <xsl:value-of select="vi:proxyIRI($baseUri, '', concat ($cur_suffix, '-', position()))"/>
 			</xsl:attribute>
-
 		<xsl:if test="name() like 'funding_round'">
-		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'funding_rounds'">
-		    <rdfs:label><xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="concat(round_code, ': ', raised_amount, ' ', funded_month, '/', funded_year, ' source: ', source_description)"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'offices'">
 			<xsl:variable name="offices_label" select="address1"/>
@@ -386,34 +402,61 @@
 			<xsl:if test="string-length(description) &gt; 0">
 				<xsl:variable name="offices_label" select="concat($offices_label, ' - ', description)"/>
 			</xsl:if>
-		    <rdfs:label><xsl:value-of select="vi:trim($offices_label, ', ')"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="vi:trim($offices_label, ', ')"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'video_embeds'">
-		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="description"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'acquisitions'">
-		    <rdfs:label><xsl:value-of select="source_description"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="source_description"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'external_links'">
-		    <rdfs:label><xsl:value-of select="title"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="title"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'milestones'">
-		    <rdfs:label><xsl:value-of select="description"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="description"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'products'">
-		    <rdfs:label><xsl:value-of select="name"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="name"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'providerships'">
-		    <rdfs:label><xsl:value-of select="provider"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="provider"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'relationships'">
-		    <rdfs:label><xsl:value-of select="title"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="title"/>
+							</rdfs:label>
 		</xsl:if>
 		<xsl:if test="name() like 'investments'">
-		    <rdfs:label><xsl:value-of select="funding_round/company/name"/></rdfs:label>
+							<xsl:if test="string-length(company/name) &gt; 0">
+								<rdfs:label>
+									<xsl:value-of select="company/name"/>
+								</rdfs:label>
+							</xsl:if>
+							<xsl:if test="string-length(financial_org/name) &gt; 0">
+								<rdfs:label>
+									<xsl:value-of select="financial_org/name"/>
+								</rdfs:label>
+							</xsl:if>
 		</xsl:if>
 		<xsl:if test="name() like 'competitions'">
-		    <rdfs:label><xsl:value-of select="competitor/name"/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select="competitor/name"/>
+							</rdfs:label>
 		</xsl:if>
 		    <xsl:apply-templates select="@*|node()"/>
 		</xsl:element>
@@ -430,7 +473,9 @@
 			<xsl:variable name="cur_suffix" select="name()"/>
 			<xsl:variable name="totalFundsRaised" select="."/>
 			<oplmny:MonetaryValue rdf:about="{vi:proxyIRI($baseUri, '', concat ($cur_suffix, '-', position()))}">
-		            <rdfs:label><xsl:value-of select='$totalFundsRaised'/></rdfs:label>
+							<rdfs:label>
+								<xsl:value-of select='$totalFundsRaised'/>
+							</rdfs:label>
                             <oplmny:hasCurrencyValue rdf:datatype="&xsd;decimal">
                                 <xsl:value-of select="vi:crunchbase_moneystring2decimal(.)" />
                             </oplmny:hasCurrencyValue>

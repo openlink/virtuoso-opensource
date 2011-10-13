@@ -60,13 +60,13 @@
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:template match="/">
+    <xsl:template match="/rdf:RDF">
 	<rdf:RDF>
 	    <xsl:apply-templates/>
 	</rdf:RDF>
     </xsl:template>
 
-    <xsl:template match="rdf:RDF/geonames:Feature">
+    <xsl:template match="geonames:Feature">
 	<rdf:Description rdf:about="{$docproxyIRI}">
 	    <rdf:type rdf:resource="&bibo;Document"/>
 	    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
