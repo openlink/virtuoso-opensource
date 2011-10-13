@@ -1623,8 +1623,9 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
   return 1;
 }
 
+int32 iri_range_size = 10000;
 #define N_IRI_SEQS 19
-#define IRI_RANGE_SZ 10000
+#define IRI_RANGE_SZ iri_range_size
 
 extern dk_mutex_t * log_write_mtx;
 
