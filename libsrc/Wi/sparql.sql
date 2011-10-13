@@ -2209,6 +2209,17 @@ create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p
   g_iid := iri_to_id (g_uri);
   s_iid := iri_to_id (s_uri);
   p_iid := iri_to_id (p_uri);
+  -- dbg_obj_princ ('DB.DBA.RDF_QUAD_URI_L will make RDF_INSERT_TRIPLES (', g_iid, '(', s_iid, p_iid, o_obj, '))');
+--  if (ro_id_dict is null
+--    and (rdf_box_data_tag (o_lit) in (__tag of varchar, __tag of XML))
+--    and __rdf_obj_ft_rule_count_in_graph (g_iid) )
+--    {
+--      declare triples any;
+--      -- dbg_obj_princ ('DB.DBA.RDF_QUAD_URI_L will make RDF_INSERT_TRIPLES (', g_iid, '(', s_iid, p_iid, o_lit, '))');
+--      triples := vector (vector (s_iid, p_iid, o_lit));
+--      DB.DBA.RDF_INSERT_TRIPLES (id_to_iri (g_iid), triples);
+--      return;
+--    }
   o_obj := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict);
   if (__rdf_graph_is_in_enabled_repl (g_iid))
     {
@@ -2231,6 +2242,15 @@ create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (in g_uri varchar, in s_uri varchar
     o_obj := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict);
   else
     o_obj := DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (o_lit, iri_to_id (dt), lang, g_iid, p_iid, ro_id_dict);
+--  if (ro_id_dict is null
+--    and (rdf_box_data_tag (o_obj) in (__tag of varchar, __tag of XML))
+--    and __rdf_obj_ft_rule_count_in_graph (g_iid) )
+--    {
+--      declare triples any;
+--      triples := vector (vector (s_iid, p_iid, o_obj));
+--      DB.DBA.RDF_INSERT_TRIPLES (id_to_iri (g_iid), triples);
+--      return;
+--    }
   if (__rdf_graph_is_in_enabled_repl (g_iid))
     {
       declare triples any;
@@ -5413,7 +5433,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
   declare ro_id_dict, dp any;
   if (not isiri_id (graph_iri))
     graph_iri := iri_to_id (graph_iri);
-  if (__rdf_obj_ft_rule_count_in_graph (graph_iri) or '1' = registry_get ('cl_rdf_text_index'))
+  if (__rdf_obj_ft_rule_count_in_graph (graph_iri))
     is_text := 1;
   if (__rdf_graph_is_in_enabled_repl (graph_iri))
     DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iri), triples);

@@ -3232,14 +3232,21 @@ bif_rdf_obj_ft_rule_zap_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 caddr_t
 bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  iri_id_t g_id = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
-  caddr_t p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
+  iri_id_t g_id;
+  caddr_t p;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
   dtp_t p_dtp;
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
+      if ((NULL != cl_text_set) && ('1' == cl_text_set[0]))
+        return box_num (2);
+    }
+  g_id = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
+  p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
   iid_hkey.hkey_g = 0;
   iid_hkey.hkey_iid_p = 0;
   p_dtp = DV_TYPE_OF (p);
-
   switch (p_dtp)
     {
       case DV_IRI_ID: case DV_STRING: case DV_UNAME:
@@ -3302,7 +3309,14 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
 {
   ptrlong res = rdf_obj_ft_predonly_rule_count;
   ptrlong *graph_specific;
-  boxint g_id_int = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_count_in_graph");
+  boxint g_id_int;
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
+      if ((NULL != cl_text_set) && ('1' == cl_text_set[0]))
+        return box_num (-1);
+    }
+  g_id_int = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_count_in_graph");
   mutex_enter (rdf_obj_ft_rules_mtx);
   graph_specific = (ptrlong *)id_hash_get (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int));
   if (NULL != graph_specific)
