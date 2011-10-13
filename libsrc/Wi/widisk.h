@@ -357,6 +357,7 @@ struct wi_database_s
     int32	db_stripe_unit;
     int32	db_extent_size;
     int32	db_initial_gen;
+    char 	db_id[16];
   };
 
 struct disk_stripe_s

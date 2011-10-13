@@ -159,6 +159,18 @@ log_set_server_version_check (int in_txn)
 
   sprintf (tmp, "server_version_check ('%s')", DBMS_SRV_VER);
   log_set_compatibility_check (in_txn, tmp);
+  if (wi_inst.wi_master->dbs_id[0])
+    {
+      int inx;
+      char hex[33];
+      for (inx = 0; inx < sizeof (wi_inst.wi_master->dbs_id); inx ++)
+	{
+	  sprintf (hex + (inx * 2), "%02x", (unsigned char) (wi_inst.wi_master->dbs_id[inx]));
+	}
+      hex[32] = 0;
+      sprintf (tmp, "server_id_check ('%s')", hex);
+      log_set_compatibility_check (in_txn, tmp);
+    }
 }
 
 

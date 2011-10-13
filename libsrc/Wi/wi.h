@@ -287,6 +287,7 @@ struct dbe_storage_s
   buffer_desc_t *	dbs_extent_set;
   dp_addr_t		dbs_n_pages_in_extent_set;
   int32			dbs_initial_gen; /* generic no of exe tat inited the db */
+  char 			dbs_id[16];
 } ;
 
 

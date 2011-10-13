@@ -2792,6 +2792,28 @@ dbs_byte_order_cmp (char byte_order)
   return 0;
 }
 
+extern caddr_t *local_interfaces;
+extern char *srv_cwd;
+
+static void
+dbs_init_id (char * str)
+{
+  int inx;
+  char buf[100];
+  MD5_CTX ctx;
+  memset (&ctx, 0, sizeof (MD5_CTX));
+  MD5Init (&ctx);
+  DO_BOX (caddr_t, val, inx, local_interfaces)
+    {
+      MD5Update (&ctx, (unsigned char *) val, box_length (val) - 1);
+    }
+  END_DO_BOX;
+  MD5Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
+  snprintf (buf, sizeof (buf), "%ld,%p", srv_pid, &str);
+  MD5Update (&ctx, (unsigned char *) buf, strlen (buf));
+  MD5Final (str, &ctx);
+}
+
 void
 dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
 {
@@ -2831,6 +2853,9 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     }
   db.db_checkpoint_map = dbs->dbs_cp_remap_pages ? (dp_addr_t) (uptrlong) dbs->dbs_cp_remap_pages->data : 0;
   db.db_byte_order = DB_SYS_BYTE_ORDER;
+  if (0 == dbs->dbs_id[0])
+    dbs_init_id (dbs->dbs_id);
+  memcpy (db.db_id, dbs->dbs_id, sizeof (db.db_id));
 
   LSEEK (fd, 0, SEEK_SET);
   memcpy (zero, &db, sizeof (db));
@@ -3460,6 +3485,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	  bp_ctx.db_bp_index = cfg_page.db_bp_index;
 	  bp_ctx.db_bp_wr_bytes = cfg_page.db_bp_wr_bytes;
 	}
+      memcpy (dbs->dbs_id, cfg_page.db_id, sizeof (cfg_page.db_id));
       if (DBS_PRIMARY == type)
 	dbs_init_registry (dbs);
       dbs_extent_open (dbs);

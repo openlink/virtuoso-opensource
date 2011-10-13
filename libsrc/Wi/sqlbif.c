@@ -13273,6 +13273,35 @@ bif_server_version_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_server_id_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t id = bif_string_arg (qst, args, 0, "server_id_check");
+  caddr_t *qi = QST_INSTANCE (qst);
+  unsigned char db_id[16];
+  int inx, c;
+  if (!QI_IS_DBA (qi))
+    return 0;
+  if (f_read_from_rebuilt_database)
+    return 0;
+
+  if (box_length (id) < sizeof (db_id) * 2)
+    return 0;
+
+  for (inx = 0; inx < sizeof (db_id); inx ++)
+    {
+      sscanf (id + (inx * 2), "%02x", &c);
+      db_id[inx] = (unsigned char) c;
+    }
+
+  if (memcmp (db_id, wi_inst.wi_master->dbs_id, sizeof (db_id)))
+    {
+      log_error ("The transaction log file has been produced by different server instance.");
+      call_exit(0);
+    }
+  return NEW_DB_NULL;
+}
+
 void
 fcache_init ()
 {
@@ -14685,6 +14714,7 @@ sql_bif_init (void)
   /* check byteorder/version in the log */
   bif_define ("byte_order_check", bif_byte_order_check);
   bif_define ("server_version_check", bif_server_version_check);
+  bif_define ("server_id_check", bif_server_id_check);
 
   /* bit operations for BPEL */
   bif_define ("bit_set", bif_bit_set);
