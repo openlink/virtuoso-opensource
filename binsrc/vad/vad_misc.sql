@@ -534,7 +534,11 @@ create procedure "VAD"."DBA"."VAD_TEST_PACKAGE_LT" (inout parr any, in pkgname v
     return 0;
 
   if (exists (
-  select "R_ID" from "VAD"."DBA"."VAD_REGISTRY" where "R_PRNT" = id and "R_TYPE" = 'FOLDER' and lt ("R_SHKEY", pkgver)
+  select "R_ID" 
+    from "VAD"."DBA"."VAD_REGISTRY" 
+    where "R_PRNT" = id and 
+          "R_TYPE" = 'FOLDER' and 
+          "VAD"."DBA"."VERSION_COMPARE" ("R_SHKEY", pkgver) = -1
   ))
   return 1;
 
@@ -551,7 +555,11 @@ create procedure "VAD"."DBA"."VAD_TEST_PACKAGE_GT" (inout parr any, in pkgname v
   if (not id)
     return 0;
   if (exists (
-  select "R_ID" from "VAD"."DBA"."VAD_REGISTRY" where "R_PRNT" = id and "R_TYPE" = 'FOLDER' and gt ("R_SHKEY", pkgver)
+  select "R_ID" 
+    from "VAD"."DBA"."VAD_REGISTRY" 
+    where "R_PRNT" = id and 
+          "R_TYPE" = 'FOLDER' and 
+          "VAD"."DBA"."VERSION_COMPARE" ("R_SHKEY", pkgver) = 1
   ))
   return 1;
   return 0;
