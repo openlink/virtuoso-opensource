@@ -606,6 +606,8 @@ namespace OpenLink.Data.Virtuoso
 		protected override void Dispose (bool disposing)
 		{
 		  Debug.WriteLineIf (CLI.FnTrace.Enabled, "OdbcConnection.Dispose ()");
+			try
+			{
 			if (disposing)
 			{
 				Close ();
@@ -619,10 +621,17 @@ namespace OpenLink.Data.Virtuoso
 				OnDisconnect ();
 			}
 
-#if WIN32_FINALIZERS
+#if WIN3#if WIN32_FINALIZERS
 			//statementList.Unreference ();
 			Unreference ();
 #endif
+		}
+			catch (Exception e)
+			{
+				// Dispose method should never throw an exception
+				Debug.WriteLineIf(CLI.FnTrace.Enabled,
+					"OdbcConnection.Dispose caught exception: " + e.Message);
+			}
 		}
 
 		internal void Add (IntPtr hstmt, VirtuosoCommand command)

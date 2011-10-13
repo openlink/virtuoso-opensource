@@ -108,6 +108,7 @@ namespace OpenLink.Data.Virtuoso
 			try
 			{
 				session = new TcpSession (this, socket);
+                		socket.NoDelay = true;
 
 #if MONO
 				Future future = new Future (Service.CallerId, new object[] { null });

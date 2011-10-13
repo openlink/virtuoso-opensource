@@ -552,6 +552,8 @@ namespace OpenLink.Data.Virtuoso
 
 		protected override void Dispose (bool disposing)
 		{
+			try
+			{
 			if (disposing)
 			{
 				DisposeStatement ();
@@ -562,6 +564,12 @@ namespace OpenLink.Data.Virtuoso
 				connection.innerConnection.RemoveCommand (this);
 			connection = null;
 			transaction = null;
+		}
+			catch (Exception e)
+			{
+				Debug.WriteLineIf(CLI.FnTrace.Enabled,
+					"VirtuosoCommand.Dispose caught exception: " + e.Message);
+			}
 		}
 
 		internal void OnConnectionClose ()
