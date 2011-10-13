@@ -2303,7 +2303,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('    <br />\n');
     http('	<form action="" method="get">\n');
     http('	<fieldset>\n');
-    http('		<label for="default-graph-uri">Default Data Source Name (Graph IRI)</label><br />\n');
+    http('		<label for="default-graph-uri">Default Data Set Name (Graph IRI)</label><br />\n');
     http('		<input type="text" name="default-graph-uri" id="default-graph-uri"');
     http(sprintf (' value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
     http('		<br /><br />\n');
