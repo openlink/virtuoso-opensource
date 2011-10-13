@@ -473,9 +473,9 @@ rdf_view_create_view (in nth int, in qualifier varchar, in _tbls any, in gen_sta
 	 }
        inx := inx + 1;
      }
-   if (exists (select top 1 1 from SYS_FOREIGN_KEYS where PK_TABLE = tbl and 0 < position (FK_TABLE, _tbls))
+   if (exists (select top 1 1 from SYS_FOREIGN_KEYS where PK_TABLE = tbl and FK_TABLE <> tbl and 0 < position (FK_TABLE, _tbls))
        or
-       exists (select top 1 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and 0 < position (PK_TABLE, _tbls)))
+       exists (select top 1 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE <> tbl and 0 < position (PK_TABLE, _tbls)))
      ret := ret || rdf_view_sp (6) || '# Maps from foreign-key relations of "' || tbl || '"\n';
    ret := ret || rdf_view_get_fk_pk_rel (qualifier, suffix, tbl, _tbls, pkcols);
    ret := ret || rdf_view_get_pk_fk_rel (qualifier, suffix, tbl, _tbls, pkcols);
@@ -968,7 +968,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
 
     case when fct_installed
     then
-      '''/describe/?url=http://^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+      '''/describe/?url=http%%3A//^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
     else
       '''/about/html/http://^{URIQADefaultHost}^%s'','
     end
@@ -991,7 +991,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
 
     case when fct_installed
     then
-      '''/describe/?url=http://^{URIQADefaultHost}^/<qual>/stat%%23&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+      '''/describe/?url=http%%3A//^{URIQADefaultHost}^/<qual>/stat%%23&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
     else
       '''/about/html/http://^{URIQADefaultHost}^/<qual>/stat%%01'','
     end
