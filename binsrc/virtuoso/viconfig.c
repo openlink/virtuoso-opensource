@@ -113,6 +113,7 @@ extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
+extern int32 log_proc_overwrite;
 
 #ifdef _SSL
 extern char *https_port;
@@ -176,6 +177,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern int32 ric_samples_sz;
 extern int32 enable_p_stat;
 extern int aq_max_threads;
 
@@ -356,6 +358,7 @@ extern int32 cli_not_c_char_escape;
 extern int32 cli_utf8_execs;
 extern int32 cli_binary_timestamp;
 extern int32 cli_no_system_tables;
+extern int32 cli_max_cached_stmts;
 
 int32 c_cli_encryption_on_password;
 extern long cli_encryption_on_password;
@@ -1047,6 +1050,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "RdfFreeTextRulesSize", &c_rdf_obj_ft_rules_size) == -1)
     c_rdf_obj_ft_rules_size = 0;
 
+  if (cfg_getlong (pconfig, section, "RdfInferenceSampleCacheSize", &ric_samples_sz) == -1)
+    ric_samples_sz = 0;
+
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
 
@@ -1056,6 +1062,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "PageMapCheck", &dbs_cache_check_enable) == -1)
     dbs_cache_check_enable = 0;
 
+  if (cfg_getlong (pconfig, section, "MaxOpenClientStatements", &cli_max_cached_stmts) == -1)
+    cli_max_cached_stmts = 10000;
 
   section = "HTTPServer";
 
@@ -1663,7 +1671,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   aq_max_threads = c_aq_max_threads;
   if (aq_max_threads > 100)
     aq_max_threads = 100;
-  if (aq_max_threads < 10)
+  if (aq_max_threads < 10 && aq_max_threads > 0)
     aq_max_threads = 10;
 #ifdef _SSL
   https_port = c_https_port;

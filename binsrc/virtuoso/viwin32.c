@@ -157,7 +157,7 @@ extern int ob_just_report;
 /*
  *  Globals for virtuoso
  */
-PCONFIG	pconfig;			/* configuration file */
+PCONFIG	pconfig = NULL;			/* configuration file */
 
 /*
  *  Module locals
