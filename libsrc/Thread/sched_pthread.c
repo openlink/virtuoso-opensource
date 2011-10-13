@@ -1299,6 +1299,7 @@ mutex_enter (dk_mutex_t *mtx)
     rc = pthread_mutex_trylock ((pthread_mutex_t*) &mtx->mtx_mtx);
   if (TRYLOCK_SUCCESS != rc)
     {
+      long long wait_ts = rdtsc ();
       static int unnamed_waits;
 #if HAVE_SPINLOCK
       if (MUTEX_TYPE_SPIN == mtx->mtx_type)
@@ -1306,6 +1307,7 @@ mutex_enter (dk_mutex_t *mtx)
       else
 #endif
 	rc = pthread_mutex_lock ((pthread_mutex_t*) &mtx->mtx_mtx);
+      mtx->mtx_wait_clocks += rdtsc () - wait_ts;
       mtx->mtx_waits++;
       if (!mtx->mtx_name)
 	unnamed_waits++; /*for dbg breakpoint */
@@ -1421,8 +1423,8 @@ mutex_stat ()
       printf ("%s %p E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_spin_waits, mtx->mtx_spins);
 #else
-      printf ("%s %p E: %ld W %ld \n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
-	      mtx->mtx_enters, mtx->mtx_waits);
+      printf ("%s %p E: %ld W %ld wclk %ld \n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
+	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_wait_clocks);
 #endif
     }
   END_DO_SET();

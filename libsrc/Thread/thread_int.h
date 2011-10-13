@@ -226,6 +226,7 @@ struct mutex_s
     long		mtx_spin_waits;
     long		mtx_waits;
     long		mtx_enters;
+    long long		mtx_wait_clocks;
 #endif
     int			mtx_type;
   };
