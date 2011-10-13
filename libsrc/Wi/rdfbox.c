@@ -529,7 +529,7 @@ caddr_t
 bif_rdf_box_set_is_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t rb = bif_arg (qst, args, 0, "rdf_box_set_is_text");
-  int f = bif_long_arg (qst, args, 1, "rdf_vix_set_is_complete");
+  int f = bif_long_arg (qst, args, 1, "rdf_box_set_is_text");
   if (DV_RDF == DV_TYPE_OF (rb))
     {
       rdf_box_t * rb2 = (rdf_box_t *) rb;
