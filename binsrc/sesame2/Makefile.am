@@ -36,13 +36,15 @@ SESAME_SRC= \
 	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
+	virtuoso_driver/VirtuosoOperation.java \
 	virtuoso_driver/VirtuosoQuery.java \
 	virtuoso_driver/VirtuosoRepositoryConfig.java \
 	virtuoso_driver/VirtuosoRepositoryConnection.java \
 	virtuoso_driver/VirtuosoRepositoryFactory.java \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoRepositorySchema.java \
-	virtuoso_driver/VirtuosoTupleQuery.java
+	virtuoso_driver/VirtuosoTupleQuery.java \
+	virtuoso_driver/VirtuosoUpdate.java
 
 SESAME_XSL = \
 	create.xsl \
@@ -51,7 +53,7 @@ SESAME_XSL = \
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
-SESAME_CLASSPATH=lib/slf4j-api-1.5.11.jar:lib/slf4j-simple-1.5.11.jar:lib/openrdf-sesame-2.3.1-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+SESAME_CLASSPATH= lib/slf4j-api-1.6.1.jar:lib/slf4j-simple-1.6.1.jar:lib/openrdf-sesame-2.5.1-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am:	$(TARGETS)
 
