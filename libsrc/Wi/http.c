@@ -3348,75 +3348,76 @@ request_do_again:
   if (http_ses_trap)
 #endif
     {
-    /* --ches-- */
-    char *uri_begin;
-    char *last_slash;
-    caddr_t save_history_name;
-    caddr_t vdir = NULL;
-    caddr_t err = NULL;
-    /* Detect virtual dir directory */
-    /* Assume first word is method name */
-    if (!ws->ws_req_line)
-      {
-        err = srv_make_new_error ("42000", "HTL01", "The request line is empty.");
-        goto end_hack_block;
-      }
-    uri_begin = strchr(ws->ws_req_line, ' ');
-    if (NULL == uri_begin)
-      {
-        err = srv_make_new_error ("42000", "HTL01", "The request line does not contain method name: %.1000s", ws->ws_req_line);
-        goto end_hack_block;
-      }
-    while (('\0' != uri_begin[0]) && strchr (" \t", uri_begin[0]))
-      uri_begin++;
-    vdir = box_dv_short_string (uri_begin);
-    last_slash = strrchr(vdir, '/');
-    if (NULL == last_slash)
-      {
-        err = srv_make_new_error ("42000", "HTL01", "No virtual directory name found in the request line %.1000s", ws->ws_req_line);
-        dk_free_box (vdir);
-        goto end_hack_block;
-      }
-    /* Get special registry item value */
-    IN_TXN;
-    save_history_name = registry_get("__save_http_history");
-    LEAVE_TXN;
-    if ((DV_STRING == DV_TYPE_OF(save_history_name)) &&
-        ((0 == strncmp(vdir, save_history_name, (box_length (save_history_name) - 1)) &&
-          '/' == vdir[box_length(save_history_name) - 1]) || !strcmp (save_history_name, "/")))
-      {
-	caddr_t sql_text = dk_alloc_box (50 + box_length (vdir), DV_STRING);
-        query_t *stmt;
-        snprintf(sql_text, box_length (sql_text), "DB.DBA.sys_save_http_history('%s', '%s')", save_history_name, last_slash);
-        dk_free_box (save_history_name);
-        dk_free_box (vdir);
-        stmt = sql_compile(sql_text, ws->ws_cli, &err, SQLC_DEFAULT);
-	dk_free_box (sql_text);
-        if(err)
-          goto end_hack_block;
-        err = qr_quick_exec(stmt, ws->ws_cli, NULL, NULL, 0);
-	IN_TXN;
-	if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
-	  lt_rollback (cli->cli_trx, TRX_CONT);
-	else
-	  rc = lt_commit (cli->cli_trx, TRX_CONT);
-	lt_threads_set_inner (cli->cli_trx, 1);
-	LEAVE_TXN;
-	if (rc != LTE_OK)
-	  {
-	    MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
-	  }
-        qr_free(stmt);
-      }
-    else
+      /* --ches-- */
+      char *uri_begin;
+      char *last_slash;
+      caddr_t save_history_name;
+      caddr_t vdir = NULL;
+      caddr_t err = NULL;
+      /* Detect virtual dir directory */
+      /* Assume first word is method name */
+      if (!ws->ws_req_line)
+	{
+	  err = srv_make_new_error ("42000", "HTL01", "The request line is empty.");
+	  goto rec_err_end;
+	}
+      uri_begin = strchr(ws->ws_req_line, ' ');
+      if (NULL == uri_begin)
+	{
+	  err = srv_make_new_error ("42000", "HTL01", "The request line does not contain method name: %.1000s", ws->ws_req_line);
+	  goto rec_err_end;
+	}
+      while (('\0' != uri_begin[0]) && strchr (" \t", uri_begin[0]))
+	uri_begin++;
+      vdir = box_dv_short_string (uri_begin);
+      last_slash = strrchr(vdir, '/');
+      if (NULL == last_slash)
+	{
+	  err = srv_make_new_error ("42000", "HTL01", "No virtual directory name found in the request line %.1000s", ws->ws_req_line);
+	  dk_free_box (vdir);
+	  goto rec_err_end;
+	}
+      /* Get special registry item value */
+      IN_TXN;
+      save_history_name = registry_get("__save_http_history");
+      LEAVE_TXN;
+      if ((DV_STRING == DV_TYPE_OF (save_history_name)) &&
+	  ((0 == strncmp(vdir, save_history_name, (box_length (save_history_name) - 1)) &&
+	    '/' == vdir[box_length(save_history_name) - 1]) || !strcmp (save_history_name, "/")))
+	{
+	  static query_t *stmt = NULL;
+	  if (!stmt)
+	    {
+	      stmt = sql_compile ("DB.DBA.sys_save_http_history (?, ?)", ws->ws_cli, &err, SQLC_DEFAULT);
+	      if (err)
+		goto rec_err_end;
+	    }
+
+	  err = qr_quick_exec (stmt, ws->ws_cli, NULL, NULL, 2,
+	      ":0", save_history_name, QRP_STR,
+	      ":1", last_slash, QRP_STR);
+
+	  IN_TXN;
+	  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+	    lt_rollback (cli->cli_trx, TRX_CONT);
+	  else
+	    rc = lt_commit (cli->cli_trx, TRX_CONT);
+	  lt_threads_set_inner (cli->cli_trx, 1);
+	  LEAVE_TXN;
+	  if (rc != LTE_OK)
+	    {
+	      MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
+	    }
+	}
+      dk_free_box (save_history_name); 
       dk_free_box (vdir);
-end_hack_block:
-    if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
-      {
-        log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
-        dk_free_tree(err);
-      }
-  }
+rec_err_end:
+      if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
+	{
+	  log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
+	  dk_free_tree(err);
+	}
+    }
 
 #ifdef VIRTUAL_DIR
   path1 = (ws->ws_p_path && BOX_ELEMENTS (ws->ws_p_path) )? ws->ws_p_path[0] : NULL;
