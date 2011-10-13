@@ -1866,10 +1866,11 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
   SPART *agg_call;
   SPART *var_vector_expn;
   SPART *var_vector_arg;
+  SPART *opts_arg;
   dk_set_t opts_revlist = NULL;
   caddr_t limofs_name;
   caddr_t storage_name_or_null;
-  const char *descr_name;
+  const char *descr_name, *postproc_name = NULL;
   int need_limofs_trick = (
     (DV_LONG_INT != DV_TYPE_OF (limit_expn)) ||
     (DV_LONG_INT != DV_TYPE_OF (offset_expn)) ||
@@ -1903,11 +1904,26 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
       (SPART **)t_list (1, var_vector_arg ) );
   if (NULL != sparp->sparp_env->spare_describe_mode)
     {
-      int phys_only = ((NULL == sparp->sparp_env->spare_inference_name) && spar_describe_restricted_by_physical (sparp, retvals));
-      if (phys_only)
-        descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s_PHYSICAL", sparp->sparp_env->spare_describe_mode);
+      const char *mode = sparp->sparp_env->spare_describe_mode;
+      const char *mode1 = mode, *plus = strchr (mode, '+');
+      int phys_only;
+      if (NULL != plus)
+        {
+          mode1 = t_box_dv_short_nchars (mode, plus-mode);
+          postproc_name = t_box_sprintf (100, "sql:SPARQL_DESC_POSTPROC_%.50s", plus+1);
+        }
+      if ('\0' == mode1[0])
+        descr_name = "sql:SPARQL_DESC_DICT";
       else
-        descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s", sparp->sparp_env->spare_describe_mode);
+        {
+          phys_only = ((NULL == sparp->sparp_env->spare_inference_name)
+            && (NULL == sparp->sparp_env->spare_use_same_as)
+            && spar_describe_restricted_by_physical (sparp, retvals) );
+          if (phys_only)
+            descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s_PHYSICAL", mode1);
+          else
+            descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s", mode1);
+        }
     }
   else
     descr_name = "sql:SPARQL_DESC_DICT";
@@ -1933,9 +1949,15 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
       t_set_push (&opts_revlist, t_box_dv_short_string ("inference"));
       t_set_push (&opts_revlist, sparp->sparp_env->spare_inference_name);
     }
+  if (NULL != sparp->sparp_env->spare_use_same_as)
+    {
+      t_set_push (&opts_revlist, t_box_dv_short_string ("same-as"));
+      t_set_push (&opts_revlist, sparp->sparp_env->spare_use_same_as);
+    }
   storage_name_or_null = sparp->sparp_env->spare_storage_name;
   if (NULL == storage_name_or_null)
     storage_name_or_null = t_NEW_DB_NULL;
+  opts_arg = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_revlist_to_array (opts_revlist)); /*!!!TBD describe options will be added here */
   descr_call = spar_make_funcall (sparp, 0, descr_name,
       (SPART **)t_list (6,
         agg_call,
@@ -1944,7 +1966,15 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
         good_graphs,
         bad_graphs,
         storage_name_or_null,
-        spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_revlist_to_array (opts_revlist)) ) ); /*!!!TBD describe options will be added here */
+        opts_arg ) );
+  if (NULL != postproc_name)
+    descr_call = spar_make_funcall (sparp, 0, postproc_name,
+      (SPART **)t_list (5,
+        descr_call,
+        good_graphs,
+        bad_graphs,
+        storage_name_or_null,
+        opts_arg ) );
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
       spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
