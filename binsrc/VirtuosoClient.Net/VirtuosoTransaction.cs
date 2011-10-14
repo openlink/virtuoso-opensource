@@ -25,6 +25,7 @@
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 
 #if ODBC_CLIENT
 namespace OpenLink.Data.VirtuosoOdbcClient
@@ -144,8 +145,7 @@ namespace OpenLink.Data.Virtuoso
                     {
                         // Dispose method should never throw an exception.
                         // So just log any messages.
-                        Debug.WriteLineIf(CLI.FnTrace.Enabled, 
-                            "VirtuosoTransaction.Dispose caught exception: " + e.Message);
+                        Debug.WriteLineIf(CLI.FnTrace.Enabled, "VirtuosoTransaction.Dispose caught exception: " + e.Message);
                     }
                 }
 			}
