@@ -292,7 +292,7 @@
 		   exec (qr, stat, msg, vector (), 0, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		     {
-		       http ('<div>Instance Data: <br/>');
+		       http (sprintf ('<div>Instance Data Named Graph: %V <br/>', gr));
 		       foreach (any _row in data) do
 			 {
 			   if (_row[0] not like '%/stat#%')
@@ -318,7 +318,7 @@
 		   exec (qr, stat, msg, vector (), 1, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
-		   http ('<div>Statistics Data (VoiD Graph): <br/>');
+		   http ('<div>Metadata Data (VoiD): <br/>');
 		   if (fct_installed)
 		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
                    else  
@@ -333,7 +333,7 @@
 		   exec (qr, stat, msg, vector (), 1, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
-		   http ('<div>Ontology: <br/>');
+		   http ('<div>Ontology Data Named Graph: <br/>');
 		   if (fct_installed)
 	             http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
 		   else
