@@ -12068,6 +12068,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (in group_iri varchar, in
   dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   jso_mark_affected (group_iri);
+  __rdf_cli_mark_qr_to_recompile ();
 }
 ;
 
@@ -12108,6 +12109,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (in group_iri varchar, in g
       foreach (IRI_ID iid in privates) do
         jso_mark_affected (id_to_iri (iid));
     }
+  __rdf_cli_mark_qr_to_recompile ();
 }
 ;
 

@@ -3755,6 +3755,28 @@ bif_rdf_graph_default_perms_of_user_dict (caddr_t * qst, caddr_t * err_ret, stat
   return box_copy (rdf_graph_default_world_perms_of_user_dict_hit);
 }
 
+caddr_t
+bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  client_connection_t * cli = qi->qi_client;
+  query_t **qr;
+  caddr_t *text;
+  id_hash_iterator_t it;
+
+  if (!cli || !cli->cli_text_to_query)
+    return NULL;
+
+  IN_CLIENT (cli);
+  id_hash_iterator (&it, cli->cli_text_to_query);
+  while (hit_next (&it, (caddr_t *) & text, (caddr_t *) & qr))
+    {
+      qr[0]->qr_to_recompile = 1;
+    }
+  LEAVE_CLIENT (cli);
+  return NULL;
+}
+
 int
 rdf_graph_specific_perms_of_user (user_t *u, iri_id_t g_iid)
 {
@@ -4589,6 +4611,7 @@ rdf_box_init ()
   bif_define ("__rdf_graph_public_perms_dict", bif_rdf_graph_public_perms_dict);
   bif_define ("__rdf_graph_group_of_privates_dict", bif_rdf_graph_group_of_privates_dict);
   bif_define ("__rdf_graph_default_perms_of_user_dict", bif_rdf_graph_default_perms_of_user_dict);
+  bif_define ("__rdf_cli_mark_qr_to_recompile", bif_rdf_cli_mark_qr_to_recompile);
   bif_define ("__rdf_graph_approx_perms", bif_rdf_graph_approx_perms);
   bif_define ("__rdf_graph_specific_perms_of_user", bif_rdf_graph_specific_perms_of_user);
   bif_define ("__rgs_assert", bif_rgs_assert);
