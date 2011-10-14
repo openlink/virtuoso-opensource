@@ -89,15 +89,22 @@ create procedure rdf_view_tbl_pk_cols (inout tbls any, out pkcols any)
 	   declare cols any;
 	   declare j int;
 	   newtb[i/2] := tbls[i];
-	   cols := make_array (length (tbls [i + 1]), 'any');
-	   j := 0;
-	   foreach (varchar c in tbls [i + 1]) do
+	   if (__tag (tbls [i + 1]) = 193)
 	     {
-	       cols[j] := (select vector (sc."COLUMN", sc."COL_DTP", sc."COL_SCALE", sc."COL_PREC")
-	   	from DB.DBA.TABLE_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
-	       if (length (cols[j]) = 0)
-		 signal ('22023', sprintf ('Non existing column %s for table %s', c, tbls[i]));
-	       j := j + 1;
+	       cols := make_array (length (tbls [i + 1]), 'any');
+	       j := 0;
+	       foreach (varchar c in tbls [i + 1]) do
+		 {
+		   cols[j] := (select vector (sc."COLUMN", sc."COL_DTP", sc."COL_SCALE", sc."COL_PREC")
+		    from DB.DBA.TABLE_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
+		   if (length (cols[j]) = 0)
+		     signal ('22023', sprintf ('Non existing column %s for table %s', c, tbls[i]));
+		   j := j + 1;
+		 }
+	     }
+	   else
+	     {
+	       cols := rdf_view_get_primary_key (tbls[i]);
 	     }
 	   pkcols[i] := tbls[i];
 	   pkcols[i+1] := cols;
