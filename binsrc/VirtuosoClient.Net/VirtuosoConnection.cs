@@ -319,6 +319,9 @@ namespace OpenLink.Data.Virtuoso
                 case IsolationLevel.Serializable:
                     isolation = CLI.IsolationLevel.SQL_TXN_SERIALIZABLE;
                     break;
+                case IsolationLevel.Unspecified:
+                    isolation = CLI.IsolationLevel.SQL_TXN_READ_COMMITED;
+                    break;
                 default:
                     throw new Exception ("Unknown or unsupported isolation level");
             }
