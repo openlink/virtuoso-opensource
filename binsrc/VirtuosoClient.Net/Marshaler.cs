@@ -195,6 +195,18 @@ namespace OpenLink.Data.Virtuoso
 				{
 					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_TIME);
 				}
+				else if (type == typeof (VirtuosoTimeSpan))
+				{
+					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_TIME);
+				}
+				else if (type == typeof(VirtuosoDateTime))
+				{
+					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_DATETIME);
+				}
+				else if (type == typeof(VirtuosoDateTimeOffset))
+				{
+					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_DATETIME);
+				}
 				else if (type == typeof (int[]))
 				{
 					stream.WriteByte ((byte) BoxTag.DV_ARRAY_OF_LONG);

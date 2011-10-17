@@ -62,11 +62,6 @@ namespace OpenLink.Data.Virtuoso
 			this.value = new TimeSpan(days, hours, minutes, seconds);
 		}
 
-		public VirtuosoTimeSpan (int days, int hours, int minutes, int seconds, int milliseconds)
-		{
-			this.value = new TimeSpan(days, hours, minutes, seconds, milliseconds);
-		}
-
 		public VirtuosoTimeSpan (int days, int hours, int minutes, int seconds, long microseconds)
 		{
 			if (microseconds < 0 || microseconds > 999999)

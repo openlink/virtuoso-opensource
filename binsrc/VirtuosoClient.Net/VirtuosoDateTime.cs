@@ -68,11 +68,6 @@ namespace OpenLink.Data.Virtuoso
 			this.value = new DateTime(year, month, day, hour, minute, second);
 		}
 
-		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, int millisecond)
-		{
-			this.value = new DateTime(year, month, day, hour, minute, second, millisecond);
-		}
-
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, long microsecond)
 		{
 			if (microsecond < 0 || microsecond > 999999)

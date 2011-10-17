@@ -155,6 +155,81 @@ namespace OpenLink.Data.Virtuoso
 				second = ts.Seconds;
 				fraction = ts.Milliseconds * Values.MicrosPerMilliSec;
 			}
+			else if (value is VirtuosoDateTime)
+			{
+				VirtuosoDateTime dt = (VirtuosoDateTime) value;
+
+				TimeZone tz = TimeZone.CurrentTimeZone;
+				TimeSpan tz_offset = tz.GetUtcOffset (dt.Value);
+				tz_offset_minutes = (int) (tz_offset.Hours * 60) + tz_offset.Minutes;
+
+                long ticks = dt.Ticks - tz_offset.Ticks;
+                dt = new VirtuosoDateTime(ticks);
+
+				int year = dt.Year;
+				int month = dt.Month;
+				int day_of_month = dt.Day;
+				days = GetDays (year, month, day_of_month);
+
+				if (type == DateTimeType.DT_TYPE_DATETIME)
+				{
+					hour = dt.Hour;
+					minute = dt.Minute;
+					second = dt.Second;
+                    fraction = (int)dt.Microsecond;
+				}
+				else if (type == DateTimeType.DT_TYPE_DATE)
+				{
+					hour = minute = second = fraction = 0;
+				}
+				else
+					throw new InvalidCastException ();
+			}
+#if ADONET3
+            else if (value is VirtuosoDateTimeOffset)
+            {
+                VirtuosoDateTimeOffset dt = (VirtuosoDateTimeOffset)value;
+
+                TimeSpan tz_offset = dt.Offset;
+                tz_offset_minutes = (int)(tz_offset.Hours * 60) + tz_offset.Minutes;
+
+                long ticks = dt.Ticks - tz_offset.Ticks;
+                dt = new VirtuosoDateTimeOffset(ticks, new TimeSpan(0));
+
+                int year = dt.Year;
+                int month = dt.Month;
+                int day_of_month = dt.Day;
+                days = GetDays(year, month, day_of_month);
+
+                if (type == DateTimeType.DT_TYPE_DATETIME)
+                {
+                    hour = dt.Hour;
+                    minute = dt.Minute;
+                    second = dt.Second;
+                    fraction = (int)dt.Microsecond;
+                }
+                else if (type == DateTimeType.DT_TYPE_DATE)
+                {
+                    hour = minute = second = fraction = 0;
+                }
+                else
+                    throw new InvalidCastException();
+            }
+#endif
+            else if (value is VirtuosoTimeSpan)
+            {
+                if (type != DateTimeType.DT_TYPE_TIME)
+                    throw new InvalidCastException();
+
+                days = Values.DAY_ZERO;
+                tz_offset_minutes = 0;
+
+                VirtuosoTimeSpan ts = (VirtuosoTimeSpan)value;
+                hour = ts.Hours;
+                minute = ts.Minutes;
+                second = ts.Seconds;
+                fraction = (int)ts.Microseconds;
+            }
 			else
 				throw new InvalidCastException ();
 
@@ -195,6 +270,28 @@ namespace OpenLink.Data.Virtuoso
 				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "TimeSpan: " + ts);
 				return ts;
 			}
+#if ADONET3
+			else if (type == DateTimeType.DT_TYPE_DATETIME)
+                        {
+				int year, month, day_of_month;
+				GetDate (days, out year, out month, out day_of_month);
+				TimeSpan tz_offset = new TimeSpan (0, tz_offset_minutes, 0);
+
+				VirtuosoDateTimeOffset dt = new VirtuosoDateTimeOffset (year, month, day_of_month, hour, minute, second, fraction, tz_offset);
+				dt = dt.AddMinutes(tz_offset_minutes);
+				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
+				return dt;
+			}
+                        else if (type == DateTimeType.DT_TYPE_DATE)
+			{
+				int year, month, day_of_month;
+				GetDate (days, out year, out month, out day_of_month);
+
+				VirtuosoDateTime dt = new VirtuosoDateTime (year, month, day_of_month, hour, minute, second, fraction);
+				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
+				return dt;
+			}
+#else
                         else if (type == DateTimeType.DT_TYPE_DATETIME || type == DateTimeType.DT_TYPE_DATE)
 			{
 				int year, month, day_of_month;
@@ -205,6 +302,7 @@ namespace OpenLink.Data.Virtuoso
 				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
 				return dt;
 			}
+#endif
 			else
 				throw new InvalidCastException ();
 		}

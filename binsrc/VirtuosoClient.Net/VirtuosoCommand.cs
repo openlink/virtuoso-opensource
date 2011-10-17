@@ -459,17 +459,19 @@ namespace OpenLink.Data.Virtuoso
 
 			bool schemaOnly = SchemaOnlyDataReader (behavior);
 			string text = GetCommandText ();
+		        bool isSparql = text.TrimStart(null).StartsWith("sparql", StringComparison.OrdinalIgnoreCase);
 			if (schemaOnly)
 			{
 				if (!isPrepared)
 				{
-					text = replaceNamedParams (text);
+                    			if (!isSparql)
+						text = replaceNamedParams (text);
 					innerCommand.Prepare (text);
 				}
 			}
 			else
 			{
-				if (parameters != null && parameters.Count > 0)
+				if (!isSparql && parameters != null && parameters.Count > 0)
 				{
 					VirtuosoParameterCollection _parameters = handleNamedParams (text, parameters);
 					Debug.Assert (_parameters.Count == parameters.Count, "Count mismatch in reordered parameter array");
