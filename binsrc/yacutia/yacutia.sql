@@ -441,7 +441,7 @@ create procedure adm_menu_tree ()
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="Linked Data" url="sparql_input.vspx"  id="189" tip="Linked Data " allowed="yacutia_message">',
+ <node name="Linked Data Objects" url="sparql_input.vspx"  id="189" tip="Linked Data Objects" allowed="yacutia_message">',
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',

@@ -36,7 +36,7 @@
       <v:variable name="message" default="null" type="varchar" persist="0"/>
     </vm:variables>
   <vm:menu>
-   <vm:menuitem value="Linked Data"/>
+   <vm:menuitem value="Linked Data Objects"/>
   </vm:menu>
   <vm:header caption="Quad Store Upload"/>
   <vm:pagebody>
