@@ -1732,7 +1732,12 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
       return 1;
     }
   /* the cols did not fit.  See if need rearrange or split */
-  if (recursive) GPF_T1 ("still did not refit on recursive call");
+  if (recursive)
+    {
+      log_error ("can not refit row key: %s space %d, gap: %d pm free: %d",
+	  	rd->rd_key ? rd->rd_key->key_name : "no key", space, gap, pm->pm_count);
+      GPF_T1 ("still did not refit on recursive call");
+    }
   space = ROW_ALIGN (space);
     if (space > pm->pm_bytes_free)
     {
