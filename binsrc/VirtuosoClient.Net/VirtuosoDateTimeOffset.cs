@@ -75,11 +75,6 @@ namespace OpenLink.Data.Virtuoso
 			this.value = new DateTimeOffset(year, month, day, hour, minute, second, offset);
 		}
 
-		public VirtuosoDateTimeOffset (int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan offset)
-		{
-			this.value = new DateTimeOffset(year, month, day, hour, minute, second, millisecond, offset);
-		}
-
 		public VirtuosoDateTimeOffset (int year, int month, int day, int hour, int minute, int second, long microsecond, TimeSpan offset)
 		{
 			if (microsecond < 0 || microsecond > 999999)

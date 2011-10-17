@@ -118,6 +118,15 @@ namespace OpenLink.Data.Virtuoso
 				return value;
             if (value is SqlRdfBox)
 				return value;
+            if (value is VirtuosoDateTime)
+                return value;
+            if (value is VirtuosoTimeSpan)
+                return value;
+#if ADONET3
+            if (value is VirtuosoDateTimeOffset)
+                return value;
+#endif
+
             if (value is System.Byte[] && type != value.GetType())
                 return value;
 			if (type == typeof (string))
@@ -650,6 +659,14 @@ namespace OpenLink.Data.Virtuoso
 						return ((IConvertData) value).GetDataType ();
 					if (type == typeof (System.TimeSpan))
 						return Time;
+					if (type == typeof (VirtuosoTimeSpan))
+						return Time;
+					if (type == typeof (VirtuosoDateTime))
+						return DateTime;
+#if ADONET3
+					if (type == typeof (VirtuosoDateTimeOffset))
+						return DateTime;
+#endif
 					if (type == typeof (byte[]))
 						return Binary;
 					if (type == typeof (SqlXml))
