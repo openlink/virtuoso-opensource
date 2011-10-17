@@ -203,10 +203,12 @@ namespace OpenLink.Data.Virtuoso
 				{
 					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_DATETIME);
 				}
+#if ADONET3
 				else if (type == typeof(VirtuosoDateTimeOffset))
 				{
 					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_DATETIME);
 				}
+#endif
 				else if (type == typeof (int[]))
 				{
 					stream.WriteByte ((byte) BoxTag.DV_ARRAY_OF_LONG);
