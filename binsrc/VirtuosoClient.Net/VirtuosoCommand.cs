@@ -463,23 +463,19 @@ namespace OpenLink.Data.Virtuoso
 			{
 				if (!isPrepared)
 				{
-#if ADONET3
                     			if (!isSparql)
 						text = replaceNamedParams (text);
-#endif
 					innerCommand.Prepare (text);
 				}
 			}
 			else
 			{
-#if ADONET3
 				if (!isSparql && parameters != null && parameters.Count > 0)
 				{
 					VirtuosoParameterCollection _parameters = handleNamedParams (text, parameters);
 					Debug.Assert (_parameters.Count == parameters.Count, "Count mismatch in reordered parameter array");
 					text = replaceNamedParams(text);
 				}
-#endif
 				innerCommand.SetParameters (parameters);
 				if (!isPrepared)
 				{
