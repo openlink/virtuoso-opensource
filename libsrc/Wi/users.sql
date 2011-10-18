@@ -462,7 +462,7 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
         {
 	  if (primary_group is null or inh[i] <> primary_group)
 	    {
-	      insert into SYS_ROLE_GRANTS (GI_SUPER, GI_SUB, GI_ADMIN, GI_DIRECT, GI_GRANT)
+	      insert soft SYS_ROLE_GRANTS (GI_SUPER, GI_SUB, GI_ADMIN, GI_DIRECT, GI_GRANT)
 		  values (_u_id, inh[i], grant_opt, 0, _g_id);
 	    }
           i := i + 1;
