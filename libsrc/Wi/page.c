@@ -1668,6 +1668,25 @@ row_refit_col (buffer_desc_t * buf, int map_pos, dbe_key_t * key, db_buf_t row, 
   return 1;
 }
 
+int
+row_refit_col_space_needed (buffer_desc_t * buf, int map_pos, dbe_key_t * key, db_buf_t row, dbe_col_loc_t * cl, db_buf_t bytes, int new_len, int * space_ret)
+{
+  /* insert the new val if fits.  If If fits, return the space left in space_ret.  If did not fit, return how much extra space is needed in space_ret */
+  int space = *space_ret;
+  short off, len;
+  pg_check_map (buf);
+  if (DV_DB_NULL == DV_TYPE_OF (bytes))
+    new_len = 0;
+  KEY_PRESENT_VAR_COL (key, row, (*cl), off, len);
+  if (new_len - len > space)
+    {
+      *space_ret = new_len - len;
+      return 0;
+    }
+  *space_ret -= new_len - len;
+  return 1;
+}
+
 
 void
 page_row_spacing (buffer_desc_t * buf, short row_gap, short ins_inx, int ins_gap)
@@ -1711,12 +1730,13 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
   db_buf_t row = buf->bd_buffer + pm->pm_entries[rd->rd_map_pos];
   dbe_key_t * key = rd->rd_key->key_versions[IE_KEY_VERSION (row)];
   int inx, rc = 0;
-  int space = row_space_after (buf, rd->rd_map_pos), avail, gap;
+  int space = row_space_after (buf, rd->rd_map_pos), avail, gap, space_needed = 0, space_before = space;
   if (!buf->bd_is_write || !buf->bd_is_dirty) GPF_T1 ("refit1 for non excl or non dirty buffer");
   for (inx = 0; inx < rd->rd_n_values; inx++)
     {
       if (rd->rd_upd_change[inx])
 	{
+	  space_before = space;
 	  rc = row_refit_col (buf, rd->rd_map_pos, key, row, rd->rd_upd_change[inx], rd->rd_values[inx], box_length_on_row (rd->rd_values[inx]), &space);
 	  if (!rc)
 	    break;
@@ -1734,11 +1754,24 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
   /* the cols did not fit.  See if need rearrange or split */
   if (recursive)
     {
-      log_error ("can not refit row key: %s space %d, gap: %d pm free: %d",
-	  	rd->rd_key ? rd->rd_key->key_name : "no key", space, gap, pm->pm_count);
+      log_error ("can not refit row key: %s space %d, gap: %d pm free: %d, pm count: %d",
+	  	rd->rd_key ? rd->rd_key->key_name : "no key", space, gap, pm->pm_bytes_free, pm->pm_count);
       GPF_T1 ("still did not refit on recursive call");
     }
-  space = ROW_ALIGN (space);
+  for (space = space_before; inx < rd->rd_n_values; inx++)
+    {
+      if (rd->rd_upd_change[inx])
+	{
+	  space_before = space;
+	  rc = row_refit_col_space_needed (buf, rd->rd_map_pos, key, row, rd->rd_upd_change[inx], rd->rd_values[inx], box_length_on_row (rd->rd_values[inx]), &space);
+	  if (!rc)
+	    {
+	      space_needed += space;
+	      space = space_before;
+	    }
+	}
+    }
+  space = ROW_ALIGN (space_needed);
     if (space > pm->pm_bytes_free)
     {
       rd->rd_op = RD_UPDATE;
