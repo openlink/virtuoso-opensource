@@ -2270,10 +2270,12 @@ bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long to = (long) bif_long_range_arg (qst, args, 1, "left", 0, 10000000); /* substr length */
   caddr_t res;
   long len;
-  dtp_t dtp1 = DV_TYPE_OF (str);
-  int sizeof_char = IS_WIDE_STRING_DTP (dtp1) ? sizeof (wchar_t) : sizeof (char);
+  dtp_t dtp1;
+  int sizeof_char;
 
 retry_unrdf:
+  dtp1 = DV_TYPE_OF (str);
+  sizeof_char = IS_WIDE_STRING_DTP (dtp1) ? sizeof (wchar_t) : sizeof (char);
   if (dtp1 == DV_DB_NULL)
     str = NULL;
   else if (dtp1 != DV_STRING && dtp1 != DV_C_STRING &&
