@@ -700,6 +700,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 		  goto next_key;
 		if (!key->key_distinct)
 		  {
+		    del_itc->itc_no_bitmap = 0; /* reset as prev ins may set it to true */
 		    res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
 		    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
 		  }
