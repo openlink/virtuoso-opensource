@@ -178,18 +178,17 @@ create procedure
 RDF_VIEW_DROP_STMT (in qualifier varchar)
 {
    declare drop_map any;
-   declare  mask varchar;
+   declare gr varchar;
 
    drop_map := '';
-   mask := sprintf ('http://%s/schemas/%s/qm-%%', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
-   for select "o" from (sparql define input:storage ""
-   select ?o from virtrdf:
+   gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   for select "s" from (sparql define input:storage ""
+   select ?s from virtrdf:
    {
-     virtrdf:DefaultQuadStorage-UserMaps ?p ?o .
-     filter ( ?p != rdf:type && ?o like ?:mask)
+     ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:gr)` ; virtrdf:qmUserSubMaps ?t
    }) x do
    {
-     drop_map := drop_map || sprintf ('SPARQL drop silent quad map <%s> .;\n', "o");
+     drop_map := drop_map || sprintf ('SPARQL drop silent quad map <%s> .;\n', "s");
    }
  return drop_map;
 }
@@ -1087,7 +1086,7 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
     1,\n',
     case when fct_installed
     then
-    '''/describe/?url=http://^{URIQADefaultHost}^%U&graph=http%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23'','
+    '''/describe/?url=http://^{URIQADefaultHost}^%U'','
     else
     '''/about/html/http://^{URIQADefaultHost}^%s'','
     end,
