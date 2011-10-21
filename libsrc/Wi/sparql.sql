@@ -3534,6 +3534,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
                 }
               else
                 {
+		  subj := charset_recode (subj, 'UTF-8', '_WIDE_');
                   http (' rdf:about="', ses); http_value (subj, 0, ses); http ('">', ses);
                 }
             }
@@ -3548,6 +3549,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
         {
           res := id_to_iri (subj);
 --          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = subj));
+	  res := charset_recode (res, 'UTF-8', '_WIDE_');
           http (' rdf:about="', ses); http_value (res, 0, ses); http ('">', ses);
         }
       if (not isiri_id (pred))
@@ -3615,6 +3617,7 @@ res_for_pred:
             {
               res := coalesce (id_to_iri(obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
 --              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
+	      res := charset_recode (res, 'UTF-8', '_WIDE_');
               http (' rdf:resource="', ses); http_value (res, 0, ses); http ('"/>', ses);
             }
         }
@@ -3672,6 +3675,7 @@ res_for_pred:
                 }
               else
                 {
+		  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
                   http (' rdf:resource="', ses); http_value (obj, 0, ses); http ('"/>', ses);
                 }
             }
