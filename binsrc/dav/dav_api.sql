@@ -2195,6 +2195,11 @@ DAV_RES_UPLOAD_STRSES_INT (
 }
 ;
 
+-- the sink queue, see below
+create table RDF_SINK_QUEUE (RSQ_PATH varchar, RSQ_ID int, RSQ_C_ID int, RSQ_GRAPH varchar, RSQ_STATE int, RSQ_TS timestamp, RSQ_TYPE varchar, RSQ_UID int, RSQ_GID int, primary key (RSQ_ID))
+create index RDF_SINK_QUEUE_STAT on RDF_SINK_QUEUE (RSQ_STATE, RSQ_TS)    
+;
+
 create procedure
 DAV_RES_UPLOAD_STRSES_INT_INNER (
     in path varchar,
@@ -2468,19 +2473,15 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
     -- dbg_obj_princ ('fine, DAV_RES_UPLOAD_STRSES_INT returns ', rc, ' for ', path);
 
 
-  declare c_id, this_c_id, is_rdf, depth integer;
-  declare rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
-  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, _col_p_id, _inherit any;
+  declare c_id, depth integer;
+  declare rdf_graph any;
+  declare _col_p_id, _inherit any;
 
   -- delete RDF data from separate (file) graph (if exists)
   RDF_SINK_DELETE (path);
 
-  -- flag for rdf upload
-  is_rdf := 0;
-
   -- get parent collection id
-  this_c_id := c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
-
+   c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
   -- is rdf_sink folder?
   rdf_graph := null;   
   depth := 0; 
@@ -2499,6 +2500,66 @@ look_again:
   rdfg_found:; 
   if (not DB.DBA.is_empty_or_null (rdf_graph))
   {
+    declare aq any;
+    insert soft RDF_SINK_QUEUE (RSQ_PATH, RSQ_ID, RSQ_C_ID, RSQ_GRAPH, RSQ_STATE, RSQ_TYPE, RSQ_UID, RSQ_GID) values (path, rc, c_id, rdf_graph, 0, type, ouid, ogid);
+    set_user_id (user);
+    aq := async_queue (1);
+    aq_request (aq, 'DB.DBA.RDF_SINK_AQ_RUN', vector ());
+  }
+  return rc;
+
+unhappy_upload:
+  if (__SQL_STATE = 'HT507')
+    return -41;
+  if (__SQL_STATE = 'HT508')
+    return -42;
+  if (__SQL_STATE = 'HT509')
+    return -43;
+  return -29;
+}
+;
+
+create procedure RDF_SINK_AQ_GET ()
+{
+  declare arr any;
+  set isolation = 'serializable';
+  arr := (select vector_agg (vector (RSQ_PATH, RSQ_ID, RSQ_C_ID, RSQ_GRAPH, RSQ_TYPE, RSQ_UID, RSQ_GID)) from (select top 10 RSQ_PATH, RSQ_ID, RSQ_C_ID, RSQ_GRAPH, RSQ_TYPE, RSQ_UID, RSQ_GID 
+  	from RDF_SINK_QUEUE where RSQ_STATE = 0 order by RSQ_TS for update) x);
+  foreach (any x in arr) do
+    {
+      update RDF_SINK_QUEUE set RSQ_STATE = 1 where RSQ_ID = x[1];
+    }
+  commit work;
+  return arr;
+}
+;
+
+create procedure DB.DBA.RDF_SINK_AQ_RUN ()
+{
+  declare aq, arr any;
+  if (exists (select 1 from RDF_SINK_QUEUE where RSQ_STATE = 1))
+    return;
+  aq := async_queue (10);
+  for (;;)
+    {
+      arr := RDF_SINK_AQ_GET ();
+      if (not length (arr))
+	return;
+      foreach (any x in arr) do
+	{
+	  aq_request (aq, 'DB.DBA.RDF_SINK_FUNC', vector (x[0], x[1], x[2], x[3], x[4], x[5], x[6]));
+	}
+      aq_wait_all (aq);
+      delete from RDF_SINK_QUEUE where RSQ_STATE = 2;
+      commit work;
+    }
+}
+;
+
+create procedure RDF_SINK_FUNC (in path varchar, in rc int, in c_id int, in rdf_graph any, in type any, in ouid int, in ogid int)
+{
+  declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
+  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, content any;
     declare exit handler for sqlstate '*'
     {
       goto _bad_content;
@@ -2513,6 +2574,7 @@ look_again:
     if (RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
     {
       rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+      rdf_graph_resource_name := replace (rdf_graph_resource_name, ' ', '_');
       rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
       if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
       {
@@ -2527,21 +2589,13 @@ look_again:
         rdf_graph_resource_id := WS.WS.GETID ('R');
         insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
           values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
-        DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
+	  DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 
+		'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
       }
     }
   _bad_content:;
-  }
-  return rc;
-
-unhappy_upload:
-  if (__SQL_STATE = 'HT507')
-    return -41;
-  if (__SQL_STATE = 'HT508')
-    return -42;
-  if (__SQL_STATE = 'HT509')
-    return -43;
-  return -29;
+  update RDF_SINK_QUEUE set RSQ_STATE = 2 where RSQ_ID = rc;
+  commit work;
 }
 ;
 
@@ -2578,10 +2632,13 @@ create procedure RDF_SINK_UPLOAD (
       lst := unzip_list (tmp_file);
       foreach (any x in lst) do
 	{
-	  declare fname, item_graph any;
+	  declare fname, item_graph, ss any;
+	  ss := string_output ();
 	  fname := x[0];
-	  item_graph := 'http://local.virt' || path || '/' || fname;
 	  content := unzip_file (tmp_file, fname);
+	  http_dav_url (fname, null, ss);
+	  fname := string_output_string (ss);
+	  item_graph := 'http://local.virt' || path || '/' || fname;
 	  RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges);
 	  SPARQL insert in graph ?:zip_graph { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
 	  SPARQL clear graph ?:item_graph;
