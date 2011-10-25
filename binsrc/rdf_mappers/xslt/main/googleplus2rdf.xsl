@@ -98,6 +98,9 @@
 	      </xsl:when>
 	    </xsl:choose>
 	</xsl:when>
+	<xsl:when test="$mode = 'comment'">
+	    <xsl:apply-templates select="items" mode="comment"/>
+	</xsl:when>
       </xsl:choose>
     </rdf:RDF>
   </xsl:template>
@@ -461,12 +464,22 @@
 	    <xsl:value-of select="originalContent"/>
 	  </oplgp:originalContent>
 	  <rdfs:label>
+	    <xsl:choose>
+	      <xsl:when test="string-length(content) &gt; 50">
 	    <xsl:value-of select="concat(substring (content, 1, 50), '...')"/>
+	      </xsl:when>
+	      <xsl:otherwise>
+		<xsl:value-of select="content"/>
+	      </xsl:otherwise>
+	    </xsl:choose>
 	  </rdfs:label>
 	</xsl:when>
 	<xsl:otherwise>
 	  <rdfs:label>
+	    <!-- 
 	    <xsl:value-of select="concat(objectType, ' object linked to activity ', ../id)"/>
+	    -->
+	    <xsl:value-of select="../title"/>
 	  </rdfs:label>
 	</xsl:otherwise>
       </xsl:choose>
@@ -536,6 +549,66 @@
 	  </xsl:if>
 	</oplgp:Attachment>
       </oplgp:attachment>
+  </xsl:template>
+
+  <!-- Comments mapping ---------------------->
+
+  <xsl:template match="items" mode="comment">
+    <xsl:variable name="activity_id" select="inReplyTo/id"/>
+    <xsl:variable name="activity_object_url" select="concat($resourceURL, '#ActivityObject_', $activity_id)"/>
+    <rdf:Description rdf:about="{$activity_object_url}">
+      <oplgp:has_comment>
+	<oplgp:Comment rdf:about="{concat($resourceURL, '#Comment_', id)}">
+	  <rdfs:label>
+	    <xsl:variable name="plain_content">
+	      <xsl:call-template name="strip-HTML">
+		<xsl:with-param name="text" select="object/content"/>
+	      </xsl:call-template>
+	    </xsl:variable>
+	    <xsl:choose>
+	      <xsl:when test="string-length($plain_content) &gt; 50">
+		<xsl:value-of select="concat(actor/displayName, ': ', substring ($plain_content, 1, 50), '...')"/>
+	      </xsl:when>
+	      <xsl:otherwise>
+		<xsl:value-of select="concat(actor/displayName, ': ',$plain_content)"/>
+	      </xsl:otherwise>
+	    </xsl:choose>
+	  </rdfs:label>
+	  <oplgp:id>
+	    <xsl:value-of select="id"/>
+	  </oplgp:id>
+	  <oplgp:in_reply_to rdf:resource="{$activity_object_url}"/>
+	  <oplgp:comment_content>
+	    <xsl:value-of select="object/content"/>
+	  </oplgp:comment_content>
+	  <xsl:if test="string-length(published) &gt; 0">
+	    <oplgp:published rdf:datatype="&xsd;date">
+	      <xsl:value-of select="published"/>
+	    </oplgp:published>
+	  </xsl:if>
+	  <xsl:if test="string-length(updated) &gt; 0">
+	    <oplgp:updated rdf:datatype="&xsd;date">
+	      <xsl:value-of select="updated"/>
+	    </oplgp:updated>
+	  </xsl:if>
+	  <oplgp:comment_self_link rdf:resource="{selfLink}"/>
+	  <oplgp:comment_verb>
+	    <xsl:value-of select="verb"/>
+	  </oplgp:comment_verb>
+	  <oplgp:in_reply_to_object>
+	    <oplgp:InReplyTo rdf:about="{concat($resourceURL, '#InReplyTo_', $activity_id, '_', position(.))}">
+	      <oplgp:activity_replied_to_id>
+		<xsl:value-of select="inReplyTo/id"/>
+	      </oplgp:activity_replied_to_id>
+	      <oplgp:in_reply_to_url rdf:resource="{inReplyTo/url}"/>
+	    </oplgp:InReplyTo>
+	  </oplgp:in_reply_to_object>
+	  <oplgp:comment_actor>
+	    <xsl:apply-templates select="actor" mode="activity" />
+	  </oplgp:comment_actor>
+	</oplgp:Comment>
+      </oplgp:has_comment>
+    </rdf:Description>
   </xsl:template>
 
   <!-- Named templates -->
@@ -707,6 +780,29 @@
     </xsl:for-each>
   </xsl:template>
 
+  <xsl:template name="strip-HTML">
+    <xsl:param name="text"/>
+    <xsl:choose>
+      <xsl:when test="contains($text, '&gt;')">
+	<xsl:choose>
+	  <xsl:when test="contains($text, '&lt;')">
+	    <xsl:value-of select="substring-before($text, '&lt;')"/>
+          </xsl:when>
+          <xsl:otherwise>
+	    <xsl:value-of select="substring-before($text, '&gt;')"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:call-template name="strip-HTML">
+	  <xsl:with-param name="text" select="substring-after($text, '&gt;')"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$text"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="*|text()" mode="activity"/>
+  <xsl:template match="*|text()" mode="comment"/>
 
 </xsl:stylesheet>

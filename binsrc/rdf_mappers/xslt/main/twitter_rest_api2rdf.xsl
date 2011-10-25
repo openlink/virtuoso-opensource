@@ -186,6 +186,11 @@
 		</rdf:Description>
 
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
+		<xsl:if test="starts-with (text, '#Self #WebID #Fingerprint:')">
+		    <opl:hasFingerprint>
+			<xsl:value-of select="substring-after (text, '#Self #WebID #Fingerprint:')"/>
+		    </opl:hasFingerprint>
+		</xsl:if>
             <xsl:choose>
                 <xsl:when test="$what = 'favorites'">
 			        <twitter:has_favorite rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
