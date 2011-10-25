@@ -8545,7 +8545,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:array-of-QuadMap } ) do
             {
-              if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 1) is null)
+              if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 3) is null)
                 result ('00000', 'Quad map array <' || "s" || '> is not used, removed');
             }
           for (sparql define input:storage ""
@@ -8569,7 +8569,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:QuadMapFormat } ) do
             {
-              if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 1) is null)
+              if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 3) is null)
                 result ('00000', 'Quad map format <' || "s" || '> is not used, removed');
             }
         }
@@ -9180,9 +9180,10 @@ create function DB.DBA.RDF_QM_CBD_OF_IRI_CLASS (in classiri varchar) returns any
             optional { ?sffs ?sffp ?sffo . }
           } union {
             `iri(?:classiri)` virtrdf:qmfSuperFormats ?sups .
-            optional { ?sups ?supp ?supo . }
+            optional { ?sups ?supp ?supo . FILTER (str(?supo) != bif:concat (str(?:classiri), '-nullable')) }
           } } ) );
   descr := dict_list_keys (descr, 2);
+  rowvector_digit_sort (descr, 0, 1);
   rowvector_digit_sort (descr, 1, 1);
   return descr;
 }
@@ -9191,7 +9192,7 @@ create function DB.DBA.RDF_QM_CBD_OF_IRI_CLASS (in classiri varchar) returns any
 create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any, in options any, in origclassiri varchar := null) returns any
 {
   declare graphiri varchar;
-  declare sprintffsid, superformatsid varchar;
+  declare sprintffsid, superformatsid, nullablesuperformatid varchar;
   declare basetype, basetypeiri varchar;
   declare bij, deref integer;
   declare sffs, res any;
@@ -9210,6 +9211,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   iritmpl := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (iritmpl);
   sprintffsid := classiri || '--Sprintffs';
   superformatsid := classiri || '--SuperFormats';
+  nullablesuperformatid := null;
   res := vector ();
   foreach (any arg in arglist) do
     if (UNAME'in' <> arg[0])
@@ -9272,15 +9274,16 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           arglist_copy := arglist;
           for (argctr := 0; (argctr < arglist_len); argctr := argctr + 1)
             arglist_copy[argctr][3] := 0;
+          nullablesuperformatid := classiri || '-nullable';
           res := vector_concat (res,
-            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (classiri || '-nullable', iritmpl, arglist_copy, options, NULL) );
+            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (nullablesuperformatid, iritmpl, arglist_copy, options, NULL) );
         }
       origclassiri := classiri;
     }
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
-      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri, 2);
       if (side_s is not null)
         {
           declare tmpname varchar;
@@ -9292,6 +9295,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           }
           old_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(classiri);
           new_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(tmpname);
+          -- dbg_obj_princ ('old descr is ', old_descr);
+          -- dbg_obj_princ ('new descr is ', new_descr);
           if (md5 (serialize (old_descr)) = md5 (serialize (new_descr)))
             {
               sparql define input:storage ""
@@ -9383,7 +9388,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
             virtrdf:qmfValRange-rvrRestrictions
               virtrdf:SPART_VARR_NOT_NULL .
           `iri(?:superformatsid)`
-            rdf:_1 `iri(bif:concat (?:classiri, "-nullable"))` };
+            rdf:_1 `iri(?:nullablesuperformatid)` };
     }
   commit work;
   return vector_concat (res, vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
@@ -9406,12 +9411,13 @@ fheaders is, say,
   declare uriprintname, uriparsename varchar;
   declare arglist_len, isnotnull integer;
   declare graphiri varchar;
-  declare superformatsid varchar;
+  declare superformatsid, nullablesuperformatid varchar;
   declare bij, deref integer;
   declare sffs any;
   declare res any;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   superformatsid := classiri || '--SuperFormats';
+  nullablesuperformatid := null;
   if (get_keyword_ucase ('DATATYPE', options) is not null or get_keyword_ucase ('LANG', options) is not null)
     signal ('22023', 'IRI class <' || classiri || '> can not have DATATYPE or LANG options specified');
   bij := get_keyword_ucase ('BIJECTION', options, 0);
@@ -9452,7 +9458,7 @@ fheaders is, say,
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
-      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri, 2);
       if (side_s is not null)
         {
           declare tmpname varchar;
@@ -9557,7 +9563,7 @@ fheaders is, say,
 create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any, in options any, in origclassiri varchar := null) returns any
 {
   declare graphiri varchar;
-  declare sprintffsid, superformatsid varchar;
+  declare sprintffsid, superformatsid, nullablesuperformatid varchar;
   declare basetype, basetypeiri varchar;
   declare const_dt, dt_expn, const_lang varchar;
   declare bij, deref integer;
@@ -9577,6 +9583,7 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
   iritmpl := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (iritmpl);
   sprintffsid := classiri || '--Sprintffs';
   superformatsid := classiri || '--SuperFormats';
+  nullablesuperformatid := null;
   res := vector ();
   foreach (any arg in arglist) do
     if (UNAME'in' <> arg[0])
@@ -9643,15 +9650,16 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
           arglist_copy := arglist;
           for (argctr := 0; (argctr < arglist_len); argctr := argctr + 1)
             arglist_copy[argctr][3] := 0;
+          nullablesuperformatid := classiri || '-nullable';
           res := vector_concat (res,
-            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (classiri || '-nullable', iritmpl, arglist_copy, options, NULL) );
+            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (nullablesuperformatid, iritmpl, arglist_copy, options, NULL) );
         }
       origclassiri := classiri;
     }
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
-      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri, 2);
       if (side_s is not null)
         {
           declare tmpname varchar;
@@ -9766,11 +9774,12 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
   declare uriprint any;
   declare uriprintname, uriparsename varchar;
   declare arglist_len integer;
-  declare superformatsid varchar;
+  declare superformatsid, nullablesuperformatid varchar;
   declare res any;
   declare const_dt, dt_expn, const_lang varchar;
   declare bij, deref integer;
   superformatsid := classiri || '--SuperFormats';
+  nullablesuperformatid := null;
   const_dt := get_keyword_ucase ('DATATYPE', options);
   const_lang := get_keyword_ucase ('LANG', options);
   bij := get_keyword_ucase ('BIJECTION', options, 0);
@@ -9808,7 +9817,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
-      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri, 2);
       if (side_s is not null)
         {
           declare tmpname varchar;
@@ -10044,7 +10053,7 @@ create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar, in silent integer
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
-      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri, 2);
       if (side_s is not null)
         signal ('22023', 'Can not drop class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
     }
