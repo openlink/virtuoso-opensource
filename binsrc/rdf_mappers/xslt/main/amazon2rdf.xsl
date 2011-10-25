@@ -176,11 +176,14 @@
           <!-- Add reference to gr:Brand object -->
             <gr:Brand rdf:about="{vi:proxyIRI ($base, '', 'Brand')}">
               <xsl:variable name="brand" select="//amz:ItemAttributes/amz:Brand[1]|//amz:ItemAttributes/amz:Author[1]" />
-              <gr:name><xsl:value-of select="$brand"/></gr:name>
-              <rdfs:label><xsl:value-of select="$brand"/></rdfs:label>
+						<gr:name>
+							<xsl:value-of select="$brand"/>
+						</gr:name>
+						<rdfs:label>
+							<xsl:value-of select="$brand"/>
+						</rdfs:label>
           <!--     <rdf:type resource="&gr;Brand" /> -->
             </gr:Brand>
-          
 					<xsl:if test="//amz:ItemAttributes/amz:ListPrice">
 						<gr:Offering rdf:about="{vi:proxyIRI($base, '', 'ListOffer')}">
                          				<opl:providedBy>
@@ -436,7 +439,14 @@
       <xsl:value-of select="."/>
     </dc:title>
     <rdfs:label>
+			<xsl:choose>
+				<xsl:when test="//amz:ProductGroup[ . = 'Book']">
+					<xsl:value-of select="concat('Book: ', .)"/>
+				</xsl:when>
+				<xsl:otherwise>
       <xsl:value-of select="concat('Product:', .)"/>
+				</xsl:otherwise>
+			</xsl:choose>
     </rdfs:label>
     </xsl:template>
   
@@ -706,10 +716,14 @@
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:Author" mode="bibo">
-      <dcterms:creator><xsl:value-of select="."/></dcterms:creator>
+		<dcterms:creator>
+			<xsl:value-of select="."/>
+		</dcterms:creator>
       <dbpedia:author>
         <foaf:Person rdf:about="{vi:proxyIRI ($base, '', translate(., ' ', '_'))}">
-          <foaf:name><xsl:value-of select="."/></foaf:name>
+				<foaf:name>
+					<xsl:value-of select="."/>
+				</foaf:name>
         </foaf:Person>
       </dbpedia:author>
     </xsl:template>

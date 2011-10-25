@@ -310,6 +310,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_TWITTER', null, 'Twitter');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('http://search.twitter.com/search.json\\?q=%40Fingerprint.*',
+	'URL', 'DB.DBA.RDF_LOAD_TWITTER_FP', null, 'Twitter WebIDs');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://.*salesforce.com/.*)|'||
 	'(https://.*salesforce.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_SALESFORCE', null, 'SalesForce');
@@ -2534,6 +2538,31 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	what_ := 'user';
 	url := sprintf('http://twitter.com/users/show/%s.xml', id);
 	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_TWITTER_FP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xt, xd any;
+	declare url, tmp varchar;
+	declare tree any;
+	declare ses any;
+	declare exit handler for sqlstate '*'
+	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	tree := json_parse (_ret_body);
+	ses := string_output ();
+	DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
+	ses := string_output_string (ses);
+	xt := xtree_doc (ses, 2);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter_fp2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (new_origin_uri)));
+	xd := serialize_to_UTF8_xml (xt);
+	--dbg_obj_print_vars (xd);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
 ;
@@ -6009,7 +6038,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 
 create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, xt, api_urls, tmp any;
+  declare xd, xd2, xt, api_urls, tmp any;
   declare url, people_api_url, activity_api_url any;
   declare uid, post_id, api_mode varchar;
   declare first_pass integer;
@@ -6077,6 +6106,9 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
     RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+
+    DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (graph_iri, new_origin_uri, dest, _key, opts, activity_id);
+
     return 1;
   }
 
@@ -6099,20 +6131,64 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
     tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     if (length (tmp) = 0)
       return 0;
+  
     tmp := json_parse (tmp);
     xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
       vector ('baseUri', new_origin_uri, 'mode', api_mode));
-    xd := serialize_to_UTF8_xml (xt);
+    xd2 := serialize_to_UTF8_xml (xt);
+
     if (first_pass)
     {
       RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
       first_pass := 0;
     }
-    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd2, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+
+    if (api_mode = 'activity')
+    {
+      declare vReplies_urls any;
+      declare replies_url varchar;
+      vReplies_urls := xpath_eval ('/results/items/object/replies/selfLink', xd, 0);
+      foreach (any replies_url_entry in vReplies_urls) do
+      {
+        replies_url := cast (replies_url_entry as varchar);
+        DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (graph_iri, new_origin_uri, dest, _key, opts, null, replies_url);
+      }
+    }
   }
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in _key any, in opts any, 
+  in activity_id varchar,	  -- Used when sponging a G+ Post directly
+  in replies_url varchar := null  -- Used when sponging an G+ Activities list
+  )
+{
+  declare url, tmp, xd, xt any;
+
+  if (activity_id is not null)
+    url := sprintf ('https://www.googleapis.com/plus/v1/activities/%s/comments?key=%s', activity_id, _key);
+  else if (replies_url is not null)
+    url := sprintf ('%s?key=%s', replies_url, _key);
+  else
+    return;
+  tmp := '';
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  if (length (tmp) = 0)
+  {
+    log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+    return;
+  }
+  tmp := json_parse (tmp);
+  xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
+    vector ('baseUri', new_origin_uri, 'mode', 'comment'));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 }
 ;
 
