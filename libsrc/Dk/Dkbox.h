@@ -251,12 +251,14 @@ ptr += 4
 
 #ifdef DOUBLE_ALIGN
 
+#define ALIGN_LIKE_BOX(x)		ALIGN_8(x)
 #define STATIC_DV_NULL 			{0,0,0,0,0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 		8
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) (~((ptrlong)7) & (ptrlong)(area))) + BOX_AUTO_OVERHEAD)
 
 #else /* DOUBLE_ALIGN */
 
+#define ALIGN_LIKE_BOX(x)		ALIGN_4(x)
 #define STATIC_DV_NULL 			{0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 		4
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) area) + BOX_AUTO_OVERHEAD)
@@ -708,6 +710,7 @@ EXE_EXPORT (box_t, box_dv_uname_nchars, (const char *buf, size_t buf_len));
 EXE_EXPORT (box_t, box_dv_uname_substr, (ccaddr_t box, int n1, int n2));
 EXE_EXPORT (box_t, box_double, (double d));
 EXE_EXPORT (box_t, box_float, (float d));
+EXE_EXPORT (box_t, box_dv_wide_nchars, (const wchar_t *buf, size_t buf_wchar_count));
 #ifdef _DKSYSTEM_H
 EXE_EXPORT (caddr_t, box_vsprintf, (size_t buflen_eval, const char *format, va_list tail));
 #endif
@@ -772,6 +775,7 @@ box_t dbg_box_dv_uname_nchars (const char *file, int line, const char *buf, size
 box_t dbg_box_dv_uname_substr (const char *file, int line, ccaddr_t box, int n1, int n2);
 box_t dbg_box_double (const char *file, int line, double d);
 box_t dbg_box_float (const char *file, int line, float d);
+box_t dbg_box_dv_wide_nchars (const char *file, int line, const wchar_t *buf, size_t buf_wchar_count);
 #ifdef _DKSYSTEM_H
 caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const char *format, va_list tail);
 #endif
@@ -801,6 +805,7 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define box_dv_uname_substr(S,N1,N2)		dbg_box_dv_uname_substr (__FILE__, __LINE__, (S), (N1), (N2))
 #define box_double(D)				dbg_box_double (__FILE__, __LINE__, (D))
 #define box_float(D)				dbg_box_float (__FILE__, __LINE__, (D))
+#define box_dv_wide_nchars(B,WCHAR_COUNT)	dbg_box_dv_wide_nchars (__FILE__, __LINE__, (B), (WCHAR_COUNT))
 #define box_vsprintf(L,F,T)			dbg_box_vsprintf (__FILE__, __LINE__, (L), (F), (T))
 
 #endif

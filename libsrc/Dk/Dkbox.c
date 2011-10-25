@@ -1443,6 +1443,17 @@ DBG_NAME (box_dv_short_strconcat) (DBG_PARAMS const char *str1, const char *str2
 }
 
 
+box_t
+DBG_NAME (box_dv_wide_nchars) (DBG_PARAMS const wchar_t *buf, size_t buf_wchar_count)
+{
+  wchar_t *box;
+  box = (wchar_t *)DBG_NAME (dk_alloc_box) (DBG_ARGS (uint32) ((buf_wchar_count + 1) * sizeof (wchar_t)), DV_WIDE);
+  memcpy (box, buf, buf_wchar_count * sizeof (wchar_t));
+  box[buf_wchar_count] = (wchar_t)'\0';
+  return (box_t)box;
+}
+
+
 caddr_t
 DBG_NAME (box_vsprintf) (DBG_PARAMS size_t buflen_eval, const char *format, va_list tail)
 {
@@ -2461,6 +2472,14 @@ box_t
 box_float (float d)
 {
   return dbg_box_float (__FILE__, __LINE__, d);
+}
+
+
+#undef box_dv_wide_nchars
+box_t
+box_dv_wide_nchars (const wchar_t *buf, size_t buf_wchar_count)
+{
+  return dbg_box_dv_wide_nchars (__FILE__, __LINE__, buf, buf_wchar_count);
 }
 
 

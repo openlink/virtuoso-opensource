@@ -1145,7 +1145,7 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     exec ('checkpoint');
   else
     {
-      cl_exec ('rdf_check_init()');
+      exec ('rdf_check_init()');
     cl_exec ('checkpoint');
     }
 
