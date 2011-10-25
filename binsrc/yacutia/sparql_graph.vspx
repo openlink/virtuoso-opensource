@@ -69,6 +69,12 @@
 		     _graph := self.graph_name;
 		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
                      SPARQL DROP SILENT GRAPH iri (?:_graph) ; 
+		     for select "s" from (sparql 
+		        define input:storage "" 
+			select ?s from virtrdf: { ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:_graph)` ; virtrdf:qmUserSubMaps ?t }) x do
+		       {
+			 exec (sprintf ('SPARQL drop silent quad map <%s> . ', "s"));	
+		       }
 		   }
 		self.mode := '';
           ]]></v:script>

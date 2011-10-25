@@ -38,7 +38,7 @@
 	    <vm:menu>
 		<vm:menuitem value="Linked Data Objects"/>
 	    </vm:menu>
-	    <vm:header caption="RDF Subscriptions"/>
+	    <vm:header caption="Subscriptions (PHSB)"/>
 	    <vm:pagebody>
 		<v:on-init>
 		    <![CDATA[
