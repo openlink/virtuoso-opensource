@@ -32,7 +32,9 @@
 #define LIKE_ARG_WCHAR	2
 #define LIKE_ARG_UTF	3
 
-int cmp_like (const char *string, const char *pattern, collation_t *collation, char escape_char, int strtype, int patterntype );
-unsigned char *nc_strstr (const unsigned char *string1, const unsigned char *string2);
+extern int cmp_like (const char *string, const char *pattern, collation_t *collation, char escape_char, int strtype, int patterntype );
+extern unsigned char *nc_strstr (const unsigned char *string1, const unsigned char *string2);
+extern wchar_t *nc_strstr__wide (const wchar_t *string1, const wchar_t *string2);
+
 
 #endif /* _WI_STRLIKE_H */

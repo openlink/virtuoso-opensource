@@ -28,6 +28,8 @@
 #ifndef _SQLBIF_H
 #define _SQLBIF_H
 
+#include "sqlnode.h"
+
 typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
     long *scale, caddr_t *collation);
 

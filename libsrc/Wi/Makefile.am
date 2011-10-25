@@ -146,6 +146,7 @@ libwi_la_SOURCES = \
 	bif_intl.c \
 	bif_json.c \
 	bif_regexp.c \
+	bif_search_excerpt.c \
 	bif_uuencode.c \
 	bitmap.c \
 	blob.c \
@@ -263,6 +264,7 @@ libwi_odbc_la_SOURCES = \
 	bif_intl.c \
 	bif_json.c \
 	bif_regexp.c \
+	bif_search_excerpt.c \
 	bif_uuencode.c \
 	bitmap.c \
 	blob.c \
