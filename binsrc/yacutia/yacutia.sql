@@ -442,7 +442,7 @@ create procedure adm_menu_tree ()
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="Linked Data Objects" url="sparql_input.vspx"  id="189" tip="Linked Data Objects" allowed="yacutia_message">',
+ <node name="Linked Data" url="sparql_input.vspx"  id="189" tip="Linked Data" allowed="yacutia_message">',
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
@@ -488,7 +488,7 @@ case when 0 and check_package('rdf_mappers') then
    <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
    <node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
-   '<node name="RDF Subscriptions" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
+   '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
        else
        '' 
        end,
@@ -5514,6 +5514,43 @@ create procedure Y_SYNCML_DETECT (
 }
 ;
 
+create procedure Y_SYNCML_VERSIONS ()
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_version') is not null)
+    return DB.DBA.yac_syncml_version ();
+
+  return vector ();
+}
+;
+
+create procedure Y_SYNCML_VERSION (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_version_get') is not null)
+    return DB.DBA.yac_syncml_version_get (path);
+
+  return 'N';
+}
+;
+
+create procedure Y_SYNCML_TYPES ()
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_type') is not null)
+    return DB.DBA.yac_syncml_type ();
+
+  return vector ();
+}
+;
+
+CREATE PROCEDURE Y_SYNCML_TYPE (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_type_get') is not null)
+    return DB.DBA.yac_syncml_type_get (path);
+
+  return 'N';
+}
+;
 
 create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any)
 {

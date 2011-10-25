@@ -125,6 +125,14 @@
 				</v:select-list>
 			      </td>
 			      <td>
+				<v:button name="add_to_all" value="&gt;&gt;&gt;" action="simple" >
+				  <v:on-post>
+				    self.pkeys := vector_concat (self.pkeys, self.avail);
+				    self.avail := vector ();
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+			        </v:button><br />
 				<v:button name="add_to" value="&gt;" action="simple" >
 				  <v:on-post>
 				    declare av, se, sel, nav any;
@@ -170,6 +178,14 @@
 					  nav := vector_concat (nav, vector (c));
 				      }
 				    self.pkeys := nav;
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+			        </v:button><br />
+				<v:button name="remove_from_all" value="&lt;&lt;&lt;" action="simple" >
+				  <v:on-post>
+				    self.avail := vector_concat (self.avail, self.pkeys);
+				    self.pkeys := vector ();
 				    self.av_cols.vc_data_bind (e);
 				    self.se_cols.vc_data_bind (e);
 				  </v:on-post>

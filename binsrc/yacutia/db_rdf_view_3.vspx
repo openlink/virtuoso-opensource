@@ -114,6 +114,7 @@
 		 gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 		 stat := '00000';
 		 msg := 'OK';
+		 sparql clear graph iri (?:gr);
 		 exec ('DB.DBA.TTLP (?, \'\', ?, 255)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 		 res [length(arr)] := vector (vector (stat, msg));
 		 exec (sprintf ('sparql
@@ -268,6 +269,23 @@
 	  </table>
 	  <?vsp
 	    }  
+	  ?>
+	  <h2>Quad Maps</h2>
+	  <?vsp
+	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
+	       stat := '00000';
+	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	     gr := sprintf ('http://%s/%s#', defhost, self.base_url);
+	       if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+	         fct_installed := 1;
+               else 
+	         fct_installed := 0;
+	     for select * from (sparql define input:storage "" select ?s from virtrdf: { ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:gr)` ; virtrdf:qmUserSubMaps ?t }) x do
+               {
+	         http (sprintf ('<a href="/describe/?uri=%U" target="_blank">%V</a><br/>', "s", "s")); 
+	       }  
+	  ?>
+	  <?vsp  
 	  if (self.view_vd or self.owl_vd)
 	    {
 	  ?>
@@ -276,23 +294,15 @@
 	    }
 	  ?>
 	  <?vsp
-	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
-	       stat := '00000';
-	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-	       if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
-	         fct_installed := 1;
-               else 
-	         fct_installed := 0;
 	       if (__proc_exists (fix_identifier_case ('shcompo_clear'), 2) is not null)
 	         shcompo_clear ();
 	       if (self.view_vd)
                  {
-		   gr := sprintf ('http://%s/%s#', defhost, self.base_url);
 		   qr := sprintf ('sparql select distinct ?class from <%s> { ?s a ?class } limit 10', gr);
 		   exec (qr, stat, msg, vector (), 0, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		     {
-		       http (sprintf ('<div>Instance Data Named Graph: %V <br/>', gr));
+		     http (sprintf ('<div>Instance Data Named Graph: <a href="/describe/?uri=%U"i target="_blank">%V</a> <br/>', gr, gr));
 		       foreach (any _row in data) do
 			 {
 			   if (_row[0] not like '%/stat#%')
@@ -318,7 +328,7 @@
 		   exec (qr, stat, msg, vector (), 1, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
-		   http ('<div>Metadata Data (VoiD): <br/>');
+		       http ('<div>Metadata Data (VoiD): ');
 		   if (fct_installed)
 		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
                    else  
@@ -328,20 +338,15 @@
 	        }
 	       if (self.owl_vd)
                  {
- 		   gr := sprintf ('http://%s/schemas/%s#', defhost, self.base_url);
-		   qr := sprintf ('sparql select ?s from <%s> { ?s a ?class } limit 1', gr);
-		   exec (qr, stat, msg, vector (), 1, meta, data);
-		   if (stat = '00000' and length (data) and length (data[0]))
-		   {
-		   http ('<div>Ontology Data Named Graph: <br/>');
+		   gr := sprintf ('http://%s/schemas/%s/', defhost, self.base_url);
+		   http ('<div>Ontology Data Named Graph: ');
 		   if (fct_installed)
-	             http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+	             http (sprintf ('<a href="%V" target="_blank">%V</a>', gr, gr));
 		   else
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
+	             http (sprintf ('<a href="%V" target="_blank">%V</a>', replace (gr, '#', '%01'), gr));
 		   http ('</div>');
 	           }
 	        }
-	    }
 	  ?>
       </td>
   </tr>

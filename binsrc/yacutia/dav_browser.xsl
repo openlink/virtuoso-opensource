@@ -948,7 +948,7 @@ self.vc_data_bind (e);
                         declare i integer;
 
                         idx := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
-                        _fidx := yac_syncml_version ();
+                        _fidx := Y_SYNCML_VERSIONS ();
                         for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
@@ -966,7 +966,7 @@ self.vc_data_bind (e);
                         declare i integer;
 
                         idx := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
-                        _fidx := yac_syncml_type ();
+                        _fidx := Y_SYNCML_TYPES ();
                         for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
@@ -1585,8 +1585,8 @@ self.vc_data_bind (e);
                         declare _fidx, idx any;
                         declare i integer;
 
-                          idx := get_keyword ('s_v', self.vc_page.vc_event.ve_params, yac_syncml_version_get (self.source_dir));
-                        _fidx := yac_syncml_version ();
+                          idx := get_keyword ('s_v', self.vc_page.vc_event.ve_params, Y_SYNCML_VERSION (self.source_dir));
+                          _fidx := Y_SYNCML_VERSIONS ();
                           for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
@@ -1603,8 +1603,8 @@ self.vc_data_bind (e);
                         declare _fidx, idx any;
                         declare i integer;
 
-                          idx := get_keyword ('s_t', self.vc_page.vc_event.ve_params, yac_syncml_type_get (self.source_dir));
-                        _fidx := yac_syncml_type ();
+                          idx := get_keyword ('s_t', self.vc_page.vc_event.ve_params, Y_SYNCML_TYPE (self.source_dir));
+                          _fidx := Y_SYNCML_TYPES ();
                           for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
