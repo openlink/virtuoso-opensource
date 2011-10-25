@@ -31,7 +31,7 @@
 
     <owl:Class rdf:about="&opl;DataSource">
         <rdfs:label>DataSource</rdfs:label>
-        <rdfs:comment>The source ontology used for transformation</rdfs:comment>
+        <rdfs:comment>The data source used for transformation</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
     </owl:Class>
 
@@ -48,7 +48,7 @@
     </owl:Class>
 
     <owl:Property rdf:about="&opl;isDescribedUsing">
-        <rdfs:comment>The source ontology URI whcih is used for transformation</rdfs:comment>
+        <rdfs:comment>The source ontology URI which is used for transformation</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;DataSource"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
         <rdfs:label>Is Described Using</rdfs:label>
@@ -86,4 +86,28 @@
         <rdfs:label>Error Text</rdfs:label>
         <rdfs:range rdf:resource="&xsd;string"/>
     </owl:AnnotationProperty>
+
+    <owl:Property rdf:about="&opl;mentions">
+        <rdfs:comment>A named entity mentioned in the source data</rdfs:comment>
+        <rdfs:domain rdf:resource="&opl;DataSource"/>
+        <rdfs:isDefinedBy rdf:resource="&opl;"/>
+        <rdfs:label>mentions</rdfs:label>
+        <rdfs:range rdf:resource="&opl;NamedEntity"/>
+    </owl:Property>
+
+    <owl:Class rdf:about="&opl;NamedEntity">
+        <rdfs:label>NamedEntity</rdfs:label>
+        <rdfs:comment>A named entity identified by a Sponger NLP cartridge</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="&opl;"/>
+    </owl:Class>
+
+    <owl:Property rdf:about="&opl;namedEntityConcept">
+        <rdfs:comment>The concept (type of thing) the named entity represents</rdfs:comment>
+        <rdfs:domain rdf:resource="&opl;NamedEntity"/>
+        <rdfs:isDefinedBy rdf:resource="&opl;"/>
+        <rdfs:label>named entity concept</rdfs:label>
+        <rdfs:range rdf:resource="&owl;Thing"/>
+    </owl:Property>
+
 </rdf:RDF>
+
