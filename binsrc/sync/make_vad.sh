@@ -203,6 +203,7 @@ directory_init() {
   mkdir vad/data
   mkdir vad/data/SyncML
   cp -f syncml.sql vad/data/SyncML
+  cp -f syncml_drop.sql vad/data/SyncML
 }
 
 virtuoso_shutdown() {
@@ -260,17 +261,11 @@ sticker_init() {
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/SyncML/syncml.sql', 0, 'report', 1);" >> $STICKER
-  echo "      " >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
-  echo "      delete from SYNC_DEVICES;" >> $STICKER
-  echo "      delete from SYNC_MAPS;" >> $STICKER
-  echo "      delete from SYNC_ANCHORS;" >> $STICKER
-  echo "      delete from SYNC_RPLOG;" >> $STICKER
-  echo "      delete from SYNC_SESSION;" >> $STICKER
-  echo "      drop procedure DB.DBA.SYNCML;" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/SyncML/syncml_drop.sql', 0, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
@@ -279,6 +274,7 @@ sticker_init() {
   IFS='
 ' 
   echo "  <file type=\"dav\" source=\"data\" target_uri=\"SyncML/syncml.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"dav\" source=\"data\" target_uri=\"SyncML/syncml_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   IFS="$oldIFS"
   echo "</resources>" >> $STICKER
   echo "<registry>" >> $STICKER
