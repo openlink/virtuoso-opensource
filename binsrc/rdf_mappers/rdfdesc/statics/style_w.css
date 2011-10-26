@@ -170,4 +170,8 @@ line-height: 120%;
 #qrcode { 
   float: right;
   clear: right;
-  margin-right: 20px} 
+  margin-right: 20px; } 
+
+#FT_share { float: center; clear: both; text-align: center; margin-top: 4px; }
+
+.addthis_toolbox { width: 400px; margin: 0 auto; }

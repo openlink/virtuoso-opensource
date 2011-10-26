@@ -1,5 +1,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" version="XHTML+RDFa 1.0" xml:lang="en">
+<html 
+    xmlns="http://www.w3.org/1999/xhtml" 
+    version="XHTML+RDFa 1.0" 
+    xml:lang="en"
+    xmlns:addthis="http://www.addthis.com/help/api-spec"
+    xmlns:fb="http://www.facebook.com/2008/fbml"
+>
 <?vsp
 
    declare _G, _S, _S_save, odd_position any;
@@ -16,6 +22,18 @@
        http ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><body>You are not allowed to sponge due to Access Control restrictions.</body></html>');
        return;
      }
+
+  --
+  -- Get AddthisKey from registry
+  --
+  --  if 0 then disable addthis support
+  --  if 1 use temp key to get basic social bookmarking
+  --  any other value should be a registered key
+  --
+  declare _addthis_key varchar;
+  _addthis_key := registry_get ('rdf_mappers_addthis_key');
+  if (0 = _addthis_key) _addthis_key := '0';
+  if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
    label := '';
    iri_type := 'unknown';
@@ -464,6 +482,31 @@
 
 <!-- footer -->
     <div id="footer">
+<?vsp if (_addthis_key <> '0') { ?>
+  <div id="FT_share">
+    <!-- AddThis Button BEGIN -->
+	<div class="addthis_toolbox addthis_default_style ">
+	<a class="addthis_button_facebook_like" id="fb_like_id"></a>
+	<a class="addthis_button_tweet"></a>
+	<a class="addthis_button_google_plusone" id="g_plusone_id"></a>
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+    <script type="text/javascript"> 
+    /*<![CDATA[*/
+	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
+	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    /*]]>*/
+    </script>
+    <script type="text/javascript"> 
+	var fb_like_id = document.getElementById('fb_like_id');
+	if (fb_like_id) fb_like_id.setAttribute('fb:like:layout', 'button_count');
+	var g_plusone_id = document.getElementById('g_plusone_id');
+	if (g_plusone_id) g_plusone_id.setAttribute('g:plusone:size', 'medium');
+    </script>
+    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <!-- AddThis Button END -->
+  </div><!-- ft_s -->
+<?vsp } ?>
       <?vsp if (error_message is null) { ?>
       <div id="ft_t">
         Alternative Linked Data Views:
