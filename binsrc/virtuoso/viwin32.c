@@ -1256,7 +1256,7 @@ usage (void)
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
 
-  sprintf (line, "Compiled for 32 Bit Windows Operating Environments\n");
+  sprintf (line, "Compiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
 
   if (build_special_server_model && strlen(build_special_server_model) > 1)
