@@ -46,13 +46,9 @@ select fct_query (xtree_doc ('
 <query><text>semantic</text> <view type="text" limit="10" />
 </query>'));
 
-
-
-
-
-
 select fct_test ('
-<query> <class iri="http://xmlns.com/foaf/0.1/Person" />
+<query> 
+  <class iri="http://xmlns.com/foaf/0.1/Person" />
 <view type="properties" limit="10" /></query>
  ', 1000);
 
@@ -66,10 +62,9 @@ select fct_test  ('<query> <text>hottie</text><view type="text-properties" limit
 
 select fct_test  ('<query> <text property="http://purl.org/dc/elements/1.1/description">hottie</text><view type="text" limit="20"/></query>');
 
-
-
-select xslt ('file://fct/fct_vsp.xsl', xtree_doc ('<facets><result><row><column>http://xyz.com/xyz.htm</column></row></result></facets>'), vector ('sid', 2, 'type', 'properties'))
-
+select xslt ('file://fct/fct_vsp.xsl',
+             xtree_doc ('<facets><result><row><column>http://xyz.com/xyz.htm</column></row></result></facets>'), 
+             vector ('sid', 2, 'type', 'properties'))
 
 create procedure fct_exp (in str varchar)
 {

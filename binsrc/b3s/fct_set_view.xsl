@@ -34,8 +34,16 @@
 <xsl:param name="name"/>
 <xsl:param name="timeout"/>
 <xsl:param name="location-prop"/>
+<xsl:param name="dtp"/>
+<xsl:param name="cond_t"/>
 <xsl:param name="lo"/>
 <xsl:param name="hi"/>
+<xsl:param name="neg"/>
+<xsl:param name="lang"/>
+<xsl:param name="val"/>
+<xsl:param name="lat"/>
+<xsl:param name="lon"/>
+<xsl:param name="d"/>
 
 <xsl:template match = "query | property |property-of">
 
@@ -110,17 +118,16 @@
 	</class>
       </xsl:when>
 
-      <xsl:when test="$op = 'class'">
+        <!-- xsl:when test="$op = 'class'">
         <class iri="{$iri}"/>
         <xsl:element name="view">
             <xsl:attribute name="type">list</xsl:attribute>
 	  <xsl:attribute name="limit"> <xsl:value-of select="$limit"/></xsl:attribute>
 	  <xsl:attribute name="offset"> <xsl:value-of select="$offset"/></xsl:attribute>
 	</xsl:element>
-      </xsl:when>
+        </xsl:when -->
     </xsl:choose>
     
-
     <xsl:if test="$op = 'value' and
 		  $pos = count (./ancestor::*[name () = 'query' or
 		                              name () = 'property' or
@@ -131,24 +138,51 @@
       <value xml:lang="{$lang}"
 	     datatype="{$datatype}"
 	     op="{$cmp}">
-        <xsl:value-of select="$iri"/>
+          <xsl:value-of select="$val"/>
       </value>
     </xsl:if>
 
-      <xsl:if test="$op = 'value-range' and
+      <xsl:if test="$op = 'cond-range' and
 	            $pos = count (./ancestor::*[name () = 'query' or
 		                                name () = 'property' or
 			                        name () = 'property-of']) +
                            count (./preceding::*[name () = 'query' or
 			                         name () = 'property' or
 				                 name () = 'property-of'])">
-        <value-range xml:lang="{$lang}"
+        <cond-range xml:lang="{$lang}"
 	       datatype="{$datatype}"
                hi="{$hi}"
-               lo="{$lo}">
-        </value-range>
+               lo="{$lo}"
+               neg="{$neg}">
+        </cond-range>
       </xsl:if>
 
+      <xsl:if test="$op = 'cond' and
+	            $pos = count (./ancestor::*[name () = 'query' or
+		                                name () = 'property' or
+			                        name () = 'property-of']) +
+                           count (./preceding::*[name () = 'query' or
+			                         name () = 'property' or
+				                 name () = 'property-of'])">
+        <xsl:choose>
+          <xsl:when test="$cond_t = 'in'">
+            <cond type="{$cond_t}" neg="{$neg}">
+              <xsl:copy-of select="$parms"/>
+            </cond>
+          </xsl:when>
+          <xsl:when test="$cond_t = 'near'">
+            <cond type="{$cond_t}" neg="{$neg}" lat="{$lat}" lon="{$lon}" d="{$d}" location-prop="{$location-prop}"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <cond type="{$cond_t}"
+              xml:lang="{$lang}"
+	      datatype="{$datatype}"
+              neg="{$neg}">
+              <xsl:value-of select="$val"/>
+            </cond>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:if>
   </xsl:copy>
 </xsl:if>
 

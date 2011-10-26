@@ -13,7 +13,7 @@
 ?>
 
 <script type="text/javascript" >
-    var featureList=["map", "combolist", "ajax", "tab", "json"];
+    var featureList=["map", "combolist", "ajax", "tab", "json", "location"];
 </script>
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
 <script type="text/javascript" src="facet.js"></script>
@@ -123,13 +123,12 @@ declare exit handler for sqlstate '*'
   http('  <div class="body">An unexpected error was encountered while processing your request.</div>\n');
   http('  <div class="diag">\n');
   http('  <h3>Diagnostics</h3>\n');
-  http(sprintf ('<pre>SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
-  http(sprintf ('<pre>SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
+  http(sprintf ('<pre class="sqlstate">SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
+  http(sprintf ('<pre class="sqlmsg">SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
+  http('<a href="#" id="err_det_toggle" onclick="javascript: OAT.Dom.show (err_details);">More info&hellip;</a>');
+  http('  <div id="err_details" style="display:none">');
   if (connection_get ('sparql_query') is not null)
-    http(sprintf ('<pre>SPARQL  : %s</pre><br/>\n', connection_get ('sparql_query')));
-  http('  </div>\n');
-  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');  
-  http('  </div>\n');
+    http(sprintf ('<pre class="sparqlqry">SPARQL:\n%s</pre><br/>\n', connection_get ('sparql_query')));
 
   commit work;
   declare _state any;
@@ -143,6 +142,19 @@ declare exit handler for sqlstate '*'
 		 __SQL_STATE,
 		 __SQL_MESSAGE,
 		 serialize(params));
+
+  http('    <pre class="facet_state">STATE:\n');
+  http('<![CDATA[\n');
+  http_value(_state);
+  http('\n]]>');
+
+  http('    </pre><br/>');
+
+  http('  </div>\n');
+  http('  </div>\n');
+  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');  
+  http('</div>\n');
+
   goto footer;
   
 };
@@ -153,7 +165,7 @@ footer:;
 <div class="dbg" style="display: none"><pre><![CDATA[<?vsp if (sq is not null) http(sq); ?>]]></div>
 </div><!-- #MD -->
 <div id="FT">
-  Faceted Search &amp; Find service<br/>
+  Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
   <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
   <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a>
   <?vsp 

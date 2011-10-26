@@ -144,7 +144,7 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
        }
    }
 
-   if (sid is not null) connection_set ('sid', sid);
+   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', sid);
 }
 ;
 
@@ -578,8 +578,11 @@ create procedure b3s_label (in _S any, in langs any)
   declare lang, stat, msg varchar;
 
   stat := '00000';
-  exec (sprintf ('sparql define input:inference "facets" '||
-  'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  --exec (sprintf ('sparql define input:inference "facets" '||
+  --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'') 
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) order by 3', 
+	stat, msg, vector (_S), 0, meta, data);
   if (stat <> '00000')
     return '';
   best_str := '';
@@ -598,7 +601,9 @@ create procedure b3s_label (in _S any, in langs any)
 	}
     }
   if (__tag (best_str) = 246)
-    best_str := rdf_box_data (best_str);
+    {
+      best_str := __rdf_strsqlval (best_str);
+    }
   return best_str;
 }
 ;
@@ -840,7 +845,7 @@ fct_make_selector (in subj any, in sid integer)
 }	
 ;
 
-create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 4)
+create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 3)
 {
   declare qrcode_bytes, mixed_content, content varchar;
   declare qrcode any;
@@ -853,7 +858,7 @@ create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 12
   content := "IM CreateImageBlob" (src_width, src_height, 'white', 'jpg');
   qrcode := "QRcode encodeString8bit" (data_to_qrcode);
   qrcode_bytes := aref_set_0 (qrcode, 0);
-  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale, 0, 0, cast (content as varchar), length (content));
+  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale + 2, 0, 0, cast (content as varchar), length (content));
   mixed_content := encode_base64 (cast (mixed_content as varchar));
   mixed_content := replace (mixed_content, '\r\n', '');
   return mixed_content;

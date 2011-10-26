@@ -5,6 +5,7 @@
     xml:lang="en" 
     lang="en"
     xmlns:addthis="http://www.addthis.com/help/api-spec"
+    xmlns:fb="http://www.facebook.com/2008/fbml"
 >
 <?vsp
 --
@@ -269,14 +270,27 @@
 <?vsp if (_addthis_key <> '0') { ?>
   <div id="FT_share">
     <!-- AddThis Button BEGIN -->
-    <a class="addthis_button" href="http://www.addthis.com/bookmark.php?v=250&amp;pubid=<?=_addthis_key?>"><img src="http://s7.addthis.com/static/btn/sm-share-en.gif" width="83" height="16" alt="Bookmark and Share" style="border:0"/></a>
+	<div class="addthis_toolbox addthis_default_style ">
+	<a class="addthis_button_facebook_like" id="fb_like_id"></a>
+	<a class="addthis_button_tweet"></a>
+	<a class="addthis_button_google_plusone" id="g_plusone_id"></a>
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
     <script type="text/javascript">
+    /*<![CDATA[*/
 	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
 	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    /*]]>*/
+    </script>
+    <script type="text/javascript"> 
+	var fb_like_id = document.getElementById('fb_like_id');
+	if (fb_like_id) fb_like_id.setAttribute('fb:like:layout', 'button_count');
+	var g_plusone_id = document.getElementById('g_plusone_id');
+	if (g_plusone_id) g_plusone_id.setAttribute('g:plusone:size', 'medium');
     </script>
     <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
     <!-- AddThis Button END -->
-  </div><!-- FT_share -->
+  </div><!-- ft_s -->
 <?vsp } ?>
       <div id="ft_t">
         Alternative Linked Data Views:

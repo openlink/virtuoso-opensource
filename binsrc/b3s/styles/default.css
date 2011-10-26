@@ -398,6 +398,18 @@ div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
   width: 650px;
 }
 
+#cond_form {
+  width: 100%;
+  border-top: 1px solid #ddd;
+  margin-top: 15px;
+  margin-left: 5px;
+}
+
+button.in_set_cond_b {
+  margin-left: 10px;
+}
+
+a.in_del:hover { cursor: pointer; }
 
 #opts input[type="checkbox"] { margin-left: 120px; }
 
@@ -443,6 +455,10 @@ div#top_ctr {
   padding-left: 5px; padding-right: -4px;
 }
 
+#top_ctr ul {
+  list-style-type: none;
+}
+
 div.error_msg { margin: 5px; }
 div.error_msg h2 {}
 div.error_msg div.body { margin: 10px;}
@@ -475,6 +491,8 @@ div.facet {
   background-color: #fff;
   border: 1px inset;
 }
+
+.plink_a {margin-left: 1em}
 
 div#sparql_link { margin-top: 10px; float: right;}
 div#sparql_link a { 
@@ -531,4 +549,6 @@ a#sp_link { font-size: 11pt; font-weight:normal; }
 
 #qrcode { position:fixed; top:100px; right: 30px; z-index: 0; } 
 
-#FT_share { float: right; clear: right; vertical-align: top; margin-right: 4px; }
+#FT_share { float: center; clear: both; text-align: center; }
+
+.addthis_toolbox { width: 400px; margin: 0 auto; }

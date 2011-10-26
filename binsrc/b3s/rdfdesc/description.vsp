@@ -5,6 +5,7 @@
     xml:lang="en" 
     version="XHTML+RDFa 1.0"
     xmlns:addthis="http://www.addthis.com/help/api-spec"
+    xmlns:fb="http://www.facebook.com/2008/fbml"
 >
 <?vsp
 --
@@ -161,6 +162,15 @@
   else if (get_keyword ('sr', params) is not null and 0 = length (_F))
     {
       declare refr varchar;
+      if (get_keyword ('sr', params, '') = 'clean')
+	{
+	  refr := 0;
+	  if (exists (select 1 from SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
+	    {
+	      sparql clear graph ?:doc;
+            }
+        }
+      else  
       refr := atoi (get_keyword ('sr', params, '0'));		
       DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', refr, doc), 'SPARQL');
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
@@ -298,7 +308,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (label); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sp=1" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
+	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (label); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sr=clean" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
@@ -469,14 +479,27 @@ if (_subject <> '') {
 <?vsp if (_addthis_key <> '0') { ?>
   <div id="FT_share">
     <!-- AddThis Button BEGIN -->
-    <a class="addthis_button" href="http://www.addthis.com/bookmark.php?v=250&amp;pubid=<?=_addthis_key?>"><img src="http://s7.addthis.com/static/btn/sm-share-en.gif" width="83" height="16" alt="Bookmark and Share" style="border:0"/></a>
+	<div class="addthis_toolbox addthis_default_style ">
+	<a class="addthis_button_facebook_like" id="fb_like_id"></a>
+	<a class="addthis_button_tweet"></a>
+	<a class="addthis_button_google_plusone" id="g_plusone_id"></a>
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
     <script type="text/javascript">
+    /*<![CDATA[*/
 	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
 	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    /*]]>*/
+    </script>
+    <script type="text/javascript"> 
+	var fb_like_id = document.getElementById('fb_like_id');
+	if (fb_like_id) fb_like_id.setAttribute('fb:like:layout', 'button_count');
+	var g_plusone_id = document.getElementById('g_plusone_id');
+	if (g_plusone_id) g_plusone_id.setAttribute('g:plusone:size', 'medium');
     </script>
     <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
     <!-- AddThis Button END -->
-  </div><!-- FT_share -->
+  </div><!-- ft_s -->
 <?vsp } ?>
       <div id="ft_t">
         Alternative Linked Data Views:

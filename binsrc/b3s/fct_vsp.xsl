@@ -26,13 +26,16 @@
 <xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
 
 <xsl:variable name="page_len" select="20"/>
-<xsl:variable name="offs" select="if(or(/facets/view/@offset = '', not(/facets/view/@offset)), 1, /facets/view/@offset + 1)"/>
+<xsl:variable name="offs" 
+              select="if(or(/facets/view/@offset = '', not(/facets/view/@offset)), 1, /facets/view/@offset + 1)"/>
 <xsl:variable name="rowcnt" select="count(/facets/result/row)"/>
 <xsl:param name="s_term"/>
 <xsl:param name="p_term"/>
 <xsl:param name="o_term"/>
 <xsl:param name="t_term"/>
 <xsl:param name="p_qry"/>
+<xsl:param name="p_xml"/>
+<xsl:param name="tree"/>
 
 <xsl:template match = "facets">
 <div id="res">
@@ -62,22 +65,23 @@
     Nothing found.
   </div>
 </xsl:if>
-<!--xsl:choose>
-  <xsl:when test="$type = 'text'"><h3>Text match results</h3></xsl:when>
+<xsl:choose>
+  <!--xsl:when test="$type = 'text'"><h3>Text match results</h3></xsl:when>
   <xsl:when test="$type = 'text-d'"><h3>Text match results</h3></xsl:when>
   <xsl:when test="$type = 'text-properties'"><h3>List of Properties With Matching Text</h3></xsl:when>
   <xsl:when test="$type = 'classes'"><h3>Types</h3></xsl:when>
   <xsl:when test="$type = 'properties'"><h3>Properties</h3></xsl:when>
-  <xsl:when test="$type = 'properties-in'"><h3>Referencing Properties</h3></xsl:when>
-  <xsl:when test="$type = 'list'"><h3>List</h3></xsl:when>
-  <xsl:when test="$type = 'list-count'"><h3>Distinct values</h3></xsl:when>
-  <xsl:when test="$type = 'geo'"><h3>Location</h3></xsl:when>
-</xsl:choose-->
+  <xsl:when test="$type = 'properties-in'"><h3>Referencing Properties</h3></xsl:when-->
+  <xsl:when test="$type = 'list'"><h3>Select a value or condition</h3></xsl:when>
+  <!--xsl:when test="$type = 'list-count'"><h3>Distinct values</h3></xsl:when>
+  <xsl:when test="$type = 'geo'"><h3>Location</h3></xsl:when-->
+</xsl:choose>
 <!--xsl:message terminate="no"><xsl:value-of select="$type"/></xsl:message-->
 <xsl:choose>
-  <xsl:when test="$type = 'geo'">
+  <xsl:when test="$type = 'geo' or $type = 'geo-list'">
     <script type="text/javascript" >
 <![CDATA[
+
 OAT.Preferences.imagePath = "oat/images/";
 
 function markerClickHandler (caller, msg, m) {
@@ -124,10 +128,12 @@ function init(){
   var providerType = OAT.Map.TYPE_G3;
   window.cMap = new OAT.Map($('user_map'),providerType,{fix:OAT.Map.FIX_ROUND1});
   OAT.Map.loadApi(providerType, {callback: mapcb});
+  window.geo_ui = new Geo_ui ('cond_form');
 }
 ]]>
     </script>
     <div id="user_map"></div>
+    <xsl:call-template name="render-geo-conds-ui"/>
   </xsl:when>
   <xsl:otherwise>
     <xsl:choose>
@@ -202,7 +208,10 @@ function init(){
   var sparql_a = OAT.Dom.create('a',{}, 'sparql_a');
   sparql_a.href='/sparql?qtxt=<xsl:value-of select="urlify ($p_qry)"/>'
   sparql_a.innerHTML = 'View query as SPARQL';
-  OAT.Dom.append (['sparql_a_ctr',sparql_a]);
+  var plink_a = OAT.Dom.create('a',{}, 'plink_a');
+  plink_a.href='/fct/facet.vsp?qxml=<xsl:value-of select="urlify ($p_xml)"/>'
+  plink_a.innerHTML = 'Facet permalink';
+  OAT.Dom.append (['sparql_a_ctr',sparql_a, plink_a]);
 </script>
 <xsl:if test="$type = 'default'">
 <script type="text/javascript">
@@ -219,24 +228,28 @@ function init(){
 
 	  var pivot_link_opts = OAT.Dom.create('span', {}, 'pivot_link_opts');
 	  pivot_link_opts.innerHTML = '&nbsp;&nbsp;\
-          <!--\
-	  <a href="#" title="Sets the CXML type of subject URIs to String or Link, optionally performing a DESCRIBE on the subject">Style&nbsp;for&nbsp;RDF&nbsp;subjects</a>&nbsp;\
+	  <a href="#" title="Sets the link-out behavior of subject URIs, optionally performing a DESCRIBE on the subject">Subject&nbsp;link&nbsp;behavior</a>&nbsp;\
 	  <select id="CXML_redir_for_subjs" onchange="fct_set_pivot_subj_uri_opt()">\
-	  		<option value="" selected="true">Convert to string facets</option>\
-			<option value="121">Make plain links</option>\
-			<option value="LOCAL_PIVOT">Make SPARQL DESCRIBE Pivot links</option>\
-			<option value="LOCAL_TTL">Make SPARQL DESCRIBE download links (TTL)</option>\
-			<option value="LOCAL_CXML">Make SPARQL DESCRIBE download links (CXML)</option>\
+			<option value="121" selected="true">External resource link</option>\
+	  		<option value="">No link out</option>\
+			<!-- <option value="LOCAL_PIVOT">External faceted navigation links</option> -->\
+			<option value="LOCAL_TTL">External description resource (TTL)</option>\
+			<!-- <option value="LOCAL_CXML">External description resource (CXML)</option> -->\
+			<option value="LOCAL_NTRIPLES">External description resource (NTRIPLES)</option>\
+			<option value="LOCAL_JSON">External description resource (JSON)</option>\
+			<option value="LOCAL_XML">External description resource (RDF/XML)</option>\
 		</select>\
 		&nbsp;&nbsp;\
-                -->\
-		<a href="#" title="Sets the CXML type of resource URIs to String or Link, optionally performing a DESCRIBE on the resource">CXML&nbsp;link&nbsp;behavior</a>&nbsp;\
+		<a href="#" title="Sets the CXML type of resource URIs to String or Link, optionally performing a DESCRIBE on the resource">Facet&nbsp;link&nbsp;behavior</a>&nbsp;\
 		<select id="CXML_redir_for_hrefs" onchange="fct_set_pivot_href_opt()">\
-			<option value="" selected="true">Local faceted navigation links</option>\
-			<option value="121">External resource links</option>\
+			<option value="" selected="true">Local faceted navigation link</option>\
+			<option value="121">External resource link</option>\
 			<option value="LOCAL_PIVOT">External faceted navigation links</option>\
 			<option value="LOCAL_TTL">External description resource (TTL)</option>\
 			<option value="LOCAL_CXML">External description resource (CXML)</option>\
+			<option value="LOCAL_NTRIPLES">External description resource (NTRIPLES)</option>\
+			<option value="LOCAL_JSON">External description resource (JSON)</option>\
+			<option value="LOCAL_XML">External description resource (RDF/XML)</option>\
 		</select>';
 
       OAT.Dom.append (['pivot_a_ctr',pivot_a,pivot_pg,pivot_qrcode_opts,pivot_link_opts]);
@@ -325,7 +338,7 @@ function init(){
             </td>
 	</xsl:if>
 	    <td>
-	      <xsl:if test="'url' = column[1]/@datatype">
+	      <xsl:if test="'uri' = column[1]/@datatype or 'url' = column[1]/@datatype">
 		<a><xsl:attribute name="href">/describe/?url=<xsl:value-of select="urlify (column[1])"/>&amp;sid=<xsl:value-of select="$sid"/></xsl:attribute>
 		  <xsl:attribute name="class">describe</xsl:attribute>Describe</a>
 	      </xsl:if>
@@ -336,15 +349,23 @@ function init(){
 		  <!--xsl:message terminate="no"><xsl:value-of select="$query/query/class/@iri"/><xsl:value-of select="column[1]"/></xsl:message-->  
 	      <xsl:variable name="current_iri" select="column[1]"/> 
 	      <xsl:if test="not $query/query/class[@iri = $current_iri]" > 
-                  <xsl:attribute name="class">sel_val</xsl:attribute>
-		<xsl:attribute name="href">/fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:choose>
+                  <xsl:variable name="use_iri">
+                    <xsl:choose>
                     <xsl:when test="column[1]/@sparql_ser != ''">
                       <xsl:value-of select="urlify(column[1]/@sparql_ser)"/>
                     </xsl:when>
                     <xsl:otherwise>
-                      <xsl:value-of select="urlify (column[1])"/>
+                        <xsl:value-of select="urlify($current_iri)"/>
                     </xsl:otherwise>
-                    </xsl:choose>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/></xsl:attribute>
+                    </xsl:choose>
+                  </xsl:variable>
+                  <xsl:comment><xsl:value-of select="$current_iri"/></xsl:comment>
+                  <xsl:attribute name="class">sel_val</xsl:attribute>
+		  <xsl:attribute name="href">/fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;<xsl:choose>
+                    <xsl:when test="'cond' = $command">cond_t=eq&amp;val=<xsl:value-of select="$use_iri"/></xsl:when>
+                    <xsl:otherwise>iri=<xsl:value-of select="$use_iri"/></xsl:otherwise>
+                    </xsl:choose>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/>
+                  </xsl:attribute>
 	      </xsl:if>
 		<xsl:attribute name="title">
 		  <xsl:value-of select="column[1]"/>
@@ -389,7 +410,7 @@ function init(){
               <xsl:value-of select="column[1]/@datatype" />
             </td>
           </xsl:when-->
-	  <xsl:otherwise>
+	  <xsl:otherwise> <!-- text matches view -->
             <td class="rnk">
               <xsl:for-each select="column[@datatype='trank' or @datatype='erank']">
                 <img class="rnk">
@@ -416,7 +437,7 @@ function init(){
 	    <xsl:for-each select="column">
 	      <td>
 		<xsl:choose>
-		  <xsl:when test="'url' = ./@datatype">
+		  <xsl:when test="'uri' = ./@datatype or 'url' = ./@datatype">
 		    <a>
 		      <xsl:attribute name="href">/describe/?url=<xsl:value-of select="urlify (.)"/></xsl:attribute>
 		      <xsl:attribute name="title"><xsl:value-of select="."/></xsl:attribute>
@@ -442,29 +463,69 @@ function init(){
 </table>
 
 <xsl:if test="/facets/result/@type='propval-list' or /facets/result/@type='list'">
-  <form id="valrange_form" style="display:none"> 
+  <form id="cond_form"> 
     <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
     <input type="hidden" name="hi" id="out_hi"/>
     <input type="hidden" name="lo" id="out_lo"/>
     <input type="hidden" name="lang" id="out_lang"/>
     <input type="hidden" name="datatype" id="out_dtp"/>
-    <input type="hidden" name="iri" id="out_iri"/>
+    <input type="hidden" name="val" id="out_val"/>
+    <input type="hidden" name="cmd" value="cond" id="cmd"/>
+    <input type="hidden" name="cond_parms" id="cond_parms"/>
     Add condition: 
-    <select id="cond_type" name="cmd">
-      <option value="cond_none">None</option>
-      <option value="select_value">==</option>
-      <option value="cond_gt">&gt;=</option> 
-      <option value="cond_lt">&lt;=</option>
-      <option value="cond_range">between</option>
+    <select id="cond_type" name="cond_t">
+      <option value="none">None</option>
+      <option value="eq">==</option>
+      <option value="neq">!=</option>
+      <option value="gte">&gt;=</option> 
+      <option value="gt">&gt;</option> 
+      <option value="lte">&lt;=</option>
+      <option value="lt">&lt;</option>
+      <option value="range">Between</option>
+      <option value="neg_range">Not Between</option>
+      <option value="contains">Contains</option>
+      <option value="in">In</option>
     </select>
     <span id="cond_inp_ctr" style="display:none">
+      <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/--> 
       <input id="cond_lo" type="text"/>
       <span id="cond_hi_ctr"> and <input id="cond_hi" type="text"/></span> <select id="cond_dt"></select>
-      <input type="button" id="set_val_range" value="Set Condition"/>
+      <input type="button" id="set_cond" value="Set Condition"/>
     </span>
+    <div id="in_ctr" style="display:none"></div>
+    <div id="geo_ctr" style="display:none"></div>
   </form>                
 </xsl:if>
 
+<xsl:call-template name="render-geo-conds-ui"/>
+
+</xsl:template>
+
+<xsl:template name="render-geo-conds-ui">
+  <xsl:if test="$type='geo' or $type='geo-list'">
+    <form id="cond_form"> 
+      <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
+      <input type="hidden" name="cmd" value="cond" id="cmd"/>
+      <input type="hidden" name="cond_t" value="near" id="cond_t"/>
+      <label for="cond_distance">Within: </label>
+      <input name="dist" id="cond_dist" type="text" size="5"/> km of 
+      <span id="loc_ctr">
+        <img src="images/notify_throbber.gif" alt="Locating..." id="loc_acq_thr_i" style="display:none"/>
+        <input id="cond_loc" type="text" style="display:none"/>
+      </span>
+      <span id="coord_ctr">
+        <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/--> 
+        <label for="cond_lat">Lat:</label>
+        <input name="lat" id="cond_lat" type="text" size="9"/>
+        <label for="cond_lon">Lon:</label>
+        <input name="lon" id="cond_lon" type="text" size="9"/>
+        <label for="cond_acc">Accuracy</label>
+        <input id="cond_acc" type="text" size="6" disabled="true"/>
+      </span>
+      <button id="cond_loc_acq_b">Acquire</button>
+      <button id="cond_loc_use_b">Set condition</button>
+    </form>                
+  </xsl:if>
 </xsl:template>
 
 <xsl:template match="@* | node()">

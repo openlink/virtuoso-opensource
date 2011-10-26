@@ -140,11 +140,11 @@ create procedure fct_svc () __soap_http 'text/xml'
 
   tmp := cast (xpath_eval ('//query/@timeout', xslt) as varchar);
   if (tmp is null)
-    timeout := atoi (registry_get ('fct_timeout'));
+    timeout := atoi (registry_get ('fct_timeout_min'));
   else
     timeout := atoi (tmp);
 
-  maxt := atoi (registry_get ('fct_max_timeout'));
+  maxt := atoi (registry_get ('fct_timeout_max'));
   if (0 >= timeout or timeout > maxt)
     timeout := maxt;
   ret := fct_svc_exec (xslt, timeout, accept, lines);

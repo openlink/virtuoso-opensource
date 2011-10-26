@@ -47,7 +47,7 @@ VAD_NAME_DEVEL="$VAD_PKG_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
-SQLDEPS="ns.sql facet.sql complete_ddl.sql"
+SQLDEPS="ns.sql virt_rdf_label.sql facet.sql complete_ddl.sql"
 EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql"
 
 HOST_OS=`uname -s | grep WIN`
@@ -192,6 +192,7 @@ directory_init() {
   # components which are not in their place
   cp -Rf $HOME/binsrc/oat vad/vsp/fct
   cp -Rf $HOME/binsrc/samples/dbpedia/vsp/statics vad/vsp/fct/rdfdesc
+  cp -Rf $HOME/binsrc/rdf_mappers/virt_rdf_label.sql vad/vsp/fct
   cp -Rf styles vad/vsp/fct/rdfdesc
   cp -Rf s vad/vsp/fct/rdfdesc
 
