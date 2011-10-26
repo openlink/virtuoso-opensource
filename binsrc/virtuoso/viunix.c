@@ -184,7 +184,7 @@ extern LOG *startup_log;
 LOG *cfg_open_syslog (int level);
 
 /* Globals for virtuoso */
-PCONFIG pconfig;			/* configuration file */
+PCONFIG pconfig = NULL;			/* configuration file */
 
 /* Locals */
 extern LOG *stderr_log;

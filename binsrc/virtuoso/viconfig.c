@@ -1072,7 +1072,6 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "MaxOpenClientStatements", &cli_max_cached_stmts) == -1)
     cli_max_cached_stmts = 10000;
 
-
   section = "HTTPServer";
 
   if (cfg_getstring (pconfig, section, "ServerPort", &c_http_port) == -1)
