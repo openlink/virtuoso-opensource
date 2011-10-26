@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_dbf_set">
+  <refmeta>
+    <refentrytitle>__dbf_set</refentrytitle>
+    <refmiscinfo>admin</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>__dbf_set</refname>
+    <refpurpose>Sets vector execution parameters.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn___dbf_set">
+      <funcprototype id="fproto___dbf_set">
+        <funcdef><function>__dbf_set</function></funcdef>
+	<paramdef>in <parameter>flag_name</parameter> varchar</paramdef>
+	<paramdef>out<parameter>flag_value</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc___dbf_set">
+    <title>Description</title>
+    <para>Sets at run time by a dba group user the vector execution parameters.</para>
+  </refsect1>
+  <refsect1 id="params___dbf_set">
+    <title>Parameters</title>
+    <refsect2><title>flag_name</title>
+      <para>Name of the flag.</para>
+      <para>For Configuring Vectored Execution, should be used the following values:</para>
+      <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+      <itemizedlist mark="bullet">
+        <listitem><emphasis>dc_batch_sz</emphasis>: flag for ini parameter VectorSize;</listitem>
+        <listitem><emphasis>dc_max_batch_sz</emphasis>: flag for ini parameter MaxVectorSize;</listitem>
+        <listitem><emphasis>enable_dyn_batch_sz</emphasis>: flag for ini parameter AdjustVectorSize;</listitem>
+        <listitem><emphasis>enable_qp</emphasis>: flag for ini parameter ThreadsPerQuery;</listitem>
+        <listitem><emphasis>aq_max_threads</emphasis>: flag for ini parameter AsyncQueueMaxThreads;</listitem>
+      </itemizedlist>
+    </refsect2>
+    <refsect2><title>flag_value</title>
+      <para>Value of the flag.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples___dbf_set">
+    <title>Examples</title>
+    <example id="ex___dbf_set"><title></title>
+<para>Set the maximum number of outstanding parallel work units to 16:</para>
+<programlisting><![CDATA[
+SQL> __dbf_set ('enable_qp', 16);
+]]></programlisting>
+    </example>
+  </refsect1>
+</refentry>

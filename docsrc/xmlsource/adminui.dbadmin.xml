@@ -193,7 +193,7 @@ need a screenshot  here
 	procedures can be done via the ISQL command-line interface or from the "Create Procedure" link shown
         above the list of objects for the relevant database.
 	</para>
-    <figure float="1"><title>Viewing Stored Procedures details for the Demo catalogue in the Demo Database</title>
+    <figure float="1"><title>Viewing Stored Procedures details for the DB catalogue</title>
       <graphic fileref="ui/admprocedures_01.png"/></figure>
         <para>
 	Stored procedures may also refer to modules that contain a group

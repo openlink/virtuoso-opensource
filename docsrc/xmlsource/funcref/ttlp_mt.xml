@@ -6,7 +6,7 @@
   </refmeta>
   <refnamediv>
     <refname>DB.DBA.TTLP_MT</refname>
-    <refpurpose>parses TTL (TURTLE or N3 resource) and places its triples into DB.DBA.RDF_QUAD on multiple threads.</refpurpose>
+    <refpurpose>parses TTL (TURTLE), TTL(N-Triple) or NQ (N-quad) resources, and places its triples into DB.DBA.RDF_QUAD on multiple threads.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_ttlp_mt">
@@ -72,7 +72,8 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
   <refsect1 id="examples_ttlp_mt">
     <title>Examples</title>
     <example id="ex_ttlp_mt"><title></title>
-<para><emphasis>Sample Example 1</emphasis></para>
+<para><emphasis>Example 1</emphasis></para>
+<para>Load ttl from local file:</para>
 <screen><![CDATA[
 SQL> DB.DBA.TTLP_MT (file_to_string_output ('tmp/users.ttl'), '', 'http://mytest.com');
 
@@ -100,7 +101,8 @@ http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format           
 10 Rows. -- 30 msec.
 
 ]]></screen>
-<para><emphasis>Sample Example 2</emphasis></para>
+<para><emphasis>Example 2</emphasis></para>
+<para>Usage of the ttlp_mt function in a procedure:</para>
 <screen><![CDATA[
 SQL>create procedure SPARQL_DAWG_LOAD_REMOTE_DATFILE (in full_uri varchar, in in_resultset integer := 0)
 {
@@ -137,15 +139,14 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openli
 
 2 Rows. -- 1382 msec.
 ]]></screen>
-<para><emphasis>Sample Example 3</emphasis></para>
-    <para>Forth item in record of NQuad format is optional. If present then it is used as a graph.
+<para><emphasis>Example 3</emphasis></para>
+    <para>Fourth item in record of NQuad format is optional. If present then it is used as a graph.
 If missed then the default graph is used. The purpose is to make SPARQL dataset serialization possible in
 a "natural" way: the content of default graph is written without any graph name specified whereas the
-content of named graphs is written with fouth field in place. Similarly, TriG uses default graph for
+content of named graphs is written with fourth field in place. Similarly, TriG uses default graph for
 triples outside graph blocks. In all these cases, base IRI is used to resolve all relative IRIs of
-the document, no matter what is the destination graph. Here is a simple example:</para>
-<para><emphasis>Sample Example 2</emphasis></para>
-    <para>Suppose we have the simple nquad.nq file:</para>
+the document, no matter what is the destination graph. Suppose the following scenario:</para>
+<para>There is a simple nquad.nq file:</para>
 <programlisting><![CDATA[
 <http://www.w3.org/2002/01/tr-automation/tr.rdf> <http://purl.org/dc/elements/1.1/title> "W3C Standards and Technical Reports" <http://www.w3.org/People/Berners-Lee/card> .
 <http://www.w3.org/People/Berners-Lee/card> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/PersonalProfileDocument> <http://www.w3.org/People/Berners-Lee/card> .

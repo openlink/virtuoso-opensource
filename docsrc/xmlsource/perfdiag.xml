@@ -85,7 +85,7 @@ the resident size is normally less than the buffer pool's size.
 To see the count of major page faults. i.e. ones that read the disk, do:
     </para>
 <programlisting><![CDATA[
-select getrusage ()[]4];
+getrusage ()[]4];
 ]]></programlisting>
     <para>through interactive SQL. The result is the count of major faults since
 starting the process. The count should not vary between samples, at least not more

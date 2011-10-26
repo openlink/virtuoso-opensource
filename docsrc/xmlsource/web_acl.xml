@@ -143,12 +143,15 @@ start to collect statistics), and then to check with http_acl_stats () what valu
 
 <itemizedlist>
   <listitem>From Admin UI main menu open "System Admin" node.</listitem>
-  <listitem>Choose "Access Control"</listitem>
+  <listitem>Go to Security -&gt; Access Control</listitem>
   <listitem>By default three default ACLs are listed:
   <simplelist>
    <member>HTTP - rules for the Web server </member>
    <member>NEWS - rules for the Internet News</member>
    <member>PROXY - rules for the Web Proxy Server</member>
+   <member>PSH and PSH-SSL - available only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/pubsubhub_dav.vad">pubsubhub_dav.vad</ulink> 
+	    is installed.</member>
   </simplelist>
   <figure id="admacl1" float="1">
       <title>Access Control</title>

@@ -27,33 +27,35 @@
 
 	<sect3 id="snapshotreplication">
 		<title>Snapshot Replication</title>
+<itemizedlist mark="bullet">		
 <para>Conductor "Replication" offers manage Virtuoso Replication. You are offered with "Basic",
-"Incremental", "Bidirectional Snapshot" and "Transactional" sub-tabs-
+"Incremental", "Bidirectional Snapshot" and "Transactional" sub-tabs.
 </para>
-	<para>
-From <emphasis>Replication/Basic/Query(Table select)to local</emphasis> to replicate local table(s)
+<itemizedlist mark="bullet">
+	<listitem>From <emphasis>Replication/Basic/Query(Table select)to local</emphasis> to replicate local table(s)
 to another data source click <emphasis>Create New Snapshot</emphasis> and follow the wizard.
-</para>
-	<para>
+</listitem>
+	<listitem>
 To copy the changes from the local table to the remote select some replications and
 press <emphasis>Synchronize</emphasis>
-</para>
-	<para>
+</listitem>
+	<listitem>
 To drop the replication definition without dropping the destination table select some replications and press
 <emphasis>Remove</emphasis>
-</para>
-	<para>
+</listitem>
+	<listitem>
 To drop the replication definition and the destination table select some replications and
 press <emphasis>Remove &amp; Drop Remote</emphasis>
-</para>
-	<para>
+</listitem>
+	<listitem>
 To copy the changes from the local table to the remote automatically select some
 replications, enter minutes in <emphasis>Scheduled Interval</emphasis> and
 press <emphasis>Schedule</emphasis>
-</para>
-	<para>
+</listitem>
+	<listitem>
 To remove scheduled update select the replications enter 0 in "Scheduled Interval" and press Schedule
-</para>
+</listitem>
+</itemizedlist>
         <figure float="1"><title>Snapshot Replication</title>
           <graphic fileref="ui/replt_ss_01.png"/></figure>
         <figure float="1"><title>Snapshot Replication</title>
@@ -63,11 +65,10 @@ To remove scheduled update select the replications enter 0 in "Scheduled Interva
         <figure float="1"><title>Snapshot Replication</title>
           <graphic fileref="ui/replt_ss_add_03.png"/></figure>
         <figure float="1"><title>Snapshot Replication</title>
-          <graphic fileref="ui/replt_ss_add_04.png"/></figure>
-        <figure float="1"><title>Snapshot Replication</title>
           <graphic fileref="ui/replt_ss_add_05.png"/></figure>
         <figure float="1"><title>Snapshot Replication</title>
           <graphic fileref="ui/replt_ss_add_06.png"/></figure>
+</itemizedlist>          
 
 	</sect3>
 

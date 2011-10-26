@@ -24,65 +24,52 @@
 
 <sect2 id="admui.webservices"><title>Web Services</title>
   <sect3 id="contentcrawler"><title>Content Crawler</title>
-  <itemizedlist mark="bullet">Supported features:
-     <listitem>Import Targets: Virtuoso can be set up to retrieve content from external web sites and host it in its own
+  
+    <itemizedlist mark="bullet">Some of the supported features are:
+      <listitem><emphasis>Import Targets</emphasis>: Virtuoso can be set up to retrieve content from external web sites and host it in its own
 WebDAV repository via this page.
         <figure float="1"><title>Web Robot - Target</title>
       <graphic fileref="ui/dav_rbt_trgt_01.png"/>
     </figure>
-    <para><emphasis>Target Description</emphasis> lets you provide a friendly description for the
-target that you are defining.
-    </para>
-    <para><emphasis>Target URL</emphasis> is the url of the web site that you are trying
+        <itemizedlist mark="bullet">
+          <listitem><emphasis>Target Description</emphasis> lets you provide a friendly description for the
+target that you are defining.</listitem>
+          <listitem><emphasis>Target URL</emphasis> is the url of the web site that you are trying
 to retrieve content from. Only the hostname should be provided here, along with the protocol. For
-example http://www.myhost.com.
-    </para>
-    <para><emphasis>Login name on target</emphasis> is the username for accessing the remote server,
+example http://www.myhost.com.</listitem>
+          <listitem><emphasis>Login name on target</emphasis> is the username for accessing the remote server,
 if required.
-    </para>
-    <para><emphasis>Login password on target</emphasis> is the password for the login name above.
-    </para>
-    <para><emphasis>Copy to Local DAV collection</emphasis> is the name of the collection (folder)
-where retrieved content will be stored in Dav.
-    </para>
-		<para>
-<emphasis>Single page download</emphasis> radio button specifies whether
-Virtuoso will retrieved linked content also.</para>
-		<para>
-<emphasis>Local Resources Owner</emphasis> The DAV user that will be the owner
-of the content that will copied to DAV.
-</para>
-		<para>
-The <emphasis>Download only newer than</emphasis> field allows you to specify
+          </listitem>
+          <listitem><emphasis>Login password on target</emphasis> is the password for the login name above.</listitem>
+          <listitem><emphasis>Copy to Local DAV collection</emphasis> is the name of the collection (folder)
+where retrieved content will be stored in DAV.</listitem>
+          <listitem><emphasis>Single page download</emphasis> radio button specifies whether
+Virtuoso will retrieved linked content also.</listitem>
+          <listitem><emphasis>Local Resources Owner</emphasis> The DAV user that will be the owner
+of the content that will copied to DAV.</listitem>
+          <listitem>The <emphasis>Download only newer than</emphasis> field allows you to specify
 a datetime value to prevent Virtuoso downloading files that are older than
-that datetime.</para>
-		<para>
-Use the <emphasis>Follow Links Matching</emphasis> field to limit the content
-that is downloaded by specify pattern matching criteria.</para>
-		<para>
-<emphasis>Do NOT follow links matching</emphasis> allows you limit content by
-specifying what files not to download.</para>
-		<para>
-<emphasis>Download Images</emphasis> radio buttons to allow Virtuoso to pull
+that datetime.</listitem>
+          <listitem>Use the <emphasis>Follow Links Matching</emphasis> field to limit the content
+that is downloaded by specify pattern matching criteria.</listitem>
+          <listitem><emphasis>Do NOT follow links matching</emphasis> allows you limit content by
+specifying what files not to download.</listitem>
+        </itemizedlist>
+      </listitem>                                                
+      <listitem><emphasis>Download Images</emphasis> radio buttons to allow Virtuoso to pull
 down image type also.  You may want to prevent this if you are more interested
-in the textual content rather than bandwidth draining images.</para>
-		<para>
-<emphasis>Use WebDAV methods</emphasis> can be checked if the host is known to
-support WebDAV methods.  This would enable better copying of sites that support DAV.</para>
-		<para>
-<emphasis>Delete if Remove on Remote is Detected</emphasis> can be switched on
+in the textual content rather than bandwidth draining images.</listitem>                                    
+      <listitem><emphasis>Use WebDAV methods</emphasis> can be checked if the host is known to
+support WebDAV methods. This would enable better copying of sites that support DAV.</listitem>                                    
+      <listitem><emphasis>Delete if Remove on Remote is Detected</emphasis> can be switched on
 so that when Virtuoso synchronizes its content with that on the remote host
 it will check for files that have been removed on the remote and remove
-them from the local copy also.</para>
-		<para>
-<emphasis>Store metadata*</emphasis> when checked offers to be stored respectively
-metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is checked.</para>
-    <para>
-When all details have been completed press the <emphasis>Add</emphasis> (or
-Update if updating) button to submit the web robot task to the queue.
-    </para>
-</listitem>
-     <listitem>Import Queues: this page shows you a list of web copy targets that have been enlisted with the
+them from the local copy also.</listitem>                                    
+      <listitem><emphasis>Store metadata*</emphasis> when checked offers to be stored respectively
+metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is checked.</listitem>                                    
+      <listitem>When all details have been completed press the <emphasis>Add</emphasis> (or
+Update if updating) button to submit the web robot task to the queue.</listitem>                                    
+      <listitem><emphasis>Import Queues</emphasis>: This page shows you a list of web copy targets that have been enlisted with the
 Virtuoso Server, and a list of web robot update schedules. Several options are available for
 each item listed: Start, Update, Schedule, Reset, and Stop. You can configure the scheduled update
 interval by pressing the Schedule link and entering a value in minutes. Once that is done you can
@@ -93,13 +80,13 @@ the details of the web copy item press the Reset link.
       <graphic fileref="ui/dav_rbt_que_01.png"/>
     </figure>
 </listitem>
-     <listitem>Retrieved Sites: You can view a list of the links retrieved from the web copy from this page. You are also
+      <listitem><emphasis>Retrieved Sites</emphasis>: You can view a list of the links retrieved from the web copy from this page. You are also
 able to remove some of the content from this page by following the Edit link.
         <figure float="1"><title>Web Robot - Retrieved Links</title>
       <graphic fileref="ui/dav_rbt_rtrd_01.png"/>
     </figure>
 </listitem>
-     <listitem>Export: You can export content from the WebDAV repository. Note that you can only export content
+      <listitem><emphasis>Export</emphasis>: You can export content from the WebDAV repository. Note that you can only export content
 that has been retrieved using Virtuoso's Web Robot.
     <para>When you click the "Export" link for a retrieved collection, you will be presented
 with a form for selecting the export target location. Choose the export method: either File
@@ -119,12 +106,13 @@ to any WebDAV server. WebDAV methods assume that the target is publicly availabl
       </para>
     </note>
 </listitem>
-     <listitem>Populate the RDF Quad Store: Virtuoso's built-in Content Crawler to can be used to populate its RDF Quad Store, as a one-time run or on a scheduled basis.
+      <listitem><emphasis>Populate the RDF Quad Store</emphasis>: Virtuoso's built-in Content Crawler to can be used to populate its RDF Quad Store, as a one-time run or on a scheduled basis.
 <para>Transforming data sources into RDF "on the fly" is sufficient for many use cases, but there are times when the volume or sheer nature of a data source makes batch-loading necessary.</para>
 <para>For example, Freebase offers RDF representations of its data, but it doesn't publish RDF dumps; even if it did, such dumps would usually be outdated by the time they were loaded.</para>
 <para>One practical solution takes the form of a scheduled crawl of specific resources of interest.</para>
 </listitem>
   </itemizedlist>
+    
   <sect4 id="contentcrawlerrdf"><title>Set Up the Content Crawler to Gather RDF</title>
   <para>The Virtuoso Conductor can be used to set up various Content Crawler Jobs:</para>
   <sect5 id="contentcrawlerrdfquad"><title>Setting up a Content Crawler Job to Add RDF Data to the Quad Store</title>
@@ -182,14 +170,23 @@ http://virtuoso.openlinksw.com/
       <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
       <graphic fileref="ui/cr11a.png"/>
     </figure>    
+    <figure id="cr11b" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr11b.png"/>
+    </figure>        
   </listitem>
   <listitem>Click the "Import Queues" button.
     <figure id="cr12" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
       <graphic fileref="ui/cr12.png"/>
     </figure>
+   
   </listitem>
   <listitem>For the "Robot targets" with label "Basic Sitemap Crawling Example " click the "Run" button.
+    <figure id="cr12a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr12a.png"/>
+    </figure>   	
   </listitem>
   <listitem>This will result in the Target site being crawled and the retrieved pages stored locally in DAV and any sponged triples in the RDF Quad store.
     <figure id="cr13" float="1">
@@ -205,7 +202,7 @@ http://virtuoso.openlinksw.com/
   </listitem>
   <listitem>Navigate to the location of newly created DAV collection:
 <programlisting><![CDATA[
-/DAV/home/demo/basic_sitemap/	
+/DAV/home/demo/VirtSample/
 ]]></programlisting>
   </listitem>
   <listitem>The retrieved content will be available in this location.
@@ -217,7 +214,7 @@ http://virtuoso.openlinksw.com/
 </orderedlist>  
   </sect5>  
   <sect5 id="contentcrawlerrdfssm"><title>Setting up a Content Crawler Job to Retrieve Semantic Sitemaps (a variation of the standard sitemap)</title>
-  <para>The following section describes how to set up crawler job for getting Semantic Sitemap's content -- a variation of standard sitemap:</para>  
+  <para>The following section describes how to set up crawler job for getting Semantic Sitemap's content: a variation of standard sitemap:</para>  
 <orderedlist>
   <listitem>From the Virtuoso Conductor User Interface i.e. http://cname:port/conductor, login as the "dba" user.</listitem>
   <listitem>Go to "Web Application Server".
@@ -399,6 +396,10 @@ create procedure WS.WS.SITEMAP_BB_STORE (
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr17.png"/>
     </figure>    
+    <figure id="cr17a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr17a.png"/>
+    </figure>        
   </listitem>
   <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create". 
@@ -541,7 +542,10 @@ DAV/home/demo/gov.uk/data
   </sect4>
   </sect3>
   <sect3 id="admiui.accesscontrol"><title>Access Control</title>
-    <para>From "System Admin"/"Access Controls" you can manage Rules and ACL respectively for HTTP, News and Proxy.
+    <para>From "System Admin" -&gt; Security -&gt; "Access Controls" you can manage Rules and ACL 
+    	respectively for HTTP, News, Proxy. The tabs PSH and PSH-SSL are available only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/pubsubhub_dav.vad">pubsubhub_dav.vad</ulink> 
+	    is installed.
     </para>
           <figure float="1" id="acl001"><title>Access Control Lists</title>
       <graphic fileref="ui/acl001.png"/>

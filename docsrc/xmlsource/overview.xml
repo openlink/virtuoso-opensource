@@ -1434,7 +1434,7 @@ WHERE
       <tip><title>See Also:</title>
        <para><link linkend="rdfsparqlrule">Inference Rules and Reasoning</link></para>
        <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtFacetBrowserInstallConfig">Virtuoso Faceted Browser Installation and configuration</ulink></para>
-       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Facets Web Service</ulink></para>       
+       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Faceted Web Service</ulink></para>       
      </tip>          
     </sect2>   
     <sect2 id="virtuosotipsandtricksdumparbqntr">
@@ -1994,6 +1994,48 @@ DEBUG> info threads
 SQL> txn_killall();
 
 Done. -- 866 msec.	
+]]></programlisting>   	
+  </listitem>
+</orderedlist>
+    </sect2> 
+    <sect2 id="cxmlurlptrn">
+      <title>What CXML params are supported for the SPARQL URL pattern?</title>     
+      <para>The following options are supported for CXML link behavior in the SPARQL URL Pattern:</para>
+<orderedlist>
+  <listitem>Local faceted navigation links: 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=&: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+  <listitem>External Resource Links: 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=121: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=121&save=display&fname=
+
+]]></programlisting>   	
+  </listitem>
+  <listitem>External faceted navigation links: 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_PIVOT: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_PIVOT&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+  <listitem>External description resource(TTL): 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_TTL:
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_TTL&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+  <listitem>External description resource(CXML): 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_CXML: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_CXML&save=display&fname=
 ]]></programlisting>   	
   </listitem>
 </orderedlist>
@@ -3015,5 +3057,121 @@ string 2                untyped!
 SQL>	
 ]]></programlisting>      
     </sect2>        
+    <sect2 id="howbackuprestoreind">  
+        <title>How Can I Backup and Restore individual table(s) and individual index(s)?</title>	   
+        <para>See more details <link linkend="procindexrecov">here</link>.</para>
+    </sect2> 
+    <sect2 id="bifcontainsoptions">  
+      <title>What bif:contains free-text options can I use?</title>	   
+      <para>Virtuoso supports the following free-text options for bif:contains:</para>
+      <orderedlist>
+        <listitem><emphasis>OFFBAND</emphasis>: See description for this free-text option in 
+        <link linkend="offbanddata">this section</link>.           
+          <itemizedlist mark="bullet">
+            <listitem>Note: it is useful only if data comers via an RDF View and the source 
+            	relational table uses this trick;</listitem>
+          </itemizedlist>          
+        </listitem>
+        <listitem><emphasis>SCORE</emphasis>: This free-text option is calculated as described in 
+        <link linkend="hitscores">this section</link>:
+<programlisting><![CDATA[
+SQL>SPARQL 
+SELECT ?s1 as ?c1, ?sc, ?rank 
+WHERE 
+  {
+    {
+      { 
+        SELECT ?s1, (?sc * 3e-1) as ?sc, ?o1, 
+          (sql:rnk_scale (<LONG::IRI_RANK> (?s1))) as ?rank  
+        WHERE 
+          { 
+            ?s1 ?s1textp ?o1 . 
+            ?o1 bif:contains  '"CNET"'  option (score ?sc)  . 
+          } 
+        ORDER BY DESC (?sc * 3e-1 + sql:rnk_scale (<LONG::IRI_RANK> (?s1)))  
+        LIMIT 20  
+        OFFSET 0 
+      }
+    }
+  };
+
+c1                                              sc      rank
+_________________________________________________________________________
+http://www.mixx.com/stories/45003360/justi...   3 	    5.881291583872891e-14
+http://www.mixx.com/stories/45099313/bing_...   2.7     5.881291583872891e-14
+http://dbpedia.org/resource/CBS_Interactive 	  1.5 	  5.881291583872891e-14
+http://dbpedia.org/resource/CBS_Interactive 	  1.5 	  5.881291583872891e-14
+
+
+4 Rows. -- 1 msec.
+]]></programlisting>
+      </listitem>
+      <listitem><emphasis>SCORE_LIMIT</emphasis>: This free-text option works as it is in plain 
+      SQL free-text. <link linkend="queryingftcols">See more details</link> :
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT ?s ?sc 
+WHERE 
+  { 
+    ?s ?p ?o . 
+    ?o bif:contains "tree" OPTION (score ?sc , score_limit 20)
+  };
+  
+s                                                                      sc
+VARCHAR                                                                INTEGER
+________________________________________________________________________________   
+
+                                                                      
+http://www.openlinksw.com/virtrdf-data-formats#default                 24
+http://www.openlinksw.com/virtrdf-data-formats#default                 24
+http://www.openlinksw.com/virtrdf-data-formats#sql-longvarbinary       21
+http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-dt          20
+http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-dt         20
+http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-lang        20
+http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-lang       20
+
+7 Rows. -- 2 msec.
+]]></programlisting>          
+        </listitem>
+      </orderedlist>
+    </sect2>              
+    <sect2 id="sparqlendpointprotection">  
+      <title>What SPARQL Endpoint Protection Methods can I use?</title>	   
+      <para>Virtuoso supports the following SPARQL Endpoint protection methods:</para>
+      <orderedlist>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthPolicyFOAFSSL">Secure SPARQL Endpoint Guide using WebID Protocol</ulink></listitem>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtOAuthSPARQL">Secure SPARQL Endpoint Guide via OAuth</ulink></listitem>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLProtectSQLDigestAuthentication">Secure SPARQL Endpoint Guide via SQL Accounts -- usage path digest authentication</ulink></listitem>
+      </orderedlist>
+    </sect2>   
+    <sect2 id="sparqlassignrole">    
+    	<title>How do I assign SPARQL role to SQL user?</title>	   
+    	<para>This section a sample scenario how to assign SPARQL ( for ex. SPARQL_SELECT ) role to 
+    		Virtuoso SQL user:</para>
+      <orderedlist>
+      	<listitem>Go to <ulink url="http://cname/conductor">http://cname/conductor</ulink>.</listitem>
+      	<listitem>Enter dba credentials.</listitem> 
+        <listitem>Go to System Admin -&gt; User Accounts: 
+          <figure id="role1" float="1">
+            <title>Assign SPARQL Role to SQL User</title>
+            <graphic fileref="ui/ag1.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click "Edit" for a given user from the very last right column:
+          <figure id="role2" float="1">
+            <title>Assign SPARQL Role to SQL User</title>
+            <graphic fileref="ui/ag2.png"/>
+          </figure>
+        </listitem>
+        <listitem>From "Accounts Roles" drop-down list select a SPARQL Role, for ex. 
+        	<emphasis>SPARQL_SELECT</emphasis> and click the "&gt;&gt;" button:
+          <figure id="role1" float="1">
+            <title>Assign SPARQL Role to SQL User</title>
+            <graphic fileref="ui/ag3.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click "Save". </listitem>
+      </orderedlist>    	                   
+    </sect2>   
   </sect1>    
 </chapter>
