@@ -1,3 +1,13 @@
+Oct 29, 2011, V5.0.15:
+  * This is a final maintainance release of the legacy Virtuoso V5 engine.
+
+    Users are encouraged to upgrade to the Virtuoso V6 engine
+    which is the current stable release.
+
+    For CVS users, the V6 engine is located on the V6_0_0-DEVEL branch
+    at this time, which will be merged forward soon as the new HEAD.
+
+
 March 30, 2010, V5.0.14:
   * Database engine
     - Added support for CSV import
