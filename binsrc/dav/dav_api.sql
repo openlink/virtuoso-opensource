@@ -1884,10 +1884,7 @@ DAV_AUTHENTICATE_SSL (
     goto _exit;
 
   set_user_id ('dba');
-  foafIRI := DAV_AUTHENTICATE_SSL_WEBID ();
-  if (isnull (foafIRI))
-    goto _exit;
-
+  foafIRI := null;
   tmp := '/';
   V := vector ();
   T := split_and_decode (trim (path, '/'), 0, '\0\0/');
@@ -1908,6 +1905,10 @@ DAV_AUTHENTICATE_SSL (
     if (isinteger (id) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
     {
       tmp := null;
+      if (isnull (foafIRI))
+	foafIRI := DAV_AUTHENTICATE_SSL_WEBID ();
+      if (isnull (foafIRI))
+	goto _exit;
       graph := WS.WS.DAV_IRI (V[N]);
       for (
         sparql
