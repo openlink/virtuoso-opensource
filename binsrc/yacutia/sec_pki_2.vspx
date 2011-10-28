@@ -260,6 +260,7 @@
 			      'emailAddress',  get_keyword ('emailAddress', arr)),
 			      vector ('basicConstraints', 'critical,CA:FALSE',
 			        'authorityKeyIdentifier', 'keyid,issuer:always',
+                                'extendedKeyUsage', 'critical,serverAuth',
 			        'nsComment', 'Virtuoso Generated Certificate'));
 			  USER_KEY_STORE (user, k, 'X.509', 2, '', cast (xenc_pkcs12_export (k, 'HTTPS Certificate', '') as varchar));
 			  self.key_list.vc_data_bind (e);
