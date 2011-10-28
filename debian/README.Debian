@@ -16,4 +16,4 @@ The first time virtuoso-t is run it will create an empty database in
 web-browser at <http://hostname:8890/> and use the conductor (default user
 and password of dba/dba) to install other VAD packages to taste.
 
- -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Wed Feb  3 16:31:48 CET 2010
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Sat Oct 29 00:02:36 CEST 2011
