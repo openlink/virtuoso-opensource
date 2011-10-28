@@ -206,7 +206,7 @@ function init(){
 </div> <!-- #res -->
 <script type="text/javascript">
   var sparql_a = OAT.Dom.create('a',{}, 'sparql_a');
-  sparql_a.href='/sparql?qtxt=<xsl:value-of select="urlify ($p_qry)"/>'
+  sparql_a.href='/sparql?qtxt=<xsl:value-of select="urlify ($p_qry)"/>&amp;debug='
   sparql_a.innerHTML = 'View query as SPARQL';
   var plink_a = OAT.Dom.create('a',{}, 'plink_a');
   plink_a.href='/fct/facet.vsp?qxml=<xsl:value-of select="urlify ($p_xml)"/>'
