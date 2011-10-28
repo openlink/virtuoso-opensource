@@ -167,7 +167,7 @@
 			'OU',  get_keyword ('ou', params), 
 			'CN',  get_keyword ('name', params), 
 			'emailAddress',  get_keyword ('email', params)), 
-		vector ('basicConstraints', 'critical,CA:FALSE', 
+		vector ('basicConstraints', 'critical,CA:TRUE', 
 			'authorityKeyIdentifier', 'keyid,issuer:always', 
 			'nsComment', 'Virtuoso Generated Certificate'));
        USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', cast (xenc_pkcs12_export ('id_rsa', 'CA Certificate', '') as varchar));
