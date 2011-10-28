@@ -181,7 +181,7 @@ void new_dbs_read_cfg (caddr_t *it, char *mode);
 dk_set_t new_cfg_read_storages (caddr_t **temp_storage);
 
 extern LOG *startup_log;
-LOG *cfg_open_syslog (int level);
+LOG *cfg_open_syslog (int level, char *facility);
 
 /* Globals for virtuoso */
 PCONFIG pconfig = NULL;			/* configuration file */
@@ -568,7 +568,7 @@ main (int argc, char **argv)
   dbg_malloc_enable();
 #endif
   if (!startup_log)
-    startup_log = cfg_open_syslog (LOG_DEBUG);
+    startup_log = cfg_open_syslog (LOG_DEBUG, "default");
 
   process_exit_hook = viunix_terminate;
 
