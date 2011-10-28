@@ -13164,8 +13164,8 @@ create procedure DB.DBA.RDF_QUAD_OUTLINE_ALL (in force integer := 0)
 ;
 
 --!AFTER
---DB.DBA.RDF_QUAD_OUTLINE_ALL ()
---;
+DB.DBA.RDF_QUAD_OUTLINE_ALL ()
+;
 
 
 create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
