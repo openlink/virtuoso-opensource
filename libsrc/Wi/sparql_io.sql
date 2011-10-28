@@ -752,6 +752,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
               if (res is null)
                 res := sprintf ('bad://%d', iri_id_num (_val));
               http (sprintf ('\n   <binding name="%s"><uri>', _name), ses);
+	      res := charset_recode (res, 'UTF-8', '_WIDE_');
               http_value (res, 0, ses);
               http ('</uri></binding>', ses);
 	    }
@@ -761,7 +762,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
           if (_val like 'nodeID://%')
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, _val), ses);
           else
-            http (sprintf ('\n   <binding name="%s"><uri>%V</uri></binding>', _name, _val), ses);
+            http (sprintf ('\n   <binding name="%s"><uri>%V</uri></binding>', _name, charset_recode (_val, 'UTF-8', '_WIDE_')), ses);
         }
       else
         {
@@ -888,7 +889,7 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
 --              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
               if (res is null)
                 res := sprintf ('bad://%d', iri_id_num (_val));
-              http (sprintf (' rdf:resource="%V"/></res:binding>', res), ses);
+              http (sprintf (' rdf:resource="%V"/></res:binding>', charset_recode (res, 'UTF-8', '_WIDE_')), ses);
 	    }
 	}
       else if (isstring (_val) and (1 = __box_flags (_val)))
@@ -896,7 +897,7 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
           if (_val like 'nodeID://%')
             http (sprintf (' rdf:nodeID="b%s"/></res:binding>', subseq(_val, 9)), ses);
           else
-            http (sprintf (' rdf:resource="%V"/></res:binding>', _val), ses);
+            http (sprintf (' rdf:resource="%V"/></res:binding>', charset_recode (_val, 'UTF-8', '_WIDE_')), ses);
         }
       else
         {
