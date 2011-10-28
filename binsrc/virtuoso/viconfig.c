@@ -185,7 +185,8 @@ char * http_log_file_check (struct tm *now); /* http log name checking */
 
 int32 c_txn_after_image_limit;
 int32 c_n_fds_per_file;
-int32 c_syslog;
+int32 c_syslog = 0;
+char *c_syslog_facility = NULL;
 /* These are the config variables as read here */
 char *c_error_log_file;
 char *c_database_file;
@@ -527,18 +528,112 @@ virtuoso_cfg_next_string (char **pkey, char **pret)
 
 LOG *startup_log = NULL;
 
+#ifdef HAVE_SYSLOG
+struct _syslog_code {
+	char    *c_name;
+	int     c_val;
+} syslog_facilitynames[] =
+{
+#ifdef LOG_AUTH
+	{ "AUTH",	LOG_AUTH },
+#endif
+#ifdef LOG_AUTHPRIV
+	{ "AUTHPRIV",	LOG_AUTHPRIV },
+#endif
+#ifdef LOG_CRON
+	{ "CRON",	LOG_CRON },
+#endif
+#ifdef LOG_DAEMON
+	{ "DAEMON",	LOG_DAEMON },
+#endif
+#ifdef LOG_FTP
+	{ "FTP",	LOG_FTP },
+#endif
+#ifdef LOG_INSTALL
+	{ "INSTALL",	LOG_INSTALL },
+#endif
+#ifdef LOG_KERN
+	{ "KERN",	LOG_KERN },
+#endif
+#ifdef LOG_LPR
+	{ "LPR",	LOG_LPR },
+#endif
+#ifdef LOG_MAIL
+	{ "MAIL",	LOG_MAIL },
+#endif
+#ifdef LOG_NETINFO
+	{ "NETINFO",	LOG_NETINFO },
+#endif
+#ifdef LOG_NEWS
+	{ "NEWS",	LOG_NEWS },
+#endif
+#ifdef LOG_RAS
+	{ "RAS",	LOG_RAS },
+#endif
+#ifdef LOG_REMOTEAUTH
+	{ "REMOTEAUTH",	LOG_REMOTEAUTH },
+#endif
+#ifdef LOG_SYSLOG
+	{ "SYSLOG",	LOG_SYSLOG },
+#endif
+#ifdef LOG_USER
+	{ "USER",	LOG_USER },
+#endif
+#ifdef LOG_UUCP
+	{ "UUCP",	LOG_UUCP },
+#endif
+#ifdef LOG_LOCAL0
+	{ "LOCAL0",	LOG_LOCAL0 },
+#endif
+#ifdef LOG_LOCAL1
+	{ "LOCAL1",	LOG_LOCAL1 },
+#endif
+#ifdef LOG_LOCAL2
+	{ "LOCAL2",	LOG_LOCAL2 },
+#endif
+#ifdef LOG_LOCAL3
+	{ "LOCAL3",	LOG_LOCAL3 },
+#endif
+#ifdef LOG_LOCAL4
+	{ "LOCAL4",	LOG_LOCAL4 },
+#endif
+#ifdef LOG_LOCAL5
+	{ "LOCAL5",	LOG_LOCAL5 },
+#endif
+#ifdef LOG_LOCAL6
+	{ "LOCAL6",	LOG_LOCAL6 },
+#endif
+#ifdef LOG_LOCAL7
+	{ "LOCAL7",	LOG_LOCAL7 },
+#endif
+	{ "DEFAULT",	LOG_USER }
+};
+#endif
+
+
 LOG *
-cfg_open_syslog (int level)
+cfg_open_syslog (int level, char *c_facility)
 {
 #ifdef HAVE_SYSLOG
+  int facility = LOG_USER;
+  int i;
+
+  if (!c_facility) c_facility = "default";
+
+  for (i = 0; i < sizeof (syslog_facilitynames) / sizeof (syslog_facilitynames[0]); i++)
+    {
+      if (!stricmp (syslog_facilitynames[i].c_name, c_facility))
+	{
+	  facility = syslog_facilitynames[i].c_val;
+	  break;
+	}
+    }
+
       return log_open_syslog ("Virtuoso",
 	  LOG_CONS | LOG_NOWAIT | LOG_PID,
-	  LOG_USER,
-	  level, L_MASK_ALL,
-            f_debug ?
-                L_STYLE_LEVEL | L_STYLE_GROUP | L_STYLE_TIME :
-		L_STYLE_GROUP | L_STYLE_TIME
-	  );
+      facility, level,
+	L_MASK_ALL,
+	f_debug ? L_STYLE_LEVEL | L_STYLE_GROUP : L_STYLE_GROUP);
 #else
       return NULL;
 #endif
@@ -608,6 +703,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "Syslog", &c_syslog) == -1)
     c_syslog = 0;
 
+  if (cfg_getstring (pconfig, section, "SyslogFacility", &c_syslog_facility) == -1)
+    c_syslog_facility = "default";
+
   if (c_file_extend < DP_INSERT_RESERVE + 5)
     c_file_extend = DP_INSERT_RESERVE + 5;
 
@@ -629,8 +727,9 @@ cfg_setup (void)
       if (startup_log)
         log_close (startup_log);
       startup_log = NULL;
+
       if (c_syslog)
-	cfg_open_syslog (c_error_log_level);
+    cfg_open_syslog (c_error_log_level, c_syslog_facility);
 
   if (cfg_getstring (pconfig, section, "xa_persistent_file", &c_xa_persistent_file) == -1)
     c_xa_persistent_file = s_strdup (setext (prefix, "pxa", EXT_SET));
