@@ -1,3 +1,504 @@
+2011-10-28 23:28  source
+
+	* Updated version to 6.1.4 for final release
+
+2011-10-28 23:22  source
+
+	* Enabled check for bad index due to XML fragment
+
+2011-10-28 23:21  source
+
+	* Added information about upgrading from previous 6.1.x to 6.1.4
+
+2011-10-28 21:46  source
+
+	* Fixed prototype
+
+2011-10-28 21:41  source
+
+	* Fixed datetime fraction
+
+2011-10-28 21:10  source
+
+	* Rebuild drivers
+
+2011-10-28 16:09  source
+
+	* Fixed disable strict void var checking as /fct sometimes generates
+	  undefined vars
+
+2011-10-28 16:00  source
+
+	* Added support for setting syslog facility
+
+2011-10-28 15:56  source
+
+	* Fixed call auth check only when needed
+
+2011-10-28 15:55  source
+
+	* Fixed flags for ods
+
+2011-10-28 13:16  source
+
+	* Added common function for testing extensions for rdfxml
+
+2011-10-28 13:14  source
+
+	* Fixed encoding issues
+
+2011-10-26 15:38  source
+
+	* Added new UI for conditionals like = < > ranges and IN
+	* Added initial UI for geo based conditionals
+	* Added support for proper permalink
+	* Added Twitter, Facebook and Google+ share buttons to footer
+	* Added version info to footer
+
+2011-10-26 15:22  source
+
+	* Added AddThis share buttons
+
+2011-10-26 09:34  source
+
+	* Fixed Compiled for line in usage
+	* Fixed compiler warning
+
+2011-10-26 00:21  source
+
+	* Updated documentation
+
+2011-10-26 00:00  source
+
+	* Fixed run check init on local
+
+2011-10-25 23:56  source
+
+	* Fixed package uninstall
+
+2011-10-25 23:56  source
+
+	file syncml_drop.sql was added on branch V6_0_0-DEVEL on 2011-10-25 23:58:36 +0000
+
+2011-10-25 23:54  source
+
+	* Added async rdf extraction
+
+2011-10-25 23:36  source
+
+	* Added opl:mentions and opl:NamedEntity class to OpenLink Attribution
+
+2011-10-25 23:31  source
+
+	file location.js was added on branch V6_0_0-DEVEL on 2011-10-25 23:37:37 +0000
+
+2011-10-25 23:31  source
+
+	* Added missing location support
+
+2011-10-25 23:28  source
+
+	* Added finger print from twitter entry
+	* Fixed minor issues
+
+2011-10-25 23:28  source
+
+	file twitter_fp2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-10-25 23:36:21 +0000
+
+2011-10-25 23:25  source
+
+	* Added support for Google+ comments
+
+2011-10-25 23:20  source
+
+	* Fixed when dropping a graph, also check if there is a quad map for it
+	* Fixed move all cols in pk rdf view sel
+	* Fixed handling of syncml functionality
+	* Fixed labels
+
+2011-10-25 19:36  source
+
+	* Added new implementation of search_excerpt that can handle both
+	  ANSI/UTF8 and Wide strings
+
+2011-10-25 10:54  source
+
+	* Fixed problems re-creating quad map
+
+2011-10-21 12:03  source
+
+	* Fixed drop stmt gr
+
+2011-10-21 11:53  source
+
+	* Fixed bad conversion of utf8 in rdf/xml
+
+2011-10-19 15:22  source
+
+	* Fixed dtp check
+
+2011-10-19 15:18  source
+
+	* Fixed reset bitmap flag as previous insert might have set it to true
+
+2011-10-19 15:14  source
+
+	* Fixed missing cast
+
+2011-10-18 12:45  source
+
+	* Fixed if one column cannot fit into available space, then instead
+	  of guessing how much space is needed we calculate space for all
+	  columns which cannot fit
+
+2011-10-18 12:41  source
+
+	* Fixed error adding inherited roles as they can overlap
+
+2011-10-18 09:15  source
+
+	* Updated default settings file
+
+2011-10-17 15:50  source
+
+	* Fixed issue building with Mono
+
+2011-10-17 14:06  source
+
+	* Fixed log info about row state
+
+2011-10-17 09:55  source
+
+	* Fixed labels
+
+2011-10-17 09:48  source
+
+	* Fixed issue with SPASQL and ADONET3 named parameters
+	* Fixed ADO.Net Provider failure retrieving RDF datetime literal values
+	* Removed duplicate functions
+
+2011-10-14 17:02  source
+
+	* Fixed issue with rdfview generation
+
+2011-10-14 12:54  source
+
+	* Fixed if BeginTransaction is called with an Unspecified isolation
+	  level, use a default of ReadCommitted
+
+2011-10-14 12:47  source
+
+	* Fixed recompile all qr's cached on cli connection when dropping
+	  a group or creating new graph group
+
+2011-10-14 10:33  source
+
+	* Fixed labels
+
+2011-10-14 00:32  source
+
+	* Fixed missing Diagnostic
+
+2011-10-13 22:14  source
+
+	* Rebuild driver
+
+2011-10-13 22:07  source
+
+	* Upgraded driver to Sesame 2.5.1
+
+2011-10-13 22:07  source
+
+	file VirtuosoOperation.java was added on branch V6_0_0-DEVEL on 2011-10-13 22:49:22 +0000
+
+2011-10-13 22:07  source
+
+	file VirtuosoUpdate.java was added on branch V6_0_0-DEVEL on 2011-10-13 22:49:22 +0000
+
+2011-10-13 18:36  source
+
+	* Added new Google+ cartridge
+	* Added new Jigsaw cartridge
+	* Added gr:Brand information to Ebay cartridge
+	* Added money class similar to GoodRelations prices for Crunchbase
+	* Fixed handling of HTTPS Groupon URIs
+	* Fixed do not immediately index in normal mode
+	* Fixed eBay URL-schemes
+	* Fixed MIME type for JSON-LD
+	* Fixed documentation
+	* Removed CRLF
+
+2011-10-13 18:33  source
+
+	* Added new tabs to Linked Data
+	* Added PSH tabs
+	* Fixed labels and texts
+
+2011-10-13 18:32  source
+
+	* Fixed issue displayong characters in isql.vspx
+
+2011-10-13 18:29  source
+
+	* Fixed uninitialized var
+
+2011-10-13 18:28  source
+
+	* Added support for ms-author-va : sparql header
+	* Fixed use new virtuoso_ini_item_value
+	* Fixed set id of current user
+	* Fixed issue compiling stored procedure
+
+2011-10-13 17:09  source
+
+	file VirtuosoDateTime.cs was added on branch V6_0_0-DEVEL on 2011-10-13 18:26:27 +0000
+
+2011-10-13 17:09  source
+
+	file VirtuosoDateTimeOffset.cs was added on branch V6_0_0-DEVEL on 2011-10-13 18:26:27 +0000
+
+2011-10-13 17:09  source
+
+	file VirtuosoTimeSpan.cs was added on branch V6_0_0-DEVEL on 2011-10-13 18:26:27 +0000
+
+2011-10-13 17:08  source
+
+	* Added support for VirtuosoDateTime, VirtuosoDateTimeOffset and
+	  VirtuosoTimeSpan
+	* Fixed issue with dropped connection after multiple bad login attempts
+	* Fixed dispose methods should never throw an exception
+	* Fixed drop statement in Virtuoso when it is disposed in the provider
+
+2011-10-13 16:52  source
+
+	* Fixed copyright year to 2011
+
+2011-10-13 16:50  source
+
+	* Fixed buggy comparison when installing VAD packages
+
+2011-10-13 16:48  source
+
+	* Added stats for time waiting on a mutex
+
+2011-10-13 16:35  source
+
+	file googleplus2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-10-13 18:36:28 +0000
+
+2011-10-13 16:35  source
+
+	file oplgoogleplus.owl was added on branch V6_0_0-DEVEL on 2011-10-13 18:36:28 +0000
+
+2011-10-13 16:29  source
+
+	* Removed duplicate stored procedures
+
+2011-10-13 14:39  source
+
+	* Fixed use openssl md5 where available
+
+2011-10-13 14:24  source
+
+	* Fixed check for min async queue size
+
+2011-10-13 14:21  source
+
+	* Added new setting RdfFreeTextRulesSize
+
+2011-10-13 14:08  source
+
+	* Fixed execute on all partitions at same time
+
+2011-10-13 14:06  source
+
+	* Fixed undefined Inference rule error when rule created from graph
+	  created from SPARUL insert statement
+	* Fixed issue loading inf rules on cluster
+
+2011-10-13 14:00  source
+
+	* Added support to sql_bif_excerpt for using wide string
+
+2011-10-13 13:59  source
+
+	* Fixed memleak
+
+2011-10-13 13:58  source
+
+	* Fixed issue with fulltext indexing
+
+2011-10-13 13:56  source
+
+	* Fixed issue with bif:contains
+
+2011-10-13 13:54  source
+
+	* Fixed deadlock on attempt of qr_recompile during the run of
+	  SPARQL-to_SQL front-end
+
+2011-10-13 13:28  source
+
+	* Fixed http recording
+
+2011-10-13 13:27  source
+
+	* Fixed crash when array is bad
+
+2011-10-13 13:26  source
+
+	* Fixed function name in argument
+
+2011-10-13 13:11  source
+
+	* Fixed SSL verification context
+
+2011-10-13 13:00  source
+
+	* Added inproved support for inference and RDF views to "non-default"
+	  storages
+	* Added option to register pos-processing callbacks to DESCRIBE
+
+2011-10-13 12:54  source
+
+	* Added new BIF functions for handling dictionaries of triples
+
+2011-10-13 12:15  source
+
+	* Added iri range size setting
+
+2011-10-13 12:14  source
+
+	* Added new "mode" flag to TURTLE parser, so it adds source line
+	  numbers (and source text labels) to blank nodes of the parsed
+	  document
+
+2011-10-13 12:12  source
+
+	* Fixed check for DAV
+
+2011-10-13 11:09  source
+
+	* Added dbs id hash to log
+
+2011-10-13 11:05  source
+
+	* Fixed compiler warning
+
+2011-10-13 11:04  source
+
+	* Fixed private key protection
+
+2011-10-13 11:03  source
+
+	* Fixed checks
+
+2011-10-13 11:03  source
+
+	* Fixed inlist to mean equality, not a lt of the one_of_these call
+	  comparison
+
+2011-10-13 11:01  source
+
+	* Fixed label
+
+2011-10-13 11:00  source
+
+	* Fixed use cartridge if such is defined
+
+2011-10-13 10:59  source
+
+	* Fixed moved assignment before loop, as sqlerror can lead to a
+	  double free
+
+2011-10-13 10:58  source
+
+	* Fixed issue with foreignkey handling inside rdfview
+
+2011-09-28 17:04  source
+
+	* Rewrite HTML generation for /sparql endpoint
+
+2011-09-28 17:01  source
+
+	* Added new function virtuoso_ini_item_value which can read settings
+	  from the virtuoso.ini, without having to open/parse it for every
+	  request
+
+2011-09-27 12:14  source
+
+	file sec_acl_edit_sp.vspx was added on branch V6_0_0-DEVEL on 2011-10-13 18:33:27 +0000
+
+2011-09-27 12:14  source
+
+	file sec_auth_serv_sp.vspx was added on branch V6_0_0-DEVEL on 2011-10-13 18:33:27 +0000
+
+2011-09-27 09:42  source
+
+	* Fixed sql codegen for combination of SERVICE {} that binds a
+	  variable and OPTIONAL {} that uses it later, and the binding in
+	  SERVICE is the only non-nullable binding of that variable
+	cvs: ----------------------------------------------------------------------
+
+2011-09-27 09:40  source
+
+	* Fixed do not cache samples indefinitely
+
+2011-09-23 19:22  source
+
+	* Added initial support for filtering on value ranges
+	* Added new export formats
+	* Fixed MIME type for JSON-LD
+	* Fixed use lang for properties labels
+	* Fixed pretty-print query
+	* Fixed check for owl:Class
+	* Fixed label prefs and metadata
+	* Fixed footer
+	*CVS: ----------------------------------------------------------------------
+
+2011-09-23 19:12  source
+
+	* Added extra mime types to accept header
+
+2011-09-23 15:20  source
+
+	* Fixed overflow in bif_date_diff
+
+2011-09-22 18:57  source
+
+	file jigsaw2rdf.xsl was added on branch V6_0_0-DEVEL on 2011-10-13 18:36:28 +0000
+
+2011-09-22 18:57  source
+
+	file oplmoney.owl was added on branch V6_0_0-DEVEL on 2011-10-13 18:36:28 +0000
+
+2011-09-21 15:23  source
+
+	* FIxed do not make UNAMEs in SQL texts immortal
+
+2011-09-21 15:22  source
+
+	* Fixed must save IN list as it will be reset to 0 inside
+
+2011-09-21 13:27  source
+
+	* Fixed use len of the N leading chars represented as UTF8
+
+2011-09-21 13:23  source
+
+	* Added support for DV_BIN
+
+2011-09-20 12:03  source
+
+	* Fixed issues detecting images
+
+2011-09-20 11:58  source
+
+	* Fixed handling of sparql endpoint in Pivot permalink generation
+
+2011-09-19 13:37  source
+
+	* Fixed do not check byte-order on crash recovery replay
+
 2011-09-15 16:02  source
 
 	* Updated version to 6.1.4-rc1
