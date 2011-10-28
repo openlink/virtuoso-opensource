@@ -24,6 +24,7 @@
 
 using System;
 using System.Data;
+using System.Diagnostics;
 #if ADONET2
 using System.Data.Common;
 using System.Security;

@@ -132,7 +132,7 @@ namespace OpenLink.Data.Virtuoso
 					hour = dt.Hour;
 					minute = dt.Minute;
 					second = dt.Second;
-					fraction = dt.Millisecond * Values.MicrosPerMilliSec;
+					fraction = (int)(dt.Ticks % TimeSpan.TicksPerSecond / 10L);// dt.Millisecond * Values.MicrosPerMilliSec;
 				}
 				else if (type == DateTimeType.DT_TYPE_DATE)
 				{
@@ -153,7 +153,7 @@ namespace OpenLink.Data.Virtuoso
 				hour = ts.Hours;
 				minute = ts.Minutes;
 				second = ts.Seconds;
-				fraction = ts.Milliseconds * Values.MicrosPerMilliSec;
+				fraction = (int)(ts.Ticks % TimeSpan.TicksPerSecond / 10L); //ts.Milliseconds * Values.MicrosPerMilliSec;
 			}
 			else if (value is VirtuosoDateTime)
 			{
