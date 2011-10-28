@@ -128,13 +128,25 @@ ld_add (in _fname varchar, in _graph varchar)
 }
 ;
 
-create procedure ld_ttlp_flags (in fname varchar)
+create procedure ld_ttlp_flags (in fname varchar, in opt varchar)
 {
-  if (fname like '%/btc-2009%' or fname like '%.nq%' or fname like '%.n4')
+  if (fname like '%/btc-20%' or fname like '%.nq%' or fname like '%.n4')
+{
+      if (lower (opt) = 'with_delete')
+	return 255 + 512 + 2048;
     return 255 + 512;
+    }
    if (fname like '%.trig' or fname like '%.trig.gz')
      return 255 + 256;
   return 255;
+}
+;
+
+create procedure ld_is_rdfxml (in f any)
+{
+  if (f like '%.xml' or f like '%.owl' or f like '%.rdf' or f like '%.rdfs')
+    return 1;
+  return 0;
 }
 ;
 
@@ -168,17 +180,17 @@ ld_file (in f varchar, in graph varchar)
   else if (f like '%.gz')
     {
       gzip_name := regexp_replace (f, '\.gz\x24', '');
-      if (gzip_name like '%.xml' or gzip_name like '%.owl' or gzip_name like '%.rdf')
+      if (ld_is_rdfxml (gzip_name))
 	DB.DBA.RDF_LOAD_RDFXML (gz_file_open (f), graph, graph);
       else
-	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name));
+	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name, graph));
     }
   else
     {
-      if (f like '%.xml' or f like '%.owl' or f like '%.rdf')
+      if (ld_is_rdfxml (f))
 	DB.DBA.RDF_LOAD_RDFXML (file_open (f), graph, graph);
       else
-	TTLP (file_open (f), graph, graph, ld_ttlp_flags (f));
+	TTLP (file_open (f), graph, graph, ld_ttlp_flags (f, graph));
     }
 
   --log_message (sprintf ('loaded %s', f));
