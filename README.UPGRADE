@@ -118,12 +118,12 @@ print the following message and refuses to start the database:
 Upgrading from VOS 6.1.X to VOS 6.1.4
 -------------------------------------
 
-In Virtuoso versions before 6.1.4 some XML  data was stored in the
+In Virtuoso versions before 6.1.4 some XML data was stored in the
 QUAD store in such a way it could break the sequence in an index
 causing wrong results to be passed back.
 
 To fix this we've added an automated check into 6.1.4 to detect if
-this condition occurs and to fix it when needed.
+this condition occurs and to fix the index when needed.
 
 When a DBA starts the database with this newer virtuoso binary the
 following text will appear in the virtuoso session log:
@@ -168,19 +168,21 @@ appear in the log and the virtuoso server will refuse to start up:
   21:05:36 PL LOG: This process will now exit.
 
 Since the update will take a substantial amount of time and additional
-disk space depending on the size of the QUAD store, OpenLink decided
-not to automatically start the update process but hand control back
-to the DBA and let him decide when to perform this update. In case
-the DBA wants to delay the update until a more appropriate time,
-he should restart with the previous binary as this latest binary
-will not allow him to startup.
+disk space depending on the size of the QUAD store, OpenLink has
+decided not to automatically start the update process but hand
+control back to the DBA and let him decide when to perform this
+update. In case the DBA wants to delay the update until a more
+appropriate time, he should restart with the previous binary as
+this latest binary will not allow him to startup.
 
-Once the DBA has checked the backups, diskspace and found an
-appropriate timeslot to run this update, he should edit the
+Once the DBA has checked the backups, disk space and found an
+appropriate time-slot to run this update, he should edit the
 virtuoso.ini file and add the following flag:
 
 	[Parameters]
 	AnalyzeFixQuadStore = 1
+
+
 
 Upon starting the virtuoso server, the following messages will appear in the virtuoso.log file:
 
@@ -213,6 +215,7 @@ Upon starting the virtuoso server, the following messages will appear in the vir
 
 If the update process detects any problem, it will put some debug
 output into the virtuoso.log and exit. At this point the DBA is
-advised to remove the virtuoso.trx file and contact OpenLink Support.
+advised to remove the virtuoso.trx file and contact OpenLink Support
+<support@openlinksw.com>.
 
-If the update process completes, the database is left in an online state.
+After the update process has completed, the database is left in an online state.
