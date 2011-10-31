@@ -1,3 +1,127 @@
+Oct 31, 2011, V6.1.4:
+  * Upgrading from previous versions
+    - Added information about upgrading from previous 6.1.x to 6.1.4
+    - Enabled check for bad index due to XML fragment
+      See: README.UPGRADE
+
+  * Database engine
+    - Added new implementation of search_excerpt that can handle both ANSI/UTF8 and Wide strings
+    - Added new setting RdfFreeTextRulesSize
+    - Added improved support for inference and RDF views to "non-default" storages
+    - Added option to register post-processing callbacks to DESCRIBE
+    - Added initial support for PHP 5.3
+    - Added aggregate DB.DBA.GROUP_DIGEST which makes it possible to
+      return part of big output of DB.DBA.GROUP_CONCAT without running out of row length limits
+    - Added optimised codegen for built-in aggregate functions
+    - Added option to enable/disable ?P statistics
+    - Added support for HTML+Microformat, Microformat/JSON and JSON-LD output formats
+    - Added support for SPARQL 1.1 build-in IF and COALESCE
+    - Added support for SPARQL 1.1 Graph Store HTTP Protocol
+    - Added support for SPARQL Graph CRUD
+    - Added support for SQLQUERY syntax in declaration of RDF views
+    - Added support to call XPath/XQuery functions in SPARQL
+    - Added option to enable/disable ?P statistics
+    - Fixed code generation using gawk 4
+    - Fixed code generation for service invocation for case of IN parameter that is not bound in 
+      SINV sub-query is neither external/global nor fixed in parent group pattern
+    - Fixed col_default to be same dtp as col_dtp to prevent default value misuse
+    - Fixed compiler warnings
+    - Fixed connection leak in connection pool during long checkpoints
+    - Fixed crash running FILTER query containing IN clause with only one item in it
+    - Fixed deadlock on attempt of qr_recompile during the run of SPARQL-to_SQL front-end
+    - Fixed disable dep cols check
+    - Fixed disabled pg_check_map by default to make checkpoint faster
+    - Fixed handling of GROUP BY and ORDER BY using expressions
+    - Fixed hang or crash after checkpoint is finished
+    - Fixed issues with cost based optimizer
+    - Fixed issue with multiple transitive subqueries in sql optimizer
+    - Fixed issue with ORDER BY expression optimization
+    - Fixed JSON output for native parsers
+    - Fixed key dep cols check for sample
+    - Fixed lock status report
+    - Fixed memory leaks
+    - Fixed possible mutex deadlock
+    - Fixed problems re-creating quad map
+    - Fixed rdfview generation
+    - Fixed recompile all qr's cached on cli connection when dropping a group or creating new
+      graph group
+    - Fixed set sl_owner before cpt_rollback in order to know which thread owns the process,
+      otherwise other threads may wrongly go inside the wait_checkpoint
+    - Fixed skip rules which perform http redirect when doing a POST
+    - Fixed space calculation when changed records does not fit in available space on page
+    - Fixed SPARQL OPTIONAL keyword sometimes causing queries to not return graph matches
+    - Fixed SQL codegen bug in SPARQL queries of R2RML rewriter
+    - Fixed when iri exceeds 2KB limit and flag is enabled then shorten the iri, instead of
+      rejecting it
+    - Rebuild Jena, Sesame2 and JDBC drivers
+    - Updated documentation
+
+
+  * SPARQL and RDF
+    - Added new cartridges for Eventbrite, Eventful, Foursquare, Google+, Google Place, Google
+      Product, Google Profile, Gowalla, Guardian, Hyperpublic, Jigsaw, LinkedIn, Plancast,
+      ProgrammableWeb, Seatgeek, Seevl, SimpleGeo, Upcoming, XRD, Zappos and Zoopla
+    - Added ontologies for OpenLink CV/Resume, Productontology
+    - Added new cartridge for Twitter using REST API
+    - Added enhancements to Facebook OpenGraph cartridge
+    - Added support for social bookmarking
+    - Added new HTML generation for /sparql endpoint
+    - Added support for ms-author-va : sparql header
+    - Added new UI in /fct for conditionals like = < > ranges and IN
+    - Added support for proper permalink for /fct
+    - Added support for javascript-like hrefs in RDFa
+    - Added w3-1999-xhtml/vocab for RDFa 1.1
+    - Added HTTP status codes in SPARQL graph store protocol
+    - Added API for selective sponging
+    - Added generation of CV from LinkedIn using the oplcv ontology
+    - Added support for CREATE LITERAL CLASS "format string" ...
+    - Fixed bad conversion of utf8 in rdf/xml
+    - Fixed "delayed" filters like ?x p1 ?o1 ; p2 ?o2 . optional { ... } . filter (?o1 = ?o2)
+    - Fixed map OpenLink Zillow ontology to geo:lat/long
+    - Fixed map oplog:likes_XXX property to like:likes
+    - Fixed minor issues
+    - Fixed SPARUL LOAD INTO command creating duplicate graphs
+    - Fixed translation from nodeID://xxx to _:xxx
+    - Fixed url encoding issues in RDF/XML
+    - Fixed when dropping a graph, also check if there is a quad map for it
+
+
+  * ODS Applications
+    - Added ACL eXecute flag
+    - Added RDL and TTL representations to Offers
+    - Added SIOC object services
+    - Added WebID verify service
+    - Added annotation rules
+    - Added app discussion rules
+    - Added discussion IRIs
+    - Added header and head links for IRIs
+    - Added ldap schema support to WebID
+    - Added mail verification service
+    - Added support for WebID idp
+    - Added user's rewrite rules
+    - Added user/mail availability action
+    - Updated CKEditor to version 3.6.1
+    - Fixed a++
+    - Fixed ACL using patterns
+    - Fixed API functions
+    - Fixed call auth check only when needed
+    - Fixed changing/deleting events does not trigger re-sync with publication
+    - Fixed Delicious import/publish
+    - Fixed description presentation
+    - Fixed Facebook UI
+    - Fixed IE JS problems
+    - Fixed import atom sources
+    - Fixed move/copy API with wrong source/destination
+    - Fixed navigation and UI
+    - Fixed Offers, Likes and Dislikes, Topic of Interest
+    - Fixed search RSS problem
+    - Fixed SIOC RDF links API functions
+    - Fixed typo in messages
+    - Fixed UI bug
+    - Fixed UI bugs
+    - Fixed WebDAV selection
+
+
 March 30, 2011, V6.1.3:
   * Database engine
     - Added configurable normalization of accented characters
