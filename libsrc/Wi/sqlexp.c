@@ -239,8 +239,10 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
     return;                                            /* 0123456789 */
   if ((func_len > 9) && !stricmp (func + (func_len - 9), "__w_cache") && (n_params >= 1))
     {
+      ST ** new_pars = (ST **) t_full_box_copy_tree ((caddr_t)act_params); /* we do a copy in order to keep dfe_tree as is, otherwise we may not find it in a next step as hash on tree changes */
       state_slot_t *aux_ssl = ssl_new_inst_variable (sc->sc_cc, "cache", DV_ARRAY_OF_POINTER);
-      ((ptrlong *)(act_params[n_params - 1]))[0] = aux_ssl->ssl_index;
+      ((ptrlong *)(new_pars[n_params - 1]))[0] = aux_ssl->ssl_index;
+      act_params = new_pars;
     }
   if (ret_param)
     params = (state_slot_t **) t_alloc_box ((n_params + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
