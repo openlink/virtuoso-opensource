@@ -1382,9 +1382,12 @@ pred_gen_1 (sql_comp_t * sc, ST * tree, dk_set_t * code, int succ, int fail, int
   if (ST_P (tree, BOP_AND))
     {
       jmp_label_t temp_succ = sqlc_new_label (sc);
-      pred_gen_1 (sc, tree->_.bin_exp.left, code, temp_succ, fail, unkn);
+      jmp_label_t temp_unkn = sqlc_new_label (sc);
+      pred_gen_1 (sc, tree->_.bin_exp.left, code, temp_succ, fail, temp_unkn);
       cv_label (code, temp_succ);
       pred_gen_1 (sc, tree->_.bin_exp.right, code, succ, fail, unkn);
+      cv_label (code, temp_unkn);
+      pred_gen_1 (sc, tree->_.bin_exp.right, code, unkn, fail, unkn);
       return;
     }
   if (BIN_EXP_P (tree))
