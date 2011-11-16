@@ -567,6 +567,7 @@ USER_DROP (in _name varchar, in _cascade integer := 0)
     signal ('37000', concat ('The user ''', _name, ''' does not exist'), 'U0015');
   delete from SYS_USER_GROUP where UG_UID = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
+  delete from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = _u_id;
   if (_u_is_sql)
     DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
