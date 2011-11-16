@@ -3528,7 +3528,11 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           dtd_t *dtd = NULL;
           id_hash_t *id_cache = NULL;
           xml_tree_ent_t *xte;
-          caddr_t tree = xml_make_mod_tree ((query_instance_t *)qst, arg, &err, FINE_XML | GE_XML, NULL /* no uri! */, "UTF-8", NULL, NULL, &dtd, &id_cache, &ns_2dict);
+	  caddr_t tree;
+
+	  if (arg_dtp == DV_XML_ENTITY)
+	    return box_copy_tree (arg);
+          tree = xml_make_mod_tree ((query_instance_t *)qst, arg, &err, FINE_XML | GE_XML, NULL /* no uri! */, "UTF-8", NULL, NULL, &dtd, &id_cache, &ns_2dict);
           if (NULL == tree)
             sqlr_resignal (err);
           xte = xte_from_tree (tree, (query_instance_t*) qst);
