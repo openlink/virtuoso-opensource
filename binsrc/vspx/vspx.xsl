@@ -3151,7 +3151,7 @@ toggle_label:
       while (inx &lt; len) {
         declare ctrl vspx_control;
         ctrl := node.vc_children[inx];
-        if (ctrl and udt_instance_of (ctrl, fix_identifier_case ('vspx_button'))) {
+        if (ctrl is not null and udt_instance_of (ctrl, fix_identifier_case ('vspx_button'))) {
           declare btn vspx_button;
           btn := node.vc_children[inx];
           btn.bt_open_img := sel_img;
