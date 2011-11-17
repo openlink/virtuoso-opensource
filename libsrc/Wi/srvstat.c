@@ -1439,6 +1439,7 @@ stat_desc_t stat_descs [] =
     {"cl_req_batch_size", &cl_req_batch_size, SD_INT32},
     {"db_exists", &db_exists, SD_INT32},
     {"st_lite_mode", &my_lite_mode, NULL},
+    {"st_aq_max_threads", &aq_max_threads, SD_INT32},
 
     /* backup vars */
     {"backup_prefix_name", NULL, &my_bp_prefix},
