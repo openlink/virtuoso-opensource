@@ -223,8 +223,6 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
 	  case AMMSC_COUNTSUM:
 	  case AMMSC_SUM:
 	      case AMMSC_AVG:
-		  ha->ha_memcache_only = 0;
-		  break;
 	  case AMMSC_MIN:
 	  case AMMSC_MAX:
 		    {
