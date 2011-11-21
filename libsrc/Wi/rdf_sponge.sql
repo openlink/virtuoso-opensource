@@ -1271,6 +1271,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   --  }
 
 load_grddl:;
+  if (__proc_exists ('DB.DBA.RDF_RUN_CARTRIDGES') and 0 <> (rc := DB.DBA.RDF_RUN_CARTRIDGES (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options, ret_hdr, ps, aq, req_hdr_arr)))
+    return rc;
+  if (__proc_exists ('DB.DBA.RDF_RUN_CARTRIDGES') is null) -- remove in next release
+    {
   cset := http_request_header (ret_hdr, 'Content-Type', 'charset', null);
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS, RM_DESCRIPTION from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
     {
@@ -1331,7 +1335,7 @@ load_grddl:;
 	    }
 	  if (__tag(rc) = 193 or rc < 0 or rc > 0)
 	    {
-	      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+		  if (rc > 0 and __proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
 		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
               if (__tag(rc) = 193)
                 return rc;
@@ -1339,6 +1343,7 @@ load_grddl:;
 	    }
 	}
       try_next_mapper:;
+    }
     }
 
   -- else if not handled with the above cases

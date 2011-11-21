@@ -2659,18 +2659,56 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
   inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
-  if (not isstring (o_type))
-    o_type := null;
-  if (not isstring (o_lang))
-    o_lang := null;
   dict_put (app_env,
     vector (
       iri_to_id (s_uri),
       iri_to_id (p_uri),
       DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
-        case (isstring (o_type)) when 0 then null else o_type end,
-        case (isstring (o_lang)) when 0 then null else o_lang end) ),
+        case when (isstring (o_type) or __tag (o_type) = 217) then o_type else null end,
+        case when (isstring (o_lang) or __tag (o_lang) = 217) then o_lang else null end) ),
     0 );
+}
+;
+
+create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_XLAT (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
+  inout app_env any )
+{
+  
+  declare xlat_cbk, s_xlat, o_xlat varchar;
+  declare xlat_env, dict any;
+  --dbg_obj_princ (current_proc_name (), ' (', g_iid, s_uri, p_uri, o_uri, ');');
+  dict := app_env[0];
+  xlat_cbk := app_env[1];
+  xlat_env := app_env[2];
+  s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+  o_xlat := call(xlat_cbk)(o_uri, xlat_env);
+
+  dict_put (dict, vector (iri_to_id (s_xlat), iri_to_id (p_uri), iri_to_id (o_xlat)), 0);
+}
+;
+
+create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L_XLAT (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout app_env any )
+{
+  declare xlat_cbk, s_xlat, o_xlat varchar;
+  declare xlat_env, dict any;
+  --dbg_obj_princ (current_proc_name (),' (', g_iid, s_uri, p_uri, o_uri, ');');
+  dict := app_env[0];
+  xlat_cbk := app_env[1];
+  xlat_env := app_env[2];
+  s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+  dict_put (dict,
+    vector (
+      iri_to_id (s_xlat),
+      iri_to_id (p_uri),
+      DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
+        case when (isstring (o_type) or __tag (o_type) = 217) then o_type else null end,
+        case when (isstring (o_lang) or __tag (o_lang) = 217) then o_lang else null end) ),
+    0);
 }
 ;
 
@@ -2692,6 +2730,26 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     res);
   return res;
+}
+;
+
+create function DB.DBA.RDF_TTL_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, in dict any, in flags integer := 0) returns any
+{
+  if (__tag (dict) <> 214)
+    signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
+  rdf_load_turtle (strg, base, graph, flags,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    dict);
+  return;
 }
 ;
 
@@ -2824,6 +2882,48 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
   return res;
 }
 ;
+
+create procedure DB.DBA.RDF_RDFXML_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, inout dict any, in flag int := 0, in xml_parse_mode int := 0)
+{
+  if (__tag (dict) <> 214)
+    signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
+  if (flag = 0)
+    xml_parse_mode := 0;
+  rdf_load_rdfxml (strg, bit_or (flag, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa 
+    graph,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    dict,
+    base );
+}
+;
+
+create procedure DB.DBA.RDFA_LOAD_DICT_XLAT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0, in iri_xlate_cbk varchar, in iri_xlate_env any)
+{
+  declare app_env any;
+  if (__tag (dict) <> 214)
+    signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
+  rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa 
+    graph,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_XLAT',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L_XLAT',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    vector (dict, iri_xlate_cbk, iri_xlate_env),
+    base );
+}
+;
+
 
 
 create procedure DB.DBA.RDF_RDFA11_FETCH_PROFILES (in profile_iris any, inout prefixes any, inout terms any, inout vocab any)
