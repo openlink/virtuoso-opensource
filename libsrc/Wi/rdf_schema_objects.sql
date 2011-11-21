@@ -1126,21 +1126,25 @@ RDF_VIEW_CHECK_SYNC_TB (in tb varchar)
 ;
 
 create procedure
-RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0)
+RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar := null)
 {
    declare mask varchar;
-   declare txt, tbls, err_ret any;
-   declare stat, msg varchar;
+   declare txt, tbls, err_ret, opt any;
+   declare stat, msg, gr varchar;
 
    tbls := vector ();
    err_ret := vector ();
+   opt := vector ();
    mask := sprintf ('http://%s/schemas/%s/qm-%%', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   if (length (pgraph))
+     opt := vector (gr, pgraph);
    for select "o" from
    (sparql define input:storage "" select ?o from virtrdf:
      {
        virtrdf:DefaultQuadStorage-UserMaps ?p ?o .
        ?o a virtrdf:QuadMap  .
-       filter (?o like ?:mask)
+       ?o virtrdf:qmGraphRange-rvrFixedValue `iri(?:gr)` .
      }
      order by asc (bif:sprintf_inverse (bif:concat (str(rdf:_), "%d"), str (?p), 1))) x do
    {
@@ -1173,7 +1177,7 @@ RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0)
     {
       for (declare ctr int, ctr := 1; ctr <= 4; ctr := ctr + 1)
         {
-	  txt := sparql_rdb2rdf_codegen (tb, ctr);
+	  txt := sparql_rdb2rdf_codegen (tb, ctr, opt);
 	  stat := '00000';
 	  if (isvector (txt))
 	    {
