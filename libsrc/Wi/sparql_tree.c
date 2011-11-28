@@ -52,6 +52,51 @@ extern "C" {
 #define sparp_check_tree(t)
 #endif
 
+#ifndef NDEBUG
+SPART **
+t_spartlist_concat (SPART **list1, SPART **list2)
+{
+  return (SPART **)t_list_concat ((caddr_t)list1, (caddr_t)list2);
+}
+#endif
+
+caddr_t *
+t_modify_list (caddr_t *lst, int edit_idx, int delete_len, caddr_t *ins, int ins_len)
+{
+  int lst_len = BOX_ELEMENTS_0 ((caddr_t)(lst));
+  caddr_t *res;
+  t_check_tree (lst);
+  if ((0 > edit_idx) || (0 > delete_len) || (edit_idx + delete_len > lst_len))
+    GPF_T1 ("t_modify_list(): bad range");
+  if ((ins + ins_len > lst) && (ins < lst+lst_len))
+    GPF_T1 ("t_modify_list(): overlapping arrays");
+  if (delete_len == ins_len)
+    {
+      memcpy (lst + edit_idx, ins, ins_len * sizeof (caddr_t));
+      t_check_tree (lst);
+      return lst;
+    }
+  res = (caddr_t *)t_alloc_box ((lst_len - delete_len + ins_len) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  if (edit_idx)
+    memcpy (res, lst, edit_idx * sizeof (caddr_t));
+  if (ins_len)
+    memcpy (res + edit_idx, ins, ins_len * sizeof (caddr_t));
+  memcpy (res + edit_idx + ins_len, lst + edit_idx + delete_len, (lst_len - (edit_idx + delete_len)) * sizeof (caddr_t));
+  t_check_tree (res);
+  return res;
+}
+
+#ifndef NDEBUG
+#define t_modify_spartlist(lst,edit_idx,delete_len,ins,ins_len) ((SPART **)t_modify_list ((caddr_t *)lst, edit_idx, delete_len, (caddr_t *)ins, ins_len))
+#else
+SPART **
+t_modify_spartlist (SPART **lst, int edit_idx, int delete_len, SPART **ins, int ins_len)
+{
+  return (SPART **)t_modify_list ((caddr_t *)lst, edit_idx, delete_len, (caddr_t *)ins, ins_len);
+}
+#endif
+
+
 /* ROUTINES FOR SPART TREE TRAVERSAL */
 
 int
@@ -496,6 +541,504 @@ sparp_gp_localtrav_treelist (sparp_t *sparp, SPART **treelist,
     }
   END_DO_BOX_FAST;
 }
+
+/* MACRO REWRITING */
+
+void
+spar_macro_xlate_selid (sparp_t *sparp, caddr_t *selid_ptr, spar_mproc_ctx_t *ctx)
+{
+  if (NULL == ctx->smpc_defbody_topselid)
+    {
+      if ((NULL != selid_ptr[0]) && ('@' == selid_ptr[0][0]))
+        spar_internal_error (sparp, "spar_" "macro_xlate_selid(): selid not from defm but has '@'");
+      return;
+    }
+  if (NULL == ctx->smpc_context_selid)
+    spar_internal_error (sparp, "spar_" "macro_xlate_selid(): no context");
+  if ('@' == ctx->smpc_context_selid[0])
+     spar_internal_error (sparp, "spar_" "macro_xlate_selid(): context selid has '@'");
+  if (!strcmp (selid_ptr[0], ctx->smpc_context_selid))
+    return;
+  if (!strcmp (selid_ptr[0], ctx->smpc_defbody_topselid))
+    {
+      selid_ptr[0] = ctx->smpc_context_selid;
+      return;
+    }
+  selid_ptr[0] = t_box_sprintf (100, "%.70s%.20s%.10s", ctx->smpc_mcall->_.macrocall.mname, ctx->smpc_defbody_currselid, selid_ptr[0]);
+}
+
+SPART **
+spar_macroprocess_define_list (sparp_t *sparp, SPART **trees, spar_mproc_ctx_t *ctx)
+{
+  int ctr, len = BOX_ELEMENTS_0 (trees);
+  for (ctr = 1; ctr < len; ctr += 2)
+    {
+      SPART ***vallist = (SPART ***)(trees[ctr]);
+      int valctr, valcount;
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (vallist))
+        spar_internal_error (sparp, "spar_" "macroprocess_define_list(): invalid list of values");
+      valcount = BOX_ELEMENTS (vallist);
+      for (valctr = valcount; valctr--; /* no step */)
+        {
+          ptrlong valtype = ((ptrlong *)(vallist[valctr]))[0];
+          if ((SPAR_VARIABLE == valtype) || (SPAR_MACROPU == valtype))
+            {
+              vallist[valctr][1] = spar_macroprocess_tree (sparp, vallist[valctr][1], ctx);
+            }
+        }
+    }
+  return trees;
+}
+
+SPART **
+spar_macroprocess_treelist (sparp_t *sparp, SPART **trees, int begin_with, spar_mproc_ctx_t *ctx)
+{
+  int ctr, len = BOX_ELEMENTS_0 (trees);
+  for (ctr = begin_with; ctr < len; ctr++)
+    trees[ctr] = spar_macroprocess_tree (sparp, trees[ctr], ctx);
+  return trees;
+}
+
+SPART *
+spar_macro_instantiate (sparp_t *sparp, SPART *tree, SPART *defm, SPART *mcall, spar_mproc_ctx_t *ctx)
+{
+  SPART *cloned_body = sparp_tree_full_copy (sparp, defm->_.defmacro.body, NULL);
+  SPART *res = NULL;
+  spar_mproc_ctx_t local_ctx;
+  memset (&local_ctx, 0, sizeof (spar_mproc_ctx_t));
+  local_ctx.smpc_unictr = (sparp->sparp_unictr)++;
+  local_ctx.smpc_context_gp = ctx->smpc_context_gp;
+  local_ctx.smpc_context_selid = ctx->smpc_context_selid;
+  local_ctx.smpc_defbody_topselid = local_ctx.smpc_defbody_currselid = defm->_.defmacro.selid;
+  local_ctx.smpc_defm = defm;
+  local_ctx.smpc_mcall = mcall;
+  res = spar_macroprocess_tree (sparp, cloned_body, &local_ctx);
+  if (SPAR_GP != SPART_TYPE (res))
+    return res;
+  if ((0 != res->_.gp.subtype) && (DEFMACRO_L != res->_.gp.subtype))
+    return res;
+  if (0 != BOX_ELEMENTS_0 (res->_.gp.members))
+    {
+      if (0 == BOX_ELEMENTS_0 (local_ctx.smpc_ins_membs))
+        local_ctx.smpc_ins_membs = res->_.gp.members;
+      else
+        local_ctx.smpc_ins_membs = t_spartlist_concat (res->_.gp.members, local_ctx.smpc_ins_membs);
+    }
+  if (0 != BOX_ELEMENTS_0 (local_ctx.smpc_ins_membs))
+    {
+      if (0 == BOX_ELEMENTS_0 (ctx->smpc_ins_membs))
+        ctx->smpc_ins_membs = local_ctx.smpc_ins_membs;
+      else
+        ctx->smpc_ins_membs = t_spartlist_concat (ctx->smpc_ins_membs, local_ctx.smpc_ins_membs);
+    }
+  if (0 != BOX_ELEMENTS_0 (res->_.gp.filters))
+    {
+      if (0 == BOX_ELEMENTS_0 (local_ctx.smpc_ins_filts))
+        local_ctx.smpc_ins_filts = res->_.gp.filters;
+      else
+        local_ctx.smpc_ins_filts = t_spartlist_concat (res->_.gp.filters, local_ctx.smpc_ins_filts);
+    }
+  if (0 != BOX_ELEMENTS_0 (local_ctx.smpc_ins_filts))
+    {
+      if (0 == BOX_ELEMENTS_0 (ctx->smpc_ins_filts))
+        ctx->smpc_ins_filts = local_ctx.smpc_ins_filts;
+      else
+        ctx->smpc_ins_filts = t_spartlist_concat (ctx->smpc_ins_filts, local_ctx.smpc_ins_filts);
+    }
+  return NULL;
+}
+
+caddr_t
+spar_macro_sign_inner_varname (sparp_t *sparp, caddr_t vname, spar_mproc_ctx_t *ctx)
+{
+  char *tail;
+  caddr_t res = t_box_sprintf (100, "%.50s_%.50s_%d", vname, ctx->smpc_mcall->_.macrocall.mname, ctx->smpc_unictr);
+  for (tail = res; '\0' != tail[0]; tail++)
+    {
+      if ((':' == tail[0]) || ('/' == tail[0]) || ('-' == tail[0])) tail[0] = '_';
+    }
+  return res;
+}
+
+caddr_t
+spar_macroprocess_varname (sparp_t *sparp, SPART *varname_or_macropu, int allow_macro_arg_namesakes, spar_mproc_ctx_t *ctx)
+{
+  int param_index;
+  SPART *mcall, *argtree;
+  if (NULL == varname_or_macropu)
+    return NULL;
+  mcall = ctx->smpc_mcall;
+  if ((DV_STRING == DV_TYPE_OF (varname_or_macropu)) || (DV_UNAME == DV_TYPE_OF (varname_or_macropu)))
+    {
+      caddr_t varname = (caddr_t)varname_or_macropu;
+      int local_ctr;
+      if (NULL == mcall)
+        return varname;
+      DO_BOX_FAST_REV (caddr_t, nm, param_index, ctx->smpc_defm->_.defmacro.paramnames)
+        {
+          if (strcmp (nm, varname))
+            continue;
+          if (allow_macro_arg_namesakes)
+            goto param_index_found; /* see below */
+          else
+            spar_internal_error (sparp, "spar_" "macroprocess_varname(): plain varname instead of expected macropu");
+        }
+      END_DO_BOX_FAST_REV;
+      DO_BOX_FAST_REV (caddr_t, nm, local_ctr, ctx->smpc_defm->_.defmacro.localnames)
+        {
+          if (strcmp (nm, varname))
+            continue;
+          return spar_macro_sign_inner_varname (sparp, varname, ctx);
+        }
+      END_DO_BOX_FAST_REV;
+      spar_error (sparp, "The variable name '%.100s' in macro '%.100s' is neither argument name nor local name",
+        varname, ctx->smpc_defm->_.defmacro.mname );
+      return varname; /* Never reached */
+    }
+  if (SPAR_MACROPU != SPART_TYPE (varname_or_macropu))
+    spar_internal_error (sparp, "spar_" "macroprocess_varname(): bad arg");
+  if (NULL == mcall)
+    spar_internal_error (sparp, "spar_" "macroprocess_varname(): macroprocessing without macro call");
+  param_index = varname_or_macropu->_.macropu.pindex;
+  if (param_index >= BOX_ELEMENTS (mcall->_.macrocall.argtrees))
+    spar_internal_error (sparp, "spar_" "macroprocess_varname(): more macro parameters than macro call args");
+param_index_found:
+  argtree = mcall->_.macrocall.argtrees[param_index];
+  if (SPAR_VARIABLE != SPART_TYPE (argtree))
+    spar_error (sparp, "The argument #%d (?%.100s) of macro '%.100s' should be a plain variable, because it is used as an alias name",
+      param_index+1, ctx->smpc_defm->_.defmacro.mname, ctx->smpc_defm->_.defmacro.paramnames[param_index] );
+  return argtree->_.var.vname;
+}
+
+SPART *
+spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
+{
+  int ctr;
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_GP:
+      {
+        SPART *saved_gp = ctx->smpc_context_gp;
+        caddr_t saved_selid = ctx->smpc_context_selid;
+        caddr_t saved_defbody_curselid = ctx->smpc_defbody_currselid;
+        if ('@' != tree->_.gp.selid[0]) /* We're outside a defbody (outside macro call at all or in group inside the argument */
+          {
+            if (NULL == ctx->smpc_defm) /* We're outside a macro call */
+              {
+                ctx->smpc_context_gp = tree;
+                ctx->smpc_context_selid = tree->_.gp.selid;
+              }
+          }
+        else
+          ctx->smpc_defbody_currselid = tree->_.gp.selid;
+        spar_macro_xlate_selid (sparp, &(tree->_.gp.selid), ctx);
+        tree->_.gp.options = spar_macroprocess_treelist (sparp, tree->_.gp.options, 0, ctx);
+        switch (tree->_.gp.subtype)
+          {
+          case SELECT_L:
+            {
+              SPART *subq = tree->_.gp.subquery;
+              spar_macro_xlate_selid (sparp, &(subq->_.req_top.retselid), ctx);
+              subq->_.req_top.orig_retvals = spar_macroprocess_treelist (sparp, subq->_.req_top.orig_retvals, 0, ctx);
+              subq->_.req_top.retvals = spar_macroprocess_treelist (sparp, subq->_.req_top.retvals, 0, ctx);
+              subq->_.req_top.pattern = spar_macroprocess_tree (sparp, subq->_.req_top.pattern, ctx);
+              subq->_.req_top.groupings = spar_macroprocess_treelist (sparp, subq->_.req_top.groupings, 0, ctx);
+              subq->_.req_top.having = spar_macroprocess_tree (sparp, subq->_.req_top.having, ctx);
+              subq->_.req_top.order = spar_macroprocess_treelist (sparp, subq->_.req_top.order, 0, ctx);
+              subq->_.req_top.limit = spar_macroprocess_tree (sparp, subq->_.req_top.limit, ctx);
+              subq->_.req_top.offset = spar_macroprocess_tree (sparp, subq->_.req_top.offset, ctx);
+              break;
+            }
+          case UNION_L:
+            DO_BOX_FAST (SPART *, memb, ctr, tree->_.gp.members)
+              {
+                tree->_.gp.members[ctr] = spar_macroprocess_tree (sparp, memb, ctx);
+              }
+            END_DO_BOX_FAST;
+            break;
+          default:
+            {
+              SPART **membs = tree->_.gp.members;
+              SPART **filts = tree->_.gp.filters;
+              int memb_ctr, memb_count = BOX_ELEMENTS (membs);
+              int filt_count = BOX_ELEMENTS_0 (filts);
+              for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr++)
+                {
+                  SPART *memb = membs[memb_ctr];
+                  switch (SPART_TYPE (memb))
+                    {
+                    case SPAR_MACROCALL:
+                      {
+                        caddr_t mname = memb->_.macrocall.mname;
+                        SPART *defm = spar_find_defmacro_by_iri_or_fields (sparp, mname, NULL);
+                        int argctr;
+                        if (SPAR_GP != SPART_TYPE (defm->_.defmacro.body))
+                          spar_error (sparp, "Macro <%.200s> is expanded into expression but used as part of group pattern", mname);
+                        if (defm->_.defmacro.subtype)
+                          {
+                            int context_graph_type = DEFAULT_L;
+                            SPART *context_graph = memb->_.macrocall.context_graph;
+                            if ((NULL != context_graph) && !SPART_IS_DEFAULT_GRAPH_BLANK (context_graph))
+                              context_graph_type = GRAPH_L;
+                            if (defm->_.defmacro.subtype != context_graph_type)
+                              spar_error (sparp, "Macro <%.200s> should be used in context of %s graph but is placed into %s graph pattern", mname,
+                                ((DEFAULT_L == defm->_.defmacro.subtype) ? "default" : "named"),
+                                ((DEFAULT_L == context_graph_type) ? "default" : "named") );
+                          }
+                        DO_BOX_FAST (SPART *, mcarg, argctr, memb->_.macrocall.argtrees)
+                          {
+                            memb->_.macrocall.argtrees[argctr] = spar_macroprocess_tree (sparp, mcarg, ctx);
+                          }
+                        END_DO_BOX_FAST;
+                        spar_macro_instantiate (sparp, tree, defm, memb, ctx);
+                        tree->_.gp.members = membs = t_modify_spartlist (membs, memb_ctr, 1, ctx->smpc_ins_membs, BOX_ELEMENTS_0 (ctx->smpc_ins_membs));
+                        ctx->smpc_ins_membs = NULL;
+                        memb_count = BOX_ELEMENTS (membs);
+                        memb_ctr--;
+                        if (BOX_ELEMENTS_0 (ctx->smpc_ins_filts))
+                          {
+                            tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, ctx->smpc_ins_filts);
+                            ctx->smpc_ins_filts = NULL;
+                          }
+                        filt_count = BOX_ELEMENTS (filts);
+                        break;
+                      }
+                    case SPAR_MACROPU:
+                      {
+                        SPART *arg = ctx->smpc_mcall->_.macrocall.argtrees[tree->_.macropu.pindex];
+                        SPART *arg_copy;
+                        spar_mproc_ctx_t gparg_ctx;
+                        if (SPAR_GP != SPART_TYPE (arg))
+                          spar_error (sparp, "The argument #%d (?%.20s) of macro <%.200s> should be a group pattern",
+                            tree->_.macropu.pindex, tree->_.macropu.pname, ctx->smpc_mcall->_.macrocall.mname );
+                        arg_copy = sparp_tree_full_copy (sparp, arg, NULL);
+                        memset (&gparg_ctx, 0, sizeof (spar_mproc_ctx_t));
+                        gparg_ctx.smpc_unictr = (sparp->sparp_unictr)++;
+                        gparg_ctx.smpc_context_gp = tree;
+                        gparg_ctx.smpc_context_selid = tree->_.gp.selid;
+                        gparg_ctx.smpc_defbody_topselid = gparg_ctx.smpc_defbody_currselid = arg_copy->_.gp.selid;
+                        arg_copy = spar_macroprocess_tree (sparp, arg_copy, &gparg_ctx);
+                        tree->_.gp.members = membs = t_modify_spartlist (membs, memb_ctr, 1, arg_copy->_.gp.members, BOX_ELEMENTS_0 (arg_copy->_.gp.members));
+                        memb_count = BOX_ELEMENTS (membs);
+                        memb_ctr--;
+                        if (BOX_ELEMENTS_0 (arg_copy->_.gp.filters))
+                          {
+                            tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, arg_copy->_.gp.filters);
+                            filt_count = BOX_ELEMENTS (filts);
+                          }
+                        break;
+                      }
+                    default:
+                      tree->_.gp.members[memb_ctr] = spar_macroprocess_tree (sparp, memb, ctx);
+                      if (NULL != ctx->smpc_ins_filts)
+                        {
+                          if (BOX_ELEMENTS_0 (ctx->smpc_ins_filts))
+                            {
+                              tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, ctx->smpc_ins_filts);
+                              ctx->smpc_ins_filts = NULL;
+                            }
+                          filt_count = BOX_ELEMENTS (filts);
+                        }
+                      break;
+                    }
+                }
+              break;
+            }
+          }
+        tree->_.gp.filters = spar_macroprocess_treelist (sparp, tree->_.gp.filters, 0, ctx);
+        ctx->smpc_defbody_currselid = saved_defbody_curselid;
+        ctx->smpc_context_gp = saved_gp;
+        ctx->smpc_context_selid = saved_selid;
+        return tree;
+      }
+    case SPAR_TRIPLE:
+      {
+        int ctr;
+        spar_macro_xlate_selid (sparp, &(tree->_.triple.selid), ctx);
+        if (NULL != tree->_.triple.tabid)
+          spar_macro_xlate_selid (sparp, &(tree->_.triple.tabid), ctx);
+        for (ctr = 0; ctr < SPART_TRIPLE_FIELDS_COUNT; ctr++)
+          {
+            SPART *fld = tree->_.triple.tr_fields[ctr];
+            SPART *new_fld = spar_macroprocess_tree (sparp, fld, ctx);
+            int new_fld_type = SPART_TYPE (new_fld);
+            switch (new_fld_type)
+              {
+              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+                /* This fails if a variable is made from MACROPU so its selid is selid from smpc_context_gp
+                if (strcmp (tree->_.triple.selid, new_fld->_.var.selid) ||
+                  (NULL != new_fld->_.var.tabid && strcmp (tree->_.triple.tabid, new_fld->_.var.tabid)) )
+                  spar_internal_error (sparp, "spar_" "macroprocess_tree(): strange macroprocessing of a triple field variable");
+                */
+                new_fld->_.var.selid = tree->_.triple.selid;
+                new_fld->_.var.tabid = tree->_.triple.tabid;
+                new_fld->_.var.tr_idx = ctr;
+                new_fld->_.var.rvr.rvrRestrictions |= sparp_tr_usage_natural_restrictions[ctr];
+                /* no break */
+              case SPAR_LIT: case SPAR_QNAME:
+                tree->_.triple.tr_fields[ctr] = new_fld;
+                break;
+              default:
+                {
+                  SPART *local_bnode1, *local_bnode2, *eq_bop;
+                  spar_selid_push_reused (sparp, tree->_.triple.selid);
+                  local_bnode1 = spar_make_blank_node (sparp, spar_mkid (sparp, "_:mcall"), 1);
+                  spar_selid_pop (sparp);
+                  tree->_.triple.tr_fields[ctr] = local_bnode1;
+                  local_bnode1->_.var.tr_idx = ctr;
+                  local_bnode1->_.var.tabid = tree->_.triple.tabid;
+                  local_bnode2 = sparp_tree_full_copy (sparp, local_bnode1, NULL);
+                  local_bnode2->_.var.tr_idx = SPART_VAR_OUTSIDE_TRIPLE;
+                  local_bnode2->_.var.tabid = NULL;
+                  eq_bop = spartlist (sparp, 3, BOP_EQ, local_bnode2, new_fld);
+                  ctx->smpc_ins_filts = t_modify_spartlist (ctx->smpc_ins_filts, 0, 0, &eq_bop, 1);
+                  break;
+                }
+              }
+          }
+        for (ctr = 1; ctr < BOX_ELEMENTS_0 (tree->_.triple.options); ctr += 2)
+          {
+            tree->_.triple.options[ctr] = spar_macroprocess_tree (sparp, tree->_.triple.options[ctr], ctx);
+          }
+        return tree;
+      }
+    case SPAR_VARIABLE:
+    case SPAR_BLANK_NODE_LABEL:
+      spar_macro_xlate_selid (sparp, &(tree->_.var.selid), ctx);
+      if (NULL != tree->_.var.tabid)
+        spar_macro_xlate_selid (sparp, &(tree->_.var.tabid), ctx);
+      if (NULL != ctx->smpc_defm)
+        tree->_.var.vname = spar_macro_sign_inner_varname (sparp, tree->_.var.vname, ctx);
+      return tree;
+    case SPAR_MACROCALL:
+      {
+        caddr_t mname;
+        SPART *defm;
+        SPART **context_membs = NULL;
+        SPART *res;
+        int context_memb_count = 0;
+        if (NULL != ctx->smpc_context_gp)
+          {
+            context_membs = ctx->smpc_context_gp->_.gp.members;
+            context_memb_count = BOX_ELEMENTS (context_membs);
+          }
+        mname = tree->_.macrocall.mname;
+        defm = spar_find_defmacro_by_iri_or_fields (sparp, mname, NULL);
+        if ((SPAR_GP == SPART_TYPE (defm->_.defmacro.body)) && (SELECT_L != defm->_.defmacro.body->_.gp.subtype))
+          spar_error (sparp, "Macro <%.200s> is expanded into group pattern but used as part of expression", mname);
+        DO_BOX_FAST (SPART *, mcarg, ctr, tree->_.macrocall.argtrees)
+          {
+            tree->_.macrocall.argtrees[ctr] = spar_macroprocess_tree (sparp, mcarg, ctx);
+          }
+        END_DO_BOX_FAST;
+        res = spar_macro_instantiate (sparp, tree, defm, tree, ctx);
+        if (NULL != ctx->smpc_context_gp)
+          {
+            ctx->smpc_context_gp->_.gp.members = t_modify_spartlist (context_membs, context_memb_count, 0, ctx->smpc_ins_membs, BOX_ELEMENTS_0 (ctx->smpc_ins_membs));
+            ctx->smpc_ins_membs = NULL;
+            if (NULL != ctx->smpc_ins_filts)
+              {
+                ctx->smpc_context_gp->_.gp.filters = t_spartlist_concat (ctx->smpc_context_gp->_.gp.filters, ctx->smpc_ins_filts);
+                ctx->smpc_ins_filts = NULL;
+              }
+          }
+        else
+          {
+            if ((NULL != ctx->smpc_ins_membs) || (NULL != ctx->smpc_ins_filts))
+              spar_error (sparp, "A call of macro <%.200s> forms parts oi graph pattern outside any graph pattern", mname);
+          }
+        return res;
+      }
+    case SPAR_LIT: case SPAR_QNAME: return tree;
+    case ORDER_L:
+      tree->_.oby.expn = spar_macroprocess_tree (sparp, tree->_.oby.expn, ctx);
+      return tree;
+    case SPAR_FUNCALL:
+      DO_BOX_FAST (SPART *, arg, ctr, tree->_.funcall.argtrees)
+        {
+          tree->_.funcall.argtrees[ctr] = spar_macroprocess_tree (sparp, arg, ctx);
+        }
+      END_DO_BOX_FAST;
+      return tree;
+    case SPAR_BUILT_IN_CALL:
+      DO_BOX_FAST (SPART *, arg, ctr, tree->_.builtin.args)
+        {
+          tree->_.builtin.args[ctr] = spar_macroprocess_tree (sparp, arg, ctx);
+        }
+      END_DO_BOX_FAST;
+      return tree;
+    case BOP_OR: case BOP_AND:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+    case BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    case BOP_LIKE:
+      tree->_.bin_exp.right = spar_macroprocess_tree (sparp, tree->_.bin_exp.right, ctx);
+      /* no break; */
+    case BOP_NOT:
+      tree->_.bin_exp.left = spar_macroprocess_tree (sparp, tree->_.bin_exp.left, ctx);
+      return tree;
+    case SPAR_ALIAS:
+      tree->_.alias.arg = spar_macroprocess_tree (sparp, tree->_.alias.arg, ctx);
+      tree->_.alias.aname = spar_macroprocess_varname (sparp, (SPART *)(tree->_.alias.aname), 0, ctx);
+      return tree;
+    case SPAR_MACROPU:
+      {
+        int idx = tree->_.macropu.pindex;
+        SPART *mcall = ctx->smpc_mcall;
+        SPART *argtree, *argcopy;
+        if (NULL == mcall)
+          spar_internal_error (sparp, "spar_" "macroprocess_tree(): macro parameter without macro call");
+        if (idx >= BOX_ELEMENTS (mcall->_.macrocall.argtrees))
+          spar_internal_error (sparp, "spar_" "macroprocess_tree(): more macro parameters than macro call args");
+        argtree = mcall->_.macrocall.argtrees[idx];
+        argcopy = sparp_tree_full_copy (sparp, argtree, ctx->smpc_context_gp);
+        return argcopy;
+      }
+    case SPAR_SERVICE_INV:
+      {
+       int vctr;
+        tree->_.sinv.iri_params = spar_macroprocess_treelist (sparp, tree->_.sinv.iri_params, 0, ctx);
+        tree->_.sinv.defines = spar_macroprocess_define_list (sparp, tree->_.sinv.defines, ctx);
+        tree->_.sinv.sources = spar_macroprocess_treelist (sparp, tree->_.sinv.sources, 0, ctx);
+        if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((caddr_t)(tree->_.sinv.param_varnames)))
+          {
+            DO_BOX_FAST_REV (SPART * /* not caddr_t :) */, vname, vctr, tree->_.sinv.param_varnames)
+              {
+                tree->_.sinv.param_varnames[vctr] = spar_macroprocess_varname (sparp, vname, 1, ctx);
+              }
+            END_DO_BOX_FAST_REV;
+          }
+        DO_BOX_FAST_REV (SPART * /* not caddr_t :) */, vname, vctr, tree->_.sinv.rset_varnames)
+          {
+            tree->_.sinv.rset_varnames[vctr] = spar_macroprocess_varname (sparp, vname, 1, ctx);
+          }
+        END_DO_BOX_FAST_REV;
+        sparp->sparp_query_uses_sinvs++;
+        spar_add_service_inv_to_sg (sparp, tree);
+        return tree;
+      }
+    default:
+      {
+        GPF_T;
+#if 0
+        int ctr;
+        DO_BOX_FAST (SPART *, sub, ctr, tree)
+          {
+            ptrlong sub_t;
+            if (!(DV_ARRAY_OF_POINTER == DV_TYPE_OF (sub)))
+              continue;
+            sub_t = sub->type;
+            if (!(((sub_t >= SPAR_MIN_TREE_TYPE) && (sub_t <= SPAR_MAX_TREE_TYPE)) || ((sub_t >= BOP_NOT) && (sub_t <= BOP_MOD))))
+              continue;
+            ((SPART **)tree)[ctr] = spar_macroprocess_tree (sparp, sub, ctx);
+          }
+        END_DO_BOX_FAST;
+#endif
+        return tree;
+      }
+    }
+  
+}
+
 
 /* EQUIVALENCE CLASSES */
 
@@ -2290,7 +2833,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.var.selid = sparp_clone_id (sparp, orig->_.var.selid);
       if (NULL != orig->_.var.tabid)
         tgt->_.var.tabid = sparp_clone_id (sparp, orig->_.var.tabid);
-      tgt->_.var.vname = t_box_copy (orig->_.var.vname);
+      /* tgt->_.var.vname = t_box_copy (orig->_.var.vname); */
       sparp_rvr_copy (sparp, &(tgt->_.var.rvr), &(orig->_.var.rvr));
       return tgt;
     case SPAR_GP:
@@ -2453,7 +2996,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       return tgt;
     case SPAR_QM_SQL_FUNCALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.qm_sql_funcall.fname = t_box_copy (orig->_.qm_sql_funcall.fname);
+      /*tgt->_.qm_sql_funcall.fname = t_box_copy (orig->_.qm_sql_funcall.fname);*/
       tgt->_.qm_sql_funcall.fixed = (SPART **)t_box_copy ((caddr_t) orig->_.qm_sql_funcall.fixed);
       DO_BOX_FAST_REV (SPART *, arg, arg_ctr, orig->_.qm_sql_funcall.fixed)
         {
@@ -2470,6 +3013,19 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
     case SPAR_LIST:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.list.items = sparp_treelist_full_clone_int (sparp, orig->_.list.items, parent_gp);
+      return tgt;
+    case SPAR_DEFMACRO:
+      spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): attempt of copying a macro definition");
+      return NULL;
+    case SPAR_MACROCALL:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      /*tgt->_.macrocall.mname = t_box_copy (orig->_.macrocall.mname);*/
+      tgt->_.macrocall.argtrees = sparp_treelist_full_clone_int (sparp, orig->_.macrocall.argtrees, parent_gp);
+      tgt->_.macrocall.context_graph = sparp_tree_full_clone_int (sparp, orig->_.macrocall.context_graph, parent_gp);
+      return tgt;
+    case SPAR_MACROPU:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      /*tgt->_.macropu.pname = t_box_copy (orig->_.macropu.pname);*/
       return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
@@ -2525,13 +3081,13 @@ sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
 SPART *
 sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
 {
-  int fld_ctr, eq_idx;
+  int defctr, defcount, fld_ctr, eq_idx;
   SPART *tgt;
   switch (SPART_TYPE (orig))
     {
     case SPAR_ALIAS:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.alias.aname = t_box_copy (orig->_.alias.aname);
+      tgt->_.alias.aname = (caddr_t)sparp_tree_full_copy (sparp, (SPART *)(orig->_.alias.aname), parent_gp); /* not t_box_copy, because it can be macropu */
       tgt->_.alias.arg = sparp_tree_full_copy (sparp, orig->_.alias.arg, parent_gp);
       return tgt;
     case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
@@ -2548,7 +3104,9 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.gp.members = sparp_treelist_full_copy (sparp, orig->_.gp.members, (SPART *) orig);
       tgt->_.gp.filters = sparp_treelist_full_copy (sparp, orig->_.gp.filters, (SPART *) orig);
+      tgt->_.gp.subquery = sparp_tree_full_copy (sparp, orig->_.gp.subquery, (SPART *) orig);
       tgt->_.gp.equiv_indexes = (ptrlong *)t_box_copy ((caddr_t)(orig->_.gp.equiv_indexes));
+      tgt->_.gp.options = sparp_treelist_full_copy (sparp, orig->_.gp.options, (SPART *) orig);
       return tgt;
     case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
       return (SPART *)t_full_box_copy_tree ((caddr_t)orig);
@@ -2608,6 +3166,34 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
     case SPAR_LIST:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.list.items = sparp_treelist_full_copy (sparp, orig->_.list.items, parent_gp);
+      return tgt;
+    case SPAR_SERVICE_INV:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.sinv.iri_params = sparp_treelist_full_copy (sparp, orig->_.sinv.iri_params, parent_gp);
+      tgt->_.sinv.param_varnames = (caddr_t *)t_box_copy ((caddr_t)(orig->_.sinv.param_varnames));
+      tgt->_.sinv.rset_varnames = (caddr_t *)t_box_copy ((caddr_t)(orig->_.sinv.rset_varnames));
+      tgt->_.sinv.defines = (SPART **)t_box_copy ((caddr_t)(orig->_.sinv.defines));
+      defcount = BOX_ELEMENTS_0 (tgt->_.sinv.defines);
+      for (defctr = 1; defctr < defcount; defctr += 2)
+        {
+          SPART ***vals = (SPART ***)(t_box_copy ((caddr_t)(orig->_.sinv.defines[defctr])));
+          int valctr, valcount = BOX_ELEMENTS_0 (vals);
+          tgt->_.sinv.defines[defctr] = (void *)vals;
+          for (valctr = valcount; valctr--; /* no step */)
+            vals[valctr] = sparp_treelist_full_copy (sparp, vals[valctr], parent_gp);
+        }
+      tgt->_.sinv.sources = sparp_treelist_full_copy (sparp, orig->_.sinv.sources, parent_gp);
+      return tgt;
+    case SPAR_DEFMACRO:
+      spar_internal_error (sparp, "sparp_" "tree_full_copy(): should not copy macro defs");
+    case SPAR_MACROCALL:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.macrocall.mname = t_box_copy (orig->_.macrocall.mname);
+      tgt->_.macrocall.argtrees = sparp_treelist_full_copy (sparp, orig->_.macrocall.argtrees, parent_gp);
+      tgt->_.macrocall.context_graph = sparp_tree_full_copy (sparp, orig->_.macrocall.context_graph, parent_gp);
+      return tgt;
+    case SPAR_MACROPU:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
       return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
@@ -3689,6 +4275,8 @@ spart_dump_opname (ptrlong opname, int is_op)
     case CONSTRUCT_L: return "CONSTRUCT result-mode";
     case CREATE_L: return "quad mapping name";
     case DATATYPE_L: return "DATATYPE builtin";
+    case DEFAULT_L: return "default graph context";
+    case DEFMACRO_L: return "DEFMACRO";
     case DESC_L: return "descending";
     case DESCRIBE_L: return "DESCRIBE result-mode";
     case DISTINCT_L: return "SELECT DISTINCT result-mode";
@@ -3708,6 +4296,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case LANGMATCHES_L: return "LANGMATCHES builtin";
     case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
+    case MACRO_L: return "macro invocation";
     /* case NAMED_L: return "NAMED"; */
     case NIL_L: return "NIL";
     case OBJECT_L: return "OBJECT";
@@ -4209,6 +4798,38 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.list.items, ses, indent+2, "ITEMS", -2);
 	      break;
 	    }
+          case SPAR_DEFMACRO:
+            {
+              int namectr, namecount;
+              spart_dump (tree->_.defmacro.mname, ses, indent+2, "DEFINITION OF MACRO NAME", 0);
+              spart_dump (tree->_.defmacro.quad_pattern, ses, indent+2, "QUAD PATTERN ITEMS", -2);
+              namecount = BOX_ELEMENTS_0 (tree->_.defmacro.paramnames);
+              for (namectr = 0; namectr < namecount; namectr++)
+                spart_dump (tree->_.defmacro.paramnames[namectr], ses, indent+2, "PARAMETER", 0);
+              namecount = BOX_ELEMENTS_0 (tree->_.defmacro.localnames);
+              for (namectr = 0; namectr < namecount; namectr++)
+                spart_dump (tree->_.defmacro.localnames[namectr], ses, indent+2, "LOCAL VAR", 0);
+              spart_dump (tree->_.defmacro.body, ses, indent+2, "BODY", -1);
+              if (tree->_.defmacro.aggregate_count)
+                spart_dump ((void *)(tree->_.defmacro.aggregate_count), ses, indent+2, "AGGREGATE COUNT", 0);
+              break;
+            }
+          case SPAR_MACROCALL:
+            {
+              int argctr, argcount = BOX_ELEMENTS (tree->_.macrocall.argtrees);
+	      sprintf (buf, "MACRO <%.50s> CALL, id %s", tree->_.macrocall.mname, tree->_.macrocall.mid);
+	      SES_PRINT (ses, buf);
+              spart_dump (tree->_.macrocall.argtrees, ses, indent+2, "CONTEXT GRAPH", -1);
+              for (argctr = 0; argctr < argcount; argctr++)
+                spart_dump (tree->_.macrocall.argtrees[argctr], ses, indent+2, "ARGUMENT", -1);
+              break;
+            }
+          case SPAR_MACROPU:
+            {
+              sprintf (buf, "MACRO PARAM %s (#%ld), type %ld\n", tree->_.macropu.pname, (long)(tree->_.macropu.pindex), (long)(tree->_.macropu.pumode));
+              SES_PRINT (ses, buf);
+              break;
+            }
 	  default:
 	    {
 	      sprintf (buf, "NODE OF TYPE %ld (", (ptrlong)(tree->type));

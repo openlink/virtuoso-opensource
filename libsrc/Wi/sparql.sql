@@ -182,19 +182,19 @@ create table DB.DBA.RDF_QUAD_DELETE_QUEUE (
 )
 ;
 
-create table DB.DBA.SYS_FAKE_0
+create table DB.DBA.SYS_IDONLY_EMPTY
 (
   ID integer not null primary key
 )
 ;
 
-create table DB.DBA.SYS_FAKE_1
+create table DB.DBA.SYS_IDONLY_ONE
 (
   ID integer not null primary key
 )
 ;
 
-insert soft DB.DBA.SYS_FAKE_1 (ID) values (0)
+insert soft DB.DBA.SYS_IDONLY_ONE (ID) values (0)
 ;
 
 sequence_set ('RDF_URL_IID_NAMED', 1000000, 1)
@@ -10741,7 +10741,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
       qm_empty := NULL;
       if (tablename is null)
         {
-          tablename := 'DB.DBA.SYS_FAKE_1';
+          tablename := 'DB.DBA.SYS_IDONLY_ONE';
           if (0 < length (conds))
             signal ('22023', 'Quad Mapping <' || qmid || '> has four constants and no one quad map value; it does not access tables so it can not have WHERE conditions');
         }
@@ -12873,8 +12873,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant all on DB.DBA.SYS_SPARQL_HOST to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH to SPARQL_UPDATE',
-    'grant select on DB.DBA.SYS_FAKE_0 to SPARQL_SELECT',
-    'grant select on DB.DBA.SYS_FAKE_1 to SPARQL_SELECT',
+    'grant select on DB.DBA.SYS_IDONLY_EMPTY to SPARQL_SELECT',
+    'grant select on DB.DBA.SYS_IDONLY_ONE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_GLOBAL_RESET to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to SPARQL_SELECT',

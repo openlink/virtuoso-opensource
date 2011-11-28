@@ -1465,8 +1465,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	is_ddl = sql_is_ddl (tree);
       if (!is_ddl)
 	{
-	  semaphore_leave (parse_sem);
-	  inside_sem = 0;
+          if (inside_sem)
+            {
+              semaphore_leave (parse_sem);
+              inside_sem = 0;
+            }
 	}
       else
 	sqlc_inside_sem = 1;
@@ -1715,7 +1718,18 @@ dbg_sql_compile_static (const char *file, int line, const char *string2, client_
 	     caddr_t * err, volatile int cr_type)
 {
   caddr_t my_err = NULL;
-  query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, &my_err, cr_type, NULL, NULL);
+  query_t *qr = NULL;
+  sql_tree_t *tree = NULL;
+  if (SQLC_STATIC_PRESERVES_TREE == cr_type)
+    {
+      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
+      if (NULL != err[0])
+        return NULL;
+      cr_type = SQLC_DEFAULT;
+    }
+  qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, tree, NULL);
+  dk_free_tree ((caddr_t *)tree);
   if (NULL != err)
     err[0] = my_err;
   if (NULL == qr)
@@ -1805,7 +1819,18 @@ query_t *
 sql_compile_static (const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type)
 {
-  query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, NULL, NULL);
+  query_t *qr = NULL;
+  sql_tree_t *tree = NULL;
+  if (SQLC_STATIC_PRESERVES_TREE == cr_type)
+    {
+      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
+      if (NULL != err[0])
+        return NULL;
+      cr_type = SQLC_DEFAULT;
+    }
+  qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, tree, NULL);
+  dk_free_tree ((caddr_t *)tree);
   return qr;
 }
 #endif

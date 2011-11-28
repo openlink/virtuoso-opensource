@@ -383,7 +383,6 @@ spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
   if (DESCRIBE_L == root->_.req_top.subtype)
     {
-      sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_expr->_.req_top.storage_name);
       root->_.req_top.retvals =
         spar_retvals_of_describe (sparp,
           root->_.req_top.retvals,
@@ -5323,6 +5322,8 @@ void
 sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
 {
   ptrlong top_type = SPART_TYPE (sparp->sparp_expr);
+  if ((NULL == sparp->sparp_env->spare_storage_name) && (NULL == sparp->sparp_storage))
+    sparp->sparp_storage = sparp_find_storage_by_name (NULL);
   if (SPAR_QM_SQL_FUNCALL == top_type)
     return;
   if (SPAR_CODEGEN == top_type)
@@ -5611,7 +5612,6 @@ retry_preopt:
             spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but not assigned", eq->e_varnames[0]);
         }
     }
-  sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_expr->_.req_top.storage_name);
 /* Building qm_list for every triple in the tree. */
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_refresh_triple_cases, NULL,

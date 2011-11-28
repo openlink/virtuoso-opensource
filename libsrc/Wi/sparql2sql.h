@@ -126,6 +126,10 @@ extern void sparp_up_from_sub (sparp_t *sparp, SPART *subq_gp_wrapper, sparp_t *
 /*!< Continues the current traversal in the given gp with subquery */
 extern void sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env);
 
+extern SPART **spar_macroexpand_treelist (sparp_t *sparp, SPART **trees, int begin_with);
+/*!< Do nothing or macroexpand a single tree, returns the result, destroying and/or reusing the original */
+extern SPART *spar_macroexpand_tree (sparp_t *sparp, SPART *tree);
+
 struct sparp_equiv_s;
 
 /*! Equivalence class of variables. All instances of \c sparp_equiv_s are enumerated in \c sparp_sg->sg_equivs .
@@ -837,7 +841,15 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
     } while (0)
 
 /*! Adds either iri of \c jso_inst or \c jso_name into dependencies of the generated query. \c jso_inst is used only if \c jso_name is NULL */
-extern void ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name);
+extern void spar_qr_uses_jso_int (comp_context_t *cc, ccaddr_t jso_inst, ccaddr_t jso_name);
+
+#define sparp_qr_uses_jso(sparp,jso_inst,jso_name) do { \
+  struct sql_comp_s *super_sc = (sparp)->sparp_sparqre->sparqre_super_sc; \
+  if (NULL != super_sc) \
+    spar_qr_uses_jso_int (super_sc->sc_cc, (jso_inst), (jso_name)); } while (0)
+
+#define ssg_qr_uses_jso(ssg,jso_inst,jso_name) spar_qr_uses_jso_int ((ssg)->ssg_sc->sc_cc, (jso_inst), (jso_name))
+
 extern void ssg_qr_uses_table (spar_sqlgen_t *ssg, const char *tbl);
 
 extern ssg_valmode_t sparp_lit_native_valmode (SPART *tree);

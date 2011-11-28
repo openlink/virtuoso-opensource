@@ -418,6 +418,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{D}{A}{T}{A}{T}{Y}{P}{E}	{ return DATATYPE_L	; }
 <SPARQL>{D}{E}{F}{A}{U}{L}{T}		{ return DEFAULT_L	; }
 <SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L	; }
+<SPARQL>{D}{E}{F}{M}{A}{C}{R}{O}	{ return DEFMACRO_L	; }
 <SPARQL>{D}{E}{L}{E}{T}{E}		{ return DELETE_L	; }
 <SPARQL>{D}{E}{R}{E}{F}			{ return DEREF_L	; }
 <SPARQL>{D}{E}{S}{C}			{ return DESC_L		; }
@@ -451,7 +452,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{L}{I}{K}{E}			{ return LIKE_L		; }
 <SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L	; }
 <SPARQL>{L}{I}{T}{E}{R}{A}{L}		{ return LITERAL_L	; }
+<SPARQL>{L}{O}{C}{A}{L}			{ return LOCAL_L	; }
 <SPARQL>{L}{O}{A}{D}			{ return LOAD_L		; }
+<SPARQL>{M}{A}{C}{R}{O}			{ return MACRO_L	; }
 <SPARQL>{M}{A}{K}{E}			{ return MAKE_L		; }
 <SPARQL>{M}{A}{P}			{ return MAP_L		; }
 <SPARQL>{M}{A}{X}			{ return MAX_L		; }
@@ -548,38 +551,21 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>({PN_PREFIX}?)":"		{ TOKBOX_Q(0,QNAME_NS,"namespace"); }
 <SPARQL>"_:"{PN_LOCAL}			{ TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
 
-<SPARQL>"?"{SPAR_VARNAME}	{
+<SPARQL>[?$]{SPAR_VARNAME}	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
-    return QUEST_VARNAME;
+    return QD_VARNAME;
   }
 
-<SPARQL>[$]{SPAR_VARNAME}	{
+<SPARQL>[?$]":"{SPAR_PARAMNAME}	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
-    return DOLLAR_VARNAME;
+    return QD_COLON_PARAMNAME;
   }
 
-<SPARQL>"?:"{SPAR_PARAMNAME}	{
-    sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
-    return QUEST_COLON_PARAMNAME;
-  }
-
-<SPARQL>[$]":"{SPAR_PARAMNAME}	{
-    sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
-    return DOLLAR_COLON_PARAMNAME;
-  }
-
-<SPARQL>"??"	{
+<SPARQL>[?$]"?"	{
     char buf[20]; sprintf (buf, ":%d", sparp->sparp_sparqre->sparqre_param_ctr[0]);
     sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
     sparyylval.box = t_box_dv_uname_string (buf);
-    return QUEST_COLON_PARAMNUM;
-  }
-
-<SPARQL>[$]"?"	{
-    char buf[20]; sprintf (buf, ":%d", sparp->sparp_sparqre->sparqre_param_ctr[0]);
-    sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
-    sparyylval.box = t_box_dv_uname_string (buf);
-    return DOLLAR_COLON_PARAMNUM;
+    return QD_COLON_PARAMNUM;
   }
 
 <SPARQL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{

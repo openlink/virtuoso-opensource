@@ -46,6 +46,7 @@ query_t *eql_compile_2 (const char *string, client_connection_t * cli, caddr_t *
 #define SQLC_QR_TEXT_IS_CONSTANT -8
 #define SQLC_IS_RECOMPILE  0x100
 #define SQLC_PARSE_ONLY_REC 	-9
+#define SQLC_STATIC_PRESERVES_TREE 	-10
 
 query_t *eql_compile (const char *string, client_connection_t * cli);
 

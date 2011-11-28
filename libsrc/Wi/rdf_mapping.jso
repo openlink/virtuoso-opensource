@@ -214,10 +214,19 @@ JSO_SCALAR qmAllConds STRING_array PRIVATE		--!< Complete list of all join condi
 JSO_SCALAR qmAllCondCount INTEGER PRIVATE		--!< Number of used elements in qmAllCondCount
 JSO_STRUCT_END
 
+JSO_STRUCT_BEGIN sparql_macro_library virtrdf SparqlMacroLibrary	--!< Library of SPARQL macro definitions that are loaded automatically when the storage is used
+JSO_SCALAR smlSourceText STRING REQUIRED				--!< Source text of the library
+JSO_SCALAR smlCompilationState INTEGER PRIVATE				--!< 2 for completely (and successfull compilation, 1 for compilation in progress, 0 for not even started
+JSO_SCALAR smlIncludes ANY PRIVATE					--!< IRIs of included macro libraries
+JSO_SCALAR smlList ANY PRIVATE						--!< The compiled library
+JSO_STRUCT_END
+
+
 JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info
 JSO_POINTER qsMjvMaps quad_map_array OPTIONAL
 JSO_POINTER qsUserMaps quad_map_array OPTIONAL
 JSO_POINTER qsDefaultMap quad_map OPTIONAL
+JSO_POINTER qsMacroLibrary sparql_macro_library OPTIONAL
 JSO_SCALAR qsMatchingFlags BITMASK OPTIONAL
 JSO_SCALAR qsAlterInProgress ANY OPTIONAL
 JSO_STRUCT_END

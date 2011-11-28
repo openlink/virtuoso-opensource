@@ -413,23 +413,6 @@ sparp_jso_push_deleted (sparp_t *sparp, ccaddr_t class_iri, ccaddr_t inst_iri)
 }
 
 void
-ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name)
-{
-  comp_context_t *cc = ssg->ssg_sc->sc_cc;
-  if (NULL == cc)
-    return;
-  if (NULL == jso_name)
-    {
-      jso_rtti_t *jso_rtti = gethash (jso_inst, jso_rttis_of_structs);
-      if (NULL == jso_rtti)
-        return; /* Built-in anonymous JSO, like one used when define input:storage "" */
-      jso_name = jso_rtti->jrtti_inst_iri;
-    }
-  box_dv_uname_make_immortal ((caddr_t)jso_name);
-  qr_uses_jso (cc->cc_super_cc->cc_query, jso_name);
-}
-
-void
 ssg_qr_uses_table (spar_sqlgen_t *ssg, const char *tbl)
 {
   comp_context_t *cc;
@@ -1867,7 +1850,18 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         sub_sparp->sparp_env = subq->_.req_top.shared_spare;
         sub_sparp->sparp_parent_sparp = sparp;
         res = sparp_expn_native_valmode (sub_sparp, subq->_.req_top.retvals[0]);
+        if ((SSG_VALMODE_NUM == res) || (SSG_VALMODE_LONG == res) || (SSG_VALMODE_SQLVAL == res))
+          return res;
+#if 0 /*!!! TBD extend ssg_print_scalar_subquery_exp() to support any valmodes and avoid using casts to SSG_VALMODE_LONG */
+        if (IS_BOX_POINTER (res))
+          {
+            if (res->qmfIsSubformatOfLong)
+              return SSG_VALMODE_LONG;
+          }
         return res;
+#else
+        return SSG_VALMODE_LONG;
+#endif
       }
     default: break;
     }
@@ -4385,6 +4379,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
         tmpl = ssg_tmpl_ref_short_of_X (needed, native);
       else
         tmpl = ssg_tmpl_literal_short_of_X (needed, native);
+      /* \c needed is passed to ssg_print_tmpl, not native, because custom string is in needed, not in native */
       ssg_print_tmpl (ssg, needed, tmpl, NULL, NULL, tree, asname);
       return;
     }
@@ -4463,11 +4458,12 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
 void
 ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname)
 {
+  ssg_valmode_t native = NULL;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ssg, 4000))
     spar_internal_error (NULL, "ssg_print_scalar_expn (): stack overflow");
 
   if (SSG_VALMODE_AUTO == needed)
-    needed = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+    needed = native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
   switch (SPART_TYPE (tree))
     {
     case BOP_AND:	ssg_print_bop_bool_expn (ssg, tree, " AND "	, " __and ("	, 0, needed); goto print_asname;
@@ -4510,16 +4506,6 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
     case SPAR_BLANK_NODE_LABEL:
     case SPAR_VARIABLE:
       {
-#if 0
-        ssg_valmode_t vmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
-        if (vmode == needed)
-          {
-            sparp_equiv_t *eq = ssg->ssg_equivs[tree->_.var.equiv_idx];
-            ssg_print_equiv_retval_expn (ssg, sparp_find_gp_by_alias (ssg->ssg_sparp, tree->_.var.selid), eq, 0, 1, needed, NULL_ASNAME);
-          }
-        else
-          ssg_print_valmoded_scalar_expn (ssg, tree, needed, vmode);
-#else
         if (SPART_VARNAME_IS_GLOB (tree->_.var.vname))
           {
             ssg_print_global_param (ssg, tree, needed);
@@ -4527,15 +4513,15 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         if (NULL == ssg->ssg_equivs) /* This is for case when parts of the SPARQL front-end are used to produce small SQL fragments */
           {
-            ssg_valmode_t vmode;
-            vmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
-            if (vmode == needed)
+            if (NULL == native)
+              native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+            if (native == needed)
               {
                 ssg_putchar (' ');
                 ssg_prin_id (ssg, tree->_.var.vname);
                 goto print_asname; /* see below */
               }
-            ssg_print_valmoded_scalar_expn (ssg, tree, needed, vmode, asname);
+            ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
           }
         else
           {
@@ -4561,7 +4547,6 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
 #endif
             ssg_print_equiv_retval_expn (ssg, gp, eq, SSG_RETVAL_FROM_JOIN_MEMBER | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_CAN_PRINT_NULL | SSG_RETVAL_USES_ALIAS, needed, asname);
           }
-#endif
         return;
       }
     case SPAR_BUILT_IN_CALL:
@@ -4584,7 +4569,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       {
         int curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
-        ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
+        if (NULL == native)
+          native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
         if (native != needed)
           {
             ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
@@ -4750,7 +4736,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         if (SSG_VALMODE_NUM == needed)
           {
-            ssg_valmode_t native = sparp_lit_native_valmode (tree);
+            if (NULL == native)
+              native = sparp_lit_native_valmode (tree);
             if (SSG_VALMODE_NUM == native)
               ssg_print_literal_as_sqlval (ssg, NULL, tree);
             else
@@ -4844,13 +4831,14 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       goto print_asname;
     case SPAR_RETVAL:
       {
-        ssg_valmode_t vmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
-        if (vmode != needed)
+        if (NULL == native)
+          native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        if (native != needed)
           {
-            ssg_print_valmoded_scalar_expn (ssg, tree, needed, vmode, asname);
+            ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
             return;
           }
-        ssg_print_retval (ssg, tree, vmode, asname);
+        ssg_print_retval (ssg, tree, native, asname);
         return;
       }
     case SPAR_QM_SQL_FUNCALL:
@@ -4877,7 +4865,9 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             }
           goto print_asname;
         }
-      if ((SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed) && (SSG_VALMODE_NUM != needed))
+      /*if (NULL == native)
+        native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);*/
+      if (/*(native != needed) &&*/ (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed) && (SSG_VALMODE_NUM != needed))
         {
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, asname);
           return;
@@ -7095,7 +7085,7 @@ no_extra_ft_tables: ;
     }
   if (NULL == colcodes)
     { /* This is a special case of quad map with four constants and no one quad map value. */
-      ssg_puts (" DB.DBA.SYS_FAKE_1 AS ");
+      ssg_puts (" DB.DBA.SYS_IDONLY_ONE AS ");
       ssg_prin_id (ssg, tabid);
       t_set_push (&(ssg->ssg_valid_ret_tabids), tabid);
       ssg->ssg_indent--;
