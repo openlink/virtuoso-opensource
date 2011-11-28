@@ -10685,7 +10685,8 @@ static caddr_t
 bif_user_set_password (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t u_name = bif_string_arg (qst, args, 0, "user_set_password");
-  caddr_t u_pwd = bif_string_arg (qst, args, 1, "user_set_password");
+  caddr_t u_pwd = bif_string_or_wide_or_uname_arg (qst, args, 1, "user_set_password");
+  caddr_t u_pwd_to_delete = NULL;
 
   query_instance_t *qi = (query_instance_t *) (qst);
   user_t *usr = sec_name_to_user (u_name);
@@ -10697,8 +10698,21 @@ bif_user_set_password (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!usr)
     sqlr_new_error ("42000", "SR286", "The user %.50s does not exist", u_name);
-  if (strlen (u_pwd) == 0)
+  if ((DV_WIDE == DV_TYPE_OF (u_pwd)) ? (0 == ((wchar_t *)u_pwd)[0]) : ('\0' == u_pwd[0]))
     sqlr_new_error ("42000", "SR287", "The new password for %.50s cannot be empty", usr->usr_name);
+  switch (DV_TYPE_OF (u_pwd))
+    {
+    case DV_WIDE:
+      u_pwd_to_delete = u_pwd = box_wide_as_utf8_char (u_pwd, box_length (u_pwd) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+      break;
+    case DV_UNAME:
+      u_pwd_to_delete = u_pwd = box_dv_short_string (u_pwd);
+      break;
+    default:
+      if (strlen (u_pwd) != (box_length (u_pwd) - 1))
+        sqlr_new_error ("42000", "SR287", "The new password for %.50s cannot contain zero bytes", usr->usr_name);
+      break;
+    }
   qi->qi_client = bootstrap_cli;
   /*qi->qi_trx->lt_replicate = REPL_NO_LOG; */
   QR_RESET_CTX_T (qi->qi_thread)
@@ -10707,6 +10721,7 @@ bif_user_set_password (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   QR_RESET_CODE
     {
+      dk_free_box (u_pwd_to_delete);
       POP_QR_RESET;
       /*qi->qi_trx->lt_replicate = old_log; */
       qi->qi_client = cli;
@@ -10725,6 +10740,7 @@ bif_user_set_password (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   log_array[5] = usr->usr_data ? box_string (usr->usr_data) : dk_alloc_box (0, DV_DB_NULL);
   log_text_array (qi->qi_trx, (caddr_t) log_array);
   dk_free_tree ((box_t) log_array);
+  dk_free_box (u_pwd_to_delete);
   return NULL;
 }
 

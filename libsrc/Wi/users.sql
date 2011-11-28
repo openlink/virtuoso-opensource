@@ -196,8 +196,7 @@ create procedure DB.DBA.SECURITY_CL_EXEC_AND_LOG (in txt varchar, in args any)
 }
 ;
 
-create procedure
-USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
+create procedure DB.DBA.USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 {
   declare _pwd, _pwd_mode, _pwd_mode_data, _login_qual varchar;
   declare _dav_enable, _sql_enable integer;
@@ -250,6 +249,9 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
   }
   if (_login_qual = '')
     signal ('22023', 'Qualifier cannot be empty string');
+
+  if (__tag of NVARCHAR = __tag (passwd))
+    passwd := charset_recode (passwd, '_WIDE_', 'UTF-8');
 
   _pwd := pwd_magic_calc (_name, passwd, 0);
   _u_sys_name := pwd_magic_calc (_name, _u_sec_sys_name, 0);
@@ -334,6 +336,10 @@ USER_ROLE_DROP (in _name varchar)
 create procedure
 USER_CHANGE_PASSWORD (in _name varchar, in old_pwd varchar, in new_pwd varchar)
 {
+  if (__tag of NVARCHAR = __tag (old_pwd))
+    old_pwd := charset_recode (old_pwd, '_WIDE_', 'UTF-8');
+  if (__tag of NVARCHAR = __tag (new_pwd))
+    new_pwd := charset_recode (new_pwd, '_WIDE_', 'UTF-8');
   if (exists (select 1 from SYS_USERS where U_NAME = _name and U_IS_ROLE = 0 and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = old_pwd))
     {
       if (exists (select 1 from SYS_USERS where U_NAME = _name and U_SQL_ENABLE = 1))
@@ -354,6 +360,8 @@ create procedure USER_PASSWORD_SET (in name varchar, in passwd varchar)
 {
   declare _u_id, _u_group integer;
   declare _u_data varchar;
+  if (__tag of NVARCHAR = __tag (passwd))
+    passwd := charset_recode (passwd, '_WIDE_', 'UTF-8');
   if (exists (select 1 from SYS_USERS where U_NAME = name and U_SQL_ENABLE = 1))
     {
       user_set_password (name, passwd);
