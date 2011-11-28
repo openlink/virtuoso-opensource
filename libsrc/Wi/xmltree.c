@@ -4490,6 +4490,8 @@ xpath_funcall_or_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
   int param_count = ('f' == predicate_type) ? argcount - 2 : BOX_ELEMENTS (params);
   /*caddr_t err = NULL;*/
   xp_instance_t * xqi;
+  XT *funcall;
+  xp_func_t fn;
   bif_xquery_arg (qst, args, 0, cache_ssl_idx, param_count, funname, "function name", &str, &str_is_temp, &xqr_text_ent, &xqr);
   if (NULL == xqr)
     {
@@ -4527,11 +4529,14 @@ xpath_funcall_or_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
   xqi = xqr_instance (xqr, qi);
   QR_RESET_CTX
     {
-      int inx;
+      int inx, param_ofs, param_step;
+      funcall = xqr->xqr_tree;
+      fn = (void *)unbox (funcall->_.xp_func.executable);
+      param_ofs = ((xpf_cartesian_product_loop == fn) ? 1 : 0);
+      param_step = ((xpf_cartesian_product_loop == fn) ? 2 : 1);
       for (inx = 0; inx < param_count; inx ++)
         {
-          XT *funcall = xqr->xqr_tree;
-          XT *fake_var = funcall->_.xp_func.argtrees[inx];
+          XT *fake_var = funcall->_.xp_func.argtrees[inx * param_step + param_ofs];
           caddr_t param_val = (('f' == predicate_type) ? bif_arg (qst, args, 2+inx, funname) : params[inx]);
           XQI_SET (xqi, fake_var->_.var.res, NULL);
 #ifdef XPATH_DEBUG
@@ -4545,6 +4550,7 @@ xpath_funcall_or_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 #endif
           if ((DV_DB_NULL == DV_TYPE_OF (param_val)) || (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (param_val) && 0 == BOX_ELEMENTS (param_val)))
             {
+              XQI_SET (xqi, fake_var->_.var.init, dk_alloc_box (0, DV_ARRAY_OF_XQVAL));
               XQI_SET_INT (xqi, fake_var->_.var.state, XI_AT_END);
             }
           else
@@ -4615,6 +4621,18 @@ xpath_funcall_or_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
   if (xqi_set_odometer >= xqi_set_debug_start)
     dk_check_tree (val);
 #endif
+  if ((xpf_cartesian_product_loop == fn) && (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (val)))
+    {
+      caddr_t val0;
+      if (0 == BOX_ELEMENTS (val))
+        {
+          dk_free_tree (val); return NEW_DB_NULL;
+        }
+      val0 = ((caddr_t *)val)[0];
+      ((caddr_t *)val)[0] = NULL;
+      dk_free_tree (val);
+      return val0;
+    }
   return val;
 }
 
@@ -10162,7 +10180,7 @@ xml_ent_hash (caddr_t box)
   xml_entity_t *xe = (xml_entity_t *)box;
   int32 chld_hash = 0;
   if (XE_IS_TREE (xe))
-    chld_hash = (int32)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
+    chld_hash = (int32)(ptrlong)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
   else if (XE_IS_PERSISTENT (xe))
     chld_hash = (int32)(((xper_entity_t *)(xe))->xper_pos);
 /* No need in "if (XE_IS_LAZY (xe))", because there's no position in not-yet-loaded doc */

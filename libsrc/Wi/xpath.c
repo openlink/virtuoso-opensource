@@ -4867,14 +4867,15 @@ shuric_t *xqr_shuric_retrieve (query_instance_t *qi, caddr_t uri, caddr_t *err_r
 xp_query_t *
 xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount)
 {
-  int argctr;
+  int argctr, allctr, iterctr, itercount;
   xp_env_t l_xe;
   xpp_t l_xpp;
   xp_query_t *xqr = (xp_query_t *) dk_alloc_box_zero (sizeof (xp_query_t), DV_XPATH_QUERY);
   int n_slots, fill = 0;
   ptrlong *map;
-  XT **arg_array = dk_alloc_box (argcount * sizeof (XT *), DV_ARRAY_OF_POINTER);
+  XT **arg_array = (XT **)dk_alloc_box (argcount * sizeof (XT *), DV_ARRAY_OF_POINTER);
   XT *var = NULL;
+  XT *call;
   memset (&l_xe, 0, sizeof (xp_env_t));
   memset (&l_xpp, 0, sizeof (xpp_t));
   l_xpp.xpp_xp_env = &l_xe;
@@ -4889,15 +4890,63 @@ xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount)
       arg_array[argctr] = xp_make_variable_ref (&l_xpp, buf);
       arg_array[argctr]->type = XP_FAKE_VAR;
     }
-  xqr->xqr_tree = xtlist_with_tail (&l_xpp, 8, (caddr_t)arg_array, CALL_STMT,
+  call = xtlist_with_tail (&l_xpp, 8, (caddr_t)arg_array, CALL_STMT,
     box_dv_uname_string (metas->xpfm_name),
     box_num((ptrlong)(metas->xpfm_executable)),
     (ptrlong)(metas->xpfm_res_dtp),
     xe_new_xqst (&l_xpp, XQST_REF),
     xe_new_xqst (&l_xpp, XQST_REF),
     var );
+  for (itercount = allctr = 0; allctr < argcount; allctr++)
+    {
+      int descr_idx = allctr;
+      xpfm_arg_descr_t *descr;
+      if (descr_idx > metas->xpfm_main_arg_no)
+        descr_idx = (int) (metas->xpfm_main_arg_no + ((descr_idx-metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no));
+      descr = metas->xpfm_args+descr_idx;
+      if (descr->xpfma_is_iter)
+        itercount++;
+    }
+  if (itercount != 0)
+    {
+      XT **iter_vars = (XT **) dk_alloc_box_zero ((itercount * 2 + 1) * sizeof (XT *), DV_ARRAY_OF_POINTER);
+      XT *cart_var = NULL;
+      XT *cart;
+      if (NULL != var)
+        {
+          cart_var = xp_make_variable_ref (&l_xpp, "Cartesian product");
+        }
+      cart = xtlist_with_tail (&l_xpp, 8, (caddr_t)iter_vars, CALL_STMT,
+        box_dv_uname_string ("(internal) Cartesian product loop"),
+        box_num((ptrlong)(xpf_cartesian_product_loop)),
+        DV_ARRAY_OF_XQVAL,
+        xe_new_xqst (&l_xpp, XQST_REF),
+        xe_new_xqst (&l_xpp, XQST_REF),
+        cart_var );
+      for (iterctr = allctr = 0; allctr < argcount; allctr++)
+        {
+          int descr_idx = allctr;
+          xpfm_arg_descr_t *descr;
+          if (descr_idx > metas->xpfm_main_arg_no)
+            descr_idx = (int) (metas->xpfm_main_arg_no + ((descr_idx-metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no));
+          descr = metas->xpfm_args+descr_idx;
+          if (descr->xpfma_is_iter)
+            {
+              char buf[30];
+              sprintf (buf, " %d", l_xe.xe_xqst_ctr);
+              cart->_.xp_func.argtrees[iterctr*2] =
+                xtlist (&l_xpp, 4, XP_LITERAL, NULL, box_dv_uname_string(buf), xe_new_xqst (&l_xpp, XQST_REF));
+              cart->_.xp_func.argtrees[iterctr*2+1] =
+                call->_.xp_func.argtrees[allctr];
+              call->_.xp_func.argtrees[allctr] = xp_make_variable_ref(&l_xpp, buf);
+              iterctr++;
+            }
+        }
+      cart->_.xp_func.argtrees[itercount*2] = call;
+      call = cart;
+    }
+  xqr->xqr_tree = call;
   xqr->xqr_instance_length = sizeof (caddr_t) * l_xe.xe_xqst_ctr;
-
   n_slots = dk_set_length (xqr->xqr_state_map);
   map = (ptrlong *) dk_alloc_box (sizeof (ptrlong) * n_slots, DV_SHORT_STRING);
   DO_SET (ptrlong, pos, &xqr->xqr_state_map)
