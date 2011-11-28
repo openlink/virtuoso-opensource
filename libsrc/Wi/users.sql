@@ -227,7 +227,7 @@ create procedure DB.DBA.USER_CREATE (in _name varchar, in passwd varchar, in opt
     _login_qual := get_keyword_ucase ('LOGIN_QUALIFIER', options, 'DB');
     _prim_group := get_keyword_ucase ('PRIMARY_GROUP', options, NULL);
 
-    _u_e_mail := get_keyword_ucase ('E-MAIL', options, '');
+    _u_e_mail := coalesce (get_keyword_ucase ('E-MAIL', options), get_keyword_ucase ('E_MAIL', options, ''));
     _u_full_name := get_keyword_ucase ('FULL_NAME', options, NULL);
     _u_home := get_keyword_ucase ('HOME', options, NULL);
     _u_perms := get_keyword_ucase ('PERMISSIONS', options, '110100000R');
@@ -240,7 +240,7 @@ create procedure DB.DBA.USER_CREATE (in _name varchar, in passwd varchar, in opt
     new_opts := vector ();
     while (i < l)
       {
-	if (upper(options[i]) not in ('PASSWORD_MODE', 'PASSWORD_MODE_DATA', 'GET_PASSWORD', 'SQL_ENABLE', 'DAV_ENABLE', 'LOGIN_QUALIFIER', 'PRIMARY_GROUP', 'E-MAIL', 'FULL_NAME', 'HOME', 'PERMISSIONS', 'DISABLED'))
+	if (upper(options[i]) not in ('PASSWORD_MODE', 'PASSWORD_MODE_DATA', 'GET_PASSWORD', 'SQL_ENABLE', 'DAV_ENABLE', 'LOGIN_QUALIFIER', 'PRIMARY_GROUP', 'E-MAIL', 'E_MAIL', 'FULL_NAME', 'HOME', 'PERMISSIONS', 'DISABLED'))
 	  {
             new_opts := vector_concat (new_opts, vector (options[i], options[i+1]));
 	  }
