@@ -1128,6 +1128,15 @@ RDF_VIEW_CHECK_SYNC_TB (in tb varchar)
 create procedure
 RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar := null)
 {
+   declare gr varchar;
+   gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   return RDF_VIEW_SYNC_TO_PHYSICAL (gr, load_data, pgraph);
+}
+;
+
+create procedure
+RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph varchar := null)
+{
    declare mask varchar;
    declare txt, tbls, err_ret, opt any;
    declare stat, msg, gr varchar;
@@ -1135,8 +1144,7 @@ RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar
    tbls := vector ();
    err_ret := vector ();
    opt := vector ();
-   mask := sprintf ('http://%s/schemas/%s/qm-%%', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
-   gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   gr := vgraph;
    if (length (pgraph))
      opt := vector (gr, pgraph);
    for select "o" from
