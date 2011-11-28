@@ -98,7 +98,7 @@ create procedure TUT_get_xml(in path varchar){
 	
   	if(isnull(xpath_eval('@wwwpath',xp_example)))
   	{
-		 	if (_ex_optxml and lower(xpath_eval('string(/init/@is_vspx)',_ex_optxml)) = 'yes')
+	  if (_ex_optxml is not null and lower(xpath_eval('string(/init/@is_vspx)',_ex_optxml)) = 'yes')
 	       		ex := 'x';
   	  		XMLAddAttribute (xp_example,2,'wwwpath',concat(_ex_fspath ,'/', _ex_id , '.vsp',ex));
   	  	};
