@@ -105,7 +105,7 @@ static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
 long http_ses_trap = 0;
 int www_maintenance = 0;
 
-#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance))
+#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance || cpt_is_global_lock ()))
 
 caddr_t
 temp_aspx_dir_get (void)
