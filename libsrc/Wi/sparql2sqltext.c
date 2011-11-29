@@ -7732,7 +7732,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
       if (SSG_TABLE_SELECT_PASS == pass)
         {
           char buf[200];
-          snprintf (buf, sizeof (buf), " (select top 1 1 as __fake_table_col_%d from DB.DBA.RDF_QUAD) as __fake_table_%d",
+          snprintf (buf, sizeof (buf), " (select top 1 1 as __fake_table_col_%d from DB.DBA.SYS_IDONLY_ONE) as __fake_table_%d",
             ssg->ssg_sparp->sparp_unictr, ssg->ssg_sparp->sparp_unictr );
           ssg->ssg_sparp->sparp_unictr++;
           ssg_puts (buf);
@@ -8226,9 +8226,9 @@ retval_list_complete:
           ssg_newline (0);
           snprintf (buf, sizeof (buf), "stub-%s", member->_.gp.selid);
           if (SSG_PRINT_UNION_NONEMPTY_STUB & head_flags)
-            ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
+            ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.SYS_IDONLY_ONE) AS ");
           else
-            ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD WHERE 0) AS ");
+            ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.SYS_IDONLY_EMPTY WHERE 0) AS ");
           ssg_prin_id (ssg, buf);
           /* no t_set_push (&(ssg->ssg_valid_ret_selids), ...); because it's single-use stub */
           need_self_joins_in_where = 'Y';
@@ -8239,7 +8239,7 @@ retval_list_complete:
           char buf[105]; /* potentially 100 chars long see sparp_clone_id etc. */
           ssg_newline (0);
           snprintf (buf, sizeof (buf), "lojstub-%s", member->_.gp.selid);
-          ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
+          ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.SYS_IDONLY_ONE) AS ");
           ssg_prin_id (ssg, buf);
           /* no t_set_push (&(ssg->ssg_valid_ret_selids), ...); because it's single-use stub */
           if (OPTIONAL_L == first_itm->_.gp.subtype)
