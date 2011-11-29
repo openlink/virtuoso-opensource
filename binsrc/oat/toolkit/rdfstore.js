@@ -1,5 +1,4 @@
-/*
- *  $Id$
+/*  $Id$
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
@@ -713,7 +712,10 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	if (!!item.label)
 	    return item.label;
 	else
-	    return self.getCIRIorSplit (item.iid)
+	    if (self.options.raw_iris) 
+		return OAT.IRIDB.getIRI (item.iid);
+            else
+		return self.getCIRIorSplit (item.iid);
     }
 
 // XXX

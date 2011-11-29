@@ -1176,6 +1176,7 @@ OAT.Map.loadApi = function(provider, optObj) {
 	window[funcName] = function() {
 	    window[funcName] = null;
 	    if (options.callback) { options.callback(provider); }
+	    OAT.MSG.send (OAT, "OAT_MAP_API_LOADED", provider);
 	}
 	return funcName;
     }

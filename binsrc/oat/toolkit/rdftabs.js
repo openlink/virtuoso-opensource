@@ -64,7 +64,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 	pageSize:20,
 	removeNS:true,
 	description:"This view shows all RDF data grouped by subject resource.",
-	desc:"RDF data by subject resource"
+	desc:"RDF data by subject resource",
+	raw_iris: false
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -344,7 +345,10 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		elm.href = OAT.IRIDB.getIRI(value);
 		attach(elm,value);
 	    }
-	    elm.innerHTML = self.parent.store.getCIRIorSplit(value);
+
+	    if (self.options.raw_iris) elm.innerHTML = elm.href; 
+            else elm.innerHTML = self.parent.store.getCIRIorSplit(value);
+
 	    if (i) { self.sortDiv.appendChild(OAT.Dom.text(", ")); }
 	    self.sortDiv.appendChild(elm);
 	}
@@ -374,7 +378,8 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
     this.options = {
 	limit:5,
 	description:"This module is used to navigate through locally cached data, one resource at a time. Filters are not applied.",
-	desc:"Navigate through locally cached data (Filters not applied)"
+	desc:"Navigate through locally cached data (Filters not applied)",
+        raw_iris: false
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -595,7 +600,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    } else if (type == 1) { /* dereferencable link */
 		content = OAT.Dom.create("a");
 		    content.href = value.getIRI();
-		    content.innerHTML = self.parent.store.getCIRIorSplit(value.getIID());
+
+		    if (self.options.raw_iris) content.innerHTML = value.getIRI();
+                    else content.innerHTML = self.parent.store.getCIRIorSplit(value.getIID());
+
 		    self.dattach(content,value.getIRI());
 		} 
 	    } else { /* text */
@@ -696,6 +704,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    if (iid in self.parent.store.labels)
 		a.innerHTML = self.parent.store.labels[iid].label;
 	    else
+		if (self.options.raw_iris) 
+                    a.innerHTML = OAT.IRIDB.getIRI(iid);
+                else 
 		a.innerHTML = self.parent.store.getCIRIorSplit(iid);
 
 	    a.title = a.href = OAT.IRIDB.getIRI(iid);
@@ -766,15 +777,25 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	td.colSpan = 3;
 
 	var simple;
+
+	if (self.options.raw_iris) 
+            simple = OAT.IRIDB.getIRI(label); 
+        else 
 	simple = self.parent.store.getCIRIorSplit(label);
 
 	if (cnt > 1 && simple.charAt(0) != "[" && simple in self.plurals) {
 	    simple = self.plurals[simple];
 	}//]
 
-	td.innerHTML = simple;
-	td.title = OAT.IRIDB.getIRI(label);
+	var a = OAT.Dom.create("a", {className: "nav_rdf_subject"});
+
+	a.innerHTML = simple;
+	a.title = OAT.IRIDB.getIRI(label);
+	a.href = simple;
+
+	td.appendChild (a);
 	tr.appendChild(td);
+
 	OAT.Event.attach(arrow,"click",function() {
 	    state = (state+1) % 2;
 	    arrow.innerHTML = states[state];
@@ -945,7 +966,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	pageSize:100,
 	removeNS:true,
 	description:"This module displays all filtered triples.",
-	desc:"All filtered triples"
+	desc:"All filtered triples",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1039,7 +1061,12 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	try { 	// Dirty data does exist, you see...
 	var iri = decodeURIComponent(OAT.IRIDB.getIRI(iid));
             var col_v_elm = OAT.Dom.create("a");
-	    col_v_elm.innerHTML = self.parent.store.getCIRIorSplit(iid);
+
+            if (self.options.raw_iris)
+              col_v_elm.innerHTML = iri;
+            else 
+              col_v_elm = self.parent.store.getCIRIorSplit(iid);
+
 	    col_v_elm.href = iri;
 	    self.parent.processLink(col_v_elm, iri);
         } catch (e) {
@@ -1081,7 +1108,8 @@ OAT.RDFTabs.svg = function(parent,optObj) {
     this.options = {
 	limit:100,
 	description:"",
-	desc:"Filtered data as SVG Graph"
+	desc:"Filtered data as SVG Graph",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1327,7 +1355,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	hoverPopup:true,
 	height: "600px",
 	useMobileOpts:false,
-	supportedMobileDetected:false
+	supportedMobileDetected:false,
+        raw_iris: false
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -1654,7 +1683,13 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	for (var p in preds) {
 	    if (self.markerPredBlacklist.find(parseInt(p)) != -1) continue; // Not all predicates are created equal
 	    var pred = preds[p];
-	    var simple = self.parent.store.getCIRIorSplit(p);
+            var simple;
+
+	    if (self.options.raw_iris)
+              simple = OAT.IRIDB.getIRI (p); 
+            else 
+              simple = self.parent.store.getCIRIorSplit(p);
+
 	    if (pred.length == 1 || self.lookupProperties.find(simple) != -1) {
 		var predC = OAT.Dom.create("tr",{className:"predicate"});
 		var predT = OAT.Dom.create("td",{className:"pred_title"});
@@ -1846,7 +1881,8 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
     this.options = {
 	imagePath:OAT.Preferences.imagePath,
 	description:"This module displays all date/time containing resources on an interactive timeline.",
-	desc:"Date/time on timeline"
+	desc:"Date/time on timeline",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1958,6 +1994,10 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
     }
 }
 
+//
+// XXX unfinished
+//
+
 OAT.RDFTabs.people = function(parent,optObj) {
     var self = this;
     OAT.RDFTabs.parent(self);
@@ -1965,7 +2005,8 @@ OAT.RDFTabs.people = function(parent,optObj) {
     this.options = {
 	pictSize:150,
 	columns: 2,
-	width: 800
+	width: 800,
+        raw_iris: false
     };
 
     this.personTypes = ["http://xmlns.com/foaf/0.1/Person"];
@@ -1991,8 +2032,10 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	thumbSize:150,
 	size:600,
 	description:"This module displays all images found in filtered data set.",
-	desc:"Images from filtered data set"
+	desc:"Images from filtered data set",
+        raw_iris: false
     }
+
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
     this.elm.style.textAlign = "center";
@@ -2189,7 +2232,8 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 
     this.options = {
 	description:"This module displays all links found in filtered data set.",
-	desc:"Links from filtered data set"
+	desc:"Links from filtered data set",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -2280,7 +2324,8 @@ OAT.RDFTabs.fresnel = function(parent, optObj) {
 	defaultURL:"",
 	autoload:false,
 	description:"This module applies Fresnel RDF Vocabularies to all dereferenced data.",
-	desc:"Fresnel RDF Vocabularies to dereferenced data"
+	desc:"Fresnel RDF Vocabularies to dereferenced data",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 

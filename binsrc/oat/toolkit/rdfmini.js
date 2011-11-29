@@ -193,7 +193,10 @@ OAT.RDFMini = function(div,optObj) {
 		ciri = OAT.IRIDB.resolveCIRI(data_.getValue());
 		content = OAT.Dom.create("span");
 		var a = OAT.Dom.create("a");
-		a.innerHTML = (label ? label : ciri);
+
+		if (label) a.innerHTML = label;
+		else a.innerHTML = (self.options.raw_iris ? data : ciri);
+
 		a.href = data;
 		content.appendChild(a);
 		self.processLink(a,data,disabledActions);
@@ -208,7 +211,10 @@ OAT.RDFMini = function(div,optObj) {
 	    label = data_.label;
 	    content = OAT.Dom.create("span");
 	    var a = OAT.Dom.create("a");
-	    a.innerHTML = (label ? label : ciri);
+
+	    if (label) a.innerHTML = label;
+            else a.innerHTML = (self.options.raw_iris ? data : ciri);
+
 	    a.href = data;
 	    content.appendChild(a);
 	    self.processLink(a,data,disabledActions);
