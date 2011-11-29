@@ -42,6 +42,7 @@ extern numeric_t num_int64_min;
 void db_buf_length  (unsigned char * buf, long * head_ret, long * len_ret);
 int box_serial_length (caddr_t box, dtp_t dtp);
 extern short db_buf_const_length [256];
+extern dtp_t dtp_canonical[256];
 
 int  dv_composite_cmp (db_buf_t dv1, db_buf_t dv2, collation_t * coll);
 int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);

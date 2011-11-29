@@ -1048,7 +1048,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
   flags1 = dv1[1];
   if (RBS_EXT_TYPE & flags1)
     return dv_rdf_ext_compare (dv1, dv2);
-  if (dtp2 > DV_RDF)
+  if (dtp_canonical[dtp2] > DV_RDF) /* dtp_canonical because dv int64 is gt dv rdf but here it counts for dv long int */
     return DVC_DTP_LESS;
   if (RBS_SKIP_DTP & flags1)
     {

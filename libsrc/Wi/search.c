@@ -36,6 +36,7 @@
 
 
 short db_buf_const_length[256];
+dtp_t dtp_canonical[256];
 
 int  itc_random_leaf (it_cursor_t * itc, buffer_desc_t *buf, dp_addr_t * leaf_ret);
 int itc_down_rnd_check (it_cursor_t * itc, dp_addr_t leaf);
@@ -48,6 +49,7 @@ numeric_t num_int64_min;
 void
 const_length_init (void)
 {
+  int inx;
   db_buf_const_length[DV_SHORT_INT] = 2;
   db_buf_const_length[DV_LONG_INT] = 5;
   db_buf_const_length[DV_INT64] = 9;
@@ -72,6 +74,18 @@ const_length_init (void)
   num_int64_min = numeric_allocate ();
   numeric_from_int64 (num_int64_max, INT64_MAX);
   numeric_from_int64 (num_int64_min, INT64_MIN);
+  for (inx = 0; inx < 256; inx++)
+    dtp_canonical[inx] = inx;
+  dtp_canonical[DV_IRI_ID_8] = DV_IRI_ID;
+  dtp_canonical[DV_SHORT_INT] = DV_LONG_INT;
+  dtp_canonical[DV_INT64] = DV_LONG_INT;
+  dtp_canonical[DV_SHORT_STRING_SERIAL] = DV_STRING;
+  dtp_canonical[DV_C_STRING] = DV_STRING;
+  dtp_canonical[DV_WIDE] = DV_LONG_WIDE;
+  dtp_canonical[DV_TIMESTAMP] = DV_DATETIME;
+  dtp_canonical[DV_DATE] = DV_DATETIME;
+  dtp_canonical[DV_TIME] = DV_DATETIME;
+  dtp_canonical[DV_RDF_ID_8] = DV_RDF_ID;
 }
 
 
