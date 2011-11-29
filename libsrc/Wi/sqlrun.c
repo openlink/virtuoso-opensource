@@ -3422,9 +3422,12 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
       return err;
     }
   dk_free_box (detail);
-  for (inx = 0; inx < param_inx - 1; inx++)
-    cli_send_row_count (cli, 0, NULL, self_thread);
-  cli_send_row_count (cli, n_affected, NULL, self_thread);
+  if (CALLER_LOCAL != caller)
+    {
+      for (inx = 0; inx < param_inx - 1; inx++)
+	cli_send_row_count (cli, 0, NULL, self_thread);
+      cli_send_row_count (cli, n_affected, NULL, self_thread);
+    }
 #ifdef WIRE_DEBUG
   list_wired_buffers (__FILE__, __LINE__, "qr_exec finish");
 #endif
