@@ -1772,6 +1772,25 @@ DAV_AUTHENTICATE_SSL_CONDITION () returns integer
 }
 ;
 
+create function DAV_WEBID_QR (in gr varchar, in uri varchar)
+{
+    return sprintf ('sparql 
+    define input:storage ""  
+    prefix cert: <http://www.w3.org/ns/auth/cert#>  
+    prefix rsa: <http://www.w3.org/ns/auth/rsa#>  
+    select (str (?exp)) (str (?mod))  
+    from <%S>  
+    where 
+    {  	  
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  } 	  
+      union 
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }  	  
+      union 
+      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }        
+    }', gr, uri, uri, uri);
+}
+;
+
 create function
 DAV_AUTHENTICATE_SSL_WEBID ()
 {
@@ -1822,21 +1841,7 @@ DAV_AUTHENTICATE_SSL_WEBID ()
   exec (S, st, msg, vector (), 0);
     if (st = '00000')
     {
-  S := sprintf (' sparql define input:storage "" ' ||
-                ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
-                ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-                ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
-                '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
-                '   from <%s> ' ||
-                '  where { ' ||
-                '          ?id cert:identity <%s> ; ' ||
-                '              rsa:public_exponent ?exp ; ' ||
-                '              rsa:modulus ?mod . ' ||
-                '          optional { ?exp cert:decimal ?exp_val . ' ||
-                '          ?mod cert:hex ?mod_val . } ' ||
-                '        }',
-                foafGraph,
-                localIRI);
+      S := DAV_WEBID_QR (foafGraph, localIRI);
   exec (S, st, msg, vector (), 0, meta, data);
       if (st = '00000')
       {
