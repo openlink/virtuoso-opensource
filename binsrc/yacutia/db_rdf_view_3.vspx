@@ -52,6 +52,7 @@
       <v:variable persist="0" name="exec_it" type="int" default="0" param-name="exec" />
       <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
       <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
+      <v:variable persist="0" name="pgraphv" type="varchar" default="''" param-name="pgraph"/>
   </vm:variables>
 
   <vm:header caption="Linked Data View definition"/>
@@ -101,7 +102,7 @@
 		}
              if (self.rdb_sync.ufl_selected)
 	       {
-	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected);
+	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected, self.pgraph.ufl_value);
                  if (0 = length (self.sync_ret))
 		   self.sync_ret := vector (vector ('00000', 'OK'));
   	       }	       
@@ -320,6 +321,28 @@
 			 }
 		       http ('</div>');
 		     }
+		   if (length (self.pgraphv) and self.fill.ufl_selected)
+		     {
+		       qr := sprintf ('sparql select distinct ?class from <%s> { ?s a ?class } limit 10', self.pgraphv);
+		       exec (qr, stat, msg, vector (), 0, meta, data);
+		       if (stat = '00000' and length (data) and length (data[0]))
+			 {
+			   http (sprintf ('<div>Instance Data Physical Named Graph: %V <br/>', self.pgraphv));
+			   foreach (any _row in data) do
+			     {
+			       qr := sprintf ('sparql select ?s from <%s> { ?s a <%s> } limit 1', self.pgraphv, _row[0]);
+			       exec (qr, stat, msg, vector (), 1, meta2, data2);
+			       if (stat = '00000' and length (data2) and length (data2[0]))
+				 {
+				   if (fct_installed)
+				     http (sprintf ('<a href="/describe/?url=%U" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+				   else
+				     http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
+				 }
+			     }
+			   http ('</div>');
+			 }
+		     } 
 	        }
 	       if (self.st and self.view_vd)
                  {
@@ -363,7 +386,9 @@
 	  <?vsp } ?>
 	  <?vsp } ?>
 	  <?vsp if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC')) { ?>
-	  <br /><v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
+	  <br />
+	  <label>Physical Graph Name</label> <v:text name="pgraph" value="--sprintf ('urn:%{URIQADefaultHost}s:%s', self.base_url)" xhtml_size="70" /><br />
+	  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
 	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
 	  <?vsp } ?>
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
