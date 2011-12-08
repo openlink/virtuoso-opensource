@@ -1374,6 +1374,8 @@ buffer_ready:
     }
 
 res_complete:
+  if (!res_is_new)
+    res = box_copy (res);
   dk_free_box (output_cs_upcase);
   if (base_uri_is_temp)
     dk_free_box ((caddr_t) base_uri);

@@ -636,10 +636,11 @@ typedef struct xp_node_s
 #define XRL_PARSETYPE_TOP_LEVEL		0x01	/*!< Top-level element (rdf:RDF) */
 #define XRL_PARSETYPE_RESOURCE		0x02	/*!< Resource description */
 #define XRL_PARSETYPE_LITERAL		0x04	/*!< Literal value */
-#define XRL_PARSETYPE_RES_OR_LIT	0x06	/*!< Either resource description or a literal */
-#define XRL_PARSETYPE_PROPLIST		0x08	/*!< Sequence of properties of a resource */
-#define XRL_PARSETYPE_EMPTYPROP		0x10	/*!< Nothing but ending tag of property */
-#define XRL_PARSETYPE_COLLECTION	0x22	/*!< First resource inside collection, other resources are recognized by */
+#define XRL_PARSETYPE_RES_OR_LIT	0x08	/*!< Either resource description or a literal */
+#define XRL_PARSETYPE_PROPLIST		0x10	/*!< Sequence of properties of a resource */
+#define XRL_PARSETYPE_EMPTYPROP		0x20	/*!< Nothing but ending tag of property */
+#define XRL_PARSETYPE_COLLECTION	0x40	/*!< First resource inside collection, other resources are recognized by */
+#define XRL_PARSETYPE_SET_EXPLICITLY	0x80	/*!< The parser mode is set explicitly by rdf:parseType attribute */
 
 /*! Stack part of RDF/XML-specific context of XML parser.
 These are fields of quad to be created.
@@ -656,9 +657,9 @@ typedef struct xp_rdfxml_locals_s
   caddr_t	xrl_reification_id;	/*!< ID used to reify a statement as four quads for S,P,O and rdf:type rdfs:Statement. */
   int		xrl_li_count;		/*!< Counter of used LI, not inheritable */
   dk_set_t	xrl_seq_items;		/*!< Backstack of "Sequence" parseType subjects */
-  int		xrl_parsetype:8;	/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
-  char		xrl_base_set:8;
-  char		xrl_language_set:8;
+  unsigned char	xrl_parsetype;		/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
+  char		xrl_base_set;
+  char		xrl_language_set;
 } xp_rdfxml_locals_t;
 
 #define RDFA_ICT_PRED_REL_OR_TYPEOF	200	/*!< Forward with ref object */

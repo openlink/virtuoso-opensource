@@ -176,7 +176,12 @@ xp_rdfxml_resolved_iid (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
     }
   else
     local = box_dv_short_string (avalue);
-  res = xml_uri_resolve_like_get (xp->xp_qi, &err, xp->xp_rdfxml_locals->xrl_base, local, "UTF-8");
+#if 1
+  res = rfc1808_expand_uri (xp->xp_rdfxml_locals->xrl_base, local,
+    NULL /*output_cs_name*/, 0, NULL /*base_string_cs_name*/, NULL /*rel_string_cs_name*/, &err);
+#else
+  res = xml_uri_resolve_like_get (xp->xp_qi, &err, xp->xp_rdfxml_locals->xrl_base, local, NULL /* No need to convert into "UTF-8" because it's UTF-8 already */);
+#endif
   dk_free_box (local);
   if (NULL != err)
     sqlr_resignal (err);
@@ -245,12 +250,12 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
 #ifdef RECOVER_RDF_VALUE
   caddr_t rdf_val = NULL;
 #endif
-  if (XRL_PARSETYPE_LITERAL == outer->xrl_parsetype)
+  if (XRL_PARSETYPE_LITERAL & outer->xrl_parsetype)
     {
       xp_element (userdata, name, attrdata);
       return;
     }
-  else if (XRL_PARSETYPE_EMPTYPROP == outer->xrl_parsetype)
+  else if (XRL_PARSETYPE_EMPTYPROP & outer->xrl_parsetype)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Sub-element in a predicate element with object node attribute");
   inner = xp_push_rdf_locals (xp);
   xn = xp->xp_free_list;
@@ -285,17 +290,17 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
     {
       if (!strcmp ("RDF", tmp_local))
         {
-          if (XRL_PARSETYPE_TOP_LEVEL != outer->xrl_parsetype)
+          if (!(XRL_PARSETYPE_TOP_LEVEL & outer->xrl_parsetype))
             xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Element rdf:RDF can appear only at top level");
           inner->xrl_parsetype = XRL_PARSETYPE_RESOURCE;
         }
       else if (!strcmp ("Description", tmp_local))
         {
-          if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+          if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
             xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Element rdf:Description can not appear in list of properties");
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
         }
-      else if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+      else if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
         {
           caddr_t full_element_name;
           if (!strcmp ("li", tmp_local))
@@ -321,25 +326,55 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           return;
         }
 #endif
-      else if (
+      else
+        {
+          size_t l1, l2;
+          caddr_t full_element_name;
+          if (
         !strcmp ("Property", tmp_local) ||
         !strcmp ("Bag", tmp_local) ||
         !strcmp ("Seq", tmp_local) ||
         !strcmp ("Alt", tmp_local)  ||
         !strcmp ("List", tmp_local) ||
-        !strcmp ("Statement", tmp_local) )
+            !strcmp ("Statement", tmp_local) ||
+            !strcmp ("nil", tmp_local) )
+            { ; }
+          else if (
+            !strcmp ("subject", tmp_local) ||
+            !strcmp ("predicate", tmp_local) ||
+            !strcmp ("object", tmp_local) ||
+            !strcmp ("type", tmp_local) ||
+            !strcmp ("value", tmp_local) ||
+            !strcmp ("first", tmp_local) ||
+            !strcmp ("rest", tmp_local) ||
+            '_' == tmp_local[0] )
         {
-          size_t l1 = strlen (tmp_nsuri), l2 = strlen (tmp_local);
-          caddr_t full_element_name = dk_alloc_box (l1 + l2 + 1, DV_STRING);
+              xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200, "Name rdf:%.200s is used for node, not for property (legal, but strange)", tmp_local);
+            }
+          else if (
+            !strcmp ("ID", tmp_local) ||
+            !strcmp ("about", tmp_local) ||
+            !strcmp ("bagID", tmp_local) ||
+            !strcmp ("parseType", tmp_local) ||
+            !strcmp ("resource", tmp_local) ||
+            !strcmp ("nodeID", tmp_local) ||
+            !strcmp ("li", tmp_local) ||
+            !strcmp ("aboutEach", tmp_local) ||
+            !strcmp ("aboutEachPrefix", tmp_local) )
+            {
+              xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Name rdf:%.200s is used for node", tmp_local);
+            }
+          else
+            {
+              xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200, "Unknown name rdf:%.200s is used (legal, but strange)", tmp_local);
+            }
+          l1 = strlen (tmp_nsuri);
+          l2 = strlen (tmp_local);
+          full_element_name = dk_alloc_box (l1 + l2 + 1, DV_STRING);
           memcpy (full_element_name, tmp_nsuri, l1);
           strcpy (full_element_name + l1, tmp_local);
           subj_type = xp->xp_boxed_name = full_element_name;
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
-        }
-      else
-        {
-          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Unknown element in RDF namespace");
-          return;
         }
     }
   else
@@ -348,7 +383,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       caddr_t full_element_name = dk_alloc_box (l1 + l2 + 1, DV_STRING);
       memcpy (full_element_name, tmp_nsuri, l1);
       strcpy (full_element_name + l1, tmp_local);
-      if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+      if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
         {
           dk_free_tree (inner->xrl_predicate);
           inner->xrl_predicate = full_element_name;
@@ -391,7 +426,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           if (!strcmp (tmp_local, "about"))
             {
               caddr_t inner_subj;
-              if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:about' can not appear in element that is supposed to be property name");
                   return;
@@ -403,7 +438,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           else if (!strcmp (tmp_local, "resource"))
             {
               caddr_t inner_subj;
-              if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
                   return;
@@ -416,7 +451,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             {
               caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, box_dv_short_string (avalue));
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:nodeID' conflicts with other attribute that set the subject");
-              if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
                   inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
                 }
@@ -427,7 +462,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             }
           else if (!strcmp (tmp_local, "ID"))
             {
-              if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
                   caddr_t reif_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
                   XRL_SET_NONINHERITABLE (inner, xrl_reification_id, reif_subj, "Reification ID of the statement is set twice by 'rdf:ID' attribute of a property element");
@@ -441,17 +476,17 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             }
           else if (!strcmp (tmp_local, "datatype"))
             {
-              if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
                   return;
                 }
-              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0),  "Attribute 'rdf:datatype' us used twice");
+              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0),  "Attribute 'rdf:datatype' is used twice");
               inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
             }
           else if (!strcmp (tmp_local, "parseType"))
             {
-              if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:parseType' can appear only in property elements");
                   return;
@@ -460,15 +495,15 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                 {
                   caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
                   XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute parseType='Resource' can not be used if object is set by other attribute");
-                  inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
+                  inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST | XRL_PARSETYPE_SET_EXPLICITLY;
                 }
               else if (!strcmp (avalue, "Literal"))
                 {
-                  inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
+                  inner->xrl_parsetype = XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_SET_EXPLICITLY;
                 }
               else if (!strcmp (avalue, "Collection"))
                 {
-                  inner->xrl_parsetype = XRL_PARSETYPE_COLLECTION;
+                  inner->xrl_parsetype = XRL_PARSETYPE_COLLECTION | XRL_PARSETYPE_SET_EXPLICITLY;
                   return;
                 }
               else
@@ -522,30 +557,27 @@ push_inner_attr_prop:
     }
   if ((NULL != inner->xrl_subject) || (NULL != inner_attr_props))
     {
-      if (XRL_PARSETYPE_LITERAL == inner->xrl_parsetype)
+      if (XRL_PARSETYPE_LITERAL & inner->xrl_parsetype)
         {
           xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200,
             "Conflicting attributes: property value can not be a node and a literal simultaneously" );
           return;
         }
     }
-/*  if ((XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype) && (NULL != outer->xrl_subject))
-    XRL_SET_NONINHERITABLE (inner, xrl_subject, box_copy_tree (outer->xrl_subject));
-*/
   if (NULL == inner->xrl_subject)
     {
       if ((NULL != inner_attr_props) || (NULL != subj_type) ||
 #ifdef RECOVER_RDF_VALUE
         (NULL != rdf_val) ||
 #endif
-        (XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) )
+        (XRL_PARSETYPE_PROPLIST & inner->xrl_parsetype) )
         {
           caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
           XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Blank node object can not be defined here");
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
         }
     }
-  if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (NULL != outer->xrl_predicate))
+  if ((XRL_PARSETYPE_PROPLIST & inner->xrl_parsetype) && (NULL != outer->xrl_predicate))
     XRL_SET_NONINHERITABLE (outer, xrl_subject, box_copy_tree (inner->xrl_subject), "A property can not have two object values");
   if (NULL != subj_type)
     xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_type, subj_type);
@@ -580,11 +612,11 @@ push_inner_attr_prop:
       xp->xp_boxed_name = aname = dk_alloc_box (l1 + l2 + 1, DV_STRING);
       memcpy (aname, tmp_nsuri, l1);
       strcpy (aname + l1, tmp_local);
-      xp_rdfxml_triple_l (xp, inner->xrl_subject, aname, avalue, NULL, NULL);
+      xp_rdfxml_triple_l (xp, inner->xrl_subject, aname, avalue, NULL, inner->xrl_language);
       dk_free_box (aname);
       xp->xp_boxed_name = NULL;
     }
-  if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype))
+  if ((XRL_PARSETYPE_PROPLIST & inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
     { /* This means parseType="Resource". It should be handled immediately to prevent error in case of parseType="Resource" nested inside inner. */
       xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
       if (NULL != inner->xrl_reification_id)
@@ -605,12 +637,12 @@ xp_rdfxml_element_end (void *userdata, const char * name)
 {
   xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
   xp_rdfxml_locals_t *inner = xp->xp_rdfxml_locals;
-  if (XRL_PARSETYPE_LITERAL != inner->xrl_parsetype)
+  if (!(XRL_PARSETYPE_LITERAL & inner->xrl_parsetype))
     {
       xp_node_t *current_node = xp->xp_current;
       xp_node_t *parent_node = xp->xp_current->xn_parent;
       xp_rdfxml_locals_t *outer = inner->xrl_parent;
-      if ((NULL != outer) && (XRL_PARSETYPE_COLLECTION == outer->xrl_parsetype))
+      if ((NULL != outer) && (XRL_PARSETYPE_COLLECTION & outer->xrl_parsetype))
         {
           xp_rdfxml_locals_t *outer = inner->xrl_parent;
           caddr_t subj;
@@ -623,7 +655,7 @@ xp_rdfxml_element_end (void *userdata, const char * name)
             }
           dk_set_push (&(outer->xrl_seq_items), subj);
         }
-      else if (XRL_PARSETYPE_COLLECTION == inner->xrl_parsetype)
+      else if (XRL_PARSETYPE_COLLECTION & inner->xrl_parsetype)
         {
           caddr_t tail = uname_rdf_ns_uri_nil;
           while (NULL != inner->xrl_seq_items)
@@ -640,6 +672,21 @@ xp_rdfxml_element_end (void *userdata, const char * name)
       else if (NULL != inner->xrl_predicate)
         {
           xp_rdfxml_locals_t *outer = inner->xrl_parent;
+          if ((NULL == inner->xrl_subject) && (XRL_PARSETYPE_RES_OR_LIT & inner->xrl_parsetype))
+            {
+              caddr_t obj = box_dv_short_string ("");
+              xp_rdfxml_triple_l (xp, inner->xrl_parent->xrl_subject, inner->xrl_predicate, obj, inner->xrl_datatype, inner->xrl_language);
+              if (NULL != inner->xrl_reification_id)
+                {
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+                  xp_rdfxml_triple_l (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, obj, inner->xrl_datatype, inner->xrl_language);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+                }
+              dk_free_tree (obj);
+            }
+          else
+            {
           if (NULL == inner->xrl_subject)
             inner->xrl_subject = xp_rdfxml_bnode_iid (xp, NULL);
           xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
@@ -650,6 +697,7 @@ xp_rdfxml_element_end (void *userdata, const char * name)
               xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
               xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
             }
+        }
         }
       if (0 != strses_length (xp->xp_strses))
         GPF_T1("xp_rdfxml_element_end(): non-empty xp_strses outside XRL_PARSETYPE_LITERAL");
@@ -666,12 +714,15 @@ xp_rdfxml_element_end (void *userdata, const char * name)
     {
       xp_node_t * current_node = xp->xp_current;
       xp_node_t * parent_node = xp->xp_current->xn_parent;
+      xp_rdfxml_locals_t *outer = inner->xrl_parent;
+      caddr_t lang_in_effect;
       caddr_t obj;
       xml_tree_ent_t *literal_xte;
-      if (NULL == xp->xp_current->xn_children)
+      if ((NULL == xp->xp_current->xn_children) && !(XRL_PARSETYPE_SET_EXPLICITLY & inner->xrl_parsetype))
         {
           obj = strses_string (xp->xp_strses);
           strses_flush (xp->xp_strses);
+          lang_in_effect = inner->xrl_language;
         }
       else
         {
@@ -685,12 +736,20 @@ xp_rdfxml_element_end (void *userdata, const char * name)
           literal_tree = list_to_array (children);
           literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
           obj = (caddr_t) literal_xte;
+          lang_in_effect = NULL;
         }
       dk_free_tree (current_node->xn_attrs);
       xp->xp_current = parent_node;
       current_node->xn_parent = xp->xp_free_list;
       xp->xp_free_list = current_node;
-      xp_rdfxml_triple_l (xp, inner->xrl_parent->xrl_subject, inner->xrl_predicate, obj, inner->xrl_datatype, inner->xrl_language);
+      xp_rdfxml_triple_l (xp, outer->xrl_subject, inner->xrl_predicate, obj, inner->xrl_datatype, lang_in_effect);
+      if (NULL != inner->xrl_reification_id)
+        {
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+          xp_rdfxml_triple_l (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, obj, inner->xrl_datatype, lang_in_effect);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+        }
       dk_free_tree (obj);
       xp_pop_rdf_locals (xp);
       return;
@@ -703,7 +762,7 @@ void
 xp_rdfxml_id (void *userdata, char * name)
 {
   xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
-  if (XRL_PARSETYPE_LITERAL == xp->xp_rdfxml_locals->xrl_parsetype)
+  if (XRL_PARSETYPE_LITERAL & xp->xp_rdfxml_locals->xrl_parsetype)
     xp_id (userdata, name);
 }
 
@@ -712,7 +771,7 @@ void
 xp_rdfxml_character (vxml_parser_t * parser,  char * s, int len)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
-  switch (xp->xp_rdfxml_locals->xrl_parsetype)
+  switch (xp->xp_rdfxml_locals->xrl_parsetype & (XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_RES_OR_LIT))
     {
     case XRL_PARSETYPE_LITERAL:
       session_buffered_write (xp->xp_strses, s, len);
@@ -747,7 +806,7 @@ void
 xp_rdfxml_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
-  switch (xp->xp_rdfxml_locals->xrl_parsetype)
+  switch (xp->xp_rdfxml_locals->xrl_parsetype & (XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_RES_OR_LIT))
     {
     case XRL_PARSETYPE_LITERAL:
       xp_entity (parser, refname, reflen, isparam, edef);
@@ -766,7 +825,7 @@ void
 xp_rdfxml_pi (vxml_parser_t * parser, const char *target, const char *data)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
-  switch (xp->xp_rdfxml_locals->xrl_parsetype)
+  switch (xp->xp_rdfxml_locals->xrl_parsetype & (XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_TOP_LEVEL | XRL_PARSETYPE_RES_OR_LIT))
     {
     case XRL_PARSETYPE_LITERAL:
       xp_pi (parser, target, data);
@@ -778,7 +837,7 @@ xp_rdfxml_pi (vxml_parser_t * parser, const char *target, const char *data)
       xp_pi (parser, target, data);
       break;
     default:
-      xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Processing instruction found instead of XML element");
+      xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 100, "Processing instruction found instead of XML element");
       break;
     }
 }
