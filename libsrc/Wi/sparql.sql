@@ -12630,6 +12630,38 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
 }
 ;
 
+create procedure DB.DBA.RDF_GRAPH_USER_PERMS_DEL_MEMONLY (in graph_iri varchar, in graph_iid IRI_ID, in uid integer)
+{
+  graph_iri := cast (graph_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(graph_iri), graph_iid);
+  dict_put (__rdf_graph_id2iri_dict(), graph_iid, __uname(graph_iri));
+  if (uid = http_nobody_uid())
+    dict_remove (__rdf_graph_public_perms_dict(), graph_iid);
+  else
+    __rdf_graph_specific_perms_of_user (graph_iid, uid, -1);
+  jso_mark_affected (graph_iri);
+}
+;
+
+create procedure DB.DBA.RDF_GRAPH_USER_PERMS_DEL (in graph_iri varchar, in uname varchar)
+{
+  declare graph_iid IRI_ID;
+  declare uid integer;
+  declare special_iid IRI_ID;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_GRAPH_USER_PERMS_SET (''%s'', ''%s'', %d);\n', graph_iri, uname, perms), -1);
+  graph_iid := iri_to_id (graph_iri);
+  uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
+  set isolation = 'serializable';
+  commit work;
+  if (uid is null)
+    signal ('RDF99', sprintf ('No active SQL user "%s" found, can not change its permissions on graph <%s>', uname, graph_iri));
+  delete from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('delete from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = %s and RGU_USER_ID = %d;\n', cast (graph_iid as varchar), uid), -1);
+  commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_USER_PERMS_DEL_MEMONLY (?,?,?)', vector (graph_iri, graph_iid, uid));
+}
+;
+
 create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_graphs any, in uid any, in gs_app_cbk varchar, in gs_app_uid varchar, in req_perms integer) returns any
 {
   declare group_iid IRI_ID;
