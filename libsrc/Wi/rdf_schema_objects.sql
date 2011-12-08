@@ -175,13 +175,11 @@ create procedure rdf_view_ns_get_1 (in cols any, inout dict any)
 ;
 
 create procedure
-RDF_VIEW_DROP_STMT (in qualifier varchar)
+RDF_VIEW_DROP_STMT_BY_GRAPH (in gr varchar)
 {
    declare drop_map any;
-   declare gr varchar;
 
    drop_map := '';
-   gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
    for select "s" from (sparql define input:storage ""
    select ?s from virtrdf:
    {
@@ -191,6 +189,18 @@ RDF_VIEW_DROP_STMT (in qualifier varchar)
      drop_map := drop_map || sprintf ('SPARQL drop silent quad map <%s> .;\n', "s");
    }
  return drop_map;
+}
+;
+
+create procedure
+RDF_VIEW_DROP_STMT (in qualifier varchar)
+{
+   declare drop_map any;
+   declare gr varchar;
+
+   drop_map := '';
+   gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   return RDF_VIEW_DROP_STMT_BY_GRAPH (gr);
 }
 ;
 
