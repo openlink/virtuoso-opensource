@@ -4104,7 +4104,7 @@ ws_serve_connection (ws_connection_t * ws)
       SSL * new_ssl = NULL;
 
       if (NULL != tcpses_get_ssl (ses->dks_session))
-	SSL_free ((SSL *) tcpses_get_ssl (ses->dks_session));
+	sslses_to_tcpses (ses->dks_session);
       to = ses->dks_read_block_timeout;
       session_set_control (ses->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
       dst = tcpses_get_fd (ses->dks_session);
