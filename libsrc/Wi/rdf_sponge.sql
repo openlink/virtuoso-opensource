@@ -21,6 +21,28 @@
 --
 --
 
+-- Function				is called from
+-- RDF_FT_INDEX_GRABBED			RDF_GRAB_SEEALSO, RDF_GRAB
+-- RDF_GRAB_SINGLE			RDF_GRAB_SINGLE_ASYNC
+-- RDF_GRAB_SINGLE_ASYNC			RDF_GRAB_SEEALSO, RDF_GRAB
+-- RDF_GRAB_SEEALSO			RDF_GRAB
+-- RDF_GRAB				code made from codegen for ssg_grabber_codegen() prepared by sparp_rewrite_grab()
+-- RDF_GRAB_RESOLVER_DEFAULT		passed as 'resolver' to RDF_GRAB_SINGLE from SPARUL_LOAD
+-- SYS_HTTP_SPONGE_GET_CACHE_PARAMS	SYS_HTTP_SPONGE_UP
+-- SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED	unused in server
+-- RDF_HTTP_MAKE_HTTP_REQ		SYS_HTTP_SPONGE_UP
+-- RDF_HTTP_URL_GET			SYS_HTTP_SPONGE_UP
+-- SYS_HTTP_SPONGE_UP			itself, RDF_SPONGE_UP_1
+-- SYS_FILE_SPONGE_UP			RDF_SPONGE_UP_1
+-- RDF_SPONGE_GUESS_CONTENT_TYPE		RDF_LOAD_HTTP_RESPONSE
+-- RDF_SW_PING				RDF_LOAD_HTTP_RESPONSE
+-- RDF_PROC_COLS				RDF_LOAD_HTTP_RESPONSE
+-- RDF_LOAD_HTTP_RESPONSE		SYS_FILE_SPONGE_UP, passed to SYS_HTTP_SPONGE_UP from RDF_SPONGE_UP_1
+-- RDF_FORGET_HTTP_RESPONSE		passed to SYS_FILE_SPONGE_UP and SYS_HTTP_SPONGE_UP from RDF_SPONGE_UP_1
+-- RDF_SPONGE_UP				RDF_SPONGE_UP_LIST, code made by ssg_grabber_codegen passes it to RDF_GRAB proc view as _grabber_loader
+-- RDF_SPONGE_UP_1			RDF_SPONGE_UP
+-- RDF_SPONGE_UP_LIST			unused in server
+
 -----
 -- Procedures for graph grabber
 
@@ -615,6 +637,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     old_download_size, old_download_msec_time, old_read_count,
     new_download_size, explicit_refresh, max_sz integer;
   declare get_method varchar;
+  declare get_soft varchar;
   declare ret_hdr, immg, req_hdr_arr any;
   declare req_hdr varchar;
   declare ret_body, ret_content_type, ret_etag, ret_last_modified, ret_date, ret_last_modif, ret_expires varchar;
@@ -628,6 +651,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
   new_origin_login := cast (get_keyword_ucase ('get:login', options) as varchar);
   explicit_refresh := get_keyword_ucase ('get:refresh', options);
+  get_soft := get_keyword_ucase ('get:soft', options, '');
   if (explicit_refresh is null)
     {
       max_refresh := virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration');
@@ -797,7 +821,7 @@ perform_actual_load:
 	}
       goto resp_received;
     }
-  if (eraser is not null)
+  if (eraser is not null and (get_soft <> 'add'))
     call (eraser) (local_iri, new_origin_uri, options);
   signal ('RDFZZ', sprintf (
       'Unable to get data from "%.1000s": This version of Virtuoso does not support OPTION (get:method "%.100s")',
@@ -864,7 +888,7 @@ resp_received:
   whenever sqlstate '*' goto error_during_load;
   parser_rc := 0;
   req_hdr_arr := DB.DBA.RDF_HTTP_MAKE_HTTP_REQ (new_origin_uri, get_method, req_hdr);
-  if (eraser is not null)
+  if (eraser is not null and (get_soft <> 'add'))
     call (eraser) (local_iri, new_origin_uri, options);
   parser_rc := call (parser) (local_iri, new_origin_uri, ret_content_type, ret_hdr, ret_body, options, req_hdr_arr);
   -- dbg_obj_princ (parser, ' returned ', parser_rc, ' to SYS_HTTP_SPONGE_UP()');
@@ -940,7 +964,9 @@ create function DB.DBA.SYS_FILE_SPONGE_UP (in local_iri varchar, in get_uri varc
 {
   declare new_origin_uri, str, base_uri, mime_type, dummy, tmp any;
   declare inx int;
+  declare get_soft varchar;
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
+  get_soft := get_keyword_ucase ('get:soft', options, '');
   inx := 5;
   base_uri := new_origin_uri;
   base_uri := charset_recode (base_uri, 'UTF-8', NULL);
@@ -950,7 +976,7 @@ create function DB.DBA.SYS_FILE_SPONGE_UP (in local_iri varchar, in get_uri varc
   dummy := vector ();
   tmp := vector ('OK');
   mime_type := null;
-  if (eraser is not null)
+  if (eraser is not null and (get_soft <> 'add'))
     call (eraser) (local_iri, new_origin_uri, options);
   DB.DBA.RDF_LOAD_HTTP_RESPONSE (local_iri, new_origin_uri, mime_type, tmp, str, options, dummy);
   return local_iri;
@@ -1176,11 +1202,11 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 -- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest, groupdest, cset, base, first_stat, first_msg varchar;
+  declare dest, groupdest, get_soft, cset, base, first_stat, first_msg varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
-  declare saved_log_mode, only_rdfa integer;
+  declare saved_log_mode, only_rdfa, retr_count integer;
   aq := null;
   ps := virtuoso_ini_item_value ('SPARQL', 'PingService');
   if (length (ps))
@@ -1194,6 +1220,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   dest := get_keyword_ucase ('get:destination', options);
   groupdest := get_keyword_ucase ('get:group-destination', options);
   base := get_keyword ('http-redirect-to', options, new_origin_uri);
+  get_soft := get_keyword_ucase ('get:soft', options);
   if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only')
     only_rdfa := 1;
   else
@@ -1202,6 +1229,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     signal ('RDFXX', sprintf ('Unable to load RDF graph <%.500s> from <%.500s>: the sparql-results XML answer does not contain triples', graph_iri, new_origin_uri));
   if (get_keyword ('http-headers', options) is null)
     options := vector_concat (options, vector ('http-headers', vector (req_hdr_arr, ret_hdr)));
+retry_after_deadlock:
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
     {
       --if (dest is null)
@@ -1271,9 +1299,19 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   --  }
 
 load_grddl:;
-  if (__proc_exists ('DB.DBA.RDF_RUN_CARTRIDGES') and 0 <> (rc := DB.DBA.RDF_RUN_CARTRIDGES (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options, ret_hdr, ps, aq, req_hdr_arr)))
+  if (('40001' = __SQL_STATE) and (retr_count < 10))
+    {
+      rollback work;
+      retr_count := retr_count + 1;
+      goto retry_after_deadlock;
+    }
+  if (__proc_exists ('DB.DBA.RDF_RUN_CARTRIDGES') is not null)
+    {
+      rc := DB.DBA.RDF_RUN_CARTRIDGES (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options, ret_hdr, ps, aq, req_hdr_arr);
+      if (rc)
     return rc;
-  if (__proc_exists ('DB.DBA.RDF_RUN_CARTRIDGES') is null) -- remove in next release
+    }
+  else
     {
   cset := http_request_header (ret_hdr, 'Content-Type', 'charset', null);
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS, RM_DESCRIPTION from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
@@ -1356,7 +1394,7 @@ load_grddl:;
   --      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
   --    return 1;
   --  }
-  if (dest is null)
+  if ((dest is null) and (get_soft is null or (get_soft <> 'add')))
     {
       DB.DBA.SPARUL_CLEAR (graph_iri, 1, 0);
       commit work;
@@ -1396,6 +1434,12 @@ resignal_parse_error:
 load_grddl_after_error:
   first_stat := __SQL_STATE;
   first_msg := __SQL_MESSAGE;
+  if (('40001' = first_stat) and (retr_count < 10))
+    {
+      rollback work;
+      retr_count := retr_count + 1;
+      goto retry_after_deadlock;
+    }
   goto load_grddl;
 }
 ;
@@ -1461,7 +1505,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri, cookie varchar;
   declare perms, log_mode integer;
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
   --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
@@ -1479,7 +1523,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   log_mode := get_keyword ('__rdf_sponge_log_mode', options);
   if (log_mode is not null) -- when in aq mode
     log_enable (log_mode, 1);
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ') set local_iri=', local_iri);
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ') set local_iri=', local_iri);
   perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
   if ('soft' = get_soft)
@@ -1492,7 +1536,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
           -- dbg_obj_princ ('Exists and get:soft=soft, leaving');
           if (not bit_and (perms, 1))
             {
-               -- dbg_obj_princ (dest, ' graph is OK as it is but not returned from RDF_SPONGE_UP due to lack of read permission for user ', uid);
+               -- dbg_obj_princ (dest, ' graph is OK as it is but not returned from RDF_SPONGE_UP_1 due to lack of read permission for user ', uid);
                return null;
             }
           res_graph_iri := local_iri;
@@ -1501,18 +1545,18 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       -- dbg_obj_princ ('Does not exists, continue despite get:soft=soft');
     }
   else
-    if (('replacing' = get_soft) or ('replace' = get_soft))
+    if (('replacing' = get_soft) or ('replace' = get_soft) or ('add' = get_soft))
       {
         -- dbg_obj_princ ('get:soft=replacing');
         ;
       }
   else
     signal ('RDFZZ', sprintf (
-      'This version of Virtuoso supports only "soft" and "replacing" values of "define get:soft ...", not "%.500s"',
+      'This version of Virtuoso supports only "soft", "replacing" and "add" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
   if (not bit_and (perms, 4))
     {
-       -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP due to lack of sponge permission for user ', uid);
+       -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user ', uid);
        return null;
     }
   -- if requested iri is immutable, do not try to get it at all
@@ -1574,7 +1618,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
 	}
     }
 graph_is_ready:
-  -- dbg_obj_princ (res_graph_iri, ' graph is ready, about to return from RDF_SPONGE_UP');
+  -- dbg_obj_princ (res_graph_iri, ' graph is ready, about to return from RDF_SPONGE_UP_1');
   if (__rdf_obj_ft_rule_check (iri_to_id (res_graph_iri), null) and
     get_keyword ('refresh_free_text', options, 0) )
     VT_INC_INDEX_DB_DBA_RDF_OBJ();
