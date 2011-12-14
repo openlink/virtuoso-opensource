@@ -1145,12 +1145,22 @@ RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar
 ;
 
 create procedure
-RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph varchar := null)
+RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph varchar := null, in log_mode int := 1, in load_atomic int := 1)
 {
    declare mask varchar;
    declare txt, tbls, err_ret, opt any;
    declare stat, msg, gr varchar;
+   declare old_mode int;
 
+   old_mode := log_enable (log_mode, 1);
+   declare exit handler for sqlstate '*' {
+     log_enable (old_mode, 1);
+     if (load_atomic)
+       __atomic (0);
+   };
+
+   if (load_atomic)
+     __atomic (1);
    tbls := vector ();
    err_ret := vector ();
    opt := vector ();
@@ -1224,6 +1234,12 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 	  exec (pname, stat, msg);
 	  if (stat <> '00000') err_ret := vector_concat (err_ret, vector (sprintf ('%s: %s', stat, msg)));
 	}
+    }
+  log_enable (old_mode, 1);
+  if (load_atomic)
+    {
+      __atomic (0);
+      exec ('checkpoint');
     }
   return err_ret;
 }
