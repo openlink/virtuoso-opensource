@@ -2992,6 +2992,8 @@ sqlo_scalar_subq_scope (sqlo_t * so, ST ** ptree)
   dk_set_t s;
   sql_scope_t * sco = so->so_scope;
   ST * org, * res;
+  if (!sco)
+    SQL_GPF_T1 (so->so_sc->sc_cc, "no scope");
   for (s = sco->sco_scalar_subqs; s; s = s->next->next)
     {
       org = (ST*)s->data;
