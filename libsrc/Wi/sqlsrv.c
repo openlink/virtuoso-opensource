@@ -2353,6 +2353,12 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
   srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  if (!stmt)
+    {
+      LEAVE_CLIENT (cli);
+      DKST_RPC_DONE (IMMEDIATE_CLIENT);
+      return 1;
+    }
   dbg_printf (("sf_sql_free_stmt %s %d\n", stmt->sst_id, op));
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
@@ -2874,7 +2880,7 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *lt;
   srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
-  if (stmt->sst_inst)
+  if (stmt && stmt->sst_inst)
     {
       query_instance_t *qi = stmt->sst_inst;
       caddr_t val;
