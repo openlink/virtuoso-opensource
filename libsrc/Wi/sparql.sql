@@ -2273,11 +2273,16 @@ create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, 
   t := __tag (o_val);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+      if (not (t in (__tag of varchar, 126, 133, 217, __tag of nvarchar, 226)))
         {
           goto o_val_done;
         }
-      if (__tag of nvarchar = t)
+      if (t = 133)
+	{
+	  o_val := cast (o_val as nvarchar);
+	  t := __tag (o_val);
+	}
+      if (__tag of nvarchar = t or t = 226)
         o_val := charset_recode (o_val, '_WIDE_', 'UTF-8');
       else if (t in (126, 217))
         o_val := cast (o_val as varchar);
