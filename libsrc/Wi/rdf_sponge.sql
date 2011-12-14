@@ -972,6 +972,9 @@ create function DB.DBA.SYS_FILE_SPONGE_UP (in local_iri varchar, in get_uri varc
   base_uri := charset_recode (base_uri, 'UTF-8', NULL);
   while (length (base_uri) > inx + 1 and aref (base_uri, inx) = ascii ('/'))
     inx := inx + 1;
+  if (inx = 8) -- i.e., it is 'file:///'
+    str := file_to_string (subseq (base_uri, inx-1));
+  else
   str := file_to_string (concat (http_root(), '/' , subseq (base_uri, inx)));
   dummy := vector ();
   tmp := vector ('OK');
