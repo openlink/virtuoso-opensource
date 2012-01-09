@@ -25,6 +25,59 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
+	declare full_path varchar;
+	declare path_id any;
+	full_path := '/' || DAV_CONCAT_PATH (path, '/');
+	path_id := DAV_SEARCH_ID (full_path, 'C');
+	if (isarray(path_id) = 1)
+	{
+		if (path_id[0] = UNAME'CalDAV')
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, access-control, calendar-access\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
+		if (path_id[0] = UNAME'CardDAV')
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, 3, access-control, addressbook\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
+	}
+	else
+	{
+		declare is_det int;
+		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
+		if (is_det > 0)
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, access-control, calendar-access\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
+		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
+		if (is_det > 0)
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, 3, access-control, addressbook\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
+	}
   declare headers, ctype, msauthor any;
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
   WS.WS.GET (path, params, lines);
@@ -50,17 +103,14 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
   declare uname, upwd varchar;
   declare id any;
   declare _u_id, _g_id, rc integer;
+	--dbg_obj_princ ('WS.WS.PROPFIND (', path, params, lines, ')');
 
   _ses := aref_set_0 (params, 1);
   _body := string_output_string (_ses);
-  -- dbg_obj_princ (_body);
   _lpath := http_path ();
   _ppath := http_physical_path ();
   if (_lpath = '')
     _lpath := '/';
-
-  -- dbg_obj_princ ('WS.WS.PROPFIND (', path, params, lines, ')');
-
   id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
   if (id is not null)
     st := 'C';
@@ -85,7 +135,6 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
     {
       rc := DAV_AUTHENTICATE_HTTP (DAV_GET_PARENT (id, st, _ppath), 'C', '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
     }
-  -- dbg_obj_princ ('Authentication in PROPFIND gives ', rc, uname, upwd, _u_id, _g_id, _perms);
   if (rc < 0)
     {
       if ((rc = -12) or (rc = -13))
@@ -131,6 +180,17 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
 
 
   http_request_status ('HTTP/1.1 207 Multi-Status');
+	declare full_path varchar;
+	declare path_id any;
+	full_path := '/' || DAV_CONCAT_PATH (path, '/');
+	path_id := DAV_SEARCH_ID (full_path, 'C');
+	if (isarray(path_id) = 1)
+	{
+		if (path_id[0] = UNAME'CalDAV')
+			http_header ('DAV: 1, calendar-access, calendar-schedule, calendar-proxy\r\nContent-type: application/xml; charset="utf-8"\r\n');
+		if (path_id[0] = UNAME'CardDAV')
+			http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
+	}
   http_header ('Content-type: text/xml; charset="utf-8"\r\n');
   http ('<?xml version="1.0" encoding="utf-8"?>\n');
   http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
@@ -277,7 +337,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (in lpath varchar,
   declare st char(1);
   declare diritm, prop_raw_val, prop_val, href any;
   declare perms, uid, gid any;
-  -- dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE_FORMAT (', lpath, dirlist, append_name_to_href, ms_date, propnames, all_prop, add_not_found, u_id, ')');
+  --dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE_FORMAT (', lpath, dirlist, append_name_to_href, ms_date, propnames, all_prop, add_not_found, _u_id, ')');
 
   if (ms_date)
     {
@@ -324,11 +384,10 @@ next_response:
     crt := now ();
   if (__tag (modt) <> 211)
     modt := now ();
-
   href := case append_name_to_href when 0 then lpath else DAV_CONCAT_PATH (lpath, name) end;
-  if (st = 'C' and href not like '%/')
+  if (st = 'C' and href not like '%/' and href not like '%.ics' and href not like '%.vcf')
     href := href || '/';
-  http ('<D:response xmlns:lp0="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
+  http ('<D:response xmlns:D="DAV:" xmlns:lp0="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
   http ('<D:href>');
   http_dav_url (
     charset_recode (
@@ -365,7 +424,7 @@ next_response:
 	}
       else if (prop = ':getcontenttype')
 	{
-	  http (concat('<D:getcontenttype>', mime_type, '</D:getcontenttype>\n'));
+          http (concat('<lp0:getcontenttype>', mime_type, '</lp0:getcontenttype>\n'));
           found_sprop := 1;
 	}
       else if (prop = ':getcontentlength' and st = 'R')
@@ -373,10 +432,118 @@ next_response:
 	  http (concat ('<lp0:getcontentlength>', cast (res_len as varchar), '</lp0:getcontentlength>\n'));
           found_sprop := 1;
 	}
+      else if (prop = 'urn:ietf:params:xml:ns:caldav:supported-calendar-component-set')
+	{
+	   http ('<C:supported-calendar-component-set xmlns:C="urn:ietf:params:xml:ns:caldav"><C:comp name="VEVENT"/><C:comp name="VTODO"/></C:supported-calendar-component-set>\r\n');
+          found_sprop := 1;
+	}
+	else if (prop = 'urn:ietf:params:xml:ns:carddav:supported-address-data')
+	{
+	   http ('<A:supported-address-data xmlns:A="urn:ietf:params:xml:ns:carddav"><C:address-data-type content-type="text/vcard" version="3.0"/></A:supported-address-data>\r\n');
+          found_sprop := 1;
+	}
+      else if (prop = ':getetag' and st = 'C')
+	{
+	  http (concat('<lp0:getetag>"', WS.WS.ETAG (name, parent_col), '"</lp0:getetag>\n'));
+          found_sprop := 1;
+	}
+      else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-data')
+	{
+          declare content, type_ any;
+	   DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
+	  http (concat('<C:calendar-data xmlns:C="urn:ietf:params:xml:ns:caldav">', content, '</C:calendar-data>\n'));
+          found_sprop := 1;
+	}
+	else if (prop = 'urn:ietf:params:xml:ns:carddav:address-data')
+	{
+          declare content, type_ any;
+	   DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
+	  http (concat('<A:address-data xmlns:A="urn:ietf:params:xml:ns:carddav">', content, '</A:address-data>\n'));
+          found_sprop := 1;
+	}
+	else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-home-set')
+	{
+		http (concat('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>', lpath, '</D:href></C:calendar-home-set>\n'));
+          found_sprop := 1;
+	}
+	else if (prop = 'urn:ietf:params:xml:ns:carddav:addressbook-home-set')
+	{
+		http (concat('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>', lpath, '</D:href></C:addressbook-home-set>\n'));
+          found_sprop := 1;
+	}
+	else if (prop = ':principal-URL')
+	{
+		http (concat('<D:principal-URL><D:href>', lpath, '</D:href></D:principal-URL>\n'));
+        found_sprop := 1;
+	}
+    else if (prop = ':supported-report-set')
+	{
+		if (mime_type = 'text/vcard')
+		{
+			http (concat('<D:supported-report-set>', '<D:supported-report>
+                        <D:report>
+                            <C:addressbook-query xmlns:C="urn:ietf:params:xml:ns:carddav"/>
+                        </D:report>
+                    </D:supported-report>
+                    <D:supported-report>
+                        <D:report>
+                            <C:addressbook-multiget xmlns:C="urn:ietf:params:xml:ns:carddav"/>
+                        </D:report>
+                    </D:supported-report>
+                    <D:supported-report>
+                        <D:report>
+                            <D:expand-property />
+                        </D:report>
+                    </D:supported-report>
+					<D:supported-report>
+                        <D:report>
+                            <D:principal-property-search />
+                        </D:report>
+                    </D:supported-report>
+					<D:supported-report>
+                        <D:report>
+                            <D:principal-search-property-set />
+                        </D:report>
+                    </D:supported-report>', '</D:supported-report-set>\n'));
+					 found_sprop := 1;
+		}
+		else if (mime_type = 'text/calendar')
+		{
+			http (concat('<D:supported-report-set>', '<D:supported-report>
+				<D:report>
+					<C:calendar-multiget xmlns:C="urn:ietf:params:xml:ns:caldav"/>
+				</D:report>
+			</D:supported-report>
+			<D:supported-report>
+				<D:report>
+					<C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav"/>
+				</D:report>
+			</D:supported-report>
+			<D:supported-report>
+				<D:report>
+					<D:principal-match/>
+				</D:report>
+			</D:supported-report>
+			<D:supported-report>
+				<D:report>
+					<C:free-busy-query xmlns:C="urn:ietf:params:xml:ns:caldav"/>
+				</D:report>
+                    </D:supported-report>', '</D:supported-report-set>\n'));
+					 found_sprop := 1;
+		}
+        found_sprop := 1;
+	}
       else if (prop = ':resourcetype')
 	{
 	  if (st = 'C')
+          {
+	    if (mime_type = 'text/vcard')
+	      http ('<D:resourcetype><D:collection/><C:addressbook xmlns:C="urn:ietf:params:xml:ns:carddav" /></D:resourcetype>\n');
+		 else if (mime_type = 'text/calendar')
+	      http ('<D:resourcetype><D:collection/><C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav" /></D:resourcetype>\n');
+            else
 	    http ('<D:resourcetype><D:collection/></D:resourcetype>\n');
+          }
 	  else
 	    http ('<D:resourcetype/>\n');
           found_sprop := 1;
@@ -615,6 +782,308 @@ create procedure WS.WS.PROPNAMES (in _body varchar)
 }
 ;
 
+create procedure WS.WS.CALENDAR_NAMES (in _body varchar)
+{
+	declare prop, propname, allprop, tree, tmp, ret any;
+	declare ix, len, sc integer;
+	declare name varchar;
+	if (not isstring(_body) or _body = '')
+		return null;
+	prop := string_output ();
+	propname := string_output ();
+	allprop := string_output ();
+	tree := xml_tree_doc (xml_expand_refs (xml_tree (_body)));
+	http_value (xpath_eval ('//calendar-multiget/prop', tree , 1), null, prop);
+	http_value (xpath_eval ('//calendar-multiget/propname', tree , 1), null, propname);
+	http_value (xpath_eval ('//calendar-multiget/allprop', tree , 1), null, allprop);
+	prop := string_output_string (prop);
+	propname := string_output_string (propname);
+	allprop := string_output_string (allprop);
+	ret := null;
+	if (allprop <> '')
+		return vector ('allprop');
+	else if (propname <> '')
+		return vector ('propname');
+	else if (prop <> '')
+	{
+		declare xp any;
+		tree := xtree_doc (prop);
+		xp := xpath_eval('/prop/*', tree, 0);
+		foreach (any elm in xp) do
+		{
+			name := cast (xpath_eval ('name()', elm) as varchar);
+			sc := strrchr (name, ':');
+			if (sc is not null and (name like 'DAV::%'
+				or name like 'http://www.openlinksw.com/virtuoso/webdav/1.0/:%'))
+				name := subseq (name, sc, length (name));
+			if (ret is null)
+				ret := vector (name);
+			else
+				ret := vector_concat (ret, vector (name));
+		}
+	}
+	return ret;
+}
+;
+
+create procedure WS.WS.ADDRESSBOOK_NAMES (in _body varchar)
+{
+	declare prop, propname, allprop, tree, tmp, ret any;
+	declare ix, len, sc integer;
+	declare name varchar;
+	if (not isstring(_body) or _body = '')
+		return null;
+	prop := string_output ();
+	propname := string_output ();
+	allprop := string_output ();
+	tree := xml_tree_doc (xml_expand_refs (xml_tree (_body)));
+	http_value (xpath_eval ('//addressbook-multiget/prop', tree , 1), null, prop);
+	http_value (xpath_eval ('//addressbook-multiget/propname', tree , 1), null, propname);
+	http_value (xpath_eval ('//addressbook-multiget/allprop', tree , 1), null, allprop);
+	prop := string_output_string (prop);
+	propname := string_output_string (propname);
+	allprop := string_output_string (allprop);
+	ret := null;
+	if (allprop <> '')
+		return vector ('allprop');
+	else if (propname <> '')
+		return vector ('propname');
+	else if (prop <> '')
+	{
+		declare xp any;
+		tree := xtree_doc (prop);
+		xp := xpath_eval('/prop/*', tree, 0);
+		foreach (any elm in xp) do
+		{
+			name := cast (xpath_eval ('name()', elm) as varchar);
+			sc := strrchr (name, ':');
+			if (sc is not null and (name like 'DAV::%'
+				or name like 'http://www.openlinksw.com/virtuoso/webdav/1.0/:%'))
+				name := subseq (name, sc, length (name));
+			if (ret is null)
+				ret := vector (name);
+			else
+				ret := vector_concat (ret, vector (name));
+		}
+	}
+	return ret;
+}
+;
+
+
+create procedure WS.WS.REPORT (in path varchar, inout params varchar, in lines varchar)
+{
+	declare _mod_time datetime;
+	declare _cr_time datetime;
+	declare _depth integer;
+	declare st, _temp varchar;
+	declare _ms_date integer;
+	declare _lpath, _body, _ses, _props, _ppath, _perms varchar;
+	declare uname, upwd varchar;
+	declare id any;
+	declare _u_id, _g_id, rc, is_calendar, is_addressbook integer;
+	_ses := aref_set_0 (params, 1);
+	_body := string_output_string (_ses);
+	_lpath := http_path ();
+	_ppath := http_physical_path ();
+	is_calendar := 0;
+	is_addressbook := 0;
+	if (_lpath = '')
+		_lpath := '/';
+	id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
+	if (id is not null)
+	{
+		if (isarray(id) = 1)
+		{
+			if (id[0] = UNAME'CalDAV')
+				is_calendar := 1;
+			if (id[0] = UNAME'CardDAV')
+				is_addressbook := 1;
+		}
+		st := 'C';
+	}
+	else
+	{
+		id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
+		if (id is not null)
+			st := 'R';
+		else
+		{
+			http_request_status ('HTTP/1.1 404 Not Found');
+			return;
+		}
+	}
+	_u_id := null;
+	_g_id := null;
+	if (st = 'C')
+		rc := DAV_AUTHENTICATE_HTTP (id, st, '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+	else
+		rc := DAV_AUTHENTICATE_HTTP (DAV_GET_PARENT (id, st, _ppath), 'C', '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+	if (rc < 0)
+	{
+		if ((rc = -12) or (rc = -13))
+		{
+			http_request_status ('HTTP/1.1 403 Forbidden');
+			return;
+		}
+		return;
+	}
+	if (strstr (WS.WS.FINDPARAM (lines, 'User-Agent:'), 'Microsoft') is not null)
+		_ms_date := 1;
+	else
+		_ms_date := 0;
+	_temp := WS.WS.FINDPARAM (lines, 'Depth:');
+	if (_temp <> '' and _temp <> 'infinity')
+		_depth := atoi (_temp);
+	else
+		_depth := -1;
+	{
+		declare test_tree any;
+		declare exit handler for sqlstate '*'
+		{
+			http_request_status ('HTTP/1.1 400 Bad Request');
+			return;
+		};
+		if (length (_body) > 0)
+			test_tree := xml_tree (_body);
+	}
+	if (st = 'C' and aref (_lpath, length (_lpath) - 1) <> ascii ('/'))
+		_lpath := concat (_lpath, '/');
+	-- Any properties
+	if (is_calendar = 1)
+		_props := WS.WS.CALENDAR_NAMES (_body);
+	else if (is_addressbook = 1)
+		_props := WS.WS.ADDRESSBOOK_NAMES (_body);
+	else
+		_props := WS.WS.PROPNAMES (_body);
+	if (isarray (_props) and length (_props) = 1 and (aref (_props, 0) = 'propname'))
+	{
+		WS.WS.CUSTOM_PROP (_lpath, _props, _depth, st);
+		return;
+	}
+	http_request_status ('HTTP/1.1 207 Multi-Status');
+	if (is_calendar = 1)
+	{
+		declare urls any; 
+		urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] //calendar-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
+		http_header ('DAV: 1, calendar-access, calendar-schedule, calendar-proxy\r\nContent-type: application/xml; charset="utf-8"\r\n');
+		http ('<?xml version="1.0" encoding="utf-8"?>\n');
+		http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
+		foreach (any prop in urls) do
+		{
+			if (-13 = WS.WS.REPORT_RESPONSE (cast(prop as varchar), _ppath, _depth, st, _ms_date, _props, _u_id))
+			{
+				_u_id := null;
+				_g_id := null;
+				-- This will force 'Unauthorized'
+				http_rewrite ();
+				WS.WS.GET_DAV_AUTH (lines, 0, 1, uname, upwd, _u_id, _g_id, _perms);
+				return;
+			}
+		}
+		http ('</D:multistatus>\n');
+	}
+	else if (is_addressbook = 1)
+	{
+		declare urls any; 
+		urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] //addressbook-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
+		http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
+		http ('<?xml version="1.0" encoding="utf-8"?>\n');
+		http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
+		foreach (any prop in urls) do
+		{
+			if (-13 = WS.WS.REPORT_RESPONSE (cast(prop as varchar), _ppath, _depth, st, _ms_date, _props, _u_id))
+			{
+				_u_id := null;
+				_g_id := null;
+				-- This will force 'Unauthorized'
+				http_rewrite ();
+				WS.WS.GET_DAV_AUTH (lines, 0, 1, uname, upwd, _u_id, _g_id, _perms);
+				return;
+			}
+		}
+		http ('</D:multistatus>\n');
+	}
+	else
+	{
+		http_header ('Content-type: text/xml; charset="utf-8"\r\n');
+		http ('<?xml version="1.0" encoding="utf-8"?>\n');
+		http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
+		if (-13 = WS.WS.PROPFIND_RESPONSE (_lpath, _ppath, _depth, st, _ms_date, _props, _u_id))
+		{
+			_u_id := null;
+			_g_id := null;
+			-- This will force 'Unauthorized'
+			http_rewrite ();
+			WS.WS.GET_DAV_AUTH (lines, 0, 1, uname, upwd, _u_id, _g_id, _perms);
+			return;
+		}
+		http ('</D:multistatus>\n');
+	}
+}
+;
+
+--#IF VER=5
+--!AFTER
+--#ENDIF
+create function WS.WS.REPORT_RESPONSE (
+	in lpath varchar,
+    in ppath varchar,
+	in depth integer,
+	in st char (1),
+	in ms_date integer,
+	in propnames any,
+	in u_id integer) returns integer
+{
+	declare all_prop, ppath_len integer;
+	declare dirlist any;
+	declare add_not_found, _this_col integer;
+	all_prop := 0;
+	add_not_found := 1;
+	if (not isstring (lpath) or not isstring (ppath))
+		return -28;
+	if (st = 'C' and aref (ppath, length (ppath) - 1) <> ascii ('/'))
+		ppath := concat (ppath, '/');
+	ppath_len := length (ppath);
+	if (not isarray (propnames))
+	{
+		if (ms_date)
+		{
+			propnames := vector (':getlastmodified', ':creationdate',
+				':lastaccessed', ':getcontentlength', ':resourcetype', ':supportedlock');
+			add_not_found := 0;
+		}
+		else
+			propnames := vector (':getlastmodified', ':getcontentlength', ':resourcetype');
+	}
+	else if (aref (propnames, 0) = 'allprop')
+	{
+		propnames := vector (':getlastmodified', ':creationdate', ':getetag', ':getcontenttype',
+			':getcontentlength', ':resourcetype', ':lockdiscovery', ':supportedlock');
+		all_prop := 1;
+	}
+	dirlist := DAV_DIR_LIST_INT (ppath, -1, '%', null, null, u_id);
+	if (isinteger (dirlist))
+	{
+		if (dirlist = -13)
+		{
+			if (u_id > 0)
+				dirlist := vector ();
+			else
+				return dirlist;
+		}
+		else
+			dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
+	}
+	if (length (dirlist) = 0)
+	{
+		return -1;
+	}
+	WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, 0, ms_date, propnames, all_prop, add_not_found, 0, u_id);
+	return 0;
+}
+;
+
 create procedure WS.WS.CUSTOM_PROP (in lpath any, in prop any, in depth integer, in st char (1))
 {
   declare _name, _lmask, _prop, _ltype, _lscope, _lown, _ltoken, _tp, _pname varchar;
@@ -690,15 +1159,25 @@ nf:
 -- /* PROPPATCH method */
 create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in lines varchar)
 {
-  declare _u_id, _g_id, _slen, _len, _ix, id, _pid, _ix1 integer;
+  declare _u_id, _g_id, _slen, _len, _ix, id, _pid, _ix1, is_calendar, is_addressbook integer;
   declare uname, upwd, st, _perms, _body, _name varchar;
   declare _ses, _set, _del, _tmp, _val any;
   declare rc, acc, _proprc, xtree any;
-
   -- dbg_obj_princ ('WS.WS.PROPPATCH (', path, params, lines, ')');
+  is_addressbook := 0;
+  is_calendar := 0;
   id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
   if (id is not null)
+	{
+		if (isarray(id) = 1)
+		{
+			if (id[0] = UNAME'CalDAV')
+				is_calendar := 1;
+			if (id[0] = UNAME'CardDAV')
+				is_addressbook := 1;
+		}
     st := 'C';
+	}
   else
     {
       id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
@@ -771,8 +1250,12 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
              pn := concat (pns, ':', pn);
 
            xte_nodebld_acc (acc, xte_node (xte_head (pn)));
-
-	   if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/'
+		if (is_calendar or is_addressbook)
+		{
+			--- do nothing for now;
+			;
+		}
+	   else if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/'
 	       and _prop_name in ('virtpermissions', 'virtowneruid', 'virtownergid'))
 	     {
 	       declare tmp, tmp_id any;
@@ -811,8 +1294,7 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 		     update WS.WS.SYS_DAV_COL set COL_GROUP = tmp_id where COL_ID = id;
 		 }
 	     }
-	   else if (not exists (select 1 from WS.WS.SYS_DAV_PROP
-		where PROP_NAME = pn and PROP_TYPE = st and PROP_PARENT_ID = id))
+	   else if (not exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = pn and PROP_TYPE = st and PROP_PARENT_ID = id))
 	    {
               _pid := WS.WS.GETID ('P');
               insert into WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
