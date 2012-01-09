@@ -4756,6 +4756,7 @@ create procedure WS.WS.WAC_DELETE (
     DAV_DELETE_INT (rtrim (path, '/') || ',acl', 1, null, null, 0, 0);
       connection_set ('dav_acl_sync', null);
     }
+  set_user_id ('dba');
   SPARQL clear graph ?:graph;
   }
 ;
