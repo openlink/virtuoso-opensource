@@ -995,7 +995,7 @@ ext_http_proxy (in url varchar := null,
                 in header varchar := null,
                 in force varchar := null,
                 in "output-format" varchar := null,
-                in get varchar := 'soft',
+                in get varchar := 'add',
                 in login varchar := '') __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
@@ -1092,14 +1092,16 @@ end_loop:;
                 accept := "output-format";
 	    }
           stat := '00000';
-	  if (get not in ('soft', 'replacing'))
-	    get := 'soft';
+	  if (get not in ('soft', 'replacing', 'add'))
+	    get := 'add';
 	  if (length (login))
 	    login := concat ('define get:login "', login, '" ');
 	  else
 	    login := '';
 	  host := http_request_header(http_request_header(), 'Host', null, null);
 	  ids := vector ('rdf', 'id/entity', 'id');
+	  if (not exists (select 1 from RDF_QUAD where G = iri_to_id (url, 0)))
+	    {
 	  foreach (varchar idn in ids) do
 	    {
 	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
@@ -1113,6 +1115,7 @@ end_loop:;
 		  else if (url like 'nodeID/%')
 		    url := 'nodeID:/' || subseq (url, 6);
 		}
+	    }
 	    }
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');
