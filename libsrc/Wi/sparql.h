@@ -833,7 +833,7 @@ extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, S
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
 extern void spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv);
-extern SPART **spar_make_sources_like_top (sparp_t *sparp);
+extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);

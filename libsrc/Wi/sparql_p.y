@@ -1216,7 +1216,7 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 		SPART *sinv;
 		if ((NULL == sparp_arg->sparp_env->spare_default_graphs) && (NULL == sparp_arg->sparp_env->spare_named_graphs))
 		  memcpy (&(sparp_arg->sparp_env->spare_src), $<box>5, sizeof (sparp_sources_t));
-		sources = spar_make_sources_like_top (sparp_arg);
+		sources = spar_make_sources_like_top (sparp_arg, SELECT_L);
 		sinv = spar_make_service_inv (sparp_arg, $2, $4, sparp_arg->sparp_permitted_syntax, sources, sinv_storage_uri);
 		spar_add_service_inv_to_sg (sparp_arg, sinv);
 		t_set_push (&(sparp_env()->spare_context_sinvs), sinv);

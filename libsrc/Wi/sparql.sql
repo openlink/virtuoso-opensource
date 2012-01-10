@@ -6466,7 +6466,7 @@ create procedure DB.DBA.RDF_REPL_DEL (inout rquads any)
 --#IF VER=5
 --!AFTER
 --#ENDIF
-create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null) returns any
 {
   declare g any;
   declare g_iid IRI_ID;
@@ -6503,7 +6503,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer,
 }
 ;
 
-create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in uid integer, in log_mode integer, in compose_report integer) returns any
+create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in uid integer, in log_mode integer, in compose_report integer, in options any := null) returns any
 {
   declare old_log_enable integer;
   declare grab_params any;
@@ -6515,14 +6515,17 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
-  grab_params := vector ('base_iri', resource, 'get:destination', graph_iri,
-    'resolver', 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT', 'loader', 'DB.DBA.RDF_SPONGE_UP',
-    'get:soft', 'replacing',
-    'get:refresh', -1,
-    'get:error-recovery', 'signal',
-    -- 'flags', flags,
-    'get:strategy', 'rdfa-only',
-    'grabbed', grabbed );
+  grab_params := vector_concat (vector (
+      'base_iri', resource,
+      'get:destination', graph_iri,
+      'resolver', 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT', 'loader', 'DB.DBA.RDF_SPONGE_UP',
+      'get:soft', get_keyword ('get:soft', options, 'replacing'),
+      'get:refresh', get_keyword ('get:refresh', options, -1),
+      'get:error-recovery', get_keyword ('get:error-recovery', options, 'signal'),
+      -- 'flags', flags,
+      'get:strategy', get_keyword ('get:strategy', options, 'rdfa-only'),
+      'grabbed', grabbed ),
+    options );
   commit work;
   res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
   commit work;
@@ -6544,7 +6547,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
 }
 ;
 
-create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer) returns any
+create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null) returns any
 {
   declare g_iid IRI_ID;
   declare old_log_enable integer;
@@ -6594,7 +6597,7 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in ui
 }
 ;
 
-create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer) returns any
+create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null) returns any
 {
   declare g_iid IRI_ID;
   declare old_log_enable integer;

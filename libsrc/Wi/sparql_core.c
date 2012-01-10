@@ -2471,7 +2471,7 @@ spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv)
 
 
 SPART **
-spar_make_sources_like_top (sparp_t *sparp)
+spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype)
 {
   sparp_env_t *env = sparp->sparp_env;
   dk_set_t src = NULL;
@@ -2488,7 +2488,8 @@ spar_make_sources_like_top (sparp_t *sparp)
   END_DO_SET()
   sources = (SPART **)t_revlist_to_array (src);
   if ((0 == BOX_ELEMENTS (sources)) &&
-    (NULL != (env->spare_common_sponge_options)) )
+    (NULL != (env->spare_common_sponge_options)) &&
+    (LOAD_L != top_subtype) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
   return sources;
 }
@@ -2499,7 +2500,7 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t final_output_format_name;
-  SPART **sources = spar_make_sources_like_top (sparp);
+  SPART **sources = spar_make_sources_like_top (sparp, subtype);
   switch (subtype)
     {
     case CONSTRUCT_L: case DESCRIBE_L:
@@ -3294,12 +3295,12 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
   END_DO_SET()
   for (ctr = BOX_ELEMENTS_0 (options) - 2; 0 <= ctr; ctr -= 2)
     {
-      caddr_t param = (caddr_t)(options[ctr]);
+      caddr_t param = (ccaddr_t)(options[ctr]);
       const char **chk;
       for (chk = sparp_known_get_params; (NULL != chk[0]) && strcmp (chk[0], param); chk++) ;
       if (NULL == chk[0])
         spar_error (sparp, "Unsupported parameter '%.30s' in FROM ... (OPTION ...)", param);
-      if (0 < dk_set_position_of_string (opts_ptr[0], param))
+      if (NULL != dk_set_getptr_keyword (opts_ptr[0], param))
         spar_error (sparp, "FROM ... (OPTION ... %s ...) conflicts with 'DEFINE %s ...", param, param);
       (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree (param);
       (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(options[ctr + 1]));
@@ -3402,6 +3403,7 @@ spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
     "RDF_LOAD_RDFXML",
     "RDF_LOAD_RDFXML_MT",
     "RDF_MODIFY_TRIPLES",
+    "RDF_SPONGE_UP",
     "SPARQL_INSERT_DICT_CONTENT",
     "SPARQL_DELETE_DICT_CONTENT",
     "SPARQL_DESC_AGG",
@@ -3615,16 +3617,29 @@ SPART *
 spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART *graph_precode, SPART *aux_op)
 {
   SPART *fake_sol;
-  SPART *call, *top;
+  SPART *call, *top, **options = NULL, *options_vector_call;
   caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
   if (NULL == log_mode)
     log_mode = t_NEW_DB_NULL;
+  if (LOAD_L == subtype)
+    {
+      dk_set_t *opts_ptr = &(sparp->sparp_env->spare_common_sponge_options);
+      options = (SPART **)t_full_box_copy_tree ((caddr_t)(t_list_to_array (opts_ptr[0])));
+      if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:destination"))
+        spar_error (sparp, "DEFINE get:destination ... is not applicable for SPARUL LOAD statement, use LOAD ... INTO ... form instead");
+      if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:uri"))
+        spar_error (sparp, "DEFINE get:uri ... is not applicable for SPARUL LOAD statement, use LOAD ... INTO ... form instead");
+    }
+  if (NULL == options)
+    options_vector_call = (SPART *)t_NEW_DB_NULL;
+  else
+    options_vector_call = spar_make_funcall (sparp, 0, "bif:vector", options);
   if (NULL != sparp->sparp_env->spare_output_route_name)
     call = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_env->spare_output_route_name),
-      (SPART **)t_list (11, graph_precode,
+      (SPART **)t_list (12, graph_precode,
           t_box_dv_short_string (opname),
           ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
           ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
@@ -3632,10 +3647,11 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
           aux_op,
           t_NEW_DB_NULL,
           t_NEW_DB_NULL,
-          spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
+          spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp), options_vector_call ) );
   else
     call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
-      (SPART **)t_list (5, graph_precode, aux_op, spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
+      (SPART **)t_list (6, graph_precode, aux_op,
+      spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp), options_vector_call ) );
   top = spar_make_top_or_special_case_from_wm (sparp, subtype,
     (SPART **)t_list (1, call),
     spar_selid_pop (sparp), fake_sol );
