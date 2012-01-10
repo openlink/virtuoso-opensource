@@ -5995,7 +5995,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
           o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iri, p_iid, ro_id_dict);
           if (not rdf_box_is_storeable (o_final))
             {
-              -- dbg_obj_princ ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT', o_orig, '=>', o_final);
+              -- dbg_obj_princ ('OBLOM', 'Bad O after DB.DBA.MAKE_OBJ_OF_SQLVAL_FT', o_orig, '=>', o_final);
               signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
         }
         }
@@ -6004,7 +6004,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
 	o_final := DB.DBA.RDF_OBJ_ADD (257, o_final, 257);
           if (not rdf_box_is_storeable (o_final))
             {
-              -- dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig, '=>', o_final);
+              -- dbg_obj_princ ('OBLOM', 'Bad O after DB.DBA.RDF_OBJ_ADD', o_orig, '=>', o_final);
               signal ('OBLOM', 'Bad O after DB.DBA.RDF_OBJ_ADD');
             }
         }
