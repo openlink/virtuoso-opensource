@@ -11385,6 +11385,8 @@ bif_txn_killall (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int lte = n >= 1 ? bif_long_arg (qst, args, 0, "txn_killall") : LTE_TIMEOUT;
   query_instance_t *qi = (query_instance_t *) qst;
   sec_check_dba (qi, "txn_killall");
+  if (wi_inst.wi_is_checkpoint_pending)
+    sqlr_new_error ("37000", ".....", "Can not kill during pending checkpoint");
   IO_SECT (qi)
     {
       IN_TXN;
