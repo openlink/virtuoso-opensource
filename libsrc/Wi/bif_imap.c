@@ -70,6 +70,7 @@
 	  } \
 	END_WRITE_FAIL (ses)
 
+
 static int
 is_ok (char *resp)
 {
@@ -231,6 +232,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   char resp[1024];
   char message[128], err_text[512], err_code[6], login_message[512], username[512], password[512];
   char end_msg[1] = ")";
+  char end_msg3[3] = ")\r\n";
   char *s, *ps;
   caddr_t target_folder_id = NULL;
   dk_session_t *msg = NULL;
@@ -313,9 +315,9 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("list", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-			snprintf (message, sizeof (message), "3 LIST \"\" \"%s\"", folder_id);
+	snprintf (message, sizeof (message), "3 LIST \"\" \"%s\"", folder_id);
       else
-			snprintf (message, sizeof (message), "3 LIST \"\" \"%%\"");
+	snprintf (message, sizeof (message), "3 LIST \"\" \"%%\"");
       SEND (ses, rc, message, "");
       message_begin = 0;
       strses_flush (msg);
@@ -364,7 +366,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       FAILED
       {
 	strcpy_ck (err_code, "IM010");
-	strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
+	strcpy_ck (err_text, "Failed reading output of LIST command on remote IMAP server");
 	goto error_end;
       }
       END_READ_FAIL (ses);
@@ -375,7 +377,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("delete", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-		snprintf (message, sizeof (message), "3 DELETE \"%s\"", folder_id);
+	snprintf (message, sizeof (message), "3 DELETE \"%s\"", folder_id);
       else
 	{
 	  strcpy_ck (err_code, "IM011");
@@ -407,7 +409,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("create", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-		snprintf (message, sizeof (message), "3 CREATE \"%s\"", folder_id);
+	snprintf (message, sizeof (message), "3 CREATE \"%s\"", folder_id);
       else
 	{
 	  strcpy_ck (err_code, "IM015");
@@ -440,9 +442,9 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("select", mode) || !stricmp ("expunge", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-		snprintf (message, sizeof (message), "4 SELECT \"%s\"", folder_id);
+	snprintf (message, sizeof (message), "4 SELECT \"%s\"", folder_id);
       else
-		snprintf (message, sizeof (message), "4 SELECT \"INBOX\"");
+	snprintf (message, sizeof (message), "4 SELECT \"INBOX\"");
       SEND (ses, rc, message, "");
       while (1)
 	{
@@ -560,7 +562,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		    goto logout;
 		  }
-		dk_set_push (ret_v, list (3, uid, strses_string (msg2), strses_string (msg)));
+		dk_set_push (ret_v, list (3, box_num (uid), strses_string (msg2), strses_string (msg)));
 	      }
 	      FAILED
 	      {
@@ -594,7 +596,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	  strcpy_ck (err_text, "There must be 2 string items in vector of argument 7 (old folder name to rename and a new name)");
 	  goto logout;
 	}
-		snprintf (message, sizeof (message), "4 RENAME \"%s\" \"%s\"", in[0], in[1]);
+      snprintf (message, sizeof (message), "4 RENAME \"%s\" \"%s\"", in[0], in[1]);
       SEND (ses, rc, message, "");
       while (1)
 	{
@@ -616,7 +618,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   if (!stricmp ("fetch", mode) || !stricmp ("message_delete", mode) || !stricmp ("message_copy", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
-		snprintf (message, sizeof (message), "4 SELECT \"%s\"", folder_id);
+	snprintf (message, sizeof (message), "4 SELECT \"%s\"", folder_id);
       else
 	snprintf (message, sizeof (message), "4 SELECT INBOX");
       SEND (ses, rc, message, "");
@@ -634,7 +636,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       if (inx_mails > 0)
 	{
 	  volatile int l, br;
-	  int start = 0;
+	  int do_not_read, start = 0;
 	  dtp_t type;
 	  if (in)
 	    l = BOX_ELEMENTS (in);
@@ -660,12 +662,13 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  goto logout;
 		}
 	      if (!stricmp ("fetch", mode))
-					snprintf (message, sizeof (message), "5 UID FETCH %d BODY.PEEK[]", (int)(in[br]));
+		snprintf (message, sizeof (message), "5 UID FETCH %d BODY.PEEK[]", (int) (in[br]));
 	      if (!stricmp ("message_delete", mode))
-					snprintf (message, sizeof (message), "5 UID STORE %d +FLAGS (\\Deleted)", (int)(in[br]));
+		snprintf (message, sizeof (message), "5 UID STORE %d +FLAGS (\\Deleted)", (int) (in[br]));
 	      if (!stricmp ("message_copy", mode))
-					snprintf (message, sizeof (message), "5 UID COPY %d \"%s\"", (int)(in[br]), target_folder_id);
+		snprintf (message, sizeof (message), "5 UID COPY %d \"%s\"", (int) (in[br]), target_folder_id);
 	      SEND (ses, rc, message, "");
+	      do_not_read = 0;
 	      while (1)
 		{
 		  message_begin = 0;
@@ -673,7 +676,8 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  strses_enable_paging (msg, http_ses_size);
 		  CATCH_READ_FAIL (ses)
 		  {
-		    rc = dks_read_line (ses, resp, sizeof (resp));
+		    if (!do_not_read)
+		      rc = dks_read_line (ses, resp, sizeof (resp));
 		    if (strlen (resp) > 2 && !strncmp ("5 OK", resp, 4))
 		      break;
 		    if (strlen (resp) > 2 && !strncmp ("5 BAD", resp, 5))
@@ -688,23 +692,26 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			strcpy_ck (err_code, "IM036");
 			break;
 		      }
-		    while (strncmp (end_msg, resp, sizeof (end_msg)))
+		    while (resp)
 		      {
 			ps = resp;
 			if (!message_begin)
 			  {
 			    message_begin = 1;
-			    ps = imap_next_word (ps);
-			    ps = imap_next_word (ps);
-			    if (!ascii_strncasecmp ("FETCH", ps, 5))
+			    if (!ascii_strncasecmp ("* ", ps, 2))
 			      {
 				ps = imap_next_word (ps);
-				if (ps[0] == '(')
-				  ps++;
-				if (ascii_strncasecmp ("UID", ps, 3) == 0)
+				ps = imap_next_word (ps);
+				if (!ascii_strncasecmp ("FETCH", ps, 5))
 				  {
 				    ps = imap_next_word (ps);
-				    uid = atoi (ps);
+				    if (ps[0] == '(')
+				      ps++;
+				    if (ascii_strncasecmp ("UID", ps, 3) == 0)
+				      {
+					ps = imap_next_word (ps);
+					uid = atoi (ps);
+				      }
 				  }
 			      }
 			    else
@@ -728,6 +735,12 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			  }
 		      next_message:
 			rc = dks_read_line (ses, resp, sizeof (resp));
+			if (strlen (resp) > 2 && (!strncmp ("5 OK", resp, 4) || !strncmp ("5 BAD", resp, 5)
+				|| !strncmp ("5 NO", resp, 4)))
+			  {
+			    do_not_read = 1;
+			    break;
+			  }
 		      }
 		    session_flush_1 (msg);
 		    if (tcpses_check_disk_error (msg, NULL, 0))
@@ -744,7 +757,14 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 			goto logout;
 		      }
-		    dk_set_push (ret_v, list (2, uid, strses_string (msg)));
+		    if (uid > 0)
+		      {
+			caddr_t result = NULL;
+			result = strses_string (msg);
+			if (!strncmp (result + strlen (result) - 3, end_msg3, sizeof (end_msg3)))
+			  result[strlen (result) - 3] = 0;
+			dk_set_push (ret_v, list (2, box_num (uid), result));
+		      }
 		  }
 		  FAILED
 		  {
