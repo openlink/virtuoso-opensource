@@ -323,52 +323,52 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       strses_flush (msg);
       strses_enable_paging (msg, http_ses_size);
       CATCH_READ_FAIL (ses)
-      {
-	rc = dks_read_line (ses, resp, sizeof (resp));
-	while (strlen (resp) > 2 && strncmp ("3 OK", resp, 4))
-	  {
-	    ps = resp;
-	    ps = imap_next_word (ps);
-	    if (!ascii_strncasecmp ("LIST", ps, 4))
+	{
+	  rc = dks_read_line (ses, resp, sizeof (resp));
+	  while (strlen (resp) > 2 && strncmp ("3 OK", resp, 4))
+	    {
+	      ps = resp;
 	      ps = imap_next_word (ps);
-	    else
-	      {
-		strcpy_ck (err_text, "Some error in the list of folders");
-		strcpy_ck (err_code, "IM006");
-		SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-		goto logout;
-	      }
-	    dk_set_push (ret_v, box_dv_short_string (ps));
-	    if (tcpses_check_disk_error (msg, qst, 0))
-	      {
-		strcpy_ck (err_text, "Server error in accessing temp file");
-		strcpy_ck (err_code, "IM007");
-		SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-		goto logout;
-	      }
-	    rc = dks_read_line (ses, resp, sizeof (resp));
-	  }
-	if (tcpses_check_disk_error (msg, NULL, 0))
-	  {
-	    strcpy_ck (err_text, "Server error in accessing temp file");
-	    strcpy_ck (err_code, "IM008");
-	    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-	    goto logout;
-	  }
-	if (!STRSES_CAN_BE_STRING (msg))
-	  {
-	    strcpy_ck (err_text, "Server error in storing data into a string session");
-	    strcpy_ck (err_code, "IM009");
-	    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-	    goto logout;
-	  }
-      }
+	      if (!ascii_strncasecmp ("LIST", ps, 4))
+		ps = imap_next_word (ps);
+	      else
+		{
+		  strcpy_ck (err_text, "Some error in the list of folders");
+		  strcpy_ck (err_code, "IM006");
+		  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+		  goto logout;
+		}
+	      dk_set_push (ret_v, box_dv_short_string (ps));
+	      if (tcpses_check_disk_error (msg, qst, 0))
+		{
+		  strcpy_ck (err_text, "Server error in accessing temp file");
+		  strcpy_ck (err_code, "IM007");
+		  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+		  goto logout;
+		}
+	      rc = dks_read_line (ses, resp, sizeof (resp));
+	    }
+	  if (tcpses_check_disk_error (msg, NULL, 0))
+	    {
+	      strcpy_ck (err_text, "Server error in accessing temp file");
+	      strcpy_ck (err_code, "IM008");
+	      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+	      goto logout;
+	    }
+	  if (!STRSES_CAN_BE_STRING (msg))
+	    {
+	      strcpy_ck (err_text, "Server error in storing data into a string session");
+	      strcpy_ck (err_code, "IM009");
+	      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+	      goto logout;
+	    }
+	}
       FAILED
-      {
-	strcpy_ck (err_code, "IM010");
-	strcpy_ck (err_text, "Failed reading output of LIST command on remote IMAP server");
-	goto error_end;
-      }
+	{
+	  strcpy_ck (err_code, "IM010");
+	  strcpy_ck (err_text, "Failed reading output of LIST command on remote IMAP server");
+	  goto error_end;
+	}
       END_READ_FAIL (ses);
       goto logout;
     }
@@ -494,82 +494,82 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      strses_flush (msg2);
 	      strses_enable_paging (msg2, http_ses_size);
 	      CATCH_READ_FAIL (ses)
-	      {
-		rc = dks_read_line (ses, resp, sizeof (resp));
-		if (strlen (resp) > 2 && !strncmp ("5 OK", resp, 4))
-		  break;
-		while (strncmp (end_msg, resp, sizeof (end_msg)))
-		  {
-		    ps = resp;
-		    if (!message_begin)
-		      {
-			message_begin = 1;
-			ps = imap_next_word (ps);
-			ps = imap_next_word (ps);
-			if (!ascii_strncasecmp ("FETCH", ps, 5))
-			  {
-			    ps = imap_next_word (ps);
-			    if (ps[0] == '(')
-			      ps++;
-			    if (ascii_strncasecmp ("UID", ps, 3) == 0)
-			      {
-				ps = imap_next_word (ps);
-				uid = atoi (ps);
-				ps = imap_next_word (ps);
-				SES_PRINT (msg2, ps);
-				if (tcpses_check_disk_error (msg2, qst, 0))
-				  {
-				    strcpy_ck (err_text, "Server error in accessing temp file");
-				    strcpy_ck (err_code, "IM024");
-				    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-				    goto logout;
-				  }
-				goto next_statement;
-			      }
-			  }
-			else
-			  {
-			    strcpy_ck (err_text, "Some error");
-			    strcpy_ck (err_code, "IM023");
-			    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-			    goto logout;
-			  }
-		      }
-		    SES_PRINT (msg, ps);
-		    if (tcpses_check_disk_error (msg, qst, 0))
-		      {
-			strcpy_ck (err_text, "Server error in accessing temp file");
-			strcpy_ck (err_code, "IM024");
-			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-			goto logout;
-		      }
-		  next_statement:
-		    rc = dks_read_line (ses, resp, sizeof (resp));
-		  }
-		session_flush_1 (msg);
-		session_flush_1 (msg2);
-		if (tcpses_check_disk_error (msg, NULL, 0) || tcpses_check_disk_error (msg2, NULL, 0))
-		  {
-		    strcpy_ck (err_text, "Server error in accessing temp file");
-		    strcpy_ck (err_code, "IM025");
-		    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-		    goto logout;
-		  }
-		if (!STRSES_CAN_BE_STRING (msg) || !STRSES_CAN_BE_STRING (msg2))
-		  {
-		    strcpy_ck (err_text, "Server error in storing data into a string session");
-		    strcpy_ck (err_code, "IM026");
-		    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-		    goto logout;
-		  }
-		dk_set_push (ret_v, list (3, box_num (uid), strses_string (msg2), strses_string (msg)));
-	      }
+		{
+		  rc = dks_read_line (ses, resp, sizeof (resp));
+		  if (strlen (resp) > 2 && !strncmp ("5 OK", resp, 4))
+		    break;
+		  while (strncmp (end_msg, resp, sizeof (end_msg)))
+		    {
+		      ps = resp;
+		      if (!message_begin)
+			{
+			  message_begin = 1;
+			  ps = imap_next_word (ps);
+			  ps = imap_next_word (ps);
+			  if (!ascii_strncasecmp ("FETCH", ps, 5))
+			    {
+			      ps = imap_next_word (ps);
+			      if (ps[0] == '(')
+				ps++;
+			      if (ascii_strncasecmp ("UID", ps, 3) == 0)
+				{
+				  ps = imap_next_word (ps);
+				  uid = atoi (ps);
+				  ps = imap_next_word (ps);
+				  SES_PRINT (msg2, ps);
+				  if (tcpses_check_disk_error (msg2, qst, 0))
+				    {
+				      strcpy_ck (err_text, "Server error in accessing temp file");
+				      strcpy_ck (err_code, "IM024");
+				      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+				      goto logout;
+				    }
+				  goto next_statement;
+				}
+			    }
+			  else
+			    {
+			      strcpy_ck (err_text, "Some error");
+			      strcpy_ck (err_code, "IM023");
+			      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+			      goto logout;
+			    }
+			}
+		      SES_PRINT (msg, ps);
+		      if (tcpses_check_disk_error (msg, qst, 0))
+			{
+			  strcpy_ck (err_text, "Server error in accessing temp file");
+			  strcpy_ck (err_code, "IM024");
+			  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+			  goto logout;
+			}
+		    next_statement:
+		      rc = dks_read_line (ses, resp, sizeof (resp));
+		    }
+		  session_flush_1 (msg);
+		  session_flush_1 (msg2);
+		  if (tcpses_check_disk_error (msg, NULL, 0) || tcpses_check_disk_error (msg2, NULL, 0))
+		    {
+		      strcpy_ck (err_text, "Server error in accessing temp file");
+		      strcpy_ck (err_code, "IM025");
+		      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+		      goto logout;
+		    }
+		  if (!STRSES_CAN_BE_STRING (msg) || !STRSES_CAN_BE_STRING (msg2))
+		    {
+		      strcpy_ck (err_text, "Server error in storing data into a string session");
+		      strcpy_ck (err_code, "IM026");
+		      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+		      goto logout;
+		    }
+		  dk_set_push (ret_v, list (3, box_num (uid), strses_string (msg2), strses_string (msg)));
+		}
 	      FAILED
-	      {
-		strcpy_ck (err_code, "IM027");
-		strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
-		goto error_end;
-	      }
+		{
+		  strcpy_ck (err_code, "IM027");
+		  strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
+		  goto error_end;
+		}
 	      END_READ_FAIL (ses);
 	    }
 	}
@@ -675,103 +675,103 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  strses_flush (msg);
 		  strses_enable_paging (msg, http_ses_size);
 		  CATCH_READ_FAIL (ses)
-		  {
-		    if (!do_not_read)
-		      rc = dks_read_line (ses, resp, sizeof (resp));
-		    if (strlen (resp) > 2 && !strncmp ("5 OK", resp, 4))
-		      break;
-		    if (strlen (resp) > 2 && !strncmp ("5 BAD", resp, 5))
-		      {
-			strcpy_ck (err_text, "Error in IMAP command UID STORE");
-			strcpy_ck (err_code, "IM035");
-			break;
-		      }
-		    if (strlen (resp) > 2 && !strncmp ("5 NO", resp, 4))
-		      {
-			strcpy_ck (err_text, "Error in IMAP command UID STORE");
-			strcpy_ck (err_code, "IM036");
-			break;
-		      }
-		    while (resp)
-		      {
-			ps = resp;
-			if (!message_begin)
-			  {
-			    message_begin = 1;
-			    if (!ascii_strncasecmp ("* ", ps, 2))
-			      {
-				ps = imap_next_word (ps);
-				ps = imap_next_word (ps);
-				if (!ascii_strncasecmp ("FETCH", ps, 5))
-				  {
-				    ps = imap_next_word (ps);
-				    if (ps[0] == '(')
-				      ps++;
-				    if (ascii_strncasecmp ("UID", ps, 3) == 0)
-				      {
-					ps = imap_next_word (ps);
-					uid = atoi (ps);
-				      }
-				  }
-			      }
-			    else
-			      {
-				strcpy_ck (err_text, "Some error");
-				strcpy_ck (err_code, "IM037");
-				SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-				goto logout;
-			      }
-			    if (!stricmp ("message_delete", mode) || !stricmp ("message_copy", mode))
-			      break;
-			    goto next_message;
-			  }
-			SES_PRINT (msg, ps);
-			if (tcpses_check_disk_error (msg, qst, 0))
-			  {
-			    strcpy_ck (err_text, "Server error in accessing temp file");
-			    strcpy_ck (err_code, "IM038");
-			    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-			    goto logout;
-			  }
-		      next_message:
+		    {
+		      if (!do_not_read)
 			rc = dks_read_line (ses, resp, sizeof (resp));
-			if (strlen (resp) > 2 && (!strncmp ("5 OK", resp, 4) || !strncmp ("5 BAD", resp, 5)
-				|| !strncmp ("5 NO", resp, 4)))
-			  {
-			    do_not_read = 1;
-			    break;
-			  }
-		      }
-		    session_flush_1 (msg);
-		    if (tcpses_check_disk_error (msg, NULL, 0))
-		      {
-			strcpy_ck (err_text, "Server error in accessing temp file");
-			strcpy_ck (err_code, "IM039");
-			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-			goto logout;
-		      }
-		    if (!STRSES_CAN_BE_STRING (msg))
-		      {
-			strcpy_ck (err_text, "Server error in storing data into a string session");
-			strcpy_ck (err_code, "IM040");
-			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-			goto logout;
-		      }
-		    if (uid > 0)
-		      {
-			caddr_t result = NULL;
-			result = strses_string (msg);
-			if (!strncmp (result + strlen (result) - 3, end_msg3, sizeof (end_msg3)))
-			  result[strlen (result) - 3] = 0;
-			dk_set_push (ret_v, list (2, box_num (uid), result));
-		      }
-		  }
+		      if (strlen (resp) > 2 && !strncmp ("5 OK", resp, 4))
+			break;
+		      if (strlen (resp) > 2 && !strncmp ("5 BAD", resp, 5))
+			{
+			  strcpy_ck (err_text, "Error in IMAP command UID STORE");
+			  strcpy_ck (err_code, "IM035");
+			  break;
+			}
+		      if (strlen (resp) > 2 && !strncmp ("5 NO", resp, 4))
+			{
+			  strcpy_ck (err_text, "Error in IMAP command UID STORE");
+			  strcpy_ck (err_code, "IM036");
+			  break;
+			}
+		      while (resp)
+			{
+			  ps = resp;
+			  if (!message_begin)
+			    {
+			      message_begin = 1;
+			      if (!ascii_strncasecmp ("* ", ps, 2))
+				{
+				  ps = imap_next_word (ps);
+				  ps = imap_next_word (ps);
+				  if (!ascii_strncasecmp ("FETCH", ps, 5))
+				    {
+				      ps = imap_next_word (ps);
+				      if (ps[0] == '(')
+					ps++;
+				      if (ascii_strncasecmp ("UID", ps, 3) == 0)
+					{
+					  ps = imap_next_word (ps);
+					  uid = atoi (ps);
+					}
+				    }
+				}
+			      else
+				{
+				  strcpy_ck (err_text, "Some error");
+				  strcpy_ck (err_code, "IM037");
+				  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+				  goto logout;
+				}
+			      if (!stricmp ("message_delete", mode) || !stricmp ("message_copy", mode))
+				break;
+			      goto next_message;
+			    }
+			  SES_PRINT (msg, ps);
+			  if (tcpses_check_disk_error (msg, qst, 0))
+			    {
+			      strcpy_ck (err_text, "Server error in accessing temp file");
+			      strcpy_ck (err_code, "IM038");
+			      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+			      goto logout;
+			    }
+			next_message:
+			  rc = dks_read_line (ses, resp, sizeof (resp));
+			  if (strlen (resp) > 2 && (!strncmp ("5 OK", resp, 4) || !strncmp ("5 BAD", resp, 5)
+				  || !strncmp ("5 NO", resp, 4)))
+			    {
+			      do_not_read = 1;
+			      break;
+			    }
+			}
+		      session_flush_1 (msg);
+		      if (tcpses_check_disk_error (msg, NULL, 0))
+			{
+			  strcpy_ck (err_text, "Server error in accessing temp file");
+			  strcpy_ck (err_code, "IM039");
+			  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+			  goto logout;
+			}
+		      if (!STRSES_CAN_BE_STRING (msg))
+			{
+			  strcpy_ck (err_text, "Server error in storing data into a string session");
+			  strcpy_ck (err_code, "IM040");
+			  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+			  goto logout;
+			}
+		      if (uid > 0)
+			{
+			  caddr_t result = NULL;
+			  result = strses_string (msg);
+			  if (!strncmp (result + strlen (result) - 3, end_msg3, sizeof (end_msg3)))
+			    result[strlen (result) - 3] = 0;
+			  dk_set_push (ret_v, list (2, box_num (uid), result));
+			}
+		    }
 		  FAILED
-		  {
-		    strcpy_ck (err_code, "IM041");
-		    strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
-		    goto error_end;
-		  }
+		    {
+		      strcpy_ck (err_code, "IM041");
+		      strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
+		      goto error_end;
+		    }
 		  END_READ_FAIL (ses);
 		}
 	    }
