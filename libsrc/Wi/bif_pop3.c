@@ -273,7 +273,8 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      while (strncmp (end_msg, resp, sizeof (end_msg)))
 		{
 		  rc = dks_read_line (ses, resp, sizeof (resp));
-		  SES_PRINT (msg, resp);
+		  if (strncmp (end_msg, resp, sizeof (end_msg)))
+		    SES_PRINT (msg, resp);
 		  if (tcpses_check_disk_error (msg, qst, 0))
 		    {
 		      strcpy_ck (err_text, "Server error in accessing temp file");
