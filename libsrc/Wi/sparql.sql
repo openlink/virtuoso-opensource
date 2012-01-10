@@ -9184,7 +9184,7 @@ jso_load_failed:
 ;
 
 -----
--- Internal routines for SPARQL quad map syntax extensions
+-- Internal routines for SPARQL macro library and quad map syntax extensions
 
 create procedure DB.DBA.RDF_QM_CHANGE (in warninglist any)
 {
@@ -11452,6 +11452,186 @@ create procedure DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (in storage varchar, in qmid 
   sparql define input:storage ""
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` . };
   commit work;
+}
+;
+
+create function DB.DBA.RDF_SML_DROP (in smliri varchar, in silent integer, in compose_report integer := 1) returns any
+{
+  declare report, affected any;
+  report := '';
+  vectorbld_init (affected);
+  for (sparql define input:storage ""
+    select ?storageiri
+    from virtrdf:
+    where { ?storageiri virtrdf:qsMacroLibrary `iri(?:smliri)` } ) do
+    {
+      report := report || 'SPARQL macro library <' || smliri || '> has been detached from quad storage <' || "storageiri" || '>\n';
+      vectorbld_acc (affected, "storageiri");
+    }
+  vectorbld_final (affected);
+  sparql define input:storage ""
+  delete from virtrdf:
+    { ?storageiri virtrdf:qsMacroLibrary `iri(?:smliri)` }
+  from virtrdf:
+    where { ?storageiri virtrdf:qsMacroLibrary `iri(?:smliri)` };
+  commit work;
+  if (not exists (
+      sparql define input:storage ""
+      select 1 from virtrdf: where { `iri(?:smliri)` ?p ?o } ) )
+    {
+      DB.DBA.RDF_QM_APPLY_CHANGES (null, affected);
+      if (silent)
+        {
+          if (compose_report)
+            return report || 'SPARQL macro library <' || smliri || '> does not exists, nothing to delete';
+          else
+            return 0;
+        }
+      else
+        signal ('22023', 'SPARQL macro library <' || smliri || '> does not exists, nothing to delete');
+    }
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (smliri, 'http://www.openlinksw.com/schemas/virtrdf#SparqlMacroLibrary');
+  sparql define input:storage ""
+  delete from graph virtrdf: {
+      `iri(?:smliri)` ?p ?o }
+  from virtrdf:
+  where { `iri(?:smliri)` ?p ?o };
+  DB.DBA.RDF_QM_APPLY_CHANGES (vector ('http://www.openlinksw.com/schemas/virtrdf#SparqlMacroLibrary', smliri), affected);
+  if (compose_report)
+    return report || 'SPARQL macro library <' || smliri || '> has been deleted';
+  else
+    return 1;
+}
+;
+
+create function DB.DBA.RDF_SML_CREATE (in smliri varchar, in txt varchar) returns any
+{
+  declare stat, msg, smliri_copy varchar;
+  declare mdata, rset, affected any;
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (smliri, 'http://www.openlinksw.com/schemas/virtrdf#SparqlMacroLibrary', 1);
+  stat := '00000';
+  if (__tag (txt) = __tag of nvarchar)
+    txt := charset_recode (txt, '_WIDE_', 'UTF-8');
+  exec ('sparql define input:macro-lib-ignore-create "yes" define input:disable-storage-macro-lib "yes" ' || txt, stat, msg, null, 1, mdata, rset);
+  if (stat <> '00000')
+    signal (stat, msg);
+  if (length (rset))
+    signal ('SPAR0', 'Assertion failed: the validation query of macro library should return nothing');
+  vectorbld_init (affected);
+  for (sparql define input:storage ""
+    select ?storageiri
+    from virtrdf:
+    where { ?storageiri virtrdf:qsMacroLibrary `iri(?:smliri)` } ) do
+    {
+      vectorbld_acc (affected, "storageiri");
+    }
+  smliri_copy := smliri;
+  vectorbld_acc (affected, smliri_copy);
+  vectorbld_final (affected);
+  sparql define input:storage ""
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
+      `iri(?:smliri)` ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { `iri(?:smliri)` ?p ?o };
+  commit work;
+  sparql define input:storage ""
+  insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
+      `iri(?:smliri)` a virtrdf:SparqlMacroLibrary ; virtrdf:smlSourceText ?:txt };
+  DB.DBA.RDF_QM_APPLY_CHANGES (null, affected);
+  return 'SPARQL macro library <' || smliri || '> has been (re)created';
+}
+;
+
+create function DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY (in storageiri varchar, in args any) returns any
+{
+  declare expected_smliri varchar;
+  declare old_ctr, expected_found integer;
+  declare silent, report any;
+  expected_smliri := get_keyword_ucase ('ID', args, NULL);
+  silent := get_keyword_ucase ('SILENT', args, 0);
+  expected_found := 0;
+  old_ctr := 0;
+  vectorbld_init (report);
+  for (sparql define input:storage ""
+    select ?oldsmliri
+    from virtrdf:
+    where { ?storageiri virtrdf:qsMacroLibrary ?oldsmliri } ) do
+    {
+      if (expected_smliri is not null and cast (expected_smliri as nvarchar) <> cast ("oldsmliri" as nvarchar))
+        {
+          if (silent)
+            vectorbld_acc (report, vector ('00100', 'The SPARQL macro library to detach from <' || storageiri || '> is <' || expected_smliri || '> but actually attached one is <' || "oldsmliri" || '>, nothing to do'));
+          else
+            signal ('22023', 'The SPARQL macro library to detach from <' || storageiri || '> is <' || expected_smliri || '> but actually attached one is <' || "oldsmliri" || '>');
+        }
+      else
+        {
+          if (expected_smliri is not null)
+            expected_found := 1;
+          vectorbld_acc (report, vector ('00000', 'SPARQL macro library <' || "oldsmliri" || '> has been detached from quad storage <' || storageiri || '>'));
+        }
+      old_ctr := old_ctr + 1;
+    }
+  if (expected_smliri is not null)
+    {
+      sparql define input:storage ""
+      delete from virtrdf:
+        { ?storageiri virtrdf:qsMacroLibrary ?smliri }
+      from virtrdf:
+        where { ?storageiri virtrdf:qsMacroLibrary ?smliri };
+    }
+  else
+    {
+      sparql define input:storage ""
+      delete from virtrdf:
+        { ?storageiri virtrdf:qsMacroLibrary ?smliri }
+      from virtrdf:
+        where { ?storageiri virtrdf:qsMacroLibrary ?smliri };
+    }
+  commit work;
+  if (old_ctr > 1)
+    vectorbld_acc (report, vector ('00100', 'Note that there was a configuration error: more than one macro library was attached to the quad storage <' || storageiri || '>'));
+  else if (old_ctr = 0)
+    {
+      if (silent)
+        vectorbld_acc (report, vector ('00100', 'No one SPARQL macro library is attached to the quad storage <' || storageiri || '>, nothing to detach'));
+      else
+        signal ('22023', 'No one SPARQL macro library is attached to the quad storage <' || storageiri || '>, nothing to detach');
+    }
+  vectorbld_final (report);
+dbg_obj_princ ('DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY (', storageiri, args, ') returns ', report);
+  return report;
+}
+;
+
+create function DB.DBA.RDF_QM_ATTACH_MACRO_LIBRARY (in storageiri varchar, in args any) returns any
+{
+  declare smliri varchar;
+  smliri := get_keyword_ucase ('ID', args, NULL);
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (storageiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadStorage');
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (smliri, 'http://www.openlinksw.com/schemas/virtrdf#SparqlMacroLibrary');
+  declare report any;
+  vectorbld_init (report);
+  for (sparql define input:storage ""
+    select ?oldsmliri
+    from virtrdf:
+    where { ?storageiri virtrdf:qsMacroLibrary ?oldsmliri } ) do
+    {
+      vectorbld_acc (report, vector ('00000', 'SPARQL macro library <' || "oldsmliri" || '> has been detached from quad storage <' || storageiri || '>'));
+    }
+  sparql define input:storage ""
+  delete from virtrdf:
+    { ?storageiri virtrdf:qsMacroLibrary ?oldsmliri }
+  from virtrdf:
+    where { ?storageiri virtrdf:qsMacroLibrary ?oldsmliri };
+  commit work;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  insert in graph virtrdf: {
+      `iri(?:storageiri)` virtrdf:qsMacroLibrary `iri(?:smliri)` };
+  vectorbld_acc (report, vector ('00000', 'SPARQL macro library <' || smliri || '> has been attached to quad storage <' || storageiri || '>'));
+  vectorbld_final (report);
+  return report;
 }
 ;
 
