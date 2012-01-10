@@ -172,7 +172,6 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case ASC_L: return "ASC";
     case ASK_L: return "ASK";
     case BOUND_L: return "BOUND";
-    case COALESCE_L: return "COALESCE";
     case CONSTRUCT_L: return "CONSTRUCT";
     /*case CREATE_L: return "quad mapping name";*/
     case DATATYPE_L: return "DATATYPE";
@@ -183,15 +182,9 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
     /* case GRAPH_L: return "GRAPH"; */
-    case IF_L: return "IF";
     case IN_L: return "IN";
     case IRI_L: return "IRI";
-    case isBLANK_L: return "isBLANK";
-    case isIRI_L: return "isIRI";
-    case isLITERAL_L: return "isLITERAL";
-    case isURI_L: return "isIRI"; /* no isURI in SPARQL */
     case LANG_L: return "LANG";
-    case LANGMATCHES_L: return "LANGMATCHES";
     case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
     /* case NAMED_L: return "FROM NAMED"; */
@@ -203,12 +196,9 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case ORDER_L: return "ORDER";
     /* case PREDICATE_L: return "PREDICATE"; */
     /* case PREFIX_L: return "PREFIX"; */
-    case REGEX_L: return "REGEX";
-    case SAMETERM_L: return "sameTerm";
     case SCORE_L: return "SCORE";
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT";
-    case STR_L: return "STR";
     /* case SUBJECT_L: return "SUBJECT"; */
     case true_L: return "true";
     case UNION_L: return "UNION";
@@ -291,7 +281,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
       if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
     }
-  else if ((strchr (vname, '_') || strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
+  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
   ssg_putchar ('?');
   ssg_puts (vname);
@@ -519,14 +509,18 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg->ssg_indent -= 2;
               }
             return;
-          }
-        ssg_puts (ssg_sd_opname (tree->_.builtin.btype, 0));
+          default:
+            {
+              const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
+              ssg_puts (sbd->sbd_name);
         ssg_putchar ('(');
         ssg->ssg_indent++;
         ssg_sdprint_tree_list (ssg, tree->_.builtin.args, ',');
         ssg_putchar (')');
         ssg->ssg_indent--;
         return;
+      }
+          }
       }
     case SPAR_FUNCALL:
       {
