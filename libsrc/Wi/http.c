@@ -397,7 +397,7 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 }
 
 static int
-http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit, ws_connection_t * ws)
+http_acl_match (caddr_t *alist, caddr_t name, ccaddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit, ws_connection_t * ws)
 {
   int inx;
   DO_BOX (ws_acl_t *, elm, inx, alist)
@@ -408,7 +408,7 @@ http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_fl
 	    ws->ws_body_limit = elm->ha_limit;
 	  if (dst == NULL && obj_id < 0 && rw_flag < 0)
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
-	  else if (dst != NULL && DVC_MATCH == cmp_like (dst, elm->ha_dest, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+	  else if (dst != NULL && DVC_MATCH == cmp_like (dst, elm->ha_dest ? elm->ha_dest : "*", NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
 	  else if (dst == NULL && elm->ha_obj == obj_id && rw_flag == elm->ha_rw)
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
@@ -430,7 +430,10 @@ ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 
   if (list)
     {
-      if (http_acl_match (list, ws->ws_client_ip, NULL, -1, -1, ACL_CHECK_HITS, hit, ws) > 0) /* 1:deny */
+      char * vd = ws->ws_req_line ? strchr (ws->ws_req_line, '\x20') : NULL;
+      while (vd && isspace (*vd))
+	vd++;
+      if (http_acl_match (list, ws->ws_client_ip, vd, -1, -1, ACL_CHECK_HITS, hit, ws) > 0) /* 1:deny */
 	rc = 0;
     }
   return rc;
