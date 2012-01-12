@@ -188,6 +188,7 @@ typedef struct http_cli_ctx_s
   dk_session_t *    hcctx_prv_req_hdrs;
   dk_session_t *    hcctx_req_body;
   char		    hcctx_resp_content_is_strses;
+  char		    hcctx_resp_content_len_recd;
   long              hcctx_resp_content_length;
   caddr_t           hcctx_response;
   dk_set_t          hcctx_resp_hdrs;

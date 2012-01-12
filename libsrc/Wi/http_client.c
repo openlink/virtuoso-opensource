@@ -1150,6 +1150,7 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
   if (!strnicmp ("Content-Length:", hdr, 15))
     {
       ctx->hcctx_resp_content_length = atol (hdr + 15);
+      ctx->hcctx_resp_content_len_recd = 1;
 
       if (ctx->hcctx_resp_content_length < 0)
 	{
@@ -1275,7 +1276,7 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
   if (F_ISSET (ctx, HC_F_BODY_READ)) return (HC_RET_OK);
   ctx->hcctx_state = HC_STATE_READ_RESP_BODY;
 
-  if (!ctx->hcctx_resp_content_length && !ctx->hcctx_is_chunked && !ctx->hcctx_close)
+  if (!ctx->hcctx_resp_content_length && !ctx->hcctx_is_chunked && (!ctx->hcctx_close || ctx->hcctx_resp_content_len_recd))
     return (HC_RET_OK);
 
   if (ctx->hcctx_method == HC_METHOD_HEAD || ctx->hcctx_respcode == 304)
@@ -2155,6 +2156,7 @@ http_cli_req_init (http_cli_ctx * ctx)
       ctx->hcctx_is_chunked = 0;
       ctx->hcctx_respcode = 0;
       ctx->hcctx_resp_content_length = 0;
+      ctx->hcctx_resp_content_len_recd = 0;
     }
   return (HC_RET_OK);
 }
@@ -2188,6 +2190,7 @@ http_cli_resp_reset (http_cli_ctx * ctx)
   ctx->hcctx_is_chunked = 0;
   ctx->hcctx_respcode = 0;
   ctx->hcctx_resp_content_length = 0;
+  ctx->hcctx_resp_content_len_recd = 0;
 }
 
 HC_RET
