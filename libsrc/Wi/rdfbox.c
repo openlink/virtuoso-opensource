@@ -836,7 +836,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
       rb_ext_serialize (rb, ses);
       return;
     }
-  if  (!unbox_inline (rb->rb_box))
+  if  (!unbox (rb->rb_box))
     {
       if (!rb->rb_is_complete)
     {
