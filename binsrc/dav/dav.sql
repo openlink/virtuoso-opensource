@@ -2040,7 +2040,7 @@ create procedure WS.WS.GET (in path any, inout params any, in lines any)
   declare full_path varchar;
   declare parent_path varchar;
   declare cont_type varchar;
-  declare server_etag, client_etag varchar;
+  declare server_etag, client_etag, rdf_graph varchar;
   declare uid, maxres integer;
   declare p_comm, stat, msg, xpr, sxtag, rxtag, resource_content, str varchar;
   declare resource_owner, exec_safety_level integer;
@@ -2468,6 +2468,14 @@ again:
 			case when is_https_ctx () then 'https' else 'http' end,
 			http_request_header (lines, 'Host', NULL, NULL), http_path ());	
 		}
+	      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where 
+		PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
+	      if (rdf_graph is not null)
+	        {
+		  declare rdf_uri varchar;
+		  rdf_uri := rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph));
+		  hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rdf_uri);
+                }		  
 	      http_header (hdr_str);
 	    }
 	  else

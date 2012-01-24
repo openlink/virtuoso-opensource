@@ -2562,6 +2562,12 @@ create procedure DB.DBA.RDF_SINK_AQ_RUN ()
 }
 ;
 
+create procedure DAV_RDF_RES_NAME (in rdf_graph varchar)
+{
+   return replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+}
+;
+
 create procedure RDF_SINK_FUNC (in path varchar, in rc int, in c_id int, in rdf_graph any, in type any, in ouid int, in ogid int)
 {
   declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
@@ -2579,7 +2585,7 @@ create procedure RDF_SINK_FUNC (in path varchar, in rc int, in c_id int, in rdf_
     -- upload into first (rdf_sink) graph
     if (RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
     {
-      rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+      rdf_graph_resource_name := DAV_RDF_RES_NAME (rdf_graph);
       rdf_graph_resource_name := replace (rdf_graph_resource_name, ' ', '_');
       rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
       if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
