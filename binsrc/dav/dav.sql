@@ -447,6 +447,11 @@ next_response:
 	  http (concat('<lp0:getetag>"', WS.WS.ETAG (name, parent_col), '"</lp0:getetag>\n'));
           found_sprop := 1;
 	}
+	else if (prop = 'http://calendarserver.org/ns/:getctag')
+	{
+	  http (concat('<CS:getctag xmlns:CS="http://calendarserver.org/ns/">', WS.WS.ETAG (name, parent_col), '</CS:getctag>\n'));
+          found_sprop := 1;
+	}
       else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-data')
 	{
           declare content, type_ any;
@@ -475,6 +480,14 @@ next_response:
 	{
 		http (concat('<D:principal-URL><D:href>', lpath, '</D:href></D:principal-URL>\n'));
         found_sprop := 1;
+	}
+	else if (prop = ':current-user-privilege-set')
+	{
+		if (mime_type = 'text/vcard' or mime_type = 'text/calendar')
+		{
+			http ('<D:current-user-privilege-set><D:privilege><D:all/></D:privilege></D:current-user-privilege-set>');
+			found_sprop := 1;
+		}
 	}
     else if (prop = ':supported-report-set')
 	{
