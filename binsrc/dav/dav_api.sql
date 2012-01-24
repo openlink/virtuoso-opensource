@@ -1525,7 +1525,7 @@ DAV_REQ_CHARS_TO_BITMASK (in req varchar) returns integer
 create function
 DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar, in a_pwd varchar, in a_uid integer := null) returns integer
 {
-  declare oid, ogid, puid, pgid integer;
+  declare rc, oid, ogid, puid, pgid integer;
   declare opwd, pperms varchar;
   declare pacl varbinary;
   what := upper (what);
@@ -1566,18 +1566,14 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   }
   if (isarray (id))
   {
-    declare detcol_id integer;
+    rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
+    if (rc >= 0)
+      rc := DAV_AUTHENTICATE (id[1], 'C', '1__', a_uname, a_pwd, a_uid);
 
-    detcol_id := id[1];
-    select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
-    if (not DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
-    {
-      if (not WS.WS.ACL_IS_GRANTED (pacl, oid, 4))
-      {
-        return -13;
-      }
-    }
-    return call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
+    if (rc = -20)
+      rc := DAV_AUTHENTICATE (id[1], 'C', req, a_uname, a_pwd, a_uid);
+
+    return rc;
   }
   whenever not found goto nf_col_or_res;
   if (what = 'R')
@@ -1649,6 +1645,9 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
     rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE_HTTP') (id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
     if (rc >= 0)
       rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', '1__', can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, d__perms);
+
+    if (rc = -20)
+      rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
 
     return rc;
   }
@@ -1776,6 +1775,7 @@ create function DAV_WEBID_QR (in gr varchar, in uri varchar)
 {
     return sprintf ('sparql 
     define input:storage ""  
+    define input:same-as "yes"
     prefix cert: <http://www.w3.org/ns/auth/cert#>  
     prefix rsa: <http://www.w3.org/ns/auth/rsa#>  
     select (str (?exp)) (str (?mod))  
