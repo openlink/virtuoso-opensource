@@ -342,7 +342,7 @@ create procedure
 	    stmt := sprintf ('SELECT CAST (%s as VARCHAR)', stmt);
 	    tree := sql_parse (stmt);
 	  }
-	if (tree [0] <> 100)
+	if (tree [0] <> 100 and tree[0] <> 113)
 	  {
 	    if (registry_get ('XMLA-DML') = '1')
 	      {
@@ -350,9 +350,9 @@ create procedure
 		stmt_is_ddl := 1;
 	      }
 	    else
-	   signal ('00004', 'Only select statements are supported via XML for Analysis provider');
+	      signal ('00004', 'Only select statements are supported via XML for Analysis provider');
 	  }
-	   res := exec (stmt, state, msg, vector (), 0, mdta, dta);
+	res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 	if (isinteger (dta))
 	  dta := vector (vector (dta));
 --  	if (strstr (stmt, 'FROM DB.DBA.SYS_FOREIGN_KEYS'))
@@ -657,6 +657,8 @@ xmla_dbschema_catalogs () for xmla_discover
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
   cat := self.xmla_get_restriction ('CATALOG_NAME', '%');
+  if (cat is null)
+    cat := '%';
 
   if (not xmla_not_local_dsn (dsn))
     {
@@ -812,6 +814,15 @@ create method xmla_dbschema_columns () for xmla_discover
   sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
   col := self.xmla_get_restriction ('COLUMN_NAME', '%');
+  if (cat is null)
+    cat := '%';
+  if (sch is null)
+    sch := '%';
+  if (tb is null)
+    tb := '%';
+  if (col is null)
+    col := '%';
+
   if (not xmla_not_local_dsn (dsn))
     {
       declare uname, passwd varchar;
@@ -888,53 +899,97 @@ create method xmla_dbschema_columns () for xmla_discover
 create method xmla_dbschema_foreign_keys () for xmla_discover
 {
   declare dta, mdta, stmt, state, msg any;
-  declare dsn, cat, tb, col, sch any;
-  declare uname, passwd, _tbl varchar;
+  declare dsn any;
+  declare p_cat, p_tbl, p_sch any;
+  declare f_cat, f_tbl, f_sch any;
+  declare _ptbl, _ftbl varchar;
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', '%');
-  sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
-  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
-  cat := trim (cat, '"');
-  sch := trim (sch, '"');
-  tb := trim (tb, '"');
-  uname := self.xmla_get_property ('UserName', null);
-  passwd := self.xmla_get_property ('Password', null);
-  _tbl := cat || '.' || sch || '.' || tb;
 
-  if (uname is null or passwd is null)
-     signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+  p_cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', 'DB');
+  p_sch := self.xmla_get_restriction ('PK_TABLE_SCHEMA', '%');
+  p_tbl := self.xmla_get_restriction ('PK_TABLE_NAME', '%');
+  f_cat := self.xmla_get_restriction ('FK_TABLE_CATALOG', 'DB');
+  f_sch := self.xmla_get_restriction ('FK_TABLE_SCHEMA', '%');
+  f_tbl := self.xmla_get_restriction ('FK_TABLE_NAME', '%');
+
+  if (p_cat is null) 
+  {
+    if (f_cat is not null)
+      p_cat := f_cat;
+    else
+      p_cat := 'DB';
+  }
+
+  if (f_cat is null)
+  { 
+    if (p_cat is not null)
+      f_cat := p_cat;
+    else
+      f_cat := 'DB';
+  }
+
+  if (p_sch is null)
+    p_sch := '%';
+  if (p_tbl is null)
+    p_tbl := '%';
+  if (f_sch is null)
+    f_sch := '%';
+  if (f_tbl is null)
+    f_tbl := '%';
+
+  p_cat := trim (p_cat, '"');
+  p_sch := trim (p_sch, '"');
+  p_tbl := trim (p_tbl, '"');
+  f_cat := trim (f_cat, '"');
+  f_sch := trim (f_sch, '"');
+  f_tbl := trim (f_tbl, '"');
+  _ptbl := p_cat || '.' || p_sch || '.' || p_tbl;
+  _ftbl := f_cat || '.' || f_sch || '.' || f_tbl;
 
   if (not xmla_not_local_dsn (dsn))
     {
+      declare uname, passwd varchar;
+      uname := self.xmla_get_property ('UserName', null);
+      passwd := self.xmla_get_property ('Password', null);
+      if (uname is null or passwd is null)
+	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME like _tbl))
-	{
-	    declare _dsn, r_name, _rt_name any;
-	    select RT_DSN, RT_REMOTE_NAME, RT_NAME into _dsn, r_name, _rt_name
-		from DB.DBA.SYS_REMOTE_TABLE where RT_NAME like _tbl;
-	    r_name := '%.' || r_name;
-       	    stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' || r_name ||
-			''' AND FK_TABLE = ''' || _rt_name
-	       			|| ''' AND DSN = ''' || xmla_get_dsn_name (_dsn) || '''';
-	}
-      else
-        stmt := 'SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA,
-		 name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
-		 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
-		 name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
-		 KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
-		 FROM DB.DBA.SYS_FOREIGN_KEYS WHERE PK_TABLE like ''' || _tbl || ''' OR FK_TABLE like ''' || _tbl || '''';
+      exec('select
+    	 name_part (PK_TABLE, 0) as PKTABLE_CAT varchar (128),
+    	 name_part (PK_TABLE, 1) as PKTABLE_SCHEM varchar (128),
+    	 name_part (PK_TABLE, 2) as PKTABLE_NAME varchar (128),
+    	 PKCOLUMN_NAME,
+    	 name_part (FK_TABLE, 0) as FKTABLE_CAT varchar (128),
+	 name_part (FK_TABLE, 1) as FKTABLE_SCHEM varchar (128),
+    	 name_part (FK_TABLE, 2) as FKTABLE_NAME varchar (128),
+    	 FKCOLUMN_NAME,
+    	 (KEY_SEQ + 1) as KEY_SEQ SMALLINT,
+    	 (case UPDATE_RULE when 0 then 3 when 1 then 0 when 3 then 4 end) as UPDATE_RULE smallint,
+    	 (case DELETE_RULE when 0 then 3 when 1 then 0 when 3 then 4 end) as DELETE_RULE smallint,
+    	 FK_NAME,
+	 PK_NAME, 
+    	 NULL as DEFERRABILITY 
+    	from DB.DBA.SYS_FOREIGN_KEYS SYS_FOREIGN_KEYS
+    	where name_part (PK_TABLE, 0) like ?
+    	 and name_part (PK_TABLE, 1) like ?
+    	 and name_part (PK_TABLE, 2) like ?
+    	 and name_part (FK_TABLE, 0) like ?
+    	 and name_part (FK_TABLE, 1) like ?
+    	 and name_part (FK_TABLE, 2) like ?
+    	order by 1, 2, 3, 5, 6, 7, 9 ', null, null,
+      	vector(p_cat, p_sch, p_tbl, f_cat, f_sch, f_tbl), 0, mdta, dta);
     }
   else
     {
        dsn := xmla_get_dsn_name (dsn);
-       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' || _tbl || ''' AND FK_TABLE = ''' || _tbl
-	       || ''' AND DSN = ''' || dsn || '''';
+       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' 
+       		|| _ptbl || ''' AND FK_TABLE = ''' || _ftbl
+	       	|| ''' AND DSN = ''' || dsn || '''';
+       exec (stmt, state, msg, vector (), 0, mdta, dta);
     }
 
-  exec (stmt, state, msg, vector (), 0, mdta, dta);
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
@@ -946,35 +1001,69 @@ create method xmla_dbschema_primary_keys () for xmla_discover
 {
   declare state, msg, dta, mdta, stmt any;
   declare dsn, cat, tb, col, sch any;
-  declare uname, passwd, _tbl varchar;
+  declare _tbl varchar;
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  cat := self.xmla_get_restriction ('TABLE_CATALOG', '%');
+  cat := self.xmla_get_restriction ('TABLE_CATALOG', 'DB');
   sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
-  uname := self.xmla_get_property ('UserName', null);
-  passwd := self.xmla_get_property ('Password', null);
+
+  if (cat is null)
+    cat := 'DB';
+  if (sch is null)
+    sch := '%';
+  if (tb is null)
+    tb := '%';
+  
   cat := trim (cat, '"');
   sch := trim (sch, '"');
   tb := trim (tb, '"');
   _tbl := cat || '.' || sch || '.' || tb;
 
-  if (uname is null or passwd is null)
-     signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
-
   if (not xmla_not_local_dsn (dsn))
     {
+      declare uname, passwd varchar;
+      uname := self.xmla_get_property ('UserName', null);
+      passwd := self.xmla_get_property ('Password', null);
+      if (uname is null or passwd is null)
+	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      stmt := sprintf ('SELECT COLUMN_NAME FROM %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS LEFT JOIN %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE ON %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.CONSTRAINT_NAME = %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.CONSTRAINT_NAME WHERE  CONSTRAINT_TYPE = ''PRIMARY KEY'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.TABLE_NAME=''%s'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.TABLE_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.CONSTRAINT_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.TABLE_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.CONSTRAINT_SCHEMA=''%s''', cat, cat, cat, cat, cat, tb, cat, sch, cat, sch, cat, sch, cat, sch);
+      exec('SELECT
+         	name_part(v1.KEY_TABLE,0) AS TABLE_CAT NVARCHAR(128),
+		name_part(v1.KEY_TABLE,1) AS TABLE_SCHEM NVARCHAR(128),
+	 	name_part(v1.KEY_TABLE,2) AS TABLE_NAME NVARCHAR(128),
+		DB.DBA.SYS_COLS."COLUMN" AS COLUMN_NAME NVARCHAR(128),
+		(kp.KP_NTH+1) AS KEY_SEQ SMALLINT,
+		name_part (v1.KEY_NAME, 2) AS PK_NAME NVARCHAR(128)
+       	FROM
+         DB.DBA.SYS_KEYS v1,
+	 DB.DBA.SYS_KEYS v2,
+	 DB.DBA.SYS_KEY_PARTS kp,
+	 DB.DBA.SYS_COLS
+       	WHERE 
+         name_part(v1.KEY_TABLE,0) LIKE ? 
+	 AND name_part(v1.KEY_TABLE,1) LIKE ?
+	 AND name_part(v1.KEY_TABLE,2) LIKE ?
+	 AND __any_grants (v1.KEY_TABLE) 
+	 AND v1.KEY_IS_MAIN = 1 
+	 AND v1.KEY_MIGRATE_TO is NULL 
+	 AND v1.KEY_SUPER_ID = v2.KEY_ID 
+	 AND kp.KP_KEY_ID = v1.KEY_ID 
+	 AND kp.KP_NTH < v1.KEY_DECL_PARTS 
+	 AND DB.DBA.SYS_COLS.COL_ID = kp.KP_COL 
+	 AND DB.DBA.SYS_COLS."COLUMN" <> ''_IDN'' 
+       	ORDER BY v1.KEY_TABLE, kp.KP_NTH'
+       	, null, null,
+      vector(cat, sch, tb), 0, mdta, dta);
     }
   else
     {
         dsn := xmla_get_dsn_name (dsn);
 	stmt := 'SELECT * FROM DB.DBA.SYS_PRIMARY_KEYS_VIEW WHERE PK_TABLE = ''' || _tbl || ''' AND DSN = ''' || dsn || '''';
+        exec (stmt, state, msg, vector (), 0, mdta, dta);
     }
 
-  exec (stmt, state, msg, vector (), 0, mdta, dta);
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
@@ -1073,6 +1162,12 @@ create method xmla_dbschema_tables () for xmla_discover
   --cat := self.xmla_get_property ('Catalog', 'DB');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
   cat := self.xmla_get_restriction ('TABLE_CATALOG', 'DB');
+
+  if (cat is null)
+    cat := 'DB';
+  if (tb is null)
+    tb := '%';
+  
   if (not xmla_not_local_dsn (dsn))
     {
       declare uname, passwd varchar;
@@ -1132,12 +1227,11 @@ xmla_get_schs ()
 	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
 	,''),
       vector ('DBSCHEMA_PRIMARY_KEYS',
-	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
+	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '')
 	,''),
       vector ('DBSCHEMA_FOREIGN_KEYS',
-	 soap_box_structure ('PK_TABLE_SCHEMA', '', 'PK_TABLE_NAME', '', 'PK_COLUMN_NAME', '',
-	   		     'FK_TABLE_SCHEMA', '', 'FK_TABLE_NAME', '', 'FK_COLUMN_NAME', '',
-			     'KEY_SEQ', '', 'UPDATE_RULE', '', 'DELETE_RULE', '', 'FK_NAME', '')
+	 soap_box_structure ('PK_TABLE_CATALOG', '', 'PK_TABLE_SCHEMA', '', 'PK_TABLE_NAME', '',
+	   		     'FK_TABLE_CATALOG', '', 'FK_TABLE_SCHEMA', '', 'FK_TABLE_NAME', '')
 	,''),
       vector ('DBSCHEMA_PROVIDER_TYPES',
 	 soap_box_structure ('DATA_TYPE', '', 'BEST_MATCH', '')
