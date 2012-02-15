@@ -877,6 +877,7 @@ ins_subq (instruction_t * ins, caddr_t * qst)
   cli->cli_anytime_started = at_start;
   if (err == (caddr_t) SQL_NO_DATA_FOUND
       && ins->_.subq.query->qr_select_node
+      && ins->_.subq.query->qr_select_node->sel_out_slots
       && BOX_ELEMENTS (ins->_.subq.query->qr_select_node->sel_out_slots) > 0
       && ins->_.subq.query->qr_select_node->sel_out_slots[0])
     qst_set_bin_string (qst, ins->_.subq.query->qr_select_node->sel_out_slots[0], (db_buf_t) "", 0, DV_DB_NULL);
