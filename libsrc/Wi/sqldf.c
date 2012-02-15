@@ -5980,12 +5980,15 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	    }
 	}
       /* GK: all the predicates should be placed by now */
-      DO_SET (df_elt_t *, pred, &so->so_this_dt->ot_preds)
+      if (so->so_this_dt->ot_from_dfes)
 	{
-	  if (!pred->dfe_is_placed)
-	    SQL_GPF_T1 (so->so_sc->sc_cc, "Unplaced predicate in select layout");
+	  DO_SET (df_elt_t *, pred, &so->so_this_dt->ot_preds)
+	    {
+	      if (!pred->dfe_is_placed)
+		SQL_GPF_T1 (so->so_sc->sc_cc, "Unplaced predicate in select layout");
+	    }
+	  END_DO_SET ();
 	}
-      END_DO_SET ();
 
       sqlo_n_full_layouts++;
       this_score = sqlo_score (ot->ot_work_dfe, ot->ot_work_dfe->_.sub.in_arity);
