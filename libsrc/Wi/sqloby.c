@@ -841,6 +841,7 @@ sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
   /* if exps laid out after oby, add the cols refd therein to oby deps */
   dk_set_t deps = NULL;
   df_elt_t * oby_dfe = dt_dfe->_.sub.last;
+  int __i;
   while (oby_dfe)
     {
       if (DFE_ORDER == oby_dfe->dfe_type)
@@ -849,6 +850,13 @@ sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
     }
   if (!oby_dfe)
     return;
+  DO_BOX (ST *, spec, __i, oby_dfe->_.setp.specs)
+    {
+      df_elt_t * spec_dfe = sqlo_df (so, spec->_.o_spec.col);
+      if (spec_dfe == sel_dfe)
+	return;
+    }
+  END_DO_BOX;
   sqlo_exp_cols_from_dt (so, sel_dfe->dfe_tree, dt_dfe, &deps);
   if (!oby_dfe->_.setp.oby_dep_cols)
     {
