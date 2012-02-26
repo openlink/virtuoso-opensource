@@ -1244,7 +1244,13 @@ BN_box (BIGNUM * x)
   return buf;
 }
 
-
+/*
+   1 - info type
+   2 - certificate
+   3 - certifcate file type (1 - DER, 2 - PKCS12, 0 - PEM, 3 - internal key name)
+   4 - password to open pkcs12 bundle
+   5 - extension OID (7); attribute e.g. CN (10)
+*/
 static caddr_t
 bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1382,6 +1388,14 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	unsigned int n;
 	unsigned char md[EVP_MAX_MD_SIZE];
 	char tmp[4];
+	char *digest_name = (char *) (BOX_ELEMENTS (args) > 4 ? bif_string_or_null_arg (qst, args, 4, "get_certificate_info") : NULL);
+
+	if (digest_name)
+	  {
+	    digest = EVP_get_digestbyname (digest_name);
+	    if (!digest)
+	      sqlr_new_error ("22023", "SR...", "Can not find digest %s", digest_name);
+	  }
 
 	if (!X509_digest (cert, digest, md, &n))
 	  {
