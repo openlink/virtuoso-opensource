@@ -355,6 +355,22 @@ create procedure
 	res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 	if (isinteger (dta))
 	  dta := vector (vector (dta));
+        if ((1 = length (dta)) and (1 = length (dta[0])) and (214 = __tag (dta[0][0])))
+	  {
+	    declare triples, inx any;
+	    triples := dict_list_keys (dta[0][0], 1);
+	    for (inx := 0; inx < length (triples); inx := inx + 1)
+	      {
+		declare trip any;
+		trip := triples [inx];
+		trip [0] := __ro2sq (trip[0]);
+		trip [1] := __ro2sq (trip[1]);
+		trip [2] := __ro2sq (trip[2]);
+		triples [inx] := trip;
+	      }
+	    dta := triples;
+	    exec_metadata ('select \'\' as S, \'\' as P, \'\' as O any', state, msg, mdta);
+	  }
 --  	if (strstr (stmt, 'FROM DB.DBA.SYS_FOREIGN_KEYS'))
 --    	   xmla_add_quot_to_table (dta);
 	blob_limit := atoi (xmla_get_property ("Properties", 'BLOBLimit', '0'));
