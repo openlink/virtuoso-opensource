@@ -6284,6 +6284,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 5, "xenc_x509_generate");
   float hours = BOX_ELEMENTS (args) > 6 ? (float) bif_float_arg (qst, args, 6, "xenc_x509_generate") : 0;
+  caddr_t digest_name = BOX_ELEMENTS (args) > 7 ? bif_string_arg (qst, args, 7, "xenc_x509_generate") : "sha1";
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1);
   xenc_key_t * cli_key = xenc_get_key_by_name (cli_pub_key, 1);
   X509 *x = NULL;
@@ -6292,6 +6293,10 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   DSA *dsa = NULL;
   X509_NAME *name = NULL;
   int i;
+  const EVP_MD *digest = EVP_get_digestbyname (digest_name);
+
+  if (!digest)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
 
   /* check ca cert */
   if (!ca_key || !ca_key->xek_evp_private_key || !ca_key->xek_x509)
@@ -6397,7 +6402,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       x509_add_ext (x, nid, exts[i+1]);
     }
 
-  if (!X509_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1()) ))
+  if (!X509_sign (x, pk, digest))
     {
       pk = NULL; /* keep one in the xenc_key */
       *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate");
@@ -6423,6 +6428,8 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   long days = bif_long_arg (qst, args, 2, "xenc_x509_ss_generate");
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "xenc_x509_ss_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_ss_generate");
+  float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, "xenc_x509_ss_generate") : 0;
+  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, "xenc_x509_ss_generate") : "sha1";
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x = NULL;
   EVP_PKEY *pk = NULL;
@@ -6431,6 +6438,10 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   X509_NAME *name = NULL;
   char buf [512];
   int i;
+  const EVP_MD *digest = EVP_get_digestbyname (digest_name);
+
+  if (!digest)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
 
   if (!key)
     {
@@ -6538,7 +6549,7 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       x509_add_ext (x, nid, exts[i+1]);
     }
 
-  if (!X509_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1())))
+  if (!X509_sign (x, pk, digest))
     {
       pk = NULL; /* keep one in the xenc_key */
       *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate : %s", get_ssl_error_text (buf, sizeof (buf)));
