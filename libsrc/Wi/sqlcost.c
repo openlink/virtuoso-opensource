@@ -362,6 +362,12 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 		}
 	      END_DO_BOX;
 	    }
+	  else if (lower->_.bin.right->dfe_type == DFE_CALL &&
+	      lower->_.bin.right->_.call.func_name && 
+	      0 == stricmp (lower->_.bin.right->_.call.func_name, "min_bnode_iri_id"))
+	    {
+	      *a1 = 1;
+	    }
 	}
       else if (lower->_.bin.op == BOP_LIKE)
 	{
