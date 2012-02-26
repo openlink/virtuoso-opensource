@@ -539,12 +539,15 @@ static query_t *
 pldbg_get_qr (char * name)
 {
   int inx;
-  query_t * qr;
+  query_t * qr = NULL;
+  const char * pname;
 
   if (!name)
     return NULL;
 
-  qr = sch_proc_def (wi_inst.wi_schema, name);
+  pname = sch_full_proc_name (wi_inst.wi_schema, name, "DB", "DBA");
+  if (pname)
+    qr = sch_proc_def (wi_inst.wi_schema, pname);
   if (!qr) /* triggers */
     {
       dbe_table_t *tb;
