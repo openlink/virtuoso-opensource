@@ -620,15 +620,15 @@ spar_defmacros_opt
 	| spar_defmacros_opt spar_defmacro	{ ; }
 	;
 
-spar_defmacro		/* [Virt]	Defmacro	 ::=  'DEFMACRO' Q_IRI_REF ( */
+spar_defmacro		/* [Virt]	Defmacro	 ::=  'DEFMACRO' IRIref ( */
 			/*... DefmacroArgs ( 'LOCAL' DefmacroArgs )? ( GroupGraphPattern | Expn ) |	*/
 			/*... DefmacroPattern ( 'LOCAL' DefmacroArgs )? GroupGraphPattern )	*/
-	: DEFMACRO_L Q_IRI_REF {
+	: DEFMACRO_L spar_iriref {
 		SPART *new_macro;
 		sparp_configure_storage_and_macro_libs (sparp_arg);
-		spar_selid_push_reused (sparp_arg, $2);
+		spar_selid_push_reused (sparp_arg, $2->_.qname.val );
 		sparp_arg->sparp_macro_mode = SPARP_DEFARG;
-		new_macro = sparp_arg->sparp_current_macro = sparp_defmacro_init (sparp_arg, $2);
+		new_macro = sparp_arg->sparp_current_macro = sparp_defmacro_init (sparp_arg, $2->_.qname.val);
 		sparp_defmacro_store (sparp_arg, new_macro); }
 	    spar_dm_args_and_body {
 		sparp_defmacro_finalize (sparp_arg, $4);
@@ -1813,11 +1813,11 @@ spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
 	;
 
 spar_macro_call	/* [Virt]	MacroCall	 ::=  'MACRO' IRIref MacroArgList?	*/
-	: MACRO_L Q_IRI_REF {
+	: MACRO_L spar_iriref {
 		SPART *mdef;
 		if (!sparp_arg->sparp_storage_is_set)
 		  sparp_configure_storage_and_macro_libs (sparp_arg);
-		mdef = spar_find_defmacro_by_iri_or_fields (sparp_arg, $2, NULL);
+		mdef = spar_find_defmacro_by_iri_or_fields (sparp_arg, $2->_.qname.val, NULL);
 		if (NULL == mdef)
 		  sparyyerror ("Undefined macro IRI");
 		if ((SPARP_DEFBODY & sparp_arg->sparp_macro_mode) && (sparp_arg->sparp_current_macro == mdef))
@@ -1827,7 +1827,7 @@ spar_macro_call	/* [Virt]	MacroCall	 ::=  'MACRO' IRIref MacroArgList?	*/
 	    spar_macro_arg_list_opt {
 		SPART **args = (SPART **)(((dk_set_t)NIL_L == $4) ? NULL : t_revlist_to_array ($4));
 		sparp_arg->sparp_macro_mode = $<token_type>3;
-		$$ = sparp_make_macro_call (sparp_arg, $2, 1, args);
+		$$ = sparp_make_macro_call (sparp_arg, $2->_.qname.val, 1, args);
 		if (!(sparp_arg->sparp_macro_mode & SPARP_DEFBODY))
 		  sparp_arg->sparp_macro_call_count++;
 		 }

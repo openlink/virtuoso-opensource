@@ -1140,7 +1140,7 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
               sparp_compile_smllist (sparp, sml_rtti->jrtti_inst_iri, smlib);
               smllist = (SPART **)(smlib->smlList);
               if (!IS_BOX_POINTER (smllist))
-                spar_error (sparp, "Compilation error in SPARQL macro libarary <%.100s> refered by quad storage <%.100s>", sml_rtti->jrtti_inst_iri, sparp->sparp_env->spare_storage_name);
+                spar_error (sparp, "Compilation error in SPARQL macro library <%.100s> refered by quad storage <%.100s>", sml_rtti->jrtti_inst_iri, sparp->sparp_env->spare_storage_name);
             }
           smllist = (SPART **)(smlib->smlList);
           DO_BOX_FAST (SPART *, new_defm, new_defm_ctr, smllist)
@@ -1168,7 +1168,7 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
             lib_name,
             &sml_cd, &sml_rtti, 1 );
           if ((NULL == sml_rtti) || (JSO_STATUS_LOADED != sml_rtti->jrtti_status))
-            spar_error (sparp, "Unknown SPARQL macro libarary <%.100s>", lib_name);
+            spar_error (sparp, "Unknown SPARQL macro library <%.100s>", lib_name);
           sml = (sparql_macro_library_t *)(sml_rtti->jrtti_self);
           sparp_qr_uses_jso (sparp, (caddr_t)sml, NULL);
           if (0 == sml->smlCompilationState)
@@ -1176,7 +1176,7 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
               sparp_compile_smllist (sparp, sml_rtti->jrtti_inst_iri, sml);
               smllist = (SPART **)(sml->smlList);
               if (!IS_BOX_POINTER (smllist))
-                spar_error (sparp, "Compilation error in SPARQL macro libarary <%.100s>", lib_name);
+                spar_error (sparp, "Compilation error in SPARQL macro library <%.100s>", lib_name);
             }
           smllist = (SPART **)(sml->smlList);
           old_defm_count = sparp->sparp_macro_def_count;
@@ -1216,7 +1216,7 @@ sparp_compile_smllist (sparp_t *outer_sparp, caddr_t sml_iri_uname, void /* actu
   SPART **mdefs;
   int ctr;
   if (DV_STRING != DV_TYPE_OF (smlib->smlSourceText))
-    spar_error (outer_sparp, "Ill metadata of SPARQL macro libarary that is associated with the quad storage");
+    spar_error (outer_sparp, "Ill metadata of SPARQL macro library that is associated with the quad storage");
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_cli = bootstrap_cli;
   sparqre.sparqre_qi = outer_sparp->sparp_sparqre->sparqre_qi;
