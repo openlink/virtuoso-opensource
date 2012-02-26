@@ -1081,9 +1081,10 @@ itc_ha_equal (it_cursor_t * itc, hash_area_t * ha, caddr_t * qst, db_buf_t hash_
 	    }
 	  if (IS_WIDE_STRING_DTP(v_dtp))
 	    {
-	      if (DVC_MATCH == compare_wide_to_utf8 ((caddr_t) (hash_row + h_off),
-		    h_len, value, box_length(value) - sizeof (wchar_t),
-		    ssl->ssl_sqt.sqt_collation))
+	      if (DVC_MATCH == compare_wide_to_utf8_with_collation (
+                  (wchar_t *)value, (box_length(value) / sizeof (wchar_t)) - 1,
+                  (utf8char *) (hash_row + h_off), h_len,
+                  ssl->ssl_sqt.sqt_collation ) )
 		continue;
 	      return DVC_LESS;
 	    }

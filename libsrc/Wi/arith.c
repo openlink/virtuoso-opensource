@@ -551,12 +551,20 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	default:
 	  collation1 = NULL;
 	}
-
       if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
-	return compare_wide_to_narrow ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
+        {
+          if (box_flags (box2) & (BF_IRI | BF_UTF8))
+            return compare_wide_to_utf8_with_collation ((wchar_t *) box1, n1, (utf8char *) box2, n2, NULL);
+          else
+            return compare_wide_to_latin1 ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
+        }
       if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
 	{
-	  int res = compare_wide_to_narrow ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
+          int res;
+          if (box_flags (box2) & (BF_IRI | BF_UTF8))
+	    res = compare_wide_to_utf8_with_collation ((wchar_t *)box2, n2, (utf8char *) box1, n1, NULL);
+          else
+	    res = compare_wide_to_latin1 ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
 	  return (res == DVC_LESS ? DVC_GREATER :
 	      (res == DVC_GREATER ? DVC_LESS : res));
 	}
@@ -768,10 +776,19 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
 	}
 
       if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
-	return compare_wide_to_narrow ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
-      else if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+        {
+          if (box_flags (box2) & (BF_IRI | BF_UTF8))
+            return compare_wide_to_utf8_with_collation ((wchar_t *) box1, n1, (utf8char *) box2, n2, NULL);
+          else
+            return compare_wide_to_latin1 ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
+        }
+      if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
 	{
-	  int res = compare_wide_to_narrow ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
+          int res;
+          if (box_flags (box2) & (BF_IRI | BF_UTF8))
+	    res = compare_wide_to_utf8_with_collation ((wchar_t *)box2, n2, (utf8char *) box1, n1, NULL);
+          else
+	    res = compare_wide_to_latin1 ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
 	  return (res == DVC_LESS ? DVC_GREATER :
 	      (res == DVC_GREATER ? DVC_LESS : res));
 	}

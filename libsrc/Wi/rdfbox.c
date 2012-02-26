@@ -2547,7 +2547,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         dk_free_box (tmp_utf8_box);
         session_buffered_write_char ('"', ses);
-        if (DV_RDF != obj_dtp)
+        if ((DV_RDF != obj_dtp) && (DV_WIDE != obj_box_value_dtp))
           {
             if (!IS_BOX_POINTER (iri))
               sqlr_new_error ("22023", "SR624", "Unsupported datatype %d in NT serialization of an object", obj_dtp);

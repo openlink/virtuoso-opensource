@@ -28,6 +28,11 @@
 
 #include "libutil.h"
 
+#ifndef UTF8CHAR_DEFINED
+#define UTF8CHAR_DEFINED
+typedef unsigned char utf8char;
+#endif
+
 typedef struct wcharset_s {
   char chrs_name[100];
   wchar_t chrs_table[256];

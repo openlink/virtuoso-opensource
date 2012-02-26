@@ -533,11 +533,9 @@ row_print_wide (caddr_t thing, dk_session_t * ses, dbe_column_t * col,
 }
 
 int
-compare_wide_to_utf8 (caddr_t _utf8_data, long utf8_len,
-    caddr_t _wide_data, long wide_len, collation_t *collation)
+compare_wide_to_utf8_with_collation (wchar_t *wide_data, long wide_wcharcount, utf8char *utf8_data, long utf8_bytes,
+    collation_t *collation)
 {
-  unsigned char *utf8_data = (unsigned char *) _utf8_data;
-  wchar_t *wide_data = (wchar_t *) _wide_data;
   long winx, ninx;
 
   wchar_t wtmp;
@@ -545,23 +543,22 @@ compare_wide_to_utf8 (caddr_t _utf8_data, long utf8_len,
   int rc;
 
   memset (&state, 0, sizeof (virt_mbstate_t));
-  wide_len = wide_len / sizeof (wchar_t);
 
   ninx = winx = 0;
   if (collation)
     while(1)
       {
-	if (ninx == utf8_len)
+	if (ninx == utf8_bytes)
 	  {
-	    if (winx == wide_len)
+	    if (winx == wide_wcharcount)
 	      return DVC_MATCH;
 	    else
 	      return DVC_LESS;
 	  }
-	if (winx == wide_len)
+	if (winx == wide_wcharcount)
 	  return DVC_GREATER;
 
-	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
+	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_bytes - ninx, &state);
 	if (rc <= 0)
 	  GPF_T1 ("inconsistent wide char data");
 	if (((wchar_t *)collation->co_table)[wtmp] <
@@ -576,17 +573,17 @@ compare_wide_to_utf8 (caddr_t _utf8_data, long utf8_len,
   else
     while(1)
       {
-	if (ninx == utf8_len)
+	if (ninx == utf8_bytes)
 	  {
-	    if (winx == wide_len)
+	    if (winx == wide_wcharcount)
 	      return DVC_MATCH;
 	    else
 	      return DVC_LESS;
 	  }
-	if (winx == wide_len)
+	if (winx == wide_wcharcount)
 	  return DVC_GREATER;
 
-	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
+	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_bytes - ninx, &state);
 	if (rc <= 0)
 	  GPF_T1 ("inconsistent wide char data");
 	if (wtmp < wide_data[winx])
@@ -831,11 +828,10 @@ complete_charset_name (caddr_t _qi, char *cs_name)
 
 
 int
-compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
+compare_wide_to_latin1 (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 {
   wchar_t temp;
   long inx = 0;
-
   while (1)
     {
       if (inx == n1)	/* box1 in end? */
@@ -845,20 +841,15 @@ compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 	  else
 	    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
 	}
-
       if (inx == n2)
 	return DVC_GREATER;	/* box2 in end (but not box1) */
-
       temp = CHAR_TO_WCHAR (box2[inx], NULL);
       if (wbox1[inx] < temp)
 	return DVC_LESS;
-
       if (wbox1[inx] > temp)
 	return DVC_GREATER;
-
       inx++;
     }
-
   /*NOTREACHED*/
   return DVC_LESS;
 }
