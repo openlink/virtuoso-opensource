@@ -913,6 +913,8 @@ buf_order_ck (buffer_desc_t * buf)
 {
   int inx;
   page_map_t * pm = buf->bd_content_map;
+  if (buf->bd_tree->it_key->key_id == KI_TEMP)
+    return;
   for (inx = 0; inx < pm->pm_count - 1; inx++)
     {
       if (DVC_LESS != buf_row_compare (buf, inx, inx + 1))

@@ -641,7 +641,7 @@ rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp)
 }
 
 #define RD_IRI_BOX(val) \
-  { if (rd->rd_temp_fill + 16 < rd->rd_temp_max) \
+  { if (rd && (rd->rd_temp_fill + 16 < rd->rd_temp_max)) \
       { rd->rd_temp_fill += 16; *(int64*)(rd->rd_temp + rd->rd_temp_fill - 16) = DV_IRI_TAG_WORD_64; *(iri_id_t*)(rd->rd_temp + rd->rd_temp_fill - 8) = val; return (caddr_t)rd->rd_temp + rd->rd_temp_fill - 8;} \
     else \
       { caddr_t box = rd_alloc_box (rd, sizeof (iri_id_t), DV_IRI_ID); *((iri_id_t*)box) = val; return box;}}
