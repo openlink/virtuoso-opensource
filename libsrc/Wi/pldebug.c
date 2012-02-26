@@ -832,7 +832,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 			}
 		  case PDI_THRE: /* stopped threads */
 			{
-			  char conn_id[20];
+			  char conn_id[30];
 			  client_connection_t * cli;
 			  IN_TXN;
 			  DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -850,7 +850,8 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 					cli->cli_pldbg->pd_id = box_copy (c_ses->dks_peer_name);
 				      else
 					{
-					  snprintf (conn_id, sizeof (conn_id), "INTERNAL:%lX", (unsigned long) (uptrlong) cli);
+					  char * ct = cli && cli->cli_ws ? "HTTP" : "INTERNAL";
+					  snprintf (conn_id, sizeof (conn_id), "%s:%lX", ct, (unsigned long) (uptrlong) cli);
 					  cli->cli_pldbg->pd_id = box_dv_short_string (conn_id);
 					}
 				    }
