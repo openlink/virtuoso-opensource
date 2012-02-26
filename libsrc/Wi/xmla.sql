@@ -847,49 +847,42 @@ create method xmla_dbschema_columns () for xmla_discover
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      exec ('select
-	         name_part(KEY_TABLE, 0) as TABLE_CATALOG,
-	         name_part(KEY_TABLE, 1) as TABLE_SCHEMA,
-	         name_part(KEY_TABLE, 2) as TABLE_NAME,
-	         "COLUMN" as COLUMN_NAME,'
-		 || ' NULL as COLUMN_GUID,'
-		 || ' NULL as COLUMN_PROPID INTEGER,'
-		 || ' (select count(*) from DB.DBA.SYS_COLS where "TABLE" = KEY_TABLE and COL_ID <= c.COL_ID and "COLUMN" <> ''_IDN'') as ORDINAL_POSITION INTEGER,'
-		 || ' case when deserialize(COL_DEFAULT) is null then 0 else -1 end as COLUMN_HASDEFAULT SMALLINT,'
-		 || ' cast (deserialize(COL_DEFAULT) as NVARCHAR) as COLUMN_DEFAULT NVARCHAR(254),'
-		 || ' cast (DB.DBA.oledb_dbflags(COL_DTP, COL_NULLABLE) as integer) as COLUMN_FLAGS INTEGER,'
-		 || ' case COL_NULLABLE when 1 then -1 else 0 end as IS_NULLABLE SMALLINT,'
-		 || ' cast (DB.DBA.oledb_dbtype(COL_DTP) as integer) as DATA_TYPE SMALLINT,'
-		 || ' NULL as TYPE_GUID,'
-		 || ' cast (DB.DBA.oledb_char_max_len(COL_DTP, COL_PREC) as integer) as CHARACTER_MAXIMUM_LENGTH INTEGER,'
-		 || ' cast (DB.DBA.oledb_char_oct_len(COL_DTP, COL_PREC) as integer) as CHARACTER_OCTET_LENGTH INTEGER,'
-		 || ' cast (DB.DBA.oledb_num_prec(COL_DTP, COL_PREC) as smallint) as NUMERIC_PRECISION SMALLINT,'
-		 || ' cast (DB.DBA.oledb_num_scale(COL_DTP, COL_SCALE) as smallint) as NUMERIC_SCALE SMALLINT,'
-		 || ' cast (DB.DBA.oledb_datetime_prec(COL_DTP, COL_PREC) as integer) as DATETIME_PRECISION INTEGER,'
-		 || ' NULL as CHARACTER_SET_CATALOG NVARCHAR(1),'
-		 || ' NULL as CHARACTER_SET_SCHEMA NVARCHAR(1),'
-		 || ' NULL as CHARACTER_SET_NAME NVARCHAR(1),'
-		 || ' NULL as COLLATION_CATALOG NVARCHAR(1),'
-		 || ' NULL as COLLATION_SCHEMA NVARCHAR(1),'
-		 || ' NULL as COLLATION_NAME NVARCHAR(1),'
-		 || ' NULL as DOMAIN_CATALOG NVARCHAR(1),'
-		 || ' NULL as DOMAIN_SCHEMA NVARCHAR(1),'
-		 || ' NULL as DOMAIN_NAME NVARCHAR(1),'
-		 || ' NULL as DESCRIPTION NVARCHAR(1) ' ||
-	       'from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS c
-	       where
-	          __any_grants(KEY_TABLE) and
-		  name_part(KEY_TABLE, 0) = ? and
-		  name_part(KEY_TABLE, 1) like ? and
-		  name_part(KEY_TABLE, 2) like ? and
-		  "COLUMN" like ? and
-		  "COLUMN" <> ''_IDN'' and
-		  KEY_IS_MAIN = 1 and
-		  KEY_MIGRATE_TO is null and
-		  KP_KEY_ID = KEY_ID and
-		  COL_ID = KP_COL order by KEY_TABLE, 7'
-		  , null, null,
-	  vector (cat, sch, tb, col), 0, mdta, dta);
+      exec('SELECT 
+         name_part(k.KEY_TABLE,0) AS TABLE_CATALOG VARCHAR(128),
+	 name_part(k.KEY_TABLE,1) AS TABLE_SCHEMA VARCHAR(128),
+	 name_part(k.KEY_TABLE,2) AS TABLE_NAME VARCHAR(128),
+	 c.\"COLUMN\" AS COLUMN_NAME VARCHAR(128),
+	 dv_to_sql_type(c.COL_DTP) AS DATA_TYPE SMALLINT,
+	 dv_type_title(c.COL_DTP) AS TYPE_NAME VARCHAR(128),
+	 c.COL_PREC AS COLUMN_SIZE INTEGER,
+	 NULL AS BUFFER_LENGTH INTEGER,
+	 c.COL_SCALE AS DECIMAL_DIGITS SMALLINT,
+	 2 AS NUM_PREC_RADIX SMALLINT,
+	 either(isnull(c.COL_NULLABLE),2,c.COL_NULLABLE) AS NULLABLE SMALLINT,
+	 NULL AS REMARKS VARCHAR(254),
+	 NULL AS COLUMN_DEF VARCHAR(128),
+	 NULL AS SQL_DATA_TYPE INTEGER,
+	 NULL AS SQL_DATETIME_SUB INTEGER,
+	 NULL AS CHAR_OCTET_LENGTH INTEGER,
+	 NULL AS ORDINAL_POSITION INTEGER,
+	 NULL AS IS_NULLABLE VARCHAR(10)
+       FROM
+         DB.DBA.SYS_KEYS k,
+	 DB.DBA.SYS_KEY_PARTS kp,
+	 DB.DBA.SYS_COLS c
+       WHERE
+         name_part(k.KEY_TABLE,0) LIKE ?
+	 AND name_part(k.KEY_TABLE,1) LIKE ?
+	 AND name_part(k.KEY_TABLE,2) LIKE ?
+	 AND c.\"COLUMN\" LIKE ?
+	 AND c.\"COLUMN\" <> ''_IDN''
+	 AND k.KEY_IS_MAIN = 1
+	 AND k.KEY_MIGRATE_TO is null
+	 AND kp.KP_KEY_ID = k.KEY_ID
+	 AND COL_ID = KP_COL
+       ORDER BY k.KEY_TABLE, c.COL_ID'
+       , null, null,
+      vector (cat, sch, tb, col), 0, mdta, dta);
     }
   else
     {
@@ -1171,16 +1164,18 @@ create method xmla_dbschema_provider_types () for xmla_discover
 create method xmla_dbschema_tables () for xmla_discover
 {
   declare dta, mdta any;
-  declare dsn, cat, tb any;
+  declare dsn, cat, sch, tb any;
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  --cat := self.xmla_get_property ('Catalog', 'DB');
-  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
   cat := self.xmla_get_restriction ('TABLE_CATALOG', 'DB');
+  sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
+  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
 
   if (cat is null)
     cat := 'DB';
+  if (sch is null)
+    sch := '%';
   if (tb is null)
     tb := '%';
   
@@ -1203,9 +1198,12 @@ create method xmla_dbschema_tables () for xmla_discover
 		    NULL as DATE_MODIFIED DATE
 		    from DB.DBA.SYS_KEYS where
 		    __any_grants(KEY_TABLE) and
-		    name_part(KEY_TABLE, 0) = ? and name_part(KEY_TABLE, 2) like ?
-		    and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is null', null, null,
-	  vector (cat, tb), 0, mdta, dta);
+		    name_part(KEY_TABLE, 0) like ? and 
+		    name_part(KEY_TABLE, 1) like ?
+		    name_part(KEY_TABLE, 2) like ?
+		    and KEY_IS_MAIN = 1 and 
+		    KEY_MIGRATE_TO is null', null, null,
+	  vector (cat, sch, tb), 0, mdta, dta);
     }
   else
     {
