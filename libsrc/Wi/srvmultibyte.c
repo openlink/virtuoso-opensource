@@ -360,8 +360,7 @@ bh_string_output_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t *
 
 
 dk_set_t
-bh_string_list_w (/* this was before 3.0: index_space_t * isp,*/ lock_trx_t * lt, blob_handle_t * bh,
-    long get_chars, int omit)
+bh_string_list_w (/* this was before 3.0: index_space_t * isp,*/ lock_trx_t * lt, blob_handle_t * bh, long get_chars, int omit, long blob_type)
 {
   /* take current page at current place and make string of
      n bytes from the place and write to client */

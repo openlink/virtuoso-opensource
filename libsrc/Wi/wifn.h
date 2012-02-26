@@ -839,7 +839,7 @@ int itc_print_blob_col_non_txn (it_cursor_t * row_itc, dk_session_t * row, caddr
 int bh_fill_buffer_from_blob (index_tree_t * it, lock_trx_t * lt, blob_handle_t * bh,
     caddr_t outbuf, long get_bytes);
 void blob_chain_delete (it_cursor_t * it, blob_layout_t *bl);
-void blob_send_bytes (lock_trx_t * lt, caddr_t bh, long n_bytes, int send_position);
+void blob_send_bytes (lock_trx_t * lt, caddr_t bh, long n_bytes, int send_position, long blob_type);
 void lt_write_blob_log (lock_trx_t * lt, dk_session_t * log_ses);
 dk_session_t * blob_to_string_output_isp (lock_trx_t * lt, caddr_t bhp);
 typedef struct blob_log_s

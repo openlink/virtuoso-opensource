@@ -2624,15 +2624,15 @@ bh_string_output_n (lock_trx_t * lt, blob_handle_t * bh, int omit, int free_buff
   return (string_output);
 }
 
-#define bh_string_list(lt, bh, get_bytes, omit) \
+#define bh_string_list(lt, bh, get_bytes, omit, blob_type) \
 ((box_tag (bh) == DV_BLOB_WIDE_HANDLE) ? \
-    bh_string_list_w (lt, bh, get_bytes, omit) : \
-    bh_string_list_n (lt, bh, get_bytes, omit))
+    bh_string_list_w (lt, bh, get_bytes, omit, blob_type) : \
+    bh_string_list_n (lt, bh, get_bytes, omit, blob_type))
 
 
 dk_set_t
 bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh,
-    long get_bytes, int omit)
+    long get_bytes, int omit, long blob_type)
 {
   /* take current page at current place and make string of
      n bytes from the place and return as string list */
@@ -2682,10 +2682,14 @@ bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * l
 		  SET_DK_MEM_RESERVE_STATE (lt);
 		  itc_bust_this_trx (tmp_itc, &buf, ITC_BUST_THROW);
 		}
-	      page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
+	      if (blob_type) /* BLOB_BIN */
+		page_string = dk_alloc_box (bytes_on_page, DV_BIN);
+	      else
+		page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
 	      memcpy (page_string, buf->bd_buffer + DP_DATA + from_byte,
 		  bytes_on_page);
-	      page_string[bytes_on_page] = 0;
+	      if (!blob_type) /* BLOB_BIN */
+		page_string[bytes_on_page] = 0;
 	      dk_set_push (&string_list, page_string);
 	    }
 	  bytes_filled += bytes_on_page;
@@ -3091,12 +3095,11 @@ bh_write_out (lock_trx_t * lt, blob_handle_t * bh, dk_session_t * ses)
 
 void
 blob_send_bytes (lock_trx_t * lt, caddr_t bhp, long get_bytes,
-    int send_position)
+    int send_position, long blob_type)
 {
   blob_handle_t *bh = (blob_handle_t *) bhp;
   caddr_t arr;
-  dk_set_t string_list =
-  bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0);
+  dk_set_t string_list = bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0, blob_type);
 
   if (BH_DIRTYREAD == string_list)
     {
@@ -3177,7 +3180,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	      if (from)
 		{
 		  bh->bh_position = 0;
-		  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1);
+		  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1, 0);
 		}
 	    }
 	}
@@ -3189,7 +3192,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	{
 
 	  bh->bh_position = 0;
-	  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1);
+	  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1, 0);
 	}
       else
 	{
@@ -3197,7 +3200,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	    bh_read_ahead (lt, bh, (unsigned) from, (unsigned) to);
 	}
     }
-  string_list = bh_string_list (/*NULL,*/ lt, bh, (long)(to - from), 0);
+  string_list = bh_string_list (/*NULL,*/ lt, bh, (long)(to - from), 0, 0);
  strings_ready:
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
@@ -3294,7 +3297,7 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
     }
 
   string_list = bh_string_list (lt, bh,
-      10000000, 0);		/* up to 10MB as varchar */
+      10000000, 0, 0);		/* up to 10MB as varchar */
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
 

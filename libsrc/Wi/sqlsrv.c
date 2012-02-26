@@ -2871,6 +2871,10 @@ sf_sql_get_data_trx_error (int code, caddr_t err_detail)
 }
 
 
+#define BLOB_CHAR 0
+#define BLOB_WIDE 1
+#define BLOB_BIN  2
+
 void
 sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
     long how_much, long starting_at)
@@ -2898,7 +2902,7 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
       LEAVE_CLIENT (cli);
       if (IS_BLOB_HANDLE (val))
 	{
-	  blob_send_bytes (qi->qi_trx, val, how_much, 0);
+	  blob_send_bytes (qi->qi_trx, val, how_much, 0, BLOB_CHAR);
 	}
       else
 	{
@@ -2998,15 +3002,14 @@ lt_enter_anyway (lock_trx_t * lt)
   return rc;
 }
 
-
 void
-sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long is_wide, long timestamp)
+sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long blob_type, long timestamp)
 {
   int is_timeout;
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *trx;
-  dtp_t bh_tag = is_wide ? DV_BLOB_WIDE_HANDLE : DV_BLOB_HANDLE;
+  dtp_t bh_tag = blob_type == BLOB_WIDE ? DV_BLOB_WIDE_HANDLE : DV_BLOB_HANDLE;
   blob_handle_t * bh = bh_alloc (bh_tag);
   dbe_key_t *key;
 
@@ -3052,7 +3055,7 @@ sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_i
       return;
     }
   trx = cli->cli_trx;
-  blob_send_bytes (trx, (caddr_t) bh, how_much, 1);
+  blob_send_bytes (trx, (caddr_t) bh, how_much, 1, blob_type);
 
   IN_TXN;
   is_timeout = lt_leave (trx);
@@ -3067,8 +3070,9 @@ sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_i
 
 #ifdef SERIAL_CLI
 CLI_WRAPPER (sf_sql_get_data_ac,
-	(long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long is_wide, long timestamp),
-	(dp_from, how_much, starting_at, bh_key_id, bh_frag_no, page_dir, page_array, is_wide, timestamp))
+	(long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long blob_type, 
+	 long timestamp),
+	(dp_from, how_much, starting_at, bh_key_id, bh_frag_no, page_dir, page_array, blob_type, timestamp))
 #define sf_sql_get_data_ac sf_sql_get_data_ac_w
 #endif
 
