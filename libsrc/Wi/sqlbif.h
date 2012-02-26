@@ -149,7 +149,7 @@ extern sql_tree_tmp * st_varchar;
 extern sql_tree_tmp * st_nvarchar;
 
 int is_allowed (char * path);
-extern void file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt);
+EXE_EXPORT (void, file_path_assert, (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt));
 int mime_get_attr (char *szMessage, long Offset, char szDelim, int *rfc822mode,
     int *override_to_mime, char *_szName, int max_name, char *_szValue, int max_value);
 void dime_compose (dk_session_t * ses, caddr_t *input, caddr_t * err);
@@ -198,8 +198,10 @@ caddr_t box_hmac (caddr_t box, caddr_t key, int alg);
 #define HMAC_ALG_RIPMD160	1
 #endif
 
-int32 sqlbif_rnd (int32* seed);
-extern int32 rnd_seed_b;
+extern int32 sqlbif_rnd (int32* seed);
+extern double sqlbif_rnd_double (int32* seed, double upper_limit);
+extern int32 rnd_seed;		/*!< 32 bit seed */
+extern int32 rnd_seed_b;	/*!< another 32 bit seed used in blobs */
 
 int virtuoso_sleep (long secs, long tms);
 void sqls_define_2pc (void);

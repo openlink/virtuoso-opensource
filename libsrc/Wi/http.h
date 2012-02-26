@@ -330,7 +330,7 @@ the order of columns in dks_charclasses, file dks_esc.c */
 
 extern unsigned char dks_esc_char_props[0x100];
 typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
-extern dks_charclass_props_t dks_charclasses['Q'+1-'>'];
+extern dks_charclass_props_t dks_charclasses['R'+1-'>'];
 #define DKS_ESC_CHARCLASS_ACTION(wc,mode) (dks_charclasses[((wc & ~0xff) ? 0 : (dks_esc_char_props[wc] - '>'))][mode])
 
 #define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
@@ -350,8 +350,15 @@ caddr_t ws_get_opt (caddr_t * opts, char *opt_name, char * def);
 
 void session_buffered_read_n (dk_session_t * ses, char *buf, int max, int *inx);
 
-size_t decode_base64(char * src, char * end);
-size_t encode_base64(char * input, char * output, size_t len);
+extern char base64_vec[];
+extern char base64url_vec[];
+#define B64_CANON base64_vec
+#define B64_URL base64url_vec
+
+size_t decode_base64_impl (char * src, char * end, char * table);
+size_t encode_base64_impl (char * input, char * output, size_t len, char * table);
+#define decode_base64(src,end) decode_base64_impl ((src), (end), B64_CANON)
+#define encode_base64(input,output,len) encode_base64_impl ((input), (output), (len), B64_CANON)
 
 void ws_strses_reply (ws_connection_t * ws, const char * volatile code);
 void ws_write_failed (ws_connection_t * ws);

@@ -261,7 +261,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 
 
 size_t
-wide_char_length_of_utf8_string (unsigned char *str, size_t utf8_length)
+wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length)
 {
   virt_mbstate_t state;
   memset (&state, 0, sizeof (virt_mbstate_t));
@@ -355,6 +355,20 @@ virt_wcsstr (const wchar_t *wcs, const wchar_t *wc)
   return NULL;
 }
 
+wchar_t *
+virt_wcsrstr (const wchar_t *wcs, const wchar_t *wc)
+{
+  size_t len;
+  const wchar_t *cp;
+  const wchar_t *ep;
+
+  len = virt_wcslen (wc);
+  for (cp = wcs + virt_wcslen (wcs) - len; cp >= wcs; --cp)
+    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
+      return (wchar_t *) cp;
+
+  return NULL;
+}
 
 static unsigned char
 cli_wchar_to_char (wchar_t src, wcharset_t *charset)

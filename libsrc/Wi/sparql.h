@@ -76,6 +76,59 @@ extern "C" {
 #define SPAR_MAX_TREE_TYPE	(ptrlong)1024	/* Don't forget to adjust */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
+#define SPAR_BIF_ABS		(ptrlong)1101
+#define SPAR_BIF_BNODE		(ptrlong)1102
+#define SPAR_BIF_CEIL		(ptrlong)1103
+#define SPAR_BIF_COALESCE	(ptrlong)1104
+#define SPAR_BIF_CONCAT		(ptrlong)1105
+#define SPAR_BIF_CONTAINS	(ptrlong)1106
+#define SPAR_BIF_DAY		(ptrlong)1107
+#define SPAR_BIF_ENCODE_FOR_URI	(ptrlong)1108
+#define SPAR_BIF_FLOOR		(ptrlong)1109
+#define SPAR_BIF_HOURS		(ptrlong)1110
+#define SPAR_BIF_IF		(ptrlong)1111
+#define SPAR_BIF_ISBLANK	(ptrlong)1112
+#define SPAR_BIF_ISIRI		(ptrlong)1113
+#define SPAR_BIF_ISLITERAL	(ptrlong)1114
+#define SPAR_BIF_ISNUMERIC	(ptrlong)1115
+#define SPAR_BIF_ISREF		(ptrlong)1116
+#define SPAR_BIF_ISURI		(ptrlong)1117
+#define SPAR_BIF_LANGMATCHES	(ptrlong)1118
+#define SPAR_BIF_LCASE		(ptrlong)1119
+#define SPAR_BIF_MD5		(ptrlong)1120
+#define SPAR_BIF_MINUTES	(ptrlong)1121
+#define SPAR_BIF_MONTH		(ptrlong)1122
+#define SPAR_BIF_NOW		(ptrlong)1123
+#define SPAR_BIF_RAND		(ptrlong)1124
+#define SPAR_BIF_REGEX		(ptrlong)1125
+#define SPAR_BIF_REPLACE	(ptrlong)1126
+#define SPAR_BIF_ROUND		(ptrlong)1127
+#define SPAR_BIF_SAMETERM	(ptrlong)1128
+#define SPAR_BIF_SECONDS	(ptrlong)1129
+#define SPAR_BIF_SHA1		(ptrlong)1130
+#define SPAR_BIF_SHA224		(ptrlong)1131
+#define SPAR_BIF_SHA256		(ptrlong)1132
+#define SPAR_BIF_SHA384		(ptrlong)1133
+#define SPAR_BIF_SHA512		(ptrlong)1134
+#define SPAR_BIF_STR		(ptrlong)1135
+#define SPAR_BIF_STRDT		(ptrlong)1136
+#define SPAR_BIF_STRENDS	(ptrlong)1137
+#define SPAR_BIF_STRLANG	(ptrlong)1138
+#define SPAR_BIF_STRLEN		(ptrlong)1139
+#define SPAR_BIF_STRSTARTS	(ptrlong)1140
+#define SPAR_BIF_SUBSTR		(ptrlong)1141
+#define SPAR_BIF_TIMEZONE	(ptrlong)1142
+#define SPAR_BIF_TZ		(ptrlong)1143
+#define SPAR_BIF_UCASE		(ptrlong)1144
+#define SPAR_BIF_URI		(ptrlong)1145
+#define SPAR_BIF_YEAR		(ptrlong)1146
+
+#define SPAR_SML_CREATE		(ptrlong)1201
+#define SPAR_SML_DROP		(ptrlong)1202
+#define SPAR_SML_ATTACH		(ptrlong)1203
+#define SPAR_SML_DETACH		(ptrlong)1204
+
+
 #define SPARP_MAX_LEXDEPTH 50
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
 

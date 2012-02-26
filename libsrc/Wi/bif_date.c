@@ -531,14 +531,12 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t unit = bif_string_arg (qst, args, 0, "datediff");
   caddr_t dt1 = bif_date_arg (qst, args, 1, "datediff");
   caddr_t dt2 = bif_date_arg (qst, args, 2, "datediff");
-  boxint s1 =
-      (boxint) DT_DAY (dt1) * 24 * 60 * 60 + (boxint) DT_HOUR (dt1) * 60 * 60 + (boxint) DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  boxint s2 =
-      (boxint) DT_DAY (dt2) * 24 * 60 * 60 + (boxint) DT_HOUR (dt2) * 60 * 60 + (boxint) DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  boxint s1 = (boxint)DT_DAY (dt1) * 24 * 60 * 60 + (boxint)DT_HOUR (dt1) * 60 * 60 + (boxint)DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+  boxint s2 = (boxint)DT_DAY (dt2) * 24 * 60 * 60 + (boxint)DT_HOUR (dt2) * 60 * 60 + (boxint)DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
   int frac1, frac2;
   int diffyear, diffmonth;
   if (0 == stricmp (unit, "day"))
-    return box_num ((boxint) DT_DAY (dt2) - (boxint) DT_DAY (dt1));
+    return box_num ((boxint)DT_DAY (dt2) - (boxint)DT_DAY (dt1));
   if (0 == stricmp (unit, "hour"))
     return box_num ((s2 - s1) / (60 * 60));
   if (0 == stricmp (unit, "minute"))
@@ -557,18 +555,18 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ts_add (&ts1, tz_tweak, "minute");
       ts_add (&ts2, tz_tweak, "minute");
       if (diffyear)
-	return box_num ((boxint) ts2.year - (boxint) ts1.year);
+        return box_num ((boxint)ts2.year - (boxint)ts1.year);
       if (diffmonth)
-	return box_num ((boxint) (ts2.year * 12 + ts2.month) - (boxint) (ts1.year * 12 + ts1.month));
+        return box_num ((boxint)(ts2.year * 12 + ts2.month) - (boxint)(ts1.year * 12 + ts1.month));
     }
-  frac1 = DT_FRACTION (dt1);
-  frac2 = DT_FRACTION (dt2);
+  frac1 = DT_FRACTION(dt1);
+  frac2 = DT_FRACTION(dt2);
   if (0 == stricmp (unit, "millisecond"))
-    return box_num ((s2 - s1) * (boxint) 1000 + (frac2 / 1000000 - frac1 / 1000000));
+    return box_num ((s2 - s1) * (boxint)1000 + (frac2 / 1000000 - frac1 / 1000000));
   if (0 == stricmp (unit, "microsecond"))
-    return box_num ((s2 - s1) * (boxint) 1000000 + (frac2 / 1000 - frac1 / 1000));
+    return box_num ((s2 - s1) * (boxint)1000000 + (frac2 / 1000 - frac1 / 1000));
   if (0 == stricmp (unit, "nanosecond"))
-    return box_num ((s2 - s1) * (boxint) 1000000000 + (frac2 - frac1));
+    return box_num ((s2 - s1) * (boxint)1000000000 + (frac2 - frac1));
   sqlr_new_error ("22023", "DT002", "Bad unit in datediff: %s.", unit);
   return NULL;
 }
@@ -858,6 +856,12 @@ bif_date_init ()
   bif_define_typed ("minute", bif_minute, &bt_integer);
   bif_define_typed ("second", bif_second, &bt_integer);
   bif_define_typed ("timezone", bif_timezone, &bt_integer);
+  bif_define_typed ("rdf_now_impl", bif_timestamp, &bt_timestamp);
+  bif_define_typed ("rdf_year_impl", bif_year, &bt_integer);
+  bif_define_typed ("rdf_month_impl", bif_month, &bt_integer);
+  bif_define_typed ("rdf_day_impl", bif_day, &bt_integer);
+  bif_define_typed ("rdf_hours_impl", bif_hour, &bt_integer);
+  bif_define_typed ("rdf_minutes_impl", bif_minute, &bt_integer);
   bif_define_typed ("nasa_tjd_number", bif_nasa_tjd_number, &bt_integer);
   bif_define_typed ("nasa_tjd_fraction", bif_nasa_tjd_fraction, &bt_double);
   bif_define_typed ("merge_nasa_tjd_to_datetime", bif_merge_nasa_tjd_to_datetime, &bt_datetime);

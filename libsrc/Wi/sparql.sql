@@ -2185,6 +2185,190 @@ create function DB.DBA.__not (in e1 any) returns integer
 
 
 -----
+-- SPARQL 1.1 built-in functions, implemented as stored procedures
+
+create function DB.DBA.rdf_strdt_impl (in str varchar, in dt_iri any)
+{
+  declare dt_iid IRI_ID;
+  declare parsed any;
+  dt_iid := __i2id (dt_iri);
+  if (dt_iid is null)
+    signal ('22007', 'Function rdf_strdt_impl needs a valid datatype IRI as its second argument');
+  if (__tag of IRI_ID = __tag (dt_iri))
+    dt_iri := __id2i (dt_iri);
+  parsed := __xqf_str_parse_to_rdf_box (str, dt_iri, isstring (str));
+  if (parsed is not null)
+    {
+      if (__tag of rdf_box = __tag (parsed))
+        rdf_box_set_type (parsed,
+          DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid));
+      return parsed;
+    }
+  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, dt_iid, null);
+}
+;
+
+create function DB.DBA.rdf_strlang_impl (in str varchar, in lang any)
+{
+ 
+  lang := cast (lang as varchar);
+  if ((lang is null) or (regexp_match ('^(([a-z][a-z](-[A-Z][A-Z])?)|(x-[A-Za-z0-9]+))\044', lang) is null))
+    signal ('22007', 'Function rdf_strlang_impl needs a valid language ID as its second argument');
+  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, null, cast (lang as varchar));
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.rdf_replace_impl (in src varchar, in needle varchar, in rpl varchar, in opts varchar := '')
+{
+  declare src_tag, needle_tag, rpl_tag integer;
+  declare res varchar;
+  src_tag := __tag (src);
+  needle_tag := __tag (needle);
+  rpl_tag := __tag (rpl);
+  if (__tag of rdf_box = src_tag)
+    {
+      src := rdf_box_data (src);
+      src_tag := __tag (src);
+    }
+  if (__tag of rdf_box = needle_tag)
+    {
+      needle := rdf_box_data (needle);
+      needle_tag := __tag (needle);
+    }
+  if (__tag of rdf_box = rpl_tag)
+    {
+      rpl := rdf_box_data (rpl);
+      rpl_tag := __tag (rpl);
+    }
+  if (__tag of nvarchar = src_tag)
+    src := charset_recode (src, '_WIDE_', '_UTF8_');
+  else if (__tag of varchar <> src_tag)
+    src := cast (src as varchar);
+  if (__tag of nvarchar = needle_tag)
+    needle := charset_recode (needle, '_WIDE_', '_UTF8_');
+  else if (__tag of varchar <> needle_tag)
+    needle := cast (needle as varchar);
+  if (__tag of nvarchar = rpl_tag)
+    rpl := charset_recode (rpl, '_WIDE_', '_UTF8_');
+  else if (__tag of varchar <> rpl_tag)
+    rpl := cast (rpl as varchar);
+  if (__tag of varchar <> __tag (opts))
+    opts := cast (opts as varchar);
+  if (opts is null)
+    opts := '';
+  if (src is null or needle is null or rpl is null)
+    return null;
+  if ('' = needle)
+    return src;
+  if (regexp_match ('^[^()|+?.:^\044\\\\\\[\\]-]+\044', needle, 0, 'u') is not null and strchr (rpl, '\044') is null and strchr (rpl, 92) is null)
+    {
+      if ('' = opts)
+        {
+          res := replace (src, needle, rpl);
+          __box_flags_set (res, 2);
+          return res;
+        }
+      if (opts in ('i', 'I'))
+        {
+          declare src_lc varchar;
+          declare hit, needle_len integer;
+          declare ses any;
+          src_lc := lcase (src);
+          needle := lcase (needle);
+          hit := strstr (src_lc, needle);
+          if (hit is null)
+            {
+              res := src;
+              __box_flags_set (res, 2);
+              return res;
+            }
+          ses := string_output();
+          needle_len := length (needle);
+          while (hit is not null)
+            {
+              http (subseq (src, 0, hit), ses);
+              http (rpl, ses);
+              src := subseq (src, hit + needle_len);
+              src_lc := subseq (src_lc, hit + needle_len);
+              hit := strstr (src_lc, needle);
+            }
+          http (src, ses);
+          res := string_output_string (ses);
+          __box_flags_set (res, 2);
+          return res;
+        }
+    }
+  if (strchr (opts, 'u') is null and strchr (opts, 'U') is null)
+    opts := opts || 'u';
+  res := regexp_xfn_replace (src, needle, rpl, 0, null, opts);
+  __box_flags_set (res, 2);
+  return res;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.regexp_xfn_replace (in src varchar, in needle varchar, in tmpl varchar, in search_begin_pos integer, in hit_max_count integer, in opts varchar)
+{
+  declare hit_list any;
+  if (0 = length (src))
+    return '';
+  if (regexp_parse (needle, '', 0, opts) is not null)
+    signal ('22023', 'The regex-based XPATH/XQuery/SPARQL replace() function can not search for a pattern that can be found even in an empty string');
+  hit_list := regexp_parse_list (needle, src, search_begin_pos, opts, coalesce (hit_max_count, 2097152));
+  return regexp_replace_hits_with_template (src, tmpl, hit_list, 1);  
+}
+;
+
+
+--!AWK PUBLIC
+create function DB.DBA.rdf_timezone_impl (in dt datetime)
+{
+  declare minutes integer;
+  declare sign, str varchar;
+  minutes := timezone (dt);
+  if (minutes is null)
+    signal ('22007', 'Function rdf_timezone_impl needs a datetime with some timezone set as its argument');
+  if (minutes < 0)
+    {
+      sign := '-';
+      minutes := -minutes;
+    }
+  else
+    sign := '';
+  if (mod (minutes, 60))
+    str := sprintf ('%sPT%dH%dM', sign, minutes / 60, mod (minutes, 60));
+  else if (minutes = 0)
+    str := 'PT0S';
+  else
+    str := sprintf ('%sPT%dH', sign, minutes / 60);
+  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, __i2id (UNAME'http://www.w3.org/2001/XMLSchema#dayTimeDuration'), null);
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.rdf_tz_impl (in dt datetime)
+{
+  declare minutes integer;
+  declare sign varchar;
+  minutes := timezone (dt);
+  if (minutes is null)
+    return '';
+  if (minutes = 0)
+    return 'Z';
+  if (minutes < 0)
+    {
+      sign := '-';
+      minutes := -minutes;
+    }
+  else
+    sign := '';
+  return sprintf ('%s%02d:%02d', sign, minutes / 60, mod (minutes, 60));
+}
+;
+
+
+-----
 -- Data loading
 
 create procedure DB.DBA.RDF_QUAD_URI (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_uri varchar)
@@ -13497,6 +13681,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_STRSQLVAL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LONG_OF_SQLVAL to SPARQL_SELECT',
+    'grant execute on DB.DBA.rdf_strdt_impl to SPARQL_SELECT',
+    'grant execute on DB.DBA.rdf_strlang_impl to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QUAD_URI to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_QUAD_URI_L to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_QUAD_URI_L_TYPED to SPARQL_UPDATE',
@@ -13608,9 +13794,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_COMMIT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_PROC_COLS to "SPARQL"',
-    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ACK to "SPARQL_SELECT"', -- DEPRECATED
-    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT to "SPARQL_SELECT"', -- DEPRECATED
-    'grant execute on DB.DBA.RDF_GRAPH_GROUP_LIST_GET to "SPARQL_SELECT"' );
+    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ACK to SPARQL_SELECT', -- DEPRECATED
+    'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT to SPARQL_SELECT', -- DEPRECATED
+    'grant execute on DB.DBA.RDF_GRAPH_GROUP_LIST_GET to SPARQL_SELECT' );
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

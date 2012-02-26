@@ -210,10 +210,7 @@ caddr_t qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq);
 
 
 
-caddr_t qr_exec (client_connection_t * cli, query_t * qr,
-    query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt,
-    local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts,
-    int named_params);
+EXE_EXPORT (caddr_t, qr_exec, (client_connection_t * cli, query_t * qr, query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt, local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts, int named_params));
 
 caddr_t qr_dml_array_exec (client_connection_t * cli, query_t * qr,
 			   query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt,

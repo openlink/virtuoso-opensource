@@ -1139,12 +1139,12 @@ rfc1808_expand_uri (/*query_instance_t *qi,*/ ccaddr_t base_uri, ccaddr_t rel_ur
     }
   if ((base_cs != buffer_cs_upcase) && !((NULL != base_cs) && (NULL != buffer_cs_upcase) && !strcmp (base_cs, buffer_cs_upcase)))
     {
-      base_uri = charset_recode_from_named_to_named ((caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
+      base_uri = charset_recode_from_named_to_named ((query_instance_t *)NULL, (caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((rel_cs != buffer_cs_upcase) && !((NULL != rel_cs) && (NULL != buffer_cs_upcase) && !strcmp (rel_cs, buffer_cs_upcase)))
     {
-      rel_uri = charset_recode_from_named_to_named ((caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
+      rel_uri = charset_recode_from_named_to_named ((query_instance_t *)NULL, (caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((NULL == base_uri) || ('\0' == base_uri[0]))
@@ -1350,7 +1350,7 @@ buffer_ready:
     ((NULL == buffer_cs_upcase) || (NULL == output_cs_upcase) || strcmp(buffer_cs_upcase, output_cs_upcase)) )
     {
       caddr_t boxed_buffer = box_dv_short_nchars (buffer, buf_tail - buffer);
-      res = charset_recode_from_named_to_named (boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
+      res = charset_recode_from_named_to_named ((query_instance_t *)NULL, boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
       if (res_is_new)
         dk_free_box (boxed_buffer);
       else
