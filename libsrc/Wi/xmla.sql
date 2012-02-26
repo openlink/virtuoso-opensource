@@ -1199,7 +1199,7 @@ create method xmla_dbschema_tables () for xmla_discover
 		    from DB.DBA.SYS_KEYS where
 		    __any_grants(KEY_TABLE) and
 		    name_part(KEY_TABLE, 0) like ? and 
-		    name_part(KEY_TABLE, 1) like ?
+		    name_part(KEY_TABLE, 1) like ? and
 		    name_part(KEY_TABLE, 2) like ?
 		    and KEY_IS_MAIN = 1 and 
 		    KEY_MIGRATE_TO is null', null, null,
