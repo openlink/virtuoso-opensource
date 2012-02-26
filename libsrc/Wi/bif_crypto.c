@@ -1532,6 +1532,33 @@ bif_bin2hex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_hex2bin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_arg (qst, args, 0, "hex2bin");
+  caddr_t out;
+  uint32 inx, len = box_length (str) - 1;
+  unsigned int tmp;
+
+  if (!len)
+    return NEW_DB_NULL;
+  if (len % 2)
+    sqlr_new_error ("22023", "ENC..", "The input string must have a length multiple by two");
+  out = dk_alloc_box (len / 2, DV_BIN);
+  out[0] = 0;
+  for (inx = 0; inx < len; inx += 2)
+    {
+      if (1 != sscanf (str+inx, "%02x", &tmp))
+	{
+	  dk_free_box (out);
+	  sqlr_new_error ("22023", "ENC..", "The input string does not contains hexadecimal string");
+	}
+      out [inx/2] = (unsigned char) tmp;
+    }
+  return out;
+}
+
+
+static caddr_t
 bif_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t data = (caddr_t) bif_string_arg (qst, args, 0, "sha1");
@@ -1562,6 +1589,7 @@ bif_crypto_init (void)
   bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
   bif_define_typed ("x509_certificate_verify", bif_x509_certificate_verify, &bt_any);
   bif_define_typed ("bin2hex", bif_bin2hex, &bt_varchar);
+  bif_define_typed ("hex2bin", bif_hex2bin, &bt_bin);
 }
 
 #else /* _SSL dummy section for bifs that are defined here to not break existing apps */
