@@ -37,6 +37,7 @@ One tab before end of single-line BNF comment.
 Whitespaces in all other places, including two whitespaces after "::=" in BNF comments */
 
 %pure_parser
+%expect 10
 
 %{
 
@@ -149,8 +150,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token CLASS_L		/*:: PUNCT_SPAR_LAST("CLASS") ::*/
 %token CLEAR_L		/*:: PUNCT_SPAR_LAST("CLEAR") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
-%token COALESCE_L	/*:: PUNCT_SPAR_LAST("COALESCE") ::*/
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
+%token COUNT_L		/* Fake, used only in sparqlwords.gperf */
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token DATA_L		/*:: PUNCT_SPAR_LAST("DATA") ::*/
@@ -174,7 +175,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
 %token HAVING_L		/*:: PUNCT_SPAR_LAST("HAVING") ::*/
 %token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
-%token IF_L		/*:: PUNCT_SPAR_LAST("IF") ::*/
 %token IFP_L		/*:: PUNCT_SPAR_LAST("IFP") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
@@ -182,13 +182,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token INSERT_L		/*:: PUNCT_SPAR_LAST("INSERT") ::*/
 %token INTO_L		/*:: PUNCT_SPAR_LAST("INTO") ::*/
 %token IRI_L		/*:: PUNCT_SPAR_LAST("IRI") ::*/
-%token isBLANK_L	/*:: PUNCT_SPAR_LAST("isBLANK") ::*/
-%token isIRI_L		/*:: PUNCT_SPAR_LAST("isIRI") ::*/
-%token isLITERAL_L	/*:: PUNCT_SPAR_LAST("isLITERAL") ::*/
-%token isREF_L		/*:: PUNCT_SPAR_LAST("isREF") ::*/
-%token isURI_L		/*:: PUNCT_SPAR_LAST("isURI") ::*/
 %token LANG_L		/*:: PUNCT_SPAR_LAST("LANG") ::*/
-%token LANGMATCHES_L	/*:: PUNCT_SPAR_LAST("LANGMATCHES") ::*/
 %token LIKE_L		/*:: PUNCT_SPAR_LAST("LIKE") ::*/
 %token LIMIT_L		/*:: PUNCT_SPAR_LAST("LIMIT") ::*/
 %token LITERAL_L	/*:: PUNCT_SPAR_LAST("LITERAL") ::*/
@@ -204,7 +198,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
 %token NOT_L		/*:: PUNCT_SPAR_LAST("NOT") ::*/
-%token NOT_FROM_L	/*:: PUNCT_SPAR_LAST("NOT FROM") ::*/
 %token NULL_L		/*:: PUNCT_SPAR_LAST("NULL") ::*/
 %token OBJECT_L		/*:: PUNCT_SPAR_LAST("OBJECT") ::*/
 %token OF_L		/*:: PUNCT_SPAR_LAST("OF") ::*/
@@ -216,7 +209,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token PREDICATE_L	/*:: PUNCT_SPAR_LAST("PREDICATE") ::*/
 %token PREFIX_L		/*:: PUNCT_SPAR_LAST("PREFIX") ::*/
 %token QUAD_L		/*:: PUNCT_SPAR_LAST("QUAD") ::*/
-%token REGEX_L		/*:: PUNCT_SPAR_LAST("REGEX") ::*/
 %token REDUCED_L	/*:: PUNCT_SPAR_LAST("REDUCED") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
 %token SAME_AS_L	/*:: PUNCT_SPAR_LAST("SAME_AS") ::*/
@@ -224,7 +216,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SAME_AS_P_L	/*:: PUNCT_SPAR_LAST("SAME_AS_P") ::*/
 %token SAME_AS_S_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S") ::*/
 %token SAME_AS_S_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S_O") ::*/
-%token SAMETERM_L	/*:: PUNCT_SPAR_LAST("SAMETERM") ::*/
 %token SCORE_L		/*:: PUNCT_SPAR_LAST("SCORE") ::*/
 %token SCORE_LIMIT_L	/*:: PUNCT_SPAR_LAST("SCORE_LIMIT") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
@@ -233,11 +224,11 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
 %token SQLQUERY_L	/*:: PUNCT("SQLQUERY"), SPAR, LAST1("SQLQUERY {"), LAST1("SQLQUERY ("), LAST1("SQLQUERY #cmt\n{"), LAST1("SQLQUERY\r\n("), ERR("SQLQUERY"), ERR("SQLQUERY bad") ::*/
 %token STORAGE_L	/*:: PUNCT_SPAR_LAST("STORAGE") ::*/
-%token STR_L		/*:: PUNCT_SPAR_LAST("STR") ::*/
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
 %token SUBJECT_L	/*:: PUNCT_SPAR_LAST("SUBJECT") ::*/
 %token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
 %token TABLE_OPTION_L	/*:: PUNCT_SPAR_LAST("TABLE_OPTION") ::*/
+%token TEXT_L	/*:: PUNCT_SPAR_LAST("TEXT") ::*/
 %token T_CYCLES_ONLY_L	/*:: PUNCT_SPAR_LAST("T_CYCLES_ONLY") ::*/
 %token T_DIRECTION_L	/*:: PUNCT_SPAR_LAST("T_DIRECTION") ::*/
 %token T_DISTINCT_L	/*:: PUNCT_SPAR_LAST("T_DISTINCT") ::*/
@@ -259,6 +250,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token USING_L		/*:: PUNCT_SPAR_LAST("USING") ::*/
 %token WHERE_L		/*:: PUNCT("WHERE"), SPAR, LAST1("WHERE {"), LAST1("WHERE ("), LAST1("WHERE #cmt\n{"), LAST1("WHERE\r\n("), ERR("WHERE"), ERR("WHERE bad") ::*/
 %token WITH_L		/*:: PUNCT_SPAR_LAST("WITH") ::*/
+%token XML_L	/*:: PUNCT_SPAR_LAST("XML") ::*/
 %token __SPAR_PUNCT_END	/* Delimiting value for syntax highlighting */
 
 %token START_OF_SPARQL_TEXT	/*:: FAKE("the beginning of SPARQL text"), SPAR, NULL ::*/
@@ -269,8 +261,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 
 %token __SPAR_NONPUNCT_START	/* Delimiting value for syntax highlighting */
 
-%token <box> TEXT_BL	/*:: PUNCT_SPAR_LAST("TEXT") ::*/
-%token <box> XML_BL	/*:: PUNCT_SPAR_LAST("XML") ::*/
+/* Do NOT try to wrap the following line! */
+%token<token_type> SPARQL_BIF	/*:: LITERAL("%d"), SPAR, LAST("ABS"), LAST("BNODE"), LAST("CEIL"), LAST("COALESCE"), LAST("CONCAT"), LAST("CONTAINS"), LAST("DAY"), LAST("ENCODE_FOR_URI"), LAST("FLOOR"), LAST("HOURS"), LAST("IF"), LAST("ISBLANK"), LAST("ISIRI"), LAST("ISLITERAL"), LAST("ISNUMERIC"), LAST("ISREF"), LAST("ISURI"), LAST("LANGMATCHES"), LAST("LCASE"), LAST("MD5"), LAST("MINUTES"), LAST("MONTH"), LAST("NOW"), LAST("RAND"), LAST("REGEX"), LAST("ROUND"), LAST("SAMETERM"), LAST("SECONDS"), LAST("SHA1"), LAST("SHA224"), LAST("SHA256"), LAST("SHA384"), LAST("SHA512"), LAST("STR"), LAST("STRDT"), LAST("STRENDS"), LAST("STRLANG"), LAST("STRLEN"), LAST("STRSTARTS"), LAST("SUBSTR"), LAST("TIMEZONE"), LAST("TZ"), LAST("UCASE"), LAST("URI"), LAST("YEAR") ::*/
+
 
 %token <box> SPARQL_INTEGER	/*:: LITERAL("%d"), SPAR, LAST("1234") ::*/
 %token <box> SPARQL_DECIMAL	/*:: LITERAL("%d"), SPAR, LAST("1234.56") ::*/
@@ -409,7 +402,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_expn_or_ggp
 %type <tree> spar_expn
 %type <tree> spar_built_in_call
-%type <tree> spar_built_in_regex
 %type <tree> spar_function_call
 %type <tree> spar_macro_call
 %type <backstack> spar_arg_list_opt
@@ -852,8 +844,6 @@ spar_dataset_clause_subtype
 	| FROM_L NAMED_L	{ $$ = SPART_GRAPH_NAMED; }
 	| NOT_L FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
 	| NOT_L FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
-	| NOT_FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
-	| NOT_FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
 	;
 
 spar_sponge_optionlist_opt	/* [Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'	*/
@@ -1292,8 +1282,8 @@ spar_triples1		/* [29*]	Triples1	 ::=  VarOrTerm PropertyListNotEmpty | TriplesN
 spar_props_opt		/* [30]	PropertyList	 ::=  PropertyListNotEmpty?	*/
 	: /* empty */	{ }
 	| spar_props	{ }
-	| spar_props _SEMI	{ }
-	| spar_props _SEMI _DOT	{ sparyyerror ("Dot immediately after semicolon is permitted in pure SPARQL but not in SPARQL-BI"); }
+	/*| spar_props _SEMI	{ }
+	| spar_props _SEMI _DOT	{ sparyyerror ("Dot immediately after semicolon is permitted in pure SPARQL but not in SPARQL-BI"); }*/
 	;
 
 spar_props		/* [31]	PropertyListNotEmpty	 ::=  Verb ObjectList ( ';' PropertyList )?	*/
@@ -1584,7 +1574,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_expn _NOT_EQ spar_expn	{ SPAR_BIN_OP ($$, BOP_NEQ, $1, $3); }
 	| spar_expn LIKE_L	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_LIKE, "LIKE operator"); }
 	    spar_expn	{	/* Virtuoso-specific extension of [47] */
-		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LIKE_L, t_list (2, $1, $4)); }
+		$$ = sparp_make_builtin_call (sparp_arg, LIKE_L, (SPART **)t_list (2, $1, $4)); }
 	| spar_expn IN_L	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_IN, "IN operator"); }
 	    _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension of [47] */
 		  dk_set_t args = $5;
@@ -1738,48 +1728,31 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	;
 
 spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
-	: STR_L _LPAR spar_expn _RPAR		/*... ( 'STR' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)STR_L, t_list (1, $3)); }
+	: SPARQL_BIF spar_arg_list {
+		SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
+		if ((SPAR_BIF_REGEX == $1) && (2 == BOX_ELEMENTS (args)))
+		  $$ = spar_make_regex_or_like_or_eq (sparp_arg, args[0], args[1]);
+		else
+		  $$ = sparp_make_builtin_call (sparp_arg, $1, args); }
+			/*... ( 'STR' '(' Expn ')' ) */
+			/*... | ( 'sameTERM' '(' Expn ',' Expn ')' ) */
+			/*... | ( 'isIRI' '(' Expn ')' ) */
+			/*... | ( 'isURI' '(' Expn ')' ) */
+			/*... | ( 'isBLANK' '(' Expn ')' ) */
+			/*... | ( 'isLITERAL' '(' Expn ')' ) */
+			/*... | ( 'REGEX' '(' Expn ',' Expn ( ',' Expn )? ')' ) */
+			/*... | ( 'isREF' '(' Expn ')' ) */
+			/*... | ( 'LANGMATCHES' '(' Expn ',' Expn ')' ) */
+			/*... | ( 'IF' '(' Expn ',' Expn ',' Expn ')' ) */
+			/*... | ( 'COALESCE' '(' Expn ( ',' Expn )* ')' ) */
+	| IRI_L _LPAR spar_expn _RPAR		/*... | ( 'IRI' '(' Expn ')' ) */
+		{ $$ = sparp_make_builtin_call (sparp_arg, IRI_L, (SPART **)t_list (1, $3)); }
 	| LANG_L _LPAR spar_expn _RPAR		/*... | ( 'LANG' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, $3)); }
-	| LANGMATCHES_L _LPAR spar_expn _COMMA spar_expn _RPAR	/*... | ( 'LANGMATCHES' '(' Expn ',' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANGMATCHES_L, t_list (2, $3, $5)); }
+		{ $$ = sparp_make_builtin_call (sparp_arg, LANG_L, (SPART **)t_list (1, $3)); }
 	| DATATYPE_L _LPAR spar_expn _RPAR	/*... | ( 'DATATYPE' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, $3)); }
+		{ $$ = sparp_make_builtin_call (sparp_arg, DATATYPE_L, (SPART **)t_list (1, $3)); }
 	| BOUND_L _LPAR spar_var _RPAR		/*... | ( 'BOUND' '(' Var ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, $3)); }
-	| SAMETERM_L _LPAR spar_expn _COMMA spar_expn _RPAR	/*... | ( 'sameTERM' '(' Expn ',' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)SAMETERM_L, t_list (2, $3, $5)); }
-	| isIRI_L _LPAR spar_expn _RPAR		/*... | ( 'isIRI' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, $3)); }
-	| isURI_L _LPAR spar_expn _RPAR		/*... | ( 'isURI' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isURI_L, t_list (1, $3)); }
-	| isBLANK_L _LPAR spar_expn _RPAR	/*... | ( 'isBLANK' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isBLANK_L, t_list (1, $3)); }
-	| isLITERAL_L _LPAR spar_expn _RPAR	/*... | ( 'isLITERAL' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, $3)); }
-	| spar_built_in_regex		/*... | RegexExpn	*/
-	| IRI_L					/*... | ( 'IRI' '(' Expn ')' ) */
-		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "IRI (built-in call)"); }
-	    _LPAR spar_expn _RPAR
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IRI_L, t_list (1, $4)); }
-	| isREF_L				/*... | ( 'isREF' '(' Expn ')' ) */
-		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "isREF (built-in call)"); }
-	    _LPAR spar_expn _RPAR
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isREF_L, t_list (1, $4)); }
-	| IF_L _LPAR spar_expn _COMMA spar_expn _COMMA spar_expn _RPAR	/*... | ( 'IF' '(' Expn ',' Expn ',' Expn ')' ) */
-		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "IF (built-in call)");
-		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IF_L, t_list (3, $3, $5, $7)); }
-	| COALESCE_L _LPAR spar_expns _RPAR	/*... | ( 'COALESCE' '(' Expn ( ',' Expn )* ')' ) */
-		{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "COALESCE (built-in call)");
-		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)COALESCE_L, t_revlist_to_array ($3)); }
-	;
-
-spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn )? ')'	*/
-	: REGEX_L _LPAR spar_expn _COMMA spar_expn _RPAR
-		{ $$ = spar_make_regex_or_like_or_eq (sparp_arg, $3, $5); }
-	| REGEX_L _LPAR spar_expn _COMMA spar_expn _COMMA spar_expn _RPAR
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (3, $3, $5, $7)); }
+		{ $$ = sparp_make_builtin_call (sparp_arg, BOUND_L, (SPART **)t_list (1, $3)); }
 	;
 
 spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
@@ -2306,7 +2279,7 @@ spar_qm_text_literal_list_opt
 	;
 
 spar_qm_text_literal_decl	/* [Virt]	QmTextLiteral	 ::=  'TEXT' 'XML'? 'LITERAL' QmSqlCol ( 'OF' QmSqlCol )? QmTextLiteralOptions? 	*/
-	: TEXT_BL spar_xml_opt LITERAL_L spar_qm_sqlcol spar_of_sqlcol_opt spar_qm_text_literal_options_opt {
+	: TEXT_L spar_xml_opt LITERAL_L spar_qm_sqlcol spar_of_sqlcol_opt spar_qm_text_literal_options_opt {
 		spar_qm_add_text_literal (sparp_arg,
 		  sparp_env()->spare_qm_current_table_alias,
 		  $2, $4, $5, $6 ); }
@@ -2314,7 +2287,7 @@ spar_qm_text_literal_decl	/* [Virt]	QmTextLiteral	 ::=  'TEXT' 'XML'? 'LITERAL' 
 
 spar_xml_opt
 	: /* empty */ { $$ = NULL; }
-	| XML_BL
+	| XML_L
 	;
 
 spar_of_sqlcol_opt
@@ -2647,9 +2620,9 @@ spar_qm_sqlcol		/* [Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id	*/
 
 spar_qm_sql_id		/* [Virt]	QmSqlId		 ::=  PLAIN_ID | 'TEXT' | 'XML'	*/
 	: SPARQL_PLAIN_ID
-	| TEXT_BL
-	| XML_BL
-	/*| a_L { $$ = t_box_dv_short_string ("a"); }*/
+	| TEXT_L	{ $$ = t_box_dv_short_string ("TEXT"); }
+	| XML_L		{ $$ = t_box_dv_short_string ("XML"); }
+	/*| a_L		{ $$ = t_box_dv_short_string ("a"); }*/
 	;
 
 spar_qm_iriref_const_expn	/* [Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' String ')' )	*/

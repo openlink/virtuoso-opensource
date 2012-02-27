@@ -1812,7 +1812,7 @@ spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong fr
       return spar_make_funcall (sparp, 0, "LONG::bif:position",
         (SPART **)t_list (2, needle_expn, lst_expn) );
 #else
-      return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L,
+      return sparp_make_builtin_call (sparp, IN_L,
         (SPART **)t_list (2, needle_expn, lst_expn) );
 #endif
     }
@@ -1820,7 +1820,7 @@ spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong fr
     return spar_make_funcall (sparp, 0, "LONG::bif:vector",
       (SPART **)t_list_to_array (single_graphs) );
   t_set_push (&single_graphs, needle_expn);
-  return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L,
+  return sparp_make_builtin_call (sparp, IN_L,
     (SPART **)t_list_to_array (single_graphs) );
 }
 
@@ -3381,12 +3381,12 @@ spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
   if (tail != like_tmpl + final_len)
     GPF_T1 ("spar_" "make_regex_or_like_or_eq (): pointer arithmetic error on like_tmpl");
 /*#endif*/
-  return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LIKE_L,
-    t_list (2, strg,
+  return sparp_make_builtin_call (sparp, LIKE_L,
+    (SPART **)t_list (2, strg,
       spartlist (sparp, 4, SPAR_LIT, like_tmpl, NULL, NULL) ) );
 
 bad_regex:
- return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (2, strg, regexpn));
+ return sparp_make_builtin_call (sparp, SPAR_BIF_REGEX, (SPART **)t_list (2, strg, regexpn));
 }
 
 void
@@ -3567,6 +3567,85 @@ xpf_checked:
         sparp->sparp_query_uses_aggregates++;
     }
   return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string (funname), args, (ptrlong)aggregate_mode);
+}
+
+const sparp_bif_desc_t sparp_bif_descs[] = {
+/*  sbd_name		| sbd_subtype			| sbd_required_syntax	| min-/maxargs	| ret_valmode		| sbd_arg_valmodes				| sbd_result_restr_bits		*/
+  { ""			, 0				, 0			, 0	, 0	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "abs"		, SPAR_BIF_ABS			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "bnode"		, SPAR_BIF_BNODE		, SSG_SD_SPARQL11	, 0	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "bound"		, BOUND_L			, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "ceil"		, SPAR_BIF_CEIL			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "coalesce"		, SPAR_BIF_COALESCE		, SSG_SD_SPARQL11	, 0	, 0xFFF	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "concat"		, SPAR_BIF_CONCAT		, SSG_SD_SPARQL11	, 0	, 0xFFF	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "contains"		, SPAR_BIF_CONTAINS		, SSG_SD_SPARQL11	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "datatype"		, DATATYPE_L			, 0			, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "day"		, SPAR_BIF_DAY			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "encode_for_uri"	, SPAR_BIF_ENCODE_FOR_URI	, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "floor"		, SPAR_BIF_FLOOR		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "hours"		, SPAR_BIF_HOURS		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "if"		, SPAR_BIF_IF			, SSG_SD_SPARQL11	, 3	, 3	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "in operator"	, IN_L				, 0			, 1	, 0xFFF	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "iri"		, IRI_L				, SSG_SD_BI_OR_SPARQL11	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "isblank"		, SPAR_BIF_ISBLANK		, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isiri"		, SPAR_BIF_ISIRI		, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isliteral"		, SPAR_BIF_ISLITERAL		, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isnumeric"		, SPAR_BIF_ISNUMERIC		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_NUM, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isref"		, SPAR_BIF_ISREF		, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isuri"		, SPAR_BIF_ISURI		, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "lang"		, LANG_L			, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "langmatches"	, SPAR_BIF_LANGMATCHES		, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "like operator"	, LIKE_L			, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "lcase"		, SPAR_BIF_LCASE		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "md5"		, SPAR_BIF_MD5			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "minutes"		, SPAR_BIF_MINUTES		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "month"		, SPAR_BIF_MONTH		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "now"		, SPAR_BIF_NOW			, SSG_SD_SPARQL11	, 0	, 0	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "rand"		, SPAR_BIF_RAND			, SSG_SD_SPARQL11	, 0	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "regex"		, SPAR_BIF_REGEX		, 0			, 2	, 3	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "round"		, SPAR_BIF_ROUND		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "sameterm"		, SPAR_BIF_SAMETERM		, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "seconds"		, SPAR_BIF_SECONDS		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "sha1"		, SPAR_BIF_SHA1			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "sha224"		, SPAR_BIF_SHA224		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "sha256"		, SPAR_BIF_SHA256		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "sha384"		, SPAR_BIF_SHA384		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "sha512"		, SPAR_BIF_SHA512		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "str"		, SPAR_BIF_STR			, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "strdt"		, SPAR_BIF_STRDT		, SSG_SD_SPARQL11	, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "strends"		, SPAR_BIF_STRENDS		, SSG_SD_SPARQL11	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "strlang"		, SPAR_BIF_STRLANG		, SSG_SD_SPARQL11	, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "strlen"		, SPAR_BIF_STRLEN		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "strstarts"		, SPAR_BIF_STRSTARTS		, SSG_SD_SPARQL11	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "substr"		, SPAR_BIF_SUBSTR		, SSG_SD_SPARQL11	, 2	, 3	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "timezone"		, SPAR_BIF_TIMEZONE		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "tz"		, SPAR_BIF_TZ			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "ucase"		, SPAR_BIF_UCASE		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "ucase"		, SPAR_BIF_UCASE		, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "uri"		, SPAR_BIF_URI			, SSG_SD_BI_OR_SPARQL11	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+  { "year"		, SPAR_BIF_YEAR			, SSG_SD_SPARQL11	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}		, 0	},
+};
+
+SPART *
+sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments)
+{
+  int ofs;
+  for (ofs = sizeof (sparp_bif_descs)/sizeof (sparp_bif_descs[0]); ofs--; /* no step */)
+    {
+      const sparp_bif_desc_t *sbd = sparp_bif_descs + ofs;
+      int argcount;
+      if (sbd->sbd_subtype != bif_id)
+        continue;
+      argcount = BOX_ELEMENTS_0 (arguments);
+      if (argcount < sbd->sbd_minargs)
+        sparyyerror_impl (sparp, NULL, t_box_sprintf (100, "Insufficient number of arguments of a standard built-in function %s()", sbd->sbd_name));
+      if (argcount > sbd->sbd_maxargs)
+        sparyyerror_impl (sparp, NULL, t_box_sprintf (100, "Too many arguments of a standard built-in function %s()", sbd->sbd_name));
+      goto ofs_found; /* see below */
+    }
+  spar_internal_error (sparp, "sparp" "_make_builtin_call(): bad bif_id");
+ofs_found:
+  return spartlist (sparp, 4, SPAR_BUILT_IN_CALL, bif_id, ofs, arguments);
 }
 
 SPART *

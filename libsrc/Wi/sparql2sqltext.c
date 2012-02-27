@@ -1673,13 +1673,17 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
               }
             return union_valmode;
           }
-        case IF_L:
+        case SPAR_BIF_IF:
           {
             ssg_valmode_t t_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[1]);
             ssg_valmode_t f_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[2]);
             return ssg_smallest_union_valmode (t_branch_valmode, f_branch_valmode);
           }
-        default: return SSG_VALMODE_SQLVAL;
+        default:
+          {
+            const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
+            return sbd->sbd_ret_valmode;
+          }
         }
     case SPAR_FUNCALL:
       return sparp_rettype_of_function (sparp, tree->_.funcall.qname, tree);
@@ -1954,92 +1958,91 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case SPAR_ALIAS:
       return sparp_restr_bits_of_expn (sparp, tree->_.alias.arg);
     case SPAR_BUILT_IN_CALL:
-      switch (tree->_.builtin.btype)
-        {
-        case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L:
-          return SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
-        case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: case BOUND_L:
+      {
+        const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
+        ptrlong res_bits = sbd->sbd_result_restr_bits;
+        switch (tree->_.builtin.btype)
           {
-            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-            ptrlong res_bits = (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL);
-            if (!(arg_bits & SPART_VARR_NOT_NULL))
+          case SPAR_BIF_ISIRI: case SPAR_BIF_ISURI: case SPAR_BIF_ISBLANK: case SPAR_BIF_ISREF: case SPAR_BIF_ISLITERAL: case BOUND_L:
+            {
+              ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              if (!(arg_bits & SPART_VARR_NOT_NULL))
+                return res_bits;
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                return (res_bits | SPART_VARR_FIXED);
+              switch (tree->_.builtin.btype)
+                {
+                  case SPAR_BIF_ISIRI: case SPAR_BIF_ISURI: case SPAR_BIF_ISBLANK:
+                    if ((arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
+                      || (arg_bits & SPART_VARR_ALWAYS_NULL) )
+                      return (res_bits | SPART_VARR_FIXED);
+                  case SPAR_BIF_ISREF: case SPAR_BIF_ISLITERAL:
+                    if ((arg_bits & SPART_VARR_IS_REF) || (arg_bits & SPART_VARR_IS_LIT)
+                      || (arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
+                      || (arg_bits & SPART_VARR_ALWAYS_NULL))
+                      return (res_bits | SPART_VARR_FIXED);
+                  case BOUND_L: break;
+                }
               return res_bits;
-            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
-              return (res_bits | SPART_VARR_FIXED);
-            switch (tree->_.builtin.btype)
-              {
-                case isIRI_L:
-                case isURI_L:
-                case isBLANK_L:
-                  if ((arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
-                    || (arg_bits & SPART_VARR_ALWAYS_NULL) )
-                    return (res_bits | SPART_VARR_FIXED);
-                case isREF_L:
-                case isLITERAL_L:
-                  if ((arg_bits & SPART_VARR_IS_REF) || (arg_bits & SPART_VARR_IS_LIT)
-                    || (arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
-                    || (arg_bits & SPART_VARR_ALWAYS_NULL))
-                    return (res_bits | SPART_VARR_FIXED);
-                case BOUND_L: break;
-              }
+            }
+          case IRI_L:
+            {
+              ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              if (SPART_VARR_ALWAYS_NULL & arg_bits)
+                return (SPART_VARR_ALWAYS_NULL);
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                return (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+              return SPART_VARR_IS_REF ;
+            }
+          case DATATYPE_L:
+            {
+              ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              if (SPART_VARR_ALWAYS_NULL & arg_bits)
+                return (SPART_VARR_ALWAYS_NULL);
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                return (SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_FIXED);
+              return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
+            }
+          case SPAR_BIF_STR:
+            {
+              ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              if (SPART_VARR_ALWAYS_NULL & arg_bits)
+                return (SPART_VARR_ALWAYS_NULL);
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                return (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+              if (SPART_VARR_NOT_NULL & arg_bits)
+                return (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL);
+              return SPART_VARR_IS_LIT ;
+            }
+          case SPAR_BIF_COALESCE:
+            {
+              ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              int argctr;
+              for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
+                {
+                  ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
+                  if (!(arg_bits & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT)))
+                    union_bits &= arg_bits;
+                }
+              return union_bits & ~SPART_VARR_NOT_NULL;
+            }
+          case SPAR_BIF_IF:
+            {
+              ptrlong t_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[1]);
+              ptrlong f_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[2]);
+              ptrlong res_bits = t_bits & f_bits;
+              if (res_bits & SPART_VARR_FIXED)
+                {
+                  ptrlong cond_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+                  if (!((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (cond_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL))))
+                    res_bits &= ~SPART_VARR_FIXED;
+                }
+              return res_bits;
+            }
+          default:
             return res_bits;
           }
-        case IRI_L:
-          {
-            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-            if (SPART_VARR_ALWAYS_NULL & arg_bits)
-              return (SPART_VARR_ALWAYS_NULL);
-            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
-              return (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
-            return SPART_VARR_IS_REF ;
-          }
-        case DATATYPE_L:
-          {
-            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-            if (SPART_VARR_ALWAYS_NULL & arg_bits)
-              return (SPART_VARR_ALWAYS_NULL);
-            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
-              return (SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_FIXED);
-            return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
-          }
-        case STR_L:
-          {
-            ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-            if (SPART_VARR_ALWAYS_NULL & arg_bits)
-              return (SPART_VARR_ALWAYS_NULL);
-            if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
-              return (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
-            if (SPART_VARR_NOT_NULL & arg_bits)
-              return (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL);
-            return SPART_VARR_IS_LIT ;
-          }
-        case COALESCE_L:
-          {
-            ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-            int argctr;
-            for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
-              {
-                ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
-                if (!(arg_bits & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT)))
-                  union_bits &= arg_bits;
-              }
-            return union_bits & ~SPART_VARR_NOT_NULL;
-          }
-        case IF_L:
-          {
-            ptrlong t_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[1]);
-            ptrlong f_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[2]);
-            ptrlong res_bits = t_bits & f_bits;
-            if (res_bits & SPART_VARR_FIXED)
-              {
-                ptrlong cond_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-                if (!((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (cond_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL))))
-                  res_bits &= ~ SPART_VARR_FIXED;
-              }
-            return res_bits;
-          }
-        default: return 0;
-        }
+      }
     case SPAR_FUNCALL:
       {
         caddr_t qname = tree->_.funcall.qname;
@@ -3363,24 +3366,14 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
 void
 ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_valmode_t needed)
 {
-  SPART *arg1 = tree->_.builtin.args[0];
-  ssg_valmode_t arg1_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg1);
+  const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
+  SPART **args = tree->_.builtin.args;
+  SPART *arg1 = ((NULL != args) ? args[0] : NULL);
+  ssg_valmode_t arg1_native = ((NULL != args) ? sparp_expn_native_valmode (ssg->ssg_sparp, arg1) : NULL);
   int argctr;
   ssg_valmode_t op_fmt = NULL;
   int arg1_restr_bits;
-  int builtin_ret_bool;
-  switch (tree->_.builtin.btype)
-    {
-    case BOUND_L: case SAMETERM_L: case LIKE_L: case IN_L:
-    case isBLANK_L: case isURI_L: case isIRI_L: case isREF_L: case isLITERAL_L:
-    case REGEX_L: case LANGMATCHES_L:
-      builtin_ret_bool = 1;
-      break;
-    default:
-      builtin_ret_bool = 0;
-      break;
-    }
-  if (builtin_ret_bool && (
+  if ((SSG_VALMODE_BOOL == sbd->sbd_ret_valmode) && (
       (SSG_VALMODE_LONG != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_NUM != needed)
       && (SSG_VALMODE_SHORT_OR_LONG != needed) && (SSG_VALMODE_AUTO != needed) && (SSG_VALMODE_BOOL != needed) ) )
     {
@@ -3427,7 +3420,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         ssg_puts (rtext);
         return;
       }
-    case SAMETERM_L:
+    case SPAR_BIF_SAMETERM:
       {
         SPART *arg2 = tree->_.builtin.args[1];
         SPART *expanded;
@@ -3443,7 +3436,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
           {
             SPART *potential_literal = ((arg1_restrs & SPART_VARR_IS_REF) ? arg2 : arg1);
             expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
-              spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, potential_literal)),
+              sparp_make_builtin_call (ssg->ssg_sparp, IRI_L, (SPART **)t_list (1, potential_literal)),
               spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2) );
             goto expanded_sameterm_ready; /* see below */
           }
@@ -3452,29 +3445,29 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
           spartlist (ssg->ssg_sparp, 3, BOP_AND,
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
               spartlist (ssg->ssg_sparp, 3, BOP_EQ,
-                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1)),
-                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ),
+                sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg1)),
+                sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1)) ) ),
+                  sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1,
+                      sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg1)) ) ),
                   NULL ),
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ) ),
+                  sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1,
+                      sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg2)) ) ),
                   NULL ) ) ),
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
               spartlist (ssg->ssg_sparp, 3, BOP_EQ,
-                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1)),
-                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ),
+                sparp_make_builtin_call (ssg->ssg_sparp, LANG_L, (SPART **)t_list (1, arg1)),
+                sparp_make_builtin_call (ssg->ssg_sparp, LANG_L, (SPART **)t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1)) ) ),
+                  sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1,
+                      sparp_make_builtin_call (ssg->ssg_sparp, LANG_L, (SPART **)t_list (1, arg1)) ) ),
                   NULL ),
                 spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1,
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ) ),
+                  sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1,
+                      sparp_make_builtin_call (ssg->ssg_sparp, LANG_L, (SPART **)t_list (1, arg2)) ) ),
                   NULL ) ) ) ) );
 
 expanded_sameterm_ready:
@@ -3497,7 +3490,7 @@ expanded_sameterm_ready:
           ssg_puts (" as varchar))");
         }
       return;
-    case COALESCE_L:
+    case SPAR_BIF_COALESCE:
       {
         ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
         if (union_valmode != needed)
@@ -3515,7 +3508,7 @@ expanded_sameterm_ready:
           }
         return;
       }
-    case IF_L:
+    case SPAR_BIF_IF:
       ssg_puts (" case ("); ssg->ssg_indent++;
       ssg_print_valmoded_scalar_expn (ssg, arg1, SSG_VALMODE_BOOL, arg1_native, NULL_ASNAME);
       ssg_puts (") when 0 then (");
@@ -3602,7 +3595,7 @@ IN_op_fnt_found:
       END_DO_BOX_FAST;
       ssg_puts ("))");
       return;
-    case isBLANK_L:
+    case SPAR_BIF_ISBLANK:
       if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
@@ -3645,8 +3638,8 @@ IN_op_fnt_found:
           ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LANGUAGE, NULL_ASNAME);
         }
       return;
-    case isURI_L:
-    case isIRI_L:
+    case SPAR_BIF_ISURI:
+    case SPAR_BIF_ISIRI:
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3675,7 +3668,7 @@ IN_op_fnt_found:
       else
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isURI()");
       return;
-    case isREF_L:
+    case SPAR_BIF_ISREF:
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3696,7 +3689,7 @@ IN_op_fnt_found:
       else
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isREF()");
       return;
-    case isLITERAL_L:
+    case SPAR_BIF_ISLITERAL:
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3774,7 +3767,7 @@ IN_op_fnt_found:
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, NULL_ASNAME);
         return;
       }
-    case STR_L:
+    case SPAR_BIF_STR:
       {
         if (SSG_VALMODE_SQLVAL == needed)
           {
@@ -3797,20 +3790,7 @@ IN_op_fnt_found:
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, NULL_ASNAME);
         return;
       }
-    case REGEX_L:
-      /*!!!TBD extra 'between'*/
-      ssg_puts (" rdf_regex_impl (");
-      ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-      ssg_putchar (',');
-      ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
-      if (3 == BOX_ELEMENTS (tree->_.builtin.args))
-        {
-          ssg_putchar (',');
-          ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], SSG_VALMODE_SQLVAL, NULL_ASNAME);
-        }
-      ssg_putchar (')');
-      return;
-    case LANGMATCHES_L:
+    case SPAR_BIF_LANGMATCHES:
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL))
         {
@@ -3824,7 +3804,28 @@ IN_op_fnt_found:
       ssg_putchar (')');
       return;
     default:
-      spar_sqlprint_error ("ssg_" "print_builtin_expn(): unsupported builtin");
+      {
+        ssg_valmode_t prev_arg_valmode = SSG_VALMODE_AUTO, arg_valmode;
+        int argctr;
+        ssg_puts (" rdf_");
+        ssg_puts (sbd->sbd_name);
+        ssg_puts ("_impl");
+        ssg_puts (" (");
+        ssg->ssg_indent++;
+        DO_BOX_FAST (SPART *, arg, argctr, tree->_.builtin.args)
+          {
+            if (argctr)
+              ssg_puts (", ");
+            arg_valmode = ((argctr < (sizeof (sbd->sbd_arg_valmodes) / sizeof (sbd->sbd_arg_valmodes[0]))) ? sbd->sbd_arg_valmodes[argctr] : NULL);
+            if (NULL == arg_valmode)
+              arg_valmode = prev_arg_valmode;
+            ssg_print_scalar_expn (ssg, arg, arg_valmode, NULL_ASNAME);
+            prev_arg_valmode = arg_valmode;
+          }
+        END_DO_BOX_FAST;
+        ssg->ssg_indent--;
+        ssg_putchar (')');
+      }
       return;
     }
 }
@@ -5439,35 +5440,35 @@ ssg_print_retval_restrictions_ex (spar_sqlgen_t *ssg, SPART *retval, rdf_val_ran
     {
       ssg_print_where_or_and (ssg, "nullable retval is not null");
       ssg_print_scalar_expn (ssg,
-        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, retval)),
+        sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, retval)),
         SSG_VALMODE_BOOL, NULL_ASNAME);
     }
   if ((SPART_VARR_IS_BLANK & tree_restr) && (!(SPART_VARR_IS_BLANK & retval_restr)))
     {
       ssg_print_where_or_and (ssg, "retval is blank node");
       ssg_print_scalar_expn (ssg,
-        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isBLANK_L, t_list (1, retval)),
+        sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISBLANK, (SPART **)t_list (1, retval)),
         SSG_VALMODE_BOOL, NULL_ASNAME);
     }
   else if ((SPART_VARR_IS_IRI & tree_restr) && (!(SPART_VARR_IS_IRI & retval_restr)))
     {
       ssg_print_where_or_and (ssg, "retval is IRI");
       ssg_print_scalar_expn (ssg,
-        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, retval)),
+        sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISIRI, (SPART **)t_list (1, retval)),
         SSG_VALMODE_BOOL, NULL_ASNAME);
     }
   else if ((SPART_VARR_IS_REF & tree_restr) && (!(SPART_VARR_IS_REF & retval_restr)))
     {
       ssg_print_where_or_and (ssg, "'any' retval is a reference");
       ssg_print_scalar_expn (ssg,
-        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isREF_L, t_list (1, retval)),
+        sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISREF, (SPART **)t_list (1, retval)),
         SSG_VALMODE_BOOL, NULL_ASNAME);
     }
   else if ((SPART_VARR_IS_LIT & tree_restr) && (!(SPART_VARR_IS_LIT & retval_restr)))
     {
       ssg_print_where_or_and (ssg, "'any' variable is a literal");
       ssg_print_scalar_expn (ssg,
-        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, retval)),
+        sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISLITERAL, (SPART **)t_list (1, retval)),
         SSG_VALMODE_BOOL, NULL_ASNAME);
     }
 /*!!! TBD: checks for type, lang */
@@ -5930,38 +5931,38 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
             }
           else if (SPART_VARR_IS_IRI & restrs_not_filtered_in_subqs)
             {
-              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isIRI_L), t_list (1, sample_var));
+              SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISIRI, (SPART **)t_list (1, sample_var));
               ssg_print_where_or_and (ssg, "value of equiv class, isIRI check by replaced filter");
               ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
             }
           else if (SPART_VARR_IS_BLANK & restrs_not_filtered_in_subqs)
             {
-              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isBLANK_L), t_list (1, sample_var));
+              SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISBLANK, (SPART **)t_list (1, sample_var));
               ssg_print_where_or_and (ssg, "value of equiv class, isBLANK check by replaced filter");
               ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
             }
           else if (SPART_VARR_IS_REF & restrs_not_filtered_in_subqs)
             {
-              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isREF_L), t_list (1, sample_var));
+              SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISREF, (SPART **)t_list (1, sample_var));
               ssg_print_where_or_and (ssg, "value of equiv class, isREF check by replaced filter");
               ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
             }
           else if (SPART_VARR_IS_LIT & restrs_not_filtered_in_subqs)
             {
-              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isLITERAL_L), t_list (1, sample_var));
+              SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISLITERAL, (SPART **)t_list (1, sample_var));
               ssg_print_where_or_and (ssg, "value of equiv class, isLITERAL check by replaced filter");
               ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
             }
           else if (SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs)
             {
-              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(BOUND_L), t_list (1, sample_var));
+              SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, sample_var));
               ssg_print_where_or_and (ssg, "value of equiv class, BOUND check by replaced filter");
               ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
             }
           else if (SPART_VARR_ALWAYS_NULL & restrs_not_filtered_in_subqs)
             {
               SPART *not_builtin = spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(BOUND_L), t_list (1, sample_var)),
+                sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, sample_var)),
                 NULL );
               ssg_print_where_or_and (ssg, "value of equiv class, !BOUND check by replaced filter");
               ssg_print_scalar_expn (ssg, not_builtin, SSG_VALMODE_BOOL, NULL_ASNAME);
@@ -8480,8 +8481,8 @@ void ssg_print_limofs_expn (spar_sqlgen_t *ssg)
       char limofs_strg [50];
       long lim_num = unbox ((caddr_t)(lim));
       long ofs_num = unbox ((caddr_t)(ofs));
-      if ((SPARP_MAXLIMIT == lim_num) && (0 < ofs_num))
-        lim_num -= ofs_num;
+/*      if ((SPARP_MAXLIMIT == lim_num) && (0 < ofs_num))
+        lim_num -= ofs_num;*/
       if (0 != ofs_num)
         snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld, %ld", ofs_num, lim_num);
       else
@@ -8555,7 +8556,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     SSG_RETVAL_MUST_PRINT_SOMETHING |
     SSG_RETVAL_CAN_PRINT_NULL |
     SSG_RETVAL_USES_ALIAS ;
-  ccaddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
+  caddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
   retvals = tree->_.req_top.retvals;
   if (NULL != ssg->ssg_sparp->sparp_env->spare_storage_name)
     {

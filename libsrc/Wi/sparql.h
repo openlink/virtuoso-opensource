@@ -128,11 +128,10 @@ extern "C" {
 #define SPAR_SML_ATTACH		(ptrlong)1203
 #define SPAR_SML_DETACH		(ptrlong)1204
 
-
 #define SPARP_MAX_LEXDEPTH 50
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
 
-#define SPARP_MAXLIMIT 0x7Fffffff /*!< Default value for LIMIT clause of SELECT */
+#define SPARP_MAXLIMIT -1 /*!< Default value for LIMIT clause of SELECT */
 
 #define SPARP_CALLARG	1 /*!< The parser reads the macro call */
 #define SPARP_DEFARG	2 /*!< The parser reads the arglist of a defmacro and remembers variable names as is in order to know what should be substituted in body */
@@ -162,7 +161,6 @@ typedef struct spar_lexbmk_s {
   s_node_t*	sparlb_lexem_bufs_tail;
   ptrlong	sparlb_offset;
 } spar_lexbmk_t;
-
 
 #if 0
 typedef struct spar_query_s
@@ -526,7 +524,8 @@ typedef struct spar_tree_s
       } bin_exp;
     struct {
         /* #define SPAR_BUILT_IN_CALL	(ptrlong)1003 */
-        ptrlong btype;
+        ptrlong btype;		/*!< Type of particular BIF, as lexem (for lexems other than SPARQL_BIF) or SPAR_BIF_xxx */
+        ptrlong desc_ofs;	/*!< The offset of BIF description in \c sparp_bif_descs array */
         SPART **args;
       } builtin;
     struct {
@@ -902,6 +901,7 @@ extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_typ
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern void spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
+extern SPART *sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments);
 extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_is_explicit, SPART **arguments);
 extern int sparp_namesake_macro_param (sparp_t *sparp, SPART *dm, caddr_t param_name);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);

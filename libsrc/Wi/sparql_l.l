@@ -32,6 +32,7 @@
 #include "sparql.h"
 #include "sparql_p.h"
 #include "numeric.h"
+#include "sparqlwords.h"
 
 #define sparyyerror(strg) sparyyerror_impl(sparp, sparyytext, (strg))
 
@@ -398,138 +399,6 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 	/* Keyword punctuators */
 
 <SPARQL>"a"				{ return a_L		; }
-<SPARQL>{A}{L}{T}{E}{R}			{ return ALTER_L	; }
-<SPARQL>{A}{S}				{ return AS_L		; }
-<SPARQL>{A}{S}{C}			{ return ASC_L		; }
-<SPARQL>{A}{S}{K}			{ return ASK_L		; }
-<SPARQL>{A}{V}{G}			{ return AVG_L		; }
-<SPARQL>{B}{A}{S}{E}			{ return BASE_L		; }
-<SPARQL>{B}{I}{N}{D}{I}{N}{G}{S}	{ return BINDINGS_L	; }
-<SPARQL>{B}{I}{J}{E}{C}{T}{I}{O}{N}	{ return BIJECTION_L	; }
-<SPARQL>{B}{O}{U}{N}{D}			{ return BOUND_L	; }
-<SPARQL>{B}{Y}				{ return BY_L		; }
-<SPARQL>{C}{L}{A}{S}{S}			{ return CLASS_L	; }
-<SPARQL>{C}{L}{E}{A}{R}			{ return CLEAR_L	; }
-<SPARQL>{C}{O}{A}{L}{E}{S}{C}{E}	{ return COALESCE_L	; }
-<SPARQL>{C}{O}{N}{S}{T}{R}{U}{C}{T}	{ return CONSTRUCT_L	; }
-<SPARQL>{C}{O}{U}{N}{T}			{ BEGIN SPARQL_AFTER_COUNT; }
-<SPARQL>{C}{R}{E}{A}{T}{E}		{ return CREATE_L	; }
-<SPARQL>{D}{A}{T}{A}			{ return DATA_L		; }
-<SPARQL>{D}{A}{T}{A}{T}{Y}{P}{E}	{ return DATATYPE_L	; }
-<SPARQL>{D}{E}{F}{A}{U}{L}{T}		{ return DEFAULT_L	; }
-<SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L	; }
-<SPARQL>{D}{E}{F}{M}{A}{C}{R}{O}	{ return DEFMACRO_L	; }
-<SPARQL>{D}{E}{L}{E}{T}{E}		{ return DELETE_L	; }
-<SPARQL>{D}{E}{R}{E}{F}			{ return DEREF_L	; }
-<SPARQL>{D}{E}{S}{C}			{ return DESC_L		; }
-<SPARQL>{D}{E}{S}{C}{R}{I}{B}{E}	{ return DESCRIBE_L	; }
-<SPARQL>{D}{I}{S}{T}{I}{N}{C}{T}	{ return DISTINCT_L	; }
-<SPARQL>{D}{R}{O}{P}			{ return DROP_L		; }
-<SPARQL>{E}{X}{C}{L}{U}{S}{I}{V}{E}	{ return EXCLUSIVE_L	; }
-<SPARQL>{E}{X}{I}{S}{T}{S}		{ return EXISTS_L	; }
-<SPARQL>{F}{A}{L}{S}{E}			{ return false_L	; }
-<SPARQL>{F}{I}{L}{T}{E}{R}		{ return FILTER_L	; }
-<SPARQL>{F}{R}{O}{M}			{ return FROM_L		; }
-<SPARQL>{F}{U}{N}{C}{T}{I}{O}{N}	{ return FUNCTION_L	; }
-<SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L	; }
-<SPARQL>{G}{R}{O}{U}{P}			{ return GROUP_L	; }
-<SPARQL>{H}{A}{V}{I}{N}{G}		{ return HAVING_L	; }
-<SPARQL>{I}{F}				{ return IF_L		; }
-<SPARQL>{I}{F}{P}			{ return IFP_L		; }
-<SPARQL>{I}{N}				{ return IN_L		; }
-<SPARQL>{I}{N}{D}{E}{X}			{ return INDEX_L	; }
-<SPARQL>{I}{N}{F}{E}{R}{E}{N}{C}{E}	{ return INFERENCE_L	; }
-<SPARQL>{I}{N}{S}{E}{R}{T}		{ return INSERT_L	; }
-<SPARQL>{I}{N}{T}{O}			{ return INTO_L		; }
-<SPARQL>{I}{R}{I}			{ return IRI_L		; }
-<SPARQL>{I}{S}{B}{L}{A}{N}{K}		{ return isBLANK_L	; }
-<SPARQL>{I}{S}{I}{R}{I}			{ return isIRI_L	; }
-<SPARQL>{I}{S}{L}{I}{T}{E}{R}{A}{L}	{ return isLITERAL_L	; }
-<SPARQL>{I}{S}{R}{E}{F}			{ return isREF_L	; }
-<SPARQL>{I}{S}{U}{R}{I}			{ return isURI_L	; }
-<SPARQL>{L}{A}{N}{G}			{ return LANG_L		; }
-<SPARQL>{L}{A}{N}{G}{M}{A}{T}{C}{H}{E}{S}	{ return LANGMATCHES_L		; }
-<SPARQL>{L}{I}{K}{E}			{ return LIKE_L		; }
-<SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L	; }
-<SPARQL>{L}{I}{T}{E}{R}{A}{L}		{ return LITERAL_L	; }
-<SPARQL>{L}{O}{C}{A}{L}			{ return LOCAL_L	; }
-<SPARQL>{L}{O}{A}{D}			{ return LOAD_L		; }
-<SPARQL>{M}{A}{C}{R}{O}			{ return MACRO_L	; }
-<SPARQL>{M}{A}{K}{E}			{ return MAKE_L		; }
-<SPARQL>{M}{A}{P}			{ return MAP_L		; }
-<SPARQL>{M}{A}{X}			{ return MAX_L		; }
-<SPARQL>{M}{I}{N}			{ return MIN_L		; }
-<SPARQL>{M}{I}{N}{U}{S}			{ return MINUS_L	; }
-<SPARQL>{M}{O}{D}{I}{F}{Y}		{ return MODIFY_L	; }
-<SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
-<SPARQL>{N}{I}{L}			{ return NIL_L		; }
-<SPARQL>{N}{O}{T}			{ return NOT_L		; }
-<SPARQL>{N}{O}{T}[ \t]+{F}{R}{O}{M}	{ return NOT_FROM_L	; }
-<SPARQL>{N}{U}{L}{L}			{ return NULL_L		; }
-<SPARQL>{O}{B}{J}{E}{C}{T}		{ return OBJECT_L	; }
-<SPARQL>{O}{F}				{ return OF_L		; }
-<SPARQL>{O}{F}{F}{B}{A}{N}{D}		{ return OFFBAND_L	; }
-<SPARQL>{O}{F}{F}{S}{E}{T}		{ return OFFSET_L	; }
-<SPARQL>{O}{P}{T}{I}{O}{N}{A}{L}	{ return OPTIONAL_L	; }
-<SPARQL>{O}{P}{T}{I}{O}{N}		{ return OPTION_L	; }
-<SPARQL>{O}{R}{D}{E}{R}			{ return ORDER_L	; }
-<SPARQL>{P}{R}{E}{D}{I}{C}{A}{T}{E}	{ return PREDICATE_L	; }
-<SPARQL>{P}{R}{E}{F}{I}{X}		{ return PREFIX_L	; }
-<SPARQL>{Q}{U}{A}{D}			{ return QUAD_L		; }
-<SPARQL>{R}{E}{G}{E}{X}			{ return REGEX_L	; }
-<SPARQL>{R}{E}{D}{U}{C}{E}{D}		{ return REDUCED_L	; }
-<SPARQL>{R}{E}{T}{U}{R}{N}{S}		{ return RETURNS_L	; }
-<SPARQL>{S}{C}{O}{R}{E}			{ return SCORE_L	; }
-<SPARQL>{S}{C}{O}{R}{E}_{L}{I}{M}{I}{T}	{ return SCORE_LIMIT_L	; }
-<SPARQL>{S}{A}{M}{E}_{A}{S}		{ return SAME_AS_L	; }
-<SPARQL>{S}{A}{M}{E}_{A}{S}_{O}		{ return SAME_AS_O_L	; }
-<SPARQL>{S}{A}{M}{E}_{A}{S}_{P}		{ return SAME_AS_P_L	; }
-<SPARQL>{S}{A}{M}{E}_{A}{S}_{S}		{ return SAME_AS_S_L	; }
-<SPARQL>{S}{A}{M}{E}_{A}{S}_{S}_{O}	{ return SAME_AS_S_O_L	; }
-<SPARQL>{S}{A}{M}{E}{T}{E}{R}{M}	{ return SAMETERM_L	; }
-<SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }
-<SPARQL>{S}{E}{R}{V}{I}{C}{E}		{ return SERVICE_L	; }
-<SPARQL>{S}{I}{L}{E}{N}{T}		{ return SILENT_L	; }
-<SPARQL>{S}{O}{F}{T}			{ return SOFT_L		; }
-<SPARQL>{S}{T}{O}{R}{A}{G}{E}		{ return STORAGE_L	; }
-<SPARQL>{S}{T}{R}			{ return STR_L		; }
-<SPARQL>{S}{U}{B}{C}{L}{A}{S}{S}	{ return SUBCLASS_L	; }
-<SPARQL>{S}{U}{B}{J}{E}{C}{T}		{ return SUBJECT_L	; }
-<SPARQL>{S}{U}{M}			{ return SUM_L		; }
-<SPARQL>{T}{A}{B}{L}{E}_{O}{P}{T}{I}{O}{N}	{ return TABLE_OPTION_L	; }
-<SPARQL>{T}_{C}{Y}{C}{L}{E}{S}_{O}{N}{L}{Y}	{ return T_CYCLES_ONLY_L	; }
-<SPARQL>{T}_{D}{I}{R}{E}{C}{T}{I}{O}{N}	{ return T_DIRECTION_L	; }
-<SPARQL>{T}_{D}{I}{S}{T}{I}{N}{C}{T}	{ return T_DISTINCT_L	; }
-<SPARQL>{T}_{E}{N}{D}_{F}{L}{A}{G}	{ return T_END_FLAG_L	; }
-<SPARQL>{T}_{E}{X}{I}{S}{T}{S}		{ return T_EXISTS_L	; }
-<SPARQL>{T}_{F}{I}{N}{A}{L}_{A}{S}	{ return T_FINAL_AS_L	; }
-<SPARQL>{T}_{I}{N}			{ return T_IN_L		; }
-<SPARQL>{T}_{M}{A}{X}			{ return T_MAX_L	; }
-<SPARQL>{T}_{M}{I}{N}			{ return T_MIN_L	; }
-<SPARQL>{T}_{O}{U}{T}			{ return T_OUT_L	; }
-<SPARQL>{T}_{N}{O}_{C}{Y}{C}{L}{E}{S}	{ return T_NO_CYCLES_L	; }
-<SPARQL>{T}_{N}{O}_{O}{R}{D}{E}{R}	{ return T_NO_ORDER_L	; }
-<SPARQL>{T}_{S}{H}{O}{R}{T}{E}{S}{T}_{O}{N}{L}{Y}	{ return T_SHORTEST_ONLY_L	; }
-<SPARQL>{T}_{S}{T}{E}{P}		{ return T_STEP_L	; }
-<SPARQL>{T}{R}{A}{N}{S}{I}{T}{I}{V}{E}	{ return TRANSITIVE_L	; }
-<SPARQL>{T}{R}{U}{E}			{ return true_L		; }
-<SPARQL>{U}{N}{B}{O}{U}{N}{D}		{ return UNBOUND_L	; }
-<SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L	; }
-<SPARQL>{U}{S}{I}{N}{G}			{ return USING_L	; }
-<SPARQL>{W}{I}{T}{H}			{ return WITH_L		; }
-
-<SPARQL>{T}{E}{X}{T}			{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return TEXT_BL	; }
-<SPARQL>{X}{M}{L}			{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return XML_BL	; }
-
-<SPARQL>{I}{D}{E}{N}{T}{I}{F}{I}{E}{D}	{ BEGIN SPARQL_AFTER_IDENTIFIED; return IDENTIFIED_L	; }
-<SPARQL>{W}{H}{E}{R}{E}			{ BEGIN SPARQL_AFTER_WHERE; return WHERE_L	; }
-<SPARQL>{S}{Q}{L}{Q}{U}{E}{R}{Y}	{ BEGIN SPARQL_AFTER_WHERE; return SQLQUERY_L	; }
-
-	/* Keyword punctuators of the SPARQL described in first drafts of W3C spec */
-
-<SPARQL>{S}{O}{U}{R}{C}{E}		{ return GRAPH_L	; }
-<SPARQL>{A}{N}{D}			{ return _AMP_AMP; }
-<SPARQL>{O}{R}				{ return _BAR_BAR; }
 
 	/* Grouping non-keyword punctuators */
 
@@ -573,7 +442,22 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
     return LANGTAG;
   }
 
-<SPARQL>{SPAR_PLAIN_SQLNAME}		{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_PLAIN_ID; }
+<SPARQL>{SPAR_PLAIN_SQLNAME}	{
+    const struct sparql_keyword *sk = sparql_lex_hash_kw (yytext, yyleng);
+    if (NULL == sk)
+      {
+        sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_PLAIN_ID;
+      }
+    switch (sk->token)
+      {
+      case COUNT_L: BEGIN SPARQL_AFTER_COUNT; break;
+      case IDENTIFIED_L: BEGIN SPARQL_AFTER_IDENTIFIED; return IDENTIFIED_L;
+      case WHERE_L: BEGIN SPARQL_AFTER_WHERE; return WHERE_L;
+      case SQLQUERY_L: BEGIN SPARQL_AFTER_WHERE; return SQLQUERY_L;
+      case SPARQL_BIF: sparyylval.token_type = sk->subtype; return SPARQL_BIF;
+      default: return sk->token;
+      } }
+
 <SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME} { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_ALIASCOLNAME; }
 <SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME}?"."{SPAR_SQLNAME} { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_QTABLENAME; }
 <SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME}?"."{SPAR_SQLNAME}"."{SPAR_SQLNAME} { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_QTABLECOLNAME; }

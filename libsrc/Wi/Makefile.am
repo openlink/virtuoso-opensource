@@ -79,6 +79,7 @@ generated_code = \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
+	sparqlwords.h \
 	sql3.c \
 	sql_code.c \
 	sql_code_1.c \
@@ -715,6 +716,16 @@ xpathp_lex_props.c: list_lex_props.sh xpathp.y
 
 xpscn.c: xpscn.l xpathp.h
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
+
+sparqlwords.h: sparqlwords.gperf
+	@$(GEN) --stdout $(GPERF) -o $@ \
+		-aCDGptr \
+		-Kkwd \
+		-L ANSI-C \
+		-k1,2,3,6,9,$$ \
+		--ignore-case \
+		-Nsparql_lex_hash_kw \
+		sparqlwords.gperf
 
 sparql_p.c sparql_p.h: sparql_p.y
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y

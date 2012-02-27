@@ -158,7 +158,7 @@ scan_for_children:
       {
         tree_cat = 1;
         sub_expns = tree->_.builtin.args;
-	sub_expn_count = BOX_ELEMENTS (sub_expns);
+	sub_expn_count = BOX_ELEMENTS_0 (sub_expns);
         break;
       }
     case SPAR_FUNCALL:
@@ -3905,7 +3905,6 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
     {
       sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
       SPART *esub_gp = esub_eq->e_gp;
-      SPART *rv;
       if (SELECT_L != esub_gp->_.gp.subtype)
         continue;
       esub_res_eq = esub_eq;
@@ -4271,7 +4270,6 @@ spart_dump_opname (ptrlong opname, int is_op)
     case ASC_L: return "ascending order";
     case ASK_L: return "ASK result-mode";
     case BOUND_L: return "BOUND builtin";
-    case COALESCE_L: return "COALESCE builtin";
     case CONSTRUCT_L: return "CONSTRUCT result-mode";
     case CREATE_L: return "quad mapping name";
     case DATATYPE_L: return "DATATYPE builtin";
@@ -4284,16 +4282,9 @@ spart_dump_opname (ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
     case GRAPH_L: return "GRAPH gp";
-    case IF_L: return "IF conditional builtin";
     case IN_L: return "IN";
     case IRI_L: return "IRI builtin";
-    case isBLANK_L: return "isBLANK builtin";
-    case isIRI_L: return "isIRI builtin";
-    case isLITERAL_L: return "isLITERAL builtin";
-    case isREF_L: return "isREF builtin";
-    case isURI_L: return "isURI builtin";
     case LANG_L: return "LANG builtin";
-    case LANGMATCHES_L: return "LANGMATCHES builtin";
     case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
     case MACRO_L: return "macro invocation";
@@ -4306,12 +4297,9 @@ spart_dump_opname (ptrlong opname, int is_op)
     case ORDER_L: return "ORDER";
     case PREDICATE_L: return "PREDICATE";
     case PREFIX_L: return "PREFIX";
-    case REGEX_L: return "REGEX builtin";
-    case SAMETERM_L: return "sameTerm builtin";
     case SCORE_L: return "SCORE";
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT result-mode";
-    case STR_L: return "STR builtin";
     case SUBJECT_L: return "SUBJECT";
     case true_L: return "true boolean";
     case UNION_L: return "UNION gp";
@@ -4596,7 +4584,10 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    {
 	      sprintf (buf, "BUILT-IN CALL:");
 	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->_.builtin.btype), ses, -1);
+	      if (tree->_.builtin.desc_ofs)
+	        SES_PRINT (ses, sparp_bif_descs[tree->_.builtin.desc_ofs].sbd_name);
+              else
+	        spart_dump_long ((void *)(tree->_.builtin.btype), ses, -1);
 	      spart_dump (tree->_.builtin.args, ses, indent+2, "ARGUMENT", -2);
 	      break;
 	    }

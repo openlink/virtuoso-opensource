@@ -752,7 +752,7 @@ sparp_rotate_comparisons_by_rank (SPART *filt)
         break;
       }
     case SPAR_BUILT_IN_CALL:
-      if (SAMETERM_L == filt->_.builtin.btype)
+      if (SPAR_BIF_SAMETERM == filt->_.builtin.btype)
         {
           SPART *l = filt->_.builtin.args[0];
           SPART *r = filt->_.builtin.args[1];
@@ -869,7 +869,7 @@ sparp_merge_BOP_OR_of_INs (SPART *first, SPART *second, so_BOP_OR_filter_ctx_t *
   memcpy (res_IN_args + 1, first_vals, first_val_count * sizeof (caddr_t));
   memcpy (res_IN_args + 1 + first_val_count, second_vals, second_val_count * sizeof (caddr_t));
   sparp_equiv_remove_var (sparp, SPARP_EQUIV (sparp, second_var->_.var.equiv_idx), second_var);
-  return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, IN_L, res_IN_args);
+  return sparp_make_builtin_call (sparp, IN_L, res_IN_args);
 }
 
 SPART *
@@ -926,7 +926,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
             }
           return filt;
         }
-      if (SAMETERM_L != filt->_.builtin.btype)
+      if (SPAR_BIF_SAMETERM != filt->_.builtin.btype)
         goto cannot_optimize; /* see below */
       /* no break, try get optimization hints like it is BOP_EQ */
     case BOP_EQ: /* No break */
@@ -1047,7 +1047,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
       {
         switch (r->_.builtin.btype)
           {
-          case STR_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
+          case SPAR_BIF_STR: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
           case IRI_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL; break;
           }
         return 0;
@@ -1181,7 +1181,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
                   str_lval = (caddr_t)l;
                   break;
                 }
-              if ((NULL != str_lval) && (SPAR_BUILT_IN_CALL == SPART_TYPE (r)) && (STR_L == r->_.builtin.btype))
+              if ((NULL != str_lval) && (SPAR_BUILT_IN_CALL == SPART_TYPE (r)) && (SPAR_BIF_STR == r->_.builtin.btype))
                 {
                   SPART *rarg1 = r->_.builtin.args[0];
                   if (SPAR_IS_BLANK_OR_VAR (rarg1))
@@ -1241,29 +1241,29 @@ because const=str(var) is never recognized as a special condition on t_in or t_o
       {
         SPART *arg1 = filt->_.builtin.args[0];
         sparp_equiv_t *arg1_eq;
-	if (SPAR_IS_BLANK_OR_VAR (arg1))
-	  arg1_eq = sparp_equiv_get (sparp, curr, arg1, 0);
-	else
-	  break;
+        if (SPAR_IS_BLANK_OR_VAR (arg1))
+          arg1_eq = sparp_equiv_get (sparp, curr, arg1, 0);
+        else
+          break;
         switch (filt->_.builtin.btype)
           {
-          case isIRI_L:
-          case isURI_L:
+          case SPAR_BIF_ISIRI:
+          case SPAR_BIF_ISURI:
             flags = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL;
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
             return 1;
-          case isBLANK_L:
+          case SPAR_BIF_ISBLANK:
             flags = SPART_VARR_IS_REF | SPART_VARR_IS_BLANK | SPART_VARR_NOT_NULL;
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
             return 1;
-          case isREF_L:
+          case SPAR_BIF_ISREF:
             flags = SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
             return 1;
-          case isLITERAL_L:
+          case SPAR_BIF_ISLITERAL:
             flags = SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL;
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
@@ -1273,26 +1273,12 @@ because const=str(var) is never recognized as a special condition on t_in or t_o
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
             return 1;
-          case SAMETERM_L:
+          case SPAR_BIF_SAMETERM:
             {
               SPART *arg2 = filt->_.builtin.args[1];
               spar_var_eq_to_equiv (sparp, curr, arg1_eq, arg2); /* No return because sameTerm is more strict than merge of equivs */
               break;
             }
-#ifdef DEBUG
-          case COALESCE_L:
-          case IRI_L:
-          case STR_L:
-          case LANG_L: case LANGMATCHES_L: case DATATYPE_L:
-          case REGEX_L:
-          case LIKE_L:
-          case IF_L:
-          case IN_L:
-            break;
-          default: spar_internal_error (sparp, "sparp_" "filter_to_equiv(): unsupported built-in");
-#else
-          default: break;
-#endif
         }
       break;
       }
@@ -6405,7 +6391,7 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
   ssg_puts ((SSG_VALMODE_LONG == retvalmode) ? ".return_iris=0 " : ".return_iris=1 ");
   ssg_puts (" AND ");
   ssg_prin_id_with_suffix (ssg, retselid, "~pview");
-  snprintf (limplusofs_strg, sizeof (limplusofs_strg), ".lim=" BOXINT_FMT, ((SPARP_MAXLIMIT-ofs) >= lim) ? lim+ofs : SPARP_MAXLIMIT);
+  snprintf (limplusofs_strg, sizeof (limplusofs_strg), ".lim=" BOXINT_FMT, (SPARP_MAXLIMIT == lim) ? SPARP_MAXLIMIT : lim+ofs);
   ssg_puts (limplusofs_strg);
   if ((NULL != formatter) || (NULL != agg_formatter))
     {

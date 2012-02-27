@@ -736,6 +736,21 @@ typedef struct rdf_ds_usage_s
   caddr_t rdfdu_alias;	/*!< Table alias used for the occurrence */
 } rdf_ds_usage_t;
 
+/*! Description of SPARQL Built In Function (one mentioned in spec and in lang syntax) */
+typedef struct sparp_bif_desc_s {
+  const char *		sbd_name;		/*!< Name, uppercased */
+  int			sbd_subtype;		/*!< Assigned SPAR_BIF_xxx value */
+  int			sbd_required_syntax;	/*!< Bits of sparql dialect such that at least one bit should be set in dialect in order to allow the function */
+  int			sbd_minargs;		/*!< Minimum allowed number of arguments */
+  int			sbd_maxargs;		/*!< Maximum allowed number of arguments */
+  ssg_valmode_t 	sbd_ret_valmode;	/*!< Native valmode of the expression */
+  ssg_valmode_t 	sbd_arg_valmodes[3];	/*!< Expected valmodes of the arguments. The valmode of last specified argument is used for the rest of arguments */
+  int			sbd_result_restr_bits;	/*!< (Approximate) restriction bits of the result, they can be changed after inspecting restriction bits of arguments */
+} sparp_bif_desc_t;
+
+extern const sparp_bif_desc_t sparp_bif_descs[];
+
+
 #define NULL_ASNAME ((const char *)NULL)
 #define COL_IDX_ASNAME (((const char *)NULL) + 0x100)
 
@@ -963,6 +978,7 @@ An occurrence of a non-blocking feature provides some hint to the optimizer of t
 #define SSG_SD_VOS_6		0x1FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
 #define SSG_SD_VOS_CURRENT	SSG_SD_VOS_6	/*!< Allows everything that is supported by current version of Virtuoso Open Source */
 #define SSG_SD_SPARQL11		0x2000	/*!< Allows the use of SPARQL 1.1 extensions, blocking in most of cases */
+#define SSG_SD_BI_OR_SPARQL11 (SSG_SD_BI | SSG_SD_SPARQL11)
 #define SSG_SD_DEPRECATED_MASK	0x0	/*!< All bits of deprecated flags (none so far) */
 #define SSG_SD_MAXVALUE		(SSG_SD_VOS_CURRENT | SSG_SD_DEPRECATED_MASK)
 
