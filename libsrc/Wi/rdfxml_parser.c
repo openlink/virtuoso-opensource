@@ -331,11 +331,11 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           size_t l1, l2;
           caddr_t full_element_name;
           if (
-        !strcmp ("Property", tmp_local) ||
-        !strcmp ("Bag", tmp_local) ||
-        !strcmp ("Seq", tmp_local) ||
-        !strcmp ("Alt", tmp_local)  ||
-        !strcmp ("List", tmp_local) ||
+            !strcmp ("Property", tmp_local) ||
+            !strcmp ("Bag", tmp_local) ||
+            !strcmp ("Seq", tmp_local) ||
+            !strcmp ("Alt", tmp_local)  ||
+            !strcmp ("List", tmp_local) ||
             !strcmp ("Statement", tmp_local) ||
             !strcmp ("nil", tmp_local) )
             { ; }
@@ -348,7 +348,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             !strcmp ("first", tmp_local) ||
             !strcmp ("rest", tmp_local) ||
             '_' == tmp_local[0] )
-        {
+            {
               xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200, "Name rdf:%.200s is used for node, not for property (legal, but strange)", tmp_local);
             }
           else if (
@@ -408,7 +408,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
           else if (!strcmp (tmp_local, "base"))
             {
-            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
+              XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
               TF_CHANGE_BASE_AND_DEFAULT_GRAPH(xp->xp_tf,box_dv_short_string (avalue));
             }
           else if (0 != strcmp (tmp_local, "space"))
@@ -512,21 +512,21 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
             }
-	  else if (!strcmp (tmp_local, "type"))
-	    {
+          else if (!strcmp (tmp_local, "type"))
+            {
               dk_set_push (&inner_attr_props, avalue);
               dk_set_push (&inner_attr_props, ((caddr_t)((ptrlong)'T')));
               inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
               continue;
-	    }
-	  else if (!strcmp (tmp_local, "value"))
-	    {
+            }
+          else if (!strcmp (tmp_local, "value"))
+            {
 #ifdef RECOVER_RDF_VALUE
-	      rdf_val = avalue;
+              rdf_val = avalue;
 #else
               goto push_inner_attr_prop; /* see below */
 #endif
-	    }
+            }
           else
             {
               xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
@@ -687,17 +687,17 @@ xp_rdfxml_element_end (void *userdata, const char * name)
             }
           else
             {
-          if (NULL == inner->xrl_subject)
-            inner->xrl_subject = xp_rdfxml_bnode_iid (xp, NULL);
-          xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
-          if (NULL != inner->xrl_reification_id)
-            {
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+              if (NULL == inner->xrl_subject)
+                inner->xrl_subject = xp_rdfxml_bnode_iid (xp, NULL);
+              xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
+              if (NULL != inner->xrl_reification_id)
+                {
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+                }
             }
-        }
         }
       if (0 != strses_length (xp->xp_strses))
         GPF_T1("xp_rdfxml_element_end(): non-empty xp_strses outside XRL_PARSETYPE_LITERAL");
@@ -938,7 +938,7 @@ xp_rdfa_expand_name (xp_node_t * xn, const char *name, const char *colon, int us
             }
           dk_free_box (ns_uri);
         }
-    return NULL; /* error: undefined namespace prefix */
+      return NULL; /* error: undefined namespace prefix */
     }
   relative = box_dv_short_string (name);
 
@@ -1170,7 +1170,7 @@ next_token:
               if (!lpar_found && strchr (tail, '('))
                 lpar_found = 1;         /* 012345678901 */
               if (!lpar_found && strncmp ("javascript:", attrvalue, 11))
-              break;
+                break;
             }
           tail++;
         }
@@ -1254,22 +1254,22 @@ next_token:
           else
             {
 #ifndef NDEBUG
-          token_end[0] = '\0';
-          if (('_' == token_start[0]) && (curie_colon == token_start + 1))
-            expanded_token = tf_bnode_iid (xp->xp_tf, box_dv_short_nchars (token_start+2, token_end-(token_start+2)));
-          else if (curie_colon == token_start)
-            { /* Note that the default prefix mapping may differ from usage to usage, it is xhtml vocab namespace only for RDFa */
-              expanded_token = box_dv_short_strconcat (uname_xhv_ns_uri, curie_colon+1);
-            }
-          else
-            expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
-          token_end[0] = saved_token_delim;
+              token_end[0] = '\0';
+              if (('_' == token_start[0]) && (curie_colon == token_start + 1))
+                expanded_token = tf_bnode_iid (xp->xp_tf, box_dv_short_nchars (token_start+2, token_end-(token_start+2)));
+              else if (curie_colon == token_start)
+                { /* Note that the default prefix mapping may differ from usage to usage, it is xhtml vocab namespace only for RDFa */
+                  expanded_token = box_dv_short_strconcat (uname_xhv_ns_uri, curie_colon+1);
+                }
+              else
+                expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
+              token_end[0] = saved_token_delim;
 #endif
-        xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
-          "Bad token in the value of attribute \"%.20s\" (undeclared namespace?)",
+              xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
+                "Bad token in the value of attribute \"%.20s\" (undeclared namespace?)",
                 rdfa_attribute_names[attr_id] );
-    }
-    }
+            }
+        }
     }
   else if (RDFA_ATTRSYNTAX_TERM & allowed_syntax)
     {
@@ -1293,7 +1293,7 @@ next_token:
         {
           if ((RDFA_ATTRSYNTAX_REL_REV_RESERVED & allowed_syntax) ||
             ((NULL != xp->xp_rdfa_locals) && (RDFA_IN_HTML & xp->xp_rdfa_locals->xrdfal_place_bits)) )
-      expanded_token = rdfa_rel_rev_value_is_reserved (token_start);
+            expanded_token = rdfa_rel_rev_value_is_reserved (token_start);
         }
       if (NULL == expanded_token)
         {
@@ -1304,11 +1304,11 @@ next_token:
       if (NULL == expanded_token)
         {
 #if 1
-        goto next_token; /* see above */
+          goto next_token; /* see above */
 #else
-        expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
+          expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
 #endif
-    }
+        }
     }
   else if ((RDFA_ATTRSYNTAX_SAFECURIE & token_syntax) && (token_end == token_start))
     {
@@ -1844,16 +1844,16 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
         }
     }
   if (NULL != avalues[RDFA_ATTR_ABOUT])
+    {
+      if (1 <= src_prio)
         {
-          if (1 <= src_prio)
-            {
-              dk_free_tree (xpt->xpt_src);
-              xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+          dk_free_tree (xpt->xpt_src);
+          xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_ABOUT, avalues,
             RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-                NULL, NULL );
-              src_prio = 1;
-            }
+            NULL, NULL );
+          src_prio = 1;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_CONTENT])
     {
@@ -1863,80 +1863,80 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     {
       xpt->xpt_dt = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_DATATYPE, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-            NULL, NULL );
+        NULL, NULL );
     }
   if (NULL != avalues[RDFA_ATTR_HREF])
     {
-          if (RDFA_IN_BASE & inner_place_bits)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+      if (RDFA_IN_BASE & inner_place_bits)
+        {
+          dk_free_tree (xpt->xpt_href);
+          xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_HREF, avalues,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
-                NULL, NULL );
-              xp_rdfa_set_base (xp, outer, xpt->xpt_href);
-              xpt->xpt_href = NULL;
-              inner_place_bits |= RDFA_IN_UNUSED;
-            }
-          else if (4 <= href_prio)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+            RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
+            NULL, NULL );
+          xp_rdfa_set_base (xp, outer, xpt->xpt_href);
+          xpt->xpt_href = NULL;
+          inner_place_bits |= RDFA_IN_UNUSED;
+        }
+      else if (4 <= href_prio)
+        {
+          dk_free_tree (xpt->xpt_href);
+          xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_HREF, avalues,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
-                NULL, NULL );
-              href_prio = 4;
-            }
+            RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
+            NULL, NULL );
+          href_prio = 4;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_PROPERTY])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_PROPERTY, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_prop_preds), &prop_pred_count );
+        &(xpt->xpt_prop_preds), &prop_pred_count );
     }
   if (NULL != avalues[RDFA_ATTR_REL])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_REL, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_rel_preds), &rel_pred_count );
-          rel_rev_attrcount++;
+        &(xpt->xpt_rel_preds), &rel_pred_count );
+      rel_rev_attrcount++;
     }
   if (NULL != avalues[RDFA_ATTR_RESOURCE])
     {
-          if (3 <= href_prio)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+      if (3 <= href_prio)
+        {
+          dk_free_tree (xpt->xpt_href);
+          xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_RESOURCE, avalues,
             RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-                NULL, NULL );
-              href_prio = 3;
-            }
+            NULL, NULL );
+          href_prio = 3;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_REV])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_REV, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_rev_preds), &rev_pred_count );
-          rel_rev_attrcount++;
+        &(xpt->xpt_rev_preds), &rev_pred_count );
+      rel_rev_attrcount++;
     }
   if (NULL != avalues[RDFA_ATTR_SRC])
     {
-          if (2 <= src_prio)
-            {
-              dk_free_tree (xpt->xpt_src);
-              xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+      if (2 <= src_prio)
+        {
+          dk_free_tree (xpt->xpt_src);
+          xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_SRC, avalues,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-                NULL, NULL );
-              src_prio = 2;
-            }
+            RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+            NULL, NULL );
+          src_prio = 2;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_TYPEOF])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_TYPEOF, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_typeofs), &typeof_count );
+        &(xpt->xpt_typeofs), &typeof_count );
     }
   if (NULL != avalues[RDFA_ATTR_XML_BASE])
     {
@@ -1949,8 +1949,8 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     }
   if (NULL != avalues[RDFA_ATTR_XML_LANG])
     {
-          if (NULL != xpt->xpt_lang)
-            dk_free_tree (xpt->xpt_lang);
+      if (NULL != xpt->xpt_lang)
+        dk_free_tree (xpt->xpt_lang);
       xpt->xpt_lang = box_dv_short_string (avalues[RDFA_ATTR_XML_LANG]);
     }
 
@@ -2018,7 +2018,7 @@ all_attributes_are_retrieved:
       xp->xp_current = xn;
     }
   if (!inner_is_allocated)
-  inner = xp_push_rdfa_locals (xp);
+    inner = xp_push_rdfa_locals (xp);
 #ifdef DEBUG
   if (NULL != xp->xp_boxed_name)
     GPF_T1("Memory leak in xp->xp_boxed_name");
@@ -2198,7 +2198,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
           literal_head = (caddr_t *)list (1, uname__root);
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
-	  current_node->xn_children = NULL;
+          current_node->xn_children = NULL;
           if (obj_use_count)
             {
               xml_tree_ent_t *literal_xte;
