@@ -1244,3 +1244,114 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
   return err_ret;
 }
 ;
+
+---------------------
+-- R2RML generator
+---------------------
+create procedure
+R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+{
+   declare create_view_stmt, ns, sns any;
+   declare total_select, total_tb, total, qual, pkcols any;
+   declare vname, mask varchar;
+
+   rdf_view_tbl_pk_cols (_tbls, pkcols);
+   cols := rdf_view_tbl_opts (_tbls, cols);
+   sns := ns := sprintf ('@prefix rr: <http://www.w3.org/ns/r2rml#> .\n@prefix %s: <http://%s/schemas/%s/> .\n', qualifier, virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+
+   if (gen_stat)
+     {
+       ns := ns || sprintf ('@prefix %s-stat: <http://%s/%s/stat#> .\n', lcase (qualifier), virtuoso_ini_item_value ('URIQA','DefaultHost'),
+			    qualifier);
+       ns := ns || '@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n';
+       ns := ns || '@prefix void: <http://rdfs.org/ns/void#> .\n';
+       ns := ns || '@prefix scovo: <http://purl.org/NET/scovo#> .\n';
+     }
+   ns := ns || '@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .\n';
+   ns := ns || rdf_view_ns_get (cols, 1);
+   ns := ns || '\n';
+
+   create_view_stmt := ns;
+   for (declare inx int, inx := 0; inx < length (_tbls) ; inx := inx + 1)
+      create_view_stmt := create_view_stmt || '\n' || r2rml_create_dataset (inx, qualifier, _tbls, gen_stat, cols, pkcols) || '';
+
+   return create_view_stmt;
+}
+;
+
+create procedure
+r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
+{
+   declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
+   declare suffix, tname, tbl, own, pref_l any;
+   declare cols_arr, inx, col_name, owner, owner_l any;
+
+   ret := '';
+   suffix := '_s';
+   uriqa_str := registry_get ('URIQADefaultHost');
+   qual := name_part (_tbls[nth], 0);
+   own := name_part (_tbls[nth], 1);
+   qual_l := lcase (qual);
+   pref_l := lcase (qualifier);
+   tbl := _tbls[nth];
+   cols_arr := get_keyword (tbl, cols);
+   tbl_name := name_part (tbl, 2);
+   owner := name_part (tbl, 1);
+   tbl_name_l := rdf_view_tb (tbl_name);
+   owner_l := rdf_view_tb (owner);
+   tname := tbl_name_l || suffix;
+   pks := get_keyword (tbl, pkcols); 
+   
+   pk_text := '';
+   for (declare i any, i := 0; i < length (pks) ; i := i + 1)
+      pk_text := pk_text || sprintf ('/{%s}', pks[i][0]);
+
+   ret := ret || sprintf ('<#TriplesMap%s> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "%s" ; rr:tableOwner "%s" ; rr:tableName "%s" ]; \n', tbl_name, qual, own, tbl_name);
+   ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s:%s; ];\n', uriqa_str, qual, tbl_name_l, pk_text, qualifier, rdf_view_cls_name (tbl_name));
+
+   inx := 0;
+   for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = tbl order by COL_ID do
+     {
+       col_name := "COLUMN";
+       if (not exists (select 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME = col_name))
+         ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s ] ; rr:objectMap [ rr:column "%s" ]; ] ;\n', 
+	 	qualifier, lower (col_name), col_name);
+       inx := inx + 1;
+     }
+   for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE <> tbl do
+     {
+       pk_text := '';
+       for select FKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE = pkt order by KEY_SEQ do
+	 {
+	   pk_text := pk_text || sprintf ('/{%s}', FKCOLUMN_NAME);
+	 }
+       ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s_has_%s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
+                             qualifier, tbl_name_l, lower (name_part (pkt, 3)), uriqa_str, qual, lower (name_part (pkt, 3)), pk_text);
+     }
+ 
+   for select distinct FK_TABLE as fkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and position (FK_TABLE, _tbls)  do
+     {
+       declare jc varchar;
+       jc := '';
+       pk_text := '';
+       for select FKCOLUMN_NAME, PKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = fkt and PK_TABLE = tbl order by KEY_SEQ do
+   	 {
+   	   jc := jc || sprintf (' rr:joinCondition [ rr:child "%s" ; rr:parent "%s" ] ;', FKCOLUMN_NAME, PKCOLUMN_NAME); 
+	   pk_text := pk_text || sprintf ('/{%s}', FKCOLUMN_NAME);
+   	 }
+       if (tbl <> fkt)
+	 { 
+           ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s_of_%s ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMap%s>; %s ]; ] ;\n',
+                             qualifier, tbl_name_l, lower (name_part (fkt, 3)), name_part (fkt, 3), jc);
+	 }
+       else
+	 {
+	   ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s_has_%s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
+                             qualifier, tbl_name_l, lower (name_part (fkt, 3)), uriqa_str, qual, lower (name_part (fkt, 3)), pk_text);
+	 }
+     }
+ 
+   ret := rtrim (ret, ';\n') || '.\n'; 
+   return ret;
+}
+;
