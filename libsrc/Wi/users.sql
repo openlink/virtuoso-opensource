@@ -1322,6 +1322,26 @@ alter index SYS_USER_WEBID on SYS_USER_WEBID partition cluster replicated
 create index SYS_USER_WEBID_NAME on SYS_USER_WEBID (UW_U_NAME) partition cluster replicated
 ;
 
+create procedure FOAF_SSL_QRY (in gr varchar, in uri varchar)
+{
+    return sprintf ('sparql
+    define input:storage ""
+    define input:same-as "yes"
+    prefix cert: <http://www.w3.org/ns/auth/cert#>
+    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
+    select (str (?exp)) (str (?mod))
+    from <%S>
+    where
+    {
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
+      union
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
+      union
+      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
+    }', gr, uri, uri, uri);
+}
+;
+
 create procedure
 DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar)
 {
@@ -1362,17 +1382,7 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := sprintf (
-        'sparql define input:storage "" '||
-	' prefix cert: <http://www.w3.org/ns/auth/cert#> '||
-	' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
-	' from <%S> '||
-  	' where { '||
-	' 	  ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ' ||
-	' 	  optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } '||
-	'       } ',
-	gr, agent);
+  qr := FOAF_SSL_QRY (gr, agent);
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
   if (stat = '00000' and length (data))
