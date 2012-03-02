@@ -344,7 +344,11 @@ bnode_found_or_added_for_big_ssl:
       SPART *tvector_call;
       int triple_is_const = 1;
       tvector_args = (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL);
+#if 0
       tvector_call = spar_make_funcall (sparp, 0, ((NULL == formatter) ? "LONG::bif:vector" :  "bif:vector"), tvector_args);
+#else /* LONG::bif:vector is needed always, otherwise construct with constant "string"@lang may become plain "string" in a formatted output */
+      tvector_call = spar_make_funcall (sparp, 0, "LONG::bif:vector", tvector_args);
+#endif
       for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
           SPART *fld = triple->_.triple.tr_fields[fld_ctr];

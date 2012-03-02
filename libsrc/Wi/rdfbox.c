@@ -2360,7 +2360,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
       break;
     case DV_WIDE:
       session_buffered_write_char ('"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_TTL_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_TTL_DQ);
       session_buffered_write_char ('"', ses);
       break;
     case DV_XML_ENTITY:
