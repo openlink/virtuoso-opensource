@@ -2516,6 +2516,20 @@ fail:
   return (caddr_t)(ptrlong)(status);
 }
 
+int
+rdfxml_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env, ptrlong *ns_counter_ptr, ttl_iriref_t *ti)
+{
+  int cache_ok = ttl_try_to_cache_new_prefix (qst, ses, env, ns_counter_ptr, ti);
+  if (!cache_ok)
+    return 0;                /* .0.12345678 */
+  session_buffered_write (ses, "\n\txmlns:", 8);
+  session_buffered_write (ses, ti->prefix, strlen (ti->prefix));
+  session_buffered_write (ses, "=\"", 2);
+  dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_DQATTR);
+  session_buffered_write_char ('"', ses);
+  return 1;
+}
+
 caddr_t
 bif_http_rdfxml_p_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2543,20 +2557,6 @@ bif_http_rdfxml_p_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fail:
   dk_free_box (ti.uri); dk_free_box (ti.ns); dk_free_box (ti.loc); dk_free_box (ti.prefix);
   return (caddr_t)(ptrlong)(status);
-}
-
-int
-rdfxml_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env, ptrlong *ns_counter_ptr, ttl_iriref_t *ti)
-{
-  int cache_ok = ttl_try_to_cache_new_prefix (qst, ses, env, ns_counter_ptr, ti);
-  if (!cache_ok)
-    return 0;                /* .0.12345678 */
-  session_buffered_write (ses, "\n\txmlns:", 8);
-  session_buffered_write (ses, ti->prefix, strlen (ti->prefix));
-  session_buffered_write (ses, "=\"", 2);
-  dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_DQATTR);
-  session_buffered_write_char ('"', ses);
-  return 1;
 }
 
 #define RDFXML_HTTP_WRITE_REF_ABOUT	1
@@ -2611,7 +2611,7 @@ rdfxml_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti, int 
         prefix_to_use = "dt";
       close_attr = 1;
       break;
-    default: GPF_T;
+    default: prefix_to_use = NULL; GPF_T;
     }
   if (NULL != prefix_to_use)
     {
@@ -3219,9 +3219,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
-	{
-	  to_free = type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
-	}
+        type_uri = to_free = rdf_type_twobyte_to_iri (rb->rb_type);
     }
   else
     {
