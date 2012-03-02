@@ -8543,6 +8543,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
   int gby_ctr, oby_ctr;
   int has_limofs = 0;	/* 0 = no limit/offset clause in the output, 1 = it is in limofs_strg, 2 = should be printed in place */
+  int three_cols_procedure = 0;
   caddr_t limofs_alias = NULL;
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
@@ -8667,7 +8668,10 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case DESCRIBE_L:
       if ((NULL != tree->_.req_top.formatmode_name) &&
         !strcmp ("_JAVA_", tree->_.req_top.formatmode_name) )
-        ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
+        {
+          ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
+          three_cols_procedure = 1;
+        }
       else if ((NULL == formatter) && (NULL == agg_formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
         {
           ssg_find_formatter_by_name_and_subtype ("TTL", subtype, &formatter, &agg_formatter, &agg_meta);
@@ -8866,9 +8870,7 @@ The fix is to avoid printing constant expressions at all, with only exception fo
           break;
         }
     }
-  else if (((CONSTRUCT_L == subtype) || (DESCRIBE_L == subtype)) &&
-    (NULL != tree->_.req_top.formatmode_name) &&
-    !strcmp ("_JAVA_", tree->_.req_top.formatmode_name) )
+  else if (three_cols_procedure)
     ssg_puts ("))");
 }
 

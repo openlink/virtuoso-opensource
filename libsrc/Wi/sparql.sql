@@ -3794,218 +3794,36 @@ print_o:
 
 create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print_top_level integer, inout ses any)
 {
+  declare ns_dict, env any;
   declare tcount, tctr integer;
   tcount := length (triples);
+  { whenever sqlstate '*' goto end_pred_sort;
+    rowvector_subj_sort (triples, 1, 1);
+end_pred_sort: ;
+  }
+  ns_dict := dict_new (case (print_top_level) when 0 then 10 else __min (tcount, 16000) end);
+  dict_put (ns_dict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
+  dict_put (ns_dict, 'http://www.w3.org/2000/01/rdf-schema#', 'rdfs');
+  env := vector (ns_dict, 0, 0, '', '', 0, 0, 0, 0);
   if (print_top_level)
     {
-       http ('<?xml version="1.0" encoding="utf-8" ?>\n<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '||
-      			'xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">', ses);
-    }
+       http ('<?xml version="1.0" encoding="utf-8" ?>\n<rdf:RDF\n\txmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n\txmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"', ses);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
-      declare subj, pred, obj any;
-      declare pred_tagname varchar;
-      declare res varchar;
-      subj := triples[tctr][0];
-      pred := triples[tctr][1];
-      obj := triples[tctr][2];
-      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: subj:', subj, __tag(subj), __box_flags (subj));
-      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: pred:', pred, __tag(pred), __box_flags (pred));
-      -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT: obj:', obj, __tag(obj), __box_flags (obj));
-      http ('\n<rdf:Description', ses);
-      if (not isiri_id (subj))
-        {
-          if (isstring (subj) and (1 = __box_flags (subj)))
-            {
-              if (subj like 'nodeID://%')
-                {
-                  http (' rdf:nodeID="b', ses); http_value (subseq (subj, 9), 0, ses); http ('">', ses);
+           http_rdfxml_p_ns (env, triples[tctr][1], ses);
                 }
-              else
-                {
-		  subj := charset_recode (subj, 'UTF-8', '_WIDE_');
-                  http (' rdf:about="', ses); http_value (subj, 0, ses); http ('">', ses);
-                }
-            }
-          else if (subj is null)
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is NULL');
-          else
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is literal');
-        }
-      else if (subj >= min_bnode_iri_id ())
-        http (sprintf (' rdf:nodeID="b%d">', iri_id_num (subj)), ses);
-      else
-        {
-          res := id_to_iri (subj);
---          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = subj));
-	  res := charset_recode (res, 'UTF-8', '_WIDE_');
-          http (' rdf:about="', ses); http_value (res, 0, ses); http ('">', ses);
-        }
-      if (not isiri_id (pred))
-        {
-          if (isstring (pred) and (1 = __box_flags (pred)))
-            {
-              if (pred like 'nodeID://%')
-                signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): blank node as predicate');
-              res := pred;
-              goto res_for_pred;
-            }
-          else if (pred is null)
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is NULL');
-          else
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is literal');
-        }
-      if (pred >= min_bnode_iri_id ())
-        signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): blank node as predicate');
-      res := id_to_iri (pred);
-res_for_pred:
-      declare delim, delim1, delim2, delim3, delim4 integer;
-      delim1 := coalesce (strrchr (res, '/'), -1);
-      delim2 := coalesce (strrchr (res, '#'), -1);
-      delim3 := coalesce (strrchr (res, ':'), -1);
-      delim4 := coalesce (strrchr (res, '%'), -1);
-      if (delim4 > 0 and delim4 < (length (res) - 2))
-        delim4 := delim4 + 2;
-      delim := __max (delim1, delim2, delim3, delim4);
-      if (delim < 0)
-        delim := null;
-      if (delim is null)
-        {
-          pred_tagname := res;
-          http ('<', ses); http (pred_tagname, ses);
-        }
-      else
-        {
-          declare p_ns_uri, p_ns_pref varchar;
-          p_ns_uri := subseq (res, 0, delim+1);
-          if (p_ns_uri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-            {
-              pred_tagname := 'rdf:' || subseq (res, delim+1);
-              http ('<', ses); http (pred_tagname, ses);
-            }
-          else if (p_ns_uri = 'http://www.w3.org/2000/01/rdf-schema#')
-            {
-              pred_tagname := 'rdfs:' || subseq (res, delim+1);
-              http ('<', ses); http (pred_tagname, ses);
-            }
-          else
-            {
-              p_ns_pref := coalesce (__xml_get_ns_prefix (p_ns_uri, 3), 'n0pred');
-              pred_tagname := p_ns_pref || ':' || subseq (res, delim+1);
-              http ('<', ses); http (pred_tagname, ses);
-              http (' xmlns:' || p_ns_pref || '="', ses); http_value (p_ns_uri, 0, ses); http ('"', ses);
-            }
-        }
-      if (obj is null)
-        signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): object is NULL');
-      if (isiri_id (obj))
-        {
-          if (obj >= min_bnode_iri_id ())
-            http (sprintf (' rdf:nodeID="b%d"/>', iri_id_num (obj)), ses);
-          else
-            {
-              res := coalesce (id_to_iri(obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
---              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
-	      res := charset_recode (res, 'UTF-8', '_WIDE_');
-              http (' rdf:resource="', ses); http_value (res, 0, ses); http ('"/>', ses);
-            }
-        }
-      else if (__tag of rdf_box = __tag (obj))
-        {
-          declare dat any;
-          if (257 <> rdf_box_type (obj))
-            {
-              res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
-              http (' rdf:datatype="', ses); http_value (res, 0, ses); http ('"', ses);
-            }
-          else if (257 <> rdf_box_lang (obj))
-            {
-              res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
-              http (' xml:lang="', ses); http_value (res, 0, ses); http ('"', ses);
-            }
-          dat := __rdf_sqlval_of_obj (obj, 1);
-          if (__tag of XML = __tag (dat))
-            {
-              http (' rdf:parseType="Literal">', ses);
-              http_value (dat, 0, ses);
-              http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-            }
-          else if (__tag of datetime = rdf_box_data_tag (obj))
-            {
-	      if (257 = rdf_box_type (obj))
-		{
-		  http (' rdf:datatype="', ses);
-		  http_escape (cast (__xsd_type (dat) as varchar), 12, ses, 1, 1);
-		  http ('">', ses);
-		}
-	      else
-		http ('>', ses);
-              __rdf_long_to_ttl (dat, ses);
-              http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-            }
-          else
-            {
-	      declare tmp any;
-              http ('>', ses);
-	      tmp := __rdf_strsqlval (obj);
-	      if (__tag of varchar = __tag (tmp))
-		tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
-              http_value (tmp, 0, ses);
-              http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-            }
-        }
-      else if (__tag of varchar = __tag (obj))
-        {
-          if (1 = __box_flags (obj))
-            {
-              if (obj like 'nodeID://%')
-                {
-                  http (' rdf:nodeID="b', ses); http_value (subseq (obj, 9), 0, ses); http ('"/>', ses);
-                }
-              else
-                {
-		  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
-                  http (' rdf:resource="', ses); http_value (obj, 0, ses); http ('"/>', ses);
-                }
-            }
-          else
-            {
-              http ('>', ses);
-              obj := charset_recode (obj, 'UTF-8', '_WIDE_');
-              http_value (obj, 0, ses);
-              http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-            }
-        }
-      else if (__tag of varbinary = __tag (obj))
-        {
           http ('>', ses);
-          http_value (obj, 0, ses);
-          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
         }
-      else if (__tag of XML = __tag (obj))
+  { whenever sqlstate '*' goto end_subj_sort;
+    rowvector_subj_sort (triples, 0, 1);
+end_subj_sort: ;
+        }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
         {
-          http (' rdf:parseType="Literal">', ses);
-          http_value (obj, 0, ses);
-          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-        }
-      else if (__tag of datetime = rdf_box_data_tag (obj))
-        {
-          http (' rdf:datatype="', ses);
-          http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
-          http ('">', ses);
-          __rdf_long_to_ttl (obj, ses);
-          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-        }
-      else
-        {
-          http (' rdf:datatype="', ses);
-          http_value (__xsd_type (obj), 0, ses);
-          http ('">', ses);
-          http_value (__rdf_strsqlval (obj), 0, ses);
-          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
-        }
-      http ('</rdf:Description>', ses);
+      http_rdfxml_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
     }
+  if (isstring (env[2]))
+    http ('\n  </rdf:Description>', ses);
   if (print_top_level)
     {
       http ('\n</rdf:RDF>', ses);
@@ -4355,7 +4173,6 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   endpoint_fmt := DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT ('ul');
   can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
-  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   http ('>\n<head><title>HTML Microdata document</title></head>\n<body>\n<ul>\n', ses);
   env := vector (0, 0, 0, null);
@@ -4514,7 +4331,6 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   endpoint_fmt := DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT ('tr');
   can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
-  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   http ('>\n<head><title>HTML Microdata document</title></head>\n<body>\n<table>\n', ses);
   env := vector (0, 0, 0, null);
@@ -4658,7 +4474,6 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
   dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
-  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; (tctr < tcount) and (1000 > dict_size (nsdict)); tctr := tctr + 1)
     {
       sparql_iri_split_rdfa_qname (triples[tctr][0], nsdict, 1);
