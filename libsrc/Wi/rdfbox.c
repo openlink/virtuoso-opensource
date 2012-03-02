@@ -1908,8 +1908,8 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
 int
 iri_cast_rdfxml_qname (query_instance_t *qi, caddr_t iri, caddr_t *uri_ret, ptrlong *is_bnode_ret)
 {
-  is_bnode_ret[0] = 0;
   caddr_t old_uri_ret = uri_ret[0];
+  is_bnode_ret[0] = 0;
   switch (DV_TYPE_OF (iri))
     {
     case DV_STRING: case DV_UNAME:
