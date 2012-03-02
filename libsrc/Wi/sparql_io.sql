@@ -2064,13 +2064,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       		vector ('text/rdf+n3',			'N3/Turtle'),
       		vector ('application/rdf+json',		'RDF/JSON'),
       		vector ('application/rdf+xml',		'RDF/XML'),
-      		vector ('text/plain',			'NTriples'),
+		vector ('text/plain',			'N-Triples'),
       		vector ('application/xhtml+xml',	'XHTML+RDFa'),
       		vector ('application/atom+xml',		'ATOM+XML'),
       		vector ('application/odata+json',	'ODATA/JSON'),
-      		vector ('application/ld+json',		'JSON-LD'),
+		vector ('application/x-json+ld', 	'JSON-LD'),
+		vector ('text/x-html+ul', 		'HTML (list)'),
+		vector ('text/x-html+tr', 		'HTML (table)'),
       		vector ('text/html',			'HTML+Microdata'),
-      		vector ('application/microdata+json',	'Microdata/JSON')
+		vector ('application/microdata+json', 	'Microdata/JSON'),
+		vector ('text/csv', 			'CSV')
       );
     }
   else
@@ -2085,7 +2088,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       		vector ('application/javascript',		'Javascript'),
       		vector ('text/plain',				'NTriples'),
       		vector ('application/rdf+xml',			'RDF/XML')
-		);
+      );
     }
   foreach (any x in opts) do
     {
