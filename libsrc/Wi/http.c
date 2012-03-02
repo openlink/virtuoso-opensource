@@ -5866,11 +5866,11 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 #define ENC_B64_NAME "encode_base64"
 #define DEC_B64_NAME "decode_base64"
 
-static char base64_vec[] =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+char base64_vec[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+char base64url_vec[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_\0";
 
 size_t
-encode_base64(char * input, char * output, size_t len)
+encode_base64_impl (char * input, char * output, size_t len, char * table)
 {
   unsigned char	c;
   int  n = 0,
@@ -5898,7 +5898,7 @@ encode_base64(char * input, char * output, size_t len)
 	}
 
       for (i = 3; i >= 0; i--)
-	output[x++] = base64_vec[enc[i]];
+	output[x++] = table[enc[i]];
       n = 1;
       count += 4;
       val = c;
@@ -5938,7 +5938,7 @@ encode_base64(char * input, char * output, size_t len)
   if (n)
     {
       for (i = 3; i >= 0; i--)
-	output[x++] = base64_vec[enc[i]];
+	output[x++] = table[enc[i]];
     }
 
   return x;
@@ -5969,6 +5969,30 @@ bif_encode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return(res);
 }
 
+caddr_t
+bif_encode_base64url(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t dest;
+  caddr_t res;
+  caddr_t src = bif_string_arg (qst, args, 0, ENC_B64_NAME);
+  dtp_t dtp = DV_TYPE_OF (src);
+  size_t len = box_length(src);
+
+  if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
+    len--;
+
+  if ((len * 2 + 1) > MAX_BOX_LENGTH)
+    sqlr_new_error ("22023", "HT081", "The input string is too large");
+
+  dest = dk_alloc_box(len * 2 + 1, DV_SHORT_STRING);
+  len = encode_base64_impl ((char *)src, (char *)dest, len, B64_URL);
+  *(dest+len) = 0;
+
+  res = box_dv_short_string(dest);
+  dk_free_box(dest);
+  return(res);
+}
+
 static void
 base64_store24(char ** d, char * c)
 {
@@ -5978,7 +6002,7 @@ base64_store24(char ** d, char * c)
 }
 
 size_t
-decode_base64(char * src, char * end)
+decode_base64_impl (char * src, char * end, char * table)
 {
     char * start = src;
     char c0, c[4], *p;
@@ -5989,8 +6013,8 @@ decode_base64(char * src, char * end)
     while ((c0 = *src++) && src < end) {
 	if (c0=='=')
 	  break; /* a = symbol is end padding */
-	if ((p=strchr(base64_vec, c0))) {
-	  c[i++]=(char) (p-base64_vec);
+	if ((p=strchr(table, c0))) {
+	  c[i++]=(char) (p-table);
 	  if (i==4) {
 	    base64_store24(&d, c);
 	    i=0;
@@ -6023,6 +6047,26 @@ bif_decode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memcpy (buf, src, blen);
 
   len = decode_base64(buf, buf + blen);
+  res = dk_alloc_box (len + 1, DV_SHORT_STRING);
+  memcpy (res, buf, len);
+  res[len] = 0;
+  dk_free_box(buf);
+
+  return (res);
+}
+
+caddr_t
+bif_decode_base64url (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t src = bif_string_arg (qst, args, 0, DEC_B64_NAME);
+  caddr_t res, buf;
+  size_t len, blen;
+
+  blen = box_length(src);
+  buf = dk_alloc_box(blen, DV_SHORT_STRING);
+  memcpy (buf, src, blen);
+
+  len = decode_base64_impl (buf, buf + blen, B64_URL);
   res = dk_alloc_box (len + 1, DV_SHORT_STRING);
   memcpy (res, buf, len);
   res[len] = 0;
@@ -10206,6 +10250,8 @@ http_init_part_one ()
   bif_define_typed ("http_request_status_get", bif_http_request_status_get, &bt_varchar);
   bif_define_typed (ENC_B64_NAME, bif_encode_base64, &bt_varchar);
   bif_define_typed (DEC_B64_NAME, bif_decode_base64, &bt_varchar);
+  bif_define_typed ("encode_base64url", bif_encode_base64url, &bt_varchar);
+  bif_define_typed ("decode_base64url", bif_decode_base64url, &bt_varchar);
   bif_define_typed ("http_root", bif_http_root, &bt_varchar);
   bif_define_typed ("dav_root", bif_dav_root, &bt_varchar);
   bif_define_typed ("http_path", bif_http_path, &bt_varchar);
