@@ -370,7 +370,7 @@ sparp_gp_trav_preopt_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
 void
 sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals)
 {
-  rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
+  rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_src.ssrc_grab);
   SPART *root = sparp->sparp_expr;
   if (rgc->rgc_all)
     spar_add_rgc_vars_and_consts_from_retvals (sparp, root->_.req_top.retvals);
@@ -2648,6 +2648,8 @@ sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
       int chk_res;
       if (SPART_GRAPH_MIN_NEGATION < source->_.graph.subtype)
         {
+          if (NULL == source->_.graph.iri)
+            continue;
           if ((NULL != rvr) && (NULL != rvr->rvrFixedValue) &&
             sparp_fixedvalues_equal (sparp, (SPART *)(source->_.graph.iri), (SPART *)(rvr->rvrFixedValue)) )
             return SSG_QM_NO_MATCH;
@@ -2658,7 +2660,10 @@ sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
         }
       if (tcc->tcc_source_invalidation_masks[source_ctr])
         continue;
-      chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(source->_.graph.iri), qmv_or_fmt_rvr, rvr);
+      if (NULL == source->_.graph.iri)
+        chk_res = ((NULL != rvr->rvrFixedValue) ? SSG_QM_APPROX_MATCH : SSG_QM_PARTIAL_MATCH);
+      else
+        chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(source->_.graph.iri), qmv_or_fmt_rvr, rvr);
       if (SSG_QM_NO_MATCH != chk_res)
         {
           if (chk_res < min_match)
@@ -5326,7 +5331,7 @@ sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
   if (SPAR_CODEGEN == top_type)
     return;
   sparp_rewrite_retvals (sparp, safely_copy_retvals);
-  if ((sparp->sparp_env->spare_grab.rgc_pview_mode) && (NULL == sparp->sparp_parent_sparp))
+  if ((sparp->sparp_env->spare_src.ssrc_grab.rgc_pview_mode) && (NULL == sparp->sparp_parent_sparp))
     {
       sparp_rewrite_grab (sparp);
       return;
@@ -6060,7 +6065,7 @@ void
 sparp_rewrite_grab (sparp_t *sparp)
 {
   sparp_env_t *env = sparp->sparp_env;
-  rdf_grab_config_t *rgc = &(env->spare_grab);
+  rdf_grab_config_t *rgc = &(env->spare_src.ssrc_grab);
   sparp_t *sparp_of_seed;	/* This will compile the statement that will collect the first set of graphs */
   sparp_t *sparp_of_iter;	/* This will compile the statement that will called while the set of graphs growth */
   sparp_t *sparp_of_final;	/* This will compile the statement that will produce the final result set */
@@ -6104,10 +6109,10 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
   sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_seed->sparp_env->spare_global_num_offset = 1;
-  sparp_of_seed->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
-  sparp_of_seed->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
-  sparp_of_seed->sparp_env->spare_grab.rgc_sa_vars = env->spare_grab.rgc_sa_vars;
-  sparp_of_seed->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
+  sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_sa_graphs = env->spare_src.ssrc_grab.rgc_sa_graphs;
+  sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_sa_preds = env->spare_src.ssrc_grab.rgc_sa_preds;
+  sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_sa_vars = env->spare_src.ssrc_grab.rgc_sa_vars;
+  sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_vars = env->spare_src.ssrc_grab.rgc_vars;
 /* Making subqueries: iter */
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
@@ -6116,10 +6121,10 @@ sparp_rewrite_grab (sparp_t *sparp)
     sparp_tweak_order_of_iter (sparp_of_iter, sparp_of_iter->sparp_expr->_.req_top.order);
   sparp_of_iter->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_iter->sparp_env->spare_global_num_offset = 1;
-  sparp_of_iter->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
-  sparp_of_iter->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
-  sparp_of_iter->sparp_env->spare_grab.rgc_sa_vars = env->spare_grab.rgc_sa_vars;
-  sparp_of_iter->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
+  sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_sa_graphs = env->spare_src.ssrc_grab.rgc_sa_graphs;
+  sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_sa_preds = env->spare_src.ssrc_grab.rgc_sa_preds;
+  sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_sa_vars = env->spare_src.ssrc_grab.rgc_sa_vars;
+  sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_vars = env->spare_src.ssrc_grab.rgc_vars;
 /* Only after making the iter subquery from the seed one, seed may loose its ORDER BY */
   sparp_of_seed->sparp_expr->_.req_top.order = NULL;
 /*!!! TBD: relax graph conditions in sparp_of_iter */

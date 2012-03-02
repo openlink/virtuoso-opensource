@@ -37,7 +37,7 @@ One tab before end of single-line BNF comment.
 Whitespaces in all other places, including two whitespaces after "::=" in BNF comments */
 
 %pure_parser
-%expect 10
+%expect 9
 
 %{
 
@@ -137,6 +137,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token _STAR_GT		/*:: PUNCT_SPAR_LAST("*>") ::*/
 
 %token a_L		/*:: PUNCT_SPAR_LAST("a") ::*/
+%token ADD_L		/*:: PUNCT_SPAR_LAST("ADD") ::*/
+%token ALL_L		/*:: PUNCT_SPAR_LAST("ALL") ::*/
 %token ALTER_L		/*:: PUNCT_SPAR_LAST("ALTER") ::*/
 %token AS_L		/*:: PUNCT_SPAR_LAST("AS") ::*/
 %token ASC_L		/*:: PUNCT_SPAR_LAST("ASC") ::*/
@@ -152,6 +154,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token CLEAR_L		/*:: PUNCT_SPAR_LAST("CLEAR") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
+%token COPY_L		/*:: PUNCT_SPAR_LAST("COPY") ::*/
 %token COUNT_L		/* Fake, used only in sparqlwords.gperf */
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
@@ -198,6 +201,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token MIN_L		/*:: PUNCT_SPAR_LAST("MIN") ::*/
 %token MINUS_L		/*:: PUNCT_SPAR_LAST("MINUS") ::*/
 %token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
+%token MOVE_L		/*:: PUNCT_SPAR_LAST("MOVE") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
 %token NOT_L		/*:: PUNCT_SPAR_LAST("NOT") ::*/
@@ -246,6 +250,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token T_NO_ORDER_L	/*:: PUNCT_SPAR_LAST("T_NO_ORDER") ::*/
 %token T_SHORTEST_ONLY_L	/*:: PUNCT_SPAR_LAST("T_SHORTEST_ONLY") ::*/
 %token T_STEP_L		/*:: PUNCT_SPAR_LAST("T_STEP") ::*/
+%token TO_L		/*:: PUNCT_SPAR_LAST("TO") ::*/
 %token TRANSITIVE_L	/*:: PUNCT_SPAR_LAST("TRANSITIVE") ::*/
 %token true_L		/*:: PUNCT_SPAR_LAST("true") ::*/
 %token UNBOUND_L	/*:: PUNCT_SPAR_LAST("UNBOUND") ::*/
@@ -324,6 +329,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_dataset_clauses_opt
 %type <nothing> spar_dataset_clause
 %type <token_type> spar_dataset_clause_subtype
+%type <token_type> spar_dataset_clause_subtype_from
+%type <token_type> spar_dataset_clause_subtype_using
 %type <trees> spar_sponge_optionlist_opt
 %type <trees> spar_sponge_option_commalist_opt_rpar
 %type <backstack> spar_sponge_option_commalist
@@ -368,9 +375,11 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_service_options
 %type <trees> spar_service_option
 %type <tree> spar_ctor_template
-%type <nothing> spar_ctor_triples
-%type <nothing> spar_triples_opt
+%type <nothing> spar_ctor_triples_or_quads_opt
+%type <nothing> spar_ctor_triples_or_quads_triples
+%type <nothing> spar_ctor_triples_or_quads_quads
 %type <nothing> spar_triples
+%type <nothing> spar_quads1
 %type <nothing> spar_triples1
 %type <nothing> spar_props_opt
 %type <nothing> spar_props
@@ -433,9 +442,18 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_sparul_create
 %type <tree> spar_sparul_drop
 %type <tree> spar_drop_macro_lib
+%type <tree> spar_sparul11_action
+%type <tree> spar_sparul11_deleteinsert
+%type <tree> spar_sparul11_insert
+%type <tree> spar_sparul11_insert_opt
+%type <tree> spar_sparul11_copymoveadd
+%type <token_type> spar_sparul11_copymoveadd_op
 %type <tree> spar_action_solution
-%type <tree> spar_in_graph_precode_opt
-%type <tree> spar_from_graph_precode_opt
+%type <tree> spar_in_graph_precode
+%type <tree> spar_from_graph_precode
+%type <tree> spar_all_or_named_or_default_or_graph_precode
+%type <tree> spar_default_or_graph_precode
+%type <nothing> spar_with_graph_precode_opt
 %type <tree> spar_graph_precode_opt
 %type <nothing> spar_in_or_into
 %type <token_type> spar_silent_opt
@@ -512,6 +530,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_opt_dot_and_end
 
 %left _SEMI
+%nonassoc PRECODE_EXPN_PREC
 %left _COLON
 %nonassoc AS_L
 %left _BAR_BAR
@@ -538,6 +557,9 @@ sparql	/* [1]*	Query		 ::=  Prolog (	*/
 	| START_OF_SPARQL_TEXT spar_prolog spar_sparul_action_or_drop_macro_libs END_OF_SPARQL_TEXT {
 		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
 		  (SPART **)t_revlist_to_array ($3) ); }
+	| START_OF_SPARQL_TEXT spar_prolog spar_sparul11_action END_OF_SPARQL_TEXT {
+		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
+		  (SPART **)t_list (1, $3) ); }
 	| START_OF_SPARQL_TEXT END_OF_SPARQL_TEXT {
 		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
 		  (SPART **)t_list (0) ); }
@@ -556,8 +578,9 @@ spar_query_body		/* [1]	QueryBody	 ::=  SelectQuery | ConstructQuery | DescribeQ
 	| spar_ask_query
 	;
 
-spar_prolog		/* [2]*	Prolog		 ::=  Define* BaseDecl? PrefixDecl* Defmacro*	*/
-	: spar_defines_opt spar_base_decl_opt spar_prefix_decls_opt spar_defmacros_opt
+spar_prolog		/* [2]*	Prolog		 ::=  Define* BaseDecl? PrefixDecl* Defmacro*
+			/*... ( 'WITH' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn )?	*/
+	: spar_defines_opt spar_base_decl_opt spar_prefix_decls_opt spar_defmacros_opt spar_with_graph_precode_opt
 	;
 
 spar_defines_opt	/* ::=  Define*	*/
@@ -785,7 +808,7 @@ spar_select_rset	/* ::=  ( ( Retcol ( ','? Retcol )* ) | '*' | 'COUNT' )	*/
 spar_select_rset_1
 	: _STAR		{ $$ = (SPART **) _STAR; }
 	/*| COUNT_LPAR _STAR _RPAR	{ $$ = (SPART **) COUNT_LPAR; }*/
-	| spar_retcols	{ $$ = (SPART **) t_revlist_to_array ($1); }
+	| spar_retcols			{ $$ = (SPART **) t_revlist_to_array ($1); }
 	| spar_retcol_commalist	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "comma-delimited list of result set expressions");
 		$$ = (SPART **) t_revlist_to_array ($1); }
@@ -847,8 +870,8 @@ spar_dataset_clauses_opt
 	;
 
 spar_dataset_clause	/* [9]*	DatasetClause	 ::=   |	*/
-			/*... ( 'FROM' ( DefaultGraphClause | NamedGraphClause ) SpongeOptionList? )	*/
-			/*... | ( 'NOT' 'FROM' ( DefaultGraphClause | NamedGraphClause ) )	*/
+			/*... ( ( 'FROM' | 'USING' ) ( DefaultGraphClause | NamedGraphClause ) SpongeOptionList? )	*/
+			/*... | ( 'NOT' 'FROM' | 'USING' ) ( DefaultGraphClause | NamedGraphClause ) )	*/
 			/* [10]	DefaultGraphClause	 ::=  SourceSelector	*/
 			/* [11]	NamedGraphClause	 ::=  'NAMED' SourceSelector	*/
 	: spar_dataset_clause_subtype spar_iriref spar_sponge_optionlist_opt {
@@ -856,10 +879,27 @@ spar_dataset_clause	/* [9]*	DatasetClause	 ::=   |	*/
 	;
 
 spar_dataset_clause_subtype
+	: spar_dataset_clause_subtype_from {
+		if (NULL != sparp_arg->sparp_env->spare_src.ssrc_graph_set_by_with)
+		  sparyyerror ("FROM can not be used in combination with WITH, use either consistent SPARUL syntax or SPARQL 1.1 syntax, not a mix");
+		$$ = $1; }
+	| spar_dataset_clause_subtype_using {
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "USING keyword");
+		$$ = $1; }
+	;
+
+spar_dataset_clause_subtype_from
 	: FROM_L		{ $$ = SPART_GRAPH_FROM; }
 	| FROM_L NAMED_L	{ $$ = SPART_GRAPH_NAMED; }
 	| NOT_L FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
 	| NOT_L FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
+	;
+
+spar_dataset_clause_subtype_using
+	: USING_L		{ $$ = SPART_GRAPH_FROM; }
+	| USING_L NAMED_L	{ $$ = SPART_GRAPH_NAMED; }
+	| NOT_L USING_L		{ $$ = SPART_GRAPH_NOT_FROM; }
+	| NOT_L USING_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
 	;
 
 spar_sponge_optionlist_opt	/* [Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'	*/
@@ -882,7 +922,7 @@ spar_sponge_option_commalist	/* ::=  SpongeOption ( ',' SpongeOption )* */
 
 spar_precode_expn	/* [Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can occur in Expn, local can not *)	*/
 	: { sparp_arg->sparp_in_precode_expn = 1; }
-	  spar_expn
+	  spar_expn %prec PRECODE_EXPN_PREC
 	  { sparp_arg->sparp_in_precode_expn = 0; $$ = $2; }
 	;
 
@@ -1220,7 +1260,7 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 		SPART **sources;
 		caddr_t sinv_storage_uri = uname_virtrdf_ns_uri_DefaultServiceStorage /*!!! TBD config */;
 		SPART *sinv;
-		if ((NULL == sparp_arg->sparp_env->spare_default_graphs) && (NULL == sparp_arg->sparp_env->spare_named_graphs))
+		if ((NULL == sparp_arg->sparp_env->spare_src.ssrc_default_graphs) && (NULL == sparp_arg->sparp_env->spare_src.ssrc_named_graphs))
 		  memcpy (&(sparp_arg->sparp_env->spare_src), $<box>5, sizeof (sparp_sources_t));
 		sources = spar_make_sources_like_top (sparp_arg, SELECT_L);
 		sinv = spar_make_service_inv (sparp_arg, $2, $4, sparp_arg->sparp_permitted_syntax, sources, sinv_storage_uri);
@@ -1261,20 +1301,43 @@ spar_service_option
 	| IN_L _STAR					{ $$ = (SPART **)t_list (2, (SPART *)((ptrlong)IN_L), (SPART *)((ptrlong)_STAR)); }
 	;
 
-spar_ctor_template	/* [26]*	ConstructTemplate	 ::=  '{' ConstructTriples '}'	*/
+spar_ctor_template	/* [26]*	ConstructTemplate	 ::=  '{' ( ConstructQuads+ '.'? ) '}'	*/
 	: _LBRA { spar_gp_init (sparp_arg, CONSTRUCT_L); }
-	    spar_ctor_triples_opt _RBRA { $$ = spar_gp_finalize (sparp_arg, NULL); }
+	    spar_ctor_triples_or_quads_opt _RBRA {
+		int g_grp_count = sparp_env()->spare_ctor_g_grp_count;
+		int g_may_vary = 0;
+		$$ = spar_gp_finalize (sparp_arg, NULL);
+		if (1 < (g_grp_count + (sparp_env()->spare_ctor_dflt_g_tmpl_count ? 1 : 0)))
+		  g_may_vary = 1;
+		if ((0 == g_may_vary) && (0 < BOX_ELEMENTS ($$->_.gp.members)))
+		  {
+		    SPART *g = $$->_.gp.members[0]->_.triple.tr_graph;
+		    if ((SPAR_QNAME != SPART_TYPE (g)) && !SPART_IS_DEFAULT_GRAPH_BLANK (g))
+		      g_may_vary = 1;
+		  }
+		if (g_may_vary)
+		  $$->_.gp.options = (SPART **)t_list (2, (SPART *)((ptrlong)QUAD_L), t_box_num_nonull (g_grp_count));
+		sparp_env()->spare_ctor_g_grp_count = 0;
+		sparp_env()->spare_ctor_dflt_g_tmpl_count = 0; }
 	;
 
-spar_ctor_triples_opt	/* [27]	ConstructTriples	 ::=  ( Triples1 ( '.' ConstructTriples )? )?	*/
+spar_ctor_triples_or_quads_opt	/* [27]*	ConstructQuads	 ::=  (Triples1  ( '.' ConstructQuads )? ) | Quads1 ( '.'? ConstructQuads )?	*/
 	: /* empty */ { }
-	| spar_ctor_triples { }
-	| spar_ctor_triples _DOT { }
+	| spar_ctor_triples_or_quads_quads { }
+	| spar_ctor_triples_or_quads_triples { }
+	| spar_ctor_triples_or_quads_triples _DOT { }
 	;
 
-spar_ctor_triples	/* ::=  Triples1 ( '.' Triples1 )* */
+spar_ctor_triples_or_quads_triples
 	: spar_triples1				{ }
-	| spar_ctor_triples _DOT spar_triples1	{ }
+	| spar_ctor_triples_or_quads_triples _DOT spar_triples1	{ }
+	| spar_ctor_triples_or_quads_quads spar_triples1	{ }
+	;
+
+spar_ctor_triples_or_quads_quads
+	: spar_quads1				{ }
+	| spar_ctor_triples_or_quads_triples _DOT spar_quads1	{ }
+	| spar_ctor_triples_or_quads_quads spar_quads1	{ }
 	;
 
 spar_triples_opt	/* ::=  Triples?	*/
@@ -1285,6 +1348,14 @@ spar_triples_opt	/* ::=  Triples?	*/
 spar_triples		/* [28]	Triples		 ::=  Triples1 ( '.' Triples? )?	*/
 	: spar_triples1				{ }
 	| spar_triples1 _DOT spar_triples_opt	{ }
+	;
+
+spar_quads1		/* [Virt]	Quads1	 ::=  GRAPH VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList | MacroCall	*/
+	: GRAPH_L	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "SPARQL 1.1 quad constructor template"); }
+	    spar_var_or_blank_node_or_iriref_or_backquoted	{
+		sparp_env()->spare_ctor_g_grp_count++;
+		t_set_push (&(sparp_env()->spare_context_graphs), $3); }
+	    _LBRA spar_triples _RBRA	{ t_set_pop (&(sparp_env()->spare_context_graphs)); }
 	;
 
 spar_triples1		/* [29*]	Triples1	 ::=  VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList | MacroCall	*/
@@ -1479,8 +1550,8 @@ spar_retcol_commalist			/* ::=  ( Expn ( ',' Expn )+ )	*/
 	;
 
 spar_retcols		/* ::=  ( Expn+ )	*/
-	: spar_expn			{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_retcols spar_expn	{ $$ = $1; t_set_push (&($$), $2); }
+	: spar_expn %prec _COMMA		{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_retcols spar_expn %prec _COMMA	{ $$ = $1; t_set_push (&($$), $2); }
 	;
 
 spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'	*/
@@ -1662,14 +1733,14 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		sparp_arg->sparp_allow_aggregates_in_expn <<= 1; }
             spar_dataset_clauses_opt
 	    spar_wherebindings_clause
-	    _RPAR spar_triple_optionlist_opt {
+	    spar_triple_optionlist_opt _RPAR {
 		SPART *subselect_top;
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
 		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
 		  where_gp, NULL, NULL, NULL, (SPART *)t_box_num(1), (SPART *)t_box_num(0) );
 		spar_env_pop (sparp_arg);
-		$$ = spar_gp_finalize_with_subquery (sparp_arg, $7, subselect_top);
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, $6, subselect_top);
 		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	| _LPAR spar_select_query_mode {
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "scalar subquery");
@@ -1681,7 +1752,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier
-	    _RPAR spar_triple_optionlist_opt {
+	    spar_triple_optionlist_opt _RPAR {
 		SPART *subselect_top;
 		SPART *where_gp;
 		SPART *wm = $7;
@@ -1694,7 +1765,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		if (SPAR_REQ_TOP == subselect_top->type)
 		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
 		spar_env_pop (sparp_arg);
-		$$ = spar_gp_finalize_with_subquery (sparp_arg, $9, subselect_top);
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top);
 		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	| spar_ret_agg_call {
 		$$ = $1;
@@ -1956,7 +2027,7 @@ spar_drop_macro_lib	/* [Virt]	DropMacroLib	 ::=  'DROP' 'SILENT'? 'MACRO' 'LIBRA
 spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 			/*... 'INSERT' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn	*/
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
-	: INSERT_L spar_in_graph_precode_opt {
+	: INSERT_L spar_in_graph_precode {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_ctor_template spar_action_solution {
@@ -1966,9 +2037,9 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 	;
 
 spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
-			/*... 'INSERT' 'DATA' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? */
-			/*... PrecodeExpn ConstructTemplate	*/
-	: INSERT_L DATA_L spar_in_graph_precode_opt {
+			/*... 'INSERT' 'DATA' ( ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn )? */
+			/*... ConstructTemplate	*/
+	: INSERT_L DATA_L spar_in_graph_precode {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
 		sparp_arg->sparp_in_precode_expn = 2; }
@@ -1983,7 +2054,7 @@ spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
 spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 			/*... 'DELETE' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn	*/
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
-	: DELETE_L spar_from_graph_precode_opt {
+	: DELETE_L spar_from_graph_precode {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_ctor_template spar_action_solution {
@@ -1993,9 +2064,9 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 	;
 
 spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
-			/*... 'DELETE' 'DATA' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )?	*/
-			/*... PrecodeExpn ConstructTemplate	*/
-	: DELETE_L DATA_L spar_from_graph_precode_opt {
+			/*... 'DELETE' 'DATA' ( ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn	*/
+			/*... ConstructTemplate	*/
+	: DELETE_L DATA_L spar_from_graph_precode {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
 		sparp_arg->sparp_in_precode_expn = 2; }
@@ -2008,7 +2079,7 @@ spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
 	;
 
 spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
-			/*... 'MODIFY' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn?	*/
+			/*... 'MODIFY' (( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
 			/*... 'DELETE' ConstructTemplate 'INSERT' ConstructTemplate	*/
 			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: MODIFY_L spar_graph_precode_opt {
@@ -2021,16 +2092,17 @@ spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
                 spar_compose_retvals_of_modify (sparp_arg, $$, $2, $5, $7); }
 	;
 
-spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
-	: CLEAR_L spar_graph_precode_opt { $$ = spar_make_sparul_clear (sparp_arg, $2); }
+spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' 'SILENT'? DropTarget	*/
+	: CLEAR_L spar_silent_opt spar_all_or_named_or_default_or_graph_precode {
+		$$ = spar_make_sparul_clear (sparp_arg, $3, $2 /* yes, $2 after $3 */); }
 	;
 
-spar_sparul_load	/* [DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn */
+spar_sparul_load	/* [DML]*	LoadAction	 ::=  'LOAD' 'SILENT'? PrecodeExpn */
 			/*... ( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
-	: LOAD_L spar_precode_expn {
-		$$ = spar_make_sparul_load (sparp_arg, $2, $2); }
-	| LOAD_L spar_precode_expn spar_in_or_into spar_graph_identified_by_opt spar_precode_expn {
-		$$ = spar_make_sparul_load (sparp_arg, $5, $2 /* yes, $2 after $3 */); }
+	: LOAD_L spar_silent_opt spar_precode_expn {
+		$$ = spar_make_sparul_load (sparp_arg, $3, $3, $2); }
+	| LOAD_L spar_silent_opt spar_precode_expn spar_in_or_into spar_graph_identified_by_opt spar_precode_expn {
+		$$ = spar_make_sparul_load (sparp_arg, $6, $3 /* yes, $3 after $6 */, $2); }
 	;
 
 spar_sparul_create	/* [DML]*	CreateAction	 ::=  'CREATE' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
@@ -2038,9 +2110,9 @@ spar_sparul_create	/* [DML]*	CreateAction	 ::=  'CREATE' 'SILENT'? 'GRAPH' ( 'ID
 		$$ = spar_make_sparul_create (sparp_arg, $4, $2 /* yes, $2 after $4 */); }
 	;
 
-spar_sparul_drop	/* [DML]*	DropAction	 ::=  'DROP' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
-	: DROP_L spar_silent_opt spar_graph_identified_by spar_precode_expn {
-		$$ = spar_make_sparul_drop (sparp_arg, $4, $2 /* yes, $2 after $4 */); }
+spar_sparul_drop	/* [DML]*	DropAction	 ::=  'DROP' 'SILENT'? DropTarget	*/
+	: DROP_L spar_silent_opt spar_all_or_named_or_default_or_graph_precode {
+		$$ = spar_make_sparul_drop (sparp_arg, $3, $2 /* yes, $2 after $3 */); }
 	;
 
 spar_action_solution
@@ -2051,19 +2123,37 @@ spar_action_solution
 		$3->_.wm.where_gp = where_gp; }
 	;
 
-spar_in_graph_precode_opt
-	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "INTO GRAPH IDENTIFIED BY clause"); }
-	| spar_in_or_into spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
+spar_in_graph_precode
+	: spar_in_or_into spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
 	;
 
-spar_from_graph_precode_opt
-	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "FROM GRAPH IDENTIFIED BY clause"); }
-	| FROM_L spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
+spar_from_graph_precode
+	: FROM_L spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
+	;
+
+spar_all_or_named_or_default_or_graph_precode    /* [DML11]	DropTarget	 ::=  (( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn ) | 'DEFAULT' | 'NAMED' | 'ALL' )	*/
+	: ALL_L		{ $$ = (SPART *)ALL_L; }
+	| DEFAULT_L	{ $$ = (SPART *)DEFAULT_L; }
+	| NAMED_L	{ $$ = (SPART *)NAMED_L; }
+	| spar_graph_identified_by spar_precode_expn	{ $$ = $2; }
+	;
+
+spar_default_or_graph_precode
+	: DEFAULT_L	{ $$ = (SPART *)DEFAULT_L; }
+	| spar_graph_identified_by_opt spar_precode_expn	{ $$ = $2; }
 	;
 
 spar_graph_precode_opt
-	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "GRAPH IDENTIFIED BY clause"); }
+	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "GRAPH IDENTIFIED BY clause", 0); }
 	| spar_graph_identified_by_opt spar_precode_expn	{ $$ = $2; }
+	;
+
+spar_with_graph_precode_opt
+	: /* empty */	{}
+	| WITH_L spar_graph_identified_by_opt spar_precode_expn spar_sponge_optionlist_opt	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "WITH clause");
+		sparp_arg->sparp_env->spare_src.ssrc_graph_set_by_with = $3;
+		sparp_make_and_push_new_graph_source (sparp_arg, SPART_GRAPH_FROM, $3, $4); }
 	;
 
 spar_in_or_into
@@ -2074,6 +2164,70 @@ spar_in_or_into
 spar_silent_opt
 	: /* empty */   { $$ = 0; }
 	| SILENT_L	{ $$ = 1; }
+	;
+
+/* Part 1b. SPARQL 1.1 Update */
+
+spar_sparul11_action		/* [DML11]	Sparul11Action	 ::=  */
+			/*... | DeleteInsert11Action | Delete11Action	*/
+			/*... | Copy11Action | Move11Action | Add11Action	*/
+	: spar_sparul11_deleteinsert
+	| spar_sparul11_insert
+	| spar_sparul11_copymoveadd
+	;
+
+spar_sparul11_deleteinsert	/* [DML]*	DeleteInsert11Action	 ::=  */
+			/*... WithGraph?	*/
+			/*... 'DELETE' ConstructTemplate ( 'INSERT' ConstructTemplate )?	*/
+			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
+	: DELETE_L {
+		$<tree>$ = spar_default_sparul_target (sparp_arg, "SPARQL 1.1 DELETE clause", 1);
+		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+	    spar_ctor_template spar_sparul11_insert_opt
+	    spar_action_solution {
+		if (NULL != $4)
+		  {
+		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL,
+		      spar_selid_pop (sparp_arg), $5 );
+		    spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>2, $3, $4); }
+		else
+		  {
+		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL,
+		      spar_selid_pop (sparp_arg), $5 );
+		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>2, $3); } }
+	;
+
+spar_sparul11_insert	/* [DML]*	Insert11Action	 ::=  */
+			/*... WithGraph?	*/
+			/*... 'INSERT' ConstructTemplate	*/
+			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
+	: INSERT_L {
+		$<tree>$ = spar_default_sparul_target (sparp_arg, "SPARQL 1.1 INSERT clause", 1);
+		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+	    spar_ctor_template
+	    spar_action_solution {
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL,
+		  spar_selid_pop (sparp_arg), $4 );
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>2, $3); }
+	;
+
+spar_sparul11_insert_opt
+	: /* empty */	{ $$ = NULL; }
+	| INSERT_L spar_ctor_template	{ $$ = $2; }
+	;
+
+spar_sparul11_copymoveadd
+	: spar_sparul11_copymoveadd_op spar_silent_opt spar_default_or_graph_precode TO_L spar_default_or_graph_precode {
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11, "WITH clause");
+		$$ = spar_make_sparul_copymoveadd (sparp_arg, $1, $3, $5, $2 /* yes, $2 after $3 */); }
+	;
+
+spar_sparul11_copymoveadd_op
+	: COPY_L	{ $$ = COPY_L; }
+	| MOVE_L	{ $$ = MOVE_L; }
+	| ADD_L		{ $$ = ADD_L; }
 	;
 
 /* PART 2. Quad Map definition statements */

@@ -1812,6 +1812,45 @@ again:
 
 
 caddr_t
+bif_aref_or_default (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arr = bif_array_or_strses_arg (qst, args, 0, "aref_or_default");
+  int inx, n_elems;
+  dtp_t dtp;
+  int argcount = BOX_ELEMENTS (args);
+  int idxcount = argcount - 2;
+  int idxctr = 1;
+  if (idxcount <= 0)
+    sqlr_new_error ("22003", "SR020", "aref_or_default() requires 3 or more arguments, but only %d passed.", argcount);
+  dtp = DV_TYPE_OF (arr);
+
+again:
+  inx = (long) bif_long_arg (qst, args, idxctr, "aref_or_default");
+  n_elems = (box_length (arr) / get_itemsize_of_vector (dtp));
+  if ((inx >= n_elems && DV_STRING_SESSION != box_tag(arr)) || (inx < 0)) /* Catch negative indexes also! */
+    goto use_default; /* see below */
+  if (idxctr == idxcount)
+    return (gen_aref (arr, inx, dtp, "aref_or_default"));
+  if (IS_NONLEAF_DTP (dtp))
+    {
+      arr = ((caddr_t *)arr)[inx];
+      dtp = DV_TYPE_OF (arr);
+      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_UNAME
+		|| IS_NONLEAF_DTP(dtp)
+		|| dtp == DV_ARRAY_OF_LONG || dtp == DV_ARRAY_OF_FLOAT
+		|| dtp == DV_ARRAY_OF_DOUBLE || IS_WIDE_STRING_DTP (dtp)
+		|| dtp == DV_STRING_SESSION)
+	 {
+	   idxctr ++;
+	   goto again; /* see above */
+	 }
+    }
+use_default:
+  return box_copy_tree (bif_arg (qst, args, argcount-1, "aref_or_default"));
+}
+
+
+caddr_t
 bif_aref_set_0 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *arr = (caddr_t *) bif_array_arg (qst, args, 0, "aref_set_0");
@@ -14509,6 +14548,7 @@ sql_bif_init (void)
   bif_define_typed ("octet_length", bif_length, &bt_integer);
 
   bif_define_typed ("aref", bif_aref, &bt_any);
+  bif_define_typed ("aref_or_default", bif_aref_or_default, &bt_any);
   bif_define_typed ("aref_set_0", bif_aref_set_0, &bt_any);
   bif_define_typed ("aset", bif_aset, &bt_integer);
   bif_define_typed ("aset_zap_arg", bif_aset_zap_arg, &bt_integer);

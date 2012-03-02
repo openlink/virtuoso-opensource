@@ -4772,7 +4772,8 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
                 default: GPF_T;
                 }
 	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.graph.iri, ses, indent+2, "IRI", 0);
+              if (NULL != tree->_.graph.iri)
+	        spart_dump (tree->_.graph.iri, ses, indent+2, "IRI", 0);
               if (NULL != tree->_.graph.expn)
 	        spart_dump (tree->_.graph.expn, ses, indent+2, "EXPN", 0);
 	      break;

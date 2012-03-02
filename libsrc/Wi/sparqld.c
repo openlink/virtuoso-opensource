@@ -1041,6 +1041,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
       }
     case SPAR_GRAPH:
       {
+        if (NULL == tree->_.graph.iri)
+          spar_error (ssg->ssg_sparp, "%.100s can be invoked only with constant graphs in FROM... clauses so SPARQL query can not be composed", ssg->ssg_sd_service_name);
         switch (tree->_.graph.subtype)
           {
           case SPART_GRAPH_FROM:

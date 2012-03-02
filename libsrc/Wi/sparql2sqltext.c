@@ -5419,13 +5419,13 @@ ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_valu
         ssg_print_tmpl (ssg, field->qmvFormat, "(^{alias-0}^.^{column-0}^ is not null)", tabid, field, NULL, NULL_ASNAME);
     }
 /* SPONGE_SEEALSO () as a fake filter for a variable */
-  if ((NULL != env->spare_grab.rgc_sa_preds) &&
+  if ((NULL != env->spare_src.ssrc_grab.rgc_sa_preds) &&
     ssg->ssg_seealso_enabled &&
     (SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
     !(SPART_VARR_IS_LIT & tree_restr) &&
     !(SPART_VARR_EXTERNAL & tree_restr) &&
-    ((0 <= dk_set_position_of_string (env->spare_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
-      (0 <= dk_set_position_of_string (env->spare_grab.rgc_vars, fld_tree->_.var.vname)) ) )
+    ((0 <= dk_set_position_of_string (env->spare_src.ssrc_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
+      (0 <= dk_set_position_of_string (env->spare_src.ssrc_grab.rgc_vars, fld_tree->_.var.vname)) ) )
     {
 /* External variable should be checked by this fake predicate at place of origin, hence no check here.
 It's an open issue what to do if seealso is enabled only in scalar subquery.
@@ -7016,12 +7016,12 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
       int good_len /*, bad_len*/;
       if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
         {
-          if (ssg->ssg_sparp->sparp_env->spare_named_graphs_listed)
-            chk_graphs = ssg->ssg_sparp->sparp_env->spare_default_graphs;
+          if (ssg->ssg_sparp->sparp_env->spare_src.ssrc_named_graphs_listed)
+            chk_graphs = ssg->ssg_sparp->sparp_env->spare_src.ssrc_default_graphs;
           else chk_graphs = NULL;
         }
       else
-        chk_graphs = ssg->ssg_sparp->sparp_env->spare_named_graphs;
+        chk_graphs = ssg->ssg_sparp->sparp_env->spare_src.ssrc_named_graphs;
       DO_SET (SPART *,src, &(chk_graphs))
         {
           if (!((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype)))

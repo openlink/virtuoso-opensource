@@ -24,9 +24,11 @@
 struct sparql_keyword { char *kwd; int token; int subtype; };
 
 %%
+"ABS",			SPARQL_BIF		, SPAR_BIF_ABS
+"ADD",			ADD_L			, 0
+"ALL",			ALL_L			, 0
 "ALTER",		ALTER_L			, 0
 "AND",			_AMP_AMP		, 0
-"ABS",			SPARQL_BIF		, SPAR_BIF_ABS
 "AS",			AS_L			, 0
 "ASC",			ASC_L			, 0
 "ASK",			ASK_L			, 0
@@ -45,6 +47,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "CONCAT",		SPARQL_BIF		, SPAR_BIF_CONCAT
 "CONSTRUCT",		CONSTRUCT_L		, 0
 "CONTAINS",		SPARQL_BIF		, SPAR_BIF_CONTAINS
+"COPY",			COPY_L			, 0
 "COUNT",		COUNT_L			, 0
 "CREATE",		CREATE_L		, 0
 "DATA",			DATA_L			, 0
@@ -106,6 +109,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "MINUTES",		SPARQL_BIF		, SPAR_BIF_MINUTES
 "MODIFY",		MODIFY_L		, 0
 "MONTH",		SPARQL_BIF		, SPAR_BIF_MONTH
+"MOVE",			MOVE_L			, 0
 "NAMED",		NAMED_L			, 0
 "NIL",			NIL_L			, 0
 "NOT",			NOT_L			, 0
@@ -162,6 +166,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "TABLE_OPTION",		TABLE_OPTION_L		, 0
 "TEXT",			TEXT_L			, 0
 "TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE
+"TO",			TO_L			, 0
 "TRANSITIVE",		TRANSITIVE_L		, 0
 "TRUE",			true_L			, 0
 "TZ",			SPARQL_BIF		, SPAR_BIF_TZ

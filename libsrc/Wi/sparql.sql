@@ -6495,44 +6495,60 @@ create procedure DB.DBA.RDF_REPL_DEL (inout rquads any)
 --#IF VER=5
 --!AFTER
 --#ENDIF
-create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null) returns any
+create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
 {
-  declare g any;
   declare g_iid IRI_ID;
   declare old_log_enable integer;
-  g := graph_iri;
-  if (isiri_id (g))
-   g := id_to_iri (g);
-  g_iid := iri_to_id (g);
-  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CLEAR GRAPH');
-  if (__rdf_graph_is_in_enabled_repl (g_iid))
+  declare txtreport varchar;
+  txtreport := '';
+  if (__tag of vector <> __tag (graph_iris))
+    graph_iris := vector (graph_iris);
+  foreach (any g_iri in graph_iris) do
     {
-      repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
-      repl_text ('__rdf_repl', 'sparql define input:storage "" clear graph iri ( ?? )', g);
+      if (isiri_id (g_iri))
+        g_iri := id_to_iri (g_iri);
+      g_iid := iri_to_id (g_iri);
+      __rgs_assert_cbk (g_iri, uid, 2, 'SPARUL CLEAR GRAPH');
     }
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
-  exec (sprintf ('
-  delete from DB.DBA.RDF_QUAD
-  where G = __i2id (''%S'') ', g));
-  cl_exec ('delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only, no cluster) where G = ? option (index RDF_QUAD_GS)', vector (g_iid));
-  delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
-  where VT_WORD = rdf_graph_keyword (g_iid);
-  if (not inside_sponge)
+  foreach (any g_iri in graph_iris) do
     {
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g;
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g), '&graphMD5=%');
+      if (isiri_id (g_iri))
+        g_iri := id_to_iri (g_iri);
+      g_iid := iri_to_id (g_iri);
+      if (__rdf_graph_is_in_enabled_repl (g_iid))
+        {
+          repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
+          repl_text ('__rdf_repl', 'sparql define input:storage "" clear graph iri ( ?? )', g_iri);
+        }
+      old_log_enable := log_enable (log_mode, 1);
+      declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+      exec (sprintf ('
+      delete from DB.DBA.RDF_QUAD
+      where G = __i2id (''%S'') ', g_iri));   
+      cl_exec ('delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only, no cluster) where G = ? option (index RDF_QUAD_GS)', vector (g_iid));
+      delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
+      where VT_WORD = rdf_graph_keyword (g_iid);
+      if (not inside_sponge)
+        {
+          delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_iri;
+          delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g_iri), '&graphMD5=%');
+        }
+      if (compose_report)
+        {
+          if (txtreport <> '')
+            txtreport := txtreport || '\n';
+          txtreport := txtreport || sprintf ('Clear graph <%s> -- done', g_iri);
+        }
     }
   /*091202 commit work; */
   log_enable (old_log_enable, 1);
   if (compose_report)
-    return sprintf ('Clear <%s> -- done', g);
-  else
-    return 1;
+    return txtreport;
+  return 1;
 }
 ;
 
-create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in uid integer, in log_mode integer, in compose_report integer, in options any := null) returns any
+create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
   declare old_log_enable integer;
   declare grab_params any;
@@ -6540,7 +6556,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
   declare res integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL LOAD');
   old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); if (silent) goto fail; resignal; };
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -6573,10 +6589,15 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
       else
         return 0;
     }
+fail:
+  if (compose_report)
+    return sprintf ('Load silent <%s> into graph <%s> -- failed: %s: %s', resource, graph_iri, __SQL_STATE, __SQL_MESSAGE);
+  else
+    return 0;
 }
 ;
 
-create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null) returns any
+create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent1 integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
   declare old_log_enable integer;
@@ -6584,6 +6605,8 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in ui
   g_iid := iri_to_id (graph_iri);
   if (__rdf_graph_is_in_enabled_repl (g_iid))
     repl_text ('__rdf_repl', 'sparql define input:storage "" create graph iri ( ?? )', graph_iri);
+  if ((silent1 is not null) and silent1)
+    silent := 1;
   if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid))
     {
       if (silent)
@@ -6626,63 +6649,85 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in ui
 }
 ;
 
-create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null) returns any
+create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
   declare old_log_enable integer;
-  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DROP GRAPH');
-  g_iid := iri_to_id (graph_iri);
-  if (__rdf_graph_is_in_enabled_repl (g_iid))
+  declare txtreport varchar;
+  txtreport := '';
+  if ((silent1 is not null) and silent1)
+    silent := 1;
+  if (__tag of vector <> __tag (graph_iris))
+    graph_iris := vector (graph_iris);
+  foreach (any g_iri in graph_iris) do
     {
-      repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
-      repl_text ('__rdf_repl', 'sparql define input:storage "" drop graph iri ( ?? )', graph_iri);
+      if (isiri_id (g_iri))
+        g_iri := id_to_iri (g_iri);
+      g_iid := iri_to_id (g_iri);
+      __rgs_assert_cbk (g_iri, uid, 2, 'SPARUL DROP GRAPH');
     }
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
-  if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
+  foreach (any g_iri in graph_iris) do
     {
+      if (isiri_id (g_iri))
+        g_iri := id_to_iri (g_iri);
+      g_iid := iri_to_id (g_iri);
+      if (__rdf_graph_is_in_enabled_repl (g_iid))
+        {
+          repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
+          repl_text ('__rdf_repl', 'sparql define input:storage "" drop graph iri ( ?? )', g_iri);
+        }
+      old_log_enable := log_enable (log_mode, 1);
+      declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+      if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid))
+        {
+          if (silent)
+            {
+              if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = g_iid))
+                {
+                  DB.DBA.SPARUL_CLEAR (g_iri, 0, uid);
+                  log_enable (old_log_enable, 1);
+                  if (compose_report)
+                    return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', g_iri);
+                  else
+                    return 2;
+                }
+              if (compose_report)
+                return sprintf ('Drop silent graph <%s> -- nothing to do', g_iri);
+              else
+                return 0;
+            }
+          else
+            signal ('22023', 'SPARUL_DROP() failed: graph <' || g_iri || '> has not been explicitly created before');
+        }
       if (silent)
         {
-          if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
-            {
-              DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
-              log_enable (old_log_enable, 1);
-              if (compose_report)
-                return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
-              else
-                return 2;
-            }
+          DB.DBA.SPARUL_CLEAR (g_iri, 0, uid);
+          delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid;
+          /*091202 commit work; */
+          log_enable (old_log_enable, 1);
           if (compose_report)
-            return sprintf ('Drop silent graph <%s> -- nothing to do', graph_iri);
+            return sprintf ('Drop silent graph <%s> -- done', g_iri);
           else
-            return 0;
+            return 1;
         }
-      else
-        signal ('22023', 'SPARUL_DROP() failed: graph <' || graph_iri || '> has not been explicitly created before');
-    }
-  if (silent)
-    {
-      DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
-      delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
-      /*091202 commit work; */
-      log_enable (old_log_enable, 1);
+      if (exists (sparql define input:storage ""
+        ask from <http://www.openlinksw.com/schemas/virtrdf#>
+        where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:g_iri)` } ) )
+        signal ('22023', 'SPARUL_DROP() failed: graph <' || g_iri || '> is used for mapping relational data to RDF');
+      DB.DBA.SPARUL_CLEAR (g_iri, 0, uid);
+      delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid;
       if (compose_report)
-        return sprintf ('Drop silent graph <%s> -- done', graph_iri);
-      else
-        return 1;
+        {
+          if (txtreport <> '')
+            txtreport := txtreport || '\n';
+          txtreport := txtreport || sprintf ('Drop graph <%s> -- done', g_iri);
+        }
     }
-  if (exists (sparql define input:storage ""
-    ask from <http://www.openlinksw.com/schemas/virtrdf#>
-    where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
-    signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
-  DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
-  delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
   log_enable (old_log_enable, 1);
   /*091202 commit work; */
   if (compose_report)
-    return sprintf ('Drop graph <%s> -- done', graph_iri);
-  else
-    return 1;
+    return txtreport;
+  return 1;
 }
 ;
 
@@ -6710,6 +6755,223 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
         }
       return res;
    }
+}
+;
+
+-- SPARQL 1.1 UPDATE functions
+
+create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, in quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
+{
+  declare ins_count, ins_grp_count integer;
+  declare res_ses any;
+  ins_count := 0;
+  ins_grp_count := 0;
+  if (__tag of vector = __tag (dflt_graph_iri))
+    {
+      ins_count := dflt_graph_iri[2]; -- 2, not 1
+      dflt_graph_iri := dflt_graph_iri[0]; -- the last op.
+    }
+  while (dict_size (quads_dict) > 0)
+    {
+      declare quads, groups any;
+      declare group_ctr, group_count, g_ins_count integer;
+      quads := dict_destructive_list_rnd_keys (quads_dict, 80000);
+      rowvector_graph_sort (quads, 3, 1);
+      groups := rowvector_graph_partition (quads, 3);
+      group_count := length (groups);
+      for (group_ctr := 0; group_ctr < group_count; group_ctr := group_ctr+1)
+        {
+          declare g_group, g any;
+          g_group := aref_set_0 (groups, group_ctr);
+          g := aref_or_default (g_group, 0, 3, dflt_graph_iri);
+          __rgs_assert_cbk (g, uid, 2, 'SPARQL 1.1 INSERT');
+          DB.DBA.RDF_INSERT_TRIPLES (g, g_group, log_mode);
+          g_ins_count := length (g_group);
+          ins_count := ins_count + g_ins_count;
+          ins_grp_count := ins_grp_count + 1;
+          if (isiri_id (g))
+            g := id_to_iri (g);
+          if (g is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (g)))
+            repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+          if (compose_report and ins_grp_count < 1000)
+            {
+              if (group_ctr)
+                http ('\n', res_ses);
+              else
+                res_ses := string_output();
+              http (sprintf ('Insert into <%s>, %d (or less) quads -- done', g, g_ins_count), res_ses);
+            }
+        }
+    }
+  if (compose_report)
+    {
+      if (ins_grp_count >= 1000)
+        return sprintf ('Insert into %d (or more) graphs, total %d (or less) quads -- done', ins_grp_count, ins_count);
+      if (ins_count)
+        return string_output_string (res_ses);
+      else
+        return sprintf ('Insert into <%s>, 0 quads -- nothing to do', dflt_graph_iri);
+    }
+  else
+    return ins_count;
+}
+;
+
+
+create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, in quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
+{
+  declare del_count, del_grp_count integer;
+  declare res_ses any;
+  del_count := 0;
+  del_grp_count := 0;
+  if (__tag of vector = __tag (dflt_graph_iri))
+    {
+      del_count := dflt_graph_iri[2]; -- 2, not 1
+      dflt_graph_iri := dflt_graph_iri[0]; -- the last op.
+    }
+  while (dict_size (quads_dict) > 0)
+    {
+      declare quads, groups any;
+      declare group_ctr, group_count, g_del_count integer;
+      quads := dict_destructive_list_rnd_keys (quads_dict, 80000);
+      rowvector_graph_sort (quads, 3, 1);
+      groups := rowvector_graph_partition (quads, 3);
+      group_count := length (groups);
+      for (group_ctr := 0; group_ctr < group_count; group_ctr := group_ctr+1)
+        {
+          declare g_group, g any;
+          g_group := aref_set_0 (groups, group_ctr);
+          g := aref_or_default (g_group, 0, 3, dflt_graph_iri);
+          __rgs_assert_cbk (g, uid, 2, 'SPARQL 1.1L DELETE');
+          DB.DBA.RDF_DELETE_TRIPLES (g, g_group, log_mode);
+          g_del_count := length (g_group);
+          del_count := del_count + g_del_count;
+          del_grp_count := del_grp_count + 1;
+          if (isiri_id (g))
+            g := id_to_iri (g);
+          if (g is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (g)))
+            repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+          if (compose_report and del_grp_count < 1000)
+            {
+              if (group_ctr)
+                http ('\n', res_ses);
+              else
+                res_ses := string_output();
+              http (sprintf ('Delete from <%s>, %d (or less) quads -- done', g, g_del_count), res_ses);
+            }
+        }
+    }
+  if (compose_report)
+    {
+      if (del_grp_count >= 1000)
+        return sprintf ('Delete from %d (or more) graphs, total %d (or less) quads -- done', del_grp_count, del_count);
+      if (del_count)
+        return string_output_string (res_ses);
+      else
+        return sprintf ('Delete from <%s>, 0 quads -- nothing to do', dflt_graph_iri);
+    }
+  else
+    return del_count;
+}
+;
+
+create function DB.DBA.SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS (in dflt_graph_iri any, in del_quads_dict any, in ins_quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
+{
+  declare del_count, ins_count integer;
+  declare del_rep, ins_rep any;
+  del_count := 0;
+  ins_count := 0;
+  if (__tag of vector = __tag (dflt_graph_iri))
+    {
+      del_count := dflt_graph_iri[1];
+      ins_count := dflt_graph_iri[2];
+      dflt_graph_iri := dflt_graph_iri[0]; -- the last op.
+    }
+  if (del_quads_dict is not null)
+    {
+      del_count := del_count + dict_size (del_quads_dict);
+      del_rep := DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (dflt_graph_iri, del_quads_dict, uid, log_mode, compose_report);
+    }
+  else if (compose_report)
+    del_rep := '';
+  else
+    del_rep := 0;
+  if (ins_quads_dict is not null)
+    {
+      ins_count := ins_count + dict_size (ins_quads_dict);
+      ins_rep := DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (dflt_graph_iri, ins_quads_dict, uid, log_mode, compose_report);
+    }
+  else if (compose_report)
+    ins_rep := '';
+  else
+    ins_rep := 0;
+  if (compose_report)
+    return concat (del_rep, case when ins_rep <> '' and del_rep <> '' then '\n' else '' end, ins_rep);
+  else
+    return del_count + ins_count;
+}
+;
+
+create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri any, in tgt_g_iri any, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
+{
+  declare src_g_iid IRI_ID;
+  declare tgt_g_iid IRI_ID;
+  declare old_log_enable, src_repl, tgt_repl integer;
+  declare qry, stat, msg varchar;
+  if (isiri_id (src_g_iri))
+    src_g_iri := id_to_iri (src_g_iri);
+  src_g_iid := iri_to_id (src_g_iri);
+  if (isiri_id (tgt_g_iri))
+    tgt_g_iri := id_to_iri (tgt_g_iri);
+  tgt_g_iid := iri_to_id (tgt_g_iri);
+  __rgs_assert_cbk (tgt_g_iri, uid, 2, 'SPARQL 1.1 ' || opname);
+  __rgs_assert_cbk (src_g_iri, uid, case (opname) when 'MOVE' then 2 else 1 end, 'SPARQL 1.1 ' || opname);
+  src_repl := __rdf_graph_is_in_enabled_repl (src_g_iid);
+  tgt_repl := __rdf_graph_is_in_enabled_repl (tgt_g_iid);
+  if (src_repl and not tgt_repl)
+    signal ('22023', sprintf ('SPARQL 1.1 can not %s replicated graph <%s> to non-replicated graph <%s>, both should be in same replication status', src_g_iri, tgt_g_iri));
+  if (tgt_repl and not src_repl)
+    signal ('22023', sprintf ('SPARQL 1.1 can not %s non-replicated graph <%s> to replicated graph <%s>, both should be in same replication status', src_g_iri, tgt_g_iri));
+  if ('ADD' <> opname)
+    DB.DBA.SPARUL_CLEAR (tgt_g_iri, 0, uid, log_mode, 0, options, silent);
+  if (src_repl and tgt_repl)
+    {
+      repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
+      repl_text ('__rdf_repl', 'sparql define input:storage "" add iri(??) to iri(??)', src_g_iri, tgt_g_iri);
+    }
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  stat := '00000';
+  qry := sprintf ('insert soft DB.DBA.RDF_QUAD (G,S,P,O) select __i2id (''%S''), t.S, t.P, t.O from DB.DBA.RDF_QUAD t where t.G = __i2id (''%S'') ',
+     tgt_g_iri, src_g_iri );
+  exec (qry, stat, msg);
+  if (stat <> '00000')
+    signal (stat, msg);
+  if ('MOVE' = opname)
+    DB.DBA.SPARUL_CLEAR (src_g_iri, 0, uid, log_mode, 0, options, silent);
+  /*091202 commit work; */
+  log_enable (old_log_enable, 1);
+  if (compose_report)
+    return sprintf ('%s <%s> to <%s> -- done', opname, src_g_iri, tgt_g_iri);
+  return 1;
+}
+;
+
+create function DB.DBA.SPARUL_COPY (in src_g_iri any, in tgt_g_iri any, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
+{
+  return DB.DBA.SPARUL_COPYMOVEADD_IMPL ('COPY', src_g_iri, tgt_g_iri, uid, log_mode, compose_report, options, silent);
+}
+;
+
+create function DB.DBA.SPARUL_MOVE (in src_g_iri any, in tgt_g_iri any, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
+{
+  return DB.DBA.SPARUL_COPYMOVEADD_IMPL ('MOVE', src_g_iri, tgt_g_iri, uid, log_mode, compose_report, options, silent);
+}
+;
+
+create function DB.DBA.SPARUL_ADD (in src_g_iri any, in tgt_g_iri any, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
+{
+  return DB.DBA.SPARUL_COPYMOVEADD_IMPL ('ADD', src_g_iri, tgt_g_iri, uid, log_mode, compose_report, options, silent);
 }
 ;
 
@@ -6922,11 +7184,22 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
   blank_ids := 0;
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
     {
-      declare fld_ctr integer;
+      declare fld_ctr, fld_count integer;
       declare triple_vec any;
-      triple_vec := vector (0,0,0);
+      declare g_opcode integer;
+      g_opcode := aref_or_default (opcodes, triple_ctr, 6, null);
+      if (g_opcode is null)
+        {
+          fld_count := 3;
+          triple_vec := vector (0,0,0);
+        }
+      else
+        {
+          fld_count := 4;
+          triple_vec := vector (0,0,0,0);
+        }
       -- dbg_obj_princ ('opcodes[triple_ctr]=', opcodes[triple_ctr]);
-      for (fld_ctr := 2; fld_ctr >= 0; fld_ctr := fld_ctr - 1)
+      for (fld_ctr := fld_count - 1; fld_ctr >= 0; fld_ctr := fld_ctr - 1)
         {
           declare op integer;
           declare arg any;
@@ -6940,16 +7213,16 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                 goto end_of_adding_triple;
               if (isiri_id (i))
                 {
-                  if ((1 = fld_ctr) and is_bnode_iri_id (i))
-                    signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
+                  if (fld_ctr in (1,3) and is_bnode_iri_id (i))
+                    signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate or graph');
                 }
               else if ((isstring (i) and (1 = __box_flags (i))) or (217 = __tag(i)))
                 {
-                  if ((1 = fld_ctr) and (i like 'bnode://%'))
-                    signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
+                  if (fld_ctr in (1,3) and (i like 'bnode://%'))
+                    signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate or graph');
                   i := iri_to_id (i);
                 }
-              else if (2 > fld_ctr)
+              else if (2 <> fld_ctr)
                 signal ('RDF01',
                   sprintf ('Bad variable value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
                     __tag (i), __box_flags (i),
@@ -6963,8 +7236,8 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                 blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
               while (arg >= length (blank_ids))
                 blank_ids := vector_concat (blank_ids, vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'))));
-              if (1 = fld_ctr)
-                signal ('RDF01', 'Bad triple for CONSTRUCT: blank node can not be used as predicate');
+              if (fld_ctr in (1,3))
+                signal ('RDF01', 'Bad triple for CONSTRUCT: blank node can not be used as predicate or graph');
               triple_vec[fld_ctr] := blank_ids[arg];
             }
           else if (3 = op)
@@ -6974,16 +7247,16 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
 
               if (isiri_id (arg))
                 {
-                  if ((1 = fld_ctr) and is_bnode_iri_id (arg))
-                    signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
+                  if (fld_ctr in (1,3) and is_bnode_iri_id (arg))
+                    signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate or graph');
                 }
               else if ((isstring (arg) and (1 = __box_flags (arg))) or (217 = __tag(arg)))
                 {
-                  if ((1 = fld_ctr) and (arg like 'bnode://%'))
-                    signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
+                  if (fld_ctr in (1,3) and (arg like 'bnode://%'))
+                    signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate or graph');
                   arg := iri_to_id (arg);
                 }
-              else if (2 > fld_ctr)
+              else if (2 <> fld_ctr)
                 signal ('RDF01',
                   sprintf ('Bad const value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
                     __tag (arg), __box_flags (arg),
@@ -13620,12 +13893,18 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_ADD to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_CLEAR to SPARQL_UPDATE',
-    'grant execute on DB.DBA.SPARUL_LOAD to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_COPY to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_CREATE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_DROP to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_LOAD to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_MOVE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_RUN to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_INIT to SPARQL_SELECT',

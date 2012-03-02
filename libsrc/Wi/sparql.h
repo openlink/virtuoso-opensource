@@ -203,8 +203,8 @@ typedef struct spar_propvariable_s {
 /*! Configuration of RDF grabber, A.K.A. 'IRI resolver'. */
 typedef struct rdf_grab_config_s {
     int		rgc_pview_mode;		/*!< The query is executed using procedure view that will form a result-set by calling more than one statement via exec() */
-    int		rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
-    int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
+    int		rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_src.ssrc_grab_consts */
+    int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_src.ssrc_grab_consts */
     dk_set_t	rgc_consts;		/*!< Constants to be used as names of additional graphs */
     dk_set_t	rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
     dk_set_t	rgc_sa_graphs;		/*!< SeeAlso graph names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
@@ -228,6 +228,7 @@ typedef struct sparp_sources_s
   {
     rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
     dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
+    SPART *		ssrc_graph_set_by_with;		/*!< The precode expression of WITH clause, if exists */
     dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
     dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
     int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
@@ -235,21 +236,6 @@ typedef struct sparp_sources_s
     int			ssrc_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
     int			ssrc_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
   } sparp_sources_t;
-
-#define spare_grab			spare_src.ssrc_grab
-#define spare_common_sponge_options	spare_src.ssrc_common_sponge_options
-#define spare_default_graphs		spare_src.ssrc_default_graphs
-#define spare_named_graphs		spare_src.ssrc_named_graphs
-#define spare_default_graphs_listed	spare_src.ssrc_default_graphs_listed
-#define spare_named_graphs_listed	spare_src.ssrc_named_graphs_listed
-#define spare_default_graphs_locked	spare_src.ssrc_default_graphs_locked
-#define spare_named_graphs_locked	spare_src.ssrc_named_graphs_locked
-
-#define SPAR_SML_CREATE		(ptrlong)1201
-#define SPAR_SML_DROP		(ptrlong)1202
-#define SPAR_SML_ATTACH		(ptrlong)1203
-#define SPAR_SML_DETACH		(ptrlong)1204
-
 
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
@@ -294,6 +280,8 @@ typedef struct sparp_env_s
     dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
     dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
     dk_set_t		spare_acc_filters;		/*!< Sets of accumulated filters of GPs */
+    int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
+    int			spare_ctor_g_grp_count;		/*!< For CONSTRUCT and the like --- count of graph {...} groups of triple templates, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
     SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
     SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
     dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
@@ -881,6 +869,7 @@ extern SPART *spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t 
 /*! Assigns sinv->_.sinv.own_idx and store the pointer to invocation in sparp->sparp_sg->sg_sinvs. After that it is legal to refer to quad maps inside the sinv and to try optimizations */
 extern void spar_add_service_inv_to_sg (sparp_t *sparp, SPART *sinv);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
+extern SPART *spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);
 extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp);
@@ -906,17 +895,19 @@ extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in re
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
-extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type);
+extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern void spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments);
 extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_is_explicit, SPART **arguments);
 extern int sparp_namesake_macro_param (sparp_t *sparp, SPART *dm, caddr_t param_name);
-extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);
-extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode);
+extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode, int silent);
+extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode, int silent);
 extern SPART *spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent);
+extern SPART *spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_precode, SPART *to_graph_precode, int silent);
+
 extern SPART *spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions);
 extern SPART *spar_make_fake_action_solution (sparp_t *sparp);
 extern SPART *spar_make_drop_macro_lib (sparp_t *sparp, SPART *sml_precode, int silent);

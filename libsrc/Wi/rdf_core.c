@@ -797,6 +797,7 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
 	}
     }
   res = box_dv_short_nchars (tmp_buf, tgt_tail - tmp_buf);
+  box_flags (res) = BF_UTF8;
   dk_free_box (tmp_buf);
   return res;
 
