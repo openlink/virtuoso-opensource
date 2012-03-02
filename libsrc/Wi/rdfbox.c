@@ -2571,14 +2571,15 @@ rdfxml_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti, int 
   int close_attr = 0;
   if (ti->is_bnode)
     {
+      full_uri = ((NULL != ti->uri) ? ti->uri : loc);
       if ((RDFXML_HTTP_WRITE_REF_ABOUT != opcode) && (RDFXML_HTTP_WRITE_REF_RES != opcode))
         {                            /* 0123456789012345678901 */
           session_buffered_write (ses, "rdf:MisusedBlankNode_", 21);
-          session_buffered_write (ses, loc, strlen (loc));
+          session_buffered_write (ses, full_uri, strlen (full_uri));
           return;
         }                        /* 012345678901.23 */
       session_buffered_write (ses, " rdf:nodeID=\"", 13);
-      session_buffered_write (ses, loc, strlen (loc));
+      session_buffered_write (ses, full_uri, strlen (full_uri));
       session_buffered_write_char ('"', ses);
       return;
     }
