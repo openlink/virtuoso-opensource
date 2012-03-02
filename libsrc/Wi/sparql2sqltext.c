@@ -86,6 +86,7 @@ void rdf_ds_load_all (void)
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" (^{tree}^ < min_bnode_iri_id ())");
   qmf->qmfIsblankOfShortTmpl = box_dv_short_string (" (^{tree}^ >= min_bnode_iri_id ())");
   qmf->qmfIslitOfShortTmpl = box_dv_short_string (" 0");
+  qmf->qmfIsnumericOfShortTmpl = box_dv_short_string (" 0");
   qmf->qmf01uriOfShortTmpl = box_dv_short_string (" (lt (^{tree}^, min_bnode_iri_id ()))");
   qmf->qmf01blankOfShortTmpl = box_dv_short_string (" (gte (^{tree}^, min_bnode_iri_id ()))");
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^");
@@ -129,6 +130,7 @@ void rdf_ds_load_all (void)
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" is_named_iri_id (^{tree}^)");
   qmf->qmfIsblankOfShortTmpl = box_dv_short_string (" is_bnode_iri_id (^{tree}^)");
   qmf->qmfIslitOfShortTmpl = box_dv_short_string (" (1 - isiri_id (^{tree}^))");
+  qmf->qmfIsnumericOfShortTmpl = box_dv_short_string (" isnumeric (^{tree}^)");
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" __ro2lo (^{tree}^)");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_DATATYPE_OF_OBJ (__ro2sq (^{tree}^))");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (^{tree}^))");
@@ -1963,7 +1965,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
         ptrlong res_bits = sbd->sbd_result_restr_bits;
         switch (tree->_.builtin.btype)
           {
-          case SPAR_BIF_ISIRI: case SPAR_BIF_ISURI: case SPAR_BIF_ISBLANK: case SPAR_BIF_ISREF: case SPAR_BIF_ISLITERAL: case BOUND_L:
+          case SPAR_BIF_ISIRI: case SPAR_BIF_ISURI: case SPAR_BIF_ISBLANK: case SPAR_BIF_ISREF: case SPAR_BIF_ISLITERAL: case SPAR_BIF_ISNUMERIC: case BOUND_L:
             {
               ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
               if (!(arg_bits & SPART_VARR_NOT_NULL))
@@ -1976,11 +1978,19 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
                     if ((arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
                       || (arg_bits & SPART_VARR_ALWAYS_NULL) )
                       return (res_bits | SPART_VARR_FIXED);
+                    /* no break; */
                   case SPAR_BIF_ISREF: case SPAR_BIF_ISLITERAL:
                     if ((arg_bits & SPART_VARR_IS_REF) || (arg_bits & SPART_VARR_IS_LIT)
                       || (arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
                       || (arg_bits & SPART_VARR_ALWAYS_NULL))
                       return (res_bits | SPART_VARR_FIXED);
+                    break;
+                  case SPAR_BIF_ISNUMERIC:
+                    if ((arg_bits & SPART_VARR_IS_REF)
+                      || (arg_bits & SPART_VARR_IS_IRI) || (arg_bits & SPART_VARR_IS_BLANK)
+                      || (arg_bits & SPART_VARR_ALWAYS_NULL))
+                      return (res_bits | SPART_VARR_FIXED);
+                    break;
                   case BOUND_L: break;
                 }
               return res_bits;
@@ -3610,14 +3620,17 @@ IN_op_fnt_found:
             {
               const char *tmpl = ((top_filter_op || (NULL == arg1_native->qmf01blankOfShortTmpl)) ?
                 arg1_native->qmfIsblankOfShortTmpl : arg1_native->qmf01blankOfShortTmpl );
-              ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+              if ((arg1_restr_bits & SPART_VARR_NOT_NULL) && !strcmp (tmpl, " isnotnull (^{tree}^)"))
+                ssg_puts_with_comment (" 1", "optimized isBLANK, isnotnull() of nonnull");
+              else
+                ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
             }
           else if (SSG_VALMODE_LONG == arg1_native)
             ssg_print_tmpl (ssg, arg1_native,
               (top_filter_op ?
                 " ((isiri_id (^{tree}^) and (^{tree}^ >= min_bnode_iri_id ()))" :
                 " either (isiri_id (^{tree}^), gte (^{tree}^, min_bnode_iri_id ()), 0)" ),
-              NULL, NULL, arg1, NULL );
+              NULL, NULL, arg1, NULL_ASNAME );
           else if (SSG_VALMODE_SQLVAL == arg1_native)
             ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_BLANK_REF (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
           else
@@ -3646,7 +3659,7 @@ IN_op_fnt_found:
           ssg_puts_with_comment (" 0", "optimized isIRI");
           return;
         }
-      if (arg1_restr_bits & SPART_VARR_IS_REF & SPART_VARR_NOT_NULL)
+      if ((arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_NOT_NULL)) == (SPART_VARR_IS_REF | SPART_VARR_NOT_NULL))
         {
           ssg_puts_with_comment (" 1", "optimized isIRI");
           return;
@@ -3655,14 +3668,17 @@ IN_op_fnt_found:
         {
           const char *tmpl = ((top_filter_op || (NULL == arg1_native->qmf01uriOfShortTmpl)) ?
             arg1_native->qmfIsuriOfShortTmpl : arg1_native->qmf01uriOfShortTmpl );
-          ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+          if ((arg1_restr_bits & SPART_VARR_NOT_NULL) && !strcmp (tmpl, " isnotnull (^{tree}^)"))
+            ssg_puts_with_comment (" 1", "optimized isIRI, isnotnull() of nonnull");
+          else
+            ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
         }
       else if (SSG_VALMODE_LONG == arg1_native)
         ssg_print_tmpl (ssg, arg1_native,
           (top_filter_op ?
             " ((isiri_id (^{tree}^) and (^{tree}^ < min_bnode_iri_id ()))" :
             " either (isiri_id (^{tree}^), lt (^{tree}^, min_bnode_iri_id ()), 0)" ),
-          NULL, NULL, arg1, NULL );
+          NULL, NULL, arg1, NULL_ASNAME );
       else if (SSG_VALMODE_SQLVAL == arg1_native)
         ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_URI_REF (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
       else
@@ -3675,13 +3691,19 @@ IN_op_fnt_found:
           ssg_puts_with_comment (" 0", "optimized isREF");
           return;
         }
-      if (arg1_restr_bits & SPART_VARR_IS_REF & SPART_VARR_NOT_NULL)
+      if ((arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_NOT_NULL)) == (SPART_VARR_IS_REF | SPART_VARR_NOT_NULL))
         {
           ssg_puts_with_comment (" 1", "optimized isREF");
           return;
         }
       if (IS_BOX_POINTER (arg1_native))
-        ssg_print_tmpl (ssg, arg1_native, arg1_native->qmfIsrefOfShortTmpl, NULL, NULL, arg1, NULL_ASNAME);
+        {
+          const char *tmpl = arg1_native->qmfIsrefOfShortTmpl;
+          if ((arg1_restr_bits & SPART_VARR_NOT_NULL) && !strcmp (tmpl, " isnotnull (^{tree}^)"))
+            ssg_puts_with_comment (" 1", "optimized isREF, isnotnull() of nonnull");
+          else
+            ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+        }
       else if (SSG_VALMODE_LONG == arg1_native)
         ssg_print_tmpl (ssg, arg1_native, " isiri_id (^{tree}^)", NULL, NULL, arg1, NULL);
       else if (SSG_VALMODE_SQLVAL == arg1_native)
@@ -3696,22 +3718,57 @@ IN_op_fnt_found:
           ssg_puts_with_comment (" 0", "optimized isLITERAL");
           return;
         }
-      if (arg1_restr_bits & SPART_VARR_IS_LIT & SPART_VARR_NOT_NULL)
+      if ((arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL)) == (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL))
         {
           ssg_puts_with_comment (" 1", "optimized isLITERAL");
           return;
         }
       if (IS_BOX_POINTER (arg1_native))
-        ssg_print_tmpl (ssg, arg1_native, arg1_native->qmfIslitOfShortTmpl, NULL, NULL, arg1, NULL_ASNAME);
+        {
+          const char *tmpl = arg1_native->qmfIslitOfShortTmpl;
+          if ((arg1_restr_bits & SPART_VARR_NOT_NULL) && !strcmp (tmpl, " isnotnull (^{tree}^)"))
+            ssg_puts_with_comment (" 1", "optimized isLITERAL, isnotnull() of nonnull");
+          else
+            ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+        }
       else if (SSG_VALMODE_LONG == arg1_native)
         ssg_print_tmpl (ssg, arg1_native,
           (top_filter_op ?
             " (not (isiri_id (^{tree}^)))" : " iszero (isiri_id (^{tree}^))" ),
-          NULL, NULL, arg1, NULL );
+          NULL, NULL, arg1, NULL_ASNAME );
       else if (SSG_VALMODE_SQLVAL == arg1_native)
         ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_LITERAL (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
       else
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isLITERAL()");
+      return;
+    case SPAR_BIF_ISNUMERIC:
+      arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
+      if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
+        {
+          ssg_puts_with_comment (" 0", "optimized isNUMERIC");
+          return;
+        }
+      if (IS_BOX_POINTER (arg1_native))
+        {
+          const char *tmpl = arg1_native->qmfIsnumericOfShortTmpl;
+          if (NULL != tmpl)
+            {
+              if ((arg1_restr_bits & SPART_VARR_NOT_NULL) && !strcmp (tmpl, " isnotnull (^{tree}^)"))
+                ssg_puts_with_comment (" 1", "optimized isNUMERIC, isnotnull() of nonnull");
+              else
+                ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+            }
+          else
+            {
+              ssg_puts (" isnumeric (");
+              ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              ssg_putchar (')');
+            }
+        }
+      else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
+        ssg_print_tmpl (ssg, arg1_native, " isnumeric (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
+      else
+        spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isNUMERIC()");
       return;
     case IRI_L:
       {
@@ -7733,7 +7790,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
       if (SSG_TABLE_SELECT_PASS == pass)
         {
           char buf[200];
-          snprintf (buf, sizeof (buf), " (select top 1 1 as __fake_table_col_%d from DB.DBA.SYS_IDONLY_ONE) as __fake_table_%d",
+          snprintf (buf, sizeof (buf), " (select 1 as __fake_table_col_%d) as __fake_table_%d",
             ssg->ssg_sparp->sparp_unictr, ssg->ssg_sparp->sparp_unictr );
           ssg->ssg_sparp->sparp_unictr++;
           ssg_puts (buf);
@@ -8227,7 +8284,7 @@ retval_list_complete:
           ssg_newline (0);
           snprintf (buf, sizeof (buf), "stub-%s", member->_.gp.selid);
           if (SSG_PRINT_UNION_NONEMPTY_STUB & head_flags)
-            ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.SYS_IDONLY_ONE) AS ");
+            ssg_puts ("(SELECT 1 as __stub) AS ");
           else
             ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.SYS_IDONLY_EMPTY WHERE 0) AS ");
           ssg_prin_id (ssg, buf);
@@ -8240,7 +8297,7 @@ retval_list_complete:
           char buf[105]; /* potentially 100 chars long see sparp_clone_id etc. */
           ssg_newline (0);
           snprintf (buf, sizeof (buf), "lojstub-%s", member->_.gp.selid);
-          ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.SYS_IDONLY_ONE) AS ");
+          ssg_puts ("(SELECT 1 AS __stub) AS ");
           ssg_prin_id (ssg, buf);
           /* no t_set_push (&(ssg->ssg_valid_ret_selids), ...); because it's single-use stub */
           if (OPTIONAL_L == first_itm->_.gp.subtype)

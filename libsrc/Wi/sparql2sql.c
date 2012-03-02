@@ -1268,6 +1268,11 @@ because const=str(var) is never recognized as a special condition on t_in or t_o
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
             return 1;
+          case SPAR_BIF_ISNUMERIC:
+            flags = SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_NOT_NULL;
+            arg1_eq->e_rvr.rvrRestrictions |= flags;
+            arg1_eq->e_replaces_filter |= flags;
+            break;
           case BOUND_L:
             flags = SPART_VARR_NOT_NULL;
             arg1_eq->e_rvr.rvrRestrictions |= flags;

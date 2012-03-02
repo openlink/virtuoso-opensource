@@ -78,6 +78,7 @@ JSO_SCALAR qmfIsrefOfShortTmpl STRING REQUIRED		--!< ... whether the short is re
 JSO_SCALAR qmfIsuriOfShortTmpl STRING REQUIRED		--!< ... whether the short is uri
 JSO_SCALAR qmfIsblankOfShortTmpl STRING REQUIRED	--!< ... whether the short is blank node ref
 JSO_SCALAR qmfIslitOfShortTmpl STRING REQUIRED		--!< ... whether the short is literal
+JSO_SCALAR qmfIsnumericOfShortTmpl STRING OPTIONAL	--!< ... whether the short is number (unlike SSG_VALMODE_NUM, no DATE/TIME etc., only number)
 -- Templates of 0/1 integer expressions that tell whether the short is of some sort:
 JSO_SCALAR qmf01uriOfShortTmpl STRING OPTIONAL		--!< ... whether the short is uri, result is 1 or 0
 JSO_SCALAR qmf01blankOfShortTmpl STRING OPTIONAL	--!< ... whether the short is blank node ref, result is 1 or 0
