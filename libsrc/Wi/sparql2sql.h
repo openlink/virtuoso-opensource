@@ -740,6 +740,7 @@ typedef struct rdf_ds_usage_s
 typedef struct sparp_bif_desc_s {
   const char *		sbd_name;		/*!< Name, uppercased */
   int			sbd_subtype;		/*!< Assigned SPAR_BIF_xxx value */
+  char			sbd_implementation;	/*!< Type of implementation. '-' for special code generation, 'B' for BIF, 'S' for stored procedures */
   int			sbd_required_syntax;	/*!< Bits of sparql dialect such that at least one bit should be set in dialect in order to allow the function */
   int			sbd_minargs;		/*!< Minimum allowed number of arguments */
   int			sbd_maxargs;		/*!< Maximum allowed number of arguments */

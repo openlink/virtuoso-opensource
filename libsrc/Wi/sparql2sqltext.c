@@ -3864,7 +3864,12 @@ IN_op_fnt_found:
       {
         ssg_valmode_t prev_arg_valmode = SSG_VALMODE_AUTO, arg_valmode;
         int argctr;
-        ssg_puts (" rdf_");
+        switch (sbd->sbd_implementation)
+          {
+          case 'B': ssg_puts (" rdf_"); break;
+          case 'S': ssg_puts (" DB.DBA.rdf_"); break;
+          default: spar_internal_error (ssg->ssg_sparp, "Built-in function is not implemented"); break;
+          }
         ssg_puts (sbd->sbd_name);
         ssg_puts ("_impl");
         ssg_puts (" (");
