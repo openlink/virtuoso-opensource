@@ -1555,9 +1555,14 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
   t := __tag (longobj);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar, 133, 226)))
     return longobj;
-      if (__tag of nvarchar = t)
+      if (t = 133)
+	{
+	  longobj := cast (longobj as nvarchar);
+	  t := __tag (longobj);
+	}
+      if (__tag of nvarchar = t or t = 226)
         longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
       else if (t in (126, 217))
         longobj := cast (longobj as varchar);
