@@ -215,12 +215,15 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       rbb->rbb_base.rb_serialize_id_only = is_complete >> 1;
       rbb->rbb_base.rb_chksum_tail = 1;
       dk_check_tree (chksum);
-      rbb->rbb_chksum = box_copy_tree (chksum);
+      rbb->rbb_chksum = chksum; /* Not box_copy_tree (chksum) */
       if (6 < BOX_ELEMENTS (args))
         {
           long dtp = bif_long_arg (qst, args, 6, "rdf_box");
           if ((dtp &~0xFF) || ! (dtp & 0x80))
-            sqlr_new_error ("22023", "SR556", "Invalid dtp %ld in call of rdf_box()", dtp);
+            {
+              dk_free_box ((caddr_t *)rbb);
+              sqlr_new_error ("22023", "SR556", "Invalid dtp %ld in call of rdf_box()", dtp);
+            }
            rbb->rbb_box_dtp = (dtp_t)dtp;
         }
       else
