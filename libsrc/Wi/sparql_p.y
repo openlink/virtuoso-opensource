@@ -141,6 +141,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token AS_L		/*:: PUNCT_SPAR_LAST("AS") ::*/
 %token ASC_L		/*:: PUNCT_SPAR_LAST("ASC") ::*/
 %token ASK_L		/*:: PUNCT_SPAR_LAST("ASK") ::*/
+%token ATTACH_L		/*:: PUNCT_SPAR_LAST("ATTACH") ::*/
 %token AVG_L		/*:: PUNCT_SPAR_LAST("AVG") ::*/
 %token BASE_L		/*:: PUNCT_SPAR_LAST("BASE") ::*/
 %token BIJECTION_L	/*:: PUNCT_SPAR_LAST("BIJECTION") ::*/
@@ -163,6 +164,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DEREF_L		/*:: PUNCT_SPAR_LAST("DEREF") ::*/
 %token DESC_L		/*:: PUNCT_SPAR_LAST("DESC") ::*/
 %token DESCRIBE_L	/*:: PUNCT_SPAR_LAST("DESCRIBE") ::*/
+%token DETACH_L		/*:: PUNCT_SPAR_LAST("DETACH") ::*/
 %token DISTINCT_L	/*:: PUNCT_SPAR_LAST("DISTINCT") ::*/
 %token DROP_L		/*:: PUNCT_SPAR_LAST("DROP") ::*/
 %token EXCLUSIVE_L	/*:: PUNCT_SPAR_LAST("EXCLUSIVE") ::*/
@@ -183,6 +185,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token INTO_L		/*:: PUNCT_SPAR_LAST("INTO") ::*/
 %token IRI_L		/*:: PUNCT_SPAR_LAST("IRI") ::*/
 %token LANG_L		/*:: PUNCT_SPAR_LAST("LANG") ::*/
+%token LIBRARY_L	/*:: PUNCT_SPAR_LAST("LIBRARY") ::*/
 %token LIKE_L		/*:: PUNCT_SPAR_LAST("LIKE") ::*/
 %token LIMIT_L		/*:: PUNCT_SPAR_LAST("LIMIT") ::*/
 %token LITERAL_L	/*:: PUNCT_SPAR_LAST("LITERAL") ::*/
@@ -418,8 +421,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <trees> spar_arrow_iriref
 %type <tree> spar_blank_node
 /* nonterminals from part 1a: */
-%type <backstack> spar_sparul_actions
-%type <tree> spar_sparul_action
+%type <backstack> spar_sparul_action_or_drop_macro_libs
+%type <tree> spar_sparul_action_or_drop_macro_lib
 %type <tree> spar_sparul_insert
 %type <tree> spar_sparul_insertdata
 %type <tree> spar_sparul_delete
@@ -429,6 +432,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_sparul_load
 %type <tree> spar_sparul_create
 %type <tree> spar_sparul_drop
+%type <tree> spar_drop_macro_lib
 %type <tree> spar_action_solution
 %type <tree> spar_in_graph_precode_opt
 %type <tree> spar_from_graph_precode_opt
@@ -452,6 +456,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_qm_drop_quad_storage
 %type <tree> spar_qm_drop_quad_map_mapping
 %type <tree> spar_qm_drop_mapping
+%type <tree> spar_qm_attach_macro_lib
+%type <tree> spar_qm_detach_macro_lib
 %type <nothing> spar_qm_from_where_list_opt
 %type <nothing> spar_qm_map_top_group
 %type <nothing> spar_qm_map_top_dotlist
@@ -523,14 +529,13 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %%
 
 /* TOP-LEVEL begin */
-sparql	/* [1]*	Query		 ::=  Prolog ( QueryBody | SparulAction* | ( QmStmt ('.' QmStmt)* '.'? ) )	*/
-	: START_OF_SPARQL_TEXT spar_prolog /* {
-		if (sparp_arg->sparp_env->spare_default_graphs_listed || sparp_arg->sparp_env->spare_named_graphs_listed) {
-		  sparp_arg->sparp_env->spare_default_graphs_locked = 1;
-		  sparp_arg->sparp_env->spare_named_graphs_locked = 1;
-		  } } */
-	    spar_query_body END_OF_SPARQL_TEXT { sparp_arg->sparp_expr = $$ = $3; }
-	| START_OF_SPARQL_TEXT spar_prolog spar_sparul_actions END_OF_SPARQL_TEXT {
+sparql	/* [1]*	Query		 ::=  Prolog (	*/
+			/*... ( CreateMacroLib? QueryBody )	*/
+			/*... | ( SparulAction | DropMacroLib )	*/
+			/*... | ( QmStmt ('.' QmStmt)* '.'? ) )	*/
+	: START_OF_SPARQL_TEXT spar_prolog spar_create_macro_lib_opt
+	    spar_query_body END_OF_SPARQL_TEXT { sparp_arg->sparp_expr = $$ = $4; }
+	| START_OF_SPARQL_TEXT spar_prolog spar_sparul_action_or_drop_macro_libs END_OF_SPARQL_TEXT {
 		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
 		  (SPART **)t_revlist_to_array ($3) ); }
 	| START_OF_SPARQL_TEXT END_OF_SPARQL_TEXT {
@@ -607,6 +612,16 @@ spar_prefix_decl	/* [4]	PrefixDecl	 ::=  'PREFIX' QNAME_NS Q_IRI_REF	*/
 	| PREFIX_L error { sparyyerror ("Missing namespace prefix after PREFIX keyword"); }
 	;
 
+spar_create_macro_lib_opt	/* [Virt]	CreateMacroLib	 ::=  'CREATE' 'MACRO' 'LIBRARY' IRIref '{' Defmacro* '}'	*/
+	: /* empty */
+	| CREATE_L MACRO_L LIBRARY_L spar_iriref {
+		if (sparp_arg->sparp_macro_def_count)
+		  sparyyerror ("Some macro are defined before CREATE MACRO LIBRARY");
+		sparp_arg->sparp_macrolib_to_create = $4->_.qname.val;
+		sparp_arg->sparp_disable_storage_macro_lib = 2; }
+	    _LBRA spar_defmacros_opt _RBRA
+	;
+
 spar_defmacros_opt
 	: /* empty */		{ ; }
 	| spar_defmacros_opt spar_defmacro	{ ; }
@@ -617,7 +632,8 @@ spar_defmacro		/* [Virt]	Defmacro	 ::=  'DEFMACRO' IRIref ( */
 			/*... DefmacroPattern ( 'LOCAL' DefmacroArgs )? GroupGraphPattern )	*/
 	: DEFMACRO_L spar_iriref {
 		SPART *new_macro;
-		sparp_configure_storage_and_macro_libs (sparp_arg);
+		if (!sparp_arg->sparp_storage_is_set)
+		  sparp_configure_storage_and_macro_libs (sparp_arg);
 		spar_selid_push_reused (sparp_arg, $2->_.qname.val );
 		sparp_arg->sparp_macro_mode = SPARP_DEFARG;
 		new_macro = sparp_arg->sparp_current_macro = sparp_defmacro_init (sparp_arg, $2->_.qname.val);
@@ -1911,12 +1927,12 @@ spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 
 /* PART 1a. SPARUL */
 
-spar_sparul_actions
-	: spar_sparul_action	{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_sparul_actions spar_sparul_action	{ $$ = $1; t_set_push (&($$), $2); }
+spar_sparul_action_or_drop_macro_libs
+	: spar_sparul_action_or_drop_macro_lib	{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_sparul_action_or_drop_macro_libs spar_sparul_action_or_drop_macro_lib	{ $$ = $1; t_set_push (&($$), $2); }
 	;
 
-spar_sparul_action		/* [DML]	SparulAction	 ::=  */
+spar_sparul_action_or_drop_macro_lib		/* [DML]	SparulAction	 ::=  */
 			/*... CreateAction | DropAction | LoadAction	*/
 			/*... | InsertAction | InsertDataAction | DeleteAction | DeleteDataAction	*/
 			/*... | ModifyAction | ClearAction	*/
@@ -1929,6 +1945,12 @@ spar_sparul_action		/* [DML]	SparulAction	 ::=  */
 	| spar_sparul_load
 	| spar_sparul_create
 	| spar_sparul_drop
+	| spar_drop_macro_lib
+	;
+
+spar_drop_macro_lib	/* [Virt]	DropMacroLib	 ::=  'DROP' 'SILENT'? 'MACRO' 'LIBRARY' PrecodeExpn	*/
+	: DROP_L spar_silent_opt MACRO_L LIBRARY_L spar_precode_expn {
+		$$ = spar_make_drop_macro_lib (sparp_arg, $5, $2 /* yes, $2 after $5 */); }
 	;
 
 spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
@@ -2287,7 +2309,7 @@ spar_qm_text_literal_decl	/* [Virt]	QmTextLiteral	 ::=  'TEXT' 'XML'? 'LITERAL' 
 
 spar_xml_opt
 	: /* empty */ { $$ = NULL; }
-	| XML_L
+	| XML_L { $$ = (caddr_t)((ptrlong)(XML_L)); }
 	;
 
 spar_of_sqlcol_opt
@@ -2330,12 +2352,40 @@ spar_qm_map_top_dotlist	/* ::=  QmMapTopOp ( '.' QmMapTopOp )*	*/
 	    spar_qm_map_top_op {}
 	;
 
-spar_qm_map_top_op		/* [Virt]	QmMapTopOp	 ::=  QmMapOp | QmDropQuadMap | QmDrop	*/
+spar_qm_map_top_op		/* [Virt]	QmMapTopOp	 ::=  QmMapOp | QmDropQuadMap | QmDrop | QmAttachMacroLib | QmDetachMacroLib	*/
 	: spar_qm_map_op
 	| spar_qm_drop_mapping {
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls), $1); }
 	| spar_qm_drop_quad_map_mapping {
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls), $1); }
+	| spar_qm_attach_macro_lib {
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls), $1); }
+	| spar_qm_detach_macro_lib {
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls), $1); }
+	;
+
+spar_qm_attach_macro_lib		/* [Virt]	QmAttachMacroLib	 ::=  'ATTACH' 'MACRO' 'LIBRARY' QmIRIrefConst	*/
+	: ATTACH_L MACRO_L LIBRARY_L spar_qm_iriref_const_expn	{
+		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MACRO_LIBRARY",
+		  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+		  (SPART **)t_list (2, t_box_dv_uname_string ("ID"), $4) );
+		if (NULL == sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+	;
+
+spar_qm_detach_macro_lib		/* [Virt]	QmDetachMacroLib	 ::=  'DETACH' 'SILENT'? 'MACRO' 'LIBRARY' QmIRIrefConst?	*/
+	: DETACH_L spar_silent_opt MACRO_L LIBRARY_L spar_qm_iriref_const_expn	{
+		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY",
+		  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+		  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $5, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
+		if (NULL == sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+	| DETACH_L spar_silent_opt MACRO_L LIBRARY_L	{
+		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY",
+		  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+		  (SPART **)t_list (2, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
+		if (NULL == sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	;
 
 spar_qm_map_group		/* [Virt]	QmMapGroup	 ::=  '{' QmMapOp ( '.' QmMapOp )* '.'? '}'	*/

@@ -245,6 +245,11 @@ typedef struct sparp_sources_s
 #define spare_default_graphs_locked	spare_src.ssrc_default_graphs_locked
 #define spare_named_graphs_locked	spare_src.ssrc_named_graphs_locked
 
+#define SPAR_SML_CREATE		(ptrlong)1201
+#define SPAR_SML_DROP		(ptrlong)1202
+#define SPAR_SML_ATTACH		(ptrlong)1203
+#define SPAR_SML_DETACH		(ptrlong)1204
+
 
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
@@ -379,6 +384,8 @@ typedef struct sparp_s {
   struct sparp_trav_params_s *sparp_stp;	/*!< Parameters of traverse (callbacks in use). It is filled in by sparp_gp_grav() only, not by sparp_gp_grav_int() */
   struct sparp_trav_state_s *sparp_stss;	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
   sparp_globals_t *sparp_sg;		/*!< Pointer to data common for all sparp_t-s for whole stack of nested sparp-s */
+  int sparp_macrolib_ignore_create;	/*!< True if define input:macrolib-ignore-create is set */
+  caddr_t sparp_macrolib_to_create;	/*!< IRI of macro lib that should be created, NULL if that's not a CREATE MACRO LIBRARY statement */
   int sparp_macro_mode;			/*!< Indicator of special mode of parsing DEFMACRO arguments, body, or invocation */
   SPART **sparp_macro_defs;		/*!< Array of locally defined macro defs, with an unused end */
   int sparp_macro_def_count;		/*!< Count of used items in \c sparp_macro_defs */
@@ -729,6 +736,8 @@ extern SPART **t_spartlist_concat (SPART **list1, SPART **list2);
 
 extern sparp_t * sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all);
 extern int sparyyparse (void *sparp);
+/*! Finds storage by name and sets it, it also finds associated macro library (it it is set of the storage) and copies macro defs from the library
+The search for associated macro lib is disabled if the statement contains CREATE MACRO LIBRARY clause */
 extern void sparp_configure_storage_and_macro_libs (sparp_t *sparp);
 extern void sparp_compile_smllist (sparp_t *sparp, caddr_t sml_iri_uname, void /* actually struct sparql_macro_library_t */ *smlib);
 
@@ -910,6 +919,7 @@ extern SPART *spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int
 extern SPART *spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions);
 extern SPART *spar_make_fake_action_solution (sparp_t *sparp);
+extern SPART *spar_make_drop_macro_lib (sparp_t *sparp, SPART *sml_precode, int silent);
 
 /*! Do nothing or macroexpand something locally or alters values by spar_macroprocess_treelist. Returns new version of \c trees, destroying and/or reusing the original */
 extern SPART **spar_macroprocess_define_list (sparp_t *sparp, SPART **trees, spar_mproc_ctx_t *ctx);

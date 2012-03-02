@@ -9231,8 +9231,11 @@ create procedure DB.DBA.RDF_QM_CHANGE_OPT (in cmdlist any)
         }
       http (')', exectext);
       STATE := '00000';
-      warnings := exec (string_output_string (exectext), STATE, MESSAGE, arglist, md, rs);
-      -- dbg_obj_princ ('warnings = ', warnings);
+      warnings := exec (string_output_string (exectext), STATE, MESSAGE, arglist, 10000, md, rs);
+      dbg_obj_princ ('md = ', md, ' rs = ', rs, ' warnings = ', warnings, STATE, MESSAGE);
+      if (__tag of vector <> __tag (warnings) and __tag of vector = __tag (rs))
+        warnings := case (length (rs)) when 0 then null else rs[0][0] end;
+      dbg_obj_princ ('warnings = ', warnings);
       if (__tag of vector = __tag (warnings))
         {
           foreach (any warning in warnings) do

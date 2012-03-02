@@ -906,6 +906,11 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           t_set_push (&(sparp->sparp_macro_libs), lib_iri_uname);
           return;
         }
+      if (!strcmp (param, "input:macro-lib-ignore-create"))
+        {
+          sparp->sparp_macrolib_ignore_create = 1;
+          return;
+        }
       if (!strcmp (param, "input:disable-storage-macro-lib"))
         {
           sparp->sparp_disable_storage_macro_lib = 1;
@@ -1151,7 +1156,7 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
           sparp_qr_uses_jso (sparp, (caddr_t)smlib, NULL);
         }
     }
-  if (NULL != sparp->sparp_macro_libs)
+  if ((NULL != sparp->sparp_macro_libs) && (NULL == sparp->sparp_macrolib_to_create))
     {
       caddr_t *explicit_includes = t_revlist_to_array (sparp->sparp_macro_libs);
       jso_class_descr_t *sml_cd;
@@ -3295,7 +3300,7 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
   END_DO_SET()
   for (ctr = BOX_ELEMENTS_0 (options) - 2; 0 <= ctr; ctr -= 2)
     {
-      caddr_t param = (ccaddr_t)(options[ctr]);
+      ccaddr_t param = (ccaddr_t)(options[ctr]);
       const char **chk;
       for (chk = sparp_known_get_params; (NULL != chk[0]) && strcmp (chk[0], param); chk++) ;
       if (NULL == chk[0])
@@ -3693,6 +3698,36 @@ sparp_namesake_macro_param (sparp_t *sparp, SPART *dm, caddr_t param_name)
 }
 
 SPART *
+spar_make_create_macro_lib (sparp_t *sparp)
+{
+  SPART *fake_sol;
+  SPART *call, *top;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  call = spar_make_funcall (sparp, 0, t_box_dv_short_string ("sql:RDF_SML_CREATE"),
+    (SPART **)t_list (2, sparp->sparp_macrolib_to_create, t_box_dv_short_string (sparp->sparp_text)) );
+  top = spar_make_top_or_special_case_from_wm (sparp, SPAR_SML_CREATE,
+    (SPART **)t_list (1, call),
+    spar_selid_pop (sparp), fake_sol );
+  return top;
+}
+
+SPART *
+spar_make_drop_macro_lib (sparp_t *sparp, SPART *sml_precode, int silent)
+{
+  SPART *fake_sol;
+  SPART *call, *top;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  call = spar_make_funcall (sparp, 0, t_box_dv_short_string ("sql:RDF_SML_DROP"),
+    (SPART **)t_list (2, sml_precode, t_box_num_nonull (silent)) );
+  top = spar_make_top_or_special_case_from_wm (sparp, SPAR_SML_DROP,
+    (SPART **)t_list (1, call),
+    spar_selid_pop (sparp), fake_sol );
+  return top;
+}
+
+SPART *
 spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART *graph_precode, SPART *aux_op)
 {
   SPART *fake_sol;
@@ -3786,7 +3821,6 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       caddr_t action_sql;
       sparp->sparp_expr = action;
       sparp_rewrite_all (sparp, 0 /* no cloning -- no need in safely_copy_retvals */);
-  /*xt_check (sparp, sparp->sparp_expr);*/
 #ifndef NDEBUG
       t_check_tree (sparp->sparp_expr);
 #endif
@@ -4203,7 +4237,8 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
       return sparp; /* see below */
     }
   END_QR_RESET
-  /*xt_check (sparp, sparp->sparp_expr);*/
+  if (NULL != sparp->sparp_macrolib_to_create && !sparp->sparp_macrolib_ignore_create)
+    sparp->sparp_expr = spar_make_create_macro_lib (sparp);
 #ifndef NDEBUG
   t_check_tree (sparp->sparp_expr);
 #endif
