@@ -2630,7 +2630,7 @@ rdfxml_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti, int 
   else
     {
       full_uri = ((NULL != ti->uri) ? ti->uri : loc);
-      dks_esc_write (ses, full_uri, box_length (full_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+      dks_esc_write (ses, full_uri, box_length (full_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
     }
   if (close_attr)
     session_buffered_write_char ('"', ses);
