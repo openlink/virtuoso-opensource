@@ -3433,9 +3433,9 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
         session_buffered_write (ses, "false", 5);
       return;
     }
-                             /* 0          1       */
-                             /* 01.234567890.12345 */
-  session_buffered_write (ses, "{ \"@literal\" : ", 15);
+                             /* 0          1     */
+                             /* 01.2345678.90123 */
+  session_buffered_write (ses, "{ \"@value\" : ", 13);
   switch (obj_box_value_dtp)
     {
     case DV_DATETIME:
@@ -3508,9 +3508,9 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     {
       if (!IS_BOX_POINTER (type_uri))
         sqlr_new_error ("22023", "SR625", "Unsupported datatype %d in LD-style JSON serialization of an RDF object", obj_dtp);
-                                 /* 0          1           */
-                                 /* 012.3456789012.3456.78 */
-      session_buffered_write (ses, " , \"@datatype\" : \"", 18);
+                                 /* 0           1      */
+                                 /* 012.345678.9012.34 */
+      session_buffered_write (ses, " , \"@type\" : \"", 14);
       dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
     }
@@ -3560,36 +3560,36 @@ bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((NULL == env->tje_prev_subj) || strcmp (env->tje_prev_subj, subj_iri))
     {
       if (NULL != env->tje_prev_pred)
-        {                            /* 012345.6789 */
-          session_buffered_write (ses, " ] } ,\n  ", 9);
+        {                            /* 012345.678901 */
+          session_buffered_write (ses, " ] } ,\n    ", 11);
           dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
-                                 /* 01.23.456.78 */
-      session_buffered_write (ses, "{ \"@\": \"", 8);
+                                 /* 01.2345.678.90 */
+      session_buffered_write (ses, "{ \"@id\": \"", 10);
       dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-                                 /* .01.23 */
-      session_buffered_write (ses, "\",\n", 3);
+                                 /* .01.23456789 */
+      session_buffered_write (ses, "\",\n      ", 9);
       env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
     }
   if ((NULL == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
     {
       if (NULL != env->tje_prev_pred)
-        {                            /* 0123.456789 */
-          session_buffered_write (ses, " ] ,\n    ", 9);
+        {                            /* 0123.45678901 */
+          session_buffered_write (ses, " ] ,\n      ", 11);
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
       session_buffered_write_char ('\"', ses);
       if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
-        session_buffered_write_char ('a', ses);
+        session_buffered_write (ses, "@type", 5);
       else
         dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
                                  /* .0123456 */
       session_buffered_write (ses, "\" : [ ", 6);
       env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
     }
-  else                         /* 01.23456789 */
-    session_buffered_write (ses, " ,\n      ", 9);
+  else                         /* 01.2345678901 */
+    session_buffered_write (ses, " ,\n        ", 11);
   if (obj_is_iri)
     {
       session_buffered_write_char ('\"', ses);
