@@ -2231,6 +2231,19 @@ AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
   [ with_conductor_vad="yes" ]
 )
 
+AC_ARG_ENABLE(dbpedia-vad,
+AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package (default)])
+AC_HELP_STRING([--disable-conductor-vad], [disable DBpedia vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_dbpedia_vad="yes";;
+       no)	with_dbpedia_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-dbpedia-vad) ;;
+     esac
+  ],
+  [ with_dbpedia_vad="yes" ]
+)
+
 AC_ARG_ENABLE(demo-vad,
 AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package (default)])
 AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package])dnl
@@ -2352,6 +2365,7 @@ if test "x$with_all_vad" = "xno"
 then
     with_bpel_vad="no"
     with_conductor_vad="no"
+    with_dbpedia_vad="no"
     with_demo_vad="no"
     with_fct_vad="no"
     with_isparql_vad="no"
@@ -2364,6 +2378,7 @@ fi
 
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
 AM_CONDITIONAL(WITH_CONDUCTOR_VAD, test "x$with_conductor_vad" = "xyes")
+AM_CONDITIONAL(WITH_DBPEDIA_VAD, test "x$with_dbpedia_vad" = "xyes")
 AM_CONDITIONAL(WITH_DEMO_VAD, test "x$with_demo_vad" = "xyes")
 AM_CONDITIONAL(WITH_FCT_VAD, test "x$with_fct_vad" = "xyes")
 AM_CONDITIONAL(WITH_ISPARQL_VAD, test "x$with_isparql_vad" = "xyes")
@@ -2589,6 +2604,7 @@ AC_CONFIG_FILES([
 	binsrc/b3s/Makefile
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
+	binsrc/dbpedia/Makefile
 	binsrc/driver/Makefile
 	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile

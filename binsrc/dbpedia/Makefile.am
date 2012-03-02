@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2012 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -19,12 +19,45 @@
 #  
 #  
 
-SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting bpel b3s tutorial yacutia samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql jena sesame sesame2 sesame3 redland hibernate dbpedia
+TOP=@TOP@
 
+if WITH_DBPEDIA_VAD
+nodist_vad_DATA = dbpedia_dav.vad
+endif
+
+noinst_SCRIPTS = make_vad.sh
+CLEANFILES =  \
+	dbpedia_dav.vad \
+	dbpedia_filesystem.vad \
+	make_dbpedia_vad.log \
+	make_vad.output \
+	vad_dav.xml \
+	vad_fs.xml \
+	virtuoso.pxa
+
+
+dbpedia_filesystem.vad dbpedia_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
 
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = config/ccdefs.c config/libxml.m4
+EXTRA_DIST = \
+	*.sql \
+	make_vad.sh \
+	vad_version \
+	vsp/*.sql \
+	vsp/*.vsp \
+	vsp/images/*.gif \
+	vsp/images/*.png \
+	vsp/statics/*.css \
+	vsp/statics/*.gif \
+	vsp/statics/*.js \
+	vsp/statics/*.png \
+	vsp/statics/*.svg \
+	vsp/style/*.css
