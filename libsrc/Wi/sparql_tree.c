@@ -3916,6 +3916,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
   spar_internal_error (sparp, "sparp_" "find_origin_of_external_var(): external source equiv is found, external source var is not");
 make_rv:
   rv = (SPART *)t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
+  rv->type = SPAR_RETVAL;
   rv->_.retval.equiv_idx = esub_res_eq->e_own_idx;
   rv->_.retval.gp = esub_res_gp;
   memcpy (&(rv->_.retval.rvr), &(esub_res_eq->e_rvr), sizeof (rdf_val_range_t));
