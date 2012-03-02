@@ -5311,8 +5311,7 @@ sqlo_next_joined (sqlo_t * so, df_elt_t * dt_dfe)
 	{
 	  df_elt_t *next_from = (df_elt_t *) from->next->data;
 	  int next_outer = dfe_is_join (next_from);
-	  remote_table_t *rt =
-	      DFE_TABLE == next_from->dfe_type ? find_remote_table (next_from->_.table.ot->ot_table->tb_name, 0) : NULL;
+	  remote_table_t * rt = DFE_TABLE == next_from->dfe_type ? find_remote_table (next_from->_.table.ot->ot_table->tb_name, 0) : NULL ;
 	  if (!next_from->dfe_is_placed && next_outer && rt)
 	    {
 	      df_elt_t *preds = sqlo_df_elt (so, next_from->_.table.ot->ot_join_cond);
