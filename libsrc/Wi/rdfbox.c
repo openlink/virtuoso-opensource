@@ -1610,6 +1610,9 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_STRING:
       dks_esc_write (out, val, box_length (val) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
       break;
+    case DV_WIDE:
+      dks_esc_write (out, val, box_length (val) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_TTL_DQ);
+      break;
     default:
       {
         caddr_t tmp_utf8_box = box_cast_to_UTF8 (qst, val);
@@ -2697,7 +2700,7 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
       break;
     case DV_WIDE:
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_PTEXT);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_PTEXT);
       break;
     case DV_XML_ENTITY:
       {
@@ -2929,6 +2932,11 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, esc_mode);
       session_buffered_write_char ('"', ses);
       break;
+    case DV_WIDE:
+      session_buffered_write_char ('"', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, esc_mode);
+      session_buffered_write_char ('"', ses);
+      break;
     case DV_XML_ENTITY:
       {
         http_ttl_or_nt_write_xe (ses, qi, (xml_entity_t *)(obj_box_value),
@@ -2937,11 +2945,6 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       }
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
-      break;
-    case DV_STRING_SESSION:
-      session_buffered_write_char ('"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, esc_mode);
-      session_buffered_write_char ('"', ses);
       break;
     default:
       {
@@ -3252,6 +3255,11 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
       break;
+    case DV_WIDE:
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
+      break;
     case DV_XML_ENTITY:
       {
         http_json_write_xe (ses, qi, (xml_entity_t *)(obj_box_value));
@@ -3451,6 +3459,11 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     case DV_STRING:
       session_buffered_write_char ('\"', ses);
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      session_buffered_write_char ('\"', ses);
+      break;
+    case DV_WIDE:
+      session_buffered_write_char ('\"', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
       break;
     case DV_XML_ENTITY:
@@ -3891,6 +3904,13 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                   dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
                 SES_PRINT (ses, "</uri>");
               }
+            break;
+          }
+        case DV_WIDE:
+          {
+            SES_PRINT (ses, "<literal>");
+            dks_esc_write (ses, val, box_length_inline (val) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_PTEXT);
+            SES_PRINT (ses, "</literal>");
             break;
           }
         case DV_STRING:
