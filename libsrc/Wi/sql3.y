@@ -25,34 +25,7 @@
  *
  */
 
-/*
-   CHANGES SINCE  22-MAR-1997
-
-   22-MAR-1997  AK   Added rule obe_literal (included in atom)
-		     to handle ODBC standard brace escaped literals like
-		     {d 'yyyy-mm-dd'}, {ts 'etc....'} and {t 'hh:mm:ss'} for
-		     date and time(stamp) values. See comment about
-		     the macro obe_keyword_to_bif_fun_name below.
-
-		     Added also three more cases to function_call rule for ODBC
-		     brace-escaped function calls like {fn concat('Bar','bar')}
-		     We should actually run in that case NAME through some kind
-		     of filter, e.g. CHAR -> chr, user -> get_user,
-		     CONCAT -> concat, etc.
-		     That is, to catch standard function names like char and
-		     insert and user that cannot be normally used because
-		     they are reserved words elsewhere,
-		     as well as (maybe) to convert uppercase names to
-		     lowercase, because currently bif-functions are recognized
-		     only in the case they have been defined in.
-		     But, what about if client defines uppercase or mixed case
-		     function names with create procedure and wants
-		     to call them with this {fn NAME} syntax???
-
-		     Added a clause to rule opt_escape to handle ODBC-standard
-		     like escape-syntax: {escape 'escape-character'}
-		     although the escape-checking syntax is not functional yet.
- */
+%expect 18
 
 %{
 
