@@ -1661,10 +1661,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
     case SPAR_BUILT_IN_CALL:
       switch (tree->_.builtin.btype)
         {
-        case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L: case BOUND_L:
-	case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: return SSG_VALMODE_BOOL;
-        case IRI_L: case DATATYPE_L: return SSG_VALMODE_LONG;
-        case COALESCE_L:
+        case IN_L: case LIKE_L: return SSG_VALMODE_BOOL;
+        case SPAR_BIF_COALESCE:
           {
             ssg_valmode_t union_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[0]);
             int argctr;
@@ -6913,7 +6911,7 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
 void
 ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 {
-  if (tree == (box_t)(1)) /* The filter has been disabled because it's printed already */
+  if (tree == (SPART *)(1)) /* The filter has been disabled because it's printed already */
     return;
   if (spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
     {
