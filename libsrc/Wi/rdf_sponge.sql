@@ -517,9 +517,11 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
   ret_dt_expires := http_string_date (ret_expires, NULL, now());
   ret_dt_last_modified := http_string_date (ret_last_modif, NULL, now());
   -- if no cache directive we say it is now
-  if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or
-    http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
+  if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
+    {
     ret_dt_expires := now ();
+      ret_etag := null;
+    }
   -- if not modified and no last given we take old last modified
   if (ret_304_not_modified and ret_dt_last_modified is null)
     ret_dt_last_modified := old_last_modified;
