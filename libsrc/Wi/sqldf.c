@@ -1089,7 +1089,7 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	    {
 	      if (!col_dfe->_.col.card)
 		sqlo_dt_col_card (so, col_dfe, exp);
-	    sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
+	      sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
 	    }
 	  col_dfe->dfe_locus = dt_dfe->dfe_locus;
 	  col_alias = ((ST**)(dt_dfe->_.sub.ot->ot_left_sel->_.select_stmt.selection))[inx]->_.as_exp.name;
@@ -1113,7 +1113,7 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  if (exp)
 	    {
 	      sqlo_dt_col_card (so, col_dfe, exp);
-	    sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
+	      sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
 	    }
 	  if (so->so_place_code_forr_cond)
 	    sqlo_post_oby_ref (so, dt_dfe, exp, inx);
@@ -3275,7 +3275,7 @@ is_call_only_dep_on (df_elt_t * dfe, op_table_t * ot, int skip_first_n)
       if (!ST_COLUMN (args[argctr], COL_DOTTED))
 	return 0;
     }
-  return  1;
+  return 1;
 }
 
 void
@@ -3415,12 +3415,12 @@ sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * co
   if (ST_P (pred->_.bin.left->dfe_tree, CALL_STMT))
     {
       if (sqlo_col_inverse_eq_1 (so, tb_dfe, pred->_.bin.left, pred->_.bin.right, col_preds, after_preds))
-      return 1;
+        return 1;
     }
   if (ST_P (pred->_.bin.right->dfe_tree, CALL_STMT))
     {
       if (sqlo_col_inverse_eq_1 (so, tb_dfe, pred->_.bin.right, pred->_.bin.left, col_preds, after_preds))
-      return 1;
+        return 1;
     }
   return 0;
 }
@@ -5297,8 +5297,8 @@ df_elt_t *
 sqlo_next_joined (sqlo_t * so, df_elt_t * dt_dfe)
 {
   /* if there is an outer that must come at this point, return it */
-  op_table_t *ot = dt_dfe->_.sub.ot;
-  df_elt_t *last = NULL, *placed;
+  op_table_t * ot = dt_dfe->_.sub.ot;
+  df_elt_t * last = NULL, * placed;
   dk_set_t from;
   for (placed = dt_dfe->_.sub.first; placed; placed = placed->dfe_next)
     {
@@ -5309,12 +5309,12 @@ sqlo_next_joined (sqlo_t * so, df_elt_t * dt_dfe)
     {
       if ((df_elt_t *) from->data == last)
 	{
-	  df_elt_t *next_from = (df_elt_t *) from->next->data;
+	  df_elt_t * next_from = (df_elt_t *) from->next->data;
 	  int next_outer = dfe_is_join (next_from);
 	  remote_table_t * rt = DFE_TABLE == next_from->dfe_type ? find_remote_table (next_from->_.table.ot->ot_table->tb_name, 0) : NULL ;
 	  if (!next_from->dfe_is_placed && next_outer && rt)
 	    {
-	      df_elt_t *preds = sqlo_df_elt (so, next_from->_.table.ot->ot_join_cond);
+	      df_elt_t * preds = sqlo_df_elt (so, next_from->_.table.ot->ot_join_cond);
 	      char old = next_from->dfe_is_placed;
 	      next_from->dfe_is_placed = DFE_PLACED;
 	      if (preds && dfe_reqd_placed (preds))
