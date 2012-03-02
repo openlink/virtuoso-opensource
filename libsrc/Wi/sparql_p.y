@@ -1601,8 +1601,8 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
                   else
                     {
                       t_set_push (&args, $1);
-		      $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL,  (SPART *) t_box_num(IN_L),
-                        t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
+		      $$ = sparp_make_builtin_call (sparp_arg, IN_L,
+		        (SPART **)t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
                     }
 		}
 	| spar_expn _LT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $1, $3); }
