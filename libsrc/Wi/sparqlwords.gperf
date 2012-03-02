@@ -69,7 +69,6 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "FROM",			FROM_L			, 0
 "FUNCTION",		FUNCTION_L		, 0
 "HOURS",		SPARQL_BIF		, SPAR_BIF_HOURS
-"GEO",			GEO_L			, 0
 "GRAPH",		GRAPH_L			, 0
 "GROUP",		GROUP_L			, 0
 "HAVING",		HAVING_L		, 0
@@ -120,7 +119,6 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "OPTION",		OPTION_L		, 0
 "OR",			_BAR_BAR		, 0
 "ORDER",		ORDER_L			, 0
-"PRECISION",		PRECISION_L		, 0
 "PREDICATE",		PREDICATE_L		, 0
 "PREFIX",		PREFIX_L		, 0
 "QUAD",			QUAD_L			, 0

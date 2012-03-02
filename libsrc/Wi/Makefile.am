@@ -722,7 +722,7 @@ sparqlwords.h: sparqlwords.gperf
 		-aCDGptr \
 		-Kkwd \
 		-L ANSI-C \
-		-k1,2,3,6,9,$$ \
+		-k1,2,3,5,7,$$ \
 		--ignore-case \
 		-Nsparql_lex_hash_kw \
 		sparqlwords.gperf
