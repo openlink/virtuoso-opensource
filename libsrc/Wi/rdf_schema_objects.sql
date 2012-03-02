@@ -1253,7 +1253,7 @@ R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in col
 {
    declare create_view_stmt, ns, sns any;
    declare total_select, total_tb, total, qual, pkcols any;
-   declare vname, mask varchar;
+   declare vname, mask, graph, uriqa_str varchar;
 
    rdf_view_tbl_pk_cols (_tbls, pkcols);
    cols := rdf_view_tbl_opts (_tbls, cols);
@@ -1271,18 +1271,20 @@ R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in col
    ns := ns || rdf_view_ns_get (cols, 1);
    ns := ns || '\n';
 
+   uriqa_str := registry_get ('URIQADefaultHost');
+   graph := 'http://' || uriqa_str || '/' || qualifier || '#';
    create_view_stmt := ns;
    for (declare inx int, inx := 0; inx < length (_tbls) ; inx := inx + 1)
-      create_view_stmt := create_view_stmt || '\n' || r2rml_create_dataset (inx, qualifier, _tbls, gen_stat, cols, pkcols) || '';
+      create_view_stmt := create_view_stmt || '\n' || r2rml_create_dataset (inx, qualifier, _tbls, gen_stat, cols, pkcols, graph) || '';
 
    return create_view_stmt;
 }
 ;
 
 create procedure
-r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any)
+r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any, in graph varchar := null)
 {
-   declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
+   declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str, graph_def any;
    declare suffix, tname, tbl, own, pref_l any;
    declare cols_arr, inx, col_name, owner, owner_l any;
 
@@ -1306,8 +1308,12 @@ r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_sta
    for (declare i any, i := 0; i < length (pks) ; i := i + 1)
       pk_text := pk_text || sprintf ('/{%s}', pks[i][0]);
 
+   if (graph is not null)   
+     graph_def := sprintf ('rr:graph <%s> ', graph);  
+    else 
+     graph_def := '';  
    ret := ret || sprintf ('<#TriplesMap%s> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "%s" ; rr:tableOwner "%s" ; rr:tableName "%s" ]; \n', tbl_name, qual, own, tbl_name);
-   ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s:%s; ];\n', uriqa_str, qual, tbl_name_l, pk_text, qualifier, rdf_view_cls_name (tbl_name));
+   ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s:%s; %s];\n', uriqa_str, qual, tbl_name_l, pk_text, qualifier, rdf_view_cls_name (tbl_name), graph_def);
 
    inx := 0;
    for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = tbl order by COL_ID do
