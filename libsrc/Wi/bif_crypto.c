@@ -529,9 +529,11 @@ bif_asn1_to_xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len = 0;
   char tmpbuf[100000];
   caddr_t bytes = bif_string_arg (qst, args, 0, "asn1_to_xml");
-  long length = bif_long_arg (qst, args, 1, "asn1_to_xml");
+  long length = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "asn1_to_xml") : 0;
   if (!(out = BIO_new (BIO_s_mem ())))
     return NEW_DB_NULL;
+  if (0 == length)
+    length = box_length (bytes) - 1;
   if (asn1_parse_to_xml (out, (unsigned char **) &bytes, length, 0, 0, 0, 1) != 1)
     {
       res = NEW_DB_NULL;
@@ -1513,6 +1515,41 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	      }
 	  }
 	BIO_free (mem);
+	break;
+      }
+    case 11:
+      {
+	X509_NAME *subj = X509_get_subject_name (cert);
+	X509_NAME_ENTRY *ne;
+	int n, i, len;
+	char *s, *data_ptr;
+	dk_set_t set = NULL; 
+	caddr_t val;
+	BIO *mem = BIO_new (BIO_s_mem ());
+	for (i = 0; NULL != subj && i < sk_X509_NAME_ENTRY_num(subj->entries); i++)
+	  {
+	    val = NULL;
+	    ne = sk_X509_NAME_ENTRY_value(subj->entries,i);
+	    n = OBJ_obj2nid (ne->object);
+	    if ((n == NID_undef) || ((s = OBJ_nid2sn (n)) == NULL))
+	      {
+		i2t_ASN1_OBJECT (buffer, sizeof (buffer), ne->object);
+		s = buffer;
+	      }
+	    ASN1_STRING_print (mem, ne->value);
+	    len = BIO_get_mem_data (mem, &data_ptr);
+	    if (len > 0 && data_ptr)
+	      {
+		val = dk_alloc_box (len + 1, DV_SHORT_STRING);
+		memcpy (val, data_ptr, len);
+		val[len] = 0;
+	      }
+	    dk_set_push (&set, box_dv_short_string (s));
+	    dk_set_push (&set, val ? val : NEW_DB_NULL);
+	    BIO_reset (mem);
+	  }
+	BIO_free (mem);
+	ret = list_to_array (dk_set_nreverse (set));
 	break;
       }
     default:
