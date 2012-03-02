@@ -1370,11 +1370,7 @@ rdf_box_hash_cmp (ccaddr_t a1, ccaddr_t a2)
 {
   rdf_box_t * rb1 = (rdf_box_t *) a1;
   rdf_box_t * rb2 = (rdf_box_t *) a2;
-  rdf_box_t tmp_rb2;
   dtp_t dtp1 = DV_TYPE_OF (rb1), dtp2 = DV_TYPE_OF (rb2);
-  dtp_t data_dtp1, data_dtp2;
-  int len1, len2, cmp_len, cmp_headlen, mcmp;
-  caddr_t data1 = NULL, data2 = NULL;
   /* arrange so that if both are not rdf boxes, the one that is a box is first */
   if (DV_RDF != dtp1)
     {
@@ -1932,7 +1928,6 @@ iri_cast_rdfxml_qname (query_instance_t *qi, caddr_t iri, caddr_t *uri_ret, ptrl
 	  }
     case DV_IRI_ID: case DV_IRI_ID_8:
       {
-        int res;
         iri_id_t iid = unbox_iri_id (iri);
         if (0L == iid)
           return 0;
@@ -2526,8 +2521,6 @@ bif_http_rdfxml_p_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t pred = bif_arg (qst, args, 1, "http_rdfxml_p_ns");
   dk_session_t *ses = http_session_no_catch_arg (qst, args, 2, "http_rdfxml_p_ns");
   int status = 0;
-  int obj_is_iri = 0;
-  dtp_t obj_dtp = 0;
   ttl_iriref_t ti;
   memset (&ti,0, sizeof (ttl_iriref_t));
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
@@ -3211,7 +3204,8 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
-  ccaddr_t type_uri = NULL, to_free = NULL;
+  ccaddr_t type_uri = NULL;
+  caddr_t to_free = NULL;
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
