@@ -5926,12 +5926,36 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
   int good_eq_found = 0;
   int retry_count = 0;
   int weak_eq_skipped = 0;
+  int restrs_not_filtered_in_subqs = eq->e_replaces_filter;
   if (!print_equs_to_globals)
     goto print_cross_equs; /* see below */;
-  if ((eq->e_replaces_filter) && (0 == eq->e_gspo_uses) &&
+  /* A special case exists: if the equiv replaces NOT NULL filter then it should be checked for the output of every OPTIONAL subq. */
+  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype))
+    {
+      int sub_ctr;
+      DO_BOX_FAST (ptrlong, sub_eq_idx, sub_ctr, eq->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_eq_idx);
+          SPART *sub_gp = sub_eq->e_gp;
+          ssg_valmode_t sub_native;
+          int col_count;
+          if ((OPTIONAL_L != sub_gp->_.gp.subtype) && (SPART_VARR_NOT_NULL & sub_eq->e_rvr.rvrRestrictions))
+            continue;
+          sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
+          col_count = ((IS_BOX_POINTER (sub_native)) ? sub_native->qmfColumnCount : 1);
+          if (0 < col_count)
+            {
+              const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + 0));
+              ssg_print_where_or_and (ssg, "an optional from subq is forced to be not null");
+              ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, sub_native, eq_asname);
+              ssg_puts (" IS NOT NULL");
+            }
+        }
+      END_DO_BOX_FAST;
+    }
+  if (restrs_not_filtered_in_subqs && (0 == eq->e_gspo_uses) &&
     ((0 != eq->e_nested_bindings) || (OPTIONAL_L != eq->e_gp->_.gp.subtype)) )
     {
-      int restrs_not_filtered_in_subqs = eq->e_replaces_filter;
       int sub_ctr;
       if (eq->e_replaces_filter & ~(eq->e_rvr.rvrRestrictions) & ~SPART_VARR_EQ_VAR)
         spar_internal_error (ssg->ssg_sparp, "lost filters in equivs");

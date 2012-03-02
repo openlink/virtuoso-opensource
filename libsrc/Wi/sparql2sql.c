@@ -1010,7 +1010,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
   int ret = 0;
   int flags = 0;
   ptrlong tree_restr_bits = sparp_restr_bits_of_expn (sparp, r);
-  eq_l->e_rvr.rvrRestrictions |= (tree_restr_bits & (
+  eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | (tree_restr_bits & (
     SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
     SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
     SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL ) );
@@ -1049,6 +1049,12 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
           {
           case SPAR_BIF_STR: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
           case IRI_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL; break;
+          default:
+            {
+              const sparp_bif_desc_t *bif_desc = sparp_bif_descs + r->_.builtin.desc_ofs;
+              if ((SSG_VALMODE_NUM == bif_desc->sbd_ret_valmode) || (SSG_VALMODE_BOOL == bif_desc->sbd_ret_valmode))
+                eq_l->e_rvr.rvrRestrictions |= SPART_VARR_LONG_EQ_SQL;
+            }
           }
         return 0;
       }
@@ -1056,7 +1062,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
     }
   if (sparp_equiv_contains_t_io (sparp, eq_l))
     return 0;
-  return flags;
+  return flags | SPART_VARR_NOT_NULL;
 }
 
 /* For an != in group \c curr between member of \c eq_l and expression \c r,
@@ -1148,7 +1154,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
                         (lval == uname_xmlschema_ns_uri_hash_boolean) ||
                         (lval == uname_xmlschema_ns_uri_hash_string) )
                         {
-                          flags = SPART_VARR_IS_LIT;
+                          flags |= SPART_VARR_IS_LIT;
                         }
                       else if (
                         (lval == uname_xmlschema_ns_uri_hash_date) ||
@@ -1159,7 +1165,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
                         (lval == uname_xmlschema_ns_uri_hash_integer) ||
                         (lval == uname_xmlschema_ns_uri_hash_time) )
                         {
-                          flags = SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+                          flags |= SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
                         }
                       rarg1_eq->e_rvr.rvrRestrictions |= flags;
                       rarg1_eq->e_replaces_filter |= flags;

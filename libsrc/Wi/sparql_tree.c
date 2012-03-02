@@ -1697,6 +1697,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
       sec->e_var_count = 0;
     }
   pri->e_replaces_filter |= sec->e_replaces_filter;
+  sec->e_replaces_filter = 0;
   sparp_rvr_tighten (sparp, &(pri->e_rvr), &(sec->e_rvr), ~0);
   pri->e_gspo_uses += sec->e_gspo_uses;
   sec->e_gspo_uses = 0;
