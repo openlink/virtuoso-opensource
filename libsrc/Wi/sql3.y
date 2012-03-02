@@ -138,8 +138,9 @@
 %type <strval> new_table_name
 
 %type <tree> selectinto_statement
+%type <tree> query_opt_from_spec
 %type <tree> query_spec
-%type <tree> query_no_from_spec
+/*%type <tree> query_no_from_spec*/
 %type <tree> query_exp
 %type <tree> sqlonly_query_exp
 %type <tree> query_or_sparql_exp
@@ -151,6 +152,7 @@
 %type <tree> sqlonly_query_term
 %type <tree> sparqlonly_query_term
 %type <tree> query_term
+%type <tree> table_exp_opt
 %type <tree> table_exp
 
 %type <box> assignment
@@ -470,7 +472,6 @@
 %type <tree> opt_proc_col_list
 %type <tree> column_commalist_or_empty
 %type <subtok> opt_best
-/*%type <tree> opt_table_exp*/
 %type <box> opt_constraint_name
 %type <box> opt_column
 %type <intval> opt_drop_behavior
@@ -1156,7 +1157,7 @@ drop_xml_schema
 
 view_query_spec
 	: query_exp
-	| query_no_from_spec
+	/*| query_no_from_spec*/
 	;
 
 view_def_select_and_opt
@@ -1595,7 +1596,7 @@ sql
 
 manipulative_statement
 	: query_or_sparql_exp
-	| query_no_from_spec
+	/*| query_no_from_spec*/
 	| update_statement_positioned
 	| update_statement_searched
 	| insert_statement
@@ -1688,7 +1689,7 @@ insert_statement
 values_or_query_spec
 	: VALUES '(' insert_atom_commalist ')'
 		{ $$ = t_listst (2, INSERT_VALUES, sqlp_wrapper_sqlxml((ST**)t_list_to_array ($3))); }
-	| query_spec
+	| query_spec /* FROM is mandatory here */
 	;
 
 insert_atom_commalist
@@ -1985,7 +1986,7 @@ non_final_query_term
 	;
 
 sqlonly_query_term
-	: query_spec
+	: query_opt_from_spec
 	| '(' query_or_sparql_exp ')' opt_order_by_clause	{ $$ = sqlp_inline_order_by ($2, (ST **) $4); }
 	| XPATH STRING { $$ = sqlp_embedded_xpath ($2); }
 	;
@@ -2013,6 +2014,18 @@ non_final_query_spec
 
 	;
 
+query_opt_from_spec
+	: SELECT opt_top selection table_exp_opt	{
+		  if (NULL == $4)
+		    $$ = t_listst (5, SELECT_STMT, NULL,
+		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), NULL) , NULL, NULL);
+		  else
+		    $$ = t_listst (5, SELECT_STMT, $2,
+		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), $4->_.table_exp.from) , NULL, $4);
+		  sqlp_breakup ($$); }
+	;
+
+
 query_spec
 	: SELECT opt_top selection table_exp
 		{ $$ = t_listst (5, SELECT_STMT, $2,
@@ -2020,14 +2033,14 @@ query_spec
 		  sqlp_breakup ($$); }
 	;
 
-query_no_from_spec
+/*query_no_from_spec
 	: SELECT opt_top selection
 		{
 		  $$ = t_listst (5, SELECT_STMT, NULL,
 		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), NULL) , NULL, NULL);
 		  sqlp_breakup ($$); }
 	;
-
+*/
 
 
 breakup_term
@@ -2056,6 +2069,11 @@ non_final_table_exp
 			$$ = sqlp_infoschema_redirect (t_listst (9,
 				TABLE_EXP, $1, $2, group_by, $4, NULL, NULL, NULL, $3));
 		}
+	;
+
+table_exp_opt
+	: /* empty */ { $$ = NULL; }
+	| table_exp
 	;
 
 table_exp
@@ -2411,12 +2429,6 @@ scalar_subquery
 
 
 subquery
-/*	: query_exp */
-/*	: '(' SELECT opt_top selection table_exp ')'
-		{ $$ = t_listst (5, SELECT_STMT, $3,
-		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $4), $5->_.table_exp.from), NULL, $5);
-		  sqlp_breakup ((ST*) $$);
-		} */
 	: '(' sqlonly_query_exp ')'	{ $$ = $2; }
 	| '(' SPARQL_L sqlonly_query_exp ')'	{ $$ = $3; }
 	;
@@ -2441,20 +2453,6 @@ scalar_exp_no_col_ref
 	: atom_no_obe				{ $$ = (sql_tree_t *) $1; }
 	| aggregate_ref
 	| scalar_subquery
-/********** pmn
-	| '(' scalar_exp_commalist ')'
-		{ dk_set_t exps = $2;
-		  if (exps -> next)
-		    {
-		      $$ = t_listst (2, COMMA_EXP, t_list_to_array (exps));
-		    }
-		  else
-		    {
-		      $$ = (ST *) exps -> data; dk_set_free (exps);
-		    }
-		}
-	  FIXED reduce/reduce conflict: (pmn)
-*************/
 	| '(' scalar_exp ')'		{ $$ = $2; }
 	| '(' scalar_exp ',' scalar_exp_commalist ')'
 		{ dk_set_t exps = t_CONS ($2, $4);
@@ -2478,20 +2476,6 @@ scalar_exp_no_col_ref_no_mem_obs_chain
 	: atom_no_obe				{ $$ = (sql_tree_t *) $1; }
 	| aggregate_ref
 	| scalar_subquery
-/********** pmn
-	| '(' scalar_exp_commalist ')'
-		{ dk_set_t exps = $2;
-		  if (exps -> next)
-		    {
-		      $$ = t_listst (2, COMMA_EXP, t_list_to_array (exps));
-		    }
-		  else
-		    {
-		      $$ = (ST *) exps -> data; dk_set_free (exps);
-		    }
-		}
-	  FIXED reduce/reduce conflict: (pmn)
-*************/
 	| '(' scalar_exp ')'		{ $$ = $2; }
 	| '(' scalar_exp ',' scalar_exp_commalist ')'
 		{ dk_set_t exps = t_CONS ($2, $4);
@@ -2888,12 +2872,6 @@ signed_literal
 	;
 
 /* miscellaneous */
-/*** pmn
-opt_prefix
-	: identifier { $$ = $1; }
-/ *	| { $$ = NULL; } * /
-	;
-*/
 
 q_table_name
 	: identifier			{ $$ = sqlp_table_name (NULL, 0, NULL, 0, $1, 1); }
@@ -3173,12 +3151,6 @@ parameter
 	: PARAMETER_L	{ $$ = $1; }
 	| NAMED_PARAMETER	{ $$ = $1; }
 	;
-
-/*** pmn
-range_variable
-	: identifier
-	;
-*/
 
 user
 	: identifier		{ $$ = $1; }
