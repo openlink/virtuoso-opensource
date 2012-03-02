@@ -2867,7 +2867,7 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_XLAT (
   
   declare xlat_cbk, s_xlat, o_xlat varchar;
   declare xlat_env, dict any;
-  --dbg_obj_princ (current_proc_name (), ' (', g_iid, s_uri, p_uri, o_uri, ');');
+  -- dbg_obj_princ (current_proc_name (), ' (', g_iid, s_uri, p_uri, o_uri, ');');
   dict := app_env[0];
   xlat_cbk := app_env[1];
   xlat_env := app_env[2];
@@ -2885,7 +2885,7 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L_XLAT (
 {
   declare xlat_cbk, s_xlat, o_xlat varchar;
   declare xlat_env, dict any;
-  --dbg_obj_princ (current_proc_name (),' (', g_iid, s_uri, p_uri, o_uri, ');');
+  -- dbg_obj_princ (current_proc_name (),' (', g_iid, s_uri, p_uri, o_uri, ');');
   dict := app_env[0];
   xlat_cbk := app_env[1];
   xlat_env := app_env[2];
@@ -8597,6 +8597,7 @@ create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 
   declare jgraph_iid IRI_ID;
   declare instances, chk any;
   -- dbg_obj_princ ('JSO_LOAD_GRAPH (', jgraph, ')');
+  log_text ('DB.DBA.JSO_LOAD_GRAPH (?,?)', jgraph, pin_now);
   jgraph_iid := iri_ensure (jgraph);
   DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
 /* Pass 1. Deleting all obsolete instances. */
@@ -8635,6 +8636,7 @@ create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 
 create function DB.DBA.JSO_PIN_GRAPH (in jgraph varchar)
 {
   declare instances any;
+  log_text ('DB.DBA.JSO_PIN_GRAPH (?)', jgraph);
   DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
   foreach (any j in instances) do
     jso_pin (j[0], j[1]);
@@ -9232,10 +9234,10 @@ create procedure DB.DBA.RDF_QM_CHANGE_OPT (in cmdlist any)
       http (')', exectext);
       STATE := '00000';
       warnings := exec (string_output_string (exectext), STATE, MESSAGE, arglist, 10000, md, rs);
-      dbg_obj_princ ('md = ', md, ' rs = ', rs, ' warnings = ', warnings, STATE, MESSAGE);
+      -- dbg_obj_princ ('md = ', md, ' rs = ', rs, ' warnings = ', warnings, STATE, MESSAGE);
       if (__tag of vector <> __tag (warnings) and __tag of vector = __tag (rs))
         warnings := case (length (rs)) when 0 then null else rs[0][0] end;
-      dbg_obj_princ ('warnings = ', warnings);
+      -- dbg_obj_princ ('warnings = ', warnings);
       if (__tag of vector = __tag (warnings))
         {
           foreach (any warning in warnings) do
@@ -9266,10 +9268,16 @@ create function DB.DBA.RDF_QM_APPLY_CHANGES (in deleted any, in affected any) re
   DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
   len := length (deleted);
   for (ctr := 0; ctr < len; ctr := ctr + 2)
-    jso_delete (deleted [ctr], deleted [ctr+1], 1);
+    {
+      jso_delete (deleted [ctr], deleted [ctr+1], 1);
+      log_text ('jso_delete (?,?,1)', deleted [ctr], deleted [ctr+1]);
+    }
   len := length (affected);
   for (ctr := 0; ctr < len; ctr := ctr + 1)
-    jso_mark_affected (affected [ctr]);
+    {
+      jso_mark_affected (affected [ctr]);
+      log_text ('jso_mark_affected (?)', affected [ctr]);
+    }
   return vector (vector ('00000', 'Transaction committed, SPARQL compiler re-configured'));
 }
 ;
@@ -9354,13 +9362,6 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (in storage varch
   if (not must_contain)
     return;
   signal ('22023', 'The quad storage "' || storage || '" does not contains quad map ' || qmid );
-}
-;
-
-create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_IS_FLAGGED (in storage varchar)
-{
-  if (not DB.DBA.RDF_QM_GET_STORAGE_FLAG (storage))
-    signal ('22023', 'The quad storage "' || storage || '" is not flagged as being edited' );
 }
 ;
 
@@ -9566,6 +9567,8 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
   if (storage is null)
     {
+      declare report, storages any;
+      vectorbld_init (storages);
       for (sparql
         define input:storage ""
         select ?st where {
@@ -9576,11 +9579,23 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
                   { ?st virtrdf:qsDefaultMap `iri(?:qmid)` }
               } } ) do
         {
-          -- dbg_obj_princ ('Will run DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (', "st", ', NULL, ', qmid, ')');
-          DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE ("st", NULL, qmid);
+          DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG ("st", 0);
+          vectorbld_acc (storages, cast ("st" as varchar));
+        }
+      vectorbld_final (storages);
+      vectorbld_init (report);
+      foreach (varchar alt_st in storages) do
+        {
+          -- dbg_obj_princ ('Will run DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (', alt_st, ', NULL, ', qmid, ')');
+          DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (alt_st, NULL, qmid);
+          vectorbld_acc (report, vector ('00000', 'Quad map <' || qmid || '> is no longer used in storage <' || alt_st || '>'));
         }
       DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (qmid, 0);
-      return vector (vector ('00000', 'Quad map <' || qmid || '> is deleted'));
+      vectorbld_acc (report, vector ('00000', 'Quad map <' || qmid || '> is deleted'));
+      vectorbld_final (report);
+      if (length (storages))
+        DB.DBA.RDF_QM_APPLY_CHANGES (null, storages);
+      return report;
     }
   else
     {
@@ -11604,7 +11619,7 @@ create function DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY (in storageiri varchar, in ar
         signal ('22023', 'No one SPARQL macro library is attached to the quad storage <' || storageiri || '>, nothing to detach');
     }
   vectorbld_final (report);
-dbg_obj_princ ('DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY (', storageiri, args, ') returns ', report);
+-- dbg_obj_princ ('DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY (', storageiri, args, ') returns ', report);
   return report;
 }
 ;

@@ -2112,8 +2112,7 @@ spar_qm_create_iol_class	/* [Virt]	QmCreateIRIorLiteralClass	 ::=  'CREATE' ( 'I
 		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
 		$$ = spar_make_qm_sql (sparp_arg,
 		  ((IRI_L == $2) ? "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT" : "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT"),
-		  (SPART **)t_list (3, $4, $5, $6), $7 );
-                sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		  (SPART **)t_list (3, $4, $5, $6), $7 ); }
 	| CREATE_L spar_iol CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_iol_class_optionlist_opt {
 		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
 		  spar_error (sparp_arg, "The identifier of %s class %.100s is already used in the previous part of the statement",
@@ -2122,8 +2121,7 @@ spar_qm_create_iol_class	/* [Virt]	QmCreateIRIorLiteralClass	 ::=  'CREATE' ( 'I
 		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
 		$$ = spar_make_qm_sql (sparp_arg,
 		  ((IRI_L == $2) ? "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS" : "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS"),
-		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 );
-                sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 ); }
 	;
 
 spar_qm_drop_iol_class		/* [Virt]	QmDropIRIorLiteralClass	 ::=  'DROP' 'SILENT'? ( 'IRI' | 'LITERAL' ) 'CLASS' QmIRIrefConst	*/
@@ -2133,19 +2131,16 @@ spar_qm_drop_iol_class		/* [Virt]	QmDropIRIorLiteralClass	 ::=  'DROP' 'SILENT'?
 		    ((IRI_L == $3) ? "IRI" : "literal"), $5);
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_CLASS",
 		  (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL );
-                sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadMapFormat , $5);
-                sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		sparp_jso_push_deleted (sparp_arg, uname_virtrdf_ns_uri_QuadMapFormat , $5); }
 	;
 
 spar_qm_create_iri_subclass	/* [Virt]	QmCreateIRISubclass	 ::=  'IRI' 'CLASS' QmIRIrefConst 'SUBCLASS' 'OF' QmIRIrefConst	*/
 	: MAKE_L IRI_L CLASS_L spar_qm_iriref_const_expn SUBCLASS_L OF_L spar_qm_iriref_const_expn {
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_SUBCLASS",
-		  (SPART **)t_list (2, $4, $7), NULL );
-		sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		  (SPART **)t_list (2, $4, $7), NULL ); }
 	| MAKE_L spar_qm_iriref_const_expn SUBCLASS_L OF_L spar_qm_iriref_const_expn {
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_SUBCLASS",
-		  (SPART **)t_list (2, $2, $5), NULL );
-		sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		  (SPART **)t_list (2, $2, $5), NULL ); }
 	;
 
 spar_qm_iol_class_optionlist_opt	/* [Virt]	QmIRIorLiteralClassOptions	 ::=  'OPTION' '(' QmIRIorLiteralClassOption (',' QmIRIorLiteralClassOption)* ')'	*/
@@ -2250,14 +2245,14 @@ spar_qm_drop_quad_map_mapping		/* [Virt]	QmDropQuadMap	 ::=  'DROP' 'SILENT'? 'Q
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                   (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $5, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
-		if (NULL == sparp_env()->spare_storage_name)
-                  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
 	| DROP_L spar_silent_opt QUAD_L MAP_L spar_graph_identified_by spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		    (SPART **)t_list (4, t_box_dv_uname_string ("GRAPH"), $6, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
-		if (NULL == sparp_env()->spare_storage_name)
-                  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
         ;
 
 spar_qm_drop_mapping		/* [Virt]	QmDrop	 ::=  'DROP' 'SLIENT'? ('GRAPH' ('IDENTIFIED' 'BY')?)? QmIRIrefConst	*/
@@ -2265,14 +2260,14 @@ spar_qm_drop_mapping		/* [Virt]	QmDrop	 ::=  'DROP' 'SLIENT'? ('GRAPH' ('IDENTIF
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                   (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $3, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
-		if (NULL == sparp_env()->spare_storage_name)
-                  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
 	| DROP_L spar_silent_opt spar_graph_identified_by spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		    (SPART **)t_list (4, t_box_dv_uname_string ("GRAPH"), $4, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
-		if (NULL == sparp_env()->spare_storage_name)
-                  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
         ;
 
 spar_qm_from_where_list_opt	/* [Virt]	QmSourceDecl	 ::=  */
@@ -2369,8 +2364,8 @@ spar_qm_attach_macro_lib		/* [Virt]	QmAttachMacroLib	 ::=  'ATTACH' 'MACRO' 'LIB
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MACRO_LIBRARY",
 		  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		  (SPART **)t_list (2, t_box_dv_uname_string ("ID"), $4) );
-		if (NULL == sparp_env()->spare_storage_name)
-		  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
 	;
 
 spar_qm_detach_macro_lib		/* [Virt]	QmDetachMacroLib	 ::=  'DETACH' 'SILENT'? 'MACRO' 'LIBRARY' QmIRIrefConst?	*/
@@ -2378,14 +2373,14 @@ spar_qm_detach_macro_lib		/* [Virt]	QmDetachMacroLib	 ::=  'DETACH' 'SILENT'? 'M
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY",
 		  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $5, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
-		if (NULL == sparp_env()->spare_storage_name)
-		  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
 	| DETACH_L spar_silent_opt MACRO_L LIBRARY_L	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DETACH_MACRO_LIBRARY",
 		  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
 		  (SPART **)t_list (2, t_box_dv_uname_string ("SILENT"), (SPART *)t_box_num_nonull ($2)) );
-		if (NULL == sparp_env()->spare_storage_name)
-		  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+		if (NULL != sparp_env()->spare_storage_name)
+		  sparp_jso_push_affected (sparp_arg, sparp_env()->spare_storage_name); }
 	;
 
 spar_qm_map_group		/* [Virt]	QmMapGroup	 ::=  '{' QmMapOp ( '.' QmMapOp )* '.'? '}'	*/
