@@ -847,40 +847,47 @@ create method xmla_dbschema_columns () for xmla_discover
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      exec('SELECT 
-         name_part(k.KEY_TABLE,0) AS TABLE_CATALOG VARCHAR(128),
-	 name_part(k.KEY_TABLE,1) AS TABLE_SCHEMA VARCHAR(128),
-	 name_part(k.KEY_TABLE,2) AS TABLE_NAME VARCHAR(128),
-	 c.\"COLUMN\" AS COLUMN_NAME VARCHAR(128),
-	 dv_to_sql_type(c.COL_DTP) AS DATA_TYPE SMALLINT,
-	 dv_type_title(c.COL_DTP) AS TYPE_NAME VARCHAR(128),
-	 c.COL_PREC AS COLUMN_SIZE INTEGER,
-	 NULL AS BUFFER_LENGTH INTEGER,
-	 c.COL_SCALE AS DECIMAL_DIGITS SMALLINT,
-	 2 AS NUM_PREC_RADIX SMALLINT,
-	 either(isnull(c.COL_NULLABLE),2,c.COL_NULLABLE) AS NULLABLE SMALLINT,
-	 NULL AS REMARKS VARCHAR(254),
-	 NULL AS COLUMN_DEF VARCHAR(128),
-	 NULL AS SQL_DATA_TYPE INTEGER,
-	 NULL AS SQL_DATETIME_SUB INTEGER,
-	 NULL AS CHAR_OCTET_LENGTH INTEGER,
-	 NULL AS ORDINAL_POSITION INTEGER,
-	 NULL AS IS_NULLABLE VARCHAR(10)
-       FROM
-         DB.DBA.SYS_KEYS k,
-	 DB.DBA.SYS_KEY_PARTS kp,
-	 DB.DBA.SYS_COLS c
-       WHERE
-         name_part(k.KEY_TABLE,0) LIKE ?
-	 AND name_part(k.KEY_TABLE,1) LIKE ?
-	 AND name_part(k.KEY_TABLE,2) LIKE ?
-	 AND c.\"COLUMN\" LIKE ?
-	 AND c.\"COLUMN\" <> ''_IDN''
-	 AND k.KEY_IS_MAIN = 1
-	 AND k.KEY_MIGRATE_TO is null
-	 AND kp.KP_KEY_ID = k.KEY_ID
-	 AND COL_ID = KP_COL
-       ORDER BY k.KEY_TABLE, c.COL_ID'
+      exec('select
+	 name_part(KEY_TABLE, 0) as TABLE_CATALOG,
+	 name_part(KEY_TABLE, 1) as TABLE_SCHEMA,
+	 name_part(KEY_TABLE, 2) as TABLE_NAME,
+	 "COLUMN" as COLUMN_NAME,
+	 NULL as COLUMN_GUID,
+	 NULL as COLUMN_PROPID INTEGER,
+	 (select count(*) from DB.DBA.SYS_COLS where "TABLE" = KEY_TABLE and COL_ID <= c.COL_ID and "COLUMN" <> ''_IDN'') as ORDINAL_POSITION INTEGER,
+	 case when deserialize(COL_DEFAULT) is null then 0 else -1 end as COLUMN_HASDEFAULT SMALLINT,
+         cast (deserialize(COL_DEFAULT) as NVARCHAR) as COLUMN_DEFAULT NVARCHAR(254),
+         cast (DB.DBA.oledb_dbflags(COL_DTP, COL_NULLABLE) as integer) as COLUMN_FLAGS INTEGER,
+	 case COL_NULLABLE when 1 then -1 else 0 end as IS_NULLABLE SMALLINT,
+	 cast (DB.DBA.oledb_dbtype(COL_DTP) as integer) as DATA_TYPE SMALLINT,
+	 NULL as TYPE_GUID,
+	 cast (DB.DBA.oledb_char_max_len(COL_DTP, COL_PREC) as integer) as CHARACTER_MAXIMUM_LENGTH INTEGER,
+	 cast (DB.DBA.oledb_char_oct_len(COL_DTP, COL_PREC) as integer) as CHARACTER_OCTET_LENGTH INTEGER,
+	 cast (DB.DBA.oledb_num_prec(COL_DTP, COL_PREC) as smallint) as NUMERIC_PRECISION SMALLINT,
+	 cast (DB.DBA.oledb_num_scale(COL_DTP, COL_SCALE) as smallint) as NUMERIC_SCALE SMALLINT,
+	 cast (DB.DBA.oledb_datetime_prec(COL_DTP, COL_PREC) as integer) as DATETIME_PRECISION INTEGER,
+	 NULL as CHARACTER_SET_CATALOG NVARCHAR(1),
+	 NULL as CHARACTER_SET_SCHEMA NVARCHAR(1),
+	 NULL as CHARACTER_SET_NAME NVARCHAR(1),
+	 NULL as COLLATION_CATALOG NVARCHAR(1),
+	 NULL as COLLATION_SCHEMA NVARCHAR(1),
+	 NULL as COLLATION_NAME NVARCHAR(1),
+	 NULL as DOMAIN_CATALOG NVARCHAR(1),
+	 NULL as DOMAIN_SCHEMA NVARCHAR(1),
+	 NULL as DOMAIN_NAME NVARCHAR(1),
+	 NULL as DESCRIPTION NVARCHAR(1)
+    	from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS c
+    	where
+	 __any_grants(KEY_TABLE) and
+	 name_part(KEY_TABLE, 0) = ? and
+	 name_part(KEY_TABLE, 1) like ? and
+	 name_part(KEY_TABLE, 2) like ? and
+	 "COLUMN" like ? and
+	 "COLUMN" <> ''_IDN'' and
+	 KEY_IS_MAIN = 1 and
+	 KEY_MIGRATE_TO is null and
+	 KP_KEY_ID = KEY_ID and
+	 COL_ID = KP_COL order by KEY_TABLE, 7'
        , null, null,
       vector (cat, sch, tb, col), 0, mdta, dta);
     }
@@ -966,20 +973,24 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
       exec('select
-    	 name_part (PK_TABLE, 0) as PKTABLE_CAT varchar (128),
-    	 name_part (PK_TABLE, 1) as PKTABLE_SCHEM varchar (128),
-    	 name_part (PK_TABLE, 2) as PKTABLE_NAME varchar (128),
-    	 PKCOLUMN_NAME,
-    	 name_part (FK_TABLE, 0) as FKTABLE_CAT varchar (128),
-	 name_part (FK_TABLE, 1) as FKTABLE_SCHEM varchar (128),
-    	 name_part (FK_TABLE, 2) as FKTABLE_NAME varchar (128),
-    	 FKCOLUMN_NAME,
-    	 (KEY_SEQ + 1) as KEY_SEQ SMALLINT,
-    	 (case UPDATE_RULE when 0 then 3 when 1 then 0 when 3 then 4 end) as UPDATE_RULE smallint,
-    	 (case DELETE_RULE when 0 then 3 when 1 then 0 when 3 then 4 end) as DELETE_RULE smallint,
-    	 FK_NAME,
+    	 name_part (PK_TABLE, 0) as PK_TABLE_CATALOG varchar (128),
+    	 name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA varchar (128),
+    	 name_part (PK_TABLE, 2) as PK_TABLE_NAME varchar (128),
+    	 PKCOLUMN_NAME as PK_COLUMN_NAME,
+    	 NULL as PK_COLUMN_GUID,
+    	 NULL as PK_COLUMN_PROPID INTEGER,
+    	 name_part (FK_TABLE, 0) as FK_TABLE_CATALOG varchar (128),
+	 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA varchar (128),
+    	 name_part (FK_TABLE, 2) as FK_TABLE_NAME varchar (128),
+    	 FKCOLUMN_NAME as FK_COLUMN_NAME,
+    	 NULL as FK_COLUMN_GUID,
+    	 NULL as FK_COLUMN_PROPID INTEGER,
+    	 (KEY_SEQ + 1) as ORDINAL INTEGER,
+    	 (case UPDATE_RULE when 0 then ''NO ACTION'' when 1 then ''CASCADE'' when 2 then ''SET NULL'' when 3 then ''SET DEFAULT'' else NULL end) as UPDATE_RULE varchar(20),
+    	 (case DELETE_RULE when 0 then ''NO ACTION'' when 1 then ''CASCADE'' when 2 then ''SET NULL'' when 3 then ''SET DEFAULT'' else NULL end) as DELETE_RULE varchar(20),
 	 PK_NAME, 
-    	 NULL as DEFERRABILITY 
+	 FK_NAME,
+    	 3 as DEFERRABILITY SMALLINT
     	from DB.DBA.SYS_FOREIGN_KEYS SYS_FOREIGN_KEYS
     	where name_part (PK_TABLE, 0) like ?
     	 and name_part (PK_TABLE, 1) like ?
@@ -987,7 +998,8 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
     	 and name_part (FK_TABLE, 0) like ?
     	 and name_part (FK_TABLE, 1) like ?
     	 and name_part (FK_TABLE, 2) like ?
-    	order by 1, 2, 3, 5, 6, 7, 9 ', null, null,
+    	order by 1, 2, 3, 7, 8, 9, 13 '
+    	, null, null,
       	vector(p_cat, p_sch, p_tbl, f_cat, f_sch, f_tbl), 0, mdta, dta);
     }
   else
@@ -1038,31 +1050,28 @@ create method xmla_dbschema_primary_keys () for xmla_discover
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      exec('SELECT
-         	name_part(v1.KEY_TABLE,0) AS TABLE_CAT NVARCHAR(128),
-		name_part(v1.KEY_TABLE,1) AS TABLE_SCHEM NVARCHAR(128),
-	 	name_part(v1.KEY_TABLE,2) AS TABLE_NAME NVARCHAR(128),
-		DB.DBA.SYS_COLS."COLUMN" AS COLUMN_NAME NVARCHAR(128),
-		(kp.KP_NTH+1) AS KEY_SEQ SMALLINT,
-		name_part (v1.KEY_NAME, 2) AS PK_NAME NVARCHAR(128)
-       	FROM
-         DB.DBA.SYS_KEYS v1,
-	 DB.DBA.SYS_KEYS v2,
-	 DB.DBA.SYS_KEY_PARTS kp,
-	 DB.DBA.SYS_COLS
-       	WHERE 
-         name_part(v1.KEY_TABLE,0) LIKE ? 
-	 AND name_part(v1.KEY_TABLE,1) LIKE ?
-	 AND name_part(v1.KEY_TABLE,2) LIKE ?
-	 AND __any_grants (v1.KEY_TABLE) 
-	 AND v1.KEY_IS_MAIN = 1 
-	 AND v1.KEY_MIGRATE_TO is NULL 
-	 AND v1.KEY_SUPER_ID = v2.KEY_ID 
-	 AND kp.KP_KEY_ID = v1.KEY_ID 
-	 AND kp.KP_NTH < v1.KEY_DECL_PARTS 
-	 AND DB.DBA.SYS_COLS.COL_ID = kp.KP_COL 
-	 AND DB.DBA.SYS_COLS."COLUMN" <> ''_IDN'' 
-       	ORDER BY v1.KEY_TABLE, kp.KP_NTH'
+      exec('select
+    	 name_part(KEY_TABLE, 0) AS TABLE_CATALOG NVARCHAR(128),
+    	 name_part(KEY_TABLE, 1) AS TABLE_SCHEMA NVARCHAR(128),
+    	 name_part(KEY_TABLE, 2) AS TABLE_NAME NVARCHAR(128),
+    	 "COLUMN" as COLUMN_NAME NVARCHAR(128),
+    	 NULL as COLUMN_GUID,
+    	 NULL as COLUMN_POPID INTEGER,
+    	 (KP_NTH + 1) as ORDINAL,
+    	 name_part(KEY_NAME, 2) as PK_NAME
+    	from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS
+    	where
+    	 __any_grants(KEY_TABLE) and
+    	 name_part(KEY_TABLE, 0) LIKE ? and
+    	 name_part(KEY_TABLE, 1) LIKE ? and
+    	 name_part(KEY_TABLE, 2) LIKE ? and
+    	 KEY_IS_MAIN = 1 and
+    	 KEY_MIGRATE_TO is null and
+    	 KP_KEY_ID = KEY_ID and
+    	 KP_NTH < KEY_DECL_PARTS and
+    	 COL_ID = KP_COL and
+    	 "COLUMN" <> ''_IDN''
+    	order by KEY_TABLE'
        	, null, null,
       vector(cat, sch, tb), 0, mdta, dta);
     }
