@@ -197,12 +197,18 @@ typedef struct ttlp_s
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
+  int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
+  id_hash_t *ttlp_inner_namespaces_prefix2iri;	/*!< An equivalent of \c ttlp_namespaces_prefix2iri for prefixes defined inside TriG block */
+  caddr_t ttlp_default_ns_uri_saved;	/*!< In TriG, @prefix can be used inside the graph block, in that case global \c ttlp_default_ns_uri is temporarily saved here */
+  caddr_t ttlp_base_uri_saved;	/*!< In TriG, @base can be used inside the graph block, in that case global \c ttlp_base_uri is temporarily saved here */
   /* feeder */
   triple_feed_t *ttlp_tf;
 } ttlp_t;
 
 
 extern ttlp_t *ttlp_alloc (void);
+extern void ttlp_enter_trig_group (ttlp_t *ttlp);
+extern void ttlp_leave_trig_group (ttlp_t *ttlp);
 extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (

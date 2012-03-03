@@ -1007,6 +1007,8 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         strstr (ret_content_type, 'application/x-turtle') is not null or
         strstr (ret_content_type, 'application/turtle') is not null )
         return 'text/rdf+n3';
+      if (strstr (ret_content_type, 'application/x-trig') is not null)
+        return 'application/x-trig';
     }
   declare ret_begin, ret_html any;
   ret_begin := subseq (ret_body, 0, 4096);

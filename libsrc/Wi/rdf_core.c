@@ -655,10 +655,35 @@ ttlp_alloc (void)
 }
 
 void
+ttlp_enter_trig_group (ttlp_t *ttlp)
+{
+  ttlp->ttlp_default_ns_uri_saved = ttlp->ttlp_default_ns_uri;
+  ttlp->ttlp_base_uri_saved = ttlp->ttlp_base_uri;
+  ttlp->ttlp_in_trig_graph = 1;
+}
+
+void
+ttlp_leave_trig_group (ttlp_t *ttlp)
+{
+  int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
+  id_hash_t *ttlp_inner_namespaces_prefix2iri;	/*!< An equivalent of \c ttlp_namespaces_prefix2iri for prefixes defined inside TriG block */
+  caddr_t ttlp_default_ns_uri_saved;	/*!< In TriG, @prefix can be used inside the graph block, in that case global \c ttlp_default_ns_uri is temporarily saved here */
+  caddr_t ttlp_base_uri_saved;	/*!< In TriG, @base can be used inside the graph block, in that case global \c ttlp_base_uri is temporarily saved here */
+}
+
+void
 ttlp_free (ttlp_t *ttlp)
 {
+  if (ttlp->ttlp_in_trig_graph)
+    {
+      dk_free_box ((caddr_t)(ttlp->ttlp_inner_namespaces_prefix2iri));
+      if (ttlp->ttlp_default_ns_uri_saved != ttlp->ttlp_default_ns_uri)
+        dk_free_box (ttlp->ttlp_default_ns_uri_saved);
+      if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
+        dk_free_box (ttlp->ttlp_base_uri_saved);
+    }
   dk_free_box (ttlp->ttlp_default_ns_uri);
-  dk_free_box (ttlp->ttlp_namespaces_prefix2iri);
+  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
@@ -867,25 +892,28 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
       goto ns_uri_found; /* see below */
     }
   lname++;
-  ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
   ns_pref = box_dv_short_nchars (qname, lname - qname);
-  ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
-  if (NULL != ns_uri_ptr)
-    ns_uri = ns_uri_ptr[0];
-  else
-    {
-      if (!strcmp (ns_pref, "rdf:"))
-        ns_uri = uname_rdf_ns_uri;
-      else if (!strcmp (ns_pref, "xsd:"))
-        ns_uri = uname_xmlschema_ns_uri_hash;
-      else if (!strcmp (ns_pref, "virtrdf:"))
-        ns_uri = uname_virtrdf_ns_uri;
-      else
+  do {
+      if (ttlp_arg[0].ttlp_in_trig_graph)
         {
-          dk_free_box (ns_pref);
-          ttlyyerror_impl (ttlp_arg, qname, "Undefined namespace prefix");
+          ns_dict = ttlp_arg[0].ttlp_inner_namespaces_prefix2iri;
+          ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+          if (NULL != ns_uri_ptr)
+            { ns_uri = ns_uri_ptr[0]; break; }
         }
-    }
+      ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
+      ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+      if (NULL != ns_uri_ptr)
+        { ns_uri = ns_uri_ptr[0]; break; }
+      if (!strcmp (ns_pref, "rdf:"))
+        { ns_uri = uname_rdf_ns_uri; break; }
+      if (!strcmp (ns_pref, "xsd:"))
+        { ns_uri = uname_xmlschema_ns_uri_hash; break; }
+      if (!strcmp (ns_pref, "virtrdf:"))
+        { ns_uri = uname_virtrdf_ns_uri; break; }
+      dk_free_box (ns_pref);
+      ttlyyerror_impl (ttlp_arg, qname, "Undefined namespace prefix");
+    } while (0);
   dk_free_box (ns_pref);
   ns_uri_len = box_length (ns_uri) - 1;
 

@@ -1384,6 +1384,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           if (status is not null)
             SPARQL_WRITE_EXEC_STATUS (ses, '#%015s: %s\n', status);
 	}
+      else if (ret_format = 'TRIG')
+        DB.DBA.RDF_TRIPLES_TO_TRIG (triples, ses);
       else if (ret_format = 'NT')
         DB.DBA.RDF_TRIPLES_TO_NT (triples, ses);
       else if (ret_format in ('JSON', 'JSON;TALIS'))
@@ -1948,11 +1950,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[11] = new Option(\'HTML+Microdata\',\'text/html\');\n');
     http('			format.options[12] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
     http('			format.options[13] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[14] = new Option(\'TriG\',\'application/x-trig\');\n');
     if (can_cxml)
       {
-	http('			format.options[14] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[15] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[15] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[16] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
@@ -2073,7 +2076,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 		vector ('text/x-html+tr', 		'HTML (table)'),
       		vector ('text/html',			'HTML+Microdata'),
 		vector ('application/microdata+json', 	'Microdata/JSON'),
-		vector ('text/csv', 			'CSV')
+		vector ('text/csv',			'CSV'),
+		vector ('application/x-trig',		'TriG')
       );
     }
   else
@@ -3617,6 +3621,8 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, out_ses);
       else if (('text/rdf+n3' = mime) or ('text/rdf+ttl' = mime) or ('text/rdf+turtle' = mime) or ('text/turtle' = mime) or ('text/n3' = mime))
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
+      else if ('application/x-trig' = mime)
+        DB.DBA.RDF_TRIPLES_TO_TRIG (triples, out_ses);
       else if ('text/plain' = mime)
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
       else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
@@ -3691,6 +3697,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/rdf+ttl') is not null or
       strcasestr (accept, 'text/rdf+turtle') is not null or
       strcasestr (accept, 'text/turtle') is not null or
+      strcasestr (accept, 'application/x-trig') is not null or
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
       strcasestr (accept, 'application/soap+xml') is not null or

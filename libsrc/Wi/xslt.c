@@ -4508,8 +4508,8 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
       for (itm_ctr = group_count; itm_ctr--; /* no step */)
         {
           caddr_t *row = (caddr_t *)(vect[itm_ctr*block_elts + key_ofs]);
-          caddr_t key = NULL;
-          dtp_t key_dtp = 0;
+          caddr_t key;
+          dtp_t key_dtp;
           if (DV_ARRAY_OF_POINTER != DV_TYPE_OF(row))
             {
               dk_free ((void *)src, group_count * sizeof (dsort_itm_t));
@@ -4524,7 +4524,17 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
                   "found a key type %s (%d) instead; index of bad item in array is %d = %d * %d + %d (block index * no of items per block + key offset)",
                   funname, dv_type_title (key_dtp), key_dtp, itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
             }
-          if (BOX_ELEMENTS(row) <= key_item_inx)
+          if (BOX_ELEMENTS(row) > key_item_inx)
+            {
+              key = row[key_item_inx];
+              key_dtp = DV_TYPE_OF (key);
+            }
+          else if ('G' == algo)
+            {
+              key = NULL;
+              key_dtp = DV_LONG_INT;
+            }
+          else
             {
               dk_free ((void *)src, group_count * sizeof (dsort_itm_t));
               if (1 == block_elts)
@@ -4537,9 +4547,8 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
                   "Function %s needs vector of blocks with vectors in key positions, each key vector should be at least %d values long "
                   "found an item of length %ld; index of bad item in array is %d = %d * %d + %d (block index * no of items per block + key offset)",
                   funname, key_item_inx+1, (long)(BOX_ELEMENTS(row)), itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
+              key = NULL; key_dtp = 0; /* to keep compiler happy */
             }
-          key = row[key_item_inx];
-          key_dtp = DV_TYPE_OF (key);
           if (DV_LONG_INT == key_dtp)
             key_val = unbox (key);
           else if (DV_IRI_ID == key_dtp)
@@ -4667,6 +4676,13 @@ bif_rowvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 }
 
 caddr_t
+bif_rowvector_graph_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int sort_asc = bif_long_range_arg (qst, args, 2, "rowvector_graph_sort", 0, 1);
+  return bif_rowvector_sort_imp (qst, err_ret, args, "rowvector_graph_sort", 'G', 1, 0, sort_asc);
+}
+
+caddr_t
 bif_rowvector_subj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int sort_asc = bif_long_range_arg (qst, args, 2, "rowvector_subj_sort", 0, 1);
@@ -4680,6 +4696,135 @@ bif_rowgvector_subj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   int key_ofs = bif_long_range_arg (qst, args, 3, "rowgvector_subj_sort", 0, 1024);
   int sort_asc = bif_long_range_arg (qst, args, 4, "rowgvector_subj_sort", 0, 1);
   return bif_rowvector_sort_imp (qst, err_ret, args, "rowgvector_subj_sort", 'S', block_elts, key_ofs, sort_asc);
+}
+
+caddr_t
+bif_rowvector_graph_partition (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *funname = "rowvector_graph_partition";
+  const int block_elts = 1;
+  const int key_ofs = 0;
+  caddr_t **vect = (caddr_t **)bif_array_arg (qst, args, 0, funname);
+  int vect_elems = BOX_ELEMENTS (vect);
+  int key_item_inx = bif_long_range_arg (qst, args, 1, funname, 0, 1024);
+  int group_count, itm_ctr;
+  int partition_ctr = 0, partition_count = 0;
+  int prev_g_dtp = 1;
+  int start_itm_ctr = 0;
+  caddr_t prev_g = NULL;
+  caddr_t **res;
+  vector_sort_t specs;
+#if 0
+  if (block_elts <= 0)
+    sqlr_new_error ("22023", "SR488", "Number of elements in block should be positive integer in call of %s()", funname);
+  if (block_elts > MAX_VECTOR_BSORT_BLOCK)
+    sqlr_new_error ("22023", "SR488", "Number of elements in block is greater than maximum block length %d supported by %s()", MAX_VECTOR_BSORT_BLOCK, funname);
+  if (vect_elems % block_elts != 0)
+    sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of number of elements in block", funname);
+  if ((0 > key_ofs) || (key_ofs >= block_elts))
+    sqlr_new_error ("22023", "SR490", "In call of %s(), offset of key in block should be nonnegative integer that is less than number of elements in block", funname);
+#endif
+  group_count = vect_elems / block_elts;
+  if (0 >= group_count)
+    return dk_alloc_box (0, DV_ARRAY_OF_POINTER);
+  for (itm_ctr = 0; itm_ctr < group_count; itm_ctr++)
+    {
+      caddr_t *row = vect[itm_ctr * block_elts + key_ofs];
+      caddr_t key;
+      dtp_t key_dtp;
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF(row))
+        {
+          if (1 == block_elts)
+            sqlr_new_error ("22023", "SR572",
+              "Function %s needs vector of vectors, "
+              "found a value type %s (%d); index of bad item in array is %d",
+              funname, dv_type_title (key_dtp), key_dtp, itm_ctr );
+          else
+            sqlr_new_error ("22023", "SR572",
+              "Function %s needs vector of blocks with vectors in key positions, "
+              "found a key type %s (%d) instead; index of bad item in array is %d = %d * %d + %d (block index * no of items per block + key offset)",
+              funname, dv_type_title (key_dtp), key_dtp, itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
+        }
+      if (BOX_ELEMENTS(row) > key_item_inx)
+        {
+          key = row[key_item_inx];
+          key_dtp = DV_TYPE_OF (key);
+        }
+      else
+        {
+          key = NULL;
+          key_dtp = 0;
+        }
+      if (key_dtp == prev_g_dtp)
+        {
+          switch (key_dtp)
+            {
+              case 0: continue;
+              case DV_LONG_INT: if (unbox (key) == unbox (prev_g)) continue; break;
+              case DV_IRI_ID: if (unbox_iri_id (key) == unbox_iri_id (prev_g)) continue; break;
+              case DV_STRING: case DV_UNAME: if ((box_length (key) == box_length (prev_g)) && !memcmp (key, prev_g, box_length (key)-1)) continue; break;
+              default:
+                sqlr_new_error ("22023", "SR572",
+                 "Function %s needs IRI_IDs or integers or strings as key elements of array, "
+                 "not a value type %s (%d); position of bad key in array is %d",
+                 funname, dv_type_title (key_dtp), key_dtp, itm_ctr * block_elts + key_ofs );
+            }
+        }
+      partition_count++;
+      prev_g = key;
+      prev_g_dtp = key_dtp;
+    }
+  prev_g_dtp = 1;
+  res = (caddr_t **)dk_alloc_box_zero (partition_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  for (itm_ctr = 0; itm_ctr < group_count; itm_ctr++)
+    {
+      caddr_t *row = vect[itm_ctr * block_elts + key_ofs];
+      caddr_t key;
+      dtp_t key_dtp;
+      if (BOX_ELEMENTS(row) > key_item_inx)
+        {
+          key = row[key_item_inx];
+          key_dtp = DV_TYPE_OF (key);
+        }
+      else
+        {
+          key = NULL;
+          key_dtp = 0;
+        }
+      if (key_dtp == prev_g_dtp)
+        {
+          switch (key_dtp)
+            {
+              case 0: continue;
+              case DV_LONG_INT: if (unbox (key) == unbox (prev_g)) continue; break;
+              case DV_IRI_ID: if (unbox_iri_id (key) == unbox_iri_id (prev_g)) continue; break;
+              case DV_STRING: case DV_UNAME: if ((box_length (key) == box_length (prev_g)) && !memcmp (key, prev_g, box_length (key)-1)) continue; break;
+              default: break;
+            }
+        }
+      if (itm_ctr)
+        {
+          size_t cut_size = (itm_ctr - start_itm_ctr) * block_elts * sizeof (caddr_t);
+          caddr_t **src_start = vect + (start_itm_ctr * block_elts);
+          caddr_t *cut = (caddr_t *)dk_alloc_box (cut_size, DV_ARRAY_OF_POINTER);
+          memcpy (cut, src_start, cut_size);
+          memset (src_start, 0, cut_size);
+          res[partition_ctr++] = cut;
+        }
+      start_itm_ctr = itm_ctr;
+      prev_g = key;
+      prev_g_dtp = key_dtp;
+    }
+  if (start_itm_ctr < group_count)
+    {
+      size_t cut_size = (itm_ctr - start_itm_ctr) * block_elts * sizeof (caddr_t);
+      caddr_t **src_start = vect + (start_itm_ctr * block_elts);
+      caddr_t *cut = (caddr_t *)dk_alloc_box (cut_size, DV_ARRAY_OF_POINTER);
+      memcpy (cut, src_start, cut_size);
+      memset (src_start, 0, cut_size);
+      res[partition_ctr++] = cut;
+    }
+  return (caddr_t)res;
 }
 
 void
@@ -4939,6 +5084,8 @@ xslt_init (void)
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
   bif_define ("rowvector_subj_sort", bif_rowvector_subj_sort);
+  bif_define ("rowvector_graph_sort", bif_rowvector_graph_sort);
   bif_define ("rowgvector_subj_sort", bif_rowgvector_subj_sort);
+  bif_define ("rowvector_graph_partition", bif_rowvector_graph_partition);
 }
 

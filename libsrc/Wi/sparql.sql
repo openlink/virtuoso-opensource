@@ -3704,6 +3704,73 @@ end_subj_sort: ;
 }
 ;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_TRIG (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr, first_dflt_g_idx integer;
+  declare prev_g_iri varchar;
+  declare first_g_idx integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('# Empty TriG\n', ses);
+      return;
+    }
+  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+  { whenever sqlstate '*' goto end_pred_sort;
+    rowvector_subj_sort (triples, 1, 1);
+end_pred_sort: ;
+  }
+  { whenever sqlstate '*' goto end_subj_sort;
+    rowvector_subj_sort (triples, 0, 1);
+end_subj_sort: ;
+  }
+  rowvector_graph_sort (triples, 3, 1);
+  dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) dbg_obj_princ (triples[tctr]);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+  for (tctr := 0; (tctr < tcount) and aref_or_default (triples, tctr, 3, null) is null; tctr := tctr + 1)
+    {
+      http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+    }
+  first_g_idx := tctr;
+  for (tctr := first_g_idx; tctr < tcount; tctr := tctr + 1)
+    {
+      http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+    }
+  if (0 < first_g_idx)
+    {
+      http ('{\n', ses);
+      for (tctr := 0; tctr < first_g_idx; tctr := tctr + 1)
+        {
+          http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+        }
+      http (' .\n}\n', ses);
+    }
+  prev_g_iri := '';
+  for (tctr := first_g_idx; tctr < tcount; tctr := tctr + 1)
+    {
+      declare g_iri varchar;
+      g_iri := id_to_iri_nosignal (triples[tctr][3]);
+      if (g_iri is not null)
+        {
+          if (g_iri <> prev_g_iri)
+            {
+              if (prev_g_iri <> '')
+                http (' .\n}\n', ses);
+              env[1] := 0;
+              http ('<', ses);
+              http_escape (g_iri, 12, ses, 1, 1);
+              http ('> = {\n', ses);
+              prev_g_iri := g_iri;
+            }
+          http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+        }
+    }
+  if (prev_g_iri <> '')
+    http (' .\n}\n', ses);
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_NT (inout triples any, inout ses any)
 {
   declare env any;
@@ -5581,6 +5648,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) re
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TRIG (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_TRIG (triples, ses);
   return ses;
 }
 ;
@@ -13844,6 +13926,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LONG_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TTL to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_TRIG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_NT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_GRAPH_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',

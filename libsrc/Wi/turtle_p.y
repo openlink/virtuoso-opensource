@@ -155,14 +155,41 @@ turtledoc
 
 clause
 	: _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
-	| _AT_base_L Q_IRI_REF dot_opt { TF_CHANGE_BASE_AND_DEFAULT_GRAPH(ttlp_arg->ttlp_tf,$2); }
-	| _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
+	| base_clause dot_opt
+	| prefix_clause dot_opt
+	| q_complete { dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
+		ttlp_arg->ttlp_last_complete_uri = NULL; }
+		trig_block_or_predicate_object_list
+	| top_triple_clause_with_nonq_subj
+	| _LBRA_TOP_TRIG {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		ttlp_enter_trig_group (ttlp_arg);
+		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
+	    base_or_prefix_or_inner_triple_clauses trig_group_end dot_opt {
+		ttlp_leave_trig_group (ttlp_arg); }
+	| error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
+	;
+
+base_clause
+	: _AT_base_L Q_IRI_REF {
+		  if (ttlp_arg->ttlp_base_uri != ttlp_arg->ttlp_base_uri_saved)
+		    dk_free_box (ttlp_arg->ttlp_base_uri);
+		  ttlp_arg->ttlp_base_uri = $2;
+		  TF_CHANGE_BASE_AND_DEFAULT_GRAPH(ttlp_arg->ttlp_tf, box_copy ($2)); }
+	;
+
+prefix_clause
+	: _AT_prefix_L QNAME_NS Q_IRI_REF {
+		id_hash_t **local_hash_ptr = (ttlp_arg->ttlp_in_trig_graph ?
+		  &(ttlp_arg->ttlp_inner_namespaces_prefix2iri) :
+		  &(ttlp_arg->ttlp_namespaces_prefix2iri) );
 		caddr_t *old_uri_ptr;
-		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)
-		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, &($2));
+		if (NULL != local_hash_ptr[0])
+		  old_uri_ptr = (caddr_t *)id_hash_get (local_hash_ptr[0], &($2));
 		else
 		  {
-		    ttlp_arg->ttlp_namespaces_prefix2iri = (id_hash_t *)box_dv_dict_hashtable (31);
+		    local_hash_ptr[0] = (id_hash_t *)box_dv_dict_hashtable (31);
 		    old_uri_ptr = NULL;
 		  }
 		if (NULL != old_uri_ptr)
@@ -174,23 +201,13 @@ clause
 		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
 		  }
 		else
-		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, &($2), &($3)); }
-	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
-		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
+		  id_hash_set (local_hash_ptr[0], &($2), &($3)); }
+	| _AT_prefix_L _COLON Q_IRI_REF	{
+		if (ttlp_arg->ttlp_default_ns_uri != ttlp_arg->ttlp_default_ns_uri_saved)
+		  dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
-	| q_complete { dk_free_tree (ttlp_arg->ttlp_subj_uri);
-		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
-		ttlp_arg->ttlp_last_complete_uri = NULL; }
-		trig_block_or_predicate_object_list
-	| top_triple_clause_with_nonq_subj
-	| _LBRA_TOP_TRIG {
-		triple_feed_t *tf = ttlp_arg->ttlp_tf;
-		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
-	    inner_triple_clauses trig_group_end dot_opt {
-		triple_feed_t *tf = ttlp_arg->ttlp_tf; }
-
-	| error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
+
 
 dot_opt
 	: /* empty */
@@ -207,9 +224,11 @@ trig_block_or_predicate_object_list
 	| opt_eq_lbra {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
+		ttlp_enter_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_subj_uri); }
-	    inner_triple_clauses trig_group_end dot_opt {
+	    base_or_prefix_or_inner_triple_clauses trig_group_end dot_opt {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		ttlp_leave_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
 	;
 
@@ -217,6 +236,17 @@ opt_eq_lbra
 	: _LBRA_TOP_TRIG
 	| _EQ_TOP_TRIG _LBRA_TOP_TRIG
 	| _EQ_TOP_TRIG error { ttlyyerror_action ("No '{' after an equality sign in TriG"); }
+	;
+
+base_or_prefix_or_inner_triple_clauses
+	: base_or_prefix_or_inner_triple_clause
+	| base_or_prefix_or_inner_triple_clauses _DOT_WS base_or_prefix_or_inner_triple_clause
+	;
+
+base_or_prefix_or_inner_triple_clause
+	: base_clause
+	| prefix_clause
+	| inner_triple_clause
 	;
 
 inner_triple_clauses
