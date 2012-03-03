@@ -81,6 +81,7 @@ libutil_la_SOURCES = \
 	usage.c \
 	uuid.c \
 	wcslen.c \
+	virt_mbrlen.c \
 	virt_mbrtowc.c \
 	virt_mbsnrtowcs.c \
 	virt_wcrtomb.c \
