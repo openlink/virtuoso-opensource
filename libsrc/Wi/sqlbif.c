@@ -115,7 +115,6 @@ extern void bif_udt_init(void);
 extern void bif_xmlenc_init(void);
 extern void tp_bif_init(void);
 extern void bif_json_init (void);
-extern void col_init ();
 extern void geo_init ();
 #ifdef _KERBEROS
 extern void  bif_kerberos_init (void);
@@ -15011,7 +15010,6 @@ sql_bif_init (void)
   bif_diff_init();
   rdf_box_init ();
   bif_json_init ();
-  col_init ();
   return;
 }
 
