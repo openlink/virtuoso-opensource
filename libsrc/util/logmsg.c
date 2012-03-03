@@ -671,7 +671,10 @@ log_open_file (char *filename, int level, int mask, int style)
 
   log = log_open_callback (file_emit, file_close, level, mask, style);
   if (log == NULL)
-    return NULL;
+    {
+      fclose (fp);
+      return NULL;
+    }
 
   log->user_data = fp;
 
