@@ -740,6 +740,20 @@ class VirtuosoRow
 		     return (new java.sql.Time (ts.getTime())).toString();
 	       }
 	   }
+	 else if (obj instanceof VirtuosoBlob)
+	   {
+	     try {
+	       Reader r = ((VirtuosoBlob)obj).getCharacterStream();
+	       char[] data = new char[1024];
+	       StringWriter w =  new StringWriter();
+	       int l;
+	       while((l = r.read(data)) != -1)
+	         w.write(data,0,l);
+	       return w.toString();
+	     } catch (IOException e) {
+	       throw new VirtuosoException(e, VirtuosoException.MISCERROR);
+	     }
+	   }
          return obj.toString();
       }
       resultSet.wasNull(true);
