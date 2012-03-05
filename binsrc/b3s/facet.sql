@@ -681,7 +681,7 @@ fct_xml_wrap (in tree any, in txt any)
 				xmlelement ("column", fct_label_np ("c1", 0, ''facets'' )))))
 	     from (sparql define output:valmode "LONG"', view_type), ntxt);
   if (n_cols = 3)
-    http ('select xmlelement ("result", xmlattributes ('''' as "type"),
+    http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
                               xmlagg (xmlelement ("row",
                                                   xmlelement ("column",
                                                               xmlattributes (fct_lang ("c1") as "xml:lang",
@@ -693,7 +693,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                   xmlelement ("column", __ro2sq ("c2")),
                                                   xmlelement ("column", __ro2sq ("c3"))
 						  	)))
-             from (sparql define output:valmode "LONG" ', ntxt);
+             from (sparql define output:valmode "LONG" ', view_type), ntxt);
 
 
   http (txt, ntxt);
@@ -1405,6 +1405,23 @@ fct_test (in str varchar, in timeout int := 0)
 ;
 
 create procedure
+fct_view_pos (in tree any)
+{
+  declare c any;
+  declare i int;
+  c := xpath_eval ('//*[name() = "query" or 
+	           name () = "property" or 
+	           name () = "property-of"]', tree, 0);
+  for (i := 0; i < length (c); i := i + 1)
+    {
+      if (xpath_eval ('./view', c[i]) is not null)
+	return i;
+    }
+  return 0;
+}
+;
+
+create procedure
 fct_exec (in tree any, 
           in timeout int)
 {
@@ -1475,7 +1492,8 @@ fct_exec (in tree any,
       inx := inx + 1;
     }
 
-
+  declare v_pos integer;
+  v_pos := fct_view_pos(tree);
 
   res := xmlelement ("facets", xmlelement ("sparql", query), 
                                xmlelement ("time", msec_time () - start_time),
@@ -1483,7 +1501,7 @@ fct_exec (in tree any,
 		               xmlelement ("timeout", __min (timeout * 2, atoi (registry_get ('fct_timeout_max')))),
 		               xmlelement ("db-activity", act),
 		               xmlelement ("processed", n_rows), 
-                               xmlelement ("view", xmlattributes (offs as "offset", lim as "limit")),
+                               xmlelement ("view", xmlattributes (offs as "offset", lim as "limit", v_pos as "position")),
                                results[0], results[1], results[2]);
 
   --String_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);

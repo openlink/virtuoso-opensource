@@ -149,7 +149,11 @@ declare exit handler for sqlstate '*'
   commit work;
   declare _state, _out any;
   declare _xmlser varchar;
-  select fct_state into _state from fct_state where fct_sid = http_param ('sid');
+
+  if (isstring (http_param ('sid')))
+    select fct_state into _state from fct_state where fct_sid = http_param ('sid');
+  else
+    _state := null;
 
   _out := string_output();
 

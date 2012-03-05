@@ -355,7 +355,7 @@ span.descr { font-size: 9pt; color: #557; margin-top: 0;}
   width: 200px; 
   border-left: 1px solid #335;}
 
-#fct_nav h3 { margin: 0; padding: 0;}
+#fct_nav h3 { margin: 0; padding: 0; color: #445; }
 
 #fct_nav ul { list-style-type: none; padding: 0; margin: 0;}
 #fct_nav ul li { list-style-type: none;}
@@ -495,6 +495,11 @@ div#top_ctr {
 
 #top_ctr ul {
   list-style-type: none;
+}
+
+#top_ctr ul .focus {
+  font-weight: bold;
+  color: #393;
 }
 
 div.error_msg { margin: 5px; }

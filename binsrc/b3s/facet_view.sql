@@ -26,22 +26,6 @@
 registry_set ('_fct_xslt_', 
               case when registry_get('_fct_url_') = 0 then 'file://fct/' else registry_get('_fct_url_') end);
 
-create procedure
-fct_view_pos (in tree any)
-{
-  declare c any;
-  declare i int;
-  c := xpath_eval ('//*[name() = "query" or 
-	           name () = "property" or 
-	           name () = "property-of"]', tree, 0);
-  for (i := 0; i < length (c); i := i + 1)
-    {
-      if (xpath_eval ('./view', c[i]) is not null)
-	return i;
-    }
-  return 0;
-}
-;
 
 create procedure
 fct_view_info (in tree any, in ctx int, in txt any)
@@ -152,16 +136,21 @@ create procedure fct_t_term ()
 create procedure
 fct_var_tag (in this_s int, in ctx int)
 {
-  if (ctx)
-    return sprintf ('<a href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Focus on %s%d">%s%d</a>',
+  declare cl varchar;
+
+  if (this_s <> ctx)
+    cl := '';
+  else 
+    cl := 'focus';
+
+  return sprintf ('<a class="%s" href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Focus on %s%d">%s%d</a>',
+                    cl,
                     connection_get ('sid'),
 		    this_s,
 		    fct_s_term (),
 		    this_s,
 		    fct_s_term (),
 		    this_s);
-  else
-    return sprintf ('%s%d', connection_get ('s_term'), this_s);
 }
 ;
 
@@ -258,7 +247,7 @@ fct_query_info (in tree any,
 
   n := cast (xpath_eval ('name ()', tree, 1) as varchar);
 
-  fct_dbg_msg (sprintf ('fct_query_info: level: %d, n: %s', level, n));
+  fct_dbg_msg (sprintf ('fct_query_info: cno: %d, level: %d, n: %s, ctx: %d', cno, level, n, ctx));
 
   http (fct_space (2 * level), txt);
 
@@ -553,8 +542,11 @@ fct_top (in tree any, in txt any)
   declare cno int;
   cno := 0;
 
-  fct_query_info (xpath_eval ('/query', tree), 1, max_s, 1, 1, txt, cno);
+  declare ctx int;
+  ctx := fct_view_pos (tree)+1;
+  fct_dbg_msg (sprintf ('fct_top: ctx: %d', ctx));
 
+  fct_query_info (xpath_eval ('/query', tree), 1, max_s, 1, ctx, txt, cno);
 }
 ;
 
@@ -1226,12 +1218,12 @@ fct_set_class (in tree any,
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
-                vector ('pos'   , pos,
-		        'op'    , 'class',
-			'iri'   , iri,
-			'type'  , 'list',
-			'limit' , 20,
-			'offset', 0,
+                vector ('pos',     pos,
+		        'op',      'class',
+			'iri',     iri,
+			'type',    'list',
+			'limit',   20,
+			'offset',  0,
 			'exclude', exclude));
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
@@ -1829,7 +1821,8 @@ fct_select_value (in tree any,
 ;
 
 create procedure 
-fct_validate_xsd_float (in str varchar) {
+fct_validate_xsd_float (in str varchar) 
+{
   declare ret varchar;
 
   ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)$', str); -- simple case
@@ -1845,7 +1838,8 @@ fct_validate_xsd_float (in str varchar) {
 ;
 
 create procedure 
-fct_validate_xsd_decimal (in str varchar) { 
+fct_validate_xsd_decimal (in str varchar) 
+{ 
   return regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)?)"\\^\\^xsd\\:decimal',str);
 }
 ;
@@ -1867,7 +1861,8 @@ fct_validate_xsd_int (in str varchar)
 ;
 
 create procedure 
-fct_validate_xsd_date (in str varchar) {
+fct_validate_xsd_date (in str varchar) 
+{
   return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:date$', str);
 }
 ;
