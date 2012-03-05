@@ -1001,6 +1001,7 @@ fct_set_focus (in tree any, in sid int, in pos int)
 		vector ('pos', pos - 1, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
+
   fct_web (tree);
 }
 ;
@@ -1104,33 +1105,72 @@ fct_set_view (in tree     any,
 ;
 
 create procedure
-fct_next (in tree any, in sid int)
+fct_next (in tree any, in sid int, in offset varchar, in limit varchar)
 {
   declare tp varchar;
   declare lim, offs int;
 
-  tp   := cast       (xpath_eval ('//view/@type',  tree) as varchar);
-  lim  := atoi (cast (xpath_eval ('//view/@limit', tree) as varchar));
-  offs := atoi (cast (xpath_eval ('//view/@offset',tree) as varchar));
+  tp := cast (xpath_eval ('//view/@type',  tree) as varchar);
 
-  fct_set_view  (tree, sid, tp, lim, offs + 20);
+  if (isstring (limit) and limit <> '')
+    lim := atoi (limit);
+  else
+    lim  := atoi (cast (xpath_eval ('//view/@limit', tree) as varchar));
+
+  if (isstring (offset) and offset <> '')
+    offs := atoi (offset);
+  else
+    offs := atoi (cast (xpath_eval ('//view/@offset',tree) as varchar));
+  
+  fct_set_view  (tree, sid, tp, lim, offs + lim);
 }
 ;
 
 create procedure
-fct_prev (in tree any, in sid int)
+fct_prev (in tree any, in sid int, in offset varchar, in limit varchar)
 {
   declare tp varchar;
   declare lim, offs int;
 
-  tp   := cast       (xpath_eval ('//view/@type',  tree) as varchar);
-  lim  := atoi (cast (xpath_eval ('//view/@limit', tree) as varchar));
-  offs := atoi (cast (xpath_eval ('//view/@offset',tree) as varchar));
+  tp := cast (xpath_eval ('//view/@type',  tree) as varchar);
 
-  offs := offs - 20;
-  if (offs < 0) offs := 0;
+  if (isstring (limit) and limit <> '')
+    lim := atoi (limit);
+  else
+    lim := atoi (cast (xpath_eval ('//view/@limit', tree) as varchar));
 
+  if (isstring (offset) and offset <> '') 
+    offs := atoi (offset);
+  else {
+    offs := atoi (cast (xpath_eval ('//view/@offset',tree) as varchar));
+    offs := offs - lim;
+    if (offs < 0) offs := 0;
+  }
   fct_set_view  (tree, sid, tp, lim, offs);
+}
+;
+
+create procedure 
+fct_go_to (in tree any, in sid int, in _offs varchar, in _lim varchar)
+{
+  declare tp varchar;
+  declare offs, lim int;
+
+  if (isstring (_offs) and _offs <> '')
+    offs := atoi (_offs);
+
+  if (isstring (_lim) and _lim <> '')
+    lim  := atoi (_lim);
+  else 
+    lim := atoi (cast (xpath_eval ('//view/@limit', tree) as varchar));
+
+  if (offs is null) offs := 0;
+
+  fct_dbg_msg (sprintf ('fct_go_to offs: %d, lim: %d', offs, lim));
+
+  tp := cast (xpath_eval ('//view/@type',  tree) as varchar);  
+
+  fct_set_view  (tree, sid, tp, lim, offs);  
 }
 ;
 
@@ -2305,9 +2345,11 @@ exec:;
 		  atoi (http_param ('offset')),
 		  http_param ('location-prop'));
   else if ('next' = cmd)
-    fct_next (tree, sid);
+    fct_next (tree, sid, http_param ('offset'), http_param ('limit'));
   else if ('prev' = cmd)
-    fct_prev (tree, sid);
+    fct_prev (tree, sid, http_param ('offset'), http_param ('limit'));
+  else if ('go_to' = cmd)
+    fct_go_to (tree, sid, http_param ('offset'), http_param ('limit'));
   else if ('set_text_property' = cmd)
     fct_set_text_property (tree, sid, http_param ('iri'));
   else if ('open_property' = cmd)

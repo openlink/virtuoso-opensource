@@ -432,6 +432,23 @@ a.in_del:hover { cursor: pointer; }
   font-style: italic;
 }
 
+/*#res div.pager button {
+border: 1px #355;
+background-image: linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
+background-image: -o-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
+background-image: -moz-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
+background-image: -webkit-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
+background-image: -ms-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
+background-image: -webkit-gradient(
+	linear,
+	left bottom,
+	left top,
+	color-stop(1, #FFFFFF),
+	color-stop(0.36, #DCD7FA),
+	color-stop(0.01, #F1F0FA)
+);
+}
+*/
 div.empty_result {
   font-weight: bold; 
   font-size: 12pt;

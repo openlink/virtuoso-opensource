@@ -25,10 +25,14 @@
 <xsl:stylesheet version ="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
 
+<!-- Pager-related vars calculation -->
+
 <xsl:variable name="page_len" select="20"/>
 <xsl:variable name="offs" 
               select="if(or(/facets/view/@offset = '', not(/facets/view/@offset)), 1, /facets/view/@offset + 1)"/>
+<xsl:variable name="limit" select="/facets/view/@limit"/>
 <xsl:variable name="rowcnt" select="count(/facets/result/row)"/>
+
 <xsl:param name="s_term"/>
 <xsl:param name="p_term"/>
 <xsl:param name="o_term"/>
@@ -40,7 +44,9 @@
 <xsl:template match = "facets">
 <div id="res">
   <div class="btn_bar btn_bar_top"><xsl:comment><xsl:value-of select="$type"/></xsl:comment>
-    <xsl:call-template name="render-pager"/>
+    <xsl:call-template name="render-pager">
+      <xsl:with-param name="pfx">pager_top</xsl:with-param>
+    </xsl:call-template>
   <xsl:if test="/facets/complete != 'yes'">
     <span class="partial_res_expln">
       <xsl:choose>
@@ -199,7 +205,9 @@ function init(){
   </xsl:otherwise>
 </xsl:choose>
 <div class="btn_bar">
-  <xsl:call-template name="render-pager"/>
+  <xsl:call-template name="render-pager">
+    <xsl:with-param name="pfx">pager_bottom</xsl:with-param>
+  </xsl:call-template>
 </div> <!-- btn_bar -->
 <div id="result_nfo">
   <xsl:choose>
@@ -264,28 +272,80 @@ function init(){
 </xsl:if>
 </xsl:template>
 
+<xsl:template name="render-limit-opts">
+  <xsl:param name="lim-list"/>
+  <xsl:param name="limit"/>
+  <xsl:variable name="new-lim-list" select="concat(normalize-space($lim-list), ' ')"/>
+  <xsl:variable name="first-val" select="substring-before($new-lim-list, ' ')" />
+  <xsl:variable name="remaining" select="substring-after($new-lim-list, ' ')" />
+  <option>
+    <xsl:attribute name="value"><xsl:value-of select="$first-val"/></xsl:attribute>
+    <xsl:if test="$first-val = $limit"><xsl:attribute name="selected">true</xsl:attribute></xsl:if>
+    <xsl:value-of select="$first-val"/>
+  </option>
+  <xsl:if test="$remaining">
+    <xsl:call-template name="render-limit-opts">
+      <xsl:with-param name="lim-list"><xsl:value-of select="$remaining"/></xsl:with-param>
+      <xsl:with-param name="limit"><xsl:value-of select="$limit"/></xsl:with-param>
+    </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
 <xsl:template name="render-pager">
+  <xsl:param name="pfx"/>
   <xsl:if test="/facets/processed &gt; 0">
-    <div class="pager">
-	<span class="stats"><xsl:text>Showing </xsl:text>
-	    <xsl:value-of select="$offs"/> - <xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
-	    <xsl:value-of select="/facets/processed"/> <xsl:text>total&#8194;</xsl:text>
+    <form class="pager">
+      <xsl:attribute name="id"><xsl:value-of select="$pfx"/></xsl:attribute>
+      <input type="hidden" name="sid">
+        <xsl:attribute name="value">
+          <xsl:value-of select="$sid"/>
+        </xsl:attribute>
+      </input>
+      <input type="hidden" name="cmd" value="go_to">
+        <xsl:attribute name="id"><xsl:value-of select="$pfx"/>_cmd</xsl:attribute>
+      </input>
+      <label>
+        <xsl:attribute name="for"><xsl:value-of select="$pfx"/>_goto</xsl:attribute>
+        Go to:
+      </label>
+
+      <input name="offset" type="text" class="pager_go" size="3">
+        <xsl:attribute name="id"><xsl:value-of select="$pfx"/>_goto</xsl:attribute>
+        <!--xsl:attribute name="value"><xsl:value-of select="$offs"/></xsl:attribute-->
+      </input>
+
+      <label>
+        <xsl:attribute name="for"><xsl:value-of select="$pfx"/>_nres</xsl:attribute>
+        Show
+      </label>
+      <select name="limit">
+        <xsl:attribute name="id"><xsl:value-of select="$pfx"/>_nres</xsl:attribute>
+        <xsl:call-template name="render-limit-opts">
+          <xsl:with-param name="lim-list">20 50 100 150 200 300 400 500</xsl:with-param>
+          <xsl:with-param name="limit" select="$limit"/>
+        </xsl:call-template>
+      </select>
+      <span class="pager_stats">
+        <xsl:value-of select="$offs"/> - <xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
+	<xsl:value-of select="/facets/processed"/> <xsl:text> total&#8194;</xsl:text>
       </span>
-      <xsl:if test="$offs &gt;= $page_len">
 	<button>
+          <xsl:if test="not($offs)">
+            <xsl:attribute name="disabled">true</xsl:attribute>
+          </xsl:if>
 	  <xsl:attribute name="class">pager</xsl:attribute>
-	  <xsl:attribute name="onclick">javascript:fct_nav_to('/fct/facet.vsp?cmd=prev&amp;sid=<xsl:value-of select="$sid"/>')
-	  </xsl:attribute>&#9666; Prev
+	  <xsl:attribute name="onclick">javascript:fct_pager_prev('<xsl:value-of select="$pfx"/>');</xsl:attribute>
+          &#9664;
 	</button>
-      </xsl:if>
-      <xsl:if test="($offs + $page_len) &lt; /facets/processed">
 	<button>
+          <xsl:if test="not(($offs + $page_len) &lt; /facets/processed)">
+            <xsl:attribute name="disabled">true</xsl:attribute>
+          </xsl:if>
 	  <xsl:attribute name="class">pager</xsl:attribute>
-	  <xsl:attribute name="onclick">javascript:fct_nav_to('/fct/facet.vsp?cmd=next&amp;sid=<xsl:value-of select="$sid"/>')
-	  </xsl:attribute>&#9656; Next
+	  <xsl:attribute name="onclick">javascript:fct_pager_next('<xsl:value-of select="$pfx"/>');</xsl:attribute>
+          &#9654;
 	</button>
-      </xsl:if>
-    </div>
+    </form>
   </xsl:if>
 </xsl:template> <!-- render-pager -->
 

@@ -33,6 +33,26 @@ function fct_nav_to (url)
   document.location = url;
 }
 
+function fct_pager_next (form_pfx)
+{
+    if ($(form_pfx+'_goto').value == '')
+      $(form_pfx + '_cmd').value = 'next';
+    $(form_pfx).submit();    
+}
+
+function fct_pager_prev (form_pfx)
+{
+    if ($(form_pfx+'_goto').value == '')
+      $(form_pfx + '_cmd').value = 'prev';
+    $(form_pfx).submit();    
+}
+
+function fct_pager_go_to (form_pfx)
+{
+    $(form_pfx + '_cmd').value = 'go_to';
+    $(form_pfx).submit();    
+}
+
 var c_thr;
 
 function fct_uri_ac_get_matches (ac_ctl)
