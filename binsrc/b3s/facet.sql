@@ -1252,13 +1252,6 @@ fct_text (in tree any,
       fct_text_1 (tree, new_s, max_s, txt, pre, post, full_tree, plain);
     }
 
-  if ('value' = n or 'cond' = n or 'cond-range' = n)
-    {
-      if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1)) 
-        {
-          http (sprintf ('?s%d ?s%dcondp ?s%d .', this_s, this_s, this_s), txt);
-        }
-    }
   if ('value' = n)
     {
       fct_value (tree, this_s, txt);
@@ -1266,11 +1259,13 @@ fct_text (in tree any,
 
   if ('cond' = n)
     {
+      fct_chk_any_prop (tree, this_s, max_s, txt);
       fct_cond (tree, this_s, txt);
     }
 
   if ('cond-range' = n)
     {
+      fct_chk_any_prop (tree, this_s, max_s, txt);
       fct_cond_range (tree, this_s, txt);
     }
 
@@ -1278,6 +1273,24 @@ fct_text (in tree any,
     {
       fct_view (tree, this_s, txt, pre, post, full_tree, plain);
     }
+}
+;
+
+create procedure
+fct_chk_any_prop (in tree any, inout this_s int, inout max_s int, in txt any)
+{
+  if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1))
+    {
+      declare dtp varchar;
+      dtp := xpath_eval ('./@dtp', tree, 1);
+
+      declare new_s int;
+      max_s := max_s + 1;
+      new_s := max_s;
+
+      http (sprintf ('?s%d ?s%dcondp ?s%d .', this_s, this_s, new_s), txt);
+      this_s := max_s;
+    }   
 }
 ;
 

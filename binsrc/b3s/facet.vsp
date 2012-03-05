@@ -148,7 +148,7 @@ declare exit handler for sqlstate '*'
 		 serialize(params));
 
   http('    <pre class="facet_state">STATE:\n<![CDATA[');
-  http(_state);
+  http_value(_state);
   http(']]>    </pre><br/>');
 
   http('  </div>\n');
