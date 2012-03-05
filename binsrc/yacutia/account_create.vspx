@@ -68,6 +68,11 @@
       </h1>
     </vm:rawheader>
     <vm:pagebody>
+	<v:on-init>
+	    <![CDATA[
+	    set http_charset='utf-8';
+	    ]]>
+	</v:on-init>
 	<vm:help id="account_create" sect=""/>
 	<script tyep="text/javascript"><![CDATA[
       function onExitUserName()
@@ -279,7 +284,8 @@
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-			  <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+			  <v:form name="account_form" type="simple" method="POST" action="" 
+			      xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
       <table class="main_page_area" style="valign: top">
         <tr valign="top">
           <td>
@@ -826,7 +832,7 @@
                 <v:script>
                   <![CDATA[
   declare i, cnt, exist, u_ident, g_name  integer;
-  declare tmp, val, user_name, user_pwd, e_mail, os_name, os_password, user_perm, user_home varchar;
+  declare tmp, val, user_name, user_pwd, user_pwd2, e_mail, os_name, os_password, user_perm, user_home varchar;
   declare attr any;
   declare st, msg varchar;
   declare webid varchar;
@@ -846,13 +852,14 @@
 
   attr := vector();
   user_name:= self.t_login_name.ufl_value;
-  user_pwd:=  self.t_user_password.ufl_value;
+  user_pwd :=  charset_recode (self.t_user_password.ufl_value, 'UTF-8', '_WIDE_');
+  user_pwd2 :=  charset_recode (self.t_user_password_conf.ufl_value, 'UTF-8', '_WIDE_');
   os_name :=  self.t_os_name.ufl_value;
   e_mail := self.t_e_mail.ufl_value;
 
   os_password :=  self.t_os_password.ufl_value;
 
-  if (user_pwd <> self.t_user_password_conf.ufl_value)
+  if (user_pwd <> user_pwd2)
     {
       control.vc_parent.vc_error_message := 'Passwords mismatch';
       self.vc_is_valid := 0;
