@@ -2221,10 +2221,14 @@ fct_vsp ()
 
   whenever not found goto no_ses;
 
+  fct_dbg_msg ('fct_vsp: select on sid');
+
   select fct_state into tree from fct_state where fct_sid = sid;
+  fct_dbg_msg ('fct_vsp: got ses');
   goto exec;
 
   no_ses:
+  fct_dbg_msg ('fct_vsp: no ses found');
   declare r_v any;
 
   if (s_for is not null) 
@@ -2262,11 +2266,12 @@ exec:;
   if (registry_get ('fct_log_enable') = 1)
   insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
          values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
+
   commit work;
 
   start_time := msec_time ();
 
-  fct_dbg_msg (sprintf ('fct_vsp: cmd: %s', cmd));
+  fct_dbg_msg (sprintf ('fct_vsp: cmd: %s, sid: %d', cmd, sid));
 
   if ('text' = cmd)
     {

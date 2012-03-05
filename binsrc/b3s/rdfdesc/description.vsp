@@ -47,6 +47,7 @@
   declare all_lang any;
   declare curr_pred any;
   declare dt1, dt2, count_str, tbinf, tbsas, ua, doc varchar;
+  declare c_iri_a any;
 
   declare continue handler for sqlstate 'S1TAT';
   set result_timeout = atoi (registry_get ('fct_timeout_max'));
@@ -197,7 +198,7 @@
 
   vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
    true_label := label;
-  iri_type := b3s_type (_S, _F, iri_uri, c_iri);
+  iri_type := b3s_type (_S, _F, iri_uri, c_iri, c_iri_a);
 
   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
 --    dbg_obj_print (qry_str);
@@ -327,20 +328,40 @@
     _ciri := c_iri;
   }
 
-  if (sid) { 
+  if (length(c_iri_a)) 
+    {
 ?>
-
-  <a class="fct_sel_as_type" 
-     title="Use as class in facets" 
-     href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?/ _ciri ?>">Constrain facet on this type</a>
+      <form id="fct_form" action="/fct/facet.vsp" method="get">
+        <label for="c_iri_sel">Type:</label>
+<?vsp
+      if (sid)
+        { 
+?>
+          <input type="hidden" name="sid" value="<?V sid ?>"/>
+          <input type="hidden" name="cmd" value="set_class"/>
+<?vsp
+          b3s_render_iri_select (c_iri_a, 'name="iri" id="c_iri_sel"');
+?>
+          <button class="fct_sel_as_type" 
+             title="Add class constraint in current facet session">Constrain facet</button>
 
 <?vsp 
-  } else { ?>
-  <a class="fct_sel_as_type" 
-     title="Start new facet session with type" 
-     href="/fct/facet.vsp?cmd=new_with_class&amp;iri=<?/ _ciri ?>">Start faceted browsing from this Type</a>
+        } 
+      else 
+        { 
+?>
+          <input type="hidden" name="cmd" value="new_with_class"/>
 <?vsp
-  } 
+          b3s_render_iri_select (c_iri_a, 'name="iri" id="c_iri_sel"');
+?>
+          <button class="fct_sel_as_type" 
+             title="Start new facet session with type">Start faceted browsing</button>
+<?vsp
+        }
+?>
+      </form>
+<?vsp
+    }
   declare qrimg any;
   qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri), lines));
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {

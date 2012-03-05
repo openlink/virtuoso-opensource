@@ -564,4 +564,6 @@ a#sp_link { font-size: 11pt; font-weight:normal; }
 
 #FT_share { float: center; clear: both; text-align: center; }
 
+#fct_form { margin-top: 1ex }
+
 .addthis_toolbox { width: 400px; margin: 0 auto; }
