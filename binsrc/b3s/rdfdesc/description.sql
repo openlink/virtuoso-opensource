@@ -182,7 +182,7 @@ create procedure b3s_type (in subj varchar,
 	      url := b3s_http_url (data[i][1]);
 
               c_iri := data[i][1];
-              v_tuple := vector (ll, c_iri);
+              v_tuple := vector (ll, c_iri, b3s_uri_curie(c_iri));
               aset (iri_a, i, v_tuple);
             }
 	}
@@ -224,7 +224,7 @@ b3s_render_iri_select (in c_iri_a any, in ins_str varchar := '', in sel int := -
           http (sprintf ('<option value="%s"%s>%s</option>', 
                         c_iri_a[i][1],
                         case when i = sel then 'selected="true"' else '' end,
-                        c_iri_a[i][0]));
+                        c_iri_a[i][2]));
         } 
       http ('<select>');
     }
