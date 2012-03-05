@@ -155,7 +155,7 @@
   <div id="MD">
     <div class="page_resource_info">
       <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
-        <?vsp http (sprintf ('%s', label)); ?></a></h2>
+        <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U page_resource_uri ?>">Permalink</a>
       <p> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a></p>
     </div>
     <div class="subj_nav">
