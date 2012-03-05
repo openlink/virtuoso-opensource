@@ -51,7 +51,7 @@
         <xsl:attribute name="href">
           <xsl:value-of select="$full_path"/>
         </xsl:attribute>
-        Run Query
+        Run with iSPARQL
       </a>&nbsp;
       <a>
         <xsl:attribute name="href">

@@ -6,7 +6,6 @@
 <head>
 <title>BBC demo queries</title>
 <link rel="stylesheet" type="text/css" href="styles/default.css"/>
-<script type="text/javascript" src="s/main.js"></script>
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
 
 <!--
@@ -83,12 +82,15 @@ function get_and_encode_query (q_elm)
       <a class="logo" href="/fct/facet.vsp">
         <img id="opl_logo" alt="OpenLink Software" src="/fct/images/openlink_site_logo.png"/>
       </a>
+      <h2>Demo SPARQL Queries</h2>
     </div> <!-- #HD -->
     <div id="MD">
       <div id="demo_queries_ctr">
-        <ul class="demo_qry_list">
+        <table class="demo_qry_list">
 <?vsp
   declare ct_tree,xst any;
+  declare num_r int;
+  num_r := 0;
 
   for select res_content, res_name, res_full_path 
         from WS.WS.SYS_DAV_RES 
@@ -100,9 +102,14 @@ function get_and_encode_query (q_elm)
 		    	  ct_tree,
                      	  vector ('name', res_name, 'full_path', 'http://' || uriqa_str || res_full_path)));
 
+        num_r := num_r + 1;
+    }
+  if (0 = num_r) 
+    {
+      http ('<tr><td colspan="3"><span class="advisory">No demo queries available on this server.</span></td></tr>');
     }
 ?>
-        </ul>
+        </table>
       </div> <!-- #demo_queries_ctr -->
     </div> <!-- #MD -->
     <div id="FT">

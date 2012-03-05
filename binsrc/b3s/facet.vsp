@@ -118,21 +118,36 @@ sq := connection_get ('sparql_query');
 
 declare exit handler for sqlstate '*'
 {
+  commit work;
+  declare _state, _out any;
+  declare _xmlser varchar;
+  select fct_state into _state from fct_state where fct_sid = http_param ('sid');
+
+  _out := string_output();
+
+  http_value (_state, 0, _out);
+  _xmlser := string_output_string (_out);
+
   http('<div class="error_msg dlg">\n');
   http('  <div class="title"><h2>Error</h2></div>\n');
-  http('  <div class="body">An unexpected error was encountered while processing your request.</div>\n');
+  http('  <div class="body">');
+  http('<p>Could not process your request because of an unexpected error.</p>');
+  http('  </div>\n');
   http('  <div class="diag">\n');
   http('  <h3>Diagnostics</h3>\n');
   http(sprintf ('<pre class="sqlstate">SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
   http(sprintf ('<pre class="sqlmsg">SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
   http('<a href="#" id="err_det_toggle" onclick="javascript: OAT.Dom.show (err_details);">More info&hellip;</a>');
   http('  <div id="err_details" style="display:none">');
+
   if (connection_get ('sparql_query') is not null)
     {
       http('<pre class="sparqlqry">SPARQL:\n');
       http_value(connection_get ('sparql_query'));
       http('</pre><br/>\n');
     }
+
+  http(sprintf ('<p><a href="/fct/facet.vsp?qxml=%U" title="Permalink">Permalink</a></p>', _xmlser));
 
   commit work;
   declare _state any;
@@ -147,9 +162,9 @@ declare exit handler for sqlstate '*'
 		 __SQL_MESSAGE,
 		 serialize(params));
 
-  http('    <pre class="facet_state">STATE:\n<![CDATA[');
-  http_value(_state);
-  http(']]>    </pre><br/>');
+  http('    <pre class="facet_state">STATE:\n');
+  http_value(_xmlser);
+  http('</pre><br/>');
 
   http('  </div>\n');
   http('  </div>\n');

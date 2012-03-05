@@ -34,6 +34,15 @@ a.describe {margin-right: 6px}
 tr:hover {
   background-color: #ddd;}
 
+pre {
+  white-space: pre-wrap;       /* css-3 */
+  white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+
 #PG { width: 100%; 
       text-align: left;
       background-color: #fff;}
@@ -57,6 +66,8 @@ tr:hover {
   padding: 0}
 
 #HD h1 a { color: #fff}
+
+#HD h2 { font-size: 14pt; float: left; margin: 20px 0 0 20px; color: #fff; padding: 0;}
 
 #main_menu {
   margin: 0; padding: 0;
@@ -513,7 +524,7 @@ table.sparql_qry_list { width: 78%; margin-left: auto; margin-right: auto}
 table.sparql_qry_list td.title { font-weight: bold; }  
 table.sparql_qry_list td.expln { width: 50%; }  
 
-#demo_queries_ctr { margin: 10px; }
+#demo_queries_ctr { margin: 10px; min-height: 200px}
 
 ul.demo_qry_list {
   list-style-type: none;
@@ -529,6 +540,8 @@ div#dbg_output {
   clear:left;
   font-size: 8pt;
 }
+
+span.advisory { font-weight: bold; }
 
 span.pivot_pg a, 
 span.pivot_qrcode_opts a,
