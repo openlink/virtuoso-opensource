@@ -299,22 +299,24 @@ function prop_val_dt_sel_init () {
     OAT.Dom.show ('cond_form');
 }
 
+
 function fct_add_loc_marker () {
     var loc_lat = $$('loc_lat');
     var loc_lon = $$('loc_lon');
     
-    if (loc_lat && loc_lon) {
+    if (loc_lat.length && loc_lon.length) {
 	var lat = parseFloat (loc_lat[0].innerHTML);
 	var lon = parseFloat (loc_lon[0].innerHTML);
-    }
 
-    window.loc_marker = window.cMap.addMarker (lat,
-	  				       lon,
-					       false, 
-					       {image: 'oat/images/markers/house.png',
-						imageSize: [18,41],
-						title: 'Origin',
-						custData: {__fct_bubble_content: ["Current Location"]}});
+
+	window.loc_marker = window.cMap.addMarker (lat,
+	  					   lon,
+						   false, 
+						   {image: 'oat/images/markers/house.png',
+						    imageSize: [18,41],
+						    title: 'Origin',
+						    custData: {__fct_bubble_content: ["Current Location"]}});
+    }
 }
 
 Geo_ui = function (form) {
