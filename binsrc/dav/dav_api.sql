@@ -338,7 +338,7 @@ DAV_HOME_DIR_CREATE (in uid varchar) returns any
       if (server_http_port () <> '80')
         host := host ||':'|| server_http_port ();
     }
-    rc := DAV_PROP_SET_INT (path, 'virt:rdf_graph', 'http://' || host || path, null, null, 0, 0);
+    rc := DAV_PROP_SET_INT (path, 'virt:rdf_graph', rtrim ('http://' || host || path, '/') || '#this', null, null, 0, 0);
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
     rc := DAV_PROP_SET_INT (path, 'virt:rdf_sponger', 'on', null, null, 0, 0);
