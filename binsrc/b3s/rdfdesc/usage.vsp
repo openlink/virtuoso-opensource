@@ -162,6 +162,15 @@
       <?vsp if (_subject <> '') { ?>
         <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
       <?vsp } ?>
+    <?vsp
+      declare qrimg, ua, qrd any;
+      qrd := HTTP_REQUESTED_URL () || '?' || http_request_get ('QUERY_STRING');
+      ua :=   http_request_header (lines, 'User-Agent');
+      qrimg := fct_make_qr_code (fct_make_curie (qrd, lines));
+      if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
+    ?>
+	      <img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
+    <?vsp } ?>
     </div> <!-- .subj_nav -->
 
 <!-- proptable -->
