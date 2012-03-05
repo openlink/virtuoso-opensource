@@ -24,14 +24,57 @@
 
 
 create procedure 
-fct_dbg_msg (in str varchar)
+fct_dbg_msg (in str varchar, in lvl int := 666)
 {
   declare d_lvl int;
+  declare d_mode varchar;
 
-  d_lvl := registry_get ('fct_dbg_lvl');
-  if (isstring (d_lvl)) d_lvl := atoi (d_lvl);
+  d_lvl := connection_get ('fct_dbg_lvl');
+  d_mode := connection_get ('fct_dbg_mode');
 
-  if (d_lvl > 0) dbg_printf ('%s', str);
+  if (lvl < d_lvl) return;
+
+  if (d_lvl) 
+    {
+      if (d_mode = 'stderr')
+        {
+          dbg_printf ('%s', str);
+	  return;
+        }
+      if (d_mode = 'page')
+        {
+          declare d_out_s any;
+          d_out_s := connection_get ('__fct_dbg_out');
+          if (d_out_s)
+            http (str || '\n', d_out_s);
+        }
+    }
+}
+;
+
+create procedure
+fct_render_dbg_out ()
+{
+  declare d_lvl int;
+  declare d_out varchar;
+
+  d_lvl := connection_get ('fct_dbg_lvl');
+  d_out := connection_get ('fct_dbg_out');
+
+  if (not d_lvl) return;
+  if (not d_out) { dbg_printf ('fct_render_dbg_out: no d_out'); return; }
+
+  declare d_ses any;
+  d_ses := connection_get ('__fct_dbg_out');
+
+  if (d_ses)
+    {
+      http('<div id="dbg_output"><pre>');
+      http_value (d_ses);
+      http('</pre></div>');
+    }
+  else 
+    dbg_printf ('fct_render_dbg_out: no string session to write to!');
 }
 ;
 

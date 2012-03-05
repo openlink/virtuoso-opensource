@@ -24,6 +24,34 @@
   b3s_handle_ses (path, lines, params);
 
   sid := connection_get ('sid');
+
+  
+  declare dbg_out any;
+  declare dbg_mode varchar;
+  declare dbg_lvl int;
+
+  dbg_lvl := http_param ('dbg');
+
+  if (not isstring (dbg_lvl))
+    dbg_lvl := 0;
+  else 
+    dbg_lvl := atoi (dbg_lvl);
+  
+  connection_set ('fct_dbg_lvl', dbg_lvl);
+
+  dbg_mode := http_param ('dbg_mode');
+
+  if (not isstring (dbg_mode))
+    dbg_mode := 'page';
+
+  connection_set ('fct_dbg_mode', dbg_mode);
+
+  if (dbg_mode := 'page')
+    {
+      dbg_out := string_output();
+      connection_set ('__fct_dbg_out', dbg_out);
+    }
+
 --  dbg_obj_print (path);
 --  dbg_obj_print (lines);
   
@@ -178,7 +206,13 @@ fct_vsp ();
 footer:;
 
 ?>
-<div class="dbg" style="display: none"><pre><![CDATA[<?vsp if (sq is not null) http(sq); ?>]]></div>
+<?vsp if (dbg_lvl) { ?>
+<div class="dbg">
+  <pre><![CDATA[<?vsp if (sq is not null) http(sq); ?>]]></pre>
+<?vsp fct_render_dbg_out ();?>
+</div>
+<?vsp } ?>
+
 </div><!-- #MD -->
 <div id="FT">
   Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>

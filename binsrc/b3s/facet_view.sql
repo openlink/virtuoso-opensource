@@ -1521,8 +1521,20 @@ fct_new ()
           <input id=  "new_search_txt" 
                  size="60" 
                  type="text" 
-                 name="q"/>
-          <input type=submit  value="Search"><br/>
+                 name="q"/>');
+if (isstring (http_param ('dbg')))
+  {
+    http('<input type="hidden" name="dbg" value="');
+    http_value (http_param('dbg'));
+    http ('">');
+  }
+if (isstring (http_param ('dbg_out')))
+  {
+    http('<input type="hidden" name="dbg_out" value="');
+    http_value (http_param('dbg_out'));
+    http ('">');
+  }
+  http('<input type=submit  value="Search"><br/>
         </div>
       </form>
     </div> <!-- #TAB_PAGE_TXT -->
