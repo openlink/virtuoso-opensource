@@ -150,29 +150,26 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 
 -- XXX should probably find the most specific if more than one class and inference rule is set
 
-create procedure b3s_type (in subj varchar, 
-                           in _from varchar, 
-                           out url varchar, 
-                           out c_iri varchar,
-                           out iri_a any)
+create procedure 
+b3s_type (in subj varchar, 
+          in _from varchar, 
+          out url varchar, 
+          out c_iri varchar)
 {
   declare meta, data, ll any;
   declare i int;
-  declare v_tuple any;
 
   ll := 'unknown';
   url := 'javascript:void()';
 
--- XXX (ghard): Must see if the distinct here has too big performance hit on large (as in LOD) systems
-
   if (length (subj))
     {
-      exec (sprintf ('sparql select distinct ?l ?tp %s where { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', _from, subj), 
+      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', _from, subj), 
 	  null, null, vector (), 100, meta, data);
+
       if (length (data))
 	{
-          iri_a := make_array (length(data), 'any');
-	  for (i := 0; i < length(data); i := i + 1) 
+	  for (i := 0; i < length (data); i := i + 1) 
             {
               if (data[i][0] is not null)
   	        ll := data[i][0];
@@ -182,14 +179,8 @@ create procedure b3s_type (in subj varchar,
 	      url := b3s_http_url (data[i][1]);
 
               c_iri := data[i][1];
-              v_tuple := vector (ll, c_iri, b3s_uri_curie(c_iri));
-              aset (iri_a, i, v_tuple);
             }
 	}
-      else
-        {
-          iri_a := vector();
-        }
     }
   return ll;
 }
@@ -211,22 +202,33 @@ create procedure b3s_uri_local_part (in uri varchar)
 ;
 
 create procedure 
-b3s_render_iri_select (in c_iri_a any, in ins_str varchar := '', in sel int := -1)
+b3s_render_iri_select (in _s varchar, 
+                       in _from varchar, 
+                       in ins_str varchar := '', 
+                       in sel int := -1)
 {
+  declare meta, data any;
   declare i int;
 
-  if (isarray (c_iri_a) and length (c_iri_a)) 
-    {
-      if (sel = -1) sel := length(c_iri_a)-1;
-      http (sprintf ('<select %s>', ins_str));
-      for (i := 0; i < length (c_iri_a); i := i + 1)
-        {
-          http (sprintf ('<option value="%s"%s>%s</option>', 
-                        c_iri_a[i][1],
-                        case when i = sel then 'selected="true"' else '' end,
-                        c_iri_a[i][2]));
-        } 
-      http ('<select>');
+  if (length (_s))
+    {	
+      exec (sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp .}', _from, _s), 
+	             null, null, vector (), 100, meta, data);
+      if (length (data))
+	{
+          if (sel = -1) sel := length(data)-1;
+
+          http (sprintf ('<select %s>', ins_str));
+
+	  for (i := 0; i < length(data); i := i + 1) 
+            { 
+              http (sprintf ('<option value="%s"%s>%s</option>', 
+                             data[i][0],
+                             case when i = sel then 'selected="true"' else '' end,
+                             b3s_uri_curie(data[i][0])));
+            } 
+          http ('</select>');
+        }
     }
 }
 ;

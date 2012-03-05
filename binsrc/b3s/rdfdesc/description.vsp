@@ -198,7 +198,8 @@
 
   vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
    true_label := label;
-  iri_type := b3s_type (_S, _F, iri_uri, c_iri, c_iri_a);
+  b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
+  iri_type := b3s_type (_S, _F, iri_uri, c_iri);
 
   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
 --    dbg_obj_print (qry_str);
@@ -272,7 +273,7 @@
 ?>
 <head>
     <base href="http://<?V host ?>/fct/rdfdesc/" />
-    <title>About: <?vsp http_value (label); ?></title>
+    <title>About: <?vsp if (length (label)) http_value (label); else http_value (b3s_uri_curie (page_resource_uri));?></title>
     <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
     <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
@@ -314,7 +315,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http_value (label); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sr=clean" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
+	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp if (length(label)) http_value (label); else http_value(b3s_uri_curie (page_resource_uri)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sr=clean" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
@@ -328,7 +329,7 @@
     _ciri := c_iri;
   }
 
-  if (length(c_iri_a)) 
+  if ('unknown' <> iri_type) 
     {
 ?>
       <form id="fct_form" action="/fct/facet.vsp" method="get">
@@ -340,7 +341,7 @@
           <input type="hidden" name="sid" value="<?V sid ?>"/>
           <input type="hidden" name="cmd" value="set_class"/>
 <?vsp
-          b3s_render_iri_select (c_iri_a, 'name="iri" id="c_iri_sel"');
+          b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
 ?>
           <button class="fct_sel_as_type" 
              title="Add class constraint in current facet session">Constrain facet</button>
@@ -352,7 +353,7 @@
 ?>
           <input type="hidden" name="cmd" value="new_with_class"/>
 <?vsp
-          b3s_render_iri_select (c_iri_a, 'name="iri" id="c_iri_sel"');
+          b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
 ?>
           <button class="fct_sel_as_type" 
              title="Start new facet session with type">Start faceted browsing</button>
