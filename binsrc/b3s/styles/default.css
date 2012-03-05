@@ -72,13 +72,13 @@ pre {
 #main_menu {
   margin: 40px 0; padding: 0;
   float: right;
-  clear: right;
+/*  clear: right;*/
   list-style-type: none;
   list-style-image: none;
   list-style-position: outside;
   list-style-type: none;
   margin-right: 12px;
-  min-width: 500px;
+/*  min-width: 500px; */
 }
 
 #main_menu li { float: left }

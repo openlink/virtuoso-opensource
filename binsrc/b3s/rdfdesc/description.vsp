@@ -325,7 +325,7 @@
     (label); else http_value(b3s_uri_curie (page_resource_uri));
     ?></a>&nbsp;&nbsp;&nbsp;<a class="desc_sponge_link"
     href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
-    not null then '&amp;sid=' || sid end ?>&amp;sponger:get=add"
+    not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
     id="sp_link" rel="nofollow">Sponge</a>&nbsp;<a class="desc_permalink" href="/describe/?url=<?U page_resource_uri ?>">Permalink</a></h2>
       <div class="ds_inf_info"> 

@@ -139,7 +139,7 @@
 </head>
 <body class="usage_page">
   <div id="HD">
-    <?vsp fct_page_head (); ?>
+    <?vsp fct_desc_page_head (); ?>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
