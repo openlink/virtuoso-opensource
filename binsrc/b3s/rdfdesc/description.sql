@@ -391,6 +391,8 @@ create procedure b3s_get_lang_by_q (in accept varchar, in lang varchar)
   declare arr any;
   declare i, l int;
 
+  if (not length (lang))
+    lang := 'en';
   arr := split_and_decode (accept, 0, '\0\0,;');
   q := 0;
   l := length (arr);
