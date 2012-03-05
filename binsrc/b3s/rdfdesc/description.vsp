@@ -31,6 +31,16 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
+--
+-- Registry keys:
+--
+-- fct_timeout_max - anytime query timeout for producing this page
+-- fct_addthis_key - addthis.com API key
+-- fct_license_text - markup designating a license for content on site
+-- 
+
+
    declare _S, odd_position any;
   declare page_resource_uri, proxy_iri, rdf_link, label, vlbl, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
@@ -598,9 +608,7 @@ if (_subject <> '') {
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" style="border-width:0"/></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
         <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
-        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" style="border-width:0"/></a>
-	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" 
-	    src="/fct/images/creativecommons.png" /></a>
+
 	<span about=""
 	resource="http://www.w3.org/TR/rdfa-syntax"
 	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
@@ -609,10 +617,17 @@ if (_subject <> '') {
 	    alt="Valid XHTML + RDFa" height="27" /></a>
 	</span>
 	<br />
-	This work is licensed under a 
-	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
 	<?vsp fct_virt_info (); ?><br /> 
-	Copyright &copy; 2009-2012 OpenLink Software 
+	<?vsp
+          declare license_text varchar;
+          license_text := registry_get ('fct_license_text');
+
+          if (license_text) {
+            http(license_text);
+	  } 
+
+        ?>
+        Copyright &copy; 2009-2012 OpenLink Software 
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
     </div> <!-- #PG -->

@@ -295,8 +295,8 @@ function prop_val_dt_sel_init () {
   		    else
   			v_h = '"' + v_h + '"^^<' + $v('cond_dt') + '>';
 		}
-		if (v_h != '' && v_l.match (/\".*\"\^\^\<.*\>/) === null) {
-		    if ($v('cond_t') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
+		if (v_l != '' && v_l.match (/\".*\"\^\^\<.*\>/) === null) {
+		    if ($v('cond_dt') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
 			v_l = '"'+ v_l +'"';
 		    else
   			v_l = '"' + v_l + '"^^<' + $v('cond_dt') + '>';
@@ -687,7 +687,18 @@ function handle_val_anchor_click (e) {
         in_ui.add_val (val, dtp, lang);
         break;
     }
+    // XXX should warn user if setting range option with values of different dtp
+
     $('out_dtp').value = dtp;
+
+    for (i=0;i<$('cond_dt').options.length;i++) {
+	var opt = $('cond_dt').options[i];
+	if (opt.value == dtp) 
+	    opt.selected = true;
+        else
+	    opt.selected = false;
+    }
+
     $('out_lang').value = lang;
 }
 
