@@ -403,7 +403,7 @@ if (_subject <> '') {
 	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
 	  --dbg_printf ('%s', count_str);
 	  exec (count_str, null, null, vector (), 0, meta, data);
-	  if (length (data))
+	  if (length (data) and length (data[0]))
 	    _last := data[0][0]; -- sum is supposed to have always number
           else
 	    _last := n_per_page;
