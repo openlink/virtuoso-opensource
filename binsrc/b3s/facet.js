@@ -706,6 +706,10 @@ function prop_cond_sel_init () {
 var in_ui = false;
 var geo_ui = false;
 
+function init () {
+    fct_init_ui (); // Yes, the xsl sheet overrides ini, but this hack needs to be here in order for the main query page to work.
+}
+
 function fct_init_ui ()
 {
     resize_handler ();
