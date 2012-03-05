@@ -161,6 +161,7 @@ b3s_type (in subj varchar,
 
   ll := 'unknown';
   url := 'javascript:void()';
+  c_iri := 'http://www.w3.org/2002/07/owl#Thing';
 
   if (length (subj))
     {
@@ -1031,7 +1032,8 @@ create procedure b3s_lbl_order (in p any)
   'http://opengraphprotocol.org/schema/title',
   'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
   'http://poolparty.punkt.at/demozone/ont#title',
-  'http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription'
+  'http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription',
+  'http://www.openlinksw.com/schemas/googleplus#displayName'
    );
   r := position (id_to_iri (p), r);
   if (r = 0)
