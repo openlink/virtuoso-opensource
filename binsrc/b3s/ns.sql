@@ -79,3 +79,15 @@ INSERT INTO GRAPH <urn:rules.skos> { skos:broader rdfs:subPropertyOf skos:broade
 ;
 
 rdfs_rule_set ('skos-trans', 'urn:rules.skos');
+
+create procedure fct_load_oplweb ()
+{
+  for select RES_CONTENT as cnt from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/fct/oplweb.owl' do
+    {
+      DB.DBA.RDF_LOAD_RDFXML (cast (cnt as varchar), 'http://www.openlinksw.com/schemas/oplweb#', 'http://www.openlinksw.com/schemas/oplweb#');
+    }
+}
+;
+
+fct_load_oplweb ();
+rdfs_rule_set ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#');
