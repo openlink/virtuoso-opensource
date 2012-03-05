@@ -37,6 +37,7 @@
       if (length (uriqa_str) > 16) 
         {
           log_message ('facets: ShortName from URIQA too long. Please set ''fct_opensearch_shortname'' in registry');
+          sname := 'OpenLink FCT';
         }
       else
         sname := uriqa_str;
