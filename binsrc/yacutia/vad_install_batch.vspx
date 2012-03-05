@@ -57,7 +57,7 @@
 		    declare state, msg, pack_name, pack_vers, pack_fullname, pkg_date, pack_path varchar;
 		    declare exit handler for sqlstate '*', not found
 		    {
-		      if (strstr (__SQL_MESSAGE, 'required package Framework') is not null)
+		      if (strstr (__SQL_MESSAGE, 'requires Framework') is not null)
 		        goto next;
 		      self.pack_ready := 0;
 		      state := __SQL_STATE;
