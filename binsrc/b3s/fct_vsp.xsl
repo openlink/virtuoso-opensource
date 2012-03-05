@@ -43,6 +43,7 @@
 <xsl:param name="p_xml"/>
 <xsl:param name="tree"/>
 <xsl:param name="addthis_key"/>
+<xsl:param name="type"/>
 
 <xsl:variable name="view-type">
   <xsl:choose>
@@ -203,7 +204,7 @@
   OAT.Dom.append (['sparql_a_ctr',sparql_a, plink_a]);
   </script>
   <!--xsl:message terminate="no">addthis_key:<xsl:value-of select="$addthis_key"/></xsl:message-->
-  <xsl:if test="$type = 'default'">
+  <xsl:if test="$view-type = 'entities-list' or $type = 'default'">
   <script type="text/javascript">
   if ($('pivot_a_ctr')) {
     var pivot_a = OAT.Dom.create('a', {}, 'pivot_a');
