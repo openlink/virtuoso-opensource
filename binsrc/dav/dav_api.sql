@@ -2705,19 +2705,15 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
     return 0;
 
     cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
-  hasSelection := length (cartridges);
   ps := null;
   aq := null;
   foreach (any row in rows) do
     {
     cname := cast (row[0] as varchar);
-    if (hasSelection)
-      {
 	    if (position (cname, cartridges))
             goto _try;
 
         goto _try_next;
-      }
 
     _try:
     val_match := case when (row[2] = 'MIME') then type else rdf_graph end;
