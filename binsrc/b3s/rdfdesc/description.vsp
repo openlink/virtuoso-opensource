@@ -46,7 +46,7 @@
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
-  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc varchar;
+  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode varchar;
   declare c_iri_a any;
 
   declare continue handler for sqlstate 'S1TAT';
@@ -69,6 +69,7 @@
   sid := null;
   inf := '';
   iri_type := 'unknown';
+  sp_mode := 'add';
 
   b3s_handle_ses (path, lines, params);
   sid := connection_get ('sid');
@@ -156,7 +157,7 @@
    proxy_iri := page_resource_uri;
 
   b3s_dbg_out (dbg_out, 'page_resource_uri: ' || page_resource_uri);
-
+  sp_mode := get_keyword ('sponger:get', params, 'add');
   if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
       DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', doc), 'SPARQL');
@@ -175,7 +176,7 @@
         }
       else  
       refr := atoi (get_keyword ('sr', params, '0'));		
-      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', refr, doc), 'SPARQL');
+      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, doc), 'SPARQL');
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
 
