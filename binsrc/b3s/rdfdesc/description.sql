@@ -618,7 +618,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 }
 ;
 
-create procedure b3s_label (in _S any, in langs any)
+create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int := 0)
 {
   declare best_str, meta, data any;
   declare best_q, q float;
@@ -627,8 +627,8 @@ create procedure b3s_label (in _S any, in langs any)
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
   --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
-  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P) as int) from RDF_QUAD table option (with ''facets'') 
-	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', 
+  exec (sprintf ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P, %d) as int) from RDF_QUAD table option (with ''facets'') 
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', lbl_order_pref_id), 
 	stat, msg, vector (_S), 0, meta, data);
   if (stat <> '00000')
     return '';
@@ -728,7 +728,7 @@ again:
 	   declare lbl, vlbl any;
 	   lbl := '';
 	   if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
-	     lbl := b3s_label (_url, langs);
+	     lbl := b3s_label (_url, langs, 1);
 	   if ((not isstring(lbl)) or length (lbl) = 0)
 	     lbl := b3s_uri_curie(_url);
 	   -- XXX: must encode as wide label to print correctly  
@@ -1014,7 +1014,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, i
 grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
 grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 
-create procedure b3s_lbl_order (in p any)
+create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
 {    
   declare r int;
   r := vector (
@@ -1047,6 +1047,12 @@ create procedure b3s_lbl_order (in p any)
   'http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription',
   'http://www.openlinksw.com/schemas/googleplus#displayName'
    );
+
+  if (lbl_order_pref_id = 1)
+    -- Give skos:prefLabel precedence
+    -- NLP meta-cartridges use skos:prefLabel to include a prefix identifying the meta-cartridge which identified a named entity
+    r := vector_concat (vector ('http://www.w3.org/2004/02/skos/core#prefLabel'), r);
+
   r := position (id_to_iri (p), r);
   if (r = 0)
     return 100;
