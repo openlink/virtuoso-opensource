@@ -622,7 +622,7 @@ create procedure b3s_label (in _S any, in langs any)
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
   --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
-  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'') 
+  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P) as int) from RDF_QUAD table option (with ''facets'') 
 	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', 
 	stat, msg, vector (_S), 0, meta, data);
   if (stat <> '00000')
@@ -1024,7 +1024,8 @@ create procedure b3s_lbl_order (in p any)
   'http://rdf.freebase.com/ns/common.topic.alias',
   'http://opengraphprotocol.org/schema/title',
   'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
-  'http://poolparty.punkt.at/demozone/ont#title'
+  'http://poolparty.punkt.at/demozone/ont#title',
+  'http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription'
    );
   r := position (id_to_iri (p), r);
   if (r = 0)
