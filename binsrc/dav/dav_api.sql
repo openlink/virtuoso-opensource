@@ -1567,9 +1567,6 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   if (isarray (id))
   {
     rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
-    if (rc >= 0)
-      rc := DAV_AUTHENTICATE (id[1], 'C', '1__', a_uname, a_pwd, a_uid);
-
     if (rc = -20)
       rc := DAV_AUTHENTICATE (id[1], 'C', req, a_uname, a_pwd, a_uid);
 
@@ -1643,9 +1640,6 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
     declare d__perms varchar;
 
     rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE_HTTP') (id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
-    if (rc >= 0)
-      rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', '1__', can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, d__perms);
-
     if (rc = -20)
       rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
 
@@ -1771,6 +1765,8 @@ DAV_AUTHENTICATE_SSL_CONDITION () returns integer
 }
 ;
 
+-- redundant code muste be deleted after move the procedure WEBID_AUTH_GEN_2 in DAV!!!
+-- START REDUNDANT CODE
 create function DAV_WEBID_QR (in gr varchar, in uri varchar)
 {
     return sprintf ('sparql 
@@ -1790,78 +1786,22 @@ create function DAV_WEBID_QR (in gr varchar, in uri varchar)
     }', gr, uri, uri, uri);
 }
 ;
+-- END REDUNDANT CODE
 
 create function
 DAV_AUTHENTICATE_SSL_WEBID ()
 {
-  declare retIRI varchar;
-  declare graph, baseGraph, foafIRI, foafGraph, loadIRI, localIRI any;
-  declare S, V, info, st, msg, data, meta any;
+  declare webid varchar;
+  declare cert, dummy, vtype any;
 
-  retIRI := null;
-
-  set_user_id ('dba');
-  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
-  V := split_and_decode (V, 0, '\0\0,:');
-  if (V is null)
-    V := vector ();
-  foafIRI := get_keyword ('URI', V);
-  if (isnull (foafIRI))
+  webid := null;
+  if (__proc_exists ('DB.DBA.WEBID_AUTH_GEN_2') is not null)
     {
-      if (__proc_exists ('DB.DBA.FOAF_SSL_WEBFINGER') is not null)
-	{
-	    retIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
-	    if (not isnull (retIRI))
-	      goto _exit;
-	}
-      if (__proc_exists ('ODS.DBA.FINGERPOINT_WEBID_GET') is not null)
-	{
-	    retIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
-	    if (not isnull (retIRI))
-	goto _exit;
-    }
-  } else {
-    foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  localIRI := foafIRI;
-  V := rfc1808_parse_uri (localIRI);
-  if (is_https_ctx () and
-      virtuoso_ini_item_value ('URIQA', 'DynamicLocal') = '1' and
-      V[1] = registry_get ('URIQADefaultHost'))
-  {
-    V [0] := 'local';
-    V [1] := '';
-    localIRI := db.dba.vspx_uri_compose (V);
-  }
-  V := rfc1808_parse_uri (foafIRI);
-  V[5] := '';
-  loadIRI := DB.DBA.vspx_uri_compose (V);
-  S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
-  st := '00000';
-  exec (S, st, msg, vector (), 0);
-    if (st = '00000')
-    {
-      S := DAV_WEBID_QR (foafGraph, localIRI);
-  exec (S, st, msg, vector (), 0, meta, data);
-      if (st = '00000')
-      {
-        info := get_certificate_info (9);
-  foreach (any _row in data) do
-  {
-    if (_row[0] = cast (info[1] as varchar) and
-        lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
-    {
-            retIRI := foafIRI;
-            goto _break;
+      cert := client_attr ('client_certificate');
+      dummy := null;
+      DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
           }
-        }
-      }
-    }
-  _break:;
-    SPARQL clear graph ?:foafGraph;
-  }
-_exit:
-  return retIRI;
+  return webid;
 }
 ;
 
@@ -1911,9 +1851,11 @@ DAV_AUTHENTICATE_SSL (
     {
       tmp := null;
       if (isnull (foafIRI))
-	foafIRI := DAV_AUTHENTICATE_SSL_WEBID ();
+      {
+	      foafIRI := DB.DBA.DAV_AUTHENTICATE_SSL_WEBID ();
       if (isnull (foafIRI))
 	goto _exit;
+  	  }
       graph := WS.WS.DAV_IRI (V[N]);
       for (
         sparql
