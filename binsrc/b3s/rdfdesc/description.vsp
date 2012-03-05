@@ -200,6 +200,7 @@
    true_label := label;
   b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
   iri_type := b3s_type (_S, _F, iri_uri, c_iri);
+  iri_type := b3s_label (c_iri, langs);
 
   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
 --    dbg_obj_print (qry_str);
