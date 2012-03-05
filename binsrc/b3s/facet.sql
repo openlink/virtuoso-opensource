@@ -460,6 +460,7 @@ og:longitude rdfs:subPropertyOf geo:long .
 <http://purl.uniprot.org/core/scientificName> rdfs:subPropertyOf virtrdf:label .
 <http://www.openlinksw.com/schemas/googleplus#activity_title> rdfs:subPropertyOf virtrdf:label .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription> rdfs:subPropertyOf virtrdf:label .
+<http://yago-knowledge.org/resource/hasPreferredName> rdfs:subPropertyOf virtrdf:label .
 ', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
