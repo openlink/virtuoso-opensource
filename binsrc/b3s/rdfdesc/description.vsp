@@ -295,9 +295,18 @@
 
   plink_href := sprintf ('/describe/?url=%U', page_resource_uri);
 
-  if (page is not null and page > 0) {
-    plink_href := concat (plink_href, sprintf ('&gp=%d&go=', page+1));
-  } 
+  if (page is not null and page > 0) 
+    {
+      plink_href := concat (plink_href, sprintf ('&gp=%d&go=', page+1));
+    } 
+  if (connection_get ('inf') is not null)
+    {
+      plink_href := concat (plink_href, sprintf ('&inf=%U', connection_get ('inf')));
+    }
+  if (connection_get ('sas') is not null)
+    {
+      plink_href := concat (plink_href, sprintf ('&sas=%U', connection_get ('sas')));
+    }
 
 
 ?>
