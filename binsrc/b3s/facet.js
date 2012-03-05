@@ -372,7 +372,7 @@ Geo_ui = function (form) {
 	OAT.Event.prevent(e);
         if ((self.lat_i.value == '' || self.lon_i.value == '') && self.loc_trig_sel.selectedIndex == 0)
 	    return;
-        if ($(cond_dist).value == '') 
+        if ($('cond_dist').value == '') 
             return;
 	if (self.loc_trig_sel.selectedIndex == 1) {
 	    self.lat_i.value='';
