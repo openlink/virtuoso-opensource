@@ -48,6 +48,8 @@
   declare curr_pred any;
   declare dt1, dt2, count_str, tbinf, tbsas, ua, doc varchar;
 
+  declare continue handler for sqlstate 'S1TAT';
+  set result_timeout = atoi (registry_get ('fct_timeout_max'));
 
   n_per_page := 100;
   dis_next := 0;
@@ -188,7 +190,7 @@
   --exec (qry_str, null, null, vector (), 0, meta, data);
 
   exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'') 
-	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) order by 3', 
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O)  order by 3', 
 	null, null, vector (_S), 0, meta, data);
 
    label := b3s_label_get (data, langs);
@@ -398,7 +400,10 @@ if (_subject <> '') {
 	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
 	  --dbg_printf ('%s', count_str);
 	  exec (count_str, null, null, vector (), 0, meta, data);
-	  _last := data[0][0]; -- sum is supposed to have always number
+	  if (length (data))
+	    _last := data[0][0]; -- sum is supposed to have always number
+          else
+	    _last := n_per_page;
 	  _last := _last / n_per_page;
         }
       
@@ -410,6 +415,8 @@ if (_subject <> '') {
            declare PRED, OBJECT, FLAG any;
 	   --if (inx <= _skip)
 	   --  goto nxt1;
+	   if (not length (data))
+	     goto skip;
 	   pred := data[0];  
            object := data[1];
            FLAG := data[2];
@@ -425,6 +432,7 @@ if (_subject <> '') {
            vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from);
 	   nxt1:;
 	   inx := inx + 1;
+	   skip:;	
 	}
       exec_close (h1);
       if (curr_pred <> '') http ('</ul></td></tr>');
