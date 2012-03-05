@@ -648,6 +648,10 @@ create procedure b3s_label (in _S any, in langs any)
     {
       best_str := __rdf_strsqlval (best_str);
     }
+
+  if (isnumeric (best_str)) 
+    return (cast (best_str as varchar));
+
   return best_str;
 }
 ;
