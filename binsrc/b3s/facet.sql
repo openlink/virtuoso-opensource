@@ -310,10 +310,11 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
   best_str := '';
   best_l := 0;
   best_q := 0;
-  for select __ro2sq (o) as o
+  for select o
         from rdf_quad table option (index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) order by cast (b3s_lbl_order (P) as int) do
     {
+      o := __ro2sq (o);
       lang_id := rdf_box_lang (o);
       if (lang_id > 257)
 	str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lang_id);
