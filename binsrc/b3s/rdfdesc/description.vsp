@@ -197,7 +197,10 @@
 
   label := b3s_label (_S, langs);
 
-  vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
+  if (not iswidestring (label))
+    vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
+  else
+    vlbl := label;
 
   b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
 
