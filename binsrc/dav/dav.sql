@@ -2348,6 +2348,7 @@ again:
        if (stat <> '00000')
 	 {
 	   exec_err:
+	   http_status_set (500);
 	   http ('<html><body>');
 	   http (concat ('<H3>Execution of "', sprintf ('%V', http_path()), '" failed.</H3>'));
 	   http (concat ('<p><b>SQL Error: ', stat, ' '));
