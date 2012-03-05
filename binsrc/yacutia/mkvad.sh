@@ -304,7 +304,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2012 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
