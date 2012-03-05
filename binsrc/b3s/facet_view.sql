@@ -39,7 +39,7 @@ fct_view_pos (in tree any)
       if (xpath_eval ('./view', c[i]) is not null)
 	return i;
     }
-  return null;
+  return 0;
 }
 ;
 
@@ -1157,9 +1157,7 @@ fct_set_class (in tree any,
 {
   declare pos int;
 
-  pos := fct_view_pos (tree);
-
-  fct_dbg_msg(sprintf('fct_set_class: sid: %d, iri: %s', sid, iri));
+  fct_dbg_msg (sprintf ('fct_set_class: sid: %d, iri: %s, pos: %d', sid, iri, pos));
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
