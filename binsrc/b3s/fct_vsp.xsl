@@ -246,6 +246,11 @@
   }
     </script>
   </xsl:if>
+
+  <xsl:call-template name="render-init-func">
+    <xsl:with-param name="result" select="/facets/result"/>
+  </xsl:call-template>
+
 </xsl:template>
 
 <xsl:template name="render-limit-opts">
@@ -394,19 +399,17 @@
                 <xsl:value-of select="$query/query/class/@iri"/><xsl:text> | </xsl:text><xsl:value-of select="column[1]"/>
               </xsl:message-->  
               <xsl:variable name="current_iri" select="column[1]"/> 
-              <xsl:if test="not $query/query/class[@iri = $current_iri]" > 
-                <xsl:variable name="use_iri">
-                  <xsl:choose>
-                    <xsl:when test="column[1]/@sparql_ser != ''">
-                      <xsl:value-of select="urlify(column[1]/@sparql_ser)"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <xsl:value-of select="urlify($current_iri)"/>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                </xsl:variable>
-                <xsl:comment><xsl:value-of select="$current_iri"/></xsl:comment>
-              </xsl:if>
+              <xsl:variable name="use_iri">
+                <xsl:choose>
+                  <xsl:when test="not $query/query/class[@iri = $current_iri] and column[1]/@sparql_ser != ''">
+                    <xsl:value-of select="urlify(column[1]/@sparql_ser)"/>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <xsl:value-of select="urlify($current_iri)"/>
+                  </xsl:otherwise>
+                </xsl:choose>
+              </xsl:variable>
+              <xsl:comment><xsl:value-of select="$current_iri"/></xsl:comment>
             </td>
             <td>
               <a id="a_{position (.)}">
@@ -562,10 +565,6 @@
   </form>                
 </xsl:if>
 
-<xsl:call-template name="render-geo-conds-ui">
-  <xsl:with-param name="result" select="/facets/result"/>
-</xsl:call-template>
-
 <xsl:call-template name="render-init-func">
   <xsl:with-param name="result" select="/facets/result"/>
 </xsl:call-template>
@@ -616,6 +615,7 @@
 </xsl:template> <!-- render-describe-link -->
 
 <xsl:template name="render-geo-conds-ui">
+  <!--xsl:message terminate="no">In render-geo-conds-ui. type=<xsl:value-of select="$type"/></xsl:message-->
   <xsl:param name="result"/>
   <xsl:if test="$type='geo' or $type='geo-list'">
     <div id="user_map"></div>
@@ -651,6 +651,7 @@
 
 <xsl:template name="render-init-func">
   <xsl:param name="result"/>
+  <!--xsl:message terminate="no">In render-init-func: type=<xsl:value-of select="$type"/></xsl:message-->
   <script type="text/javascript" >
     <xsl:if test="$type='geo' or $type='geo-list'">
 OAT.Preferences.imagePath = "oat/images/";

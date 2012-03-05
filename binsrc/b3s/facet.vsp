@@ -6,7 +6,12 @@
 <head>
 <title>Precision Search &amp; Find</title>
 
-<link id="ss" rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
+<?vsp 
+  declare main_ss varchar;
+  main_ss := registry_get ('fct_main_ss');
+  if (not isstring (main_ss)) main_ss := 'styles/default.css';
+?>
+  <link rel="stylesheet" type="text/css" href="<?=main_ss?>"  charset="utf-8" />
 
 <?vsp
   fct_gen_opensearch_link();
@@ -212,7 +217,7 @@ footer:;
   ?>
   <br/>
   <?vsp fct_virt_info (); ?><br /> 
-  <span class="copyright">Copyright &copy; 2009-2012 OpenLink Software</span>
+  <span class="copyright">Data on this page is owned by its respective rights holders.<br/>Virtuoso Faceted Browser Copyright &copy; 2009-2012 OpenLink Software</span>
   <div id="FT_L"></div>
   <div id="FT_R"></div>
 </div>
