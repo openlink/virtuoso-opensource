@@ -260,7 +260,6 @@ function prop_val_dt_sel_init () {
 
     OAT.Event.attach ('set_cond', 'click', function (e) {
 	var ct = $v('cond_type');
-
 	var v_l = $v('cond_lo');
 	var v_h = $v('cond_hi');
 
@@ -268,19 +267,26 @@ function prop_val_dt_sel_init () {
 
 	if ((ct == 'range' || ct == 'neg_range') && (v_h == '' || v_l == '')) return;
 
-
 	if ($('cond_dt').value != '##numeric' && $('cond_dt').value != '##none' && ct != 'contains') {
-	    if (v_h.match (/\".*\"\^\^\<.*\>/) === null) {
-                if ($v('cond_dt') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
-		    v_h = '"'+v_h+'"';
-  		else
-  		    v_h = '"' + v_h + '"^^<' + $v('cond_dt') + '>';
-	    }
-	    if (v_l.match (/\".*\"\^\^\<.*\>/) === null) {
-		if ($v('cond_t') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
-		    v_l = '"'+v_l+'"';
-		else
-  		    v_l = '"' + v_l + '"^^<' + $v('cond_dt') + '>';
+	    if ($v('out_lang') == '') {
+		if (v_h != '' && v_h.match (/\".*\"\^\^\<.*\>/) === null) {
+                    if ($v('cond_dt') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
+			v_h = '"'+ v_h +'"';
+  		    else
+  			v_h = '"' + v_h + '"^^<' + $v('cond_dt') + '>';
+		}
+		if (v_h != '' && v_l.match (/\".*\"\^\^\<.*\>/) === null) {
+		    if ($v('cond_t') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
+			v_l = '"'+ v_l +'"';
+		    else
+  			v_l = '"' + v_l + '"^^<' + $v('cond_dt') + '>';
+		}
+	    } else {
+		if (v_l != '')
+		    v_l = '"""' + v_l + '"""@' + $v('out_lang');
+
+		if (v_h != '')
+		    v_h = '"""' + v_h + '"""@' + $v('out_lang');
 	    }
 	}
 
