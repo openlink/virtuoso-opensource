@@ -909,6 +909,13 @@ fct_web (in tree any)
 
   fct_dbg_msg (sprintf ('reply: %s', cast (r_ses as varchar)));
 
+  declare _addthis_key varchar;
+  _addthis_key := registry_get ('fct_addthis_key');
+  if (not isstring(_addthis_key)) _addthis_key := null;
+  if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
+
+  dbg_printf('addthis_key: %s', _addthis_key);
+
   http_value (xslt (registry_get ('_fct_xslt_') || 'fct_vsp.xsl',
                     reply,
 		    vector ('sid',
@@ -933,6 +940,8 @@ fct_web (in tree any)
                             p_qry,
                             'p_xml',
                             p_xml,
+                            'addthis_key',
+                            _addthis_key,
                             'tree',
                             tree
 			    )),
@@ -2502,10 +2511,28 @@ create procedure fct_page_head ()
     <div id="homelink"></div>
   </div> <!-- hd_l -->
   <div id="hd_r">
-    <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso"
-    title="OpenLink Virtuoso">
-    <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
-    </a>
+    <div class="addthis_toolbox addthis_default_style">
+      <a class="addthis_button_compact"></a>
+      <a class="addthis_button_preferred_1"></a>
+      <a class="addthis_button_preferred_2"></a>
+      <a class="addthis_button_preferred_3"></a>
+      <a class="addthis_button_preferred_4"></a>
+      <a class="addthis_button_google_plusone"></a>
+    </div>
   </div> <!-- hd_r -->');
+}
+;
+
+create procedure fct_desc_page_head ()
+{
+  http ('<div id="hd_l">
+    <h1 id="logo">
+        <a href="/fct/facet.vsp">
+	   <img src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
+        </a>
+    </h1>
+    <div id="homelink"></div>
+  </div> <!-- hd_l -->
+  <div id="hd_r"></div> <!-- hd_r -->');
 }
 ;

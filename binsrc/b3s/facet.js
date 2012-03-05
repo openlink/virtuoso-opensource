@@ -1053,3 +1053,4 @@ function fct_set_pivot_href_opt()
   href = href.replace(/CXML_redir_for_hrefs=[^&]*&/, 'CXML_redir_for_hrefs='+opt+'&');
   a.setAttribute("href", href);
 }
+

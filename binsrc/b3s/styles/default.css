@@ -70,7 +70,7 @@ pre {
 #HD h2 { font-size: 14pt; float: left; margin: 20px 0 0 20px; color: #fff; padding: 0;}
 
 #main_menu {
-  margin: 0; padding: 0;
+  margin: 40px 0; padding: 0;
   float: right;
   clear: right;
   list-style-type: none;
@@ -590,12 +590,16 @@ div#nav {
     margin-left: 50px;
 }
 
-a#sp_link { font-size: 11pt; font-weight:normal; }
+a#sp_link { font-size: 9pt; font-weight:normal; }
+a.desc_permalink { font-size: 9pt; font-weight: normal }
 
 #qrcode { position:fixed; top:100px; right: 30px; z-index: 0; } 
 
-#FT_share { float: center; clear: both; text-align: center; }
+#FT_share { margin: auto; width: 400px}
 
 #fct_form { margin-top: 1ex }
 
-.addthis_toolbox { width: 400px; margin: 0 auto; }
+.addthis_toolbox { margin: 20px 10px auto; }
+
+#FT_share .addthis_toolbox { margin: 0 }
+

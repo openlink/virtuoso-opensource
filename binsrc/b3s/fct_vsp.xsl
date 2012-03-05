@@ -22,7 +22,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 -->
-<xsl:stylesheet version ="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="1.0" 
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:addthis="http://www.addthis.com/help/api-spec"> 
 <xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
 
 <!-- Pager-related vars calculation -->
@@ -40,6 +42,7 @@
 <xsl:param name="p_qry"/>
 <xsl:param name="p_xml"/>
 <xsl:param name="tree"/>
+<xsl:param name="addthis_key"/>
 
 <xsl:variable name="view-type">
   <xsl:choose>
@@ -199,8 +202,9 @@
   plink_a.innerHTML = 'Facet permalink';
   OAT.Dom.append (['sparql_a_ctr',sparql_a, plink_a]);
   </script>
+  <xsl:message terminate="no">addthis_key:<xsl:value-of select="$addthis_key"/></xsl:message>
   <xsl:if test="$type = 'default'">
-    <script type="text/javascript">
+  <script type="text/javascript">
   if ($('pivot_a_ctr')) {
     var pivot_a = OAT.Dom.create('a', {}, 'pivot_a');
     pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=75&amp;qrcodes=0&amp;CXML_redir_for_subjs=&amp;CXML_redir_for_hrefs=&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
@@ -214,7 +218,7 @@
 
 	  var pivot_link_opts = OAT.Dom.create('span', {}, 'pivot_link_opts');
 	  pivot_link_opts.innerHTML = '&nbsp;&nbsp;\
-	  <a href="#" title="Sets the link-out behavior of subject URIs, optionally performing a DESCRIBE on the subject">Subject&nbsp;link&nbsp;behavior</a>&nbsp;\
+	  <a href="#" title="Sets the link-out behavior of subject URIs, optionally performing a DESCRIBE on the subject">Subject&nbsp;&nbsp;link&nbsp;behavior</a>&nbsp;\
 	  <select id="CXML_redir_for_subjs" onchange="fct_set_pivot_subj_uri_opt()">\
 			<option value="121" selected="true">External resource link</option>\
 	  		<option value="">No link out</option>\
@@ -562,7 +566,11 @@
   <xsl:with-param name="result" select="/facets/result"/>
 </xsl:call-template>
 
-</xsl:template>
+<xsl:call-template name="render-init-func">
+  <xsl:with-param name="result" select="/facets/result"/>
+</xsl:call-template>
+
+</xsl:template> <!-- render-result -->
 
 <xsl:template name="render-describe-link">
   <xsl:param name="uri"/>
@@ -610,63 +618,7 @@
 <xsl:template name="render-geo-conds-ui">
   <xsl:param name="result"/>
   <xsl:if test="$type='geo' or $type='geo-list'">
-            <script type="text/javascript" >
-
-OAT.Preferences.imagePath = "oat/images/";
-
-function markerClickHandler (caller, msg, m) {
-  var c = m.__fct_bubble_content;
-
-  var x;
-  if (c[0].length > 0) {
-    x = OAT.Dom.create ("a");
-    x.href = '/describe/?url='+escape (c[0]);
-    if (c[1].length > 0)
-      x.innerHTML = c[1];
-    else
-      x.innerHTML = c[0];
-  }
-  else x = OAT.Dom.text(c[1]);
-  window.cMap.openWindow (m, x);
-}
-
-function init(){
-  window.cMap = {};
-  var mapcb = function() {
-    window.cMap.init(OAT.Map.TYPE_G3);
-    window.cMap.centerAndZoom(0,0,0);
-    window.cMap.setMapType(OAT.Map.MAP_HYB);
-    OAT.MSG.attach ("*", "MAP_MARKER_CLICK", markerClickHandler);
-    var markersArr = [];
-    <xsl:for-each select="$result/row">
-    <!--xsl:message terminate="no"><xsl:value-of select="."/></xsl:message-->
-      window.cMap.addMarker( <xsl:value-of select="column[3]"/>,
-                             <xsl:value-of select="column[4]"/>,
-                             false,
-                             {image: "oat/images/markers/01.png",
-                              imageSize: [18,41],
-                              custData: {__fct_bubble_content: ["<xsl:value-of select="column[1]"/>", 
-	                                                        "<xsl:value-of select='translate (normalize-space (column[2]), &apos;"&apos;, &apos;&apos;)'/>"]}});
-      markersArr.push([<xsl:value-of select="column[3]"/>,<xsl:value-of select="column[4]"/>]);
-    </xsl:for-each>
-    fct_add_loc_marker ();
-    window.cMap.optimalPosition(markersArr);
-    window.cMap.showMarkers(false);
-    return;
-  }
-  window.YMAPPID = "";
-  var providerType = OAT.Map.TYPE_G3;
-  window.cMap = new OAT.Map($('user_map'),providerType,{fix:OAT.Map.FIX_ROUND1});
-  OAT.Map.loadApi(providerType, {callback: mapcb});
-  window.geo_ui = new Geo_ui ('cond_form');
-
-  var acq_trig = $('acq_l_trig');
-  if (acq_trig) {
-    window.geo_ui.loc_update(parseInt(acq_trig.innerHTML));
-  }
-}
-           </script>
-           <div id="user_map"></div>
+    <div id="user_map"></div>
     <form id="cond_form"> 
       <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
       <input type="hidden" name="cmd" value="cond" id="cmd"/>
@@ -696,6 +648,88 @@ function init(){
     </form>                
   </xsl:if>
 </xsl:template> <!-- render-geo-conds-ui -->
+
+<xsl:template name="render-init-func">
+  <xsl:param name="result"/>
+  <script type="text/javascript" >
+    <xsl:if test="$type='geo' or $type='geo-list'">
+OAT.Preferences.imagePath = "oat/images/";
+function markerClickHandler (caller, msg, m) {
+  var c = m.__fct_bubble_content;
+
+  var x;
+  if (c[0].length > 0) {
+    x = OAT.Dom.create ("a");
+    x.href = '/describe/?url='+escape (c[0]);
+    if (c[1].length > 0)
+      x.innerHTML = c[1];
+    else
+      x.innerHTML = c[0];
+    }
+    else x = OAT.Dom.text(c[1]);
+  window.cMap.openWindow (m, x);
+}
+    </xsl:if>
+
+function init() {
+
+    <xsl:if test="$type='geo' or $type='geo-list'">
+  window.cMap = {};
+  var mapcb = function() {
+    window.cMap.init(OAT.Map.TYPE_G3);
+    window.cMap.centerAndZoom(0,0,0);
+    window.cMap.setMapType(OAT.Map.MAP_HYB);
+    OAT.MSG.attach ("*", "MAP_MARKER_CLICK", markerClickHandler);
+    var markersArr = [];
+      <xsl:for-each select="$result/row">
+      <!--xsl:message terminate="no"><xsl:value-of select="."/></xsl:message-->
+        window.cMap.addMarker(<xsl:value-of select="column[3]"/>,
+                              <xsl:value-of select="column[4]"/>,
+                              false,
+                              {image: "oat/images/markers/01.png",
+                               imageSize: [18,41],
+                               custData: {__fct_bubble_content: ["<xsl:value-of select="column[1]"/>", 
+	                                                         "<xsl:value-of select='translate (normalize-space (column[2]), &apos;"&apos;, &apos;&apos;)'/>"]}});
+        markersArr.push([<xsl:value-of select="column[3]"/>,<xsl:value-of select="column[4]"/>]);
+      </xsl:for-each>
+    fct_add_loc_marker ();
+    window.cMap.optimalPosition(markersArr);
+    window.cMap.showMarkers(false);
+    return;
+  }
+
+  window.YMAPPID = "";
+  var providerType = OAT.Map.TYPE_G3;
+  window.cMap = new OAT.Map($('user_map'),providerType,{fix:OAT.Map.FIX_ROUND1});
+  OAT.Map.loadApi(providerType, {callback: mapcb});
+  window.geo_ui = new Geo_ui ('cond_form');
+
+  var acq_trig = $('acq_l_trig');
+
+  if (acq_trig) {
+    window.geo_ui.loc_update(parseInt(acq_trig.innerHTML));
+  }
+    </xsl:if>
+    <xsl:if test="$addthis_key != ''">
+    </xsl:if>
+}<!-- init -->
+  </script>
+  <xsl:if test="$addthis_key != ''">
+  <script type="text/javascript">
+  var addthis_config = {
+    "data_track_clickback":true, 
+    ui_cobrand:"OpenLink Virtuoso",
+    pubid: "<xsl:value-of select="$addthis_key"/>"
+  };
+var addthis_share = {
+  url:  window.location.protocol + '//' + window.location.host + window.location.pathname + '?qxml=<xsl:value-of select="urlify ($p_xml)"/>',
+  title: "Faceted browser permalink",
+  Description: "This is a permalink to an OpenLink Faceted Browsing service page."
+};
+  </script>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js"></script>
+  </xsl:if>
+</xsl:template>
 
 <xsl:template match="@* | node()">
   <xsl:copy>

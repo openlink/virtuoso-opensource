@@ -24,22 +24,26 @@
   b3s_handle_ses (path, lines, params);
 
   sid := connection_get ('sid');
-
   
   declare dbg_out any;
   declare dbg_mode varchar;
   declare dbg_lvl int;
 
-  dbg_lvl := http_param ('dbg');
+  dbg_mode := registry_get ('fct_dbg_mode');
+  dbg_lvl := registry_get ('fct_dbg_lvl');
 
   if (not isstring (dbg_lvl))
-    dbg_lvl := 0;
-  else 
-    dbg_lvl := atoi (dbg_lvl);
+    dbg_lvl := http_param ('dbg');
+
+  if (not isstring (dbg_lvl))
+      dbg_lvl := 0;
+    else 
+      dbg_lvl := atoi (dbg_lvl);
   
   connection_set ('fct_dbg_lvl', dbg_lvl);
 
-  dbg_mode := http_param ('dbg_mode');
+  if (not isstring(dbg_mode))
+    dbg_mode := http_param ('dbg_mode');
 
   if (not isstring (dbg_mode))
     dbg_mode := 'page';
@@ -62,25 +66,6 @@
 <div id="PG">
 <div id="HD">
   <?vsp fct_page_head (); ?>  
-  <ul id="main_menu">
-    <?vsp if (sid is not null) { ?>
-      <!--li class="sel"><a href="<?= b3s_render_fct_link() ?>" class="sel">Facets</a></li-->
-    <?vsp } ?>
-    <!--li id="mnu_settings"><a href="settings.vsp?g=<?U _S ?><?V ses_parms ?>">Settings</a>
-      <div id="settings_popup" style="display: none">
-        <ul>
-          <li>
-            <input id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> 
-            <label for="sas_ckb">owl:sameAs</label>
-          </li>
-          <li>
-            <label for="inf_sel">IFP rule:</label>
-            <select id="inf_sel" onchange="javascript:inf_cb();"><?vsp b3s_render_inf_opts (); ?></select><br/>
-          </li>
-        </ul>
-      </div> 
-    </li--><!--settings-popup-->
-  </ul>
 </div><!-- #HD -->
 <div id="MD">
 <?vsp 
