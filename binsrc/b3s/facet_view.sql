@@ -914,7 +914,7 @@ fct_web (in tree any)
   if (not isstring(_addthis_key)) _addthis_key := null;
   if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
-  dbg_printf('addthis_key: %s', _addthis_key);
+  --dbg_printf('addthis_key: %s', _addthis_key);
 
   http_value (xslt (registry_get ('_fct_xslt_') || 'fct_vsp.xsl',
                     reply,

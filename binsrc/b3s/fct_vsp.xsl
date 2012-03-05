@@ -202,7 +202,7 @@
   plink_a.innerHTML = 'Facet permalink';
   OAT.Dom.append (['sparql_a_ctr',sparql_a, plink_a]);
   </script>
-  <xsl:message terminate="no">addthis_key:<xsl:value-of select="$addthis_key"/></xsl:message>
+  <!--xsl:message terminate="no">addthis_key:<xsl:value-of select="$addthis_key"/></xsl:message-->
   <xsl:if test="$type = 'default'">
   <script type="text/javascript">
   if ($('pivot_a_ctr')) {
