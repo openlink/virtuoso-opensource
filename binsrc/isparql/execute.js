@@ -510,7 +510,7 @@ var QueryExec = function(optObj) {
 				request:request,
 				data:data,
 				txt:OAT.Xml.serializeXmlDoc (data),
-				store: new OAT.RDFStore(),
+				store: new OAT.RDFStore(false,{raw_iris: true}),
 				dom: {}
 			}
 			
@@ -1211,18 +1211,19 @@ var QueryExec = function(optObj) {
 			if (item.resType == iSPARQL.ResultType.GRAPH) { // Use RDFMini to show Graphs
 				var lastIndex = 0;
 				var tabs = [
-					["navigator","Navigator"],
-					["browser","Raw Triples",{removeNS:true}],
-					["triples","Grid View",{}],
-					["svg","SVG Graph",{}],
-					["images","Images",{}],
+					["triples","Grid View",{raw_iris:true}],
+					["navigator","Navigator",{raw_iris:true}],
+					["browser","Raw Triples",{removeNS:true, raw_iris:true}],
+					["svg","SVG Graph",{raw_iris:true}],
+					["images","Images",{raw_iris:true}],
 		     ["map",
 		      iSPARQL.Defaults.mapProviderNames[iSPARQL.Defaults.map_type],
 		      {provider:iSPARQL.Defaults.map_type, 
 					markerMode:OAT.RDFTabsData.MARKER_MODE_AUTO,
 					clickPopup:true,
 					  hoverPopup:false,
-					  height: map_h}] 
+					  height: map_h,
+                      raw_iris: true}] 
 				];
 
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
@@ -1250,7 +1251,8 @@ var QueryExec = function(optObj) {
 				if (item.store.getTripleCount() > 0) {
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,
-													store: item.store});
+														store: item.store,
+													    raw_iris: true});
 
 				item.mini.processLink = self.processLink;
 
