@@ -299,18 +299,38 @@ function prop_val_dt_sel_init () {
     OAT.Dom.show ('cond_form');
 }
 
+function fct_add_loc_marker () {
+    var loc_lat = $$('loc_lat');
+    var loc_lon = $$('loc_lon');
+    
+    if (loc_lat && loc_lon) {
+	var lat = parseFloat (loc_lat[0].innerHTML);
+	var lon = parseFloat (loc_lon[0].innerHTML);
+    }
+
+    window.loc_marker = window.cMap.addMarker (lat,
+	  				       lon,
+					       false, 
+					       {image: 'oat/images/markers/house.png',
+						imageSize: [18,41],
+						title: 'Origin',
+						custData: {__fct_bubble_content: ["Current Location"]}});
+}
+
 Geo_ui = function (form) {
     var self=this;
 
     this.form = $(form);
-
     this.lc = new OAT.LocationCache (5, [], false);
+    this.update = false;
+
 
     this.refresh = function () {
 	return;
     }
 
     this.loc_marker = null;
+
 
     this.loc_acq_h = function (s,m,l) {
 	OAT.Dom.hide (self.loc_acq_thr_i);
@@ -321,14 +341,13 @@ Geo_ui = function (form) {
 	OAT.Dom.hide (self.loc_ctr);
         OAT.Dom.show (self.coord_ctr);
         OAT.Dom.show (self.loc_use_b);
-	if (self.loc_marker != null)
-	    window.cMap.removeMarker (self.loc_marker);
-	self.loc_marker = window.cMap.addMarker (l.getLat(), 
-                                                 l.getLon(), 
-                                                 false, 
-                                                 {image: 'oat/images/markers/house.png',
-                                                  imageSize: [18,41],
-                                                  custData: {__fct_bubble_content: ["Current Location"]}});
+
+        if (self.update !== false) {
+	    self.cmd_i.value = 'set_loc';
+            self.cno_i.value = self.update;
+	    self.update = false;
+	    self.form.submit();
+        }
     }
 
     this.loc_to_h = function () {
@@ -349,10 +368,30 @@ Geo_ui = function (form) {
 
     this.loc_use_h = function (e) {
 	OAT.Event.prevent(e);
-        if (self.lat_i.value == '' ||
-            self.lon_i.value == '' ||
-            $(cond_dist).value == '') return;
+        if ((self.lat_i.value == '' || self.lon_i.value == '') && self.loc_trig_sel.selectedIndex == 0)
+	    return;
+        if ($(cond_dist).value == '') 
+            return;
+	if (self.loc_trig_sel.selectedIndex == 1) {
+	    self.lat_i.value='';
+	    self.lon_i.value='';
+	}
         self.form.submit();
+    }
+
+    this.loc_update = function (cno) {
+	self.update = cno;
+	self.lc.acquireCurrent();
+    }
+
+    this.loc_trig_sel_h = function (e) {
+	if (e.target.selectedIndex == 1) {
+            OAT.Dom.hide (self.coord_ctr);
+	    OAT.Dom.hide (self.acq_b);
+        } else {
+	    OAT.Dom.show (self.coord_ctr);
+            OAT.Dom.show (self.acq_b);
+	}
     }
 
     this.init = function () {
@@ -361,12 +400,18 @@ Geo_ui = function (form) {
 	self.lat_i = $('cond_lat');
 	self.lon_i = $('cond_lon');
 	self.acc_i = $('cond_acc');
-
+	self.cmd_i = $('cmd');
+	self.cno_i = $('cno');
 	self.acq_b = $('cond_loc_acq_b');
+        self.coord_ctr = $('coord_ctr');
+
 	OAT.Event.attach (self.acq_b, 'click', self.acq_b_h);
 
 	self.loc_use_b = $('cond_loc_use_b')
 	OAT.Event.attach (self.loc_use_b, 'click', self.loc_use_h);
+
+	self.loc_trig_sel = $('loc_trig_sel');
+        OAT.Event.attach (self.loc_trig_sel, 'change', self.loc_trig_sel_h);
 
         OAT.MSG.attach (self.lc, "LOCATION_ACQUIRED", self.loc_acq_h);
         OAT.MSG.attach (self.lc, "LOCATION_ERROR", self.loc_err_h);
@@ -679,6 +724,8 @@ function init()
 
 	if (!in_ui) 
 	    in_ui = new In_ui ('in_ctr','cond_form');
+
+
 
 	OAT.Dom.hide('cond_hi_ctr');
 

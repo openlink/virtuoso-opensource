@@ -457,42 +457,55 @@ fct_query_info (in tree any,
             declare d integer;
             declare prop varchar;
             declare prop_info varchar;
+            declare acq_l integer;
 
-            lat  := xpath_eval ('./@lat', tree);
-            lon  := xpath_eval ('./@lon', tree);
-            d    := xpath_eval ('./@d', tree);
-            prop := xpath_eval ('./@location-prop', tree);
+            lat   := xpath_eval ('./@lat', tree);
+            lon   := xpath_eval ('./@lon', tree);
+            d     := xpath_eval ('./@d', tree);
+            acq_l := xpath_eval ('./@acquire', tree);
+            prop  := xpath_eval ('./@location-prop', tree);
 
             prop_info := '.';
 
             if (prop <> '') {
               prop_info := sprintf (' by %s property.', prop);
-      }
+	    }
             
-            http (sprintf ('%s is within %s km radius of lat:%s, lon:%s%s', 
-                       fct_var_tag (this_s, ctx), 
-                           d,
-                           lat,
-                           lon,
-                           prop_info),
-                  txt);
-          }
+	    if (acq_l is not null and (length(lat) = 0 or length(lon) = 0)) 
+		{
+		  fct_dbg_msg ('Triggering autolocation');
+		  http (sprintf ('<span class="acq_l_trig" id="acq_l_trig" style="display:hidden">%d</span>', cno), txt);
+		}
 
-      http (sprintf (' <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
-		       connection_get ('sid'),
-                       cno),
-              txt);
-	
-      http ('</li>\n', txt);
-      cno := cno + 1;
+	    if (length(lat) and length(lon)) 
+	      {
+		http (sprintf ('%s is within %s km radius of lat:<span class="loc_lat">%s</span>, lon:<span class="loc_lon">%s</span>%s', 
+		    fct_var_tag(this_s, ctx),
+		    d,
+		    lat,
+		    lon,
+		    prop_info),
+		    txt);
+
+		if (acq_l is not null)
+		  http ('<span class="autoloc_ind">Location acquired.</span>', txt);
+	      }
+
+	      http (sprintf (' <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+			       connection_get ('sid'),
+			       cno),
+			       txt);
+		
+	      http ('</li>\n', txt);
+	      cno := cno + 1;
       }
   if ('cond-range' = n) 
     {
       declare hi, lo, neg, cond_t any;
 
-      cond_t := xpath_eval ('./@type',  tree);
-      hi     := xpath_eval ('./@hi',  tree);
-      lo     := xpath_eval ('./@lo',  tree);
+      cond_t := xpath_eval ('./@type', tree);
+      hi     := xpath_eval ('./@hi', tree);
+      lo     := xpath_eval ('./@lo', tree);
       neg    := xpath_eval ('./@neg', tree);
 
       http ('<li>', txt);
@@ -890,9 +903,13 @@ fct_web (in tree any)
 
   declare p_ses, r_ses any;
   declare p_xml varchar;
+  declare p_xml_tree any;
 
+  p_xml_tree := xslt (registry_get ('_fct_xslt_') || 'fct_strip_loc.xsl', tree, vector());
+               
   p_ses := string_output();
-  http_value (tree, null, p_ses);
+  http_value (p_xml_tree, null, p_ses);
+
   p_xml := cast (p_ses as varchar);
 
   r_ses := string_output ();
@@ -2053,12 +2070,19 @@ fct_set_cond_near (in tree any,
                    in lat varchar,
                    in lon varchar,
                    in dist varchar,
+                   in acquire varchar,
                    in prop varchar)                   
 {
-  fct_dbg_msg (sprintf ('fct_set_cond_near: lat:%s, lon:%s, d:%s', lat, lon, dist));
+  fct_dbg_msg (sprintf ('fct_set_cond_near: lat:%s, lon:%s, d:%s, acquire:%s', 
+                        cast (lat as varchar), 
+                        cast (lon as varchar), 
+                        dist, 
+                        cast (acquire as varchar)));
 
   declare pos int;
   pos := fct_view_pos (tree);
+
+  declare acq varchar;
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
@@ -2067,6 +2091,7 @@ fct_set_cond_near (in tree any,
                         'cond_t', 'near', 
                         'lat', lat,
                         'lon', lon,
+                        'loc_acq', acquire,
                         'd', dist));
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', 
@@ -2088,20 +2113,42 @@ fct_set_cond_near (in tree any,
 
 create procedure 
 fct_set_loc (in tree any,
-             in sid int)
+             in sid int,
+             in cno int)
 {
   declare lon, lat float;
   declare acc int;
   
   lon := http_param ('lon');
   lat := http_param ('lat');
-  acc := http_param ('acc');
 
-  if (0 = lon or 0 = lat or 0 = acc) {
+  fct_dbg_msg (sprintf ('fct_set_loc: cno:%d, lon:%s, lat:%s', cno, lon, lat));
+
+  if (0 = lon or 0 = lat) {
     http_request_status ('HTTP/1.1 400 Bad request');
-    http('FCT002: Invalid location data\n');
+    http('FCT002: Missing location data\n');
     return;
   }
+
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_loc.xsl',
+                tree,
+                vector ('cno', cno,
+                        'lat', lat,
+                        'lon', lon));
+
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', 
+                tree, 
+                vector ('pos', 0, 
+                        'op', 'view', 
+                        'type', 'geo', 
+                        'limit', 20, 
+                        'offset', 0));
+
+  update fct_state set fct_state = tree where fct_sid = sid;
+
+  commit work;
+
+  fct_web (tree);
 }
 ;
 
@@ -2312,11 +2359,22 @@ exec:;
                        http_param('neg'),
                        http_param('cond_parms'));
     } else if ('near' = cond_t) {
+      declare i_lat, i_lon, i_loc_trig_sel varchar;
+
+      i_lat := http_param ('lat');
+      i_lon := http_param ('lon');
+      i_loc_trig_sel := http_param ('loc_trig_sel');
+
+      if (i_lat = 0) i_lat := null;
+      if (i_lon = 0) i_lon := null;
+      if (i_loc_trig_sel = 0) i_loc_trig_sel := null; 
+
       fct_set_cond_near (tree, 
                          sid, 
-                         http_param ('lat'), 
-                         http_param ('lon'), 
+                         i_lat,
+                         i_lon,
                          http_param ('dist'),
+                         i_loc_trig_sel,
                          http_param ('location-prop'));
     } else {
       declare iri,val any;
@@ -2341,7 +2399,7 @@ exec:;
   else if ('featured' = cmd)
     fct_featured (tree, sid);
   else if ('set_loc' = cmd)
-    fct_set_loc (tree, sid);
+    fct_set_loc (tree, sid, cast (http_param('cno') as int));
   else
     {
       http_request_status ('HTTP/1.1 400 Bad request');

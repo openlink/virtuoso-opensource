@@ -120,6 +120,7 @@ function init(){
       markersArr.push([<xsl:value-of select="column[3]"/>,<xsl:value-of select="column[4]"/>]);
     </xsl:for-each>
 <![CDATA[
+    fct_add_loc_marker ();
     window.cMap.optimalPosition(markersArr);
     window.cMap.showMarkers(false);
     return;
@@ -129,6 +130,11 @@ function init(){
   window.cMap = new OAT.Map($('user_map'),providerType,{fix:OAT.Map.FIX_ROUND1});
   OAT.Map.loadApi(providerType, {callback: mapcb});
   window.geo_ui = new Geo_ui ('cond_form');
+
+  var acq_trig = $('acq_l_trig');
+  if (acq_trig) {
+    window.geo_ui.loc_update(parseInt(acq_trig.innerHTML));
+  }
 }
 ]]>
     </script>
@@ -216,7 +222,7 @@ function init(){
 <xsl:if test="$type = 'default'">
 <script type="text/javascript">
   if ($('pivot_a_ctr')) {
-	  var pivot_a = OAT.Dom.create('a',{}, 'pivot_a');
+	  var pivot_a = OAT.Dom.create('a', {}, 'pivot_a');
       pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=75&amp;qrcodes=0&amp;CXML_redir_for_subjs=&amp;CXML_redir_for_hrefs=&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
 	  pivot_a.innerHTML = 'Make Pivot collection';
       pivot_a.id = 'pivot_a_mpc';
@@ -262,7 +268,7 @@ function init(){
   <xsl:if test="/facets/processed &gt; 0">
     <div class="pager">
 	<span class="stats"><xsl:text>Showing </xsl:text>
-	    <xsl:value-of select="$offs"/>-<!-- <xsl:value-of select="$offs + $page_len - 1"/>--><xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
+	    <xsl:value-of select="$offs"/><xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
 	    <xsl:value-of select="/facets/processed"/> <xsl:text>total&#8194;</xsl:text>
       </span>
       <xsl:if test="$offs &gt;= $page_len">
@@ -506,9 +512,14 @@ function init(){
     <form id="cond_form"> 
       <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
       <input type="hidden" name="cmd" value="cond" id="cmd"/>
+      <input type="hidden" name="cno" value="" id="cno"/>
       <input type="hidden" name="cond_t" value="near" id="cond_t"/>
       <label for="cond_distance">Within: </label>
       <input name="dist" id="cond_dist" type="text" size="5"/> km of 
+      <select name="loc_trig_sel" id="loc_trig_sel">
+        <option>Coordinates</option>
+        <option value="on">Autolocation</option>
+      </select>
       <span id="loc_ctr">
         <img src="images/notify_throbber.gif" alt="Locating..." id="loc_acq_thr_i" style="display:none"/>
         <input id="cond_loc" type="text" style="display:none"/>

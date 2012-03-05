@@ -44,6 +44,7 @@
 <xsl:param name="lat"/>
 <xsl:param name="lon"/>
 <xsl:param name="d"/>
+<xsl:param name="loc_acq"/>
 
 <xsl:template match = "query | property |property-of">
 
@@ -171,18 +172,23 @@
             </cond>
           </xsl:when>
           <xsl:when test="$cond_t = 'near'">
-            <cond type="{$cond_t}" neg="{$neg}" lat="{$lat}" lon="{$lon}" d="{$d}" location-prop="{$location-prop}"/>
+            <cond type="{$cond_t}" neg="{$neg}" lat="{$lat}" lon="{$lon}" d="{$d}" location-prop="{$location-prop}">
+              <xsl:if test="$loc_acq = 'on'">
+                <xsl:attribute name="acquire">true</xsl:attribute>
+              </xsl:if>
+            </cond>
           </xsl:when>
           <xsl:otherwise>
             <cond type="{$cond_t}"
-              xml:lang="{$lang}"
-	      datatype="{$datatype}"
-              neg="{$neg}">
+                  xml:lang="{$lang}"
+	          datatype="{$datatype}"
+                  neg="{$neg}">
               <xsl:value-of select="$val"/>
             </cond>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:if>
+
   </xsl:copy>
 </xsl:if>
 

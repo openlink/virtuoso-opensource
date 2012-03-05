@@ -1061,14 +1061,14 @@ fct_cond_near (in tree any, in this_s int, in txt any) {
   d    := xpath_eval ('./@d',   tree, 0);
   prop := xpath_eval ('./@location-prop', tree, 0);
 
-  if (length (lon)  = 0 or 
-      length (lat)  = 0 or 
-      length (d)    = 0) return;
+  if (length(lon) = 0 or length(lat) = 0 or length (d) = 0) return;
 
   lon  := aref (lon, 0);
   lat  := aref (lat, 0);
   d    := cast (aref (d, 0) as int);
   prop := aref (prop, 0);
+
+  if (lon = '' or lat = '') return;
 
   fct_dbg_msg (sprintf ('fct_cond_near: lon:%s, lat:%s, dist: %d', lon, lat, d));
 
