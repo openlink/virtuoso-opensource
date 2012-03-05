@@ -706,7 +706,7 @@ function prop_cond_sel_init () {
 var in_ui = false;
 var geo_ui = false;
 
-function init()
+function fct_init_ui ()
 {
     resize_handler ();
     OAT.Event.attach (window, 'resize', resize_handler);
@@ -811,6 +811,7 @@ function init()
         });
     }
 }
+
 
 // opts = { loader: function  - function gets called when user hits tab or stops entering text
 //          timer_interval: timer interval in msec };

@@ -712,6 +712,7 @@ function init() {
     </xsl:if>
     <xsl:if test="$addthis_key != ''">
     </xsl:if>
+  fct_init_ui();
 }<!-- init -->
   </script>
   <xsl:if test="$addthis_key != ''">

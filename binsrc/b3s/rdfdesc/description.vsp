@@ -123,6 +123,9 @@
   else
     _F := '';
 
+
+  page := null;
+
    _last := atoi (get_keyword ('lp', params, '0'));
   if ({?'prev'} is not null)  
     page := atoi (get_keyword ('op', params, '0'));
@@ -274,6 +277,16 @@
   desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
   desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
   --http_flush (1);
+
+  declare plink_href varchar;
+
+  plink_href := sprintf ('/describe/?url=%U', page_resource_uri);
+
+  if (page is not null and page > 0) {
+    plink_href := concat (plink_href, sprintf ('&gp=%d&go=', page+1));
+  } 
+
+
 ?>
 <head>
     <base href="http://<?V host ?>/fct/rdfdesc/" />
@@ -327,7 +340,7 @@
     href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
     not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
-    id="sp_link" rel="nofollow">Sponge</a>&nbsp;<a class="desc_permalink" href="/describe/?url=<?U page_resource_uri ?>">Permalink</a></h2>
+    id="sp_link" rel="nofollow">Sponge</a>&nbsp;<a class="desc_permalink" href="<?= plink_href ?>">Permalink</a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type_label ?></a>,
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
