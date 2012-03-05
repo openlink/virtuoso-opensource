@@ -41,6 +41,7 @@
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
       <v:variable name="sync_ret" type="any" default="null" persist="temp"/>
       <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
+      <v:variable persist="0" name="body_r2rml" type="any" default="null" param-name="r2rml"/>
       <v:variable persist="0" name="body_o" type="any" default="null" param-name="cr_owl"/>
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
       <v:variable persist="0" name="owl" type="int" default="0" param-name="owl"/>
@@ -200,6 +201,10 @@
 	        {
 		  self.body_v := self.body_v || '\n\n';
 		  self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, tbls, self.voidst, cols);
+		  if (__proc_exists ('DB.DBA.R2RML_FROM_TBL') is not null)
+		    self.body_r2rml := R2RML_FROM_TBL (_base_url, tbls, self.voidst, cols);
+		  else
+		    self.body_r2rml := '### You need a new server binary in order to unlock R2RML graph generator';   
 	        }
 	      if (self.view_vd)
   	        self.body_v := self.body_v || '\n\n-- Virtual directories for instance data\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
@@ -236,6 +241,7 @@
 	    {
 	  ?>
 	  <h2>Execution Status</h2>
+	  <div class="scroll_area">
 	  <table class="listing">
 	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
 	      <?vsp
@@ -251,6 +257,7 @@
 	        }
 	      ?>
 	  </table>
+          </div>
 	  <?vsp
 	  if (length (self.sync_ret))
 	    {
@@ -379,6 +386,8 @@
 	  <?vsp if (self.exist_sql) { ?>
 	  <h2>Definitions</h2>
 	  <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="20" value="--self.body_v"/><br/>
+	  <h2>R2RML Graph</h2>
+	  <v:textarea name="r2rml" xhtml_cols="120" xhtml_rows="20" value="--self.body_r2rml"/><br/>
 	  <?vsp } ?>
 	  <?vsp if (self.owl) { ?>
 	  <h2>Ontology</h2>
