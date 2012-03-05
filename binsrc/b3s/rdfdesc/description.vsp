@@ -478,12 +478,13 @@ if (_subject <> '') {
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
       curr_pred := '';
       inx := 0;
+      data := null;
       while (0 = exec_next (h1, null, null, data))	
 	{
            declare PRED, OBJECT, FLAG any;
 	   --if (inx <= _skip)
 	   --  goto nxt1;
-	   if (not length (data))
+           if (length (data) < 3)
 	     goto skip;
 	   pred := data[0];  
            object := data[1];
