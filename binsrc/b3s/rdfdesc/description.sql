@@ -711,10 +711,19 @@ again:
        http (sprintf ('<!-- %d -->', length (_url)));
 
        rdfa := b3s_rel_print (prop, rel, 0);
-       if (http_mime_type (_url) like 'image/%')
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
+	 {
+	   declare src any;
+	   whenever not found goto usual_iri;
+	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where 
+	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
+	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%% frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+	 }
+       else if (http_mime_type (_url) like 'image/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
        else
 	 {
+	   usual_iri:;
 	   declare lbl, vlbl any;
 	   lbl := '';
 	   if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
@@ -758,10 +767,11 @@ again:
        declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
        _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
-       vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
-       if (vlbl = 0)
-	 vlbl := _object;
-       http_value (vlbl);
+       --vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
+       --if (vlbl = 0)
+       --  vlbl := _object;
+       --http_value (vlbl);
+       http (_object);
        http ('</span>');
        lang := '';
      }
