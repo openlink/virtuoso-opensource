@@ -317,7 +317,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp if (length(label)) http_value (label); else http_value(b3s_uri_curie (page_resource_uri)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?><?= case when sid is not null then '&amp;sid=' || sid end ?>&amp;sponger:get=add" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
+	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp if (length(label)) http_value (label); else http_value(b3s_uri_curie (page_resource_uri)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?><?= case when sid is not null then '&amp;sid=' || sid end ?>&amp;sponger:get=add" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a>&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>"><img src="/fct/images/link_16.png" border="0" title="Permalink"/></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
