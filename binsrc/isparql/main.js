@@ -1307,6 +1307,21 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 			self.authObj = OAT.JSON.deserialize(sessionStorage.iSPARQLAuth);
     }
 
+
+    this.connectTestCb = function () {
+		self.saveAuth ();
+		OAT.WebDav.init({imageExt:"png", 
+	    				 imagePath:toolkitImagesPath, 
+	    				 silentStart:true, 
+	    				 user:self.authObj.user,
+	    				 pass:self.authObj.password, 
+	    				 isDav:true});
+		
+		self.detectServerProperties ();
+		
+		OAT.MSG.send (self, "iSPARQL_SERVER_CONNECTED", self);
+	}
+
     this.connect = function (_user, _pass, caller) {
 	self.authObj.user = _user;
 		self.authObj.password = _pass;
@@ -1315,10 +1330,8 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 		if ((!!self.authObj.user) && self.authObj.user != '') 
 		  {
 			  OAT.AJAX.PROPFIND ('/DAV/home/' + _user,'',
-		      function (data, headers) {
-									 self.connected = true;
-		      },
-		      		  {async:false,
+								 self.connectTestCb,
+								 {async:true,
 								  user: self.authObj.user,
 								  password: self.authObj.password,
 		      		   onstart:function() {return},
@@ -1329,19 +1342,6 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 									  else self.error = 'Unknown error';
 									  self.connected = false; }});
 
-	if (self.connected) {
-	    self.saveAuth ();
-	    	OAT.WebDav.init({imageExt:"png",
-	    					 imagePath:toolkitImagesPath,
-	    					 silentStart:true,
-	    					 user:self.authObj.user,
-	    						   pass:self.authObj.password, 
-	    					 isDav:true});
-
-	self.detectServerProperties ();
-
-	OAT.MSG.send (self, "iSPARQL_SERVER_CONNECTED", self);
-    }
 		  }
     }
 
