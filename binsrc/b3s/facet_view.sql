@@ -479,7 +479,7 @@ fct_query_info (in tree any,
 		if (acq_l is not null)
 		  http ('<span class="autoloc_ind">Location acquired.</span>', txt);
 	      }
-
+          }
 	      http (sprintf (' <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
 			       connection_get ('sid'),
 			       cno),
