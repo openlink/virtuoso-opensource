@@ -2640,6 +2640,7 @@ create procedure RDF_SINK_UPLOAD (
     goto _exit;
   }
   if (
+       strstr (type, 'text/n3') is not null or
        strstr (type, 'text/rdf+n3') is not null or
        strstr (type, 'text/rdf+ttl') is not null or
        strstr (type, 'application/rdf+n3') is not null or
