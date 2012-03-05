@@ -268,7 +268,7 @@ function init(){
   <xsl:if test="/facets/processed &gt; 0">
     <div class="pager">
 	<span class="stats"><xsl:text>Showing </xsl:text>
-	    <xsl:value-of select="$offs"/><xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
+	    <xsl:value-of select="$offs"/> - <xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
 	    <xsl:value-of select="/facets/processed"/> <xsl:text>total&#8194;</xsl:text>
       </span>
       <xsl:if test="$offs &gt;= $page_len">
@@ -521,7 +521,7 @@ function init(){
         <option value="on">Autolocation</option>
       </select>
       <span id="loc_ctr">
-        <img src="images/notify_throbber.gif" alt="Locating..." id="loc_acq_thr_i" style="display:none"/>
+        <img src="images/notify-throbber.gif" alt="Locating..." id="loc_acq_thr_i" style="display:none"/>
         <input id="cond_loc" type="text" style="display:none"/>
       </span>
       <span id="coord_ctr">

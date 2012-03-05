@@ -474,7 +474,7 @@ fct_query_info (in tree any,
 	    if (acq_l is not null and (length(lat) = 0 or length(lon) = 0)) 
 		{
 		  fct_dbg_msg ('Triggering autolocation');
-		  http (sprintf ('<span class="acq_l_trig" id="acq_l_trig" style="display:hidden">%d</span>', cno), txt);
+        	  http (sprintf ('<span class="acq_l_ind" id="acq_l_ind">Locating...</span><span class="acq_l_trig" id="acq_l_trig" style="display:none">%d</span>', cno), txt);
 		}
 
 	    if (length(lat) and length(lon)) 

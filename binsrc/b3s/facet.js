@@ -270,8 +270,18 @@ function prop_val_dt_sel_init () {
 
 
 	if ($('cond_dt').value != '##numeric' && $('cond_dt').value != '##none' && ct != 'contains') {
-	    v_h = '"' + v_h + '"^^<' + $v('cond_dt') + '>';
-	    v_l = '"' + v_l + '"^^<' + $v('cond_dt') + '>';
+	    if (v_h.match (/\".*\"\^\^\<.*\>/) === null) {
+                if ($v('cond_dt') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
+		    v_h = '"'+v_h+'"';
+  		else
+  		    v_h = '"' + v_h + '"^^<' + $v('cond_dt') + '>';
+	    }
+	    if (v_l.match (/\".*\"\^\^\<.*\>/) === null) {
+		if ($v('cond_t') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
+		    v_l = '"'+v_l+'"';
+		else
+  		    v_l = '"' + v_l + '"^^<' + $v('cond_dt') + '>';
+	    }
 	}
 
 	if (ct == 'gt' || 
@@ -354,12 +364,12 @@ Geo_ui = function (form) {
 
     this.loc_to_h = function () {
 	OAT.Dom.hide (self.loc_acq_thr_i);
-        alert ('Timeout while acquiring location');
+        alert ('Timeout while acquiring location.');
     }
 
     this.loc_err_h = function () {
 	OAT.Dom.hide (self.loc_acq_thr_i);
-	alert ('Failed to acquire location');
+	alert ('Failed to acquire location.\nDid you allow the client to locate you?\nYou also may have geolocation, or WiFi disabled - \nif so, try enabling them and reload.');
     }
 
     this.acq_b_h = function (e) {
