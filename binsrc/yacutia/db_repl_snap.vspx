@@ -68,12 +68,12 @@
           <col/>
         </colgroup>
         <tr>
-          <td class="page_tab_selected" align="center">Local to Remote</td>
           <td class="page_tab" align="center">
             <v:url name="b_url31" value="Remote to Local" url="db_repl_snap_pull.vspx"/>
           </td>
+          <td class="page_tab_selected" align="center">Local to Remote</td>
           <td class="page_tab" align="center">
-            <v:url name="b_url31" value="Local to Local" url="db_repl_snap_local.vspx"/>
+            <v:url name="b_url32" value="Local to Local" url="db_repl_snap_local.vspx"/>
           </td>
           <td class="page_tab_empty"></td>
         </tr>
