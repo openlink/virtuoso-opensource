@@ -208,13 +208,14 @@ b3s_render_iri_select (in _s varchar,
                        in ins_str varchar := '', 
                        in sel int := -1)
 {
-  declare meta, data any;
+  declare stat, msg, meta, data any;
   declare i int;
 
   if (length (_s))
     {	
+      data := null;
       exec (sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp .}', _from, _s), 
-	             null, null, vector (), 100, meta, data);
+	             stat, msg, vector (), 100, meta, data);
       if (length (data))
 	{
           if (sel = -1) sel := length(data)-1;
