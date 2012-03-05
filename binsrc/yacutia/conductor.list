@@ -291,6 +291,9 @@ conductor/page.xsl
 conductor/persistent_xmlns.vspx
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
+conductor/r2rml_gen.vspx
+conductor/r2rml_import.vspx
+conductor/r2rml_validate.vspx
 conductor/rdf_conf.vspx
 conductor/rdf_console.vspx
 conductor/rdf_filters_pp.vspx

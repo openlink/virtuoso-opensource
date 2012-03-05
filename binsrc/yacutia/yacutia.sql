@@ -331,10 +331,10 @@ create procedure adm_menu_tree ()
     <node name="Basic" url="db_repl_basic_local.vspx" id="8011" place="1" />
     <node name="Basic" url="db_repl_basic_local_create.vspx" id="8012" place="1" />
    </node>
-   <node name="Incremental" url="db_repl_snap.vspx"  id="81" >
-    <node name="Incremental" url="db_repl_snap_create.vspx" id="82" place="1" />
-    <node name="Incremental" url="db_repl_snap_pull.vspx" id="83" place="1"/>
-    <node name="Incremental" url="db_repl_snap_pull_create.vspx" id="84" place="1" />
+   <node name="Incremental" url="db_repl_snap_pull.vspx"  id="81" >
+    <node name="Incremental" url="db_repl_snap_pull_create.vspx" id="82" place="1" />
+    <node name="Incremental" url="db_repl_snap.vspx" id="83" place="1"/>
+    <node name="Incremental" url="db_repl_snap_create.vspx" id="84" place="1" />
     <node name="Incremental" url="db_repl_snap_local.vspx" id="85" place="1"/>
     <node name="Incremental" url="db_repl_snap_local_create.vspx" id="86" place="1" />
    </node>
@@ -485,6 +485,9 @@ case when 0 and check_package('rdf_mappers') then
    <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
+   <node name="R2RML" url="r2rml_import.vspx"  id="273" />
+   <node name="R2RML" url="r2rml_validate.vspx"  id="273" place="1"/>
+   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>
    <node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
    '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
@@ -6232,6 +6235,8 @@ create procedure y_rdf_api_type (in t int)
     return 'URL';
   else if (t = 2)
     return 'keywords';
+  else if (t = 3)
+    return 'preprocess';
   return '';
 }
 ;
@@ -6523,3 +6528,39 @@ create procedure y_list_webids (in uname varchar)
   return webids;
 }
 ;
+
+create procedure construct_table_sql( in tablename varchar ) returns varchar
+{
+  declare sql varchar;
+  declare k integer;
+  
+  sql := 'SELECT ';
+  k := 0;
+
+    for SELECT c."COLUMN" as COL_NAME 
+      from  DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, "SYS_COLS" c
+      where
+            name_part (k.KEY_TABLE, 0) =  name_part (tablename, 0) and
+            name_part (k.KEY_TABLE, 1) =  name_part (tablename, 1) and
+            name_part (k.KEY_TABLE, 2) =  name_part (tablename, 2)
+            and __any_grants (k.KEY_TABLE)
+        and c."COLUMN" <> '_IDN'
+        and k.KEY_IS_MAIN = 1
+        and k.KEY_MIGRATE_TO is null
+        and kp.KP_KEY_ID = k.KEY_ID
+        and c.COL_ID = kp.KP_COL
+	order by kp.KP_NTH do 
+	{
+      if (k > 0 )
+          sql := concat( sql, ',' );
+      else k := 1;
+
+      sql := concat( sql, COL_NAME);
+      
+  }
+  sql := concat(sql, ' FROM ', tablename);
+  
+  return sql;
+}
+;
+
