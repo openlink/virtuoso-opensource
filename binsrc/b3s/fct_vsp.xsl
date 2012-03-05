@@ -330,7 +330,7 @@ function init(){
 	<xsl:value-of select="/facets/processed"/> <xsl:text> total&#8194;</xsl:text>
       </span>
 	<button>
-          <xsl:if test="not($offs)">
+          <xsl:if test="$offs &lt;= 1">
             <xsl:attribute name="disabled">true</xsl:attribute>
           </xsl:if>
 	  <xsl:attribute name="class">pager</xsl:attribute>

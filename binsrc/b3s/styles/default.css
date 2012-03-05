@@ -432,23 +432,33 @@ a.in_del:hover { cursor: pointer; }
   font-style: italic;
 }
 
-/*#res div.pager button {
-border: 1px #355;
-background-image: linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
-background-image: -o-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
-background-image: -moz-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
-background-image: -webkit-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
-background-image: -ms-linear-gradient(bottom, #FFFFFF 100%, #DCD7FA 36%, #F1F0FA 1%);
-background-image: -webkit-gradient(
-	linear,
-	left bottom,
-	left top,
-	color-stop(1, #FFFFFF),
-	color-stop(0.36, #DCD7FA),
-	color-stop(0.01, #F1F0FA)
-);
+#res .pager button {
+  background-color: #e5e5e5;
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#eeeeee), to(#cccccc));
+  background-image: -webkit-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: -ms-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: -moz-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: -o-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: linear-gradient(top, #e5e5e5, #d5d5d5);
+  border: 1px solid #c2c2c2;
+  border-bottom: 1px solid #b2b2b2;
+  -ms-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -o-border-radius: 3px;
+  border-radius: 3px;
+  color: #333;
+  font: bold 11px Geneva, Verdana, sans-serif;
+  line-height: 1;
+  padding: 3px 3px;
+  text-align: center;
+  text-shadow: 0 1px 0 #EEE;
 }
-*/
+
+#res .pager button:disabled {
+  color: #666;
+}
+
 div.empty_result {
   font-weight: bold; 
   font-size: 12pt;
