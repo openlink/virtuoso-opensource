@@ -665,7 +665,7 @@ again:
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
        else
 	 {
-	   declare lbl any;
+	   declare lbl, vlbl any;
 	   lbl := '';
 	   if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
 	     lbl := b3s_label (_url, langs);
@@ -674,7 +674,8 @@ again:
 	   -- XXX: must encode as wide label to print correctly  
 	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
 	   http (sprintf ('<a class="uri" %s href="%s">', rdfa, b3s_http_url (_url, sid, _from)));
-	   http_value (charset_recode (lbl, 'UTF-8', '_WIDE_'));
+	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
+	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
@@ -704,9 +705,13 @@ again:
      }
    else if (__tag (_object) = 182)
      {
+       declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
        _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
-       http (_object);
+       vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
+       if (vlbl = 0)
+	 vlbl := _object;
+       http_value (vlbl);
        http ('</span>');
        lang := '';
      }

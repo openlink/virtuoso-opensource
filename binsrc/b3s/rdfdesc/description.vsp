@@ -32,7 +32,7 @@
 --
 --
    declare _S, odd_position any;
-   declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
+  declare page_resource_uri, proxy_iri, rdf_link, label, true_label, vlbl, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
    declare urilookup integer;
    declare dbg_enable varchar;
@@ -189,11 +189,13 @@
 --dbg_obj_print (qry_str);
   --exec (qry_str, null, null, vector (), 0, meta, data);
 
-  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'') 
-	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O)  order by 3', 
-	null, null, vector (_S), 0, meta, data);
+  --exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'') 
+  --	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O)  order by 3', 
+  --	null, null, vector (_S), 0, meta, data);
 
-   label := b3s_label_get (data, langs);
+  label := b3s_label (_S, langs);
+
+  vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
    true_label := label;
   iri_type := b3s_type (_S, _F, iri_uri, c_iri);
 
@@ -260,6 +262,7 @@
   fct_links_hdr (_S, rdf_link);
   if (not length (label))
     label := b3s_trunc_uri (page_resource_uri);
+  if (vlbl <> 0) label := vlbl; 
   declare desc_resource_uri varchar;
   declare desc_qr varchar;
   desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
@@ -268,7 +271,7 @@
 ?>
 <head>
     <base href="http://<?V host ?>/fct/rdfdesc/" />
-    <title>About: <?vsp http (label); ?></title>
+    <title>About: <?vsp http_value (label); ?></title>
     <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
     <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
@@ -310,7 +313,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (label); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sr=clean" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
+	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http_value (label); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>&amp;sid=<?V sid ?>&amp;sr=clean" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
