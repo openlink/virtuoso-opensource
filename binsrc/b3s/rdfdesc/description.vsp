@@ -32,7 +32,7 @@
 --
 --
    declare _S, odd_position any;
-  declare page_resource_uri, proxy_iri, rdf_link, label, true_label, vlbl, _subject any;
+  declare page_resource_uri, proxy_iri, rdf_link, label, vlbl, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
    declare urilookup integer;
    declare dbg_enable varchar;
@@ -41,7 +41,7 @@
    declare inf_parm varchar;
   declare ses_parms varchar;
   declare all_langs, lang_parm any;
-  declare c_iri, iri_type, iri_uri, _F, _from, topof varchar;
+  declare c_iri, iri_type, iri_type_label, iri_uri, _F, _from, topof varchar;
   declare page, n_per_page, lim, ofs, dis_next int;
   declare vis, printed, _skip, _last int;
   declare all_lang any;
@@ -198,15 +198,12 @@
   label := b3s_label (_S, langs);
 
   vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
-   true_label := label;
+
   b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
+
   iri_type := b3s_type (_S, _F, iri_uri, c_iri);
-  --dbg_obj_print_vars (c_iri);
-  iri_type := b3s_label (c_iri, langs);
-  if (iri_type = '')
-    {
-      iri_type := b3s_uri_local_part (c_iri); 
-    }	
+  iri_type_label := b3s_label (c_iri, langs);
+  if (iri_type_label = '') iri_type_label := iri_type;
 
   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
 --    dbg_obj_print (qry_str);
@@ -324,10 +321,11 @@
         <div class="page_resource_info">
 	<h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp if (length(label)) http_value (label); else http_value(b3s_uri_curie (page_resource_uri)); ?></a>&nbsp;&nbsp;&nbsp;<a href="/describe/?url=<?U page_resource_uri ?><?= case when sid is not null then '&amp;sid=' || sid end ?>&amp;sponger:get=add" title="Click to generate local descriptor data for this entity" id="sp_link" rel="nofollow"><img src="/fct/images/sponge.png" title="Click to generate local descriptor data for this entity" alt="Generate local descriptor data" /></a>&nbsp;<a href="/describe/?url=<?U page_resource_uri ?>"><img src="/fct/images/link_16.png" border="0" title="Permalink"/></a></h2>
       <div class="ds_inf_info"> 
-	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
+	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type_label ?></a>,
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
 <?vsp 
   declare _ciri varchar;
+  declare num_types int;
 
   if (c_iri = 'http://www.w3.org/2000/01/rdf-schema#Class' or c_iri = 'http://www.w3.org/2002/07/owl#Class') {
     _ciri := page_resource_uri;
@@ -348,23 +346,27 @@
           <input type="hidden" name="sid" value="<?V sid ?>"/>
           <input type="hidden" name="cmd" value="set_class"/>
 <?vsp
-          b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
+          num_types := b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
+          if (num_types) {
 ?>
           <button class="fct_sel_as_type" 
              title="Add class constraint in current facet session">Constrain facet</button>
 
 <?vsp 
+          }
         } 
       else 
         { 
 ?>
           <input type="hidden" name="cmd" value="new_with_class"/>
 <?vsp
-          b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
+          num_types := b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
+          if (num_types) {
 ?>
           <button class="fct_sel_as_type" 
              title="Start new facet session with type">Start faceted browsing</button>
 <?vsp
+          }
         }
 ?>
       </form>

@@ -231,6 +231,7 @@ b3s_render_iri_select (in _s varchar,
           http ('</select>');
         }
     }
+  return i;
 }
 ;
 
