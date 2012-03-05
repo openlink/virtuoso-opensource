@@ -983,21 +983,37 @@ fct_cond_range (in tree any, in this_s int, in txt any)
 create procedure 
 fct_cond_contains (in tree any, in this_s int, in txt any)
 {
-  declare val, neg, cond_t varchar;
+  declare val, neg, cond_t, txs_qr varchar;
+  declare wlimit int;
+  declare txs_arr any;
 
-  neg    := xpath_eval ('./@neg',    tree);
+  neg := xpath_eval ('./@neg', tree);
 
   val := cast (xpath_eval ('.', tree) as varchar);
 
   if (val <> '') 
-  {
-    if ('no' <> neg) {
-      http (sprintf (' filter (bif:contains (?s%d, ''"%s"'')) .', this_s, val), txt);
-  }
-    else {
-      http (sprintf (' filter (! bif:contains (?s%d, ''"%s"'')) .', this_s, val), txt);
+    {
+      wlimit := registry_get ('fct_text_query_limit');
+
+      if (isstring (wlimit))
+        wlimit := atoi (wlimit);
+      if (0 = wlimit)
+        wlimit := 100;	
+
+      txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);	
+	
+      if (length (txs_arr) > wlimit)
+	signal ('22023', 'The request is too large');
+
+      if ('no' <> neg) 
+        {
+          http (sprintf (' ?s%d bif:contains ''%s'' .', this_s, txs_qr), txt);
+        }
+      else 
+        {
+          http (sprintf (' filter (! bif:contains (?s%d, ''"%s"'')) .', this_s, val), txt);
+        }
     }
-  }
 }
 ;
 
@@ -1143,13 +1159,16 @@ fct_text (in tree any,
     {
       declare ciri varchar;
       ciri := fct_curie (cast (xpath_eval ('./@iri', tree) as varchar));
+
+      fct_dbg_msg (sprintf ('class: %s', cast (ciri as varchar)));
+
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
 	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d a <%s> } ))) .', this_s, ciri), txt);
 	}
       else if (ciri is null) 
         {
-	  http (sprintf ('?s%d a ?s%d .', this_s, this_s+1), txt); 
+	  http (sprintf ('?s%d a ?s%d .', this_s, this_s + 1), txt); 
         }
       else
 	{
@@ -1233,6 +1252,13 @@ fct_text (in tree any,
       fct_text_1 (tree, new_s, max_s, txt, pre, post, full_tree, plain);
     }
 
+  if ('value' = n or 'cond' = n or 'cond-range' = n)
+    {
+      if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1)) 
+        {
+          http (sprintf ('?s%d ?s%dcondp ?s%d .', this_s, this_s, this_s), txt);
+        }
+    }
   if ('value' = n)
     {
       fct_value (tree, this_s, txt);

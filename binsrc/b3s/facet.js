@@ -241,8 +241,8 @@ function prop_val_dt_sel_init () {
 	opts_a.push(new Option(shorten_dt (dt_a[i][0]), dt_a[i][0], false));
     }
 
-    var num_opt  = new Option ('Numeric', '##numeric', false);
-    var none_opt = new Option ('No datatype', '##none', false);
+    var num_opt  = new Option ('Numeric',     '##numeric', false);
+    var none_opt = new Option ('No datatype', '##none',    false);
 
     if (is_numeric_dt (dt_a[0][0])) {
 	opts_a.unshift (num_opt);
@@ -694,16 +694,23 @@ function init()
             case "gte":
             case "eq":
             case "neq":
+                in_ui.hide ();
+		OAT.Dom.show ('cond_inp_ctr');
+		OAT.Dom.show ('cond_dt');
+		OAT.Dom.hide ('cond_hi_ctr');
+                break;
             case "contains":
                 in_ui.hide ();
 		OAT.Dom.show ('cond_inp_ctr');
 		OAT.Dom.hide ('cond_hi_ctr');
+                OAT.Dom.hide ('cond_dt');
 		break;
 	    case "range":
             case "neg_range":
                 in_ui.hide();
 		OAT.Dom.show ('cond_inp_ctr');
 		OAT.Dom.show ('cond_hi_ctr');
+		OAT.Dom.show ('cond_dt');
 		break;
             case "in":
                 OAT.Dom.hide ('cond_inp_ctr');

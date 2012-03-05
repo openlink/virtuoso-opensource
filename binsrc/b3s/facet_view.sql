@@ -390,11 +390,17 @@ fct_query_info (in tree any,
   if ('cond' = n) 
     {
       declare cond_t, lang, dtp, neg, val any;
+      declare prop_qual varchar;
 
       cond_t := xpath_eval ('./@type',  tree);
       lang   := xpath_eval ('./@lang',    tree);
       dtp    := xpath_eval ('./@datatype',tree);
       val    := cast (xpath_eval ('.', tree) as varchar);
+
+      if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1)) 
+        prop_qual := ' (any property) ';
+      else
+        prop_qual := '';
 
       fct_dbg_msg (sprintf ('fct_qry_info: cond: type:%s dtp:%s lang:%s val:%s',
                             cast (cond_t as varchar),
@@ -415,16 +421,18 @@ fct_query_info (in tree any,
           cond_t = 'gte')
         {
  --val_fmt_enc (val, lang, dtp)), 
-          http (sprintf ('%s %s %V',
+          http (sprintf ('%s %s%s %V',
                        fct_var_tag (this_s, ctx), 
+                          prop_qual,
                           fct_cond_name (cond_t),
 	                  fct_literal (xpath_eval ('.', tree))),
                 txt);
         } 
         else if ('contains' = cond_t) 
           {
-            http (sprintf (' %s contains "%s" .', 
+            http (sprintf (' %s %scontains "%s" .', 
                            fct_var_tag (this_s, ctx),
+                           prop_qual,
                            val), 
                   txt);
           } 
@@ -432,7 +440,7 @@ fct_query_info (in tree any,
           {
             declare this_cno int;
             this_cno := cno;
-            http (sprintf ('%s is IN: ', fct_var_tag (this_s, ctx)), txt);
+            http (sprintf ('%s %sis IN: ', fct_var_tag (this_s, ctx), prop_qual), txt);
             fct_query_info_1 (tree, this_s, max_s, level, ctx, txt, cno);
             http (sprintf (' <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
 		       connection_get ('sid'),

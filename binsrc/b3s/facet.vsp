@@ -128,7 +128,11 @@ declare exit handler for sqlstate '*'
   http('<a href="#" id="err_det_toggle" onclick="javascript: OAT.Dom.show (err_details);">More info&hellip;</a>');
   http('  <div id="err_details" style="display:none">');
   if (connection_get ('sparql_query') is not null)
-    http(sprintf ('<pre class="sparqlqry">SPARQL:\n%s</pre><br/>\n', connection_get ('sparql_query')));
+    {
+      http('<pre class="sparqlqry">SPARQL:\n');
+      http_value(connection_get ('sparql_query'));
+      http('</pre><br/>\n');
+    }
 
   commit work;
   declare _state any;
@@ -143,12 +147,9 @@ declare exit handler for sqlstate '*'
 		 __SQL_MESSAGE,
 		 serialize(params));
 
-  http('    <pre class="facet_state">STATE:\n');
-  http('<![CDATA[\n');
-  http_value(_state);
-  http('\n]]>');
-
-  http('    </pre><br/>');
+  http('    <pre class="facet_state">STATE:\n<![CDATA[');
+  http(_state);
+  http(']]>    </pre><br/>');
 
   http('  </div>\n');
   http('  </div>\n');
