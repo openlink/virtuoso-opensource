@@ -66,8 +66,8 @@
     return 'Deny';
   </v:method>
   <v:method name="fmt_dest" arglist="in i any">
-    if (self.acl_name = 'HTTP')
-      return 'N/A';
+    --if (self.acl_name = 'HTTP')
+    --  return 'N/A';
     return i;
   </v:method>
   <v:method name="fmt_obj" arglist="in i any">
@@ -462,7 +462,7 @@
 				</v:select-list>
 			      </td>
 			    </tr>
-			    <?vsp if (self.acl_name <> 'HTTP' and self.acl_name <> 'NEWS') { ?>
+			    <?vsp if (self.acl_name <> 'NEWS') { ?>
 			    <tr>
 			      <td>Destination</td><td><v:text name="dest1" value="--self.dest"/></td>
 			    </tr>
@@ -545,7 +545,7 @@
                                     rat := 0;
                                     lim := 0;
 
-				    if (self.acl_name <> 'HTTP')
+				    --if (self.acl_name <> 'HTTP')
 				      dest := self.dest1.ufl_value;
 
 				    if (self.acl_name not in ('HTTP', 'PROXY'))
