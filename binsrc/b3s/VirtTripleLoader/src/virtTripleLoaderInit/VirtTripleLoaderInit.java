@@ -126,7 +126,7 @@ public class VirtTripleLoaderInit {
 			while ((c = _block.read()) != -1) {
 
 				bytesInFile ++;
-				outStream.write(c); 
+				outStream.write(c);
 
 			}
 

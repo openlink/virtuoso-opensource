@@ -176,7 +176,7 @@ directory_init() {
 
   for d in `find . -type d | grep -v CVS | grep -v VirtTripleLoader`
   do
-     mkdir -p vad/vsp/fct/$d 
+     mkdir -p vad/vsp/fct/$d
   done
 
   for f in `find . -name '*.sql'`
@@ -317,13 +317,13 @@ fi
 
 
   for f in $SQLDEPS
-  do  
+  do
       echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/$f', 0, 'report', $ISDAV);" >> $STICKER
   done
 
   for f in `find vad/code/fct -type f -print | cut -b14-`
-  do  
-     exclude=0 
+  do
+     exclude=0
      if [ ! -z "$EXCEPT" -o ! -z "$SQLDEPS" ]
      then
 	 for ex in $EXCEPT $SQLDEPS
@@ -333,7 +333,7 @@ fi
 		 exclude=1
 	     fi
 	 done
-     fi 
+     fi
      if [ $exclude -eq 0 ]
      then
 	 echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/$f', 0, 'report', $ISDAV);" >> $STICKER

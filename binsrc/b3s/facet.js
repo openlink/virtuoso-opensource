@@ -37,20 +37,20 @@ function fct_pager_next (form_pfx)
 {
     if ($(form_pfx+'_goto').value == '')
       $(form_pfx + '_cmd').value = 'next';
-    $(form_pfx).submit();    
+    $(form_pfx).submit();
 }
 
 function fct_pager_prev (form_pfx)
 {
     if ($(form_pfx+'_goto').value == '')
       $(form_pfx + '_cmd').value = 'prev';
-    $(form_pfx).submit();    
+    $(form_pfx).submit();
 }
 
 function fct_pager_go_to (form_pfx)
 {
     $(form_pfx + '_cmd').value = 'go_to';
-    $(form_pfx).submit();    
+    $(form_pfx).submit();
 }
 
 var c_thr;
@@ -64,8 +64,8 @@ function fct_uri_ac_get_matches (ac_ctl)
 
     c_thr = $('new_uri_txt');
 
-    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?uri" + "=" + escape (val), 
-                 false, 
+    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?uri" + "=" + escape (val),
+                 false,
                  fct_uri_ac_ajax_handler,{});
 }
 
@@ -78,8 +78,8 @@ function fct_lbl_ac_get_matches (ac_ctl)
 
     c_thr = $('new_lbl_txt');
 
-    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?lbl" + "=" + escape (val), 
-                 false, 
+    OAT.AJAX.GET("/services/rdf/iriautocomplete.get?lbl" + "=" + escape (val),
+                 false,
                  fct_lbl_ac_ajax_handler,{});
 }
 
@@ -100,7 +100,7 @@ function fct_uri_ac_ajax_handler (resp)
 
       if (resp_obj.restype == "single")
 	uri_ac.set_uri_opts (resp_obj.results);
-      else 
+      else
 	uri_ac.set_uri_opts (resp_obj.results[0].concat(resp_obj.results[1]));
 
     uri_ac.show_popup ();
@@ -122,18 +122,18 @@ function fct_lbl_ac_ajax_handler (resp)
 
       if (resp_obj.restype == "single")
 	lbl_ac.set_opts (resp_obj.results);
-      else 
+      else
 	lbl_ac.set_opts (resp_obj.results[0].concat(resp_obj.results[1]));
 
     lbl_ac.show_popup ();
 }
 
-function ac_show_thr () 
+function ac_show_thr ()
 {
   OAT.Dom.addClass (c_thr, 'thr');
 }
 
-function ac_hide_thr () 
+function ac_hide_thr ()
 {
   OAT.Dom.removeClass (c_thr, 'thr');
 }
@@ -149,7 +149,7 @@ function resize_handler ()
 {
     var wp_width = OAT.Dom.getViewport ()[0];
 
-    if ($('res')) 
+    if ($('res'))
       {
         var _w = (wp_width-230)+'px';
         $('res').style.width = _w;
@@ -243,7 +243,7 @@ function prop_val_dt_sel_init () {
 
 	if (v in dt_s)
 	    dt_s[v]++;
-	else 
+	else
 	    dt_s[v]=1;
     }
 
@@ -310,12 +310,12 @@ function prop_val_dt_sel_init () {
 	    }
 	}
 
-	if (ct == 'gt' || 
-            ct == 'lt' || 
-            ct == 'gte' || 
-            ct == 'lte' || 
-            ct == 'eq' || 
-            ct == 'neq' || 
+	if (ct == 'gt' ||
+            ct == 'lt' ||
+            ct == 'gte' ||
+            ct == 'lte' ||
+            ct == 'eq' ||
+            ct == 'neq' ||
             ct == 'contains') {
 	    $('out_hi').value = '';
 	}
@@ -323,12 +323,12 @@ function prop_val_dt_sel_init () {
         if (ct == 'range' || ct == 'neg_range') {
           $("out_hi").value = v_h;
 	  $("out_lo").value = v_l;
-        } else 
+        } else
           $("out_val").value = v_l;
 
         $('out_dtp').value = '';
         $('out_lang').value = '';
-        
+
 	$('cond_form').submit();
     });
 
@@ -339,7 +339,7 @@ function prop_val_dt_sel_init () {
 function fct_add_loc_marker () {
     var loc_lat = $$('loc_lat');
     var loc_lon = $$('loc_lon');
-    
+
     if (loc_lat.length && loc_lon.length) {
 	var lat = parseFloat (loc_lat[0].innerHTML);
 	var lon = parseFloat (loc_lon[0].innerHTML);
@@ -347,7 +347,7 @@ function fct_add_loc_marker () {
 
 	window.loc_marker = window.cMap.addMarker (lat,
 	  					   lon,
-						   false, 
+						   false,
 						   {image: 'oat/images/markers/house.png',
 						    imageSize: [18,41],
 						    title: 'Origin',
@@ -408,7 +408,7 @@ Geo_ui = function (form) {
 	OAT.Event.prevent(e);
         if ((self.lat_i.value == '' || self.lon_i.value == '') && self.loc_trig_sel.selectedIndex == 0)
 	    return;
-        if ($('cond_dist').value == '') 
+        if ($('cond_dist').value == '')
             return;
 	if (self.loc_trig_sel.selectedIndex == 1) {
 	    self.lat_i.value='';
@@ -512,13 +512,13 @@ In_ui = function (dom_ctr, form) {
 
         if (isNaN (parseInt(_val)) && (isNaN (parseFloat(_val))))
             _val = '"'+_val+'"';
-	
+
 	self.add_val (_val, _dt, _lang);
-    } 
+    }
 
     this.val_change_h = function (e) {
 
-	}
+    }
 
     this.make_val_row = function (d, i) {
 	var new_r = OAT.Dom.create ('tr');
@@ -529,19 +529,19 @@ In_ui = function (dom_ctr, form) {
 
 	new_val_col.innerHTML  = d.val;
 	new_dt_col.innerHTML   = d.dt;
-	new_lang_col.innerHTML = d.lang;	
+	new_lang_col.innerHTML = d.lang;
 
         var del_a = OAT.Dom.create ('a', {}, 'in_del');
 	del_a.innerHTML = 'Delete';
 
 	OAT.Event.attach (del_a, 'click', function () {
 	    self.del_val (i);
-    });
+	});
 
 	OAT.Dom.append ([new_cmd_col, del_a]);
 	OAT.Dom.append ([new_r, new_val_col, new_dt_col, new_lang_col, new_cmd_col]);
         return new_r;
-    } 
+    }
 
     this.sort_fun = function (a,b) {
 	return (a.val > b.val);
@@ -572,10 +572,10 @@ In_ui = function (dom_ctr, form) {
 
     this.mk_cond_parm = function (d) {
 	var elm = '<cond-parm ' +
-	    self.mk_attr ('datatype', d.dt) + 
-	    ' ' + 
+	    self.mk_attr ('datatype', d.dt) +
+	    ' ' +
 	    self.mk_attr ('lang', d.lang) + '>';
-	
+
 	return (elm.concat(OAT.Dom.toSafeXML(d.val),'</cond-parm>'));
     }
 
@@ -583,11 +583,11 @@ In_ui = function (dom_ctr, form) {
 	OAT.Event.prevent(e);
 	var val_s = '';
         if (!self.data.length) return;
-        
+
         for (var i=0;i < self.data.length;i++) {
 	    val_s = val_s.concat(self.mk_cond_parm (self.data[i]));
-	}	    
-	
+	}
+
         self.cond_parms.value = val_s;
         self.form.submit();
     }
@@ -610,7 +610,7 @@ In_ui = function (dom_ctr, form) {
 	OAT.Dom.append ([new_dt_c, self.new_dt_i]);
 	OAT.Dom.append ([new_lang_c, self.new_lang_i]);
 	OAT.Dom.append ([new_val_add_c, new_add_btn]);
-     
+
 	OAT.Dom.append ([self.manual_r, new_val_c, new_dt_c, new_lang_c, new_val_add_c]);
 
  	OAT.Event.attach (new_add_btn, 'click', self.val_add_h);
@@ -633,12 +633,12 @@ In_ui = function (dom_ctr, form) {
  	OAT.Event.attach (self.new_add_btn, 'click', self.val_add_h);
  	OAT.Event.attach (self.set_cond_btn, 'click', self.submit);
 
-        OAT.Dom.append ([self.val_list_t, 
-			 self.val_list_thead, 
+        OAT.Dom.append ([self.val_list_t,
+			 self.val_list_thead,
 			 self.val_list_tbody]);
 
-        OAT.Dom.append ([self.dom_ctr, 
-			 self.val_list_t, 
+        OAT.Dom.append ([self.dom_ctr,
+			 self.val_list_t,
 			 self.set_cond_btn]);
 
 	self.refresh();
@@ -671,7 +671,7 @@ function handle_val_anchor_click (e) {
     case "eq":
     case "neq":
     case "contains":
-	OAT.Event.prevent(e);
+        OAT.Event.prevent(e);
 	$('cond_lo').value = val;
 	break;
     case "range":
@@ -679,7 +679,7 @@ function handle_val_anchor_click (e) {
         OAT.Event.prevent(e);
 	if ($v('cond_lo') != '')
 	    $('cond_hi').value = val;
-	else 
+	else
 	    $('cond_lo').value = val;
 	break;
     case "in":
@@ -693,7 +693,7 @@ function handle_val_anchor_click (e) {
 
     for (i=0;i<$('cond_dt').options.length;i++) {
 	var opt = $('cond_dt').options[i];
-	if (opt.value == dtp) 
+	if (opt.value == dtp)
 	    opt.selected = true;
         else
 	    opt.selected = false;
@@ -727,37 +727,37 @@ function fct_init_ui ()
     OAT.Event.attach (window, 'resize', resize_handler);
 
     if ($('main_srch')) {
-    uri_ac = new OAT.Autocomplete('new_uri_txt',
-			          'new_uri_val',
-                                  'new_uri_btn', 
-                                  'new_uri_fm', 
-                                  {get_ac_matches: fct_uri_ac_get_matches});
+	uri_ac = new OAT.Autocomplete('new_uri_txt',
+			              'new_uri_val',
+                                      'new_uri_btn',
+                                      'new_uri_fm',
+                                      {get_ac_matches: fct_uri_ac_get_matches});
 
-    lbl_ac = new OAT.Autocomplete('new_lbl_txt',
-				  'new_lbl_val',
-				  'new_lbl_btn',
-				  'new_lbl_fm',
-                                  {get_ac_matches: fct_lbl_ac_get_matches});
-				  
+	lbl_ac = new OAT.Autocomplete('new_lbl_txt',
+				      'new_lbl_val',
+				      'new_lbl_btn',
+				      'new_lbl_fm',
+                                      {get_ac_matches: fct_lbl_ac_get_matches});
 
-    var tabs = new OAT.Tab ('TAB_CTR', {dockMode: false});
 
-    tabs.add ('TAB_TXT', 'TAB_PAGE_TXT');
-    tabs.add ('TAB_URI', 'TAB_PAGE_URI');
-    tabs.add ('TAB_URILBL', 'TAB_PAGE_URILBL');
+	var tabs = new OAT.Tab ('TAB_CTR', {dockMode: false});
 
-    tabs.go (0);
+	tabs.add ('TAB_TXT', 'TAB_PAGE_TXT');
+	tabs.add ('TAB_URI', 'TAB_PAGE_URI');
+	tabs.add ('TAB_URILBL', 'TAB_PAGE_URILBL');
+
+	tabs.go (0);
 
 	OAT.MSG.attach ('*', 'AJAX_START', function () { ac_show_thr () });
 
-    OAT.Dom.show ('main_srch');  
-	
-        if ((typeof window.external =="object") && 
-            ((typeof window.external.AddSearchProvider == "unknown") || 
-             (typeof window.external.AddSearchProvider == "function"))) 
+	OAT.Dom.show ('main_srch');
+
+        if ((typeof window.external =="object") &&
+            ((typeof window.external.AddSearchProvider == "unknown") ||
+             (typeof window.external.AddSearchProvider == "function")))
           {
-              OAT.Event.attach ('opensearch_link', 
-                                'click', 
+              OAT.Event.attach ('opensearch_link',
+                                'click',
                                 function () { window.external.AddSearchProvider(location.protocol+'//'+location.host+'/fct/opensearchdescription.vsp'); });
           }
     }
@@ -775,7 +775,7 @@ function fct_init_ui ()
 	prop_val_anchors_init();
         prop_cond_sel_init();
 
-	if (!in_ui) 
+	if (!in_ui)
 	    in_ui = new In_ui ('in_ctr','cond_form');
 
 
@@ -814,9 +814,9 @@ function fct_init_ui ()
 		break;
             case "in":
                 OAT.Dom.hide ('cond_inp_ctr');
-		OAT.Dom.hide ('cond_hi_ctr');
+                OAT.Dom.hide ('cond_hi_ctr');
                 in_ui.show();
-		break;
+                break;
 /*            case "near":
                 in_ui.hide();
                 OAT.Dom.hide ('cond_inp_ctr');
@@ -836,7 +836,7 @@ function fct_init_ui ()
 
 OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
     var self = this;
-    
+
     this.timer = 0;
     this.value = 0;
 
@@ -845,17 +845,17 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	timer_interval:1000,
 	onchange:function() {}
     }
-	
+
     for (var p in optObj) { self.options[p] = optObj[p]; }
-    
+
     this.div = OAT.Dom.create("div", {}, "autocomplete");
-    
+
     this.list = OAT.Dom.create("div",
 			       {position:"absolute",left:"0px",top:"0px",zIndex:1001},
 			       "autocomplete_list");
-    
+
     self.instant = new OAT.Instant (self.list);
-    
+
     this.submit_form = function() {
 	if (self.value) {
 	    self.val_inp.value = self.value;
@@ -885,7 +885,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 
     this.keydown_handler = function (e)
     {
-	if ((e.keyCode && e.keyCode == 13) || 
+	if ((e.keyCode && e.keyCode == 13) ||
             (e.which && e.which == 13)) {
 	    self.val_inp.value = '';
 	    if (self.timer)
@@ -897,7 +897,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	}
     }
 
-    this.blur_handler = function (e) 
+    this.blur_handler = function (e)
     {
 	if (self.timer) {
 	    window.clearTimeout (self.timer);
@@ -905,18 +905,18 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	}
     }
 
-    this.btn_handler = function(e) 
+    this.btn_handler = function(e)
     {
 	self.submit_form();
     }
 
-    
-    this.clear_opts = function() 
+
+    this.clear_opts = function()
     {
 	OAT.Dom.clear(self.list);
     }
-	
-    this.add_option = function(name, value) 
+
+    this.add_option = function(name, value)
     {
 	var n = name;
 	var v = name;
@@ -928,7 +928,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	var opt_lbl = OAT.Dom.create ("span", {}, "opt_lbl");
         opt_lbl.innerHTML = n;
 
-	var opt_iri = OAT.Dom.create ("span", {}, "opt_iri"); 
+	var opt_iri = OAT.Dom.create ("span", {}, "opt_iri");
 	opt_iri.innerHTML = v;
 
 	opt.value = v;
@@ -939,7 +939,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	self.list.appendChild(opt);
     }
 
-    this.attach = function(option) 
+    this.attach = function(option)
     {
 	var ref = function(event) {
 	    self.value       = option.value;
@@ -954,7 +954,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
     }
 
     this.set_opts = function (opt_list)
-    {	
+    {
 	if (opt_list.length) {
 	    for (var i=0;i<opt_list.length;i=i+2) {
 		this.add_option(opt_list[i], opt_list[i+1]);
@@ -964,9 +964,9 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	else
 	    self.btn.disabled = true;
     }
-	
+
     this.set_uri_opts = function (opt_list)
-    {	
+    {
 	if (opt_list.length) {
 	    for (var i=0;i<opt_list.length;i=i+1) {
 		this.add_option(opt_list[i]);
@@ -976,7 +976,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
 	else
 	    self.btn.disabled = true;
     }
-	
+
     this.show_popup = function ()
     {
 	self.instant.show();
@@ -986,8 +986,8 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
     {
 	self.instant.hide();
     }
-	
-    self.instant.options.showCallback = function() 
+
+    self.instant.options.showCallback = function()
     {
 	var coords = OAT.Dom.position(self.input);
 	var dims = OAT.Dom.getWH(self.input);

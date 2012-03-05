@@ -760,7 +760,7 @@ where
 
 
 
-select "path", xmlelement ('path', xmlagg (xmlelement ('step', "via"))) from 
+select "path", xmlelement ('path', xmlagg (xmlelement ('step', "via"))) from
 (sparql select ?o ?via ?dist ?path where
   {
     {select ?s ?o

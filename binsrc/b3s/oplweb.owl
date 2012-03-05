@@ -43,14 +43,14 @@
 			<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#internet"/>
 		  </vCard:EMAIL>
 		</vCard:ADR>
-	
+
 		<gr:offers rdf:resource="#Offering"/>
 		<gr:offers rdf:resource="#DevelopmentOffering"/>
 		<gr:offers rdf:resource="#TrainingOffering"/>
 
 		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
 		<rdfs:seeAlso rdf:resource="http://www.openlinksw.com/"/>
-	
+
 		<foaf:homepage rdf:resource="http://www.openlinksw.com/"/>
 		<foaf:logo rdf:resource="http://www.openlinksw.com/index_files/openlink150.gif" />
 		<foaf:maker rdf:resource="http://www.openlinksw.com/dataspace/organization/openlink#this" />
@@ -83,7 +83,7 @@
 		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
 		<gr:availableAtOrFrom rdf:resource="#LocationOfSalesOrServiceProvisioning_1"/>
 		<gr:includes>
-			<gr:ActualProductOrServicesInstance rdf:ID="DownloadLocation"/> 
+			<gr:ActualProductOrServicesInstance rdf:ID="DownloadLocation"/>
 			<!-- gr:ProductOrServiceSomeInstancePlaceholder rdf:ID="ComponentArchive" / -->
 		</gr:includes>
 		<gr:includes>

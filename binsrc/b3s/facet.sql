@@ -23,7 +23,7 @@
 -- Facet web service
 
 
-create procedure 
+create procedure
 fct_dbg_msg (in str varchar, in lvl int := 666)
 {
   declare d_lvl int;
@@ -34,7 +34,7 @@ fct_dbg_msg (in str varchar, in lvl int := 666)
 
   if (lvl < d_lvl) return;
 
-  if (d_lvl) 
+  if (d_lvl)
     {
       if (d_mode = 'stderr')
         {
@@ -73,7 +73,7 @@ fct_render_dbg_out ()
       http_value (d_ses);
       http('</pre></div>');
     }
-  else 
+  else
     dbg_printf ('fct_render_dbg_out: no string session to write to!');
 }
 ;
@@ -210,8 +210,8 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
   best_l := 0;
-  for select o, p 
-    from rdf_quad table option (index primary key) 
+  for select o, p
+    from rdf_quad table option (index primary key)
     where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
       if (is_rdf_box (o) or isstring (o))
@@ -222,8 +222,8 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
 	    l := length (o);
 	  if (l > best_l)
 	    {
-	    best_str := o;
-	    best_l := l;
+	      best_str := o;
+	      best_l := l;
 	    }
 	}
     }
@@ -263,7 +263,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	  str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
 	}
       else
-        str_lang := 'en';	
+        str_lang := 'en';
       q := cmp_get_lang_by_q (lng, str_lang);
 
       if (is_rdf_box (o) or isstring (o))
@@ -283,8 +283,8 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	    l := length (o);
 	  if (l > best_l)
 	    {
-	    best_str := o;
-	    best_l := l;
+	      best_str := o;
+	      best_l := l;
 	    }
 	}
     }
@@ -319,7 +319,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
       if (lang_id > 257)
 	str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lang_id);
       else
-        str_lang := 'en';	
+        str_lang := 'en';
       q := cmp_get_lang_by_q (lng, str_lang);
       if (is_rdf_box (o) or isstring (o))
 	{
@@ -360,7 +360,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	  str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
 	}
       else
-        str_lang := 'en';	
+        str_lang := 'en';
       q := cmp_get_lang_by_q (lng, str_lang);
 
       if (is_rdf_box (o) or isstring (o))
@@ -472,11 +472,11 @@ fct_inf_val (in tree any)
 {
   declare i varchar;
 
- i := cast (xpath_eval ('/query/@inference', tree) as varchar);
+  i := cast (xpath_eval ('/query/@inference', tree) as varchar);
 
   if (i is null or '' = i)
     return null;
-  return i;  
+  return i;
 }
 ;
 
@@ -489,7 +489,7 @@ fct_inf_clause (in tree any)
 
   if (i is not null)
     return sprintf (' define input:inference "%s" ', i);
-    return '';
+  return '';
 }
 ;
 
@@ -498,7 +498,7 @@ fct_sas_val (in tree any)
 {
   declare i varchar;
 
- i := cast (xpath_eval ('/query/@same-as', tree) as varchar);
+  i := cast (xpath_eval ('/query/@same-as', tree) as varchar);
 
   if (i is null or '' = i)
     return null;
@@ -515,7 +515,7 @@ fct_sas_clause (in tree any)
 
   if (i is not null)
     return sprintf (' define input:same-as "%s" ', i);
-    return '';
+  return '';
 }
 ;
 
@@ -549,10 +549,9 @@ fct_dtp (in x any)
   declare dtp any;
 
   dtp := rdf_datatype_of_long (x, UNAME'http://www.openlinksw.com/schemas/facets/dtp/plainstring');
-  return (id_to_iri (dtp)); 
+  return (id_to_iri (dtp));
 }
 ;
-
 
 --
 -- Handle any DTs which need special serialization in FILTER, etc.
@@ -567,7 +566,7 @@ fct_sparql_ser (in x any)
   return '';
 }
 ;
-	
+
 create procedure
 fct_lang (in x any)
 {
@@ -579,14 +578,16 @@ fct_lang (in x any)
 }
 ;
 
-create procedure 
+create procedure
 fct_get_mode (in tree any, in xp any)
 {
   declare view_type varchar;
   view_type := cast (xpath_eval (xp, tree, 1) as varchar);
+
   if (0 and sys_stat ('cl_run_local_only') and view_type = 'text-d')
     view_type := 'text';
-  return view_type;  
+
+  return view_type;
 }
 ;
 
@@ -606,7 +607,7 @@ fct_xml_wrap (in tree any, in txt any)
   fct_dbg_msg (sprintf ('              n_cols   : %d', n_cols));
 
 --  dbg_obj_print (xpath_eval ('//query/text', tree, 1));
- 
+
   if (n_cols = 2)
     {
       if (view_type = 'text')
@@ -636,9 +637,9 @@ fct_xml_wrap (in tree any, in txt any)
       else if (view_type = 'text-d')
 	{
 	  texp := cast (xpath_eval ('string (//query/text)', tree, 1) as varchar);
-	  http ('select  xmlelement (\'result\', 
-	  			     xmlattributes (\'text-d\' as "type"), 
-				     "res") 
+	  http ('select  xmlelement (\'result\',
+	  			     xmlattributes (\'text-d\' as "type"),
+				     "res")
 				     from (sparql ', ntxt);
 	}
       else if (view_type = 'entities-list' or view_type = 'list' or view_type = 'propval-list')
@@ -777,7 +778,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
   declare geo_conds any;
   geo_conds := xpath_eval ('//cond/@cond_t = ''near''', full_tree);
 
-  if (0 <> geo_conds and mode <> 'geo') 
+  if (0 <> geo_conds and mode <> 'geo')
     mode := 'geo-list';
 
   fct_dbg_msg (sprintf('fct_view: view mode: %s', mode));
@@ -793,17 +794,20 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
       http (sprintf ('select ?s%d as ?c1 count (*) as ?c2 ', this_s), pre);
       http (sprintf (' group by ?s%d order by desc 2', this_s), post);
     }
+
   if ('entities-list' = mode)
     {
       http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
       http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
     }
+
   if ('properties' = mode)
     {
       if (length (fct_inf_clause (tree)) > 0)
 	http (sprintf ('select ?s%dp as ?c1 count (distinct (?s%d)) as ?c2 ', this_s, this_s), pre);
       else
 	http (sprintf ('select ?s%dp as ?c1 count (*) as ?c2 ', this_s), pre);
+
       http (sprintf (' ?s%d ?s%dp ?s%do .', this_s, this_s, this_s), txt);
       http (sprintf (' group by ?s%dp order by desc 2', this_s), post);
     }
@@ -830,6 +834,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
       http (sprintf (' ?s%d a ?s%dc .', this_s, this_s), txt);
       http (sprintf (' group by ?s%dc order by desc 2', this_s), post);
     }
+
   if ('text' = mode or ('text-d' = mode and plain = 1))
     {
       declare exp any;
@@ -849,18 +854,18 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
   if ('text-d' = mode)
     {
       declare exp any;
+
       exp := charset_recode (xpath_eval ('string (//text)', tree), '_WIDE_', 'UTF-8');
-      http (sprintf ('select 
-		  	(<sql:s_sum_page> (<sql:vector_agg> (<bif:vector> (?c1, ?sm)), <bif:vector> (%s)))  as ?res where { { 
+
+      http (sprintf ('select
+		  	(<sql:s_sum_page> (<sql:vector_agg> (<bif:vector> (?c1, ?sm)), <bif:vector> (%s))) as ?res where { {
       select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', element_split (exp), this_s, this_s, this_s, this_s), pre);
 
-      http (sprintf ('order by desc (<sql:sum_rank> ((<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) ) )', this_s, this_s, this_s), post);	    
+      http (sprintf ('order by desc (<sql:sum_rank> ((<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) ) )', this_s, this_s, this_s), post);
       fct_post (tree, post, lim, offs);
       http ('}}', post);
       return;
     }
-
-
   if ('graphs' = mode)
     {
       http ('select ?g as ?c1, count(*) as ?c2 ', pre);
@@ -870,6 +875,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
     {
       declare loc any;
       loc := xpath_eval ('@location-prop', tree);
+
       if (loc = 'any')
 	{
 	  loc := '?anyloc';
@@ -877,15 +883,14 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 	}
       else
         http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
+
       if (length (loc) < 2)
          http (sprintf (' ?s%d geo:lat ?lat%d ; geo:long ?lng%d .', this_s, this_s, this_s), txt);
       else
          http (sprintf (' ?s%d %s ?location . ?location geo:lat ?lat%d ; geo:long ?lng%d .', this_s, loc, this_s, this_s), txt);
-
     }
 
   fct_post (tree, post, lim, offs);
-
 }
 ;
 
@@ -913,7 +918,7 @@ fct_literal (in tree any)
 
   if ('uri' = dtp or 'url' = dtp or 'iri' = dtp) {
       return sprintf ('<%s>', val);
-}
+  }
 
   return sprintf ('"%s"^^<%s>', val, dtp);
 }
@@ -953,9 +958,9 @@ fct_cond (in tree any, in this_s int, in txt any)
 
 --  dbg_printf ('fct_cond: inner: %s', flt_inner);
 
-  if (neg = 'on')   
+  if (neg = 'on')
     http (sprintf (' filter (! (%s)) . ', flt_inner), txt);
-  else 
+  else
     http (sprintf (' filter (%s) . ', flt_inner), txt);
 
   return;
@@ -963,7 +968,7 @@ fct_cond (in tree any, in this_s int, in txt any)
 ;
 
 create procedure
-fct_value (in tree any, in this_s int, in txt any) 
+fct_value (in tree any, in this_s int, in txt any)
 {
   declare val, dtp, op any;
 
@@ -976,7 +981,7 @@ fct_value (in tree any, in this_s int, in txt any)
   declare t_s varchar;
   t_s := sprintf ('?s%d', this_s);
 
-  http (sprintf (' filter (%s %s %s) .', t_s, op, val));  
+  http (sprintf (' filter (%s %s %s) .', t_s, op, val));
 
   return;
 }
@@ -1004,14 +1009,14 @@ fct_cond_range (in tree any, in this_s int, in txt any)
 
   cond_t := xpath_eval ('./@type', tree);
   neg    := xpath_eval ('./@neg',    tree);
-  lo := xpath_eval ('./@lo', tree);
-  hi := xpath_eval ('./@hi', tree);
+  lo     := xpath_eval ('./@lo',     tree);
+  hi     := xpath_eval ('./@hi',     tree);
 
   declare flt_inner, flt_cl varchar;
 
 --  fct_dbg_msg (sprintf ('fct_cond_range: got lo: %s, hi: %s, neg: %s', lo, hi, cast (neg as varchar)));
 
-  if (lo <> '' and hi <> '') { 
+  if (lo <> '' and hi <> '') {
     flt_inner := sprintf ('(?s%d >= %s && ?s%d <= %s)', this_s, lo, this_s, hi);
   }
 
@@ -1023,10 +1028,10 @@ fct_cond_range (in tree any, in this_s int, in txt any)
   http (flt_cl, txt);
 
   return;
-  }
+}
 ;
 
-create procedure 
+create procedure
 fct_cond_contains (in tree any, in this_s int, in txt any)
 {
   declare val, neg, cond_t, txs_qr varchar;
@@ -1037,25 +1042,25 @@ fct_cond_contains (in tree any, in this_s int, in txt any)
 
   val := cast (xpath_eval ('.', tree) as varchar);
 
-  if (val <> '') 
+  if (val <> '')
     {
       wlimit := registry_get ('fct_text_query_limit');
 
       if (isstring (wlimit))
         wlimit := atoi (wlimit);
       if (0 = wlimit)
-        wlimit := 100;	
+        wlimit := 100;
 
-      txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);	
-	
+      txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);
+
       if (length (txs_arr) > wlimit)
 	signal ('22023', 'The request is too large');
 
-      if ('no' <> neg) 
+      if ('no' <> neg)
         {
           http (sprintf (' ?s%d bif:contains ''%s'' .', this_s, txs_qr), txt);
         }
-      else 
+      else
         {
           http (sprintf (' filter (! bif:contains (?s%d, ''"%s"'')) .', this_s, val), txt);
         }
@@ -1073,14 +1078,14 @@ fct_cond_in (in tree any, in this_s int, in txt any) {
   v := xpath_eval ('./cond-parm', tree, 0);
 
   if (0 = length(v)) return;
-  
+
   for (i := 0; i < length(v); i := i + 1) {
     fct_dbg_msg (sprintf ('val: %s\n', cast (xpath_eval ('./text()', v[i]) as varchar)));
 
     if (i = 0) {
      v_str := fct_literal (v[i]);
     }
-    else 
+    else
       v_str := v_str || ',' || fct_literal (v[i]);
   };
 
@@ -1123,12 +1128,12 @@ fct_cond_near (in tree any, in this_s int, in txt any) {
   else
     http (sprintf (' ?s%d %s ?location . ?location geo:lat ?lat%d ; geo:long ?lng%d .', this_s, prop, this_s, this_s), txt);
 
-  http (sprintf (' filter (bif:st_intersects (bif:st_point (xsd:float(?lng%d),xsd:float(?lat%d)), bif:st_point (%s,%s), %d)).', 
+  http (sprintf (' filter (bif:st_intersects (bif:st_point (xsd:float(?lng%d),xsd:float(?lat%d)), bif:st_point (%s,%s), %d)).',
                  this_s, this_s, lon, lat, d), txt);
 }
 ;
 
-create procedure 
+create procedure
 fct_curie_iri (in curie varchar)
 {
   declare pos int;
@@ -1139,14 +1144,14 @@ fct_curie_iri (in curie varchar)
     return null;
   pref := subseq (curie, 0, pos);
   loc := subseq (curie, pos + 1);
-  ns := __xml_get_ns_uri (pref, 2); 
+  ns := __xml_get_ns_uri (pref, 2);
   if (ns is null)
     return null;
   return ns || loc;
 }
 ;
 
-create procedure 
+create procedure
 fct_curie (in curie varchar)
 {
   if (curie like '\\[%:%\\]')
@@ -1157,7 +1162,7 @@ fct_curie (in curie varchar)
       if (tmp is not null)
 	curie := tmp;
     }
-  return curie; 
+  return curie;
 }
 ;
 
@@ -1212,9 +1217,9 @@ fct_text (in tree any,
 	{
 	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d a <%s> } ))) .', this_s, ciri), txt);
 	}
-      else if (ciri is null) 
+      else if (ciri is null)
         {
-	  http (sprintf ('?s%d a ?s%d .', this_s, this_s + 1), txt); 
+	  http (sprintf ('?s%d a ?s%d .', this_s, this_s + 1), txt);
         }
       else
 	{
@@ -1245,6 +1250,7 @@ fct_text (in tree any,
         sc_opt := ' option (score ?sc) ';
       else
         sc_opt := '';
+
       if (prop is not null)
 	prop := '<' || prop || '>';
       else
@@ -1254,8 +1260,8 @@ fct_text (in tree any,
       if (isstring (wlimit))
         wlimit := atoi (wlimit);
       if (0 = wlimit)
-        wlimit := 100;	
-      txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);	
+        wlimit := 100;
+      txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);
       if (length (txs_arr) > wlimit)
 	signal ('22023', 'The request is too large');
       http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s, txs_qr, sc_opt), txt);
@@ -1336,7 +1342,7 @@ fct_chk_any_prop (in tree any, inout this_s int, inout max_s int, in txt any)
 
       http (sprintf ('?s%d ?s%dcondp ?s%d .', this_s, this_s, new_s), txt);
       this_s := max_s;
-    }   
+    }
 }
 ;
 
@@ -1344,7 +1350,7 @@ create procedure
 fct_query (in tree any, in plain integer := 0)
 {
   declare s, add_graph int;
-  declare txt, pre, post any;
+	  declare txt, pre, post any;
 
   txt := string_output ();
   pre := string_output ();
@@ -1411,8 +1417,8 @@ fct_view_pos (in tree any)
 {
   declare c any;
   declare i int;
-  c := xpath_eval ('//*[name() = "query" or 
-	           name () = "property" or 
+  c := xpath_eval ('//*[name() = "query" or
+	           name () = "property" or
 	           name () = "property-of"]', tree, 0);
   for (i := 0; i < length (c); i := i + 1)
     {
@@ -1424,7 +1430,7 @@ fct_view_pos (in tree any)
 ;
 
 create procedure
-fct_exec (in tree any, 
+fct_exec (in tree any,
           in timeout int)
 {
   declare start_time, view3, inx, n_rows int;
@@ -1447,7 +1453,9 @@ fct_exec (in tree any,
     }
 
   sqls := '00000';
+
   qr := fct_query (xpath_eval ('//query', tree, 1));
+
   query := qr;
 
   qr2 := fct_xml_wrap (tree, qr);
@@ -1497,12 +1505,12 @@ fct_exec (in tree any,
   declare v_pos integer;
   v_pos := fct_view_pos(tree);
 
-  res := xmlelement ("facets", xmlelement ("sparql", query), 
+  res := xmlelement ("facets", xmlelement ("sparql", query),
                                xmlelement ("time", msec_time () - start_time),
 		               xmlelement ("complete", case when sqls = 'S1TAT' then 'no' else 'yes' end),
 		               xmlelement ("timeout", __min (timeout * 2, atoi (registry_get ('fct_timeout_max')))),
 		               xmlelement ("db-activity", act),
-		               xmlelement ("processed", n_rows), 
+		               xmlelement ("processed", n_rows),
                                xmlelement ("view", xmlattributes (offs as "offset", lim as "limit", v_pos as "position")),
                                results[0], results[1], results[2]);
 

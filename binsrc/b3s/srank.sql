@@ -56,7 +56,7 @@ create procedure rnk_scale (in i int)
 
   ret := exp ((i - 0hex7fff) / 1e3);
 
-  if (ret < 1) 
+  if (ret < 1)
     {
       return (2 * atan (ret*5));
     }
@@ -66,7 +66,7 @@ create procedure rnk_scale (in i int)
       return 3 + ((atan (ret-1) * 4) / 3.14e0);
     }
 
-  else 
+  else
     {
       return 7 + (atan ((ret-10)/50) * 2);
     }

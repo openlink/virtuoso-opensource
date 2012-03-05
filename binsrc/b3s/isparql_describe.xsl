@@ -25,9 +25,9 @@
 -->
 
 <xsl:stylesheet version="1.0"
-                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"          
-                xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"         
-                xmlns:dc="http://purl.org/dc/elements/1.1/"         
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                xmlns:dc="http://purl.org/dc/elements/1.1/"
                 xmlns:ex="http://example.org/stuff/1.0/">
 <xsl:output method="html"
             omit-xml-declaration="yes"

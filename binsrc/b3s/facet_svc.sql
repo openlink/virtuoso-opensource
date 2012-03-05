@@ -31,7 +31,7 @@ create procedure fct_init ()
     {
       WS.WS.host_meta_add ('FCT.service', '<Link rel="http://openlinksw.com/virtuoso/fct/service" href="http://%{WSHost}s/fct/service"/>');
       WS.WS.host_meta_add ('FCT.browser', '<Link rel="http://openlinksw.com/virtuoso/fct/browser" href="http://%{WSHost}s/fct/"/>');
-      WS.WS.host_meta_add ('FCT.describe', 
+      WS.WS.host_meta_add ('FCT.describe',
       	'<Link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
     }
 }
@@ -50,7 +50,7 @@ create procedure fct_svc_log (in qr varchar, in lines varchar)
 }
 ;
 
-create procedure 
+create procedure
 fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
 {
   declare start_time int;
@@ -84,7 +84,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
       if (not isarray (res) or 0 = length (res) or not isarray (res[0]) or 0 = length (res[0]))
 	res := xtree_doc ('<result/>');
       else
-        res := res[0][0];	
+        res := res[0][0];
 
       ret := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
 			   xmlelement ("complete", case when sqls = 'S1TAT' then 'no' else 'yes' end),

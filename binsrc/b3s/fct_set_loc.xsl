@@ -22,7 +22,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 -->
-<xsl:stylesheet version="1.0" 
+<xsl:stylesheet version="1.0"
 		xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
 <xsl:param name="cno"/>
@@ -31,15 +31,15 @@
 
 <xsl:template match="cond[@type = 'near']">
   <xsl:choose>
-    <xsl:when test="$cno != (count (./ancestor::*[name () = 'class' or 
-                                                  name () = 'value' or 
-                                                  name () = 'value-range' or 
+    <xsl:when test="$cno != (count (./ancestor::*[name () = 'class' or
+                                                  name () = 'value' or
+                                                  name () = 'value-range' or
                                                   name () = 'cond-range' or
                                                   name () = 'cond']) +
-                             count (./ancestor-or-self::*/preceding-sibling::*/descendant-or-self::*[name () = 'class' or 
-                                              name () = 'value' or 
-                                              name () = 'value-range' or 
-                                              name () = 'cond-range' or 
+                             count (./ancestor-or-self::*/preceding-sibling::*/descendant-or-self::*[name () = 'class' or
+                                              name () = 'value' or
+                                              name () = 'value-range' or
+                                              name () = 'cond-range' or
                                               name () = 'cond']))">
       <xsl:copy>
         <xsl:apply-templates select="@* | node()"/>

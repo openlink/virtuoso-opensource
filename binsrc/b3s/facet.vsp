@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html 
+<!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <title>Precision Search &amp; Find</title>
 
-<?vsp 
+<?vsp
   declare main_ss varchar;
   main_ss := registry_get ('fct_main_ss');
   if (not isstring (main_ss)) main_ss := 'styles/default.css';
@@ -23,13 +23,13 @@
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
 <script type="text/javascript" src="facet.js"></script>
 
-<?vsp 
+<?vsp
   declare sid, _S, ses_parms varchar;
 
   b3s_handle_ses (path, lines, params);
 
   sid := connection_get ('sid');
-  
+
   declare dbg_out any;
   declare dbg_mode varchar;
   declare dbg_lvl int;
@@ -42,9 +42,9 @@
 
   if (not isstring (dbg_lvl))
       dbg_lvl := 0;
-    else 
+    else
       dbg_lvl := atoi (dbg_lvl);
-  
+
   connection_set ('fct_dbg_lvl', dbg_lvl);
 
   if (not isstring(dbg_mode))
@@ -63,19 +63,19 @@
 
 --  dbg_obj_print (path);
 --  dbg_obj_print (lines);
-  
+
 ?>
 
 </head>
 <body>
 <div id="PG">
 <div id="HD">
-  <?vsp fct_page_head (); ?>  
+  <?vsp fct_page_head (); ?>
 </div><!-- #HD -->
 <div id="MD">
-<?vsp 
+<?vsp
 --
--- 
+--
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -117,11 +117,11 @@ if ('load' = cmd)
 
     _fsq_id := http_param ('fsq_id');
 
-    if (_fsq_id) 
+    if (_fsq_id)
       {
         _sid := fct_load (_fsq_id);
 	if (_sid is not null)
-          { 
+          {
             http_rewrite ();
 	    http_request_status ('HTTP/1.1 302 Found');
 	    http_header (sprintf ('Location: /fct/facet.vsp?sid=%d&cmd=refresh\r\n', _sid));
@@ -173,11 +173,11 @@ declare exit handler for sqlstate '*'
 
   commit work;
   insert into fct_log (fl_sid, fl_cli_ip, fl_state, fl_where, fl_cmd, fl_sqlstate, fl_sqlmsg, fl_parms)
-         values (http_param('sid'), 
+         values (http_param('sid'),
 	         http_client_ip (),
 		 _state,
 		 'ERR_HANDLER',
-		 http_param('cmd'), 
+		 http_param('cmd'),
 		 __SQL_STATE,
 		 __SQL_MESSAGE,
 		 serialize(params));
@@ -188,11 +188,11 @@ declare exit handler for sqlstate '*'
 
   http('  </div>\n');
   http('  </div>\n');
-  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');  
+  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');
   http('</div>\n');
 
   goto footer;
-  
+
 };
 fct_vsp ();
 footer:;
@@ -210,11 +210,11 @@ footer:;
   Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
   <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
   <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a>
-  <?vsp 
+  <?vsp
     if (isstring (registry_get ('fst_hosted'))) { http (registry_get ('fst_hosted')); }
   ?>
   <br/>
-  <?vsp fct_virt_info (); ?><br /> 
+  <?vsp fct_virt_info (); ?><br />
   <span class="copyright">Data on this page is owned by its respective rights holders.<br/>Virtuoso Faceted Browser Copyright &copy; 2009-2012 OpenLink Software</span>
   <div id="FT_L"></div>
   <div id="FT_R"></div>

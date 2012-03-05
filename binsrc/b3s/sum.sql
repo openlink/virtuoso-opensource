@@ -20,8 +20,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--- Each summary is initially an array of 29 with s_rank, o_fill, o1, p1, sc1, o2, p2, sc2 
+-- Each summary is initially an array of 29 with s_rank, o_fill, o1, p1, sc1, o2, p2, sc2
 -- and so on.  After so many entries, more are not added.
+
 
 create procedure s_sum_init (inout env any)
 {
@@ -53,13 +54,13 @@ create procedure s_sum_fin (inout env any)
 ;
 
 
-create aggregate DB.DBA.S_SUM (in s_rank double precision, in p iri_id, in o any, in sc int) returns any from 
+create aggregate DB.DBA.S_SUM (in s_rank double precision, in p iri_id, in o any, in sc int) returns any from
   s_sum_init, s_sum_acc, s_sum_fin;
 
-grant execute on DB.DBA.S_SUM_INIT to "SPARQL";  
-grant execute on DB.DBA.S_SUM_ACC to "SPARQL";  
-grant execute on DB.DBA.S_SUM_FIN to "SPARQL";  
-grant execute on DB.DBA.S_SUM to "SPARQL";  
+grant execute on DB.DBA.S_SUM_INIT to "SPARQL";
+grant execute on DB.DBA.S_SUM_ACC to "SPARQL";
+grant execute on DB.DBA.S_SUM_FIN to "SPARQL";
+grant execute on DB.DBA.S_SUM to "SPARQL";
 
 create procedure sum_rank (inout arr any)
 {
@@ -67,7 +68,7 @@ create procedure sum_rank (inout arr any)
 }
 ;
 
-grant execute on DB.DBA.SUM_RANK to "SPARQL";  
+grant execute on DB.DBA.SUM_RANK to "SPARQL";
 
 create procedure sum_o_p_score (inout o any, inout p any)
 {
@@ -107,10 +108,10 @@ create procedure sum_result (inout final any, inout res any, inout text_exp any,
   tot	 := tot || cast (rdf_box_data (sorted[inx]) as varchar);
  exc := fct_bold_tags (search_excerpt (text_exp, tot));
 -- dbg_obj_print (' summaries of ', tot, ' ', lbl, ' ', exc);
- elt := xmlelement ('row', 
+ elt := xmlelement ('row',
 		    xmlelement ('column', xmlattributes ('trank' as "datatype"), cast (cast (tsum as real) / ((end_inx - start_inx) / 3) as varchar)),
 		    xmlelement ('column', xmlattributes ('erank' as "datatype"), cast (s_rank as varchar)),
- 		    xmlelement ('column', xmlattributes ('url' as "datatype", fct_short_form (s) as "shortform"), s), 
+ 		    xmlelement ('column', xmlattributes ('url' as "datatype", fct_short_form (s) as "shortform"), s),
 		    xmlelement ('column', lbl),
  		    xmlelement ('column', exc)
 		    );
@@ -142,14 +143,14 @@ create procedure s_sum_page_s (in rows any, in text_exp varchar)
     }
   n := 3 * n;
   --dbg_obj_print ('result length ', n);
-  res := make_array (n, 'any');  
+  res := make_array (n, 'any');
   fill := 0;
   for (inx := 0; inx < length (rows); inx := inx + 1)
     {
       os := aref (rows, inx, 1);
       s_rank := rnk_scale (os[0]);
       s := ID_TO_IRI (rows[inx][0]);
-      lbl := FCT_LABEL_S (rows[inx][0], 0, 'facets', lng_pref); 
+      lbl := FCT_LABEL_S (rows[inx][0], 0, 'facets', lng_pref);
       prev_fill := fill;
       for (inx2 := 3; inx2 < os[1] + 3; inx2 := inx2 + 3)
         {
@@ -181,23 +182,23 @@ create procedure s_sum_page_c (in rows any, in text_exp varchar)
     }
   n := 3 * dpipe_count (dp);
   --dbg_obj_print ('result length ', n);
-  res := make_array (n, 'any');  
+  res := make_array (n, 'any');
   fill := 0;
   for (inx := 0; inx < length (rows); inx := inx + 1)
     {
       os := aref (rows, inx, 1);
       s_rank := rnk_scale (os[0]);
-    prev_fill := fill;
+      prev_fill := fill;
       for (inx2 := 3; inx2 < os[1] + 3; inx2 := inx2 + 3)
-	{
-	so := dpipe_next (dp, 0);
+        {
+	  so := dpipe_next (dp, 0);
 	  --dbg_obj_print ('res ', fill, so);
-	s := so[0];
+	  s := so[0];
 	  res[fill] := so[1];
-	    res[fill + 1] := os[inx2 + 1];
-	      res[fill + 2] := os[inx2 + 2];
+	  res[fill + 1] := os[inx2 + 1];
+	  res[fill + 2] := os[inx2 + 2];
 	  lbl := so[2];
-	fill := fill + 3;
+	  fill := fill + 3;
 	}
       sum_result (final, res, text_exp, s, prev_fill, fill, s_rank, lbl);
     }
@@ -289,8 +290,8 @@ create procedure sum_tst_1 (in text_exp varchar, in text_words varchar := null)
 --    text_words := vector (text_exp);
 --  res := (select vector_agg (vector (s, sm)) from (
 --   select top 20 s, s_sum (iri_rank (s), p, o, score)  as sm
---   from rdf_obj, rdf_ft, rdf_quad q1 
---   where contains (ro_flags, text_exp) and rf_id = ro_id and q1.o = rf_o group by s 
+--   from rdf_obj, rdf_ft, rdf_quad q1
+--   where contains (ro_flags, text_exp) and rf_id = ro_id and q1.o = rf_o group by s
 --   order by sum_rank (sm) option (quietcast) ) s option (quietcast)
 --);
   --dbg_obj_print (res);
@@ -301,7 +302,7 @@ create procedure sum_tst_1 (in text_exp varchar, in text_words varchar := null)
 
 --  sum_tst ('oori');
 
---  
+--
 -- sparql
 -- select (<SHORT_OR_LONG::>(?s1)) as ?c1, (<sql:S_SUM> (
 --    <SHORT_OR_LONG::IRI_RANK> (?s1),

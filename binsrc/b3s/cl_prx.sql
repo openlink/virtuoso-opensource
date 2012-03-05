@@ -242,10 +242,10 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_5', 1,
     '/describe/\\?uri=([^\&]*)\&graph=([^\&]*)', vector ('g', 'graph'), 2,
     '/fct/rdfdesc/description.vsp?g=%s&graph=%s', vector ('g', 'graph'), null, null, 2);
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_fctabout_http_proxy_rule_list1', 1, 
-    vector ('ext_fctabout_http_proxy_rule_1', 
-      	    'ext_fctabout_http_proxy_rule_2', 
-	    'ext_fctabout_http_proxy_rule_3', 
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_fctabout_http_proxy_rule_list1', 1,
+    vector ('ext_fctabout_http_proxy_rule_1',
+      	    'ext_fctabout_http_proxy_rule_2',
+	    'ext_fctabout_http_proxy_rule_3',
 	    'ext_fctabout_http_proxy_rule_4',
 	    'ext_fctabout_http_proxy_rule_5'
 	    ));

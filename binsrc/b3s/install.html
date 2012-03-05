@@ -20,7 +20,7 @@ create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar 
 create bitmap index RDF_QUAD_GPOS on RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
 
 checkpoint;
-</pre>
+	</pre>
 	<p>Once the indexes are created, you must re-install the Faceted Browser VAD package.</p>
     </body>
 </html>

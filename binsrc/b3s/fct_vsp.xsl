@@ -22,14 +22,13 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 -->
-<xsl:stylesheet version="1.0" 
+<xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:addthis="http://www.addthis.com/help/api-spec"> 
+                xmlns:addthis="http://www.addthis.com/help/api-spec">
 <xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
-
 <!-- Pager-related vars calculation -->
 
-<xsl:variable name="offs" 
+<xsl:variable name="offs"
               select="if(or(/facets/view/@offset = '', not(/facets/view/@offset)), 1, /facets/view/@offset + 1)"/>
 <xsl:variable name="limit" select="/facets/view/@limit"/>
 
@@ -60,42 +59,42 @@
   <xsl:if test="/facets/complete = 'yes' and /facets/processed = 0 and $rowcnt = 0"><xsl:value-of select="1"/></xsl:if>
 </xsl:variable>
 
-<xsl:template match = "facets">
-<div id="res">
+<xsl:template match="facets">
+  <div id="res">
     <div class="btn_bar btn_bar_top">
       <xsl:comment><xsl:value-of select="$type"/></xsl:comment>
-    <xsl:call-template name="render-pager">
-      <xsl:with-param name="pfx">pager_top</xsl:with-param>
-    </xsl:call-template>
-  <xsl:if test="/facets/complete != 'yes'">
-    <span class="partial_res_expln">
-      <xsl:choose>
-        <xsl:when test="$rowcnt != 0">
+      <xsl:call-template name="render-pager">
+        <xsl:with-param name="pfx">pager_top</xsl:with-param>
+      </xsl:call-template>
+      <xsl:if test="/facets/complete != 'yes'">
+        <span class="partial_res_expln">
+          <xsl:choose>
+            <xsl:when test="$rowcnt != 0">
               <xsl:text>The query timed out with partial result:</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
+            </xsl:when>
+            <xsl:otherwise>
               <xsl:text>The query timed out with no result:</xsl:text>
-        </xsl:otherwise>
-      </xsl:choose>
-    </span>
-    <a class="partial_res_help" href="/fct/facet_doc.html#timeout">What's this?</a>&#8194;
-    <button>
-      <xsl:attribute name="onclick">
-        javascript:fct_nav_to('/fct/facet.vsp?cmd=refresh&amp;sid=<xsl:value-of select="$sid"/>&amp;timeout=<xsl:value-of select="$timeout"/>')
-      </xsl:attribute>Retry with <xsl:value-of select="($timeout div 1000)"/> seconds timeout
-    </button>
-  </xsl:if>
-</div> <!-- btn_bar -->
+            </xsl:otherwise>
+          </xsl:choose>
+        </span>
+        <a class="partial_res_help" href="/fct/facet_doc.html#timeout">What's this?</a>&#8194;
+        <button>
+          <xsl:attribute name="onclick">
+            javascript:fct_nav_to('/fct/facet.vsp?cmd=refresh&amp;sid=<xsl:value-of select="$sid"/>&amp;timeout=<xsl:value-of select="$timeout"/>')
+          </xsl:attribute>Retry with <xsl:value-of select="($timeout div 1000)"/> seconds timeout
+        </button>
+      </xsl:if>
+    </div> <!-- btn_bar -->
     <xsl:choose>
       <xsl:when test="$noresult = 1">
-  <div class="empty_result">
+        <div class="empty_result">
           <h3>No Result</h3>
           <p>This query did not produce any results.<br/>
           Try dropping some of the conditions, to make the query less specific.</p>
-  </div>
+        </div>
       </xsl:when>
       <xsl:otherwise>
-<xsl:choose>
+        <xsl:choose>
           <!--xsl:when test="$view-type = 'text'"><h3>Text match results</h3></xsl:when>
           <xsl:when test="$view-type = 'text-d'"><h3>Text match results</h3></xsl:when>
           <xsl:when test="$view-type = 'text-properties'"><h3>List of Properties With Matching Text</h3></xsl:when>
@@ -106,95 +105,95 @@
           <xsl:when test="$view-type = 'entities-list'"><h3>Entities found</h3></xsl:when>
           <!--xsl:when test="$view-type = 'list-count'"><h3>Distinct values</h3></xsl:when>
           <xsl:when test="$view-type = 'geo'"><h3>Location</h3></xsl:when-->
-</xsl:choose>
-<!--xsl:message terminate="no"><xsl:value-of select="$type"/></xsl:message-->
-<xsl:choose>
+        </xsl:choose>
+        <!-- xsl:message terminate="no"><xsl:value-of select="$type"/></xsl:message -->
+        <xsl:choose>
           <xsl:when test="$view-type = 'geo' or $view-type = 'geo-list'">
             <xsl:call-template name="render-geo-conds-ui">
               <xsl:with-param name="result" select="/facets/result"/>
             </xsl:call-template>
-  </xsl:when>
-  <xsl:otherwise>
-    <xsl:choose>
-      <xsl:when test="count (/facets/result) &gt; 1">
-	<xsl:for-each select="result[@type = 'classes' or @type = 'properties']">
-	  <div class="facet_ctr">
-	    <xsl:choose>
-              <xsl:when test="@type='properties'">
-		<h4 class="facet_hd">Properties</h4>
-              </xsl:when>
-              <xsl:otherwise>
-		<h4 class="facet_hd">Types</h4>
-              </xsl:otherwise>
-	    </xsl:choose>
-	    <div class="facet">
-              <xsl:call-template name="render-result">
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:choose>
+              <xsl:when test="count (/facets/result) &gt; 1">
+	        <xsl:for-each select="result[@type = 'classes' or @type = 'properties']">
+	          <div class="facet_ctr">
+	            <xsl:choose>
+                      <xsl:when test="@type='properties'">
+		        <h4 class="facet_hd">Properties</h4>
+                      </xsl:when>
+                      <xsl:otherwise>
+		        <h4 class="facet_hd">Types</h4>
+                      </xsl:otherwise>
+	            </xsl:choose>
+	            <div class="facet">
+                      <xsl:call-template name="render-result">
                         <xsl:with-param name="view-type"><xsl:value-of select="$view-type"/></xsl:with-param>
-		<xsl:with-param name="command">
-		  <xsl:choose>
-		    <xsl:when test="@type = 'classes'">set_class</xsl:when>
-		    <xsl:when test="@type = 'properties'">open_property</xsl:when>
-		    <xsl:otherwise><xsl:value-of select="$cmd"/></xsl:otherwise>
-                  </xsl:choose>
-		</xsl:with-param>
-              </xsl:call-template>
-	    </div>
-	  </div> <!-- facet_ctr -->
-	</xsl:for-each>
-	<xsl:for-each select="/facets/result [@type != 'classes' and @type != 'properties']">
-	  <xsl:call-template name="render-result">
+		        <xsl:with-param name="command">
+		          <xsl:choose>
+                            <xsl:when test="@type = 'classes'">set_class</xsl:when>
+                            <xsl:when test="@type = 'properties'">open_property</xsl:when>
+                            <xsl:otherwise><xsl:value-of select="$cmd"/></xsl:otherwise>
+                          </xsl:choose>
+                        </xsl:with-param>
+                      </xsl:call-template>
+	            </div>
+	          </div> <!-- facet_ctr -->
+	        </xsl:for-each>
+	        <xsl:for-each select="/facets/result [@type != 'classes' and @type != 'properties']">
+	          <xsl:call-template name="render-result">
 	            <xsl:with-param name="view-type"><xsl:value-of select="$view-type"/></xsl:with-param>
-	    <xsl:with-param name="command">
-	      <xsl:choose>
-                <xsl:when test="@type = 'classes'">set_class</xsl:when>
-                <xsl:when test="@type = 'properties'">open_property</xsl:when>
-                <xsl:otherwise><xsl:value-of select="$cmd"/></xsl:otherwise>
-              </xsl:choose>
-	    </xsl:with-param>
-	  </xsl:call-template>
-        </xsl:for-each>
-      </xsl:when> <!-- multiple results -->
-      <xsl:otherwise>
-        <xsl:for-each select="/facets/result">
-	  <xsl:call-template name="render-result">
+	            <xsl:with-param name="command">
+	              <xsl:choose>
+                        <xsl:when test="@type = 'classes'">set_class</xsl:when>
+                        <xsl:when test="@type = 'properties'">open_property</xsl:when>
+                        <xsl:otherwise><xsl:value-of select="$cmd"/></xsl:otherwise>
+                      </xsl:choose>
+	            </xsl:with-param>
+	          </xsl:call-template>
+                </xsl:for-each>
+              </xsl:when> <!-- multiple results -->
+              <xsl:otherwise>
+                <xsl:for-each select="/facets/result">
+	          <xsl:call-template name="render-result">
 	            <xsl:with-param name="view-type"><xsl:value-of select="$view-type"/></xsl:with-param>
-	    <xsl:with-param name="command">
-	      <xsl:choose>
-                <xsl:when test="@type = 'classes'">set_class</xsl:when>
-                <xsl:when test="@type = 'properties'">open_property</xsl:when>
-	        <xsl:otherwise><xsl:value-of select="$cmd"/></xsl:otherwise>
-              </xsl:choose>
-	    </xsl:with-param>
-	  </xsl:call-template>
-        </xsl:for-each>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:otherwise>
-</xsl:choose>
-<div class="btn_bar">
-  <xsl:call-template name="render-pager">
-    <xsl:with-param name="pfx">pager_bottom</xsl:with-param>
-  </xsl:call-template>
-</div> <!-- btn_bar -->
+	            <xsl:with-param name="command">
+	              <xsl:choose>
+                        <xsl:when test="@type = 'classes'">set_class</xsl:when>
+                        <xsl:when test="@type = 'properties'">open_property</xsl:when>
+	                <xsl:otherwise><xsl:value-of select="$cmd"/></xsl:otherwise>
+                      </xsl:choose>
+	            </xsl:with-param>
+	          </xsl:call-template>
+                </xsl:for-each>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:otherwise>
+        </xsl:choose>
+        <div class="btn_bar">
+          <xsl:call-template name="render-pager">
+            <xsl:with-param name="pfx">pager_bottom</xsl:with-param>
+          </xsl:call-template>
+        </div> <!-- btn_bar -->
       </xsl:otherwise> <!-- non-empty result -->
     </xsl:choose>
-<div id="result_nfo">
-  <xsl:choose>
+    <div id="result_nfo">
+      <xsl:choose>
         <xsl:when test="/facets/complete = 'yes'">
           <xsl:text>Complete result - </xsl:text>
         </xsl:when>
-    <xsl:otherwise>Partial result - </xsl:otherwise>
-  </xsl:choose>
+        <xsl:otherwise>Partial result - </xsl:otherwise>
+      </xsl:choose>
       <xsl:value-of select="if(/facets/processed &gt; 0, /facets/processed, $rowcnt)"/>
       <xsl:text> processed in </xsl:text>
       <xsl:value-of select="/facets/time"/>
       <xsl:text> msec.</xsl:text>
       <br/>
       <xsl:text>  Resource utilization: </xsl:text>
-  <xsl:value-of select="/facets/db-activity"/> 
-</div> <!-- #result_nfo -->
-</div> <!-- #res -->
-<script type="text/javascript">
+      <xsl:value-of select="/facets/db-activity"/>
+    </div> <!-- #result_nfo -->
+  </div> <!-- #res -->
+  <script type="text/javascript">
   var sparql_a = OAT.Dom.create('a',{}, 'sparql_a');
   sparql_a.href='/sparql?default-graph-uri=&amp;qtxt=<xsl:value-of select="urlify ($p_qry)"/>&amp;debug='
   sparql_a.innerHTML = 'View query as SPARQL';
@@ -398,8 +397,8 @@
 
               <!--xsl:message terminate="no">
                 <xsl:value-of select="$query/query/class/@iri"/><xsl:text> | </xsl:text><xsl:value-of select="column[1]"/>
-              </xsl:message-->  
-              <xsl:variable name="current_iri" select="column[1]"/> 
+              </xsl:message-->
+              <xsl:variable name="current_iri" select="column[1]"/>
               <xsl:variable name="use_iri">
                 <xsl:choose>
                   <xsl:when test="not $query/query/class[@iri = $current_iri] and column[1]/@sparql_ser != ''">
@@ -492,14 +491,14 @@
                   <xsl:attribute name="alt">
                     <xsl:choose>
                       <xsl:when test="./@datatype='trank'">Text Rank:</xsl:when>
-                      <xsl:when test="./@datatype='erank'">Entity Rank:</xsl:when> 
+                      <xsl:when test="./@datatype='erank'">Entity Rank:</xsl:when>
                     </xsl:choose>
                     <xsl:value-of select="."/>
                   </xsl:attribute>
                   <xsl:attribute name="title">
                     <xsl:choose>
                       <xsl:when test="./@datatype='trank'">Text Rank:</xsl:when>
-                      <xsl:when test="./@datatype='erank'">Entity Rank:</xsl:when> 
+                      <xsl:when test="./@datatype='erank'">Entity Rank:</xsl:when>
                     </xsl:choose>
                     <xsl:value-of select="."/>
                   </xsl:attribute>
@@ -532,7 +531,7 @@
 </table>
 
 <xsl:if test="/facets/result/@type='propval-list' or $view-type='list'">
-  <form id="cond_form"> 
+  <form id="cond_form">
     <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
     <input type="hidden" name="hi" id="out_hi"/>
     <input type="hidden" name="lo" id="out_lo"/>
@@ -541,13 +540,13 @@
     <input type="hidden" name="val" id="out_val"/>
     <input type="hidden" name="cmd" value="cond" id="cmd"/>
     <input type="hidden" name="cond_parms" id="cond_parms"/>
-    Add condition: 
+    Add condition:
     <select id="cond_type" name="cond_t">
       <option value="none">None</option>
       <option value="eq">==</option>
       <option value="neq">!=</option>
-      <option value="gte">&gt;=</option> 
-      <option value="gt">&gt;</option> 
+      <option value="gte">&gt;=</option>
+      <option value="gt">&gt;</option>
       <option value="lte">&lt;=</option>
       <option value="lt">&lt;</option>
       <option value="range">Between</option>
@@ -556,14 +555,14 @@
       <option value="in">In</option>
     </select>
     <span id="cond_inp_ctr" style="display:none">
-      <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/--> 
+      <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/-->
       <input id="cond_lo" type="text"/>
       <span id="cond_hi_ctr"> and <input id="cond_hi" type="text"/></span> <select id="cond_dt"></select>
       <input type="button" id="set_cond" value="Set Condition"/>
     </span>
     <div id="in_ctr" style="display:none"></div>
     <div id="geo_ctr" style="display:none"></div>
-  </form>                
+  </form>
 </xsl:if>
 
 <xsl:call-template name="render-init-func">
@@ -620,13 +619,13 @@
   <xsl:param name="result"/>
   <xsl:if test="$type='geo' or $type='geo-list'">
     <div id="user_map"></div>
-    <form id="cond_form"> 
+    <form id="cond_form">
       <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
       <input type="hidden" name="cmd" value="cond" id="cmd"/>
       <input type="hidden" name="cno" value="" id="cno"/>
       <input type="hidden" name="cond_t" value="near" id="cond_t"/>
       <label for="cond_distance">Within: </label>
-      <input name="dist" id="cond_dist" type="text" size="5"/> km of 
+      <input name="dist" id="cond_dist" type="text" size="5"/> km of
       <select name="loc_trig_sel" id="loc_trig_sel">
         <option>Coordinates</option>
         <option value="on">Autolocation</option>
@@ -636,7 +635,7 @@
         <input id="cond_loc" type="text" style="display:none"/>
       </span>
       <span id="coord_ctr">
-        <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/--> 
+        <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/-->
         <label for="cond_lat">Lat:</label>
         <input name="lat" id="cond_lat" type="text" size="9"/>
         <label for="cond_lon">Lon:</label>
@@ -646,7 +645,7 @@
       </span>
       <button id="cond_loc_acq_b">Acquire</button>
       <button id="cond_loc_use_b">Set condition</button>
-    </form>                
+    </form>
   </xsl:if>
 </xsl:template> <!-- render-geo-conds-ui -->
 
@@ -690,7 +689,7 @@ function init() {
                               false,
                               {image: "oat/images/markers/01.png",
                                imageSize: [18,41],
-                               custData: {__fct_bubble_content: ["<xsl:value-of select="column[1]"/>", 
+                               custData: {__fct_bubble_content: ["<xsl:value-of select="column[1]"/>",
 	                                                         "<xsl:value-of select='translate (normalize-space (column[2]), &apos;"&apos;, &apos;&apos;)'/>"]}});
         markersArr.push([<xsl:value-of select="column[3]"/>,<xsl:value-of select="column[4]"/>]);
       </xsl:for-each>
@@ -720,7 +719,7 @@ function init() {
   <xsl:if test="$addthis_key != ''">
   <script type="text/javascript">
   var addthis_config = {
-    "data_track_clickback":true, 
+    "data_track_clickback":true,
     ui_cobrand:"OpenLink Virtuoso",
     pubid: "<xsl:value-of select="$addthis_key"/>"
   };
@@ -739,6 +738,5 @@ var addthis_share = {
     <xsl:apply-templates select="@* | node()"/>
   </xsl:copy>
 </xsl:template>
-
 
 </xsl:stylesheet>

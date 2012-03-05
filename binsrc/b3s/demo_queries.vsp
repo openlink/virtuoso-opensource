@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC
-  "-//W3C//DTD XHTML 1.0 Strict//EN"	
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -14,13 +14,13 @@ FACET DEMO PAGE CUSTOMIZATION:
 
 Registry keys:
 
-'fct_demo_uri' controls generation of "Demo Queries" link on Facet Browser's front page. If not set, this page is used. 
+'fct_demo_uri' controls generation of "Demo Queries" link on Facet Browser's front page. If not set, this page is used.
 See facet_view.sql.
 
-'sparql_demo_query_path' should point to a DAV collection with .isparql files to display. If not set, 
+'sparql_demo_query_path' should point to a DAV collection with .isparql files to display. If not set,
 '/DAV/home/dav/sparql_demo_queries' will be used.
 
-'sparql_demo_xsl_uri' should point to XSL used to extract information and display entries in the list of queries. 
+'sparql_demo_xsl_uri' should point to XSL used to extract information and display entries in the list of queries.
 If not set, '/fct/isparql_describe.xsl' is used.
 
 -->
@@ -76,7 +76,7 @@ function get_and_encode_query (q_elm)
 
 </script>
 </head>
-<body>  
+<body>
   <div id="PG">
     <div id="HD">
       <a class="logo" href="/fct/facet.vsp">
@@ -92,11 +92,11 @@ function get_and_encode_query (q_elm)
   declare num_r int;
   num_r := 0;
 
-  for select res_content, res_name, res_full_path 
-        from WS.WS.SYS_DAV_RES 
+  for select res_content, res_name, res_full_path
+        from WS.WS.SYS_DAV_RES
         where RES_FULL_PATH like demo_dav_path || '%.isparql' do
     {
-	
+
 	ct_tree := xml_tree_doc (xml_tree (res_content));
 	http_value (xslt (demo_xsl_uri,
 		    	  ct_tree,
@@ -104,7 +104,7 @@ function get_and_encode_query (q_elm)
 
         num_r := num_r + 1;
     }
-  if (0 = num_r) 
+  if (0 = num_r)
     {
       http ('<tr><td colspan="3"><span class="advisory">No demo queries available on this server.</span></td></tr>');
     }

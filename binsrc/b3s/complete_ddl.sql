@@ -34,7 +34,7 @@ urilbl_complete_lookup_2 (
 EXEC_STMT ('alter index urilbl_complete_lookup_2 on urilbl_complete_lookup_2 partition (ull_label_ruined varchar (6,0hexffff))', 0);
 
 EXEC_STMT (
-'create table 
+'create table
 urilbl_cpl_log (
   ullog_ts timestamp,
   ullog_msg varchar,
