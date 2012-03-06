@@ -1791,7 +1791,7 @@ create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
 }
 ;
 
-create procedure DB.DBA.decodeXML(in xmlstr varchar)
+create procedure DB.DBA.DECODEXML(in xmlstr varchar)
 {
   -- takes XMLSTR, returns an xml tree doc
   declare ret any;
@@ -1931,7 +1931,7 @@ grant execute on DB.DBA.RDF_CONVERT_TO_XTREE to public;
 grant execute on DB.DBA.OPENGRAPH_OBJ_CONNECTIONS to public;
 grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
 grant execute on DB.DBA.XSLT_SANEURI to public;
-grant execute on DB.DBA.decodeXML to public;
+grant execute on DB.DBA.DECODEXML to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1968,7 +1968,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:uri_hash', 'DB.DBA.RDF_
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:convert_to_xtree', 'DB.DBA.RDF_CONVERT_TO_XTREE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:crunchbase_moneystring2decimal', 'DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_SANEURI');
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.decodeXML');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
