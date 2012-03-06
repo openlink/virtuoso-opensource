@@ -376,7 +376,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('.*facebook.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('app_secret', '', 'app_id', '', 'offline_access', '1'));
+	values ('.*facebook.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', 
+	  vector ('app_secret', '', 'app_id', '', 'offline_access', '1', 'max_pages', '4', 'paging_page_size_limit', '5000'));
 
 -- Force an update to the Facebook cartridge name if its already registered
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '.*facebook.*', RM_DESCRIPTION = 'Facebook (Graph API)'
@@ -3411,7 +3412,7 @@ create index OAUTH_TOKEN_REQUESTS_OAUTH_REQ_TOKEN on DB.DBA.OAUTH_TOKEN_REQUESTS
 create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
   declare qr, path any;
-  declare tree, xt, xt_og_metadata, xd, types, hdr any;
+  declare tree, xt, xt2, xt_og_metadata, xd, types, hdr any;
   declare id, cnt, url, tmp, access_token, client_id, mime, client_secret, code varchar;
   declare pos, ret, ord integer;
 
@@ -3419,9 +3420,10 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
   declare og_id varchar; -- Open Graph object ID
   declare og_conns any; -- Open Graph object's connections 
   declare og_err, og_headers any;
-  declare retries integer;
+  declare retries, page, max_pages, paging_page_size_limit, more_pages integer;
   declare og_timeout integer; -- Timeout when accessing Open Graph collections
   declare http_new_origin_uri varchar;
+  declare append_access_token_to_connections integer;
 
   og_timeout := 60;
   og_id := null;
@@ -3500,11 +3502,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     tree := json_parse (cnt);
     if (tree is null)
       return 0;
-    declare ses any;
-    ses := string_output ();
-    DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
-    ses := string_output_string (ses);
-    xt := xtree_doc (ses, 2);
+    xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
     if (xpath_eval ('/results/document/type[ .  = "link_stat"]', xt) is null)
     {
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
@@ -3529,8 +3527,14 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     return ret;
   }
 
+  -- max_pages: maximum number of pages to retrieve. 0 => no limit
+  -- paging_page_size_limit: only turn on paging for page sizes below this limit. 0 => fetch all available pages, irrespective of their size
+  max_pages := coalesce (atoi(get_keyword ('max_pages', opts)), 1);
+  paging_page_size_limit := coalesce (atoi(get_keyword ('paging_page_size_limit', opts)), 5000);
+
   url := sprintf ('https://graph.facebook.com/%s?metadata=1', id);
   cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  append_access_token_to_connections := 1;
 
   -- Handle OpenGraph object type Album as a special case when sponged directly.
   -- An access token must be supplied to be able to query this object type at all.
@@ -3541,15 +3545,38 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
   if (cnt = 'false')
   {
     -- We don't yet know the Facebook user ID of the Album's creator.
-    -- Use any available access token to get the Album's metadata
-    access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (id);
-    if (length (access_token) = 0)
+    -- Try all available access tokens to get the Album's metadata
+    declare access_tokens any;
+
+    access_token := null;
+    access_tokens := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (null);
+    if (length (access_tokens) = 0)
     {
       log_message (sprintf('%s: No access token is available to query this OpenGraph object\'s metadata.', current_proc_name()));
       return 0;
     }
-    url := url || '&access_token=' || access_token;
-    cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    foreach (any _token in access_tokens) do
+    {
+      declare token varchar;
+      token := cast (_token as varchar);
+      url := url || '&access_token=' || token;
+      cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+      if (cnt <> 'false')
+      {
+        tree := json_parse (cnt);
+        xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+        og_err := cast (xpath_eval('results/error/type', xt) as varchar);
+        if (og_err is null)
+	{
+          access_token := token;
+          goto got_usable_token_for_album;
+	}
+      }
+    }
+    log_message (sprintf('%s: No access token is available to query this OpenGraph object\'s metadata.', current_proc_name()));
+    return 0;
+
+got_usable_token_for_album:
     tree := json_parse (cnt);
     xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
     og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
@@ -3564,7 +3591,6 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     declare default_access_token varchar;
     default_access_token := access_token;
     access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
-
     if (access_token <> default_access_token)
     {
       -- Re-fetch the Album's metadata
@@ -3574,16 +3600,15 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
       url := url || '&access_token=' || access_token;
       cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     }
-    -- Set the access_token to null to prevent DB.DBA.OPENGRAPH_OBJ_CONNECTIONS from appending it to
-    -- the Album's connection/collection URLs. The access token should already appended to these URLs
-    -- in the returned metadata
-    access_token := null;
+    -- Prevent DB.DBA.OPENGRAPH_OBJ_CONNECTIONS from appending it to the Album's connection/collection URLs. 
+    -- The access token should already appended to these URLs in the returned metadata
+    append_access_token_to_connections := 0;
   }
-  declare og_nick any;
+
   tree := json_parse (cnt);
-  og_nick := get_keyword ('username', tree);
   xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
   og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
+
   -- Transform the base OpenGraph object description to RDF
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt_og_metadata, 
         vector ('baseUri', new_origin_uri, 'og_object_type', og_object_type));
@@ -3594,40 +3619,52 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
   {
     og_id := cast (xpath_eval('/results/id', xt_og_metadata) as varchar);
     if (length (og_id) > 0)
-    {
       access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
-    }
   }
-
-  --cnt := http_client (sprintf ('https://graph.facebook.com/%U/feed?access_token=%U', og_nick, access_token), proxy=>get_keyword_ucase ('get:proxy', opts));
-  --dbg_obj_print (cnt);
 
   retries := 0;
 retry_without_access_token:
   -- Try all the object's connections listed in the object metadata
-  og_conns := DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (xt_og_metadata, access_token);
+  og_conns := DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (xt_og_metadata, access_token, append_access_token_to_connections);
+  page := 0;
+
   -- batch request
   declare br, req, rtree any;
+
+next_page_batch:
+  page := page + 1;
+  more_pages := 0;
   br := '[';
   for (declare i int, i := 0; i < length (og_conns); i := i + 2)
     {
       declare u, h any;
-      h := rfc1808_parse_uri (og_conns[i + 1]);
-      h [0] := h [1] := ''; 
-      u := vspx_uri_compose (h);
-      br := br || sprintf ('{"method": "GET", "relative_url": "%s"},', subseq (u, 1)); 
+      if (og_conns[i + 1] is not null)
+      {
+        h := rfc1808_parse_uri (og_conns[i + 1]);
+        h [0] := h [1] := ''; 
+        u := vspx_uri_compose (h);
+        br := br || sprintf ('{"method": "GET", "relative_url": "%s"},', subseq (u, 1)); 
+      }
     }
   br := rtrim (br, ',') || ']';
   req := sprintf ('access_token=%U&batch=%U', access_token, br);
   cnt := http_get ('https://graph.facebook.com', og_headers, 'POST', null, req);
-  string_to_file ('fbr.json', cnt, -2);
   rtree := json_parse (cnt);
-  if (length (rtree) <> length (og_conns) / 2)
-    log_message ('FB api returns different results');
+
   -- Transform each of the OpenGraph object's connections
+  declare ibatch integer;
+  ibatch := -1;
   for (declare i int, i := 0; i < length (og_conns); i := i + 2)
   {
-    if (og_conns[i] = 'picture')
+    declare og_conn_type any;
+
+    if (og_conns[i+1] is null)
+      goto next_conn;
+
+    og_conn_type := og_conns[i];
+    ibatch := ibatch + 1;
+
+    if (og_conn_type = 'picture')
     {
       declare og_picture_url varchar;
       og_picture_url := null;
@@ -3653,22 +3690,56 @@ got_picture_url:
     }
     else
     {
-      -- Some of the Open Graph collections occasionally fail to respond, so set timeout
-      -- cnt := http_client (og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), timeout=>og_timeout, http_headers=>'User-Agent: curl');
-      cnt := get_keyword ('body', rtree[i/2]);
-      tree := json_parse (cnt);
-      xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+      cnt := get_keyword ('body', rtree[ibatch]);
+      -- Batch requests are sometimes not always completely fulfilled
+      if (cnt is not null)
+      {
+        tree := json_parse (cnt);
+        xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+      }
     }
+    og_conns[i+1] := null; -- Assume no more pages are required for this connection
     og_err := cast (xpath_eval('results/error/type', xt) as varchar);
     if (og_err is null)
     {
       declare mode varchar;
-      mode := sprintf ('%s_%s', og_object_type, og_conns[i]);
+      declare og_next_page varchar;
+
+      mode := sprintf ('%s_%s', og_object_type, og_conn_type);
+
       -- Transform the OpenGraph connection output to RDF
-      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
+      xt2 := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
 	vector ('baseUri', new_origin_uri, 'og_object_type', mode));
-      xd := serialize_to_UTF8_xml (xt);
+      xd := serialize_to_UTF8_xml (xt2);
       DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+
+      -- Prepare to get next page of collection data
+      --
+      -- The page size used by the Graph API doesn't appear to be configurable.
+      -- Two page sizes are routinely used:
+      --   25: for connections
+      --     posts, statuses, links, notes, photos, albums, checkins
+      --   5000: for connections
+      --     friends, interests, music, books, movies, games, likes
+      -- 
+      if (max_pages = 0 or (max_pages > 0 and page < max_pages))
+      {
+	og_next_page := cast (xpath_eval('/results/paging/next', xt) as varchar);
+	if (og_next_page is not null)
+	{
+	  declare page_size integer;
+
+	  page_size := 0;
+	  tmp := sprintf_inverse (og_next_page, '%slimit=%d&%s', 0);
+	  if (tmp is not null and tmp[1] is not null)
+	    page_size := tmp[1];
+	  if (page_size > 0 and (paging_page_size_limit = 0 or page_size < paging_page_size_limit))
+	  {
+	    og_conns[i+1] := og_next_page;
+	    more_pages := 1;
+	  }
+	}
+      }
     }
     else
     {
@@ -3686,9 +3757,11 @@ got_picture_url:
 	goto retry_without_access_token;
       }
     }
-conn_done:
-    ;
+next_conn:;
   }
+  if (more_pages)
+    goto next_page_batch;
+
   DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
   return 1;
 }
@@ -3696,13 +3769,13 @@ conn_done:
 
 -- Extracts an Open Graph object's connections from XML tree containing the object's metadata
 -- Returns vector of (connection name, connection uri) pairs
-create procedure DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (in xt any, in access_token varchar)
+create procedure DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (in xt any, in access_token varchar, in append_access_token integer)
 {
   declare og_conns, conns any;
   declare conn_str, token_str varchar;
 
   token_str := '';
-  if (access_token is not null and length (access_token) > 0)
+  if (append_access_token and access_token is not null and length (access_token) > 0)
     token_str := '?access_token=' || access_token;
 
   og_conns := vector();
@@ -3744,16 +3817,15 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
 
   access_token := null;
 
-  if (og_id is null or length (og_id) = 0)
-    return null;
-
-  -- First look for a non-expiring access token.
-  -- Facebook grants the same access token in response to repeated requests for a
-  -- non-expiring token for a particular Facebook app by the same user.
-  -- If more than one non-expiring access token exists in OPENGRAPH_ACCESS_TOKENS
-  -- for the same combination of user (and app), all but the most recent
-  -- are assumed to have been revoked by the user and hence be invalid.
-  for (select top 1
+  if (length (og_id) > 0)
+  {
+    -- First look for a non-expiring access token.
+    -- Facebook grants the same access token in response to repeated requests for a 
+    -- non-expiring token for a particular Facebook app by the same user.
+    -- If more than one non-expiring access token exists in OPENGRAPH_ACCESS_TOKENS 
+    -- for the same combination of user (and app), all but the most recent 
+    -- are assumed to have been revoked by the user and hence be invalid.
+    for (select top 1 
          OGAT_ACCESS_TOKEN as _token
        from
          DB.DBA.OPENGRAPH_ACCESS_TOKENS
@@ -3761,32 +3833,32 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
          OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES is null
        order by OGAT_CREATED desc
       )
-  do
-  {
-    access_token := _token;
-  }
+    do
+    {
+      access_token := _token;
+    }
 
-  if (access_token is not null)
-    return access_token;
+    if (access_token is not null)
+      return access_token;
 
-  -- Then look for an unexpired expiring access token
-  for (select top 1
+    -- Then look for an unexpired expiring access token
+    for (select top 1 
          OGAT_ACCESS_TOKEN as _token
        from
          DB.DBA.OPENGRAPH_ACCESS_TOKENS
        where
          OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES > now()
       )
-  do
-  {
-    access_token := _token;
-  }
+    do
+    {
+      access_token := _token;
+    }
 
-  if (access_token is not null)
-    return access_token;
+    if (access_token is not null)
+      return access_token;
 
-  -- Use any available non-expiring access token to sign requests 
-  for (select top 1 
+    -- Use any available non-expiring access token to sign requests 
+    for (select top 1 
        OGAT_ACCESS_TOKEN as _token
      from 
        DB.DBA.OPENGRAPH_ACCESS_TOKENS 
@@ -3794,12 +3866,19 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
        OGAT_EXPIRES is null 
      order by OGAT_CREATED desc
     )
-  do
-  {
-    access_token := _token;
-  }
+    do
+    {
+      access_token := _token;
+    }
 
-  return access_token;
+    return access_token;
+  }
+  else
+  {
+    declare access_tokens any;
+    access_tokens := (select DB.DBA.VECTOR_AGG(OGAT_ACCESS_TOKEN) from DB.DBA.OPENGRAPH_ACCESS_TOKENS order by OGAT_CREATED desc);
+    return access_tokens;
+  }
 }
 ;
 
