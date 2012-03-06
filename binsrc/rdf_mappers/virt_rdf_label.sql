@@ -106,6 +106,8 @@ oplgp:displayName rdfs:subPropertyOf virtrdf:label .
 oplgp:activity_title rdfs:subPropertyOf virtrdf:label .
 oplgp:actor_displayName rdfs:subPropertyOf virtrdf:label .
 oplgp:attachment_displayName rdfs:subPropertyOf virtrdf:label .
+<http://yago-knowledge.org/resource/hasPreferredMeaning> rdfs:subPropertyOf virtrdf:label .
+<http://yago-knowledge.org/resource/hasPreferredName> rdfs:subPropertyOf virtrdf:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
