@@ -210,9 +210,9 @@ cartridge_options_err:
     declare profile_proxy_url varchar;
 
     profile_proxy_url := replace (li_user_public_profile_url, 'http://', 'http/');
-    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?@Lookup@=&refresh=0', _host, _host, profile_proxy_url);
+    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?sponger:get=add&refresh=0', _host, _host, profile_proxy_url);
     entity_uri := sprintf ('http://%s/about/id/entity/%s', _host, profile_proxy_url);
-    describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
+    describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
 ?>
 
     <p>An OAuth access token has been generated. The Linked Data Generator hosted by application <em><?=li_app_name ?></em> now has access to your LinkedIn-hosted Data Space.</p>

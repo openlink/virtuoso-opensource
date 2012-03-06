@@ -60,14 +60,14 @@
       switch (site_name)
       {
         case 'WebID':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*@Lookup@/, 'about/html/' + item_id + '?@Lookup@');
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(item_id) + '&sp=1';
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*sponger:get/, 'about/html/' + item_id + '?sponger:get');
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(item_id) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'WebFinger':
 	  item_id = item_id.replace (/^acct:/, '');
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*@Lookup@/, 'about/html/acct:' + item_id + '?@Lookup@');
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent('acct:' + item_id) + '&sp=1';
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*sponger:get/, 'about/html/acct:' + item_id + '?sponger:get');
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent('acct:' + item_id) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'LinkedIn':
@@ -75,9 +75,9 @@
 	case 'Foursquare':
           item_id_sanitized = item_id.replace (/https:\//, 'https');
           item_id_sanitized = item_id_sanitized.replace (/http:\//, 'http');
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/id\/entity\/.*@Lookup@/, 'id/entity/' + item_id_sanitized + '?@Lookup@');
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/id\/entity\/.*sponger:get/, 'id/entity/' + item_id_sanitized + '?sponger:get');
           entity_uri = entity_uri.replace(/id\/entity\/.*/, 'id/entity/' + item_id_sanitized);
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
       }
@@ -170,21 +170,21 @@
   item_id := 'UNKNOWN_ITEM_ID';
   if (site_name = 'WebID')
   {
-    about_sponge_uri := sprintf ('http://%s/about/html/%s?@Lookup@=&refresh=0', _host, item_id);
+    about_sponge_uri := sprintf ('http://%s/about/html/%s?sponger:get=add&refresh=0', _host, item_id);
     entity_uri := item_id;
   }
   else if (site_name = 'WebFinger')
   {
-    about_sponge_uri := sprintf ('http://%s/about/html/acct:%s?@Lookup@=&refresh=0', _host, item_id);
+    about_sponge_uri := sprintf ('http://%s/about/html/acct:%s?sponger:get=add&refresh=0', _host, item_id);
     entity_uri := 'acct:' || item_id;
   }
   else
   {
-    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?@Lookup@=&refresh=0', _host, _host, item_id);
+    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?sponger:get=add&refresh=0', _host, _host, item_id);
     entity_uri := sprintf ('http://%s/about/id/entity/%s', _host, item_id);
   }
-  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
-  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sp=1', _host, entity_uri);
+  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
+  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sponger:get=add&sr=0', _host, entity_uri);
   ?>
 
 <?vsp
