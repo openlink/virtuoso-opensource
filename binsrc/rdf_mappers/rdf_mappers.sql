@@ -2015,7 +2015,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 			http ('<Document>\n', ses);
 			http_value (tag, 'about', ses);
 		}
-		else if (regexp_parse ('([0-9\.]+)-([0-9\.]+)-([0-9\.]+)', tag, 0))
+		else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
 		{
 			 http (sprintf ('<date><when>%U</when>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
 		}
@@ -2031,7 +2031,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 		{
 			http ('</Document>\n',	ses);
 		}	
-		else if (regexp_parse ('([0-9\.]+)-([0-9\.]+)-([0-9\.]+)', tag, 0))
+		else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
 		{
 			 http ('</date>\n', ses);
 		}
@@ -11044,7 +11044,7 @@ searchForCompany:
       -- Retry without the trailing "_company"
       retries := 1;
       company_name := jgsw_name;
-      vec := regexp_parse('.*(_company)\$', company_name, 0);
+      vec := regexp_parse('.*(_company)$', company_name, 0);
       if (vec is not null)
         company_name := subseq(company_name, 0, vec[2]);
       goto searchForCompany;
