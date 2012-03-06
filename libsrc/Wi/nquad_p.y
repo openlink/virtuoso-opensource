@@ -157,7 +157,7 @@ clause
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
 		caddr_t *old_uri_ptr;
 		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)
-		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, &($2));
+		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)));
 		else
 		  {
 		    ttlp_arg->ttlp_namespaces_prefix2iri = (id_hash_t *)box_dv_dict_hashtable (31);
@@ -172,7 +172,7 @@ clause
 		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
 		  }
 		else
-		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, &($2), &($3)); }
+		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)), (caddr_t)(&($3))); }
 	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
 		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
