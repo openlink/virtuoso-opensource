@@ -10257,15 +10257,29 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
   api_url := sprintf ('https://api.linkedin.com/v1/people/url=%U:(%s)', public_profile_url, required_profile_fields);
   url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
   cnt := http_get (url);
+  --dbg_printf ('%s', cnt);
 
+  declare person_id any;
   li_object_type := 'unknown';
   xd := xtree_doc (cnt);
+  person_id := cast (xpath_eval ('/person/id', xd) as varchar);
+  dbg_obj_print (cnt, person_id);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd,
     vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
   xd := serialize_to_UTF8_xml (xt);
 
   RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  if (length (person_id))
+    {
+      url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+      cnt := http_get (url);
+      dbg_printf ('%s', cnt);
+      xd := xtree_doc (cnt);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin_shares2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+      xd := serialize_to_UTF8_xml (xt);
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
   DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
   return 1;
 }
