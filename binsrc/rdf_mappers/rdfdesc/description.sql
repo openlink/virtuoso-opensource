@@ -193,7 +193,10 @@ create procedure rdfdesc_label_1 (in _S any, in lines any := null)
     }
   label := best_str;
    if (__tag of rdf_box = __tag (label))
-     label := rdf_box_data (label);
+     {
+       __rdf_box_make_complete (label);
+       label := rdf_box_data (label);
+     }
    if (not isstring (label))
      label := cast (label as varchar);
     label := cast (xtree_doc (label, 2) as varchar);

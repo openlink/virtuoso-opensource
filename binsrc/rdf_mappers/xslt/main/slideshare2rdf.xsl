@@ -196,10 +196,10 @@
 				</xsl:choose>
 			</bibo:content>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="Created" />
+				<xsl:value-of select="vi:string2date(Created)" />
 			</dcterms:created>
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="Updated" />
+				<xsl:value-of select="vi:string2date(Updated)" />
 			</dcterms:modified>
 			<bibo:pageStart>1</bibo:pageStart>
 			<bibo:pageEnd>
