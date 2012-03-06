@@ -11923,7 +11923,7 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 	    {
 	      ins_triples:
 	      declare triples, links any;
-	      dbg_obj_print ('inserting triples:', dict_size (dict));
+	      --dbg_obj_print ('inserting triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
 	      triples := dict_list_keys (dict, 1);
 	      links := DB.DBA.RM_MAKE_DOC_LINKS (graph_iri, new_origin_uri, dest, new_opts, triples);
@@ -12059,7 +12059,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
                   DB.DBA.RDF_DELETE_TRIPLES (graph, triples);
                   f_delete_orig_triples := 0;
 	        }
-	      dbg_obj_print ('inserting triples:', dict_size (dict));
+	      --dbg_obj_print ('inserting triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
 	      _triples := dict_list_keys (dict, 1);
 	      {
