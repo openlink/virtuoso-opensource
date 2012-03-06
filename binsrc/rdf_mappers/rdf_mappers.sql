@@ -6418,6 +6418,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 }
 ;
 
+-- /* Google+ */
 create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
   declare xd, xd2, xt, api_urls, tmp, hdr any;
@@ -6425,7 +6426,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
   declare uid, post_id, api_mode varchar;
   declare max_activity_pages, items_per_activity_page integer;
   declare max_comment_pages, items_per_comment_page integer;
-  declare page_token varchar;
+  declare page_token, post_url varchar;
   declare first_pass, next_page integer;
   
   declare exit handler for sqlstate '*'
@@ -6474,6 +6475,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
       return 0;
 
     url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
+    post_url := replace (new_origin_uri, 'http://', 'https://');
     base_url := url;
 
     next_page := 1;
@@ -6488,7 +6490,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
       }
       tmp := json_parse (tmp);
       xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
-      activity_id := cast (xpath_eval (sprintf('/results/items/id[../url = "%s"]', new_origin_uri), xd) as varchar);
+      activity_id := cast (xpath_eval (sprintf('/results/items/id[../url = "%s"]', post_url), xd) as varchar);
       if (activity_id is not null)
       {
         goto got_activity_id;

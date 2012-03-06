@@ -40,6 +40,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY xsi "http://www.w3.org/2001/XMLSchema-instance">
 <!ENTITY xsl "http://www.w3.org/1999/XSL/Transform">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
 ]>
 <xsl:stylesheet 
   xmlns:awol="&awol;" 
@@ -60,6 +61,7 @@
   xmlns:xsd="&xsd;" 
   xmlns:xsi="&xsi;" 
   xmlns:xsl="&xsl;" 
+  xmlns:oplcert="&oplcert;"
   version="1.0">
 
   <xsl:output method="xml" indent="yes"/>
@@ -428,6 +430,21 @@
       <oplgp:actor_profile_url rdf:resource="{url}"/>
       -->
       <oplgp:actor_profile_url rdf:resource="{vi:proxyIRI(url)}"/>
+      <!-- x509 certificate -->
+      <xsl:if test="../object/content like '%di:%?hashtag=webid%'">
+	  <xsl:variable name="di"><xsl:copy-of select="vi:di-split (../object/content)"/></xsl:variable>
+	  <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
+	  <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
+	  <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
+	  <oplcert:hasCertificate>
+	      <oplcert:Certificate rdf:about="{$ct}">
+		  <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+		  <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+		  <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+	      </oplcert:Certificate>
+	  </oplcert:hasCertificate>
+      </xsl:if>
+      <!-- end certificate -->
     </oplgp:Actor>
   </xsl:template>
 
