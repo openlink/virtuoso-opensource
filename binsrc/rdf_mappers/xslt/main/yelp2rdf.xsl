@@ -79,7 +79,7 @@
                                  		</foaf:Organization>
                                  	</opl:providedBy>
 
-				<rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
+				<rdf:type rdf:resource="&gr;Location"/>
 				<dc:title>
 					<xsl:value-of select="name" />
 				</dc:title>

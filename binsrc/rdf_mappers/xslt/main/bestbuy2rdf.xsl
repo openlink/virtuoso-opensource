@@ -80,7 +80,7 @@
 						<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 						<dcterms:subject rdf:resource="{$resourceURL}"/>
 					</rdf:Description>
-					<gr:LocationOfSalesOrServiceProvisioning rdf:about="{$resourceURL}">
+					<gr:Location rdf:about="{$resourceURL}">
                   				<opl:providedBy>
                   					<foaf:Organization rdf:about="http://www.bestbuy.com#this">
                   						<foaf:name>BestBuy</foaf:name>
@@ -131,7 +131,7 @@
 								<rdfs:label><xsl:value-of select="vi:trim(concat(/stores/store/address, ', ', /stores/store/city, ', ', /stores/store/postalCode, ', ', /stores/store/country), ', ')"/></rdfs:label>
 							</rdf:Description>
 						</vcard:ADR>
-					</gr:LocationOfSalesOrServiceProvisioning>
+					</gr:Location>
 				</xsl:when>
 				<xsl:otherwise>
 			<rdf:Description rdf:about="{$docproxyIRI}">

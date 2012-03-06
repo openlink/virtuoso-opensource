@@ -85,7 +85,7 @@
           	</opl:providedBy>
 
 	    <rdf:type rdf:resource="&geonames;Feature"/>
-        <rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
+			<rdf:type rdf:resource="&gr;Location"/>
 	    <xsl:copy-of select="*"/>
 	</rdf:Description>
     </xsl:template>
