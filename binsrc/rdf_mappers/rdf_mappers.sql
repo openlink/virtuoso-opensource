@@ -428,13 +428,18 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
                     'favorites_pg_limit', '5',
                     'user_timeline_pg_limit', '5'));
 
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('https?://plus.google.com/.*', 'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLUS', null, 'Google+');
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+    values ('https?://plus.google.com/.*', 'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLUS', null, 'Google+',
+	  vector ('max_activity_pages', '1', 'max_comment_pages', '1', 'items_per_activity_page', '50', 'items_per_comment_page', '50'));
 
 -- Disable old Twitter cartridge in favour of DB.DBA.RDF_LOAD_TWITTER_V2
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
 -- Disable old Google profile cartridge in favour of DB.DBA.RDF_LOAD_GOOGLE_PLUS
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE';
+-- Ensure previously installed Google+ cartridges have options entries 
+update DB.DBA.SYS_RDF_MAPPERS 
+  set RM_OPTIONS = vector ('max_activity_pages', '1', 'max_comment_pages', '1', 'items_per_activity_page', '50', 'items_per_comment_page', '50')
+where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PLUS' and RM_OPTIONS is null;
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
@@ -6205,9 +6210,12 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
   declare xd, xd2, xt, api_urls, tmp any;
-  declare url, people_api_url, activity_api_url any;
+  declare url, base_url, people_api_url, activity_api_url any;
   declare uid, post_id, api_mode varchar;
-  declare first_pass integer;
+  declare max_activity_pages, items_per_activity_page integer;
+  declare max_comment_pages, items_per_comment_page integer;
+  declare page_token varchar;
+  declare first_pass, next_page integer;
   
   declare exit handler for sqlstate '*'
   {
@@ -6220,6 +6228,20 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
     log_message (sprintf ('%s: An API key has not been configured for Google+', current_proc_name()));
     return 0;
   }
+
+  -- max_activity_pages / max_comment_pages:
+  -- 0 => no limit
+  -- <0 => don't fetch activities / comments
+  max_activity_pages := coalesce (atoi(get_keyword ('max_activity_pages', opts)), 1);
+  max_comment_pages := coalesce (atoi(get_keyword ('max_comment_pages', opts)), 1);
+
+  items_per_activity_page := coalesce (atoi(get_keyword ('items_per_activity_page', opts)), 50);
+  if (items_per_activity_page <= 0 or items_per_activity_page > 100)
+    items_per_activity_page := 100; 
+
+  items_per_comment_page := coalesce (atoi(get_keyword ('items_per_comment_page', opts)), 50);
+  if (items_per_comment_page <= 0 or items_per_comment_page > 100)
+    items_per_comment_page := 100; 
 
   --
   -- Sponge G+ post/Activity directly
@@ -6234,28 +6256,50 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
     -- Using the search API https://developers.google.com/+/api/latest/activities/search to search
     -- on the post ID is unreliable - often nothing is returned.
     -- The approach used here is to retrieve and search the user's Activity collection for the
-    -- required post. Without paging support, a maximum of 100 Activities is returned. An old 
-    -- post may not be contained in the list of the 100 most recent.
+    -- required post.
 
     uid := regexp_replace (new_origin_uri, '^https?://plus.google.com(/u/0)?/([0-9]{8,})(/.*)?', '\\2');
     if (uid = new_origin_uri)
       return 0;
+
     url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
-    tmp := '';
-    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
-    if (length (tmp) = 0)
+    base_url := url;
+
+    next_page := 1;
+    while (next_page > 0)
     {
-      log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
-      return 0;
+      tmp := '';
+      tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+      if (length (tmp) = 0)
+      {
+	log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+	return 0;
+      }
+      tmp := json_parse (tmp);
+      xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+      activity_id := cast (xpath_eval (sprintf('/results/items/id[../url = "%s"]', new_origin_uri), xd) as varchar);
+      if (activity_id is not null)
+      {
+        goto got_activity_id;
+      }
+
+      page_token := cast (xpath_eval ('/results/nextPageToken', xd) as varchar);
+      if (length (page_token))
+      {
+        next_page := next_page + 1;
+        url := sprintf ('%s&pageToken=%s', base_url, page_token);
+      }
+      else
+        next_page := 0;
     }
-    tmp := json_parse (tmp);
-    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
-    activity_id := cast (xpath_eval (sprintf('/results/items/id[../url = "%s"]', new_origin_uri), xd) as varchar);
+
+got_activity_id:
     if (activity_id is null)
     {
-      log_message (sprintf ('%s: Couldn''t find post ID %s amongst the user''s 100 most recent', current_proc_name(), post_id));
+      log_message (sprintf ('%s: Couldn''t find post ID %s amongst the user''s posts', current_proc_name(), post_id));
       return 0;
     }
+
     url := sprintf ('https://www.googleapis.com/plus/v1/activities/%s?key=%s', activity_id, _key);
     tmp := '';
     tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
@@ -6273,7 +6317,8 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
     DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 
-    DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (graph_iri, new_origin_uri, dest, _key, opts, triple_dict, activity_id);
+    if (max_comment_pages >= 0) 
+      DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (graph_iri, new_origin_uri, dest, _key, opts, triple_dict, activity_id, null, items_per_comment_page, max_comment_pages);
 
     return 1;
   }
@@ -6284,20 +6329,34 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
   uid := regexp_replace (new_origin_uri, '^https?://plus.google.com(/u/0)?/([0-9]{8,})(/.*)?', '\\2');
   if (uid = new_origin_uri)
     return 0;
+
   people_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s?key=%s', uid, _key);
-  activity_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
-  api_urls := vector (vector (people_api_url, 'people'), vector (activity_api_url, 'activity'));
+  activity_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=%d', uid, _key, items_per_activity_page);
+  api_urls := vector (vector (people_api_url, 'people'));
+  if (max_activity_pages >= 0)
+    api_urls := vector_concat (api_urls, vector( vector (activity_api_url, 'activity')));
+
   first_pass := 1;
   foreach (any pair in api_urls) do
   {
     url := pair[0];
     api_mode := pair[1];
-    tmp := '';
-    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
-    if (length (tmp) = 0)
-      return 0;
   
-    tmp := json_parse (tmp);
+    next_page := 1;
+    while (next_page > 0)
+    {
+      if (max_activity_pages > 0 and next_page > max_activity_pages)
+        goto got_all_activity_pages;
+
+      tmp := '';
+      DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());        
+      -- tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+      tmp := http_client_ext (url=>url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+      DB.DBA.RM_LOG_RESPONSE (tmp, hdr);
+      if (length (tmp) = 0)
+	return 0;
+  
+      tmp := json_parse (tmp);
     xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
       vector ('baseUri', new_origin_uri, 'mode', api_mode));
@@ -6331,9 +6390,13 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
     return 0;
   tmp := json_parse (tmp);
   xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/socialstatistics2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
-  xd2 := serialize_to_UTF8_xml (xt);
-  DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd2, new_origin_uri, coalesce (dest, graph_iri));
+  if (xpath_eval('results/error', xd) is null)
+  {
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/socialstatistics2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+    xd2 := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd2, new_origin_uri, coalesce (dest, graph_iri));
+  }
+
   return 1;
 }
 ;
@@ -6376,31 +6439,55 @@ create procedure DB.DBA.RDF_LOAD_SOCIALSTATISTICS (in graph_iri varchar, in new_
 
 create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in _key any, in opts any, inout triple_dict any,
   in activity_id varchar,	  -- Used when sponging a G+ Post directly
-  in replies_url varchar := null  -- Used when sponging an G+ Activities list
+  in replies_url varchar := null,  -- Used when sponging an G+ Activities list
+  in items_per_comment_page integer, 
+  in max_comment_pages integer
   )
 {
-  declare url, tmp, xd, xt any;
+  declare base_url, url, tmp, xd, xd2, xt any;
+  declare page_token varchar;
+  declare next_page integer;
 
   if (activity_id is not null)
-    url := sprintf ('https://www.googleapis.com/plus/v1/activities/%s/comments?key=%s', activity_id, _key);
+    url := sprintf ('https://www.googleapis.com/plus/v1/activities/%s/comments?key=%s&maxResults=%d', activity_id, _key, items_per_comment_page);
   else if (replies_url is not null)
-    url := sprintf ('%s?key=%s', replies_url, _key);
+    url := sprintf ('%s?key=%s&maxResults=%d', replies_url, _key, items_per_comment_page);
   else
     return;
-  tmp := '';
-  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
-  if (length (tmp) = 0)
+
+  base_url := url;
+  next_page := 1;
+  while (next_page > 0)
   {
-    log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
-    return;
+    if (max_comment_pages > 0 and next_page > max_comment_pages)
+      goto got_all_comments_pages;
+
+    tmp := '';
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (length (tmp) = 0)
+    {
+      log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+      return;
+    }
+
+    tmp := json_parse (tmp);
+    xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
+      vector ('baseUri', new_origin_uri, 'mode', 'comment'));
+    xd2 := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd2, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+
+    page_token := cast (xpath_eval ('/results/nextPageToken', xd) as varchar);
+    if (length (page_token))
+    {
+      next_page := next_page + 1;
+      url := sprintf ('%s&pageToken=%s', base_url, page_token);
+    }
+    else
+      next_page := 0;
   }
-  tmp := json_parse (tmp);
-  xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googleplus2rdf.xsl', xd, 
-    vector ('baseUri', new_origin_uri, 'mode', 'comment'));
-  xd := serialize_to_UTF8_xml (xt);
-  DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
-  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+got_all_comments_pages:;
 }
 ;
 
