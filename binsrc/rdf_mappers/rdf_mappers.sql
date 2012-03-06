@@ -371,9 +371,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
 
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH' and RM_TYPE = 'URL';	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('.*', 'MIME', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('app_secret', '', 'app_id', '', 'offline_access', '1'));
+	values ('.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('app_secret', '', 'app_id', '', 'offline_access', '1'));
 
 -- Force an update to the Facebook cartridge name if its already registered
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '.*', RM_DESCRIPTION = 'Facebook (Graph API)'
@@ -3293,207 +3292,261 @@ create index OAUTH_TOKEN_REQUESTS_OAUTH_REQ_TOKEN on DB.DBA.OAUTH_TOKEN_REQUESTS
 
 create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-    declare qr, path any;
-    declare tree, xt, xt_og_metadata, xd, types, hdr any;
-    declare id, cnt, url, tmp, access_token, client_id, mime, client_secret, code varchar;
-    declare pos, ret, ord integer;
+  declare qr, path any;
+  declare tree, xt, xt_og_metadata, xd, types, hdr any;
+  declare id, cnt, url, tmp, access_token, client_id, mime, client_secret, code varchar;
+  declare pos, ret, ord integer;
 
-    declare og_object_type varchar; -- Type of Open Graph object being handled
-    declare og_id varchar; -- Open Graph object ID
-    declare og_conns any; -- Open Graph object's connections
-    declare og_err, og_headers any;
-    declare retries integer;
-    declare og_timeout integer; -- Timeout when accessing Open Graph collections
-    declare http_new_origin_uri varchar;
+  declare og_object_type varchar; -- Type of Open Graph object being handled
+  declare og_id varchar; -- Open Graph object ID
+  declare og_conns any; -- Open Graph object's connections 
+  declare og_err, og_headers any;
+  declare retries integer;
+  declare og_timeout integer; -- Timeout when accessing Open Graph collections
+  declare http_new_origin_uri varchar;
 
-    og_timeout := 60;
+  og_timeout := 60;
+  og_id := null;
+  access_token := null;
 
-    declare exit handler for sqlstate '*'
-    {
-		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
-        return 0;
-    };
+  declare exit handler for sqlstate '*'
+  {
+    DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    return 0;
+  };
 
-    http_new_origin_uri := new_origin_uri;
-    if (subseq (new_origin_uri, 0, 5) = 'https')
-      http_new_origin_uri := 'http' || subseq (new_origin_uri, 5);
+  http_new_origin_uri := new_origin_uri;
+  if (subseq (new_origin_uri, 0, 5) = 'https')
+    http_new_origin_uri := 'http' || subseq (new_origin_uri, 5);
 
-    if (http_new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
+  if (http_new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
+  {
+    tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
+    id := rtrim(tmp[0], '&/');
+    pos := strchr(id, '&');
+    if (pos > 0)
+      id := left(id, pos);
+    if (id is null)
+      return 0;
+  }
+  else if (http_new_origin_uri like 'http://www.facebook.com/pages/%/%')
+  {
+    tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/pages/%s/%s', 0);
+    id := rtrim(tmp[1], '&/');
+    pos := strchr(id, '?');
+    if (pos > 0)
+      id := left(id, pos);
+    if (id is null)
+      return 0;
+  }
+  else if (http_new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
+  {
+    tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
+    id := rtrim(tmp[1], '&/');
+    pos := strchr(id, '?');
+    if (pos > 0)
+      id := left(id, pos);
+    if (id is null)
+      return 0;
+  }
+  else if (http_new_origin_uri like 'http://www.facebook.com/%')
+  {
+    tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/%s', 0);
+    id := rtrim(tmp[0], '&/');
+    pos := strchr(id, '?');
+    if (pos > 0)
+      id := left(id, pos);
+    if (id is null)
+      return 0;
+  }
+  else if (http_new_origin_uri like 'http://graph.facebook.com/%')
+  {
+    tmp := sprintf_inverse (http_new_origin_uri, 'http://graph.facebook.com/%s', 0);
+    id := rtrim(tmp[0], '&/');
+    pos := strchr(id, '?');
+    if (pos > 0)
+      id := left(id, pos);
+    if (id is null)
+      return 0;
+  }
+  else
+  {
+    url := concat('http://graph.facebook.com/?ids=', new_origin_uri, '&metadata=1');
+    cnt := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (hdr[0] not like 'HTTP/1._ 200 %')
     {
-		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
-		id := rtrim(tmp[0], '&/');
-		pos := strchr(id, '&');
-		if (pos > 0)
-			id := left(id, pos);
-		if (id is null)
-			return 0;
+      signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+      return 0;
     }
-    else if (http_new_origin_uri like 'http://www.facebook.com/pages/%/%')
+    tree := json_parse (cnt);
+    if (tree is null)
+      return 0;
+    declare ses any;
+    ses := string_output ();
+    DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
+    ses := string_output_string (ses);
+    xt := xtree_doc (ses, 2);
+    if (xpath_eval ('/results/document/type[ .  = "link_stat"]', xt) is null)
     {
-		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/pages/%s/%s', 0);
-        id := rtrim(tmp[1], '&/');
-        pos := strchr(id, '?');
-        if (pos > 0)
-			id := left(id, pos);
-		if (id is null)
-			return 0;
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
+          vector ('baseUri', new_origin_uri, 'og_object_type', 'general'));
+      xd := serialize_to_UTF8_xml (xt);
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
     }
-    else if (http_new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
+    mime := get_keyword ('content-type', opts);
+    ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
+    ret := -1;
+    for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
     {
-		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
-        id := rtrim(tmp[1], '&/');
-        pos := strchr(id, '?');
-        if (pos > 0)
-			id := left(id, pos);
-		if (id is null)
-			return 0;
+      if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
+        ret := 0;
+      else if (RM_TYPE = 'MIME' and mime is not null and RM_HOOK <> 'DB.DBA.RDF_LOAD_DAV_META' 
+		and regexp_match (RM_PATTERN, mime) is not null)
+	ret := 0;
     }
-    else if (http_new_origin_uri like 'http://www.facebook.com/%')
+    return ret;
+  }
+
+  url := sprintf ('https://graph.facebook.com/%s?metadata=1', id);
+  cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+
+  -- Handle OpenGraph object type Album as a special case when sponged directly.
+  -- An access token must be supplied to be able to query this object type at all.
+  -- If not supplied, OpenGraph returns HTTP 200 (OK) and 'false' instead of an OAuthException.
+  --
+  -- Attempts to sponge Photos directly return HTTP 400 (Bad request) and an OAuthException.
+  -- The Sponger doesn't invoke this cartridge.
+  if (cnt = 'false')
+  {
+    -- We don't yet know the Facebook user ID of the Album's creator.
+    -- Use any available access token to get the Album's metadata
+    access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (id);
+    if (length (access_token) = 0)
     {
-		tmp := sprintf_inverse (http_new_origin_uri, 'http://www.facebook.com/%s', 0);
-		id := rtrim(tmp[0], '&/');
-		pos := strchr(id, '?');
-		if (pos > 0)
-			id := left(id, pos);
-		if (id is null)
-			return 0;
+      log_message (sprintf('%s: No access token is available to query this OpenGraph object\'s metadata.', current_proc_name()));
+      return -1;
     }
-    else if (http_new_origin_uri like 'http://graph.facebook.com/%')
-    {
-		tmp := sprintf_inverse (http_new_origin_uri, 'http://graph.facebook.com/%s', 0);
-		id := rtrim(tmp[0], '&/');
-		pos := strchr(id, '?');
-		if (pos > 0)
-			id := left(id, pos);
-		if (id is null)
-			return 0;
-    }
-    else
-	{
-		url := concat('http://graph.facebook.com/?ids=', new_origin_uri, '&metadata=1');
-		cnt := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
-		if (hdr[0] not like 'HTTP/1._ 200 %')
-		{
-			signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
-			return 0;
-		}
-		tree := json_parse (cnt);
-		if (tree is null)
-			return 0;
-		declare ses any;
-		ses := string_output ();
-		DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
-		ses := string_output_string (ses);
-		xt := xtree_doc (ses, 2);
-		if (xpath_eval ('/results/document/type[ .  = "link_stat"]', xt) is null)
-		  {
-		    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt,
-			    vector ('baseUri', new_origin_uri, 'og_object_type', 'general'));
-		    xd := serialize_to_UTF8_xml (xt);
-		    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-		    DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
-		  }
-		mime := get_keyword ('content-type', opts);
-		ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
-		ret := 1;
-		for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
-		{
-			if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
-				ret := 0;
-			else if (RM_TYPE = 'MIME' and mime is not null and RM_HOOK <> 'DB.DBA.RDF_LOAD_DAV_META' and regexp_match (RM_PATTERN, mime) is not null)
-				ret := 0;
-		}
-		return ret;
-	}
-    url := sprintf ('https://graph.facebook.com/%s?metadata=1', id);
+    url := url || '&access_token=' || access_token;
     cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     tree := json_parse (cnt);
     xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
     og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
-    -- Transform the base OpenGraph object description to RDF
-    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt_og_metadata,
-		vector ('baseUri', new_origin_uri, 'og_object_type', og_object_type));
-    xd := serialize_to_UTF8_xml (xt);
-    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-    og_id := cast (xpath_eval('/results/id', xt_og_metadata) as varchar);
-    if (length (og_id) = 0)
-      og_id := null;
+    if (og_object_type <> 'album')
+    {
+      log_message (sprintf('%s: Unexpected OpenGraph object type - %s', current_proc_name(), og_object_type));
+      return -1;
+    }
+    -- Get the Facebook user ID of the Album's creator
+    og_id := cast (xpath_eval('/results/from/id', xt_og_metadata) as varchar);
+    -- Has he/she granted an access token
+    declare default_access_token varchar;
+    default_access_token := access_token;
     access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
 
-    -- dbg_printf('og_id: %s - access token: %s', og_id, access_token);
-
-    retries := 0;
-retry_without_access_token:
-    -- Try all the object's connections listed in the object metadata
-    og_conns := DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (xt_og_metadata, access_token);
-    -- Transform each of the OpenGraph object's connections
-    for (declare i int, i := 0; i < length (og_conns); i := i + 2)
+    if (access_token <> default_access_token)
     {
-		if (og_conns[i] = 'picture')
-		{
-			declare og_picture_url varchar;
-			og_picture_url := null;
-			-- TO DO: Doesn't work - Why?
-			-- cnt := http_client_ext (url=>og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), headers=>og_headers, n_redirects=>5);
-			cnt := http_client_ext (url=>og_conns[i+1], headers=>og_headers);
-			if (aref (og_headers, 0) like '% 302%')
-			{
-				for (declare j int, j := 0; j < length (og_headers); j := j+1)
-				{
-					-- dbg_printf ('og_header[%d] = %s', j, og_headers[j]);
-					if (og_headers[j] like 'Location: %')
-					{
-						og_picture_url := subseq (trim(og_headers[j], '\r\n'), 10);
-						goto got_picture_url;
-					}
-				}
-			}
-got_picture_url:
-			if (og_picture_url is not null)
-				xt := xtree_doc (sprintf ('<results><picture>%s</picture></results>', og_picture_url));
-			else
-				xt := xtree_doc ('<results></results>');
-		}
-		else
-		{
-			-- Some of the Open Graph collections occasionally fail to respond, so set timeout
-			cnt := http_client (og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), timeout=>og_timeout);
-			tree := json_parse (cnt);
-			xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
-		}
-		og_err := cast (xpath_eval('results/error/type', xt) as varchar);
-		if (og_err is null)
-		{
-			declare mode varchar;
-			mode := sprintf ('%s_%s', og_object_type, og_conns[i]);
-			-- Transform the OpenGraph connection output to RDF
-			xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt,
-				vector ('baseUri', new_origin_uri, 'og_object_type', mode));
-			xd := serialize_to_UTF8_xml (xt);
-			DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-		}
-		else
-		{
-			declare og_msg varchar;
-			og_msg := cast (xpath_eval('results/error/message', xt) as varchar);
-			if (retries = 0 and og_err = 'OAuthException' and 
-                                (strstr (og_msg, 'Invalid OAuth access token') is not null or strstr (og_msg, 'Error validating access token') is not null))
-			{
-				-- Access token is invalid
-				-- Even public connections will fail if tried with an invalid access token
-				-- Retry the connections without an access token, allowing connections which
-				-- require one to quietly fail
-				access_token := null;
-				retries := 1;
-				-- dbg_printf ('\nAccess token invalid - Retrying without one\n');
-				goto retry_without_access_token;
-			}
-		}
-conn_done:
-		;
+      -- Re-fetch the Album's metadata
+      -- Because this query includes an access token, any connection URIs in the returned metadata will
+      -- include the creator's access token
+      url := sprintf ('https://graph.facebook.com/%s?metadata=1', id);
+      url := url || '&access_token=' || access_token;
+      cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    }
+    -- Set the access_token to null to prevent DB.DBA.OPENGRAPH_OBJ_CONNECTIONS from appending it to
+    -- the Album's connection/collection URLs. The access token should already appended to these URLs
+    -- in the returned metadata
+    access_token := null;
+  }
+
+  tree := json_parse (cnt);
+  xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+  og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
+  -- Transform the base OpenGraph object description to RDF
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt_og_metadata, 
+        vector ('baseUri', new_origin_uri, 'og_object_type', og_object_type));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  -- May already have og_id if handling an Album
+  if (og_id is null)
+  {
+    og_id := cast (xpath_eval('/results/id', xt_og_metadata) as varchar);
+    if (length (og_id) > 0)
+    {
+      access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
+    }
+  }
+
+  retries := 0;
+retry_without_access_token:
+  -- Try all the object's connections listed in the object metadata
+  og_conns := DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (xt_og_metadata, access_token);
+  -- Transform each of the OpenGraph object's connections
+  for (declare i int, i := 0; i < length (og_conns); i := i + 2)
+  {
+    if (og_conns[i] = 'picture')
+    {
+      declare og_picture_url varchar;
+      og_picture_url := null;
+      -- TO DO: Doesn't work - Why?
+      -- cnt := http_client_ext (url=>og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), headers=>og_headers, n_redirects=>5);
+      cnt := http_client_ext (url=>og_conns[i+1], headers=>og_headers);
+      if (aref (og_headers, 0) like '% 302%')
+      {
+	for (declare j int, j := 0; j < length (og_headers); j := j+1)
+	{
+	  if (og_headers[j] like 'Location: %')
+	  {
+	    og_picture_url := subseq (trim(og_headers[j], '\r\n'), 10);
+	    goto got_picture_url;
+	  }
 	}
-	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
-	return 1;
+      }
+got_picture_url:
+      if (og_picture_url is not null)
+	xt := xtree_doc (sprintf ('<results><picture>%s</picture></results>', og_picture_url));
+      else
+	xt := xtree_doc ('<results></results>');
+    }
+    else
+    {
+      -- Some of the Open Graph collections occasionally fail to respond, so set timeout
+      cnt := http_client (og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), timeout=>og_timeout);
+      tree := json_parse (cnt);
+      xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+    }
+    og_err := cast (xpath_eval('results/error/type', xt) as varchar);
+    if (og_err is null)
+    {
+      declare mode varchar;
+      mode := sprintf ('%s_%s', og_object_type, og_conns[i]);
+      -- Transform the OpenGraph connection output to RDF
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
+	vector ('baseUri', new_origin_uri, 'og_object_type', mode));
+      xd := serialize_to_UTF8_xml (xt);
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
+    else
+    {
+      declare og_msg varchar;
+      og_msg := cast (xpath_eval('results/error/message', xt) as varchar);
+      if (retries = 0 and og_err = 'OAuthException' and 
+            (strstr (og_msg, 'Invalid OAuth access token') is not null or strstr (og_msg, 'Error validating access token') is not null))
+      {
+	-- Access token is invalid
+	-- Even public connections will fail if tried with an invalid access token
+	-- Retry the connections without an access token, allowing connections which
+	-- require one to quietly fail
+	access_token := null;
+	retries := 1;
+	goto retry_without_access_token;
+      }
+    }
+conn_done:
+    ;
+  }
+  DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+  return 1;
 }
 ;
 
