@@ -101,12 +101,13 @@
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
     </owl:Class>
 
-    <owl:Property rdf:about="&opl;namedEntityConcept">
-        <rdfs:comment>The concept (type of thing) the named entity represents</rdfs:comment>
+    <owl:Property rdf:about="&opl;entityType">
+        <rdfs:comment>The type or ontological category of a named entity</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;NamedEntity"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
-        <rdfs:label>named entity concept</rdfs:label>
+        <rdfs:label>entity type</rdfs:label>
         <rdfs:range rdf:resource="&owl;Thing"/>
+        <owl:equivalentProperty rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"/>
     </owl:Property>
 
 </rdf:RDF>
