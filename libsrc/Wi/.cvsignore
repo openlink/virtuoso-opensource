@@ -55,6 +55,7 @@ sql_code_vdb.c
 sql_code_ws.c
 sqlwords.h
 sparqlwords.h
+sparqlwords.h
 turtle_l.c
 turtle_lex_props.c
 turtle_p.c
