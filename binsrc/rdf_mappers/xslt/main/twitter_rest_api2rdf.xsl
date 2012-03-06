@@ -186,9 +186,9 @@
 		</rdf:Description>
 
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
-		<xsl:if test="starts-with (text, '#Self #WebID #Fingerprint:')">
+		<xsl:if test="starts-with (text, '#X509Cert Fingerprint:')">
 		    <opl:hasFingerprint>
-			<xsl:value-of select="substring-after (text, '#Self #WebID #Fingerprint:')"/>
+			<xsl:value-of select="substring-before (substring-after (text, '#X509Cert Fingerprint:'), ' ')"/>
 		    </opl:hasFingerprint>
 		</xsl:if>
             <xsl:choose>

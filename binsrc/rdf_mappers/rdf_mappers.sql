@@ -11564,7 +11564,7 @@ create procedure lbl_order (in p any)
   'http://poolparty.punkt.at/demozone/ont#title'
    );
   r := position (id_to_iri (p), r);
-  if (r = 0)
+  if (r <= 0)
     return 100;
   return r;
 }
