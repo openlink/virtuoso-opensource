@@ -19,7 +19,7 @@ var x = function (data)
      if (o && o.result == 0)
        {
 	 div.innerHTML = 'Status: done';
-	 //if (timer) clearTimeout (timer);
+	 if (timer) clearTimeout (timer);
        } 
    }
 function getStatus ()
