@@ -209,7 +209,7 @@ oplgp:activity_replied_to_id rdfs:subPropertyOf dc:identifier .
 oplgp:placeId rdfs:subPropertyOf dc:identifier .
 oplgp:id rdfs:subPropertyOf dc:identifier .
 oplgp:speaksLanguage rdfs:subPropertyOf dc:language .
-oplgp:providerTitle owl:equivalentProperty dc:publisher .
+oplgp:activity_title owl:equivalentProperty dc:publisher .
 oplgp:relationshipStatus rdfs:subPropertyOf dc:relation .
 oplgp:profile_url rdfs:subPropertyOf dc:source .
 oplgp:shared_url rdfs:subPropertyOf dc:source .
@@ -227,7 +227,7 @@ oplgp:comment_self_link rdfs:subPropertyOf dc:source .
 oplgp:in_reply_to_url rdfs:subPropertyOf dc:source .
 oplgp:title owl:equivalentProperty dc:title .
 oplgp:attachment_displayName owl:equivalentProperty dc:title .
-oplgp:providerTitle owl:equivalentProperty dc:title .
+oplgp:activity_title owl:equivalentProperty dc:title .
 oplgp:email_type rdfs:subPropertyOf dc:type .
 oplgp:organization_type owl:equivalentProperty dc:type .
 oplgp:url_type rdfs:subPropertyOf dc:type .
@@ -255,7 +255,7 @@ oplgp:placeId rdfs:subPropertyOf dcterms:identifier .
 oplgp:id rdfs:subPropertyOf dcterms:identifier .
 oplgp:speaksLanguage rdfs:subPropertyOf dcterms:language .
 oplgp:updated owl:equivalentProperty dcterms:modified .
-oplgp:providerTitle owl:equivalentProperty dcterms:publisher .
+oplgp:activity_title owl:equivalentProperty dcterms:publisher .
 oplgp:relationshipStatus rdfs:subPropertyOf dcterms:relation .
 oplgp:profile_url rdfs:subPropertyOf dcterms:source .
 oplgp:shared_url rdfs:subPropertyOf dcterms:source .
@@ -273,7 +273,7 @@ oplgp:comment_self_link rdfs:subPropertyOf dcterms:source .
 oplgp:in_reply_to_url rdfs:subPropertyOf dcterms:source .
 oplgp:title owl:equivalentProperty dcterms:title .
 oplgp:attachment_displayName owl:equivalentProperty dcterms:title .
-oplgp:providerTitle owl:equivalentProperty dcterms:title .
+oplgp:activity_title owl:equivalentProperty dcterms:title .
 oplgp:email_type rdfs:subPropertyOf dcterms:type .
 oplgp:organization_type owl:equivalentProperty dcterms:type .
 oplgp:url_type rdfs:subPropertyOf dcterms:type .
@@ -295,7 +295,7 @@ oplgp:content owl:equivalentProperty bibo:content .
 oplgp:comment_content owl:equivalentProperty bibo:content .
 oplgp:html_content owl:equivalentProperty bibo:content .
 oplgp:relationshipStatus owl:equivalentProperty bibo:status .
-oplgp:providerTitle owl:equivalentProperty bibo:title .
+oplgp:activity_title owl:equivalentProperty bibo:title .
 oplgp:activity_title owl:equivalentProperty bibo:title .
 oplgp:title owl:equivalentProperty bibo:title .
 oplgp:attachment_displayName owl:equivalentProperty bibo:title .
@@ -341,7 +341,7 @@ oplgp:Organization owl:equivalentClass dbpedia:Organization .
 oplgp:Person owl:equivalentClass dbpedia:Person .
 oplgp:Actor owl:equivalentClass dbpedia:Actor .
 oplgp:PlaceLived owl:equivalentClass dbpedia:Place .
-oplgp:providerTitle owl:equivalentClass dbpedia:Publisher .
+oplgp:activity_title owl:equivalentClass dbpedia:Publisher .
 oplgp:published owl:equivalentProperty dbpedia:Date .
 oplgp:updated owl:equivalentProperty dbpedia:Date .
 oplgp:access owl:equivalentProperty dbpedia:Access .
