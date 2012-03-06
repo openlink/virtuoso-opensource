@@ -3835,7 +3835,7 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
        from
          DB.DBA.OPENGRAPH_ACCESS_TOKENS
        where
-         OGAT_GRANTOR_ID = og_id and OGAT_TOKEN_INVALID = 0 and OGAT_EXPIRES is null
+         OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES is null and OGAT_APP_SITE_URL like '%facebook_oauth/'
        order by OGAT_CREATED desc
       )
     do
@@ -3852,7 +3852,7 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
        from
          DB.DBA.OPENGRAPH_ACCESS_TOKENS
        where
-         OGAT_GRANTOR_ID = og_id and OGAT_TOKEN_INVALID = 0 and OGAT_EXPIRES > now()
+         OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES > now() and OGAT_APP_SITE_URL like '%facebook_oauth/'
       )
     do
     {
@@ -3868,7 +3868,7 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
      from 
        DB.DBA.OPENGRAPH_ACCESS_TOKENS 
      where 
-       OGAT_TOKEN_INVALID = 0 and OGAT_EXPIRES is null 
+       OGAT_EXPIRES is null and OGAT_APP_SITE_URL like '%facebook_oauth/'
      order by OGAT_CREATED desc
     )
     do
@@ -3881,7 +3881,9 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
   else
   {
     declare access_tokens any;
-    access_tokens := (select DB.DBA.VECTOR_AGG(OGAT_ACCESS_TOKEN) from DB.DBA.OPENGRAPH_ACCESS_TOKENS where OGAT_TOKEN_INVALID = 0 order by OGAT_CREATED desc);
+    access_tokens := (select DB.DBA.VECTOR_AGG(OGAT_ACCESS_TOKEN) from DB.DBA.OPENGRAPH_ACCESS_TOKENS 
+                      where OGAT_APP_SITE_URL like '%facebook_oauth/'
+                      order by OGAT_CREATED desc);
     return access_tokens;
   }
 }
