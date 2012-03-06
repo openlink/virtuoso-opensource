@@ -11437,7 +11437,22 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 	      --dbg_obj_print ('no triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
 	      triples := dict_list_keys (dict, 1);
-	      DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), triples);
+	      {
+		declare deadl int;
+		deadl := 5;
+		ins_again:
+		declare exit handler for sqlstate '40001' {
+		  deadl := deadl - 1;
+		  if (deadl > 0)
+		    {
+		      rollback work;
+		      goto ins_again;
+		    }
+		  resignal;
+		};
+	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), triples);
+		DB.DBA.RDF_SPONGER_STATUS (graph_iri, new_origin_uri, dest, null, options);
+	      }	
               if (__tag(rc) = 193)
                 return rc;
 	      return 1;
@@ -11777,7 +11792,7 @@ create procedure CLEAN_SPONGE (in d int := 30, in n int := 2000)
 }
 ;
 
-RDFS_RULE_SET ('http://www.w3.org/2000/01/rdf-schema#', 'http://www.w3.org/2000/01/rdf-schema#');
+--RDFS_RULE_SET ('http://www.w3.org/2000/01/rdf-schema#', 'http://www.w3.org/2000/01/rdf-schema#');
 
 -- Sponger splash screen
 DB.DBA.VHOST_REMOVE (
