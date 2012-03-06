@@ -12002,7 +12002,9 @@ create procedure lbl_order (in p any)
   'http://rdf.freebase.com/ns/common.topic.alias',
   'http://opengraphprotocol.org/schema/title',
   'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
-  'http://poolparty.punkt.at/demozone/ont#title'
+  'http://poolparty.punkt.at/demozone/ont#title',
+  'http://www.openlinksw.com/schemas/googleplus#activity_title',
+  'http://www.openlinksw.com/schemas/googleplus#providerTitle'
    );
   r := position (id_to_iri (p), r);
   if (r <= 0)
