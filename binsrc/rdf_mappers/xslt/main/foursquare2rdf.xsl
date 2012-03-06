@@ -218,7 +218,7 @@
 						<bibo:uri rdf:resource="{concat('https://foursquare.com/venue/', id)}" />
 						<sioc:link rdf:resource="{concat('https://foursquare.com/venue/', id)}" />
 						<xsl:for-each select="categories">
-							<sioc:topic>
+							<oplfq:category>
 								<bibo:Document rdf:about="{vi:proxyIRI ($baseUri, '', concat('category_', id))}">
 									<rdfs:label>
 										<xsl:value-of select="name"/>
@@ -231,7 +231,7 @@
 									</dc:description>
 									<foaf:depiction rdf:resource="{icon}"/>
 								</bibo:Document>
-							</sioc:topic>
+							</oplfq:category>
 						</xsl:for-each>
 		</rdf:Description>
 				</oplfq:is_mayor_of>
