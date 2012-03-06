@@ -6172,9 +6172,9 @@ bif_max_notnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           coll = args[0]->ssl_sqt.sqt_collation;
           best = a;
+          notnull_found = 1;
         }
-      notnull_found = 1;
-      if (DVC_GREATER == cmp_boxes (a, best, coll, coll))
+      else if (DVC_GREATER == cmp_boxes (a, best, coll, coll))
         best = a;
     }
   if (notnull_found)
@@ -6199,9 +6199,9 @@ bif_min_notnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           coll = args[0]->ssl_sqt.sqt_collation;
           best = a;
+          notnull_found = 1;
         }
-      notnull_found = 1;
-      if (DVC_LESS == cmp_boxes (a, best, coll, coll))
+      else if (DVC_LESS == cmp_boxes (a, best, coll, coll))
         best = a;
     }
   if (notnull_found)
