@@ -311,6 +311,11 @@
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
     <meta http-equiv="Content-type" content="text/html;charset=utf-8" />
+    <script type="text/javascript">
+    /*<![CDATA[*/
+    var uri	= "<?U dsn ?>";
+    /*]]>*/
+    </script>
     <script type="text/javascript" src="statics/script.js"></script>
     <script type="text/javascript" src="oat/loader.js"></script>
 </head>
@@ -563,6 +568,7 @@
 	     http ('Trace ID: ' || sid);
 	?>
     </div>
+    <div id="status"></div>
     </div> <!-- #footer -->
 
     <?vsp if (isstring (registry_get ('urchinTracker'))) { ?>

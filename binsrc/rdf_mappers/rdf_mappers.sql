@@ -533,12 +533,16 @@ DB.DBA.EXEC_STMT(
 	MC_DESC long varchar,
 	MC_ENABLED int not null default 1,
 	MC_API_TYPE integer default 0,
+	MC_FAILED int default 0, 
+	MC_AVG_TIME float default 0,
 	primary key (MC_HOOK)
 )
 alter index RDF_META_CARTRIDGES on DB.DBA.RDF_META_CARTRIDGES partition cluster replicated', 0)
 ;
 
 RM_UPGRADE_TBL ('DB.DBA.RDF_META_CARTRIDGES', 'MC_API_TYPE', 'integer default 0');
+RM_UPGRADE_TBL ('DB.DBA.RDF_META_CARTRIDGES', 'MC_FAILED', 'integer default 0');
+RM_UPGRADE_TBL ('DB.DBA.RDF_META_CARTRIDGES', 'MC_AVG_TIME', 'float default 0');
 
 DB.DBA.EXEC_STMT(
 'create table DB.DBA.RDF_CARTRIDGES_LOOKUPS (
@@ -3462,7 +3466,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
           vector ('baseUri', new_origin_uri, 'og_object_type', 'general'));
       xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
-      DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
+      DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
     }
     mime := get_keyword ('content-type', opts);
     ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
@@ -3594,7 +3598,7 @@ got_picture_url:
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, 
 	vector ('baseUri', new_origin_uri, 'og_object_type', mode));
       xd := serialize_to_UTF8_xml (xt);
-      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
     }
     else
     {
@@ -11930,3 +11934,21 @@ again:
 }
 ;
 
+DB.DBA.VHOST_REMOVE (lpath=>'/about/queue/status');
+DB.DBA.VHOST_DEFINE (lpath=>'/about/queue/status', ppath=>'/SOAP/Http/sponger_queue_status', soap_user=>'dba');
+
+create procedure sponger_queue_status (in uri varchar) __soap_http 'applcation/json'
+{
+  declare ret any;
+  ret := '{ "result":0 }'; 
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      http_status_set (500);
+      return sprintf ('{ "error":"%V" }', __SQL_MESSAGE);
+    };
+  return ret;
+}
+;
+
+grant execute on sponger_queue_status to dba;
