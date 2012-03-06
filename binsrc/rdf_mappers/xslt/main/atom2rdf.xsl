@@ -66,6 +66,7 @@
   xmlns:ff="&ff;"
     xmlns:dcterms="&dcterms;"
   xmlns:foaf="&foaf;"
+    xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -130,6 +131,7 @@
 <xsl:template match="a:author">
     <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
     <foaf:mbox rdf:resource="mailto:{a:email}"/>
+	<opl:email_address_digest rdf:resource="{vi:di-uri (a:email)}"/>
 </xsl:template>
 
 <xsl:template match="a:entry" mode="li">
