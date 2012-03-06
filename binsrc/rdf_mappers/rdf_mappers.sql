@@ -352,7 +352,11 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('.+\\.svg\x24', 
 	'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
-
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*angel.co/.*',
+    'URL', 'DB.DBA.RDF_LOAD_ANGELLIST', null, 'Angel List');
+	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('.+\\.csv\x24', 
 	'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
@@ -8006,6 +8010,52 @@ create procedure csv_to_xml (in s any)
     }
   http ('</csv>', ss);
   return ss;
+}
+;
+
+
+create procedure DB.DBA.RDF_LOAD_ANGELLIST (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
+{
+  declare xd, xt, urlpart, url, tree, json, hdr, content, success any;
+
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    
+  urlpart:=regexp_substr('^http://(www.)?angel.co/([^/]+)', new_origin_uri, 2);
+
+	hdr:=null;  
+	
+  -- is it a user (person)?
+  url:='https://api.angel.co/1/users/search?slug=' || urlpart;
+  DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());
+  content := http_get (url, hdr, 'GET', null, null, get_keyword_ucase ('get:proxy', opts));
+  DB.DBA.RM_LOG_RESPONSE (content, hdr);
+	tree := json_parse(content);
+	xt := DB.DBA.MQL_TREE_TO_XML(tree);
+	success:=cast( xpath_eval('count(/results/error)', xt) as integer );
+	if(success=0) {
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/angellist2rdf.xsl', xt, vector('baseUri', new_origin_uri, 'type', 'Person'));
+		xd := serialize_to_UTF8_xml (xt);
+		RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+		DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+	} else {
+		-- is it a startup (company)?
+		url:='https://api.angel.co/1/startups/search?slug=' || urlpart;
+		DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());
+		content := http_get (url, hdr, 'GET', null, null, get_keyword_ucase ('get:proxy', opts));
+		DB.DBA.RM_LOG_RESPONSE (content, hdr);
+		tree := json_parse(content);
+		xt := DB.DBA.MQL_TREE_TO_XML(tree);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/angellist2rdf.xsl', xt, vector('baseUri', new_origin_uri, 'type', 'Organization'));
+		xd := serialize_to_UTF8_xml (xt);
+		DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+	}
+	
+	DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
 }
 ;
 

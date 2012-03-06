@@ -24,6 +24,14 @@
         <dc:title>OpenLink base schema</dc:title>
     </owl:Ontology>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#blog_url">
+        <rdfs:comment>A generic blog as a social profile URL. e.g. pointing to Blogger, Blogspot, Wordpress, etc.</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>Blog URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/oplbase#social_profile_url"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#social_profile_url">
         <rdfs:comment>A generic property for holding a social profile URL. e.g. from Twitter, Facebook, LinkedIn etc.</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
@@ -31,3 +39,5 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
     </owl:DatatypeProperty>
 </rdf:RDF>
+
+
