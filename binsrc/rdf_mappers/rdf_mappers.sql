@@ -23,7 +23,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
 --set macro_substitution=off;
+
 -- remove wrong cartridge patterns
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)' and RM_TYPE = 'MIME';
@@ -31,6 +33,7 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.svg\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.od[ts]\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.ics\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\\.ics\x24';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 
 -- insertion of cartridges
 
@@ -70,7 +73,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_EVRI', null, 'Evri');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://.*foursquare.com/.*)|(https://.*foursquare.com/.*)',
+    values ('(http://.*foursquare.com/.*)|'||
+    '(https://.*foursquare.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_FOURSQUARE', null, 'Foursquare');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -78,7 +82,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_SEATGEEK', null, 'Seatgeek');
 	
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://.*simplegeo.com/.*)|(https://.*simplegeo.com/.*)',
+    values ('(http://.*simplegeo.com/.*)|'||
+    '(https://.*simplegeo.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_SIMPLEGEO', null, 'SimpleGeo');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -132,7 +137,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://plus.google.com/.*)|'||
-		'(https://plus.google.com/.*)',
+	'(https://plus.google.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE', null, 'Google (Profile)');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -152,10 +157,6 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
      values ('http://.*jigsaw.com/.*',
      'URL', 'DB.DBA.RDF_LOAD_JIGSAW', null, 'Jigsaw');
 
---insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
---	values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
-
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('(text/html)|(text/xml)|(application/xml)|(application/rdf.xml)',
 	'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'yes', 'get-feeds', 'no'));
@@ -166,7 +167,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://farm[0-9]*.static.flickr.com/.*)|'||
-			'(http://www.flickr.com/photos/.*)',
+	'(http://www.flickr.com/photos/.*)',
     'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -197,9 +198,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
 	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
-        '(http://.*amazon.[^/]+/s\?.*)|' ||
-        '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
-        '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
+    '(http://.*amazon.[^/]+/s\?.*)|' ||
+    '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
+    '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -223,7 +224,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_EOL', null, 'Eol');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)|(http://del.icio.us/.*)',
+	values ('(http://.*delicious.com/.*)|'||
+	'(http://del.icio.us/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_DELICIOUS', null, 'Delicious');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -288,7 +290,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_BUGZILLA', null, 'Bugzillas');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://digg.com/.*)|(http://services.digg.com/.*)',
+	values ('(http://digg.com/.*)|'||
+	'(http://services.digg.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_DIGG', null, 'Digg');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -309,8 +312,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_GETSATISFATION', null, 'GetSatisfaction');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://twitter.com/.*)|' ||
-	'(http://search.twitter.com/.*)',
+	values ('(http://.*twitter.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_TWITTER', null, 'Twitter');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -318,7 +320,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_TWITTER_FP', null, 'Twitter WebIDs');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-  values ('http://(www.)?klout.com/.*', 'URL', 'DB.DBA.RDF_LOAD_KLOUT', null, 'Klout');
+    values ('http://(www.)?klout.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_KLOUT', null, 'Klout');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://.*salesforce.com/.*)|'||
@@ -347,58 +350,65 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_OPENLIBRARY', null, 'OpenLibrary');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('.+\\.svg\x24', 'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
+	values ('.+\\.svg\x24', 
+	'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('.+\\.csv\x24', 'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
+	values ('.+\\.csv\x24', 
+	'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('.+\\.xrd\x24', 'URL', 'RDF_LOAD_XRD_GENERIC', null, 'XRD');
+	values ('.+\\.xrd\x24', 
+	'URL', 'RDF_LOAD_XRD_GENERIC', null, 'XRD');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)|(http://www.ebay.co.uk/.*)|(http://www.ebay.com/.*)',
+	values ('(http://cgi.sandbox.ebay.com/.*)|'||
+	'(http://cgi.ebay.com/.*)|'||
+	'(http://cgi.ebay.de/.*)|'||
+	'(http://www.ebay.co.uk/.*)|'||
+	'(http://www.ebay.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('.+\\.od[ts]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
+	values ('.+\\.od[ts]\x24', 
+	'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(.+\\.docx\x24)|(.+\\.xlsx\x24)', 'URL', 'DB.DBA.RDF_LOAD_MS_DOCUMENT', null, 'Microsoft Documents');
+	values ('(.+\\.docx\x24)|(.+\\.xlsx\x24)', 
+	'URL', 'DB.DBA.RDF_LOAD_MS_DOCUMENT', null, 'Microsoft Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('.+\\.fod[tsg]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT2', null, 'OpenOffice Documents');
+	values ('.+\\.fod[tsg]\x24', 
+	'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT2', null, 'OpenOffice Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('http://local.yahooapis.com/MapsService/V1/trafficData.*',
 	'URL', 'DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA', null, 'Yahoo Traffic Data');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(.+\\.ics\x24)|(.+\\.ics\?.*)', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
+	values ('(.+\\.ics\x24)|(.+\\.ics\?.*)', 
+	'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
+	values ('(text/calendar)', 
+	'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('.*facebook.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', 
-	  vector ('app_secret', '', 'app_id', '', 'offline_access', '1', 'max_pages', '4', 'paging_page_size_limit', '5000'));
-
--- Force an update to the Facebook cartridge name if its already registered
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '.*facebook.*', RM_DESCRIPTION = 'Facebook (Graph API)'
-	where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH';
+	values ('.*facebook.*', 
+	'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)',
+	vector ('app_secret', '', 'app_id', '', 'offline_access', '1', 'max_pages', '4', 'paging_page_size_limit', '5000'));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http[s]*://.*.facebook.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_FQL', null, 'Facebook (Facebook Query Language - FQL)', vector ('secret', '', 'session', ''));
-
-update DB.DBA.SYS_RDF_MAPPERS set RM_DESCRIPTION = 'Facebook (Facebook Query Language - FQL)'
-	where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http://www.freebase.com/view/.*',
 	'URL', 'DB.DBA.RDF_LOAD_MQL', null, 'Freebase', vector ());
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
-	values ('.*', 'MIME', 'DB.DBA.RDF_LOAD_DAV_META', null, 'WebDAV Metadata', 1);
+	values ('.*', 
+	'MIME', 'DB.DBA.RDF_LOAD_DAV_META', null, 'WebDAV Metadata', 1);
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('http://.*.wikipedia.org.*',
@@ -413,73 +423,33 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)|(http://crunchbase.com/.*)',
+	values ('(http://api.crunchbase.com/v/1/.*)|'||
+	'(http://www.crunchbase.com/.*)|'||
+	'(http://crunchbase.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_CRUNCHBASE', null, 'CrunchBase', null);
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('.+\\.pptx\x24', 'URL', 'DB.DBA.RDF_LOAD_PPTX_DOCUMENT', null, 'Powerpoint documents', null);
+	values ('.+\\.pptx\x24', 
+	'URL', 'DB.DBA.RDF_LOAD_PPTX_DOCUMENT', null, 'Powerpoint documents', null);
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('http://.*.linkedin.com/.*', 'URL', 'DB.DBA.RDF_LOAD_LINKEDIN', null, 'LinkedIn', vector (
-        'consumer_key', '', 'consumer_secret', '', 'consumer_name', ''));
+	values ('http://.*.linkedin.com/.*', 
+	'URL', 'DB.DBA.RDF_LOAD_LINKEDIN', null, 'LinkedIn', 
+	vector ('consumer_key', '', 'consumer_secret', '', 'consumer_name', ''));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('http://twitter.com/.*', 'URL', 'DB.DBA.RDF_LOAD_TWITTER_V2', null, 'Twitter v2',
-            vector ('consumer_key', '',
-                    'consumer_secret', '',
-                    'friends_n_followers_pg_limit', '0',
-                    'friends_n_followers_item_limit', '100',
-                    'favorites_pg_limit', '5',
-                    'user_timeline_pg_limit', '5'));
+	values ('http://twitter.com/.*', 
+	'URL', 'DB.DBA.RDF_LOAD_TWITTER_V2', null, 'Twitter v2',
+	vector ('consumer_key', '', 'consumer_secret', '', 
+	'friends_n_followers_pg_limit', '0', 
+	'friends_n_followers_item_limit', '100',
+    'favorites_pg_limit', '5',
+    'user_timeline_pg_limit', '5'));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-    values ('https?://plus.google.com/.*', 'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLUS', null, 'Google+',
-	  vector ('max_activity_pages', '1', 'max_comment_pages', '1', 'items_per_activity_page', '50', 'items_per_comment_page', '50'));
-
--- Disable old Twitter cartridge in favour of DB.DBA.RDF_LOAD_TWITTER_V2
-update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
--- Disable old Google profile cartridge in favour of DB.DBA.RDF_LOAD_GOOGLE_PLUS
-update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE';
--- Ensure previously installed Google+ cartridges have options entries 
-update DB.DBA.SYS_RDF_MAPPERS 
-  set RM_OPTIONS = vector ('max_activity_pages', '1', 'max_comment_pages', '1', 'items_per_activity_page', '50', 'items_per_comment_page', '50')
-where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PLUS' and RM_OPTIONS is null;
-
-update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
-
--- pattern upgrades
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)|(http://crunchbase.com/.*)'
-	where RM_HOOK = 'DB.DBA.RDF_LOAD_CRUNCHBASE';
-
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
-    '(http://.*download.com/.*)|'||
-    '(http://download.cnet.com/.*)|'||
-    '(http://shopper.cnet.com/.*)|'||
-    '(http://reviews.cnet.com/.*)'
-    where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
-
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)|(http://www.ebay.co.uk/.*)|(http://www.ebay.com/.*)'
-    where RM_HOOK = 'DB.DBA.RDF_LOAD_EBAY_ARTICLE';
-
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
-	'(http://.*amazon.[^/]+/gp/product/.*)|'||
-	'(http://.*amazon.[^/]+/o/ASIN/.*)|'||
-	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
-	'(http://.*amazon.[^/]+/dp/[^/]+(/.*)?)|'||
-	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
-	'(http://.*amazon.[^/]+/s\?.*)|'||
-	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
-        '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
-	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
-	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
-
-update DB.DBA.SYS_RDF_MAPPERS
-	set RM_PATTERN = '(http://.*delicious.com/.*)|(http://del.icio.us/.*)'
-	where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
-
-update DB.DBA.SYS_RDF_MAPPERS 
-	set RM_PATTERN = '(https?://www.groupon.com/.*)'
-	where RM_HOOK = 'DB.DBA.RDF_LOAD_GROUPON';
+    values ('https?://plus.google.com/.*', 
+    'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLUS', null, 'Google+',
+	vector ('max_activity_pages', '1', 'max_comment_pages', '1', 'items_per_activity_page', '50', 'items_per_comment_page', '50'));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('http://(www\\.)?overstock.com/.*\\.(html|htm)(\\?.*)?',
@@ -496,29 +466,87 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS, RM_ENABLED)
     values ('http://.*.nytimes.com/.*', 'URL', 'DB.DBA.RDF_LOAD_NYT_ARTICLE', null, 'NYT Article', null, 0);
 
+update DB.DBA.SYS_RDF_MAPPERS 
+    set RM_DESCRIPTION = 'Facebook (Facebook Query Language - FQL)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
+
+-- Force an update to the Facebook cartridge name if its already registered
+update DB.DBA.SYS_RDF_MAPPERS 
+    set RM_PATTERN = '.*facebook.*', RM_DESCRIPTION = 'Facebook (Graph API)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH';
+
+-- Disable old Twitter cartridge in favour of DB.DBA.RDF_LOAD_TWITTER_V2
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER';
+
+-- Disable old Google profile cartridge in favour of DB.DBA.RDF_LOAD_GOOGLE_PLUS
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE';
+
+-- Ensure previously installed Google+ cartridges have options entries 
+update DB.DBA.SYS_RDF_MAPPERS 
+    set RM_OPTIONS = vector ('max_activity_pages', '1', 'max_comment_pages', '1', 'items_per_activity_page', '50', 'items_per_comment_page', '50')
+    where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PLUS' and RM_OPTIONS is null;
+
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
+
+-- pattern upgrades
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)|(http://crunchbase.com/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_CRUNCHBASE';
+
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
+    '(http://.*download.com/.*)|'||
+    '(http://download.cnet.com/.*)|'||
+    '(http://shopper.cnet.com/.*)|'||
+    '(http://reviews.cnet.com/.*)'
+    where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
+
+update DB.DBA.SYS_RDF_MAPPERS 
+    set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)|(http://cgi.ebay.de/.*)|(http://www.ebay.co.uk/.*)|(http://www.ebay.com/.*)'
+    where RM_HOOK = 'DB.DBA.RDF_LOAD_EBAY_ARTICLE';
+
+update DB.DBA.SYS_RDF_MAPPERS 
+    set RM_PATTERN =	
+	'(http://.*amazon.[^/]+/gp/product/.*)|'||
+	'(http://.*amazon.[^/]+/o/ASIN/.*)|'||
+	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
+	'(http://.*amazon.[^/]+/dp/[^/]+(/.*)?)|'||
+	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
+	'(http://.*amazon.[^/]+/s\?.*)|'||
+	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
+    '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
+	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
+
+update DB.DBA.SYS_RDF_MAPPERS
+	set RM_PATTERN = '(http://.*delicious.com/.*)|(http://del.icio.us/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
+
+update DB.DBA.SYS_RDF_MAPPERS 
+	set RM_PATTERN = '(https?://www.groupon.com/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_GROUPON';
+	
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
-  declare pk any;
-  pk := DB.DBA.REPL_PK_COLS ('DB.DBA.SYS_RDF_MAPPERS');
-  if (length (pk) = 2 and pk[0][0] = 'RM_TYPE' and pk[1][0] = 'RM_PATTERN')
+    declare pk any;
+    pk := DB.DBA.REPL_PK_COLS ('DB.DBA.SYS_RDF_MAPPERS');
+    if (length (pk) = 2 and pk[0][0] = 'RM_TYPE' and pk[1][0] = 'RM_PATTERN')
     {
-      declare skip_up int;
-      skip_up := 0;
-      for select RM_HOOK from DB.DBA.SYS_RDF_MAPPERS group by 1 having count(*) > 1 do
-	{
-	  if (skip_up = 0)
-	    log_message ('The DB.DBA.SYS_RDF_MAPPERS cannot be upgraded');
-	  log_message (sprintf ('The %s cartridge is defined multiple times, remove duplicate', RM_HOOK));
-	  skip_up := skip_up + 1;
-	}
-      if (skip_up = 0)
-	{
-	  exec ('alter table DB.DBA.SYS_RDF_MAPPERS modify primary key (RM_HOOK)');
-	  log_message ('The DB.DBA.SYS_RDF_MAPPERS have been upgraded');
-	}
+        declare skip_up int;
+        skip_up := 0;
+        for select RM_HOOK from DB.DBA.SYS_RDF_MAPPERS group by 1 having count(*) > 1 do
+        {
+            if (skip_up = 0)
+                log_message ('The DB.DBA.SYS_RDF_MAPPERS cannot be upgraded');
+            log_message (sprintf ('The %s cartridge is defined multiple times, remove duplicate', RM_HOOK));
+            skip_up := skip_up + 1;
+        }
+        if (skip_up = 0)
+        {
+            exec ('alter table DB.DBA.SYS_RDF_MAPPERS modify primary key (RM_HOOK)');
+            log_message ('The DB.DBA.SYS_RDF_MAPPERS have been upgraded');
+        }
     }
-  return;
+    return;
 }
 ;
 
@@ -527,9 +555,9 @@ DB.DBA.RM_MAPPERS_UPGRADE ()
 
 create procedure RM_UPGRADE_TBL (in tbl varchar, in col varchar, in coltype varchar)
 {
-  if (exists( select top 1 1 from DB.DBA.SYS_COLS where upper("TABLE") = upper(tbl) and upper("COLUMN") = upper(col)))
-    return;
-  exec (sprintf ('alter table %s add column %s %s', tbl, col, coltype));
+    if (exists( select top 1 1 from DB.DBA.SYS_COLS where upper("TABLE") = upper(tbl) and upper("COLUMN") = upper(col)))
+        return;
+    exec (sprintf ('alter table %s add column %s %s', tbl, col, coltype));
 }
 ;
 
@@ -585,7 +613,7 @@ alter index RDF_CARTRIDGES_LOG on DB.DBA.RDF_CARTRIDGES_LOG partition cluster re
 ;
 
 EXEC_STMT ('create table RDF_SPONGER_QUEUE (
-    	RS_URI varchar,
+    RS_URI varchar, 
 	RS_QTS datetime,
 	RS_TS timestamp,
 	RS_STATE int default 0,
@@ -600,59 +628,60 @@ RM_UPGRADE_TBL ('DB.DBA.RDF_SPONGER_META_QUEUE', 'MQ_SESSION', 'varchar');
 
 create procedure RM_LOG_REQUEST (in url varchar, in kwd varchar, in proc varchar)
 {
-  declare sid any;
-  sid := connection_get ('__rdf_sponge_sid');
-  if (registry_get ('__rdf_sponge_debug') <> '1')
-    return;
-  if (sid is null)
-    return;
-  insert into DB.DBA.RDF_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, proc);
-  connection_set ('__rdf_sponge_idn', identity_value ());
+    declare sid any;
+    sid := connection_get ('__rdf_sponge_sid');
+    if (registry_get ('__rdf_sponge_debug') <> '1')
+        return;
+    if (sid is null)
+        return;
+    insert into DB.DBA.RDF_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, proc);
+    connection_set ('__rdf_sponge_idn', identity_value ());
 }
 ;
 
 create procedure RM_LOG_RESPONSE (in resp varchar, in hdr any)
 {
-  declare sid, idn, hdr_str any;
-  sid := connection_get ('__rdf_sponge_sid');
-  idn := connection_get ('__rdf_sponge_idn');
-  if (sid is null or idn is null)
-    return;
-  hdr_str := '';
-  foreach (varchar l in hdr) do
-    hdr_str := hdr_str || l;
-  update DB.DBA.RDF_CARTRIDGES_LOG set ML_RESPONSE = resp, ML_RESPONSE_HEAD = hdr_str where ML_SESSION = sid and ML_ID = idn;
+    declare sid, idn, hdr_str any;
+    sid := connection_get ('__rdf_sponge_sid');
+    idn := connection_get ('__rdf_sponge_idn');
+    if (sid is null or idn is null)
+        return;
+    hdr_str := '';
+    foreach (varchar l in hdr) do
+        hdr_str := hdr_str || l;
+    update DB.DBA.RDF_CARTRIDGES_LOG set ML_RESPONSE = resp, ML_RESPONSE_HEAD = hdr_str where ML_SESSION = sid and ML_ID = idn;
 }
 ;
 
 create procedure RM_LOG_RESULT (in res any)
 {
-  declare sid, idn any;
-  sid := connection_get ('__rdf_sponge_sid');
-  idn := connection_get ('__rdf_sponge_idn');
-  if (sid is null or idn is null)
-    return;
-  update DB.DBA.RDF_CARTRIDGES_LOG set ML_RESULT = res where ML_SESSION = sid and ML_ID = idn;
+    declare sid, idn any;
+    sid := connection_get ('__rdf_sponge_sid');
+    idn := connection_get ('__rdf_sponge_idn');
+    if (sid is null or idn is null)
+        return;
+    update DB.DBA.RDF_CARTRIDGES_LOG set ML_RESULT = res where ML_SESSION = sid and ML_ID = idn;
 }
 ;
 
 
 create procedure RM_LOG_CLEAR ()
 {
-  declare sid any;
-  sid := connection_get ('__rdf_sponge_sid');
-  if (sid is null)
-    return;
-  delete from DB.DBA.RDF_CARTRIDGES_LOG where ML_SESSION = sid;
+    declare sid any;
+    sid := connection_get ('__rdf_sponge_sid');
+    if (sid is null)
+        return;
+    delete from DB.DBA.RDF_CARTRIDGES_LOG where ML_SESSION = sid;
 }
 ;
 
 create procedure DB.DBA.MIGRATE_CALAIS ()
 {
-  insert into DB.DBA.RDF_META_CARTRIDGES (MC_HOOK, MC_TYPE, MC_PATTERN, MC_KEY, MC_OPTIONS, MC_DESC, MC_ENABLED)
-      select RM_HOOK, RM_TYPE, RM_PATTERN, RM_KEY, RM_OPTIONS, RM_DESCRIPTION, RM_ENABLED from DB.DBA.SYS_RDF_MAPPERS
-      where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
-  delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+    insert into DB.DBA.RDF_META_CARTRIDGES (MC_HOOK, MC_TYPE, MC_PATTERN, MC_KEY, MC_OPTIONS, MC_DESC, MC_ENABLED)
+    select RM_HOOK, RM_TYPE, RM_PATTERN, RM_KEY, RM_OPTIONS, RM_DESCRIPTION, RM_ENABLED 
+        from DB.DBA.SYS_RDF_MAPPERS
+        where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+    delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 }
 ;
 
@@ -660,38 +689,33 @@ DB.DBA.MIGRATE_CALAIS ();
 
 create procedure DB.DBA.RM_MAPPERS_SET_ORDER ()
 {
-   declare inx int;
-   declare top_arr, arr, http, html, feed, calais, fb_og, num any;
-
-   if (exists (select RM_PID, count(*) from DB.DBA.SYS_RDF_MAPPERS group by RM_PID having count(*) > 1))
-     {
-       num := (select count(*) from DB.DBA.SYS_RDF_MAPPERS);
-       inx := 1;
-       for select RM_HOOK as hook from DB.DBA.SYS_RDF_MAPPERS do
-	 {
-	   update DB.DBA.SYS_RDF_MAPPERS set RM_PID = inx where RM_HOOK = hook;
-	   inx := inx + 1;
-	 }
-     }
-
-   --http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
-   html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
-   feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
-   fb_og := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
---   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
-   top_arr := vector (html, feed, fb_og);
-
-   arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
-   inx := 1;
-   arr := vector_concat (top_arr, arr);
-   foreach (int pid in arr) do
-     {
-       update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
-       inx := inx + 1;
-     }
-   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
-   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_ID', inx);
-   update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
+    declare inx int;
+    declare top_arr, arr, http, html, feed, calais, fb_og, num any;
+    if (exists (select RM_PID, count(*) from DB.DBA.SYS_RDF_MAPPERS group by RM_PID having count(*) > 1))
+    {
+        num := (select count(*) from DB.DBA.SYS_RDF_MAPPERS);
+        inx := 1;
+        for select RM_HOOK as hook from DB.DBA.SYS_RDF_MAPPERS do
+        {
+            update DB.DBA.SYS_RDF_MAPPERS set RM_PID = inx where RM_HOOK = hook;
+            inx := inx + 1;
+        }
+    }
+    html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
+    feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
+    fb_og := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
+    top_arr := vector (html, feed, fb_og);
+    arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
+    inx := 1;
+    arr := vector_concat (top_arr, arr);
+    foreach (int pid in arr) do
+    {
+        update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
+        inx := inx + 1;
+    }
+    DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
+    DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_ID', inx);
+    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
 }
 ;
 
@@ -700,34 +724,33 @@ RM_MAPPERS_SET_ORDER ();
 -- /* to insert cartridge after another */
 create procedure RM_MAPPERS_SET_CONSEQ (in proc_1 varchar, in proc_2 varchar)
 {
-   declare inx int;
-   declare top_arr, arr, http, html, feed, calais, pid_1, pid_2, do_update any;
-
-   pid_1 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_1);
-   pid_2 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_2);
-   top_arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS
-   	where RM_HOOK in ('DB.DBA.RDF_LOAD_HTTP_SESSION','DB.DBA.RDF_LOAD_HTML_RESPONSE','DB.DBA.RDF_LOAD_FEED_RESPONSE')
-	order by RM_ID);
-   arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) and RM_HOOK <> proc_2 order by RM_ID);
-   inx := 0;
-   do_update := 0;
-   arr := vector_concat (top_arr, arr);
-   foreach (int pid in arr) do
-     {
-       if (pid = pid_1)
-	 {
-	   inx := inx + 1;
-           update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid_2;
-	   do_update := 1;
-	 }
-       else if (do_update)
-	 {
-           update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
-	 }
-       inx := inx + 1;
-     }
-   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
-   update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
+    declare inx int;
+    declare top_arr, arr, http, html, feed, calais, pid_1, pid_2, do_update any;
+    pid_1 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_1);
+    pid_2 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_2);
+    top_arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS
+        where RM_HOOK in ('DB.DBA.RDF_LOAD_HTTP_SESSION','DB.DBA.RDF_LOAD_HTML_RESPONSE','DB.DBA.RDF_LOAD_FEED_RESPONSE')
+        order by RM_ID);
+    arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) and RM_HOOK <> proc_2 order by RM_ID);
+    inx := 0;
+    do_update := 0;
+    arr := vector_concat (top_arr, arr);
+    foreach (int pid in arr) do
+    {
+        if (pid = pid_1)
+        {
+            inx := inx + 1;
+            update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid_2;
+            do_update := 1;
+        }
+        else if (do_update)
+        {
+            update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
+        }
+        inx := inx + 1;
+    }
+    DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
+    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
 }
 ;
 
@@ -877,15 +900,15 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 
 create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
 {
-  if (not isstring (x))
-    return x;
-  if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
-    return x;
-  if (http_mime_type (x) like 'image/%')
+    if (not isstring (x))
+        return x;
+    if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
+        return x;
+    if (http_mime_type (x) like 'image/%')
     {
-      return x;
+        return x;
     }
-  return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
+    return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
 }
 ;
 
@@ -1255,107 +1278,106 @@ create procedure DB.DBA.XSLT_TRIM (in val varchar, in tr varchar)
 
 create procedure DB.DBA.XSLT_REPLACE1 (in val varchar)
 {
-  val := replace (val, '(', '%28');
-  val := replace (val, ')', '%29');
-  return replace (val, '\'', '%27');
+    val := replace (val, '(', '%28');
+    val := replace (val, ')', '%29');
+    return replace (val, '\'', '%27');
 }
 ;
 
 create procedure DB.DBA.XSLT_SHA1_HEX (in val varchar)
 {
-  return tree_sha1 (val, 1);
+    return tree_sha1 (val, 1);
 }
 ;
 
 create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 {
-  declare ret any;
-  ret := null;
-  if (val like '[A-Za-z]* [0-9]*')
+    declare ret any;
+    ret := null;
+    if (val like '[A-Za-z]* [0-9]*')
     {
-      declare dt, pos, tmp, v any;
-      v := trim (val, '+');
-      pos := strchr (v, ' ');
-      tmp := subseq (v, 0, pos);
-      dt := trim(tmp);
-      tmp := trim (subseq (v, pos));
-      dt := 'Wee, ' || tmp || ' ' || dt || sprintf (' %d 00:00:00 GMT', year (now ()));
-      ret := http_string_date (dt, null, null);
+        declare dt, pos, tmp, v any;
+        v := trim (val, '+');
+        pos := strchr (v, ' ');
+        tmp := subseq (v, 0, pos);
+        dt := trim(tmp);
+        tmp := trim (subseq (v, pos));
+        dt := 'Wee, ' || tmp || ' ' || dt || sprintf (' %d 00:00:00 GMT', year (now ()));
+        ret := http_string_date (dt, null, null);
     }
-  else
-    ret := http_string_date (val, null, null);
-  if (ret is not null)
+    else
+        ret := http_string_date (val, null, null);
+    if (ret is not null)
     {
-      ret := dt_set_tz (ret, 0);
-      ret := date_iso8601 (ret);
+        ret := dt_set_tz (ret, 0);
+        ret := date_iso8601 (ret);
     }
-  return coalesce (ret, val);
+    return coalesce (ret, val);
 }
 ;
 
 create procedure DB.DBA.XSLT_DI_SPLIT (in str varchar)
 {
-  declare di, h, dgst varchar;
-  declare ses any;
-  ses := string_output ();
-  http ('<result>', ses);
-  while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
+    declare di, h, dgst varchar;
+    declare ses any;
+    ses := string_output ();
+    http ('<result>', ses);
+    while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
     {
-      dbg_obj_print (di);
-      h := WS.WS.PARSE_URI (di);
-      dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
-      http (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst), ses);
+        dbg_obj_print (di);
+        h := WS.WS.PARSE_URI (di);
+        dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
+        http (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst), ses);
     }
-  http ('</result>', ses);
-  return xtree_doc (ses);
+    http ('</result>', ses);
+    return xtree_doc (ses);
 }
 ;
 
 create procedure DB.DBA.RDF_SPONGE_DOC_IRI (in url varchar, in dest varchar := null)
 {
-  declare res varchar;
-  res := coalesce (url, dest);
-  return res;
+    declare res varchar;
+    res := coalesce (url, dest);
+    return res;
 }
 ;
 
 create procedure RM_CONTENT_TYPE_IS_RDF (in ret_content_type any)
 {
-  if (strstr (ret_content_type, 'application/rdf+xml') is not null or
-      strstr (ret_content_type, 'text/rdf+n3') is not null or
-      strstr (ret_content_type, 'text/n3') is not null or
-      strstr (ret_content_type, 'text/rdf+ttl') is not null or
-      strstr (ret_content_type, 'text/rdf+turtle') is not null or
-      strstr (ret_content_type, 'text/turtle') is not null or
-      strstr (ret_content_type, 'application/rdf+n3') is not null or
-      strstr (ret_content_type, 'application/rdf+turtle') is not null or
-      strstr (ret_content_type, 'application/turtle') is not null or
-      strstr (ret_content_type, 'application/x-turtle') is not null )
-    return 1;
-  return 0;
+    if (strstr (ret_content_type, 'application/rdf+xml') is not null or
+        strstr (ret_content_type, 'text/rdf+n3') is not null or
+        strstr (ret_content_type, 'text/n3') is not null or
+        strstr (ret_content_type, 'text/rdf+ttl') is not null or
+        strstr (ret_content_type, 'text/rdf+turtle') is not null or
+        strstr (ret_content_type, 'text/turtle') is not null or
+        strstr (ret_content_type, 'application/rdf+n3') is not null or
+        strstr (ret_content_type, 'application/rdf+turtle') is not null or
+        strstr (ret_content_type, 'application/turtle') is not null or
+        strstr (ret_content_type, 'application/x-turtle') is not null )
+        return 1;
+    return 0;
 }
 ;
-
 
 --
 -- # this returns document IRI, non-proxy one
 --
 create procedure DB.DBA.RM_SPONGE_DOC_IRI (in url varchar, in frag varchar := 'this')
 {
-  declare hf, uri any;
-  hf := rfc1808_parse_uri (url);
-  if (hf[5] = '')
-    hf[5] := frag;
-  uri := vspx_uri_compose (hf);
-  return uri;
+    declare hf, uri any;
+    hf := rfc1808_parse_uri (url);
+    if (hf[5] = '')
+        hf[5] := frag;
+    uri := vspx_uri_compose (hf);
+    return uri;
 }
 ;
 
 create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
 {
-  if (is_https_ctx ())
-    return 'https';
-  return 'http';
+    if (is_https_ctx ())
+        return 'https';
+    return 'http';
 }
 ;
 
@@ -1364,56 +1386,50 @@ create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
 --
 create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
 {
-  declare cname any;
-  declare ret any;
-  declare url_sch varchar;
-  declare ua any;
-
-  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
-
-  if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
-    frag := '';
-
-  if (length (frag) and frag[0] <> '#'[0])
-    frag := '#' || sprintf ('%U', frag);
-  if (strchr (uri, '#') is not null)
-    frag := '';
-
-  --if (http_mime_type (uri) like 'image/%')
+    declare cname any;
+    declare ret any;
+    declare url_sch varchar;
+    declare ua any;
+    cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+    if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
+        frag := '';
+    if (length (frag) and frag[0] <> '#'[0])
+        frag := '#' || sprintf ('%U', frag);
+    if (strchr (uri, '#') is not null)
+        frag := '';
+    --if (http_mime_type (uri) like 'image/%')
     --return uri;
-
-  ua := rfc1808_parse_uri (uri);
-  url_sch := ua[0];
-  ua [0] := '';
-  uri := vspx_uri_compose (ua);
-  uri := ltrim (uri, '/');
-
-  if (length (login))
-    ret := sprintf ('%s://%s/about/rdf/%s/%U/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, login, uri, frag);
-  else
-    ret := sprintf ('%s://%s/about/id/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
-  return ret;
+    ua := rfc1808_parse_uri (uri);
+    url_sch := ua[0];
+    ua [0] := '';
+    uri := vspx_uri_compose (ua);  
+    uri := ltrim (uri, '/');
+    if (length (login))
+        ret := sprintf ('%s://%s/about/rdf/%s/%U/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, login, uri, frag);
+    else
+        ret := sprintf ('%s://%s/about/id/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
+    return ret;
 }
 ;
 
 create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 {
-  declare default_host, cname varchar;
-  if (is_http_ctx ())
-    default_host := http_request_header(http_request_header (), 'Host', null, null);
-  else if (connection_get ('__http_host') is not null)
-    default_host := connection_get ('__http_host');
-  else
-    default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (default_host is not null)
-    cname := default_host;
-  else
-  {
-    cname := sys_stat ('st_host_name');
-    if (server_http_port () <> '80')
-        cname := cname ||':'|| server_http_port ();
-  }
-  return cname;
+    declare default_host, cname varchar;
+    if (is_http_ctx ())
+        default_host := http_request_header(http_request_header (), 'Host', null, null);
+    else if (connection_get ('__http_host') is not null)
+        default_host := connection_get ('__http_host');
+    else
+        default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (default_host is not null)
+        cname := default_host;
+    else
+    {
+        cname := sys_stat ('st_host_name');
+        if (server_http_port () <> '80')
+            cname := cname ||':'|| server_http_port ();
+    }
+    return cname;
 }
 ;
 
@@ -1545,72 +1561,69 @@ create procedure DB.DBA.RDF_CONVERT_TO_XTREE (in code varchar)
 
 create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
 {
-  declare res, xp, xt, url varchar;
-  declare uri varchar;
-  declare st int;
-  declare dbp_iri any;
-
-  declare exit handler for sqlstate '*' {
-    return base || '#' || word;
-  };
-
-  uri := MOAT_APPLY (http_dav_uid (), word);
-  if (uri is not null)
+    declare res, xp, xt, url varchar;
+    declare uri varchar;
+    declare st int;
+    declare dbp_iri any;
+    declare exit handler for sqlstate '*' 
     {
-      return uri;
-    }
-
-  if (word[0] >= 'a'[0] and word[0] <= 'z'[0])
-    word[0] := word[0] - 32;
-  word := replace (word, ' ', '_');
-  url := sprintf ('http://dbpedia.org/resource/%U', word);
-  dbp_iri := iri_to_id (url);
-  st := (select CL_STAT from RDF_CARTRIDGES_LOOKUPS where CL_URI = dbp_iri);
-  if (st = 1)
-    return url;
-  else if (st = 0)
-    return base || '#' || word;
-
-  uri := sprintf ('ask from <http://dbpedia.org> where { <%s> ?y ?z }', url);
-  res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U&format=xml', uri), timeout=>30, proxy=>connection_get ('sparql-get:proxy'));
-  xt := xtree_doc (res);
-  xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
-  if (xp = 'true')
+        return base || '#' || word;
+    };
+    uri := MOAT_APPLY (http_dav_uid (), word);
+    if (uri is not null)
     {
-      insert soft DB.DBA.RDF_CARTRIDGES_LOOKUPS (CL_URI, CL_STAT) values (dbp_iri, 1);
-      return url;
+        return uri;
     }
-  insert soft DB.DBA.RDF_CARTRIDGES_LOOKUPS (CL_URI, CL_STAT) values (dbp_iri, 0);
-  return base || '#' || word;
+    if (word[0] >= 'a'[0] and word[0] <= 'z'[0])
+        word[0] := word[0] - 32;
+    word := replace (word, ' ', '_');  
+    url := sprintf ('http://dbpedia.org/resource/%U', word);  
+    dbp_iri := iri_to_id (url);
+    st := (select CL_STAT from RDF_CARTRIDGES_LOOKUPS where CL_URI = dbp_iri);
+    if (st = 1)
+        return url;
+    else if (st = 0)
+        return base || '#' || word;
+    uri := sprintf ('ask from <http://dbpedia.org> where { <%s> ?y ?z }', url);
+    res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U&format=xml', uri), timeout=>30, proxy=>connection_get ('sparql-get:proxy'));
+    xt := xtree_doc (res);
+    xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
+    if (xp = 'true')
+    {
+        insert soft DB.DBA.RDF_CARTRIDGES_LOOKUPS (CL_URI, CL_STAT) values (dbp_iri, 1);
+        return url;
+    }
+    insert soft DB.DBA.RDF_CARTRIDGES_LOOKUPS (CL_URI, CL_STAT) values (dbp_iri, 0);
+    return base || '#' || word;
 }
 ;
 
 create procedure DB.DBA.RM_SAMEAS_IRI (in u varchar)
 {
-  return RDF_SPONGE_PROXY_IRI (u);
-  --if (strchr (u, '#') is null)
-  --  return u || '#this';
-  --return u;
+    return RDF_SPONGE_PROXY_IRI (u);
+    --if (strchr (u, '#') is null)
+    --  return u || '#this';
+    --return u;
 }
 ;
 
 create procedure DB.DBA.RDF_MQL_RESOLVE_IMAGE (in name varchar)
 {
-  declare qr, url, cnt, tree, xt, hdr any;
-  declare exit handler for sqlstate '*'
+    declare qr, url, cnt, tree, xt, hdr any;
+    declare exit handler for sqlstate '*'
     {
-      return '';
+        return '';
     };
-
-  qr := sprintf ('{"ROOT":{"query":{"name":"%s", "type":"/common/image", "id":{}}}}', name);
-  url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
-  cnt := http_client_ext (url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
-  tree := json_parse (cnt);
-  tree := get_keyword ('ROOT', tree);
-  tree := get_keyword ('result', tree);
-  tree := get_keyword ('id', tree);
-  tree := get_keyword ('value', tree);
-  return 'http://www.freebase.com/api/trans/image_thumb'||tree;
+    
+    qr := sprintf ('{"ROOT":{"query":{"name":"%s", "type":"/common/image", "id":{}}}}', name);
+    url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
+    cnt := http_client_ext (url, headers=>hdr, proxy=>connection_get ('sparql-get:proxy'));
+    tree := json_parse (cnt);
+    tree := get_keyword ('ROOT', tree);
+    tree := get_keyword ('result', tree);
+    tree := get_keyword ('id', tree);
+    tree := get_keyword ('value', tree);
+    return 'http://www.freebase.com/api/trans/image_thumb'||tree;
 }
 ;
 
@@ -1627,38 +1640,38 @@ create procedure DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN(in elem varchar) returns varcha
 
 create procedure DB.DBA.GET_XBRL_ONTOLOGY_VALUE_NAME(in elem varchar) returns varchar
 {
-  declare cur, range, value, ret varchar;
-  declare pos int;
-  declare dict any;
-
-  dict := connection_get ('xbrl-value-name');
-  if (dict is null)
+    declare cur, range, value, ret varchar;
+    declare pos int;
+    declare dict any;
+    
+    dict := connection_get ('xbrl-value-name');
+    if (dict is null)
     {
-      dict := dict_new (10);
-      connection_set ('xbrl-value-name', dict);
+        dict := dict_new (10);
+        connection_set ('xbrl-value-name', dict);
     }
-  cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
-  ret := dict_get (dict, cur);
-  if (ret is not null)
+    cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
+    ret := dict_get (dict, cur);
+    if (ret is not null)
     {
-      return ret;
+        return ret;
     }
-  ret := 'value';
-  value := (sparql select ?s from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/>
-  	where {`iri(?:cur)` rdfs:range ?range . ?s rdfs:domain ?range } );
-  if (value is not null and value <> '')
+    ret := 'value';
+    value := (sparql select ?s from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> 
+        where {`iri(?:cur)` rdfs:range ?range . ?s rdfs:domain ?range } );
+    if (value is not null and value <> '')
     {
-      pos := strrchr(value, '/');
-      if (pos is null or pos = 0)
-	ret := value;
-      else
+        pos := strrchr(value, '/');
+        if (pos is null or pos = 0)
+            ret := value;
+        else
         {
-          value := subseq(value, pos+1);
-          ret := value;
-	}
+            value := subseq(value, pos+1);
+            ret := value;
+        }
     }
-  dict_put (dict, cur, ret);
-  return ret;
+    dict_put (dict, cur, ret);
+    return ret;
 }
 ;
 
@@ -1667,63 +1680,63 @@ create procedure DB.DBA.GET_XBRL_ONTOLOGY_VALUE_DATATYPE(in elem varchar) return
     declare cur, range, value, ret varchar;
     declare pos int;
     declare dict any;
-
+    
     dict := connection_get ('xbrl-data-type');
     if (dict is null)
-      {
-	dict := dict_new (10);
-	connection_set ('xbrl-data-type', dict);
-      }
-
+    {
+        dict := dict_new (10);
+        connection_set ('xbrl-data-type', dict);
+    }
+    
     cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
     ret := dict_get (dict, cur);
     if (ret is not null)
-      {
+    {
         return ret;
-      }
+    }
     range := (sparql select ?range from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:range ?range . } );
     ret := 'http://www.w3.org/2001/XMLSchema#string';
     if (range is not null and range <> '')
-      {
-	value := (sparql select ?range from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {?s rdfs:domain `iri(?:range)` . ?s rdfs:range ?range .});
-	if (value is not null and value <> '')
-	  {
-	    ret := value;
-	  }
-	else
-	  {
-	    if (length(range) > 8)
-	      {
-		if (right(range, 8) = 'ItemType')
-		  {
-		    value := subseq(range, 0, length(range) - 8);
-		    pos := strchr(value, '#');
-		    if (pos > 0)
-		      {
-			value := subseq(value, pos + 1);
-			if (value = 'textBlock')
-			  ret := 'http://www.w3.org/2001/XMLSchema#string';
-			else if (value = 'monetary')
-			  ret := 'http://www.w3.org/2001/XMLSchema#decimal';
-			else if (value = 'shares')
-			  ret := 'http://www.w3.org/2001/XMLSchema#decimal';
-			else if (value = 'pure')
-			  ret := 'http://www.w3.org/2001/XMLSchema#decimal';
-			else if (value = 'fraction')
-			  ret := 'http://www.w3.org/2001/XMLSchema#integer';
-			else if (value = 'domain')
-			  ret := 'http://www.w3.org/2001/XMLSchema#string';
-			else if (value = 'percent')
-			  ret := 'http://www.w3.org/2001/XMLSchema#decimal';
-			else if (value = 'perShare')
-			  ret := 'http://www.w3.org/2001/XMLSchema#decimal';
-			else
-			  ret := concat('http://www.w3.org/2001/XMLSchema#', value);
-		      }
-		  }
-	      }
-	  }
-      }
+    {
+        value := (sparql select ?range from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {?s rdfs:domain `iri(?:range)` . ?s rdfs:range ?range .});
+        if (value is not null and value <> '')
+        {
+            ret := value;
+        }
+        else
+        {
+            if (length(range) > 8)
+            {
+                if (right(range, 8) = 'ItemType')
+                {
+                    value := subseq(range, 0, length(range) - 8);
+                    pos := strchr(value, '#');
+                    if (pos > 0)
+                    {
+                        value := subseq(value, pos + 1);
+                        if (value = 'textBlock')
+                            ret := 'http://www.w3.org/2001/XMLSchema#string';
+                        else if (value = 'monetary')
+                            ret := 'http://www.w3.org/2001/XMLSchema#decimal';
+                        else if (value = 'shares')
+                            ret := 'http://www.w3.org/2001/XMLSchema#decimal';
+                        else if (value = 'pure')
+                            ret := 'http://www.w3.org/2001/XMLSchema#decimal';
+                        else if (value = 'fraction')
+                            ret := 'http://www.w3.org/2001/XMLSchema#integer';
+                        else if (value = 'domain')
+                            ret := 'http://www.w3.org/2001/XMLSchema#string';
+                        else if (value = 'percent')
+                            ret := 'http://www.w3.org/2001/XMLSchema#decimal';
+                        else if (value = 'perShare')
+                            ret := 'http://www.w3.org/2001/XMLSchema#decimal';
+                        else 
+                            ret := concat('http://www.w3.org/2001/XMLSchema#', value);
+                    }
+                }
+            }
+        }
+    }
     dict_put (dict, cur, ret);
     return ret;
 }
@@ -1775,22 +1788,22 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME(in elem varchar) returns v
     cur := replace(cur, '_', ' ');
     if (cur is not null)
     {
-       result := chr(cur[0]);
-       for (i := 1; i < length(cur); i := i+1)
-       {
-           if  (chr(cur[i]) = upper(chr(cur[i])))
-           {
-               if (chr(cur[i - 1]) = upper(chr(cur[i - 1])) or chr(cur[i - 1]) = ' ')
-                   result := concat(result, chr(cur[i]));
-               else
-               {
-                   result := concat(result, ' ');
-                   result := concat(result, chr(cur[i]));
-               }
-           }
-           else
-               result := concat(result, chr(cur[i]));
-       }
+        result := chr(cur[0]);
+        for (i := 1; i < length(cur); i := i+1)
+        {
+            if  (chr(cur[i]) = upper(chr(cur[i])))
+            {
+                if (chr(cur[i - 1]) = upper(chr(cur[i - 1])) or chr(cur[i - 1]) = ' ')
+                    result := concat(result, chr(cur[i]));
+                else
+                {
+                    result := concat(result, ' ');
+                    result := concat(result, chr(cur[i]));
+                }
+            }
+            else
+                result := concat(result, chr(cur[i]));
+        }
         return result;
     }
     else
@@ -1803,45 +1816,45 @@ RM_UPGRADE_TBL ('DB.DBA.XBRL_CIK_CACHE', 'XC_URL', 'varchar');
 
 create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
 {
-  declare url, nam, ret, cnt, xt, xp varchar;
-  declare exit handler for sqlstate '*'
+    declare url, nam, ret, cnt, xt, xp varchar;
+    declare exit handler for sqlstate '*'
     {
-      return '';
+        return '';
     };
-  whenever not found goto retr;
-  set isolation='comitted';
-  select XC_URL into ret from DB.DBA.XBRL_CIK_CACHE where XC_CIK = cik;
-  if (ret is null)
+    whenever not found goto retr;
+    set isolation='comitted';
+    select XC_URL into ret from DB.DBA.XBRL_CIK_CACHE where XC_CIK = cik;
+    if (ret is null)
     {
-      delete from XBRL_CIK_CACHE where XC_CIK = cik;
-      goto retr;
+        delete from XBRL_CIK_CACHE where XC_CIK = cik;
+        goto retr;
     }
-  return ret;
-  retr:
-  url := sprintf ('http://www.rdfabout.com/sparql?query=%U',
-  	sprintf ('select ?url ?name '||
-	' where { <http://www.rdfabout.com/rdf/usgov/sec/id/cik%s> <http://www.w3.org/2002/07/owl#sameAs> ?url ; '||
-	' <http://xmlns.com/foaf/0.1/name> ?name . }', cik));
-  cnt := http_client (url, proxy=>connection_get ('sparql-get:proxy'));
-  xt := xtree_doc (cnt);
-  url := cast (xpath_eval ('string (//binding[@name="url"]/uri)', xt) as varchar);
-  nam := cast (xpath_eval ('string (//binding[@name="name"]/literal)', xt) as varchar);
-  if (not length (url))
-    return '';
-  insert into DB.DBA.XBRL_CIK_CACHE (XC_CIK, XC_NAME, XC_URL) values (cik, nam, url);
-  return url;
+    return ret;
+    retr:
+    url := sprintf ('http://www.rdfabout.com/sparql?query=%U',
+        sprintf ('select ?url ?name '||
+        ' where { <http://www.rdfabout.com/rdf/usgov/sec/id/cik%s> <http://www.w3.org/2002/07/owl#sameAs> ?url ; '||
+        ' <http://xmlns.com/foaf/0.1/name> ?name . }', cik));
+    cnt := http_client (url, proxy=>connection_get ('sparql-get:proxy'));
+    xt := xtree_doc (cnt);
+    url := cast (xpath_eval ('string (//binding[@name="url"]/uri)', xt) as varchar);
+    nam := cast (xpath_eval ('string (//binding[@name="name"]/literal)', xt) as varchar);
+    if (not length (url))
+        return '';
+    insert into DB.DBA.XBRL_CIK_CACHE (XC_CIK, XC_NAME, XC_URL) values (cik, nam, url);
+    return url;
 }
 ;
 
 create procedure DB.DBA.XENC_X509_PUB_KEY (in data varchar) returns any
 {
-  declare x, m, e, fp any;
-  data := ltrim (data, 'data:application/x-x509-user-cert;base64,');
-  x := get_certificate_info (9, decode_base64 (data), 1);
-  fp := get_certificate_info (6, decode_base64 (data), 1);
-  e := cast (x[1] as varchar);
-  m := bin2hex (x[2]);
-  return xtree_doc (sprintf ('<key><mod>%s</mod><exp>%s</exp><fp>%s</fp></key>', m, e, replace (fp, ':', '')));
+    declare x, m, e, fp any;
+    data := ltrim (data, 'data:application/x-x509-user-cert;base64,');
+    x := get_certificate_info (9, decode_base64 (data), 1);
+    fp := get_certificate_info (6, decode_base64 (data), 1);
+    e := cast (x[1] as varchar);
+    m := bin2hex (x[2]);
+    return xtree_doc (sprintf ('<key><mod>%s</mod><exp>%s</exp><fp>%s</fp></key>', m, e, replace (fp, ':', '')));
 }
 ;
 
@@ -1849,10 +1862,10 @@ grant execute on DB.DBA.XENC_X509_PUB_KEY to public;
 
 create procedure DB.DBA.DECODEXML(in xmlstr varchar)
 {
-  -- takes XMLSTR, returns an xml tree doc
-  declare ret any;
-  ret := xtree_doc(xmlstr);
-  return ret;
+    -- takes XMLSTR, returns an xml tree doc
+    declare ret any;
+    ret := xtree_doc(xmlstr);
+    return ret;
 }
 ;
 
@@ -1872,9 +1885,9 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_DATATYPE(in elem varchar) returns var
 
 create procedure RDF_SPONGE_URI_HASH (in u varchar)
 {
-  if (u is null)
-    return '';
-  return tridgell32 (u, 1);
+    if (u is null)
+        return '';
+    return tridgell32 (u, 1);
 }
 ;
 
@@ -1906,52 +1919,47 @@ create procedure DB.DBA.FORMAT_AMOUNT (in val varchar) returns varchar
 -- Convert string money values like $1.6M, $230k, $2B into decimals
 create procedure DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL (in val varchar)
 {
-  declare vec any;
-  declare unit, base_sval, converted_sval varchar;
-  declare base_dval decimal;
-  declare multiplier integer;
-
-  if (val is null)
-    return null;
-
-  multiplier := 1;
-  converted_sval := null;
-  
-  val := upper (val);
-  vec := regexp_parse ('([0-9\.]+)([BMK]?$)', val, 0);
-  if (vec is not null and length (vec) = 6)
-  {
-    base_sval := subseq (val, vec[2], vec[3]);
-    if (vec[4] < vec[5])
+    declare vec any;
+    declare unit, base_sval, converted_sval varchar;
+    declare base_dval decimal;
+    declare multiplier integer;
+    
+    if (val is null)
+        return null;
+    multiplier := 1;
+    converted_sval := null;
+    val := upper (val);
+    vec := regexp_parse ('([0-9\.]+)([BMK]?$)', val, 0);
+    if (vec is not null and length (vec) = 6)
     {
-      unit := subseq (val, vec[4]);
-      multiplier := case (unit) when 'B' then 1000000000 when 'M' then 1000000 when 'K' then 1000 else 1 end;
-      base_dval := atof (base_sval);
+        base_sval := subseq (val, vec[2], vec[3]);
+        if (vec[4] < vec[5])
+        {
+            unit := subseq (val, vec[4]);
+            multiplier := case (unit) when 'B' then 1000000000 when 'M' then 1000000 when 'K' then 1000 else 1 end;
+            base_dval := atof (base_sval);
+        }
+        
+        if (multiplier > 1)
+            converted_sval := sprintf('%.lf', base_dval * multiplier);
+        else
+            converted_sval := base_sval; 
     }
-     
-    if (multiplier > 1)
-      converted_sval := sprintf('%.lf', base_dval * multiplier);
-    else
-      converted_sval := base_sval; 
-  }
-
-  return converted_sval;
+    return converted_sval;
 }
 ;
 
 create procedure DB.DBA.XSLT_SANEURI (in val varchar, in seed integer default -1)
 {
- -- Generate sane URI with xml/http-safe characters, based on val and seed (xpath position)
-  
-  declare str varchar;
-  if ( seed=-1 )
-    str:=regexp_replace(sprintf('%s', val), '[^a-zA-Z0-9_-]', '', 1, null);
-  else 
-    str:=regexp_replace(sprintf('%s_%d', val, seed), '[^a-zA-Z0-9_-]', '', 1, null); 
-  return str;
+    -- Generate sane URI with xml/http-safe characters, based on val and seed (xpath position)
+    declare str varchar;
+    if ( seed=-1 )
+        str:=regexp_replace(sprintf('%s', val), '[^a-zA-Z0-9_-]', '', 1, null);
+    else 
+        str:=regexp_replace(sprintf('%s_%d', val, seed), '[^a-zA-Z0-9_-]', '', 1, null); 
+    return str;
 }
 ;
-
 
 grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
@@ -2032,63 +2040,62 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
-  set_user_id ('dba');
-  if (params is null)
-    return xslt (xslt, xt);
-  else
-    return xslt (xslt, xt, params);
+    set_user_id ('dba');
+    if (params is null)
+        return xslt (xslt, xt);
+    else
+        return xslt (xslt, xt, params);
 };
 
 create procedure DB.DBA.RDF_APERTURE_INIT ()
 {
-  if (__proc_exists ('java_vm_attach', 2) is null)
+    if (__proc_exists ('java_vm_attach', 2) is null)
     {
-      delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
-      return;
+        delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
+        return;
     }
-  set_qualifier ('APERTURE');
-  if (not udt_is_available ('APERTURE.DBA.MetaExtractor'))
-  {
-    declare exit handler for sqlstate '*'
+    set_qualifier ('APERTURE');
+    if (not udt_is_available ('APERTURE.DBA.MetaExtractor'))
     {
-       set_qualifier ('DB');
-       return;
-    };
-    DB.DBA.import_jar (NULL, 'MetaExtractor', 1);
-  }
-  exec (
-'create procedure DB.DBA.RDF_LOAD_BIN_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
-{
-  declare xd, tmp, fn any;
-  tmp := null;
-  declare exit handler for sqlstate \'*\'
-    {
-      if (length (tmp))
+        declare exit handler for sqlstate '*'
+        {
+            set_qualifier ('DB');
+            return;
+        };
+        DB.DBA.import_jar (NULL, 'MetaExtractor', 1);
+    }
+    exec (
+        'create procedure DB.DBA.RDF_LOAD_BIN_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+        inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
+        {
+        declare xd, tmp, fn any;
+        tmp := null;
+        declare exit handler for sqlstate \'*\'
+        {
+        if (length (tmp))
         file_delete (tmp, 1);
-      DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
-      return 0;
-    };
-  tmp := tmp_file_name (\'rdfm\', \'bin\');
-  fn := tmp;
-  string_to_file (tmp, _ret_body, -2);
-  xd := APERTURE.DBA."MetaExtractor"().getMetaFromFile (fn, 5);
-  xd := charset_recode(xd, \'_WIDE_\', \'UTF-8\');
-  file_delete (tmp, 1);
-  if (xd is null)
-    return 0;
-  xd := replace (xd, \'file:\'||tmp, new_origin_uri);
-  xd := replace (xd, \'urn:uuid:\', new_origin_uri||\'/\');
-  DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
-  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), \'urn:org.semanticdesktop.aperture\');
-  return 1;
-}');
-
-  insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('application/.*',
-    'MIME', 'DB.DBA.RDF_LOAD_BIN_DOCUMENT', null, 'Binary Files');
-  update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1000 where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
-  set_qualifier ('DB');
+        DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+        return 0;
+        };
+        tmp := tmp_file_name (\'rdfm\', \'bin\');
+        fn := tmp;
+        string_to_file (tmp, _ret_body, -2);
+        xd := APERTURE.DBA."MetaExtractor"().getMetaFromFile (fn, 5);
+        xd := charset_recode(xd, \'_WIDE_\', \'UTF-8\');
+        file_delete (tmp, 1);
+        if (xd is null)
+        return 0;
+        xd := replace (xd, \'file:\'||tmp, new_origin_uri);
+        xd := replace (xd, \'urn:uuid:\', new_origin_uri||\'/\');
+        DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+        DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), \'urn:org.semanticdesktop.aperture\');
+        return 1;
+        }');
+    insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+        values ('application/.*',
+        'MIME', 'DB.DBA.RDF_LOAD_BIN_DOCUMENT', null, 'Binary Files');
+    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1000 where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
+    set_qualifier ('DB');
 }
 ;
 
@@ -2099,136 +2106,136 @@ RDF_APERTURE_INIT ()
 
 create procedure FB_SIG (in params any, in secret any)
 {
-  declare arr, pars, str any;
-  arr := split_and_decode (params, 0, '\0\0&=');
-  pars := vector ();
-  for (declare i int, i := 0; i < length (arr); i := i + 2)
-     {
-       declare tmp any;
-       tmp := split_and_decode (arr[i+1]);
-       tmp := tmp[0];
-       pars := vector_concat (pars, vector (arr[i]||'='||tmp));
-     }
-  pars := __vector_sort (pars);
-  str := '';
-  foreach (any elm in pars) do
+    declare arr, pars, str any;
+    arr := split_and_decode (params, 0, '\0\0&=');
+    pars := vector ();
+    for (declare i int, i := 0; i < length (arr); i := i + 2)
     {
-      str := str || elm;
+        declare tmp any;
+        tmp := split_and_decode (arr[i+1]);
+        tmp := tmp[0];
+        pars := vector_concat (pars, vector (arr[i]||'='||tmp));
     }
-  str := str || secret;
-  return md5 (str);
+    pars := __vector_sort (pars);
+    str := '';
+    foreach (any elm in pars) do
+    {
+        str := str || elm;
+    }
+    str := str || secret;
+    return md5 (str);
 };
 
 create procedure  DB.DBA.MQL_TREE_TO_XML_REC (in tree any, in tag varchar, inout ses any)
 {
-  if (not isarray (tree) or isstring (tree))
+    if (not isarray (tree) or isstring (tree))
     {
-      if (tree is not null and tree <> '')
-	{
-	  http_value (tree, tag, ses);
-	}
+        if (tree is not null and tree <> '')
+        {
+            http_value (tree, tag, ses);
+        }
     }
-  else if (length (tree) > 1 and __tag (tree[0]) = 255)
+    else if (length (tree) > 1 and __tag (tree[0]) = 255)
     {
-      http (sprintf ('<%U>', tag), ses);
-      for (declare i,l int, i := 2, l := length (tree); i < l; i := i + 2)
-         {
-	   DB.DBA.MQL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
-	 }
-      http (sprintf ('</%U>', tag), ses);
+        http (sprintf ('<%U>', tag), ses);
+        for (declare i,l int, i := 2, l := length (tree); i < l; i := i + 2)
+        {
+            DB.DBA.MQL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
+        }
+        http (sprintf ('</%U>', tag), ses);
     }
-  else if (length (tree) > 0)
+    else if (length (tree) > 0)
     {
-      for (declare i,l int, i := 0, l := length (tree); i < l; i := i + 1)
-         {
-	   DB.DBA.MQL_TREE_TO_XML_REC (tree[i], tag, ses);
-	 }
+        for (declare i,l int, i := 0, l := length (tree); i < l; i := i + 1)
+        {
+            DB.DBA.MQL_TREE_TO_XML_REC (tree[i], tag, ses);
+        }
     }
 }
 ;
 
 create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
 {
-  declare ses any;
-  ses := string_output ();
-  DB.DBA.MQL_TREE_TO_XML_REC (tree, 'results', ses);
-  ses := string_output_string (ses);
-  ses := xtree_doc (ses);
-  return ses;
+    declare ses any;
+    ses := string_output ();
+    DB.DBA.MQL_TREE_TO_XML_REC (tree, 'results', ses);
+    ses := string_output_string (ses);
+    ses := xtree_doc (ses);
+    return ses;
 }
 ;
 
 create procedure DB.DBA.STREE_ELEM (in tag varchar)
 {
-  declare x any;
-  x := replace(replace(tag, ' ', '_'), '@', '');
-  if (strchr ('!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~0123456789', x[0]) is not null)
-    return 'elem_' || x;
-  return x; 
+    declare x any;
+    x := replace(replace(tag, ' ', '_'), '@', '');
+    if (strchr ('!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~0123456789', x[0]) is not null)
+        return 'elem_' || x;
+    return x; 
 }
 ;
 
 create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, inout	ses	any)
 {
-  tag := trim(tag, '\"');
-  if (not isarray (tree) or	isstring (tree))
+    tag := trim(tag, '\"');
+    if (not isarray (tree) or	isstring (tree))
     {
-      if (isstring (tree))
-	tree := trim(tree, '\"');
-	if (left(tag,	7) = 'http://')
-	tag	:= 'Site';
-	http_value (tree, tag, ses);
+        if (isstring (tree))
+            tree := trim(tree, '\"');
+        if (left(tag,	7) = 'http://')
+            tag	:= 'Site';
+        http_value (tree, tag, ses);
     }
-  else if (length (tree) > 1 and __tag (tree[0]) = 255)
+    else if (length (tree) > 1 and __tag (tree[0]) = 255)
     {
-      if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
-	{
-	  http ('<Document>\n', ses);
-	  http_value (tag, 'about', ses);
-	}
-      else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
-	{
-	  http (sprintf ('<date><when>%U</when>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
-	}
-      else
-	{
-	  http (sprintf ('<%U>\n', STREE_ELEM (tag)), ses);
-	}
-      for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
-	{
-	  DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
-	}
-      if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
-	  {
-	    http ('</Document>\n',	ses);
-	  }	
-	else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
-	  {
-	    http ('</date>\n', ses);
-	  }
-	else
-	  {
-	    http (sprintf ('</%U>\n', STREE_ELEM (tag)), ses);
-	  }
+        if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
+        {
+            http ('<Document>\n', ses);
+            http_value (tag, 'about', ses);
+        }
+        else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
+        {
+            http (sprintf ('<date><when>%U</when>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
+        }
+        else
+        {
+            http (sprintf ('<%U>\n', STREE_ELEM (tag)), ses);
+        }
+        for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
+        {
+            DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
+        }
+        if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
+        {
+            http ('</Document>\n',	ses);
+        }	
+        else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
+        {
+            http ('</date>\n', ses);
+        }
+        else
+        {
+            http (sprintf ('</%U>\n', STREE_ELEM (tag)), ses);
+        }
     }
-  else if (length (tree) > 0)
+    else if (length (tree) > 0)
     {
-      for (declare i,l int,	i := 0,	l := length	(tree);	i <	l; i :=	i +	1)
-      {
-	DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i], tag,	ses);
-      }
+        for (declare i,l int,	i := 0,	l := length	(tree);	i <	l; i :=	i +	1)
+        {
+            DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i], tag,	ses);
+        }
     }
 }
 ;
 
 create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
 {
-  declare ses any;
-  ses := string_output ();
-  DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
-  ses := string_output_string (ses);
-  ses := xtree_doc (ses);
-  return ses;
+    declare ses any;
+    ses := string_output ();
+    DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
+    ses := string_output_string (ses);
+    ses := xtree_doc (ses);
+    return ses;
 }
 ;
 
@@ -2241,7 +2248,7 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	hdr := null;
 	declare exit handler for sqlstate '*'
 	{
-	  DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+	    DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
     username_ := get_keyword ('username', opts);
@@ -2259,18 +2266,18 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 				id := trim (tmp[1], '/');
 			else
 				return 0;
-		if (id is null)
-			{
-			return 0;
-			}
-		}
+            if (id is null)
+            {
+                return 0;
+            }
+        }
 		res := xml_tree_doc(SOAP_CLIENT (
-				url=>'https://www.salesforce.com/services/Soap/c/14.0',
-				operation=>'login',
-				parameters=>vector ('username', username_,
-							'password', password_),
-				target_namespace=>'urn:enterprise.soap.sforce.com',
-				style=>21));
+            url=>'https://www.salesforce.com/services/Soap/c/14.0',
+            operation=>'login',
+            parameters=>vector ('username', username_,
+            'password', password_),
+            target_namespace=>'urn:enterprise.soap.sforce.com',
+            style=>21));
 		sessionId := cast(xpath_eval('//sessionId/text()' , res ) as varchar);
 		serverURL := cast(xpath_eval('//serverUrl/text()' , res ) as varchar);
 		type := left(id, 3);
@@ -2508,19 +2515,19 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 		url=>serverUrl,
 		operation=>'retrieve',
 		headers=>vector (
-			vector ('SessionHeader', '__XML__', 0),
-			xtree_doc (concat (
-				'<urn:SessionHeader xmlns:urn="urn:enterprise.soap.sforce.com">
-					<urn:sessionId xmlns:urn="urn:enterprise.soap.sforce.com">',
-						sessionId,
-					'</urn:sessionId>
-				</urn:SessionHeader>'))),
-		parameters=>vector (
-			'fieldList', fieldList,
-			'sObjectType', sObjectType,
-			'ids', id),
-		target_namespace=>'urn:enterprise.soap.sforce.com',
-		style=>21));
+        vector ('SessionHeader', '__XML__', 0),
+        xtree_doc (concat (
+        '<urn:SessionHeader xmlns:urn="urn:enterprise.soap.sforce.com">
+        <urn:sessionId xmlns:urn="urn:enterprise.soap.sforce.com">',
+        sessionId,
+        '</urn:sessionId>
+        </urn:SessionHeader>'))),
+        parameters=>vector (
+        'fieldList', fieldList,
+        'sObjectType', sObjectType,
+        'ids', id),
+        target_namespace=>'urn:enterprise.soap.sforce.com',
+        style=>21));
 	RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/sf2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (new_origin_uri)));
 	xd := serialize_to_UTF8_xml (xt);
@@ -2672,7 +2679,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	}
 	else
 		return 0;
-
 	friends_and_followers: ;
 	RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
 	page := 1;
@@ -2684,7 +2690,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		page := page + 1;
 	}
 	statuses_out: ;
-
 	page := 1;
 	while (page > 0 and page < res_count)
 	{
@@ -2695,7 +2700,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		page := page + 1;
 	}
 	friends_out: ;
-
 	page := 1;
 	while (page > 0 and page < res_count)
 	{
@@ -2705,7 +2709,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		page := page + 1;
 	}
 	favorites_out: ;
-
 	page := 1;
 	while (page > 0 and page < res_count)
 	{
@@ -2716,7 +2719,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		page := page + 1;
 	}
 	followers_out: ;
-
 	what_ := 'user';
 	url := sprintf('http://twitter.com/users/show/%s.xml', id);
 	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts, triple_dict);
@@ -2758,12 +2760,11 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 	declare url_vec any;
 	declare cur, len integer;
 	declare what_, name_, where_, file, base_uri varchar;
-
 	hdr := null;
 	base_uri := new_origin_uri;
 	declare exit handler for sqlstate '*'
 	{
-	  DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+	    DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
 		return 0;
 	};
 	if (new_origin_uri like 'http://getsatisfaction.com/%')
@@ -2880,7 +2881,7 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 			vector ('baseUri', RDF_SPONGE_DOC_IRI (base_uri), 'what', what_));
 	}
 	xd := serialize_to_UTF8_xml (xt);
-        RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+    RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, base_uri, coalesce (dest, graph_iri));
 	DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 	return 1;
@@ -7776,6 +7777,7 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 	}
 	else
 		return 0;
+dbg_obj_princ(url);
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	tree := json_parse (tmp);
 	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
