@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
   Generated from oplklout.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
  
@@ -7,8 +8,8 @@
   http://developer.klout.com/iodocs (Klout API resources)
 -->
 
-
-<rdf:RDF xmlns="http://www.openlinksw.com/schemas/klout#"
+<rdf:RDF
+    xmlns="http://www.openlinksw.com/schemas/klout#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms="http://purl.org/dc/terms/"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
@@ -28,13 +29,118 @@
         <dc:title>OpenLink schema for Klout</dc:title>
     </owl:Ontology>
 
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/klout#User">
+    <rdfs:comment>A Klout (twitter) user</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>Klout user</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+  </owl:Class>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#amplification">
+    <rdfs:comment>Klout Amplification</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>Amplification</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#class">
+    <rdfs:comment>Klout user class</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>Klout</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#delta1d">
+    <rdfs:comment>Klout score 1-day change</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>delta-1d</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#delta5d">
+    <rdfs:comment>Klout score 5-day change</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>delta-5d</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#description">
+    <rdfs:comment>Klout's description of a user</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>Description</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#has_klout">
         <rdfs:comment>A user's Klout score</rdfs:comment>
-        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
         <rdfs:label>Klout</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
     </owl:DatatypeProperty>
-</rdf:RDF>
 
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#influenced_by">
+    <rdfs:comment>Klout users who influence the current user</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>InfluencedBy</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#influences">
+    <rdfs:comment>Other Klout users influenced by the current user</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>Influences</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#netscore">
+    <rdfs:comment>A Klout user's Network score</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>Netscore</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#score_slope">
+    <rdfs:comment>A user's Klout score-slope</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>ScoreSlope</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#topic">
+    <rdfs:comment>Topic about which a Klout user posts</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>KloutTopic</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/topic_interest"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#true_reach">
+    <rdfs:comment>Measure of a user's Klout True Reach</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>TrueReach</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/klout#twitterProfileURI">
+    <rdfs:comment>Klout user's equivalent Twitter profile URI</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/klout#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/klout"/>
+    <rdfs:label>TwitterProfile</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/homepage"/>
+  </owl:DatatypeProperty>
+  
+</rdf:RDF>
 

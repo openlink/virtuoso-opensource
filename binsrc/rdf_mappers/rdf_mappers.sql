@@ -318,6 +318,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_TWITTER_FP', null, 'Twitter WebIDs');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+  values ('http://(www.)?klout.com/.*', 'URL', 'DB.DBA.RDF_LOAD_KLOUT', null, 'Klout');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://.*salesforce.com/.*)|'||
 	'(https://.*salesforce.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_SALESFORCE', null, 'SalesForce');
@@ -11369,6 +11372,51 @@ user_timeline_done:;
 done:;
   DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_KLOUT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
+{
+	declare xd, xt, url, baseurl, baseurls, response, mode any;
+	declare kuser varchar;
+	declare i integer;
+	
+	declare exit handler for sqlstate '*' {
+		DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	
+	if (_key is null) {
+		log_message ('Klout: Extractor cartridge needs API key');
+		return 0;
+	}
+	
+	kuser:=regexp_replace(new_origin_uri, '^http://(www.)?(klout|twitter).com/([a-zA-Z0-9]+).*', '\\3');
+	
+	baseurl:='http://api.klout.com/1/';
+	baseurls:=vector(
+		'users/show.xml', 'show',								-- includes klout.xml data as well
+		'users/topics.xml', 'topics',
+		'soi/influenced_by.xml', 'influencers',
+		'soi/influencer_of.xml', 'influences'
+		);
+		
+	for (i:=0; i<length(baseurls); i:=i+2) {
+		url:=aref(baseurls, i);
+		mode:=aref(baseurls, i+1);
+		url:=sprintf('%s%s?users=%s&key=%s', baseurl, url, kuser, _key);
+		response := http_get (url, null, 'GET', null, '', get_keyword_ucase ('get:proxy', opts));
+		xt := xtree_doc(response);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/klout2rdf.xsl', xt, 
+		vector ('baseUri', new_origin_uri, 'mode', mode));
+		xd := blob_to_string_output (xt);
+		if (i=0) {
+			RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+		}
+		DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+		DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), null);
+	}
+	return 1;
 }
 ;
 
