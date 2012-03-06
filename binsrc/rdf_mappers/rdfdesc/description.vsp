@@ -375,7 +375,7 @@
           </a>
         </div>
 	<div id="entity_info">
-          <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (label); ?></a></h1>
+          <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else replace (_S, '#', '%01') end ?>"><?vsp http (label); ?></a></h1>
           <div id="homelink">
           </div>
           <div class="page-resource-uri">
