@@ -142,7 +142,7 @@
 		    <opl:mentions>
 			<opl:NamedEntity rdf:about="{vi:proxyIRI ($baseUri,'#', translate(., ' ,.', '_'))}">
 			    <rdfs:label>
-				<xsl:value-of select="$person_name"/>
+				<xsl:value-of select="concat ('[New York Times] ', $person_name)"/>
 			    </rdfs:label>
 			    <opl:entityType rdf:resource="&virtrdfmec;Person" />
 			</opl:NamedEntity>
@@ -152,7 +152,7 @@
 		    <opl:mentions>
 			<opl:NamedEntity rdf:about="{vi:proxyIRI ($baseUri,'#', translate(., ' ,.', '_'))}">
 			    <rdfs:label>
-				<xsl:value-of select="."/>
+				<xsl:value-of select="concat ('[New York Times] ', .)"/>
 			    </rdfs:label>
 			    <opl:entityType rdf:resource="&virtrdfmec;Organization" />
 			</opl:NamedEntity>
@@ -162,7 +162,7 @@
 		    <opl:mentions>
 			<opl:NamedEntity rdf:about="{vi:proxyIRI ($baseUri,'#', translate(., ' ,.', '_'))}">
 			    <rdfs:label>
-				<xsl:value-of select="."/>
+				<xsl:value-of select="concat ('[New York Times] ', .)"/>
 			    </rdfs:label>
 			    <opl:entityType rdf:resource="&virtrdfmec;Place" />
 			</opl:NamedEntity>
