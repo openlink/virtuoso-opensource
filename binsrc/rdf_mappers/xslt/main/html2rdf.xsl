@@ -29,6 +29,9 @@
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -45,6 +48,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:awol="&awol;"
   xmlns:dcterms="&dcterms;"
+  xmlns:oplcert="&oplcert;"
   xmlns:xhv="http://www.w3.org/1999/xhtml/vocab#"
   version="1.0">
   <xsl:output method="xml" indent="yes" encoding="utf-8"/>
@@ -90,6 +94,25 @@
 	      <awol:src rdf:resource="{$source}"/>
 	  </rdf:Description>
       </xsl:if>
+      <xsl:for-each select="//*[starts-with (., '#X509Cert Fingerprint:')]">
+	  <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (., '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+	  <xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
+	  <xsl:variable name="dgst">
+	      <xsl:choose>
+		  <xsl:when test="contains (., '#SHA1')">sha1</xsl:when>
+		  <xsl:otherwise>md5</xsl:otherwise>
+	      </xsl:choose>
+	  </xsl:variable>
+	  <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fpn)"/></xsl:variable>
+	  <rdf:Description rdf:about="{$resourceURL}">
+	      <oplcert:hasCertificate rdf:resource="{$ct}"/>
+	  </rdf:Description>
+	  <oplcert:Certificate rdf:about="{$ct}">
+	      <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+	      <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+	      <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+	  </oplcert:Certificate>
+      </xsl:for-each>
   </xsl:template>
 
   <xsl:template match="link[@rel='alternate']">
