@@ -1296,12 +1296,18 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 create procedure DB.DBA.XSLT_DI_SPLIT (in str varchar)
 {
   declare di, h, dgst varchar;
-  di := regexp_match ('di:[^ <>]+', str);
-  if (di is null)
-    return null;
-  h := WS.WS.PARSE_URI (di);
-  dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
-  return xtree_doc (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst));
+  declare ses any;
+  ses := string_output ();
+  http ('<result>', ses);
+  while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
+    {
+      dbg_obj_print (di);
+      h := WS.WS.PARSE_URI (di);
+      dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
+      http (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst), ses);
+    }
+  http ('</result>', ses);
+  return xtree_doc (ses);
 }
 ;
 

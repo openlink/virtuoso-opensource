@@ -433,16 +433,18 @@
       <!-- x509 certificate -->
       <xsl:if test="../object/content like '%di:%?hashtag=webid%'">
 	  <xsl:variable name="di"><xsl:copy-of select="vi:di-split (../object/content)"/></xsl:variable>
-	  <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
-	  <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
-	  <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
-	  <oplcert:hasCertificate>
-	      <oplcert:Certificate rdf:about="{$ct}">
-		  <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
-		  <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
-		  <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
-	      </oplcert:Certificate>
-	  </oplcert:hasCertificate>
+	  <xsl:for-each select="$di/result/di">
+	      <xsl:variable name="fp"><xsl:value-of select="hash"/></xsl:variable>
+	      <xsl:variable name="dgst"><xsl:value-of select="dgst"/></xsl:variable>
+	      <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
+	      <oplcert:hasCertificate>
+		  <oplcert:Certificate rdf:about="{$ct}">
+		      <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+		      <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+		      <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+		  </oplcert:Certificate>
+	      </oplcert:hasCertificate>
+	  </xsl:for-each>
       </xsl:if>
       <!-- end certificate -->
     </oplgp:Actor>
