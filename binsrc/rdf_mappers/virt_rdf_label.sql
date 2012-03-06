@@ -45,6 +45,9 @@ TTLP (
 @prefix dbpedia: <http://dbpedia.org/ontology/> .
 @prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> .
 @prefix sioc: <http://rdfs.org/sioc/ns#> .
+@prefix opltw: <http://www.openlinksw.com/schemas/twitter#> .
+@prefix sioct: <http://rdfs.org/sioc/types#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -354,6 +357,43 @@ oplgp:department owl:equivalentProperty dbpedia:Department .
 oplgp:role owl:equivalentProperty dbpedia:Role .
 oplgp:location owl:equivalentProperty dbpedia:Location .
 oplgp:title owl:equivalentProperty dbpedia:Title .
+
+
+opltw:User owl:equivalentClass foaf:Person .
+opltw:made_tweet owl:equivalentProperty foaf:made .
+opltw:via owl:equivalentProperty foaf:maker .
+
+opltw:Tweet owl:equivalentClass sioc:Post .
+opltw:User owl:equivalentClass sioc:UserAccount .
+opltw:made_tweet owl:equivalentProperty sioc:has_creator .
+opltw:id owl:equivalentProperty sioc:id .
+opltw:appLink owl:equivalentProperty sioc:link .
+
+opltw:Tweet owl:equivalentClass sioct:MicroblogPost .
+
+opltw:appLink owl:equivalentProperty rdf:Resource .
+
+opltw:User owl:equivalentClass dc:Agent .
+opltw:made_tweet owl:equivalentProperty dc:creator .
+opltw:id rdfs:subPropertyOf dc:identifier .
+opltw:appLink rdfs:subPropertyOf dc:source .
+
+opltw:User owl:equivalentClass dcterms:Agent .
+opltw:made_tweet owl:equivalentProperty dcterms:creator .
+opltw:id rdfs:subPropertyOf dcterms:identifier .
+opltw:appLink rdfs:subPropertyOf dcterms:source .
+
+opltw:Tweet owl:equivalentClass bibo:Article.
+opltw:id rdfs:subPropertyOf bibo:identifier .
+
+opltw:Tweet owl:equivalentClass dbpedia:Activity .
+opltw:User owl:equivalentClass dbpedia:Actor .
+opltw:User owl:equivalentClass dbpedia:Person .
+opltw:Application owl:equivalentClass dbpedia:Software .
+opltw:id owl:equivalentProperty dbpedia:Id .
+opltw:followed_by owl:equivalentProperty dbpedia:Person .
+opltw:follows owl:equivalentProperty dbpedia:Person .
+opltw:made_tweet owl:equivalentProperty dbpedia:Owner .
 
 ', '', 'virtrdf-label');
 
