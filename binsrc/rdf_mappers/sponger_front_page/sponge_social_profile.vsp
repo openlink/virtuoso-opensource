@@ -30,7 +30,7 @@
     var el_fb_ds_links_no_token;
     var user_id = "";
 
-    function build_sponge_links (site_name, host, entity_uri)
+    function build_sponge_links (site_name, host, entity_uri, about_sponge_uri)
     {
       var describe_href;
 
@@ -51,20 +51,36 @@
       switch (site_name)
       {
         case 'Twitter':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/twitter.com\/.*@Lookup@/, 'twitter.com/' + user_id + '?@Lookup@');
+          el_about_sponge_uri.href = about_sponge_uri.replace(/twitter.com\/.*@Lookup@/, 'twitter.com/' + user_id + '?@Lookup@');
           entity_uri = entity_uri.replace(/twitter.com\/.*/, 'twitter.com/' + user_id);
           describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'Delicious':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/twitter.com\/.*@Lookup@/, 'www.delicious.com/' + user_id + '?@Lookup@');
+          el_about_sponge_uri.href = about_sponge_uri.replace(/twitter.com\/.*@Lookup@/, 'www.delicious.com/' + user_id + '?@Lookup@');
           entity_uri = entity_uri.replace(/twitter.com\/.*/, 'www.delicious.com/' + user_id);
           describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'Google+':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/http\/twitter.com\/.*@Lookup@/, 
-                'https/plus.google.com/' + user_id + '?@Lookup@');
+	  var matches = /\/(\d{5,})/.exec (user_id);
+	  // Guard against a user entering their full Google+ profile URI instead of just their user ID
+	  if (matches != null)
+	    user_id = matches[1];
+	  else
+	  {
+	    matches = /^\d{5,}$/.exec (user_id);
+	    if (matches != null)
+	      user_id = matches[0];
+	    else
+	    {
+	      alert ('Please enter your ' + site_name + ' ID');
+	      el_fb_ds_links_no_token.style.display = 'none';
+	      return false;
+	    }
+	  }
+          el_about_sponge_uri.href = about_sponge_uri.replace(/http\/twitter.com\/.*@Lookup@/, 
+                  'https/plus.google.com/' + user_id + '?@Lookup@');
           entity_uri = entity_uri.replace(/http\/twitter.com\/.*/, 'https/plus.google.com/' + user_id);
           describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
           el_describe_sponge_uri.href = describe_href;
@@ -90,7 +106,7 @@
 
   if (site_name = 'Google+')
   {
-    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE');
+    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PLUS');
     if (length(rm_key) = 0)
       api_key_missing := 1;
   }
@@ -161,8 +177,9 @@
   else
     http (sprintf ('<label for="fld_user_id">%s username:&nbsp;</label>', site_name));
 ?>
-      <input type="text" maxlength="40" size="42" id="fld_user_id" name="fld_user_id" />
-      <input type="submit" name="cmd_submit_FB_ID" id="cmd_submit_user_id" value="Submit" onclick="return build_sponge_links('<?=site_name?>', '<?=_host?>', '<?=entity_uri?>');"/>
+      <input type="text" maxlength="80" size="42" id="fld_user_id" name="fld_user_id" />
+      <input type="submit" name="cmd_submit_FB_ID" id="cmd_submit_user_id" value="Submit" 
+           onclick="return build_sponge_links('<?=site_name?>', '<?=_host?>', '<?=entity_uri?>', '<?=about_sponge_uri?>');"/>
 <?vsp
   if (site_name = 'Google+')
   {

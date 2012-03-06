@@ -33,6 +33,7 @@
     function build_sponge_links (site_name, host, entity_uri)
     {
       var describe_href;
+      var item_id_sanitized;
 
       el_item_id = el_item_id || document.getElementById('fld_item_id');
       el_about_sponge_uri = el_about_sponge_uri || document.getElementById('about_sponge_uri');
@@ -64,15 +65,18 @@
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'WebFinger':
+	  item_id = item_id.replace (/^acct:/, '');
           el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*@Lookup@/, 'about/html/acct:' + item_id + '?@Lookup@');
           describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent('acct:' + item_id) + '&sp=1';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'LinkedIn':
         case 'Flickr':
-          item_id = item_id.replace (/http:\//, 'http');
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/id\/entity\/.*@Lookup@/, 'id/entity/' + item_id + '?@Lookup@');
-          entity_uri = entity_uri.replace(/id\/entity\/.*/, 'id/entity/' + item_id);
+	case 'Foursquare':
+          item_id_sanitized = item_id.replace (/https:\//, 'https');
+          item_id_sanitized = item_id_sanitized.replace (/http:\//, 'http');
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/id\/entity\/.*@Lookup@/, 'id/entity/' + item_id_sanitized + '?@Lookup@');
+          entity_uri = entity_uri.replace(/id\/entity\/.*/, 'id/entity/' + item_id_sanitized);
           describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
           el_describe_sponge_uri.href = describe_href;
           break;
@@ -93,7 +97,7 @@
 <?vsp
   declare _host varchar;
   declare site_name varchar;
-  declare rm_key varchar;
+  declare rm_key, rm_opt varchar;
   declare api_key_missing integer;
 
   site_name := http_param ('site');
@@ -105,7 +109,13 @@
   if (site_name = 'Flickr')
   {
     rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FLICKR_IMG');
-    if (length(rm_key) = 0)
+    if (length (rm_key) = 0)
+      api_key_missing := 1;
+  }
+  else if (site_name = 'Foursquare')
+  {
+    rm_opt := (select get_keyword ('oauth_token', coalesce (RM_OPTIONS, vector())) from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FOURSQUARE');
+    if (length (rm_opt) = 0)
       api_key_missing := 1;
   }
 ?>
@@ -180,7 +190,7 @@
 <?vsp
   if (api_key_missing)
   {
-    http (sprintf ('<p>An API key is required for the %s cartridge, but one hasn\'t been configured.<br/>Please refer to <a href="sponger_setup.vsp">Sponger Setup</a></p>', site_name));
+    http (sprintf ('<p>An API key or cartridge options are required for the %s cartridge, but none has been configured.<br/>Please refer to <a href="sponger_setup.vsp">Sponger Setup</a></p>', site_name));
   } 
   else
   {
@@ -192,8 +202,10 @@
 <?vsp
       if (site_name = 'WebFinger')
         http (sprintf ('WebFinger email address:&nbsp;'));
+      else if (site_name = 'Foursquare')
+        http (sprintf ('%s profile URL:&nbsp;', site_name)); 
       else
-        http (sprintf ('%s URL:&nbsp;', site_name));
+        http (sprintf ('%s URL:&nbsp;', site_name)); 
 ?>
       </label>
       <input type="text" size="60" id="fld_item_id" name="fld_item_id" />

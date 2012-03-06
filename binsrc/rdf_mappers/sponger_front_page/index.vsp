@@ -296,32 +296,34 @@ href="http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}"
                 starting point!</span></p>
 
                 <ul>
-                  <li><a href="sponge_uri.vsp?site=WebID"><img alt="WebID icon" src=
-                  "<?=skinpfx?>/i/webid_icon.png" title="Sponge your WebID / FOAF profile" /></a></li>
-
-                  <li><a href="sponge_uri.vsp?site=WebFinger"><img alt="WebFinger icon" src=
-                  "<?=skinpfx?>/i/webfinger.png" title="Sponge your WebFinger profile" /></a></li>
-
                   <li><a href=
                   "fb_access_token_popup.vsp"><img alt=
                   "Facebook icon" src="<?=skinpfx?>/i/facebook_icon.jpg" title=
                   "Sponge your Facebook profile"/></a></li>
 
-                  <li><a href="sponge_social_profile.vsp?site=Google%2B"><img alt="Google icon" src=
-                  "<?=skinpfx?>/i/gprofile_button-44.png" title="Sponge your Google+ profile" /></a></li>
-
-
                   <li><a href="twitter_access_token.vsp?site=Twitter"><img alt="Twitter icon" src=
                   "<?=skinpfx?>/i/twitter.jpg" title="Sponge your Twitter profile" /></a></li>
+
+                  <li><a href="sponge_social_profile.vsp?site=Google%2B"><img alt="Google icon" src=
+                  "<?=skinpfx?>/i/gprofile_button-44.png" title="Sponge your Google+ profile" /></a></li>
 
                   <li><a href="linkedin_access_token.vsp"><img alt="LinkedIn icon" src=
                   "<?=skinpfx?>/i/linkedin.jpg" title="Sponge your LinkedIn profile" /></a></li>
 
-                  <li><a href="sponge_social_profile.vsp?site=Delicious"><img alt="delicious icon" src=
-                  "<?=skinpfx?>/i/delicious.png" title="Sponge your Delicious profile" /></a></li>
+                  <li><a href="sponge_uri.vsp?site=Foursquare"><img alt="foursquare icon" src=
+                  "<?=skinpfx?>/i/foursquare.png" title="Sponge your Foursquare profile" /></a></li>
 
                   <li><a href="sponge_uri.vsp?site=Flickr"><img alt="flickr icon" src=
                   "<?=skinpfx?>/i/flickr.jpg" title="Sponge a Flickr image" /></a></li>
+
+                  <li><a href="sponge_social_profile.vsp?site=Delicious"><img alt="delicious icon" src=
+                  "<?=skinpfx?>/i/delicious.png" title="Sponge your Delicious profile" /></a></li>
+
+                  <li><a href="sponge_uri.vsp?site=WebID"><img alt="WebID icon" src=
+                  "<?=skinpfx?>/i/webid_icon.png" title="Sponge your WebID / FOAF profile" /></a></li>
+
+                  <li><a href="sponge_uri.vsp?site=WebFinger"><img alt="WebFinger icon" src=
+                  "<?=skinpfx?>/i/webfinger.png" title="Sponge your WebFinger profile" /></a></li>
                 </ul>
               </div>
 
