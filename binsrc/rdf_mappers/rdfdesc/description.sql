@@ -1057,7 +1057,7 @@ create procedure RM_LINK_HDR (in path varchar)
   for (declare i,l int, i := 0, l := length (exts); i < l; i := i + 1)
     {
       if (ext <> exts[i][0])
-        h := h || sprintf (' <http://%s'||fmt||'>;\r\n rel="alternate"; type="%s"; title="%s",\r\n', host, exts[i][0], exts[i][1], exts[i][2]);
+        h := h || sprintf (' <http://%s%s>;\r\n rel="alternate"; type="%s"; title="%s",\r\n', host, fmt, exts[i][0], exts[i][1], exts[i][2]); 
     }
   h := rtrim (h, ',\r\n');
   return h;
