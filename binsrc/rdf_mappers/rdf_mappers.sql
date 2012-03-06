@@ -10692,6 +10692,7 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
   return 1;
 };
 
+
 create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
   declare xt, cnt, xd any;
@@ -10748,21 +10749,25 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
     return 0;
   }
 
+  -- Retrieve most data apart from connections
   -- LinkedIn rejects the entire request if an attempt is made to retrieve a user's connections with an access token granted by someone-else
   required_profile_fields := 'id,public-profile-url,first-name,last-name,headline,industry,location,num-connections,summary,specialties,associations,interests,honors,positions,num-recommenders,recommendations-received,member-url-resources,picture-url,certifications,date-of-birth,im-accounts,educations,languages,main-address,phone-numbers,publications,skills';
   if (is_owner_key)
-    required_profile_fields := required_profile_fields || ',connections,twitter-accounts';
+    -- required_profile_fields := required_profile_fields || ',connections,twitter-accounts';
+    required_profile_fields := required_profile_fields || ',twitter-accounts';
 
   api_url := sprintf ('https://api.linkedin.com/v1/people/url=%U:(%s)', public_profile_url, required_profile_fields);
   url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
   cnt := http_get (url);
-  --dbg_printf ('%s', cnt);
 
   declare person_id any;
   li_object_type := 'unknown';
   xd := xtree_doc (cnt);
   person_id := cast (xpath_eval ('/person/id', xd) as varchar);
---  dbg_obj_print (cnt, person_id);
+  
+  declare num_connections any;
+  num_connections := cast (xpath_eval ('/person/num-connections', xd) as integer);
+  
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd,
     vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
   xd := serialize_to_UTF8_xml (xt);
@@ -10771,13 +10776,28 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
   DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
   if (length (person_id))
     {
+    	--Retrieve details of the person's network
       url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
       cnt := http_get (url);
---      dbg_printf ('%s', cnt);
       xd := xtree_doc (cnt);
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin_shares2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
       xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+      
+      -- Paginated requests for all their connections
+      declare st, retrcount integer;
+      st:=0; retrcount:=500;
+      li_object_type := 'connections';
+      while(retrcount=500) {
+        url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/connections:(id,public-profile-url,site-public-profile-request,first-name,last-name,headline,industry,location)', person_id), sprintf('start=%d&count=500',st), consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+        st:=st+500;
+        cnt := http_get (url);
+        xd := xtree_doc (cnt);
+        retrcount:=cast(xpath_eval('count(/connections/person)', xd) as integer); 
+        xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+        xd := serialize_to_UTF8_xml (xt);
+        DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+      }
     }
   DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
   return 1;

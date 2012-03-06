@@ -77,12 +77,22 @@
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 		    </rdf:Description>
 
+              <rdf:Description rdf:about="{$resourceURL}">
+		      <xsl:if test="$li_object_type='connections'">
+		        <xsl:apply-templates select="/connections/person" mode="connpersonref" />
+		        <oplli:num_connections rdf:datatype="&xsd;integer"><xsl:value-of select="/connections/@total"/></oplli:num_connections>
+		      </xsl:if>
+              </rdf:Description>
+		    
             <!-- Attribution resource -->
 	        <foaf:Organization rdf:about="{$providedByIRI}">
 	            <foaf:name>LinkedIn Inc.</foaf:name>
 	            <foaf:homepage rdf:resource="http://www.linkedin.com"/>
 	        </foaf:Organization>
-
+	        
+	        <xsl:if test="$li_object_type='connections'">
+		  <xsl:apply-templates select="/connections/person" mode="connperson" />
+		</xsl:if>
             <xsl:apply-templates select="*"/>
 		</rdf:RDF>
 	</xsl:template>
@@ -91,6 +101,20 @@
         <xsl:call-template name="person">
             <xsl:with-param name="personURI" select="$resourceURL"/>
         </xsl:call-template>
+	</xsl:template>
+
+	<xsl:template match="/connections" />
+	
+	<xsl:template match="person" mode="connpersonref">
+	  <xsl:variable name="personURI" select="vi:proxyIRI($baseUri, '', concat('Person_', id))"/>
+	  <foaf:knows rdf:resource="{$personURI}" />
+	</xsl:template>
+
+	<xsl:template match="person" mode="connperson">
+	  <xsl:variable name="personURI" select="vi:proxyIRI($baseUri, '', concat('Person_', id))"/>
+	  <xsl:call-template name="person">
+	    <xsl:with-param name="personURI"><xsl:value-of select="$personURI" /></xsl:with-param>
+	  </xsl:call-template>
 	</xsl:template>
 
 	<xsl:template match="educations">
@@ -280,9 +304,6 @@
             </xsl:if>
             <xsl:if test="headline">
     		    <oplli:headline><xsl:value-of select="headline"/></oplli:headline>
-            </xsl:if>
-            <xsl:if test="num-connections">
-    		    <oplli:num_connections rdf:datatype="&xsd;integer"><xsl:value-of select="num-connections"/></oplli:num_connections>
             </xsl:if>
             <xsl:if test="picture-url">
     		    <foaf:img rdf:resource="{picture-url}"/>
