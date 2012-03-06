@@ -50,6 +50,8 @@ TTLP (
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix oplli: <http://www.openlinksw.com/schemas/linkedin#> .
 @prefix umbelrc: <http://umbel.org/umbel/rc/> .
+@prefix oplog: <http://www.openlinksw.com/schemas/opengraph#> . 
+@prefix mo: <http://purl.org/ontology/mo/> .
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -671,6 +673,123 @@ oplli:Publication	owl:equivalentClass umbelrc:ScholarlyArticle .
 oplli:date_of_birth owl:equivalentProperty <http://www.openlinksw.com/schemas/rdfs/birthDate#this> .
 
 oplli:has_phone_number owl:equivalentProperty <http://www.openlinksw.com/schemas/rdfs/telephone#this> .
+
+
+oplog:Account owl:equivalentClass foaf:OnlineAccount .
+oplog:Group owl:equivalentClass foaf:Group .
+oplog:Note rdfs:subClassOf foaf:Document .
+oplog:Photo rdfs:subClassOf foaf:Image . 
+oplog:User rdfs:subClassOf foaf:Person . 
+oplog:Image owl:equivalentClass foaf:Image . 
+oplog:Album rdfs:subClassOf mo:ReleaseType .
+oplog:Application rdfs:subClassOf dbpedia:Software . 
+
+oplog:has_picture owl:equivalentProperty foaf:img .
+oplog:picture owl:equivalentProperty foaf:img .
+oplog:has_photo owl:equivalentProperty foaf:img .
+oplog:photos rdfs:subPropertyOf foaf:img .
+oplog:has_account rdfs:subPropertyOf foaf:page .
+oplog:name owl:equivalentProperty foaf:name .
+oplog:uri rdfs:subPropertyOf foaf:homepage .
+oplog:website rdfs:subPropertyOf foaf:homepage .
+oplog:username rdfs:subPropertyOf foaf:name .
+oplog:has_interest owl:equivalentProperty foaf:interest .
+oplog:first_name owl:equivalentProperty foaf:firstName .
+oplog:last_name owl:equivalentProperty foaf:lastName .
+oplog:gender owl:equivalentProperty foaf:gender .
+oplog:birthday owl:equivalentProperty foaf:birthday .
+oplog:has_friend rdfs:subPropertyOf foaf:knows .
+oplog:email owl:equivalentProperty foaf:mbox .
+oplog:mobile_phone rdfs:subPropertyOf foaf:phone . 
+
+oplog:Post owl:equivalentClass sioc:Post .
+oplog:Activity owl:equivalentClass sioc:Post .
+oplog:Account owl:equivalentClass sioc:UserAccount .
+oplog:Comment owl:equivalentClass sioc:Post .
+
+oplog:email owl:equivalentProperty sioc:email .
+oplog:id owl:equivalentProperty sioc:id .
+oplog:third_party_id owl:equivalentProperty sioc:id .
+oplog:updated_time owl:equivalentProperty sioc:last_activity_date .
+oplog:link owl:equivalentProperty sioc:link .
+oplog:name owl:equivalentProperty sioc:name .
+oplog:notes rdfs:subPropertyOf sioc:note .
+
+oplog:id owl:equivalentProperty dc:identifier .
+oplog:third_party_id rdfs:subPropertyOf dc:identifier .
+oplog:album_type rdfs:subPropertyOf dc:type .
+oplog:description owl:equivalentProperty dc:description .
+oplog:height rdfs:subPropertyOf dc:format .
+oplog:width rdfs:subPropertyOf dc:format .
+oplog:tagged_by owl:equivalentProperty dc:source .
+oplog:link owl:equivalentProperty dc:source .
+oplog:uri owl:equivalentProperty dc:source .
+oplog:username owl:equivalentProperty dc:publisher .
+oplog:updated_time rdfs:subPropertyOf dc:date .
+oplog:birthday rdfs:subPropertyOf dc:date .
+oplog:languages rdfs:subPropertyOf dc:language .
+
+oplog:id owl:equivalentProperty dcterms:identifier .
+oplog:third_party_id rdfs:subPropertyOf dcterms:identifier .
+oplog:album_type rdfs:subPropertyOf dcterms:type .
+oplog:description owl:equivalentProperty dcterms:description .
+oplog:height rdfs:subPropertyOf dcterms:format .
+oplog:width rdfs:subPropertyOf dcterms:format .
+oplog:tagged_by owl:equivalentProperty dcterms:source .
+oplog:link owl:equivalentProperty dcterms:source .
+oplog:uri owl:equivalentProperty dcterms:source .
+oplog:username owl:equivalentProperty dcterms:publisher .
+oplog:updated_time rdfs:subPropertyOf dcterms:date .
+oplog:birthday rdfs:subPropertyOf dcterms:date .
+oplog:languages rdfs:subPropertyOf dcterms:language .
+oplog:education rdfs:subPropertyOf dcterms:educationLevel .
+
+oplog:Photo owl:equivalentClass bibo:Image . 
+oplog:Book owl:equivalentClass bibo:Book . 
+oplog:Movie owl:equivalentClass bibo:Film . 
+oplog:Note owl:equivalentClass bibo:Note . 
+oplog:id owl:equivalentProperty bibo:identifier .
+oplog:third_party_id rdfs:subPropertyOf bibo:identifier .
+
+oplog:Event owl:equivalentClass event:Event .
+
+oplog:name owl:equivalentProperty vcard:N .
+oplog:birthday owl:equivalentProperty vcard:BDAY .
+oplog:email owl:equivalentProperty vcard:EMAIL .
+oplog:last_name owl:equivalentProperty vcard:Family .
+oplog:has_photo rdfs:subPropertyOf vcard:PHOTO .
+oplog:photos rdfs:subPropertyOf vcard:PHOTO .
+oplog:has_variant rdfs:subPropertyOf vcard:PHOTO .
+oplog:mobile_phone rdfs:subPropertyOf vcard:TEL .
+oplog:notes rdfs:subPropertyOf vcard:NOTE .
+oplog:tagged_by rdfs:subPropertyOf vcard:SOURCE .
+oplog:link rdfs:subPropertyOf vcard:SOURCE .
+oplog:uri rdfs:subPropertyOf vcard:SOURCE .
+oplog:address owl:equivalentProperty vcard:ADR .
+oplog:locale owl:equivalentProperty vcard:Locality .
+oplog:timezone owl:equivalentProperty vcard:TZ .     
+oplog:middle_name rdfs:subPropertyOf vcard:Other .     
+oplog:id rdfs:subPropertyOf vcard:UID	.
+oplog:third_party_id rdfs:subPropertyOf vcard:UID .
+oplog:category rdfs:subPropertyOf vcard:CATEGORIES .
+
+oplog:Activity owl:equivalentClass dbpedia:Activity .
+oplog:updated_time rdfs:subPropertyOf dbpedia:Date .
+oplog:birthday rdfs:subPropertyOf dbpedia:Date .
+oplog:address owl:equivalentProperty dbpedia:Address .
+oplog:notes rdfs:subPropertyOf dbpedia:Note .
+oplog:location owl:equivalentProperty dbpedia:Location .
+oplog:birthday owl:equivalentProperty dbpedia:BirthDate .
+oplog:gender owl:equivalentProperty dbpedia:Genre .
+oplog:languages rdfs:subPropertyOf dbpedia:Language .
+oplog:education owl:equivalentProperty dbpedia:Education .
+oplog:has_interest rdfs:subPropertyOf dbpedia:Interest .
+oplog:address owl:equivalentProperty dbpedia:Address .
+oplog:album_type rdfs:subPropertyOf dbpedia:Type .
+oplog:tagged_by rdfs:subPropertyOf dbpedia:Source . 
+oplog:link rdfs:subPropertyOf dbpedia:Source . 
+oplog:uri rdfs:subPropertyOf dbpedia:Source . 
+
 
 ', '', 'virtrdf-label');
 
