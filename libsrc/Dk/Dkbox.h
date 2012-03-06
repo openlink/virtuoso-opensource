@@ -663,6 +663,7 @@ EXE_EXPORT (box_t, dk_try_alloc_box, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 
 #define dk_alloc_list(n) 		((caddr_t *)dk_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
+#define dk_alloc_list_zero(n) 		((caddr_t *)dk_alloc_box_zero ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
 
 #ifdef MALLOC_DEBUG
 #define DK_ALLOC_BOX_DEBUG
