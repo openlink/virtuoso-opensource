@@ -336,20 +336,27 @@
 	<xsl:variable name="nspace">
 	    <xsl:choose>
 		<xsl:when test="$space = 'financial_org'">
-		    <xsl:text>financial-organization</xsl:text>
+					<xsl:text>Financial-organization</xsl:text>
 		</xsl:when>
 		<xsl:when test="$space = 'firm' or $space = 'competitor'">
-		    <xsl:text>company</xsl:text>
+					<xsl:text>Company</xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
-		    <xsl:value-of select="translate ($space, '_', '-')"/>
+				    <xsl:variable name="first_letter" select="upper-case(substring($space, 1, 1))"/>
+				    <xsl:variable name="type_name" select="concat($first_letter, substring($space, 2))"/>
+				    <xsl:value-of select="translate ($type_name, '_', '-')"/>
 		</xsl:otherwise>
 	    </xsl:choose>
 	</xsl:variable>
 
+        <xsl:variable name="field_name"/>
+        <xsl:if test="ends-with(name(), 's')" >
+            <xsl:variable name="field_name" select="substring(name(), 1, string-length(name()) - 1)" />
+        </xsl:if>
+		
 	<xsl:choose>
 	    <xsl:when test="$type != ''">
-		<xsl:element namespace="{$ns}" name="{name()}">
+				<xsl:element namespace="{$ns}" name="{$field_name}">
 		    <xsl:element name="{$type}" namespace="&foaf;">
 			<xsl:attribute name="rdf:about">
 			    <xsl:value-of select="vi:proxyIRI(concat ($base, $nspace, '/', permalink, $suffix))"/>
@@ -363,7 +370,7 @@
                 <xsl:apply-templates />
 	    </xsl:when>
 	    <xsl:otherwise>
-		<xsl:element namespace="{$ns}" name="{name()}">
+				<xsl:element namespace="{$ns}" name="{$field_name}">
 		    <xsl:element name="{$nspace}" namespace="{$ns}">
 			<xsl:attribute name="rdf:about">
 			    <xsl:variable name="cur_suffix" select="name()"/>

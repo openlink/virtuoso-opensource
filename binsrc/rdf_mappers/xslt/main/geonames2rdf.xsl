@@ -86,6 +86,7 @@
 
 	    <rdf:type rdf:resource="&geonames;Feature"/>
 			<rdf:type rdf:resource="&gr;Location"/>
+			<rdfs:label><xsl:value-of select="geonames:name"/></rdfs:label>
 	    <xsl:copy-of select="*"/>
 	</rdf:Description>
     </xsl:template>
