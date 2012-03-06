@@ -11665,12 +11665,13 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
     inout ret_body any, in ret_content_type varchar, inout options any)
 {
   declare new_opts any;
-  declare dummy, spmode, triples, graph, tmp, labels any;
+  declare dummy, spmode, triples, graph, tmp, labels, dict any;
   declare rc int;
 
   dummy := null;
   RM_LOG_CLEAR ();
   RM_GRAPH_PT_CK (graph_iri, dest);
+  dict := dict_new ((length (ret_body) / 100) + 1);
   graph := coalesce (dest, graph_iri);
   spmode := get_keyword ('meta-cartridges-mode', options, '');
   if (spmode = 'none')
@@ -11738,7 +11739,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	  DB.DBA.RDF_SPONGER_STATUS (graph_iri, new_origin_uri, dest, MC_DESC, options);
 	  commit work;
 	  st := msec_time ();
-	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
+	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts, dict);
 	  RM_GRAPH_PT_CK (graph_iri, dest);
 	  prof_sample (MC_HOOK, msec_time () - st, 1);
           if (registry_get ('__sparql_mappers_debug') = '1')
@@ -11749,6 +11750,28 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	    }
 	  if (rc < 0 or rc > 0)
 	    {
+	      ins_triples:
+	      declare triples, links any;
+	      dbg_obj_print ('inserting triples:', dict_size (dict));
+	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
+	      triples := dict_list_keys (dict, 1);
+	      {
+		declare deadl int;
+		deadl := 5;
+		ins_again:
+		declare exit handler for sqlstate '40001' {
+		  deadl := deadl - 1;
+		  if (deadl > 0)
+		    {
+		      rollback work;
+		      goto ins_again;
+		    }
+		  resignal;
+		};
+		--dbg_obj_print (coalesce (dest, graph_iri), triples);
+	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), triples);
+		commit work;
+	      }
 	      return (case when rc < 0 then 0 else 1 end);
 	    }
 	}
@@ -11758,6 +11781,8 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
     DB.DBA.RDF_DELETE_TRIPLES (graph, triples);
   if (registry_get ('__sparql_mappers_debug') = '1')
     dbg_obj_prin1 ('END of PP mappings');
+  if (dict_size (dict))
+    goto ins_triples;
 }
 ;
 

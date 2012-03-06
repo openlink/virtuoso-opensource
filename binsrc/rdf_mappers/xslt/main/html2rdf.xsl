@@ -30,7 +30,7 @@
 <!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
 <!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
@@ -104,8 +104,17 @@
 	      </xsl:choose>
 	  </xsl:variable>
 	  <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fpn)"/></xsl:variable>
-	  <rdf:Description rdf:about="{$resourceURL}">
+	  <xsl:variable name="au">
+	      <xsl:choose>
+		  <xsl:when test="//link[@rel='canonical']/@href"><xsl:value-of select="//link[@rel='canonical']/@href"/>#author</xsl:when>
+		  <xsl:otherwise><xsl:value-of select="vi:proxyIRI ($baseUri,'','author')"/></xsl:otherwise>
+	      </xsl:choose>
+	  </xsl:variable>
+	  <foaf:Agent rdf:about="{$au}">
 	      <oplcert:hasCertificate rdf:resource="{$ct}"/>
+	  </foaf:Agent>
+	  <rdf:Description rdf:about="{$resourceURL}">
+	      <dc:creator rdf:resource="{$au}"/>
 	  </rdf:Description>
 	  <oplcert:Certificate rdf:about="{$ct}">
 	      <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>

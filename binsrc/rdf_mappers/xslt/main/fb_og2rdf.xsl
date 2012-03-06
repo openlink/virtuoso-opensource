@@ -45,7 +45,7 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
 <!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet

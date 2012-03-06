@@ -39,7 +39,7 @@
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
 <!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

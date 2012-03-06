@@ -33,7 +33,7 @@
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
-<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
 <!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
