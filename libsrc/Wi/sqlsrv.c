@@ -3926,11 +3926,14 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 0);
       sec_read_tb_rls (NULL, NULL, NULL);
       sinv_read_sql_inverses (NULL, bootstrap_cli);
+      sqls_define_sparql_init ();
       read_proc_and_trigger_tables (1);
       read_proc_and_trigger_tables (0);
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
     }
+  else if (!in_crash_dump)
+    sqls_define_sparql_init ();
   ddl_obackup_init ();
 
   ddl_ensure_stat_tables ();

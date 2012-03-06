@@ -48,6 +48,7 @@ sql_code_imsg.c
 sql_code_pldbg.c
 sql_code_repl.c
 sql_code_sparql.c
+sql_code_sparql_init.c
 sql_code_sys.c
 sql_code_uddi.c
 sql_code_vad.c

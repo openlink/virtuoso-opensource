@@ -94,6 +94,7 @@ generated_code = \
 	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
@@ -133,6 +134,7 @@ C_FILES_SPARQL	= \
 	sparql_rdb2rdf.c \
 	sparul2sql.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	turtle_l.c \
 	turtle_p.c
 
@@ -209,6 +211,7 @@ libwi_la_SOURCES = \
 	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
@@ -327,6 +330,7 @@ libwi_odbc_la_SOURCES = \
 	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
@@ -533,7 +537,6 @@ SQL_FILES		= \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
 	$(srcdir)/odbccat.sql \
-	$(srcdir)/useraggr.sql \
 	$(srcdir)/vt_text.sql \
 	$(srcdir)/phrasematch.sql \
 	$(srcdir)/hosting.sql
@@ -611,6 +614,10 @@ SQL_FILES_PLDBG		= \
 SQL_FILES_REPL		= \
 	$(srcdir)/snapshot_repl.sql \
 	$(srcdir)/repl.sql
+
+SQL_FILES_SPARQL_INIT = \
+	$(srcdir)/useraggr.sql \
+	$(srcdir)/sparql_init.sql
 
 SQL_FILES_SPARQL	= \
 	$(srcdir)/sparql.sql \
@@ -849,6 +856,14 @@ sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile.am
 		-v init_name=_vdb \
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_VDB)
+
+sql_code_sparql_init.c: $(SQL_FILES_SPARQL_INIT) $(AWK_FILES) Makefile.am
+	@${GEN} ${GAWK} \
+		-o sql_code_sparql_init.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_sparql_init \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_SPARQL_INIT)
 
 sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
