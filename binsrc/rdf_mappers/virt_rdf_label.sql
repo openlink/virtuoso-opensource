@@ -91,7 +91,7 @@ og:longitude rdfs:subPropertyOf geo:long .
 <http://www.rdfabout.com/rdf/schema/ussec/cik> a owl:inverseFunctionalProperty .
 foaf:logo owl:subPropertyOf foaf:depiction .
 <http://umbel.org/umbel#isAbout> owl:equivalentProperty foaf:focus .
-gr:name owl:equivalentProperty foaf:name .
+gr:name rdfs:subPropertyOf foaf:name .
 <http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
 <http://www.w3.org/2007/05/powder-s#describedby> owl:equivalentProperty <http://www.iana.org/assignments/relation/describedby> .
 <http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
@@ -170,7 +170,6 @@ oplgp:FullImage owl:equivalentClass foaf:Image .
 oplgp:PreviewImage owl:equivalentClass foaf:Image .
 oplgp:Actor owl:equivalentClass foaf:OnlineAccount .
 
-oplgp:actor owl:equivalentProperty foaf:account .
 oplgp:email owl:equivalentProperty foaf:mbox .
 oplgp:actor_profile_image owl:equivalentProperty foaf:img .
 oplgp:profile_image owl:equivalentProperty foaf:img .
@@ -190,7 +189,6 @@ oplgp:nickname owl:equivalentProperty foaf:nick .
 oplgp:date_of_birth owl:equivalentProperty foaf:birthday .
 oplgp:relationshipStatus owl:equivalentProperty foaf:status .
 oplgp:honorificPrefix owl:equivalentProperty foaf:title .
-oplgp:honorificSuffix owl:equivalentProperty foaf:surname .
 
 oplgp:aboutMe rdfs:subPropertyOf dc:description .
 oplgp:activity_title owl:equivalentProperty dc:title .
@@ -409,7 +407,6 @@ oplli:first_name owl:equivalentProperty foaf:firstName .
 oplli:has_phone_number owl:equivalentProperty foaf:phone .
 oplli:has_im_account owl:equivalentProperty foaf:account .
 oplli:has_twitter_account owl:equivalentProperty foaf:account .
-oplli:headline owl:equivalentProperty foaf:account .
 oplli:interests owl:equivalentProperty foaf:interest .
 oplli:last_name owl:equivalentProperty foaf:lastName .
 oplli:location_name owl:equivalentProperty foaf:based_near .
@@ -417,17 +414,14 @@ oplli:picture_url owl:equivalentProperty foaf:img .
 oplli:publication owl:equivalentProperty foaf:publications .
 oplli:public_profile_url owl:equivalentProperty foaf:accountServiceHomepage .
 oplli:public_profile_url owl:equivalentProperty foaf:page .
-oplli:company_name owl:equivalentProperty foaf:name .
-oplli:school_name owl:equivalentProperty foaf:name .
+oplli:company_name rdfs:subPropertyOf foaf:name .
+oplli:school_name rdfs:subPropertyOf foaf:name .
 oplli:im_account_name owl:equivalentProperty foaf:accountName .
-oplli:inventor_person owl:equivalentProperty foaf:account .
 oplli:phone_number owl:equivalentProperty foaf:phone .
 oplli:publication_summary owl:equivalentProperty foaf:publications .
 oplli:publication_title owl:equivalentProperty foaf:publications .
-oplli:publisher_name owl:equivalentProperty foaf:name .
-oplli:author_name owl:equivalentProperty foaf:name .
-oplli:author_person owl:equivalentProperty foaf:account .
-oplli:recommender owl:equivalentProperty foaf:account .
+oplli:publisher_name rdfs:subPropertyOf foaf:name .
+oplli:author_name rdfs:subPropertyOf foaf:name .
 oplli:provider_account_name owl:equivalentProperty foaf:account .  
 
 oplli:Publication owl:equivalentClass sioc:Post .
@@ -451,19 +445,17 @@ oplli:summary owl:equivalentProperty sioc:content .
 oplli:patent_summary owl:equivalentProperty sioc:content . 
 oplli:publication_summary owl:equivalentProperty sioc:content . 
 oplli:education_notes owl:equivalentProperty sioc:note . 
-oplli:provider_account_name owl:equivalentProperty sioc:name . 
-oplli:first_name owl:equivalentProperty sioc:name . 
-oplli:im_account_name owl:equivalentProperty sioc:name . 
-oplli:company_name owl:equivalentProperty sioc:name .
-oplli:school_name owl:equivalentProperty sioc:name .
-oplli:im_account_name owl:equivalentProperty sioc:name .
-oplli:publisher_name owl:equivalentProperty sioc:name .
-oplli:author_name owl:equivalentProperty sioc:name .
-oplli:provider_account_name owl:equivalentProperty sioc:name .
-oplli:last_name owl:equivalentProperty sioc:name .
+oplli:provider_account_name rdfs:subPropertyOf sioc:name . 
+oplli:first_name rdfs:subPropertyOf sioc:name . 
+oplli:im_account_name rdfs:subPropertyOf sioc:name . 
+oplli:company_name rdfs:subPropertyOf sioc:name .
+oplli:school_name rdfs:subPropertyOf sioc:name .
+oplli:publisher_name rdfs:subPropertyOf sioc:name .
+oplli:author_name rdfs:subPropertyOf sioc:name .
+oplli:provider_account_name rdfs:subPropertyOf sioc:name .
+oplli:last_name rdfs:subPropertyOf sioc:name .
 oplli:proposal_comments rdfs:subPropertyOf sioc:note . 
-oplli:specialties rdfs:subPropertyOf sioc:note .
-oplli:certification_name owl:equivalentProperty sioc:name .
+oplli:certification_name rdfs:subPropertyOf sioc:name .
 oplli:language_name rdfs:subPropertyOf sioc:name .
 oplli:publication_title rdfs:subPropertyOf sioc:name .
 oplli:member_shared_resource_name rdfs:subPropertyOf sioc:name .
@@ -473,7 +465,6 @@ oplli:Company rdfs:subClassOf dc:Agent .
 oplli:InstantMessagingAccount rdfs:subClassOf dc:Agent .
 oplli:TwitterAccount rdfs:subClassOf dc:Agent .
 
-oplli:interests rdfs:subPropertyOf dc:description .
 oplli:proposal_comments rdfs:subPropertyOf dc:description .
 oplli:associations rdfs:subPropertyOf dc:description .
 oplli:certification rdfs:subPropertyOf dc:description .
@@ -494,9 +485,7 @@ oplli:member_shared_resource_url rdfs:subPropertyOf dc:source .
 oplli:patent_url rdfs:subPropertyOf dc:source .
 oplli:publication_url rdfs:subPropertyOf dc:source .
 oplli:publisher_name owl:equivalentProperty dc:publisher . 
-oplli:specialties rdfs:subPropertyOf dc:description .
 oplli:summary owl:equivalentProperty dc:description .
-oplli:headline owl:equivalentProperty dc:title .
 oplli:patent_title owl:equivalentProperty dc:title .
 oplli:title owl:equivalentProperty dc:title .
 oplli:publication_title owl:equivalentProperty dc:title .
@@ -516,7 +505,6 @@ oplli:Company rdfs:subClassOf dcterms:Agent .
 oplli:InstantMessagingAccount rdfs:subClassOf dcterms:Agent .
 oplli:TwitterAccount rdfs:subClassOf dcterms:Agent .
 
-oplli:interests rdfs:subPropertyOf dcterms:description .
 oplli:proposal_comments rdfs:subPropertyOf dcterms:description .
 oplli:associations rdfs:subPropertyOf dcterms:description .
 oplli:certification rdfs:subPropertyOf dcterms:description .
@@ -538,9 +526,7 @@ oplli:member_shared_resource_url rdfs:subPropertyOf dcterms:source .
 oplli:patent_url rdfs:subPropertyOf dcterms:source .
 oplli:publication_url rdfs:subPropertyOf dcterms:source .
 oplli:publisher_name owl:equivalentProperty dcterms:publisher . 
-oplli:specialties rdfs:subPropertyOf dcterms:description .
 oplli:summary owl:equivalentProperty dcterms:description .
-oplli:headline owl:equivalentProperty dcterms:title .
 oplli:patent_title owl:equivalentProperty dcterms:title .
 oplli:title owl:equivalentProperty dcterms:title .
 oplli:publication_title owl:equivalentProperty dcterms:title .
@@ -580,12 +566,10 @@ oplli:provider_account_id owl:equivalentProperty bibo:identifier .
 
 
 oplli:date_of_birth owl:equivalentProperty vcard:BDAY .
-oplli:headline owl:equivalentProperty vcard:TITLE .
 oplli:education_notes owl:equivalentProperty vcard:NOTE .
 oplli:first_name owl:equivalentProperty vcard:Given .
 oplli:last_name owl:equivalentProperty vcard:Family .
 oplli:picture_url owl:equivalentProperty vcard:PHOTO .
-oplli:position owl:equivalentProperty vcard:TITLE .
 oplli:company_industry rdfs:subPropertyOf vcard:Orgunit .
 oplli:company_name owl:equivalentProperty vcard:Orgname .
 oplli:id owl:equivalentProperty vcard:UID .
@@ -630,7 +614,7 @@ oplli:certification_name owl:equivalentProperty dbpedia:Certification .
 oplli:specialties owl:equivalentProperty dbpedia:Specialist .
 oplli:patent owl:equivalentProperty dbpedia:Patent .
 oplli:associations owl:equivalentProperty dbpedia:Associate .
-oplli:country_code owl:equivalentProperty dbpedia:AreaCode .
+oplli:country_code rdfs:subPropertyOf dbpedia:AreaCode .
 oplli:education owl:equivalentProperty dbpedia:Education .
 oplli:publication_date owl:equivalentProperty dbpedia:FirstPublicationDate .
 oplli:publication_date owl:equivalentProperty dbpedia:PublicationDate .
@@ -641,7 +625,6 @@ oplli:language owl:equivalentProperty dbpedia:Language .
 oplli:location_name owl:equivalentProperty dbpedia:Location .
 oplli:main_address owl:equivalentProperty dbpedia:Address .
 oplli:patent owl:equivalentProperty dbpedia:Patent .
-oplli:position owl:equivalentProperty dbpedia:Position .
 oplli:title owl:equivalentProperty dbpedia:Position .
 oplli:publisher_name owl:equivalentProperty dbpedia:Publisher .
 oplli:company_name owl:equivalentProperty dbpedia:Company .

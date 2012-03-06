@@ -160,9 +160,11 @@ xmlns:hrev="http://www.purl.org/stuff/hrev#" version="1.0">
       </dcterms:modified>
     </xsl:if>
     <xsl:if test="$rating != 0">
-      <review:rating>
-        <xsl:value-of select="." />
-      </review:rating>
+      <xsl:if test="string-length(.) &gt; 0">
+         <review:rating>
+           <xsl:value-of select="." />
+         </review:rating>
+      </xsl:if>
     </xsl:if>
     <xsl:if test="$description != 0">
       <review:text>

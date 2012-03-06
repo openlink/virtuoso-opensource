@@ -219,7 +219,7 @@ xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
 		<xsl:choose>
 				<xsl:when test="string-length($ing_name) &gt; 0">
 			  <dv:ingredient>
-						<dv:Ingredient rdf:about="{vi:proxyIRI ($baseUri, '', replace(concat('hrecipe', .), ' ', '_')) }">
+						<dv:Ingredient rdf:about="{vi:proxyIRI ($baseUri, '', escape-uri(concat('hrecipe', substring( replace(normalize-space(.), ' ', ''), 1 , 20) ), true())) }">
 					<dv:name>
 								<xsl:choose>
 									<xsl:when test="*[@class = 'name' or starts-with(@class,concat('name', ' ')) or contains(@class,concat(' ','name',' ')) or substring(@class, string-length(@class)-string-length('name')) = concat(' ','name')]">

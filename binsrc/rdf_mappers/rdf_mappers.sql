@@ -11745,10 +11745,11 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 {
   declare new_opts any;
   declare dummy, spmode, triples, graph, tmp, labels, dict any;
-  declare f_delete_orig_triples, rc int;
+  declare f_delete_orig_triples, rc, mc_api int;
 
   dummy := null;
   f_delete_orig_triples := 0;
+  mc_api := 0;
   RM_LOG_CLEAR ();
   RM_GRAPH_PT_CK (graph_iri, dest);
   dict := dict_new ((length (ret_body) / 100) + 1);
