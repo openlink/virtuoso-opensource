@@ -951,6 +951,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (inout triple_dict any, in strg varch
 
   if (triple_dict is not null)
     {
+      --string_to_file ('rdf.xml', strg, -2);
       DB.DBA.RDF_RDFXML_LOAD_DICT (strg, base, graph, triple_dict);
       DB.DBA.RDF_TTL_LOAD_DICT (ses, base, graph, triple_dict);
       return;
@@ -3503,7 +3504,10 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
       DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
     }
     ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
-    ret := -1;
+    if (RM_CONTENT_TYPE_IS_RDF (mime))
+      ret := -1;
+    else  
+      ret := 1;
     for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
     {
       if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)

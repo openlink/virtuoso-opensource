@@ -33,6 +33,8 @@
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
+<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
     xmlns:bibo="&bibo;"
@@ -48,6 +50,7 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:vi="&vi;"
+    xmlns:oplcert="&oplcert;"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     version="1.0"
 	>
@@ -78,11 +81,22 @@
 			<dcterms:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="vi:unix2iso-date (timestamp div 1000)"/></dcterms:created>
 		    </rdf:Description>
 		    <xsl:if test="starts-with (comment, '#X509Cert Fingerprint:')">
+			<xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (comment, '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+			<xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
+			<xsl:variable name="dgst">
+			    <xsl:choose>
+				<xsl:when test="contains (comment, '#SHA1')">sha1</xsl:when>
+				<xsl:otherwise>md5</xsl:otherwise>
+			    </xsl:choose>
+			</xsl:variable>
 			<rdf:Description rdf:about="{$resourceURL}">
-			    <opl:hasFingerprint>
-				<xsl:value-of select="substring-before (substring-after (comment, '#X509Cert Fingerprint:'), ' ')"/>
-			    </opl:hasFingerprint>
+			    <oplcert:hasCertificate rdf:resource="{vi:proxyIRI ($baseUri, '', $fpn)}"/>
 			</rdf:Description>
+			<oplcert:Certificate rdf:about="{vi:proxyIRI ($baseUri, '', $fpn)}">
+			    <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+			    <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+			    <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+			</oplcert:Certificate>
 		    </xsl:if>
 		</xsl:for-each>
 	    </rdf:RDF>

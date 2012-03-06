@@ -26,29 +26,16 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY sioc "http://rdfs.org/sioc/ns#">
-<!ENTITY bibo "http://purl.org/ontology/bibo/">
-<!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
-<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY opl "http://www.openlinksw.com/schema/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:foaf="&foaf;"
-	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-	xmlns:v="http://www.w3.org/2006/vcard/ns#"
-	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
-	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
-	xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
-	xmlns:sioc="&sioc;"
-	xmlns:bibo="&bibo;"
 	xmlns:owl="&owl;"
-	xmlns:a="http://www.w3.org/2005/Atom"
-	xmlns:sioct="&sioct;"
 	xmlns:opl="&opl;"
 	version="1.0">
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -58,16 +45,24 @@
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:template match="/">
 	    <rdf:RDF>
-		<xsl:for-each select="//results[starts-with (string (text), '#Self #WebID #Fingerprint:')]">
+		<xsl:for-each select="//results[starts-with (string (text), '#X509Cert Fingerprint:')]">
+		    <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (text, '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+		    <xsl:variable name="dgst">
+			<xsl:choose>
+			    <xsl:when test="contains (text, '#SHA1')">sha1</xsl:when>
+			    <xsl:otherwise>md5</xsl:otherwise>
+			</xsl:choose>
+		    </xsl:variable>
 		    <rdf:Description rdf:about="{$docproxyIRI}">
-			<rdf:type rdf:resource="&bibo;Document"/>
 			<foaf:topic rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', from_user))}"/>
 		    </rdf:Description>
 		    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', from_user))}">
-			<opl:hasFingerprint>
-			    <xsl:value-of select="substring-after (text, '#Self #WebID #Fingerprint:')"/>
-			</opl:hasFingerprint>
+			<opl:hasCertificate rdf:resource="{vi:proxyIRI ($baseUri, '', $fp)}"/>
 		    </foaf:Person>
+		    <opl:Certificate rdf:about="{vi:proxyIRI ($baseUri, '', $fp)}">
+			<opl:fingerprint><xsl:value-of select="$fp"/></opl:fingerprint>
+			<opl:fingerprint-digest><xsl:value-of select="$dgst"/></opl:fingerprint-digest>
+		    </opl:Certificate>
 		</xsl:for-each>
 	    </rdf:RDF>
 	</xsl:template>

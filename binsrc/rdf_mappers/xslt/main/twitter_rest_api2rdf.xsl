@@ -39,6 +39,8 @@
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:a="&a;"
@@ -47,6 +49,7 @@
 	xmlns:dcterms="&dcterms;"
 	xmlns:foaf="&foaf;"
     xmlns:opl="&opl;"
+	xmlns:oplcert="&oplcert;"
     xmlns:owl="&owl;"
 	xmlns:rdf="&rdf;"
 	xmlns:rdfs= "&rdfs;"
@@ -183,14 +186,28 @@
 	<xsl:template name="status">
 		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}">
 			<xsl:call-template name="status_int"/>
-		</rdf:Description>
+		    </rdf:Description>
+
+		<xsl:if test="starts-with (text, '#X509Cert Fingerprint:')">
+		    <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (text, '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+		    <xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
+		    <xsl:variable name="dgst">
+			<xsl:choose>
+			    <xsl:when test="contains (text, '#SHA1')">sha1</xsl:when>
+			    <xsl:otherwise>md5</xsl:otherwise>
+			</xsl:choose>
+		    </xsl:variable>
+		    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
+			<oplcert:hasCertificate rdf:resource="{vi:proxyIRI (concat('http://twitter.com/', user/screen_name), '', $fpn)}"/>
+		    </foaf:Person>
+		    <oplcert:Certificate rdf:about="{vi:proxyIRI (concat('http://twitter.com/', user/screen_name), '', $fpn)}">
+			<rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+			<oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+			<oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+		    </oplcert:Certificate>
+		</xsl:if>
 
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
-		<xsl:if test="starts-with (text, '#X509Cert Fingerprint:')">
-		    <opl:hasFingerprint>
-			<xsl:value-of select="substring-before (substring-after (text, '#X509Cert Fingerprint:'), ' ')"/>
-		    </opl:hasFingerprint>
-		</xsl:if>
             <xsl:choose>
                 <xsl:when test="$what = 'favorites'">
 			        <twitter:has_favorite rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
