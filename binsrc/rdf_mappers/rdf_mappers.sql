@@ -9179,7 +9179,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
 		goto no_dtd_check;
 	dtd_sysuri := xtree_doc_get_dtd (xt, 1);
-	if (dtd_sysuri = 'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd' or xpath_eval ('//@about|//@typeof', xt) is not null or registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
+	if (dtd_sysuri = 'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd' or xpath_eval ('//*[@about]|//*[@typeof]', xt) is not null or registry_get ('__rdf_cartridges_original_doc_uri__') = '1') 
 	{
 		no_dtd_check:;
 		{
