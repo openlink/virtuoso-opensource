@@ -565,8 +565,11 @@ DB.DBA.EXEC_STMT(
 )
 ;
 
+-- RDF_META_CARTRIDGES_LOG is now redundant. 
+-- But the table isn't dropped to prevent errors in old versions of Conductor/Yacutia
+-- DB.DBA.EXEC_STMT('drop table DB.DBA.RDF_META_CARTRIDGES_LOG');
 DB.DBA.EXEC_STMT(
-'create table DB.DBA.RDF_META_CARTRIDGES_LOG (
+'create table DB.DBA.RDF_CARTRIDGES_LOG (
 	ML_SESSION varchar,		-- session id
 	ML_ID integer identity,		-- an unique number
 	ML_TS timestamp,		-- ts
@@ -578,7 +581,7 @@ DB.DBA.EXEC_STMT(
 	ML_RESULT long varchar,		-- transformation to rdf
 	primary key (ML_SESSION, ML_ID)
 )
-alter index RDF_META_CARTRIDGES_LOG on DB.DBA.RDF_META_CARTRIDGES_LOG partition cluster replicated', 0)
+alter index RDF_CARTRIDGES_LOG on DB.DBA.RDF_CARTRIDGES_LOG partition cluster replicated', 0)
 ;
 
 EXEC_STMT ('create table RDF_SPONGER_QUEUE (
@@ -593,18 +596,17 @@ EXEC_STMT ('create table RDF_SPONGER_QUEUE (
 	PRIMARY KEY (RS_URI))
 create index RDF_SPONGER_QUEUE_STAT on RDF_SPONGER_QUEUE (RS_STATE, RS_QTS)', 0);
 
+RM_UPGRADE_TBL ('DB.DBA.RDF_SPONGER_META_QUEUE', 'MQ_SESSION', 'varchar');
 
 create procedure RM_LOG_REQUEST (in url varchar, in kwd varchar, in proc varchar)
 {
-  declare sid, pname any;
+  declare sid any;
   sid := connection_get ('__rdf_sponge_sid');
   if (registry_get ('__rdf_sponge_debug') <> '1')
     return;
   if (sid is null)
     return;
-  pname := rtrim (proc, '2');
-  pname := rtrim (pname, '_REST');
-  insert into DB.DBA.RDF_META_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, pname);
+  insert into DB.DBA.RDF_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, proc);
   connection_set ('__rdf_sponge_idn', identity_value ());
 }
 ;
@@ -619,7 +621,7 @@ create procedure RM_LOG_RESPONSE (in resp varchar, in hdr any)
   hdr_str := '';
   foreach (varchar l in hdr) do
     hdr_str := hdr_str || l;
-  update DB.DBA.RDF_META_CARTRIDGES_LOG set ML_RESPONSE = resp, ML_RESPONSE_HEAD = hdr_str where ML_SESSION = sid and ML_ID = idn;
+  update DB.DBA.RDF_CARTRIDGES_LOG set ML_RESPONSE = resp, ML_RESPONSE_HEAD = hdr_str where ML_SESSION = sid and ML_ID = idn;
 }
 ;
 
@@ -630,7 +632,7 @@ create procedure RM_LOG_RESULT (in res any)
   idn := connection_get ('__rdf_sponge_idn');
   if (sid is null or idn is null)
     return;
-  update DB.DBA.RDF_META_CARTRIDGES_LOG set ML_RESULT = res where ML_SESSION = sid and ML_ID = idn;
+  update DB.DBA.RDF_CARTRIDGES_LOG set ML_RESULT = res where ML_SESSION = sid and ML_ID = idn;
 }
 ;
 
@@ -641,7 +643,7 @@ create procedure RM_LOG_CLEAR ()
   sid := connection_get ('__rdf_sponge_sid');
   if (sid is null)
     return;
-  delete from DB.DBA.RDF_META_CARTRIDGES_LOG where ML_SESSION = sid;
+  delete from DB.DBA.RDF_CARTRIDGES_LOG where ML_SESSION = sid;
 }
 ;
 
@@ -961,6 +963,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (inout triple_dict any, in strg varch
       --string_to_file ('rdf.xml', strg, -2);
       DB.DBA.RDF_RDFXML_LOAD_DICT (strg, base, graph, triple_dict);
       DB.DBA.RDF_TTL_LOAD_DICT (ses, base, graph, triple_dict);
+      DB.DBA.RM_LOG_RESULT (strg);
       return;
     }
 
@@ -984,6 +987,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (inout triple_dict any, in strg varch
       DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
     }
   -- INFO: may be this should be done when primaryTopic is set
+  DB.DBA.RM_LOG_RESULT (strg);
   DB.DBA.TTLP (ses, base, graph);
 }
 ;
@@ -1402,7 +1406,7 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
 {
   declare cname any;
   declare ret any;
-  declare url_sch varchar;
+  declare url_sch, local_prx varchar;
   declare ua any;
 
   cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
@@ -1420,12 +1424,17 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
   --if (http_mime_type (uri) like 'image/%')
   --  return uri;
 
+  local_prx := sprintf ('%s://%s/about/id/entity/%%', RDF_SPONGE_IRI_SCH (), cname);
+
+  if (uri like local_prx)
+    return uri; 
+
   ua := rfc1808_parse_uri (uri);
   url_sch := ua[0];
   ua [0] := '';
   uri := vspx_uri_compose (ua);
   uri := ltrim (uri, '/');
-
+  
   ret := sprintf ('%s://%s/about/id/entity/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
   return ret;
 }
@@ -6397,7 +6406,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 
 create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
-  declare xd, xd2, xt, api_urls, tmp any;
+  declare xd, xd2, xt, api_urls, tmp, hdr any;
   declare url, base_url, people_api_url, activity_api_url any;
   declare uid, post_id, api_mode varchar;
   declare max_activity_pages, items_per_activity_page integer;
@@ -6573,7 +6582,10 @@ got_activity_id:
 
   url := sprintf('http://api.socialstatistics.com/1/users/show/%s.json', uid);
   tmp := '';
-  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+      DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());        
+      -- tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+      tmp := http_client_ext (url=>url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+      DB.DBA.RM_LOG_RESPONSE (tmp, hdr);
   if (length (tmp) = 0)
     return 0;
   tmp := json_parse (tmp);
@@ -11831,6 +11843,7 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
   declare dict any;
   declare inx, enable_meta any;
   enable_meta := 1;
+  RM_LOG_CLEAR ();
   -- remove bellow to disable get:cartridge processing
   for (inx := 0; inx < length (options); inx := inx + 2)
     {
@@ -11944,7 +11957,6 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
   dummy := null;
   f_delete_orig_triples := 0;
   mc_api := 0;
-  RM_LOG_CLEAR ();
   RM_GRAPH_PT_CK (graph_iri, dest);
   dict := dict_new ((length (ret_body) / 100) + 1);
   graph := coalesce (dest, graph_iri);
