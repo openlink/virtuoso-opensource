@@ -789,7 +789,7 @@ create procedure virt_proxy_init_about ()
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/turtle/\x241', 'text/turtle', 0.80);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/json/\x241',    'application/json', 0.70);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/jrdf/\x241',    'application/rdf+json', 0.70);
-  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/\x241', 'text/html', 0.80);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/\x241', 'text/html', 1.0);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/text/\x241',    'text/plain', 0.20);
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1,
@@ -823,7 +823,7 @@ create procedure virt_proxy_init_about ()
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/turtle/\x241', 'text/turtle', 0.80);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/jrdf/\x241',    'application/rdf+json', 0.70);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/json/\x241',    'application/json', 0.70);
-  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/entity/\x241', 'text/html', 0.80);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/entity/\x241', 'text/html', 1.0);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/atom/\x241',    'application/atom+xml', 0.60);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/jsod/\x241',    'application/odata+json', 0.60);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/text/\x241',    'text/plain', 0.20);
