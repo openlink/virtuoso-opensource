@@ -341,6 +341,33 @@ create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
 }
 ;
 
+create procedure rdfdesc_uri_local (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch, nsPrefix, ret varchar;
+
+  delim := -1;
+  uriSearch := uri;
+  nsPrefix := null;
+  ret := uri;  
+  delim := coalesce (strrchr (uriSearch, '/'), 0);
+  delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+  delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+  if (delim > 0)
+    uriSearch := subseq (uriSearch, 0, delim);
+  if (delim > 0)
+    {
+      declare rhs varchar;
+      rhs := subseq(uri, length (uriSearch) + 1, null);
+      if (not length (rhs))
+	ret := uri;
+      else
+	ret := rhs;
+    }
+  return rdfdesc_trunc_uri (ret);
+}
+;
+
 --! used to return local part of an iri
 create procedure rdfdesc_uri_local_part (in uri varchar)
 {
@@ -619,6 +646,8 @@ create procedure rdfdesc_prop_label (in uri any)
 	and P = __i2idn ('http://www.w3.org/2000/01/rdf-schema#label') OPTION (QUIETCAST));
   if (length (ll) = 0)
     ll := rdfdesc_uri_curie (uri);
+  if (isstring (ll) and ll like 'http://%')
+    ll := rdfdesc_uri_local (uri);  
   if (isstring (ll) and ll like 'opl%:isDescribedUsing')
     ll := 'Described Using Terms From';
   return ll;

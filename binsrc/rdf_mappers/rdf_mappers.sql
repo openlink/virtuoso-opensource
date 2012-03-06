@@ -1447,6 +1447,19 @@ create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 }
 ;
 
+EXEC_STMT ('create table DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI IRI_ID_8, RPIM_SOURCE_IRI IRI_ID_8, primary key (RPIM_IRI, RPIM_SOURCE_IRI))', 0);
+
+create procedure RDF_SPONGE_PROXY_IRI_MAP (in uri_identifier varchar, in graph varchar)
+{
+  declare cname, id, ret varchar;
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+  id := bin2hex (cast (decode_base64 (xenc_sha1_digest (uri_identifier)) as varbinary));
+  ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  insert soft DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI, RPIM_SOURCE_IRI) values (iri_to_id (ret), iri_to_id (graph));
+  return ret;
+}
+;
+
 --
 -- # this one is used to make proxy IRI for primary topic (entity)
 --
@@ -1975,7 +1988,7 @@ create procedure DB.DBA.XSLT_SANEURI (in val varchar, in seed integer default -1
 }
 ;
 
-create function DB.DBA.dbpedia_url_label(in url varchar)
+create function DB.DBA.DBPEDIA_URL_LABEL(in url varchar)
 {
   -- make label from dbpedia URL
   declare ret varchar;
@@ -2028,7 +2041,7 @@ grant execute on DB.DBA.OPENGRAPH_OBJ_CONNECTIONS to public;
 grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
 grant execute on DB.DBA.XSLT_SANEURI to public;
 grant execute on DB.DBA.DECODEXML to public;
-grant execute on DB.DBA.dbpedia_url_label to public;
+grant execute on DB.DBA.DBPEDIA_URL_LABEL to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -2068,7 +2081,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:crunchbase_moneystring2
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_SANEURI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.dbpedia_url_label');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.DBPEDIA_URL_LABEL');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
