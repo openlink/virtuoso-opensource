@@ -122,7 +122,6 @@ typedef struct blob_layout_s blob_layout_t;
 
 void bh_free (blob_handle_t * bh);
 
-caddr_t  box_iri_id (int64 n);
 void iri_id_write (iri_id_t *iid, dk_session_t * ses);
 
 void blobio_init (void);

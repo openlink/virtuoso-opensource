@@ -638,15 +638,6 @@ xx_encrypt_passwd (char *thing, int thing_len, char *user_name)
 }
 
 
-caddr_t
-box_iri_id (int64 n)
-{
-  iri_id_t * box = (iri_id_t*) dk_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
-  *box = n;
-  return (caddr_t) box;
-}
-
-
 void
 iri_id_write (iri_id_t * iid, dk_session_t * ses)
 {
