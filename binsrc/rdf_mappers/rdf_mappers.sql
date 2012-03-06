@@ -2015,6 +2015,10 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 			http ('<Document>\n', ses);
 			http_value (tag, 'about', ses);
 		}
+		else if (regexp_parse ('([0-9\.]+)-([0-9\.]+)-([0-9\.]+)', tag, 0))
+		{
+			 http (sprintf ('<date><when>%U</when>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
+		}
 		else
 		{
             http (sprintf ('<%U>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
@@ -2024,10 +2028,16 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
 		}
 		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
+		{
 			http ('</Document>\n',	ses);
+		}	
+		else if (regexp_parse ('([0-9\.]+)-([0-9\.]+)-([0-9\.]+)', tag, 0))
+		{
+			 http ('</date>\n', ses);
+		}
 		else
                 {
-			http (sprintf ('</%U>\n', replace(replace(tag, ' ', '_'), '@', '')),	ses);
+			http (sprintf ('</%U>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
                 }
 	}
 	else if (length (tree) > 0)
@@ -6037,7 +6047,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PROFILE_REST(in url varchar, in action v
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xd2, xt, api_urls, tmp any;
   declare url, people_api_url, activity_api_url any;
@@ -6122,7 +6132,6 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
   people_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s?key=%s', uid, _key);
   activity_api_url := sprintf ('https://www.googleapis.com/plus/v1/people/%s/activities/public?key=%s&maxResults=100', uid, _key);
   api_urls := vector (vector (people_api_url, 'people'), vector (activity_api_url, 'activity'));
-
   first_pass := 1;
   foreach (any pair in api_urls) do
   {
@@ -6159,6 +6168,17 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
       }
     }
   }
+
+  url := sprintf('http://api.socialstatistics.com/1/users/show/%s.json', uid);
+  tmp := '';
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  if (length (tmp) = 0)
+    return 0;
+  tmp := json_parse (tmp);
+  xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/socialstatistics2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+  xd2 := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd2, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;
@@ -11002,11 +11022,8 @@ searchForCompany:
 
   url := sprintf ('https://www.jigsaw.com/rest/searchCompany.xml?token=%s&name=%s', api_key, company_name);
   ret_body := http_client_ext (url, headers=>hdr, timeout=>30, proxy=>get_keyword_ucase ('get:proxy', opts));
-
-
   xd := xtree_doc (ret_body);
-  total_hits := atoi (cast (xpath_eval ('//totalHits', xd) as varchar));
-
+  total_hits := atoi(cast(xpath_eval ('//totalHits', xd) as varchar));
   if (total_hits > 1)
   {
     -- Shouldn't happen, but see above.
@@ -11027,9 +11044,9 @@ searchForCompany:
       -- Retry without the trailing "_company"
       retries := 1;
       company_name := jgsw_name;
-      vec := regexp_parse('.*(_company)$', company_name, 0);
+      vec := regexp_parse('.*(_company)\$', company_name, 0);
       if (vec is not null)
-        company_name := subseq (company_name, 0, vec[2]);
+        company_name := subseq(company_name, 0, vec[2]);
       goto searchForCompany;
     }
     else
@@ -11037,8 +11054,7 @@ searchForCompany:
   }
 
 load_rdf:
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/jigsaw2rdf.xsl', xd, 
-          vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'jgsw_id', jgsw_id));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/jigsaw2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'jgsw_id', jgsw_id));
   xd := serialize_to_UTF8_xml (xt);
   RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
