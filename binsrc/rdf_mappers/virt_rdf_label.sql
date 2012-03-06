@@ -471,7 +471,7 @@ oplli:Company rdfs:subClassOf dc:Agent .
 oplli:InstantMessagingAccount rdfs:subClassOf dc:Agent .
 oplli:TwitterAccount rdfs:subClassOf dc:Agent .
 
-oplli:oplli:interests rdfs:subPropertyOf dc:description .
+oplli:interests rdfs:subPropertyOf dc:description .
 oplli:proposal_comments rdfs:subPropertyOf dc:description .
 oplli:associations rdfs:subPropertyOf dc:description .
 oplli:certification rdfs:subPropertyOf dc:description .
@@ -502,8 +502,8 @@ oplli:publication_title owl:equivalentProperty dc:title .
 oplli:date_of_birth owl:equivalentProperty dc:date .
 oplli:certification_start_date owl:equivalentProperty dc:date .
 oplli:certification_end_date owl:equivalentProperty dc:date .
-oplli:oplli:education_start_date owl:equivalentProperty dc:date .
-oplli:oplli:education_end_date owl:equivalentProperty dc:date .
+oplli:education_start_date owl:equivalentProperty dc:date .
+oplli:education_end_date owl:equivalentProperty dc:date .
 oplli:patent_date owl:equivalentProperty dc:date .
 oplli:end_date owl:equivalentProperty dc:date .
 oplli:start_date owl:equivalentProperty dc:date .
@@ -515,7 +515,7 @@ oplli:Company rdfs:subClassOf dcterms:Agent .
 oplli:InstantMessagingAccount rdfs:subClassOf dcterms:Agent .
 oplli:TwitterAccount rdfs:subClassOf dcterms:Agent .
 
-oplli:oplli:interests rdfs:subPropertyOf dcterms:description .
+oplli:interests rdfs:subPropertyOf dcterms:description .
 oplli:proposal_comments rdfs:subPropertyOf dcterms:description .
 oplli:associations rdfs:subPropertyOf dcterms:description .
 oplli:certification rdfs:subPropertyOf dcterms:description .
@@ -546,8 +546,8 @@ oplli:publication_title owl:equivalentProperty dcterms:title .
 oplli:date_of_birth owl:equivalentProperty dcterms:date .
 oplli:certification_start_date owl:equivalentProperty dcterms:date .
 oplli:certification_end_date owl:equivalentProperty dcterms:date .
-oplli:oplli:education_start_date owl:equivalentProperty dcterms:date .
-oplli:oplli:education_end_date owl:equivalentProperty dcterms:date .
+oplli:education_start_date owl:equivalentProperty dcterms:date .
+oplli:education_end_date owl:equivalentProperty dcterms:date .
 oplli:patent_date owl:equivalentProperty dcterms:date .
 oplli:end_date owl:equivalentProperty dcterms:date .
 oplli:start_date owl:equivalentProperty dcterms:date .
@@ -561,7 +561,7 @@ oplli:Publication rdfs:subClassOf bibo:Document .
 oplli:publication_url owl:equivalentProperty bibo:uri .
 oplli:education_notes owl:equivalentProperty bibo:annotates .
 oplli:patent_number owl:equivalentProperty bibo:number .
-oplli:oplli:skill_years_of_experience owl:equivalentProperty bibo:number .
+oplli:skill_years_of_experience owl:equivalentProperty bibo:number .
 oplli:patent_status owl:equivalentProperty bibo:status .
 oplli:author_name owl:equivalentProperty bibo:owner.
 oplli:author_name owl:equivalentProperty bibo:producer .
