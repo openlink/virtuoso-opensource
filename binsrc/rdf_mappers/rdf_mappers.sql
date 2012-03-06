@@ -11418,6 +11418,8 @@ create procedure DB.DBA.RM_MAKE_DOC_LINKS (in graph_iri varchar, in new_origin_u
   mime := get_keyword ('content-type', opts);
   if (mime like '%/rdf+%' or mime = 'text/n3')
     return vector ();
+  if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
+    return vector ();
 
   add_doc := 1;
   subj1 := iri_to_id (DB.DBA.RDF_SPONGE_PROXY_IRI (coalesce (dest, graph_iri)));
