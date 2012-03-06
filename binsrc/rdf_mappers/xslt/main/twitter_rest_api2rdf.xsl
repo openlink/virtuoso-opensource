@@ -201,6 +201,24 @@
             </xsl:choose>
 		</foaf:Person>
 
+		<xsl:if test="source">
+		  <rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id, '#via'))}">
+		    <rdf:type rdf:resource="&twitter;Application" />
+
+		    <xsl:choose>
+  		      <xsl:when test="contains(source, 'href=')">
+  		        <xsl:variable name="sourceXML" select="vi:decodeXML(source)" />
+		        <rdfs:label><xsl:value-of select="$sourceXML/a" /></rdfs:label>
+		        <foaf:homepage rdf:resource="{$sourceXML/a/@href}" />
+		        <twitter:appLink><xsl:value-of select="concat($sourceXML/a/@href,'#this')" /></twitter:appLink>
+		      </xsl:when>
+		      <xsl:otherwise>
+		        <rdfs:label><xsl:value-of select="normalize-space(source/text())" /></rdfs:label>
+		      </xsl:otherwise>
+		    </xsl:choose>
+		    </rdf:Description>
+		</xsl:if>
+
 		<xsl:if test="in_reply_to_status_id != ''">
 			<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', in_reply_to_screen_name, '/status/', in_reply_to_status_id))}">
 				<sioc:has_reply rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
@@ -215,6 +233,8 @@
 		<dcterms:created rdf:datatype="&xsd;dateTime">
 			<xsl:value-of select="vi:string2date(created_at)"/>
 		</dcterms:created>
+		
+		<twitter:via rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id, '#via'))}"/>
 		<dc:title>
 			<xsl:call-template name="add-href">
 				<xsl:with-param name="string" select="text"/>
