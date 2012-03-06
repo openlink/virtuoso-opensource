@@ -1862,7 +1862,7 @@
 		    </oplcert:Certificate>
 		</xsl:if>
 		<!-- x509 certificate -->
-		<xsl:if test="concat (' ', message) like ' di:%'">
+		<xsl:if test="message like '%di:%?hashtag=webid%'">
 		    <xsl:variable name="di"><xsl:copy-of select="vi:di-split (message)"/></xsl:variable>
 		    <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
 		    <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
