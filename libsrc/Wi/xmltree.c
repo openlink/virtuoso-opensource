@@ -10039,8 +10039,8 @@ caddr_t bif_xtree_sum64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return xte_sum64 (src->xte_current);
 }
 
-/*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
-ccaddr_t
+/*! \returns NULL for string, (caddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
+caddr_t
 xsd_type_of_box (caddr_t arg)
 {
   dtp_t dtp = DV_TYPE_OF (arg);
@@ -10061,17 +10061,17 @@ again:
     case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
     case DV_SINGLE_FLOAT: return uname_xmlschema_ns_uri_hash_float;
     case DV_DB_NULL:
-      return (ccaddr_t)((ptrlong)2);
+      return (caddr_t)((ptrlong)2);
     case DV_RDF:
       {
         rdf_box_t *rb = (rdf_box_t *)arg;
         if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
           {
-            ccaddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
+            caddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
             if (NULL == res)
-              return (ccaddr_t)((ptrlong)2);
+              return (caddr_t)((ptrlong)2);
             box_flags (res) |= BF_IRI;
-            return box_copy (res);
+            return res;
           }
         dtp = ((rb->rb_is_outlined) ? ((rdf_bigbox_t *)rb)->rbb_box_dtp : DV_TYPE_OF (rb->rb_box));
         goto again; /* see above */
@@ -10079,7 +10079,7 @@ again:
     case DV_XML_ENTITY:
       return uname_rdf_ns_uri_XMLLiteral;
     default:
-      return (ccaddr_t)((ptrlong)1);
+      return (caddr_t)((ptrlong)1);
     }
 }
 
@@ -10088,7 +10088,7 @@ caddr_t
 bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg = bif_arg (qst, args, 0, "__xsd_type");
-  caddr_t res = (caddr_t) xsd_type_of_box (arg);
+  caddr_t res = xsd_type_of_box (arg);
   if (IS_BOX_POINTER (res))
     return res;
   switch ((ptrlong)(res))

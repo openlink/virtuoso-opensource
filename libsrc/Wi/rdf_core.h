@@ -44,7 +44,7 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
 #define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
-extern ccaddr_t xsd_type_of_box (caddr_t arg);
+extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
 #define BNODE_IID_TO_LABEL_BUFFER(buf,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
@@ -81,10 +81,10 @@ typedef struct triple_feed_s {
   query_instance_t *tf_qi;
   id_hash_t *tf_blank_node_ids;
   caddr_t *tf_app_env;		/*!< Environment for use by callbacks, owned by caller. It's "caddr_t *" instead of plain "caddr_t" because it's vector in most cases. */
-  const char *tf_input_name;	/*!< URI or file name or other name of source, can be NULL, owned by caller */
-  caddr_t tf_default_graph_uri;	/*!< Default graph uri, owned by caller */
-  caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, owned by caller if equal to tf_default_graph_uri, local otherwise */
-  caddr_t tf_base_uri;		/*!< Base URI to resolve relative URIs, owned by caller  */
+  caddr_t tf_boxed_input_name;	/*!< URI or file name or other name of source, can be NULL, local */
+  caddr_t tf_default_graph_uri;	/*!< Default graph uri, local */
+  caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, can be equal to tf_default_graph_uri, local */
+  caddr_t tf_base_uri;		/*!< Base URI to resolve relative URIs, local */
   caddr_t tf_default_graph_iid;	/*!< Default graph iri ID, local */
   caddr_t tf_current_graph_iid;	/*!< Current graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
@@ -248,11 +248,12 @@ extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_ch
 
 extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
 extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
-extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, const char *label);
+extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
 
 #define RDFXML_COMPLETE		0
 #define RDFXML_OMIT_TOP_RDF	1
 #define RDFXML_IN_ATTRIBUTES	2
+#define RDFXML_IN_MDATA		4
 
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,

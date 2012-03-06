@@ -2073,6 +2073,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           {
             caddr_t iduqname = sqlp_box_id_upcase (qname+4);
             bif_type_t ** bt = (bif_type_t **) id_hash_get (name_to_bif_type, (char *) &iduqname);
+            dk_free_box (iduqname);
             if (NULL == bt)
               return 0;
             return sparp_restr_bits_of_dtp (bt[0]->bt_dtp) & ~SPART_VARR_NOT_NULL;
@@ -2384,8 +2385,10 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
     }
   if ((NULL != type) && (NULL == lang))
     {
-      ccaddr_t dflt_xsd_type_of_box = xsd_type_of_box (value);
-      if ((type == dflt_xsd_type_of_box) || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box)))
+      caddr_t dflt_xsd_type_of_box = xsd_type_of_box (value);
+      int box_is_plain_num = ((type == dflt_xsd_type_of_box) || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box)));
+      dk_free_box (dflt_xsd_type_of_box);
+      if (box_is_plain_num)
         {
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;

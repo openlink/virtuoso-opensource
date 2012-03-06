@@ -1070,7 +1070,10 @@ extern name_id_cache_t * iri_prefix_cache;
 extern name_id_cache_t * rdf_lang_cache;
 extern name_id_cache_t * rdf_type_cache;
 boxint nic_name_id (name_id_cache_t * nic, char * name);
-caddr_t  nic_id_name (name_id_cache_t * nic, boxint id);
+caddr_t DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id);
+#ifdef MALLOC_DEBUG
+#define nic_id_name(nic,id) DBG_NAME(nic_id_name) (__FILE__, __LINE__, (nic), (id))
+#endif
 void nic_set (name_id_cache_t * nic, caddr_t name, boxint id);
 boxint  lt_nic_name_id (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name);
 caddr_t  lt_nic_id_name (lock_trx_t * lt, name_id_cache_t * nic, boxint id);

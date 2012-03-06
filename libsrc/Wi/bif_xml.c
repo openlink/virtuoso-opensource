@@ -630,8 +630,6 @@ xp_free (xparse_ctx_t * xp)
 {
   dk_hash_iterator_t hit;
   caddr_t it, k;
-  xp_rdfxml_locals_t *xrl;
-  xp_rdfa_locals_t *xrdfal;
   xp_node_t * xn;
   dk_free_box (xp->xp_id);
   dk_free_box (xp->xp_error_msg);
@@ -709,33 +707,8 @@ xp_free (xparse_ctx_t * xp)
   if ((NULL != xp->xp_doc_cache) && (&(xp->xp_doc_cache) == xp->xp_doc_cache->xdc_owner))
     xml_doc_cache_free (xp->xp_doc_cache);
   dk_free_box (xp->xp_top_excl_res_prefx);
-  while (NULL != xp->xp_rdfxml_locals)
-    xp_pop_rdf_locals (xp);
-  while (NULL != xp->xp_rdfa_locals)
-    {
-#ifndef NDEBUG
-      dk_free_tree (xp->xp_rdfa_locals->xrdfal_ict_buffer);
-      xp->xp_rdfa_locals->xrdfal_ict_buffer = NULL;
-#endif
-      xp_pop_rdfa_locals (xp);
-    }
-  xrl = xp->xp_rdfxml_free_list;
-  while (NULL != xrl)
-    {
-      xp_rdfxml_locals_t *next_xrl = xrl->xrl_parent;
-      dk_free (xrl, sizeof (xp_rdfxml_locals_t));
-      xrl = next_xrl;
-    }
-  xrdfal = xp->xp_rdfa_free_list;
-  while (NULL != xrdfal)
-    {
-      xp_rdfa_locals_t *next_xrdfal = xrdfal->xrdfal_parent;
-      dk_free_tree (xrdfal->xrdfal_ict_buffer);
-      dk_free (xrdfal, sizeof (xp_rdfa_locals_t));
-      xrdfal = next_xrdfal;
-    }
-  dk_free_tree (xp->xp_tmp);
-  /* Note that xp_xf is intentionally left untouched. */
+  if (NULL != xp->xp_tf)
+    xp_free_rdf_parser_fields (xp);
 }
 
 

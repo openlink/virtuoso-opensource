@@ -2806,12 +2806,12 @@ create procedure DB.DBA.RDF_VALIDATE_RDFXML (in strg varchar, in base varchar, i
   declare app_env any;
   declare old_log_mode int;
   if (graph = '')
-    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML()');
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_VALIDATE_RDFXML()');
   else if (graph is null)
     {
       graph := base;
       if ((graph is null) or (graph = ''))
-        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() requires a valid IRI as a base argument if graph is not specified');
+        signal ('22023', 'DB.DBA.RDF_VALIDATE_RDFXML() requires a valid IRI as a base argument if graph is not specified');
     }
   rdf_load_rdfxml (strg, 0, graph, vector ( '', '', '', '', '', '', '' ), app_env, base );
   return graph;
@@ -3009,18 +3009,18 @@ create function DB.DBA.RDF_TTL2SQLHASH (in strg varchar, in base varchar, in gra
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar,
-	in log_enable int := null, in transactional int := 0)
+create procedure DB.DBA.RDF_LOAD_RDFXML_IMPL (inout strg varchar, in base varchar, in graph varchar,
+  in parse_mode integer, in log_enable int := null, in transactional int := 0)
 {
   declare app_env any;
   declare old_log_mode int;
   if (graph = '')
-    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML()');
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML() and the like');
   else if (graph is null)
     {
       graph := base;
       if ((graph is null) or (graph = ''))
-        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() requires a valid IRI as a base argument if graph is not specified');
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() and similar functions require a valid IRI as a base argument if graph is not specified');
     }
   old_log_mode := null;
   if (transactional = 0)
@@ -3033,13 +3033,13 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
       old_log_mode := log_enable (log_enable, 1);
     }
   if (1 <> sys_stat ('cl_run_local_only'))
-    return rdf_load_rdfxml_cl (strg, base, graph);
+    return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph, parse_mode);
   app_env := vector (
     null,
     null,
     __max (length (strg) / 100, 100000),
     null );
-  rdf_load_rdfxml (strg, 0,
+  rdf_load_rdfxml (strg, parse_mode,
     graph,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH',
@@ -3056,6 +3056,14 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
   return graph;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar := null,
+  in xml_parse_mode integer := 0, in log_enable int := null, in transactional int := 0 )
+{
+  return DB.DBA.RDF_LOAD_RDFXML_IMPL (strg, base, graph, bit_shift (xml_parse_mode, 8), log_enable, transactional);
+}
+;
+
 
 create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in graph varchar := null)
 {
@@ -3186,39 +3194,10 @@ vocab_is_set: ;
 ;
 
 
-create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null, in xml_parse_mode integer := 0)
+create procedure DB.DBA.RDF_LOAD_RDFA (in strg varchar, in base varchar, in graph varchar := null,
+  in xml_parse_mode integer := 0, in log_enable int := null, in transactional int := 0 )
 {
-  declare app_env any;
-  if (graph = '')
-    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFA()');
-  else if (graph is null)
-    {
-      graph := base;
-      if ((graph is null) or (graph = ''))
-        signal ('22023', 'DB.DBA.RDF_LOAD_RDFA() requires a valid IRI as a base argument if graph is not specified');
-    }
-  if (1 <> sys_stat ('cl_run_local_only'))
-    return DB.DBA.RDF_LOAD_RDFA_CL (strg, base, graph, xml_parse_mode);
-  app_env := vector (
-    null,
-    null,
-    __max (length (strg) / 100, 100000),
-    null );
-  rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)),
-    graph,
-    vector (
-      'DB.DBA.TTLP_EV_NEW_GRAPH',
-      'DB.DBA.TTLP_EV_NEW_BLANK',
-      'DB.DBA.TTLP_EV_GET_IID',
-      'DB.DBA.TTLP_EV_TRIPLE',
-      'DB.DBA.TTLP_EV_TRIPLE_L',
-      'DB.DBA.TTLP_EV_COMMIT',
-      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
-    app_env,
-    base );
-  if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
-    repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
-  return graph;
+  return DB.DBA.RDF_LOAD_RDFXML_IMPL (strg, base, graph, bit_or (2, bit_shift (xml_parse_mode, 8)), log_enable, transactional);
 }
 ;
 
@@ -3278,6 +3257,13 @@ create procedure DB.DBA.RDF_RDFA_TO_DICT (in strg varchar, in base varchar, in g
     res,
     base );
   return res;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_XHTML_MICRODATA (in strg varchar, in base varchar, in graph varchar := null,
+  in xml_parse_mode integer := 1, in log_enable int := null, in transactional int := 0 )
+{
+  return DB.DBA.RDF_LOAD_RDFXML_IMPL (strg, base, graph, bit_or (4, bit_shift (xml_parse_mode, 8)), log_enable, transactional);
 }
 ;
 
@@ -12510,7 +12496,7 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
 	log_mode := log_mode + 2;
     }
   if (1 <> sys_stat ('cl_run_local_only'))
-    return rdf_load_rdfxml_cl (strg, base, graph);
+    return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph, 0);
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new ();
   else
@@ -13923,6 +13909,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_RDFA11_FETCH_PROFILES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFA to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_LOAD_XHTML_MICRODATA to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LONG_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TTL to SPARQL_SELECT',

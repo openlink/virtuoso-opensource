@@ -230,6 +230,7 @@ caddr_t os_get_uname_by_uid (long uid);
 caddr_t os_get_gname_by_gid (long gid);
 
 extern caddr_t file_native_name (caddr_t server_encoded_fname);
+extern caddr_t file_native_name_from_iri_path_nchars (const char *iri_path, size_t iri_path_len);
 caddr_t get_ssl_error_text (char *buf, int len);
 
 caddr_t regexp_match_01 (const char *pattern, const char *str, int c_opts);

@@ -38,6 +38,7 @@
 #include "turtle_p.h"
 #include "nquad_p.h"
 #include "security.h"
+#include "sqlbif.h"
 #if (__NQUAD_NONPUNCT_END != __TTL_NONPUNCT_END)
   Sources of parsers are out of sync: mismatch between token declarations in nquad_p.y and turtle_p.y
 #endif
@@ -605,33 +606,15 @@ rdf_load_turtle (
 
   if (arg1_is_filename)
     {
-#ifdef WIN32
-      char fname[_MAX_PATH], *fname_ptr;
-      strncpy (fname, text_or_filename, _MAX_PATH);
-      fname[_MAX_PATH - 1] = '\0';
-      for (fname_ptr = fname; fname_ptr[0]; fname_ptr++)
-        {
-          switch (fname_ptr[0])
-            {
-            case '|':
-              fname_ptr[0] = ':';
-              break;
-            case '/':
-              fname_ptr[0] = '\\';
-              break;
-            }
-        }
-#else
-      char *fname = ((char *) text_or_filename);
-#endif
       sec_check_dba (qi, "<read XML from URL of type file://...>");
-      srcfile = fopen (fname, "rb");
+      tf->tf_boxed_input_name = file_native_name_from_iri_path_nchars (text_or_filename, strlen (text_or_filename));
+      file_path_assert (tf->tf_boxed_input_name, NULL, 1);
+      srcfile = fopen (tf->tf_boxed_input_name, "rb");
       if (NULL == srcfile)
         {
           ttlp_free (ttlp);
-	  sqlr_new_error ("42000", "SR598", "TURTLE parser has failed to open file '%s' for reading", fname);
+          sqlr_new_error ("42000", "SR598", "TURTLE parser has failed to open file '%s' for reading", tf->tf_boxed_input_name);
         }
-      tf->tf_input_name = fname;
       ttlp->ttlp_iter = file_read;
       ttlp->ttlp_iter_data = srcfile;
       goto iter_is_set;

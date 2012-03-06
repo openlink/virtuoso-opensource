@@ -2252,9 +2252,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
         return;
       dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
       if (dt_ret->uri) /* if by some reason rb_type is wrong */
-	{
-	  box_flags (dt_ret->uri) |= BF_IRI;
-	}
+        box_flags (dt_ret->uri) |= BF_IRI;
     }
   else
     {
@@ -2721,6 +2719,7 @@ http_rdfxml_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_i
           dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
           if ((uname_rdf_ns_uri_XMLLiteral == dt_ret->uri) && (DV_XML_ENTITY == DV_TYPE_OF (obj)))
             {
+              dk_free_box (dt_ret->uri);
               dt_ret->uri = NULL;
               return;
             }
@@ -2731,14 +2730,17 @@ http_rdfxml_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_i
       obj = rb->rb_box;
     }
   if ((DV_STRING == DV_TYPE_OF (obj)) || DV_XML_ENTITY == DV_TYPE_OF (obj))
-    dt_ret->uri = NULL;
+    {
+      dk_free_box (dt_ret->uri);
+      dt_ret->uri = NULL;
+    }
   else
     {
-      ccaddr_t dt_iri = xsd_type_of_box (obj);
-      if (DV_UNAME != DV_TYPE_OF (dt_iri))
+      caddr_t dt_iri = xsd_type_of_box (obj);
+      if (!IS_BOX_POINTER (dt_iri))
         dt_ret->uri = NULL;
       else
-        dt_ret->uri = box_copy (dt_iri);
+        dt_ret->uri = dt_iri;
     }
 }
 
@@ -3018,7 +3020,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       break;
     default:
       {
-        ccaddr_t iri = xsd_type_of_box (obj_box_value);
+        caddr_t iri = xsd_type_of_box (obj_box_value);
         caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
@@ -3029,16 +3031,17 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
             if (!IS_BOX_POINTER (iri))
               sqlr_new_error ("22023", "SR624", "Unsupported datatype %d in NT serialization of an object", obj_dtp);
             SES_PRINT (ses, "^^");
-	    if (esc_mode == DKS_ESC_PTEXT)
-	      SES_PRINT (ses, "&lt;");
-	    else
-	      session_buffered_write_char ('<', ses);
+            if (esc_mode == DKS_ESC_PTEXT)
+              SES_PRINT (ses, "&lt;");
+            else
+              session_buffered_write_char ('<', ses);
             dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
-	    if (esc_mode == DKS_ESC_PTEXT)
-	      SES_PRINT (ses, "&gt;");
-	    else
-            session_buffered_write_char ('>', ses);
+            if (esc_mode == DKS_ESC_PTEXT)
+              SES_PRINT (ses, "&gt;");
+            else
+              session_buffered_write_char ('>', ses);
           }
+        dk_free_box (iri);
         break;
       }
     }
@@ -3278,8 +3281,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
-  ccaddr_t type_uri = NULL;
-  caddr_t to_free = NULL;
+  caddr_t type_uri = NULL;
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
@@ -3289,7 +3291,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
-        type_uri = to_free = rdf_type_twobyte_to_iri (rb->rb_type);
+        type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
     }
   else
     {
@@ -3331,7 +3333,8 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
     case DV_XML_ENTITY:
       {
         http_json_write_xe (ses, qi, (xml_entity_t *)(obj_box_value));
-        type_uri = uname_rdf_ns_uri_XMLLiteral;
+        if (NULL == type_uri)
+          type_uri = uname_rdf_ns_uri_XMLLiteral;
         break;
       }
     case DV_DB_NULL:
@@ -3374,9 +3377,9 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       session_buffered_write (ses, " , \"datatype\" : \"", 17);
       dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
+      dk_free_box (type_uri);
     }
   session_buffered_write (ses, " }", 2);
-  dk_free_box (to_free);
 }
 
 caddr_t
@@ -3468,7 +3471,7 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
-  ccaddr_t type_uri = NULL;
+  caddr_t type_uri = NULL;
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
@@ -3501,6 +3504,7 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
         session_buffered_write (ses, "true", 4);
       else
         session_buffered_write (ses, "false", 5);
+      dk_free_box (type_uri);
       return;
     }
                              /* 0          1     */
@@ -3537,7 +3541,8 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     case DV_XML_ENTITY:
       {
         http_json_write_xe (ses, qi, (xml_entity_t *)(obj_box_value));
-        type_uri = uname_rdf_ns_uri_XMLLiteral;
+        if (NULL == type_uri)
+          type_uri = uname_rdf_ns_uri_XMLLiteral;
         break;
       }
     case DV_DB_NULL:
@@ -3583,6 +3588,7 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       session_buffered_write (ses, " , \"@type\" : \"", 14);
       dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
+      dk_free_box (type_uri);
     }
   session_buffered_write (ses, " }", 2);
 }
@@ -4013,6 +4019,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                     SES_PRINT (ses, "<literal datatype=\"");
                     dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
                     SES_PRINT (ses, "\">");
+                    dk_free_box (iri);
                     goto literal_elt_printed; /* see below */
                   }
                 else
@@ -4026,6 +4033,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                     SES_PRINT (ses, "<literal xml:lang=\"");
                     dks_esc_write (ses, l, box_length_inline (l)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
                     SES_PRINT (ses, "\">");
+                    dk_free_box (l);
                     goto literal_elt_printed; /* see below */
                   }
                 else
@@ -4050,12 +4058,13 @@ literal_elt_printed:
           }
         default:
           {
-            ccaddr_t iri = xsd_type_of_box (val);
+            caddr_t iri = xsd_type_of_box (val);
             if (IS_BOX_POINTER (iri))
               {
                 SES_PRINT (ses, "<literal datatype=\"");
                 dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_SQATTR);
                 SES_PRINT (ses, "\">");
+                dk_free_box (iri);
               }
             else
               SES_PRINT (ses, "<literal>");
@@ -4691,7 +4700,7 @@ rdf_repl_feed_batch_of_rquads (query_instance_t *qi, caddr_t **rquads_vector, cc
   tf->tf_current_graph_uri = NULL;
   tf->tf_app_env = app_env;
   tf->tf_creator = "__rdf_repl_action";
-  tf->tf_input_name = NEW_DB_NULL;
+  tf->tf_boxed_input_name = NEW_DB_NULL;
   tf->tf_line_no_ptr = &fake_lineno;
   tf_set_cbk_names (tf, cbk_names);
   DO_BOX_FAST (caddr_t *, rquad, rquad_ctr, rquads_vector)
@@ -4758,7 +4767,6 @@ rdf_repl_feed_batch_of_rquads (query_instance_t *qi, caddr_t **rquads_vector, cc
   END_DO_BOX_FAST;
   tf_commit (tf);
   tf->tf_current_graph_uri = NULL; /* To not free it twice (there's no box_copy_tree from rquad[1] to it, just copying the pointer) */
-  dk_free_box ((caddr_t) tf->tf_input_name);
   tf_free (tf);
   dk_free_tree (rquads_vector);
 }

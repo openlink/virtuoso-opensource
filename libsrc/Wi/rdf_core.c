@@ -209,6 +209,9 @@ tf_free (triple_feed_t *tf)
     dk_free_tree (tf->tf_current_graph_uri);
   dk_free_tree (tf->tf_default_graph_iid);
   dk_free_tree (tf->tf_current_graph_iid);
+  dk_free_tree (tf->tf_boxed_input_name);
+  dk_free_tree (tf->tf_base_uri);
+  dk_free_tree (tf->tf_default_graph_uri);
   dk_free (tf, sizeof (triple_feed_t));
 }
 
@@ -413,7 +416,7 @@ tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *s
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 11, DV_ARRAY_OF_POINTER);
   msg_no_box = box_num (tf->tf_message_count++);
   msg_type_box = box_dv_short_nchars (&msg_type, 1);
-  inp_name_box = box_dv_short_string (tf->tf_input_name);
+  inp_name_box = box_copy (tf->tf_boxed_input_name);
   line_no_box = ((NULL != tf->tf_line_no_ptr) ? box_num (tf->tf_line_no_ptr[0]) : NULL);
   triple_no_box = box_num (tf->tf_triple_count);
   sqlstate_box = box_dv_short_string (sqlstate);
@@ -510,7 +513,7 @@ tf_new_base (triple_feed_t *tf, caddr_t new_base)
 
 
 caddr_t
-bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_rdf_load_rdfxml_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int mode_bits, const char *bifname)
 {
   caddr_t text_arg;
   dtp_t dtp_of_text_arg;
@@ -524,18 +527,17 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t graph_uri;
   ccaddr_t *cbk_names;
   caddr_t *app_env;
-  int mode_bits = 0;
   int n_args = BOX_ELEMENTS (args);
   /*wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;*/
-  text_arg = bif_arg (qst, args, 0, "rdf_load_rdfxml");
-  mode_bits = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
-  graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_rdfxml");
-  cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
-  app_env = (caddr_t *) bif_arg (qst, args, 4, "rdf_load_rdfxml");
+  text_arg = bif_arg (qst, args, 0, bifname);
+  mode_bits |= bif_long_arg (qst, args, 1, bifname);
+  graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, bifname);
+  cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, bifname);
+  app_env = (caddr_t *) bif_arg (qst, args, 4, bifname);
   if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
-      "The argument #4 of rdf_load_rdfxml() should be a vector of %d to %d names of stored procedures",
-      COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
+      "The argument #4 of %.200s() should be a vector of %d to %d names of stored procedures",
+      bifname, COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
   dtp_of_text_arg = DV_TYPE_OF (text_arg);
   /*ns_2dict.xn2_size = 0;*/
   do
@@ -556,12 +558,12 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  int ses_sort = looks_like_serialized_xml (((query_instance_t *)(qst)), text_arg);
 	  if (XE_XPER_SERIALIZATION == ses_sort)
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from string session with persistent XML data");
+	      "Function %.200s() does not support loading from string session with persistent XML data", bifname );
 	  if (XE_XPACK_SERIALIZATION == ses_sort)
 	    {
 #if 1
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from string session with packed XML data");
+	      "Function %.200s() does not support loading from string session with packed XML data", bifname );
 #else
 	      caddr_t *tree_tmp = NULL; /* Solely to avoid dummy warning C4090: 'function' : different 'volatile' qualifiers */
 	      xte_deserialize_packed ((dk_session_t *)text_arg, &tree_tmp, dtd_ptr);
@@ -577,18 +579,18 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       if (dtp_of_text_arg == DV_BLOB_XPER_HANDLE)
 	sqlr_error ("42000",
-	  "Function rdf_load_rdfxml() does not support loading from persistent XML objects");
+	  "Function %.200s() does not support loading from persistent XML objects", bifname );
       if ((DV_BLOB_HANDLE == dtp_of_text_arg) || (DV_BLOB_WIDE_HANDLE == dtp_of_text_arg))
 	{
 	  int blob_sort = looks_like_serialized_xml (((query_instance_t *)(qst)), text_arg);
 	  if (XE_XPER_SERIALIZATION == blob_sort)
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from BLOBs with persistent XML data");
+	      "Function %.200s() does not support loading from BLOBs with persistent XML data", bifname );
 	  if (XE_XPACK_SERIALIZATION == blob_sort)
 	    {
 #if 1
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from BLOBs with packed XML data");
+	      "Function %.200s() does not support loading from BLOBs with packed XML data", bifname );
 #else
 	      caddr_t *tree_tmp = NULL; /* Solely to avoid dummy warning C4090: 'function' : different 'volatile' qualifiers */
 	      dk_session_t *ses = blob_to_string_output (((query_instance_t *)(qst))->qi_trx, text_arg);
@@ -598,7 +600,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	        dtd_addref (dtd, 0);
 	      strses_free (ses);
 	      if ((NULL == tree) && (DEAD_HTML != (parser_mode & ~(FINE_XSLT | GE_XML | WEBIMPORT_HTML | FINE_XML_SRCPOS))))
-		sqlr_error ("42000", "The BLOB passed to a function rdf_load_rdfxml() contains corrupted packed XML serialization data");
+		sqlr_error ("42000", "The BLOB passed to a function %.200s() contains corrupted packed XML serialization data", bifname);
 	      goto tree_complete; /* see below */
 #endif
 	    }
@@ -606,8 +608,8 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  break;
 	}
       sqlr_error ("42000",
-	"Function rdf_load_rdfxml() needs a string or string session or BLOB as argument 1, not an arg of type %s (%d)",
-	dv_type_title (dtp_of_text_arg), dtp_of_text_arg);
+	"Function %.200s() needs a string or string session or BLOB as argument 1, not an arg of type %s (%d), bifname",
+	bifname, dv_type_title (dtp_of_text_arg), dtp_of_text_arg);
     } while (0);
   /* Now we have \c text ready to process */
 
@@ -619,13 +621,13 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
     default:
 /*    case 9:
-      dtd_config = bif_array_or_null_arg (qst, args, 8, "rdf_load_rdfxml");*/
+      dtd_config = bif_array_or_null_arg (qst, args, 8, bifname);*/
     case 8:
-      lh = lh_get_handler (bif_string_arg (qst, args, 7, "rdf_load_rdfxml"));
+      lh = lh_get_handler (bif_string_arg (qst, args, 7, bifname));
     case 7:
-      enc = bif_string_arg (qst, args, 6, "rdf_load_rdfxml");
+      enc = bif_string_arg (qst, args, 6, bifname);
     case 6:
-      base_uri = bif_string_or_uname_arg (qst, args, 5, "rdf_load_rdfxml");
+      base_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 5, bifname);
     case 5:
     case 4:
     case 3:
@@ -639,6 +641,27 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != err)
     sqlr_resignal (err);
   return NULL;
+}
+
+
+caddr_t
+bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_load_rdfxml_impl (qst, err_ret, args, 0, "rdf_load_rdfxml");
+}
+
+
+caddr_t
+bif_rdf_load_rdfa (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_load_rdfxml_impl (qst, err_ret, args, RDFXML_IN_ATTRIBUTES, "rdf_load_rdfa");
+}
+
+
+caddr_t
+bif_rdf_load_microdata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_load_rdfxml_impl (qst, err_ret, args, RDFXML_IN_MDATA, "rdf_load_microdata");
 }
 
 
@@ -665,10 +688,21 @@ ttlp_enter_trig_group (ttlp_t *ttlp)
 void
 ttlp_leave_trig_group (ttlp_t *ttlp)
 {
-  int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
-  id_hash_t *ttlp_inner_namespaces_prefix2iri;	/*!< An equivalent of \c ttlp_namespaces_prefix2iri for prefixes defined inside TriG block */
-  caddr_t ttlp_default_ns_uri_saved;	/*!< In TriG, @prefix can be used inside the graph block, in that case global \c ttlp_default_ns_uri is temporarily saved here */
-  caddr_t ttlp_base_uri_saved;	/*!< In TriG, @base can be used inside the graph block, in that case global \c ttlp_base_uri is temporarily saved here */
+  if (ttlp->ttlp_default_ns_uri_saved != ttlp->ttlp_default_ns_uri)
+    {
+      dk_free_box (ttlp->ttlp_default_ns_uri);
+      ttlp->ttlp_default_ns_uri = ttlp->ttlp_default_ns_uri_saved;
+      ttlp->ttlp_default_ns_uri_saved = NULL;
+    }
+  if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
+    {
+      dk_free_box (ttlp->ttlp_base_uri);
+      ttlp->ttlp_base_uri = ttlp->ttlp_base_uri_saved;
+      ttlp->ttlp_base_uri_saved = NULL;
+    }
+  dk_free_box ((caddr_t)(ttlp->ttlp_inner_namespaces_prefix2iri));
+  ttlp->ttlp_inner_namespaces_prefix2iri = NULL;
+  ttlp->ttlp_in_trig_graph = 0;
 }
 
 void
@@ -695,8 +729,6 @@ ttlp_free (ttlp_t *ttlp)
   dk_free_tree (ttlp->ttlp_obj_type);
   dk_free_tree (ttlp->ttlp_obj_lang);
   dk_free_tree (ttlp->ttlp_formula_iid);
-  dk_free_tree (ttlp->ttlp_tf->tf_base_uri);
-  dk_free_tree (ttlp->ttlp_tf->tf_default_graph_uri);
   tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }
@@ -1015,7 +1047,7 @@ ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t
 }
 
 void
-ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, const char *label)
+ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   if (NULL != ttlp_arg->ttlp_base_uri)
@@ -1509,13 +1541,13 @@ lt_nic_rollback_hook (lock_trx_t * lt)
 
 
 caddr_t
-nic_id_name (name_id_cache_t * nic, boxint id)
+DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id)
 {
   caddr_t ret;
   boxint r;
   mutex_enter (nic->nic_mtx);
   gethash_64 (r, id, nic->nic_id_to_name);
-  ret = r ? box_copy ((caddr_t) (ptrlong)r) : NULL;
+  ret = r ? DBG_NAME (box_copy) (DBG_ARGS (caddr_t) (ptrlong)r) : NULL;
   /* read the value inside the mtx because cache replacement may del it before the copy is made if not in the mtx */
   mutex_leave(nic->nic_mtx);
   return ret;
@@ -2491,13 +2523,13 @@ caddr_t
 bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_arg (qst, args, 0, "iri_to_id_repl");
-  caddr_t tmp_name = NULL;
   caddr_t err = NULL;
   caddr_t res;
   switch (DV_TYPE_OF (name))
     {
     case DV_LONG_INT: case DV_IRI_ID:
       {
+        /* caddr_t tmp_name = NULL; */
         iri_id_t iid = unbox_iri_int64 (name);
         if (iid < min_bnode_iri_id ())
           sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
@@ -3505,6 +3537,10 @@ rdf_core_init (void)
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
   bif_set_uses_index (bif_rdf_load_rdfxml);
+  bif_define_typed ("rdf_load_rdfa", bif_rdf_load_rdfa, &bt_xml_entity);
+  bif_set_uses_index (bif_rdf_load_rdfa);
+  bif_define_typed ("rdf_load_microdata", bif_rdf_load_microdata, &bt_xml_entity);
+  bif_set_uses_index (bif_rdf_load_microdata);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
