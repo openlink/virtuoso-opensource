@@ -9498,10 +9498,10 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 			}
 		}
 		mdta := mdta + 1;
-		goto ret;
+		--goto ret;
 	}
-	else if (mdta)
-	  goto ret;
+	--else if (mdta)
+	--  goto ret;
 	try_grddl1:
 	-- /* GRDDL - plan A, eRDF going here */
 	foreach (any prof in profs) do

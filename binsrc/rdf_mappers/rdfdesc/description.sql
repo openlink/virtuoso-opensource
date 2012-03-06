@@ -783,7 +783,7 @@ create procedure virt_proxy_init_about ()
       '/about/id/(http|https|acct|mailto|webcal|feed|nodeID)[/:](.*)', vector ('sch', 'g'), 2,
       '/about/data/%s/%s', vector ('sch', 'g'), null,
       '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|'||
-      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(\\*/\\*)',
+      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(application/ld.json)|(application/microdata.json)|(\\*/\\*)', 
       2, 303, null);
 
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ext_ahp_rule_list_new';
@@ -796,6 +796,8 @@ create procedure virt_proxy_init_about ()
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/jrdf/\x241',    'application/rdf+json', 0.70);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/html/^{DynamicLocalFormat}^/about/id/\x241', 'text/html', 1.0);
   DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/text/\x241',    'text/plain', 0.20);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/ld/\x241',      'application/ld+json', 0.70);
+  DB.DBA.HTTP_VARIANT_ADD ('ext_ahp_rule_list_new', '/about/data/(.*)', '/about/data/md/\x241',      'application/microdata+json', 0.70);
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_new', 1,
       		vector (
@@ -817,7 +819,7 @@ create procedure virt_proxy_init_about ()
       '/about/id/entity/(http|https|acct|mailto|webcal|feed|nodeID)/(.*)', vector ('sch', 'g'), 2,
       '/about/data/entity/%s/%s', vector ('sch', 'g'), null,
       '(application/rdf.xml)|(text/rdf.n3)|(application/x-turtle)|(text/n3)|(text/turtle)|'||
-      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(\\*/\\*)',
+      '(application/rdf.json)|(application/json)|(text/html)|(text/plain)|(application/atom.xml)|(application/odata.json)|(application/ld.json)|(application/microdata.json)|(\\*/\\*)', 
       2, 303, null);
 
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'sp_entity_rll';
@@ -832,6 +834,8 @@ create procedure virt_proxy_init_about ()
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/atom/\x241',    'application/atom+xml', 0.60);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/jsod/\x241',    'application/odata+json', 0.60);
   DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/text/\x241',    'text/plain', 0.20);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/ld/\x241',      'application/ld+json', 0.70);
+  DB.DBA.HTTP_VARIANT_ADD ('sp_entity_rll', '/about/data/entity/(.*)', '/about/data/entity/md/\x241',      'application/microdata+json', 0.70);
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_entity_rll', 1,
       		vector ( 'sp_entity_rl_restrict', 'sp_entity_rl_data'));
@@ -901,6 +905,24 @@ create procedure virt_proxy_init_about ()
       '/about?url=%s:%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/odata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_8', 1,
+      '/about/data/ld/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fld%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/ld+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_8_am', 1,
+      '/about/data/ld/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fld%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/ld+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_9', 1,
+      '/about/data/md/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fmicrodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/microdata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_9_am', 1,
+      '/about/data/md/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fmicrodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/microdata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ext_ahp_rule_list_data', 1,
       	vector (
 	  'ext_ahp_rule_data_1',
@@ -910,13 +932,17 @@ create procedure virt_proxy_init_about ()
 	  'ext_ahp_rule_data_5',
 	  'ext_ahp_rule_data_6',
 	  'ext_ahp_rule_data_7',
+	  'ext_ahp_rule_data_8',
+	  'ext_ahp_rule_data_9',
 	  'ext_ahp_rule_data_1_am',
 	  'ext_ahp_rule_data_2_am',
 	  'ext_ahp_rule_data_3_am',
 	  'ext_ahp_rule_data_4_am',
 	  'ext_ahp_rule_data_5_am',
 	  'ext_ahp_rule_data_6_am',
-	  'ext_ahp_rule_data_7_am'
+	  'ext_ahp_rule_data_7_am',
+	  'ext_ahp_rule_data_8_am',
+	  'ext_ahp_rule_data_9_am'
 	  )
 	);
 
@@ -987,6 +1013,24 @@ create procedure virt_proxy_init_about ()
       '/about?url=%s:%U&force=rdf&output-format=application%%2Fodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null,
       'Content-Type: application/odata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
 
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_8', 1,
+      '/about/data/entity/ld/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fld%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/ld+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_8_am', 1,
+      '/about/data/entity/ld/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fld%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/ld+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_9', 1,
+      '/about/data/entity/md/(http|https|webcal|feed|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fmicrodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/microdata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_9_am', 1,
+      '/about/data/entity/md/(acct|mailto)/(.*)\0x24', vector ('sch', 'url'), 2,
+      '/about?url=%s:%U&force=rdf&output-format=application%%2Fmicrodata%%2Bjson', vector ('sch', 'url'), null, null, 2, null, 
+      'Content-Type: application/microdata+json\r\n^{sql:DB.DBA.RM_LINK_HDR}^');
+
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_ent_data_rll', 1,
       	vector (
 	  'sp_ent_data_rl_1',
@@ -996,13 +1040,17 @@ create procedure virt_proxy_init_about ()
 	  'sp_ent_data_rl_5',
 	  'sp_ent_data_rl_6',
 	  'sp_ent_data_rl_7',
+	  'sp_ent_data_rl_8',
+	  'sp_ent_data_rl_9',
 	  'sp_ent_data_rl_1_am',
 	  'sp_ent_data_rl_2_am',
 	  'sp_ent_data_rl_3_am',
 	  'sp_ent_data_rl_4_am',
 	  'sp_ent_data_rl_5_am',
 	  'sp_ent_data_rl_6_am',
-	  'sp_ent_data_rl_7_am'
+	  'sp_ent_data_rl_7_am',
+	  'sp_ent_data_rl_8_am',
+	  'sp_ent_data_rl_9_am'
 	  )
 	);
 
