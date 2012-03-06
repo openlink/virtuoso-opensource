@@ -207,6 +207,22 @@
 			<oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
 		    </oplcert:Certificate>
 		</xsl:if>
+		<!-- x509 certificate -->
+		<xsl:if test="starts-with (text, '#X509Cert di:')">
+		    <xsl:variable name="di"><xsl:copy-of select="vi:di-split (text)"/></xsl:variable>
+		    <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
+		    <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
+		    <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
+		    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
+			<oplcert:hasCertificate rdf:resource="{vi:proxyIRI (concat('http://twitter.com/', user/screen_name), '', $fp)}"/>
+		    </foaf:Person>
+		    <oplcert:Certificate rdf:about="{vi:proxyIRI (concat('http://twitter.com/', user/screen_name), '', $fpn)}">
+			<rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+			<oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+			<oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+		    </oplcert:Certificate>
+		</xsl:if>
+		<!-- end certificate -->
 
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
             <xsl:choose>

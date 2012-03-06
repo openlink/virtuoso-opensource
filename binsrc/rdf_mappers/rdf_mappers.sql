@@ -1293,6 +1293,18 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_DI_SPLIT (in str varchar)
+{
+  declare di, h, dgst varchar;
+  di := regexp_match ('di:[^ <>]+', str);
+  if (di is null)
+    return null;
+  h := WS.WS.PARSE_URI (di);
+  dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
+  return xtree_doc (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst));
+}
+;
+
 create procedure DB.DBA.RDF_SPONGE_DOC_IRI (in url varchar, in dest varchar := null)
 {
   declare res varchar;
@@ -1943,6 +1955,7 @@ grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_REPLACE1 to public;
 grant execute on DB.DBA.XSLT_TRIM to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
+grant execute on DB.DBA.XSLT_DI_SPLIT to public;
 grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE2 to public;
@@ -1988,6 +2001,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:replace1', 'DB.DBA.XSLT_REPLACE1');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:trim', 'DB.DBA.XSLT_TRIM');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:di-split', 'DB.DBA.XSLT_DI_SPLIT');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date2', 'DB.DBA.XSLT_STRING2ISO_DATE2');

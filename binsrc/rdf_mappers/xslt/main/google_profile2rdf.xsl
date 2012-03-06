@@ -34,6 +34,7 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY m "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
 <!ENTITY d "http://schemas.microsoft.com/ado/2007/08/dataservices">
 ]>
@@ -64,6 +65,7 @@
 	xmlns:media="http://search.yahoo.com/mrss/" 
 	xmlns:poco="http://portablecontacts.net/ns/1.0" 
 	xmlns:thr="http://purl.org/syndication/thread/1.0"
+	xmlns:opl="&opl;"
     version="1.0">
 
 	<xsl:output method="xml" encoding="utf-8" indent="yes"/>

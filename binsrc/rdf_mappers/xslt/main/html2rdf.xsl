@@ -94,6 +94,7 @@
 	      <awol:src rdf:resource="{$source}"/>
 	  </rdf:Description>
       </xsl:if>
+      <!-- x509 certificate -->
       <xsl:for-each select="//*[starts-with (., '#X509Cert Fingerprint:')]">
 	  <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (., '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
 	  <xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
@@ -122,6 +123,32 @@
 	      <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
 	  </oplcert:Certificate>
       </xsl:for-each>
+      <!-- end certificate -->
+      <!-- x509 certificate -->
+      <xsl:for-each select="//*[starts-with (normalize-space (text()), '#X509Cert di:')]">
+	  <xsl:variable name="di"><xsl:copy-of select="vi:di-split (.)"/></xsl:variable>
+	  <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
+	  <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
+	  <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
+	  <xsl:variable name="au">
+	      <xsl:choose>
+		  <xsl:when test="//link[@rel='canonical']/@href"><xsl:value-of select="//link[@rel='canonical']/@href"/>#author</xsl:when>
+		  <xsl:otherwise><xsl:value-of select="vi:proxyIRI ($baseUri,'','author')"/></xsl:otherwise>
+	      </xsl:choose>
+	  </xsl:variable>
+	  <foaf:Agent rdf:about="{$au}">
+	      <oplcert:hasCertificate rdf:resource="{$ct}"/>
+	  </foaf:Agent>
+	  <rdf:Description rdf:about="{$resourceURL}">
+	      <dc:creator rdf:resource="{$au}"/>
+	  </rdf:Description>
+	  <oplcert:Certificate rdf:about="{$ct}">
+	      <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+	      <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+	      <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+	  </oplcert:Certificate>
+      </xsl:for-each>
+      <!-- end certificate -->
   </xsl:template>
 
   <xsl:template match="link[@rel='alternate']">

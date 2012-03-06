@@ -27,9 +27,10 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY oplklout "http://www.openlinksw.com/schemas/klout#">
 <!ENTITY opltw "http://www.openlinksw.com/schemas/twitter#">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bibo="&bibo;" xmlns:sioc="&sioc;" xmlns:oplklout="&oplklout;" xmlns:opltw="&opltw;" xmlns:foaf="&foaf;" xmlns:owl="http://www.w3.org/2002/07/owl#" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bibo="&bibo;" xmlns:sioc="&sioc;" xmlns:oplklout="&oplklout;" xmlns:opltw="&opltw;" xmlns:foaf="&foaf;" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:xsd="&xsd;" version="1.0">
 
   <xsl:output method="xml" indent="yes"/>
   

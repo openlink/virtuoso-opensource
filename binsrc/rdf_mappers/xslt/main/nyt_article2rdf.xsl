@@ -119,9 +119,9 @@
 		    <foaf:img rdf:resource="{small_image_url}"/>
 		</xsl:if>
 		<xsl:if test="nytd_section">
-		    <oplnytd:section>
+		    <oplnyt:section>
 			<xsl:value-of select="nytd_section"/>
-		    </oplnytd:section>
+		    </oplnyt:section>
 		</xsl:if>
 		<xsl:for-each select="nytd_des_facet">
 		    <dcterms:subject>

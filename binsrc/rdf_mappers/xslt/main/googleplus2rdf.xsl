@@ -105,7 +105,7 @@
     </rdf:RDF>
   </xsl:template>
 
-  <!-- People mapping --------------------->
+  <!-- People mapping -->
 
   <xsl:template match="/results/kind" mode="people">
     <xsl:if test="contains(. ,'person')">
@@ -367,7 +367,7 @@
 
   <xsl:template match="*|text()" mode="people"/>
 
-  <!-- Activity mapping ---------------------->
+  <!-- Activity mapping -->
 
   <!-- Presence of items element indicates multiple Activities are being sponged 
        in the course of sponging a Google+ user profile URL -->
@@ -551,7 +551,7 @@
       </oplgp:attachment>
   </xsl:template>
 
-  <!-- Comments mapping ---------------------->
+  <!-- Comments mapping -->
 
   <xsl:template match="items" mode="comment">
     <xsl:variable name="activity_id" select="inReplyTo/id"/>

@@ -25,6 +25,7 @@
 <!ENTITY moat "http://moat-project.org/ns#">
 <!ENTITY scot "http://scot-project.org/scot/ns#">
 <!ENTITY skos "http://www.w3.org/2004/02/skos/core#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -39,6 +40,7 @@ xmlns:scot="&scot;"
 xmlns:moat="&moat;"
 xmlns:skos="&skos;"
 xmlns:wdrs="http://www.w3.org/2007/05/powder-s#"
+xmlns:opl="&opl;"
 xmlns:dv="http://rdf.data-vocabulary.org/" version="1.0">
   <xsl:output method="xml" encoding="utf-8" indent="yes" />
   <xsl:preserve-space elements="*" />
