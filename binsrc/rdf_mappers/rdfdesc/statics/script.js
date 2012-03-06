@@ -14,18 +14,18 @@ var x = function (data)
        }
      if (o && o.result != 0)
        {
-	 div.innerHTML = "Processing: " + o.cartridge + ", " + o.time + "sec. in queue";
+	 div.innerHTML = "Status: " + o.cartridge + ", " + o.time + "sec. in queue";
        } 
      if (o && o.result == 0)
        {
-	 div.innerHTML = 'done';
+	 div.innerHTML = 'Status: done';
 	 //if (timer) clearTimeout (timer);
        } 
    }
 function getStatus ()
    {
      OAT.AJAX.GET ("/about/queue/status?uri=" + uri, false, x);
-     timer = setTimeout ("getStatus ()", 1000);
+     timer = setTimeout ("getStatus ()", 10000);
    }
 
 function init() {

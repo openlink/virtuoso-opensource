@@ -175,3 +175,5 @@ line-height: 120%;
 #FT_share { float: center; clear: both; text-align: center; margin-top: 4px; }
 
 .addthis_toolbox { width: 400px; margin: 0 auto; }
+
+#status { margin-left:10px; margin-bottom: 3px; position:fixed; bottom:10px; }
