@@ -1110,6 +1110,16 @@ create procedure DB.DBA.RM_UMBEL_GET (in strg varchar)
 }
 ;
 
+create function DB.DBA.html2text(in content long varchar)
+{
+  -- remove HTML/XML tag markup 
+  declare _ret_body long varchar;
+  _ret_body:=regexp_replace(content, '<[^>]*>', '', 1, null);
+  _ret_body:=regexp_replace(_ret_body, '  *', ' ', 1, null);
+  _ret_body:=regexp_replace(_ret_body, '  *', ' ', 1, null);
+  return _ret_body;
+};
+
 create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 {
   return regexp_match (pattern, val);
@@ -1965,6 +1975,22 @@ create procedure DB.DBA.XSLT_SANEURI (in val varchar, in seed integer default -1
 }
 ;
 
+create function DB.DBA.dbpedia_url_label(in url varchar)
+{
+  -- make label from dbpedia URL
+  declare ret varchar;
+  ret:=regexp_replace(url, '^.*/', '', 1, null);
+  ret:=regexp_replace(ret, '_', ' ', 1, null);
+  ret:=regexp_replace(ret, '%21', '!', 1, null);
+  ret:=regexp_replace(ret, '%26', '&amp;', 1, null);
+  ret:=regexp_replace(ret, '%27', '''', 1, null);
+  ret:=regexp_replace(ret, '%28', '(', 1, null);
+  ret:=regexp_replace(ret, '%29', ')', 1, null);
+  ret:=regexp_replace(ret, '%2C', ',', 1, null);
+  ret:=regexp_replace(ret, '%3F', '?', 1, null);
+  return ret;
+};
+
 grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
@@ -2002,6 +2028,7 @@ grant execute on DB.DBA.OPENGRAPH_OBJ_CONNECTIONS to public;
 grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
 grant execute on DB.DBA.XSLT_SANEURI to public;
 grant execute on DB.DBA.DECODEXML to public;
+grant execute on DB.DBA.dbpedia_url_label to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -2041,6 +2068,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:crunchbase_moneystring2
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_SANEURI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.dbpedia_url_label');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
