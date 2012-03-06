@@ -1062,18 +1062,18 @@ create procedure DB.DBA.RM_ADD_PRV (inout triple_dict any, in proc varchar, in b
 }
 ;
 
-create procedure RM_CLEAN_DEST (inout triple_dict any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar, inout opts any)
+create procedure RM_CLEAN_DEST (inout triple_dict any, in dest varchar, in graph_iri varchar, in new_origin_uri varchar, inout opts any, in clear_triple_dict int := 0)
 {
   declare deadl int;
   if (get_keyword ('disable-clean', opts, '') = 'Y')
     return;
-  --if (get_keyword ('get:soft', opts, '') = 'add')
-  --  return;
-  if (triple_dict is not null)
+    if ((registry_get ('__rdf_sponge_force_triple_dict_clean') = '1' or clear_triple_dict > 0) and triple_dict is not null)
     {
       dict_zap (triple_dict, 2);
       return;
     }
+    if (get_keyword ('get:soft', opts, '') = 'add')
+      return;
   deadl := 5;
   declare exit handler for sqlstate '40001' 
     {
