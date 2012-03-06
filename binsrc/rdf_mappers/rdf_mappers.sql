@@ -1798,6 +1798,19 @@ create procedure DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_SANEURI (in val varchar, in seed integer)
+{
+ -- Generate sane URI with xml/http-safe characters, based on val and seed (xpath position)
+  
+  declare str varchar;
+  if ( (not seed) or (seed is null)) 
+    seed:=0;
+  str:=regexp_replace(sprintf('%s_%d', val, seed), '[^a-zA-Z0-9_-]', '', 1, null); 
+  return str;
+}
+;
+
+
 grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
@@ -1832,6 +1845,7 @@ grant execute on DB.DBA.RDF_SPONGE_GET_COUNTRY_NAME to public;
 grant execute on DB.DBA.RDF_CONVERT_TO_XTREE to public;
 grant execute on DB.DBA.OPENGRAPH_OBJ_CONNECTIONS to public;
 grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
+grant execute on DB.DBA.XSLT_SANEURI to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -1867,6 +1881,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:http_string_date', 'DB.
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:uri_hash', 'DB.DBA.RDF_SPONGE_URI_HASH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:convert_to_xtree', 'DB.DBA.RDF_CONVERT_TO_XTREE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:crunchbase_moneystring2decimal', 'DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_SANEURI');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
