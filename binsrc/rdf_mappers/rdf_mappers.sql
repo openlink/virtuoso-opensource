@@ -1030,8 +1030,8 @@ create procedure RM_CLEAN_DEST (inout triple_dict any, in dest varchar, in graph
   declare deadl int;
   if (get_keyword ('disable-clean', opts, '') = 'Y')
     return;
-  if (get_keyword ('get:soft', opts, '') = 'add')
-    return;
+  --if (get_keyword ('get:soft', opts, '') = 'add')
+  --  return;
   if (triple_dict is not null)
     {
       dict_zap (triple_dict, 2);
