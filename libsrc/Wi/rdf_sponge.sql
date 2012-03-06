@@ -753,8 +753,12 @@ perform_actual_load:
   --!!!TBD: if (get_method in ('MGET', 'GET+MGET')) { ... }
   if (get_method in ('POST', 'GET', 'GET+MGET'))
     {
+      declare acc_hdr varchar; 
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
+      acc_hdr := trim (get_keyword_ucase ('get:accept', options));
+      if (not length (acc_hdr))
+	acc_hdr := 'application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.5, application/x-turtle; q=0.6, application/turtle; q=0.5, text/turtle; q=0.7, application/xml; q=0.2, */*; q=0.1';
       connection_set ('sparql-get:proxy', get_proxy);
       --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
@@ -768,7 +772,7 @@ perform_actual_load:
       -- then it may return rdf instead of html
       req_hdr := req_hdr || case when length (req_hdr) > 0 then '\r\n' else '' end
         || 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
-	|| 'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, text/turtle; q=0.5, application/xml; q=0.2, */*; q=0.1';
+	|| 'Accept: ' || acc_hdr;
 	--|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
       -- dbg_obj_princ (get_method, ' method with ', req_hdr);
       {

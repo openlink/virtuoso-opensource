@@ -791,7 +791,7 @@ void spar_change_sign (caddr_t *lit_ptr)
 }
 
 static const char *sparp_known_get_params[] = {
-    "get:cartridge", "get:login", "get:method", "get:proxy", "get:query", "get:refresh", "get:soft", "get:uri", NULL };
+    "get:accept", "get:cartridge", "get:login", "get:method", "get:proxy", "get:query", "get:refresh", "get:soft", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
     "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", NULL };
