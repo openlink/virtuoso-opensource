@@ -186,7 +186,7 @@ prefix_clause
 		  &(ttlp_arg->ttlp_namespaces_prefix2iri) );
 		caddr_t *old_uri_ptr;
 		if (NULL != local_hash_ptr[0])
-		  old_uri_ptr = (caddr_t *)id_hash_get (local_hash_ptr[0], &($2));
+		  old_uri_ptr = (caddr_t *)id_hash_get (local_hash_ptr[0], (caddr_t)(&($2)));
 		else
 		  {
 		    local_hash_ptr[0] = (id_hash_t *)box_dv_dict_hashtable (31);
@@ -201,7 +201,7 @@ prefix_clause
 		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
 		  }
 		else
-		  id_hash_set (local_hash_ptr[0], &($2), &($3)); }
+		  id_hash_set (local_hash_ptr[0], (caddr_t)(&($2)), (caddr_t)(&($3))); }
 	| _AT_prefix_L _COLON Q_IRI_REF	{
 		if (ttlp_arg->ttlp_default_ns_uri != ttlp_arg->ttlp_default_ns_uri_saved)
 		  dk_free_box (ttlp_arg->ttlp_default_ns_uri);

@@ -1236,12 +1236,11 @@ sparp_compile_smllist (sparp_t *outer_sparp, caddr_t sml_iri_uname, void /* actu
       SPART *mdef = sparp->sparp_macro_defs[ctr];
       if (NULL == mdef->_.defmacro.sml_iri)
         mdef->_.defmacro.sml_iri = box_copy (sml_iri_uname);
-      dk_check_tree ((caddr_t)(mdef));
       mdefs[ctr] = (SPART *)box_copy_tree ((caddr_t)(mdef));
     }
   dk_check_tree ((caddr_t)(mdefs));
   smlib->smlList = (ccaddr_t)mdefs;
-  smlib->smlIncludes = box_copy_tree (t_revlist_to_array (sparp->sparp_macro_libs));
+  smlib->smlIncludes = box_copy_tree ((caddr_t)t_revlist_to_array (sparp->sparp_macro_libs));
 }
 
 int
