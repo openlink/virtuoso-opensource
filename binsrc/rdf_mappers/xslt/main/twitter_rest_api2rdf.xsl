@@ -144,6 +144,7 @@
 			<twitter:id>
 				<xsl:value-of select="id" />
 			</twitter:id>
+			<twitter:screen_name><xsl:value-of select="screen_name" /></twitter:screen_name>
 			<xsl:if test="followers_count != ''">
 				<twitter:followers_count rdf:datatype="&xsd;integer">
 					<xsl:value-of select="followers_count" />
@@ -175,7 +176,7 @@
 			<foaf:title>
 				<xsl:value-of select="description" />
 			</foaf:title>
-			<owl:sameAs rdf:resource="{concat('http://twitter.com/!#/', screen_name)}"/>
+			<owl:sameAs rdf:resource="{concat('http://twitter.com/#!/', screen_name)}"/>
 		</foaf:Person>
 	</xsl:template>
 

@@ -11879,7 +11879,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	      if (rc < 0 or rc > 0)
 	        dbg_obj_prin1 ('END of PP mappings');
 	    }
-	  if (rc < 0 or rc > 0 or (MC_API_TYPE = 0 and dict_size (dict)))
+	  if (rc < 0 or rc > 0 or ( (MC_API_TYPE=0 or MC_API_TYPE=3) and dict_size (dict)))
 	    {
 	      ins_triples:
 	      declare _triples, links any;
@@ -11908,7 +11908,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), _triples);
 		commit work;
 	      }
-	      if (MC_API_TYPE = 0)
+	      if (MC_API_TYPE in (0,3))
 	        {
                   dict := dict_new ((length (ret_body) / 100) + 1);
 		  goto try_next_mapper;
