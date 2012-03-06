@@ -11745,9 +11745,10 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 {
   declare new_opts any;
   declare dummy, spmode, triples, graph, tmp, labels, dict any;
-  declare rc int;
+  declare f_delete_orig_triples, rc int;
 
   dummy := null;
+  f_delete_orig_triples := 0;
   RM_LOG_CLEAR ();
   RM_GRAPH_PT_CK (graph_iri, dest);
   dict := dict_new ((length (ret_body) / 100) + 1);
@@ -11758,6 +11759,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
   if (spmode <> '')
     {
       triples := (select vector_agg (vector (S,P,O)) from RDF_QUAD where g = iri_to_id (graph));
+      f_delete_orig_triples := 1;
       tmp := split_and_decode (spmode, 0, '\0\0,');
       if (length (tmp) = 1 and atoi (tmp[0]) <= 0)
 	spmode := abs (atoi (tmp[0]));
@@ -11827,10 +11829,15 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	      if (rc < 0 or rc > 0)
 	        dbg_obj_prin1 ('END of PP mappings');
 	    }
-	  if (rc < 0 or rc > 0)
+	  if (rc < 0 or rc > 0 or (MC_API_TYPE = 0 and dict_size (dict)))
 	    {
 	      ins_triples:
 	      declare _triples, links any;
+              if (f_delete_orig_triples)
+	        {
+                  DB.DBA.RDF_DELETE_TRIPLES (graph, triples);
+                  f_delete_orig_triples := 0;
+	        }
 	      dbg_obj_print ('inserting triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
 	      _triples := dict_list_keys (dict, 1);
@@ -11851,13 +11858,21 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), _triples);
 		commit work;
 	      }
+	      if (MC_API_TYPE = 0)
+	        {
+                  dict := dict_new ((length (ret_body) / 100) + 1);
+		  goto try_next_mapper;
+	        }
 	      return (case when rc < 0 then 0 else 1 end);
 	    }
 	}
       try_next_mapper:;
     }
-  if (spmode <> '')
-    DB.DBA.RDF_DELETE_TRIPLES (graph, triples);
+  if (f_delete_orig_triples)
+    {
+      DB.DBA.RDF_DELETE_TRIPLES (graph, triples);
+      f_delete_orig_triples := 0;
+    }
   if (registry_get ('__sparql_mappers_debug') = '1')
     dbg_obj_prin1 ('END of PP mappings');
   if (dict_size (dict))
