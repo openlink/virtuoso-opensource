@@ -11704,6 +11704,24 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 {
   declare cset, rc any;
   declare dict any;
+  declare inx, enable_meta any;
+  enable_meta := 1;
+  -- remove bellow to disable get:cartridge processing
+  for (inx := 0; inx < length (options); inx := inx + 2)
+    {
+      if (options[inx] = 'get:cartridge')
+	{
+	  if (options[inx+1] = 'none')
+	    return 1;
+	  if (options[inx+1] = 'meta')
+	    {
+	      enable_meta := 1;
+	      goto run_meta;
+	    }
+	  if (options[inx+1] = 'extractor')
+	    enable_meta := 0;
+	}
+    }
   dict := dict_new ((length (ret_body) / 100) + 1);
   cset := http_request_header (ret_hdr, 'Content-Type', 'charset', null);
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS, RM_DESCRIPTION from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
