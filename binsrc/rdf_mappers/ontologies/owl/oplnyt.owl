@@ -1,0 +1,61 @@
+<!--
+  Generated from oplnyt.n3
+
+  An OpenLink ontology for New York Times
+
+  See: http://developer.nytimes.com/docs/read/The_Semantic_API
+-->
+
+<rdf:RDF xmlns="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/nyt">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-12-14</dc:date>
+        <dc:description>OpenLink schema for New York Times Semantic API objects and properties</dc:description>
+        <dc:title>OpenLink schema for New York Times</dc:title>
+    </owl:Ontology>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/nyt#concept_type">
+        <comment>A concept type from the New York Times controlled vocabulary</comment>
+        <domain rdf:resource="http://www.w3.org/2004/02/skos/core#&#34;Concept"/>
+        <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/nyt"/>
+        <label>NYT concept type</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/nyt#full_article">
+        <comment>A link to a full NYT article related to a NYT concept/topic tag</comment>
+        <domain rdf:resource="http://www.w3.org/2004/02/skos/core#&#34;Concept"/>
+        <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/nyt"/>
+        <label>full NYT article</label>
+        <range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/nyt#is_times_tag">
+        <comment>True if a concept is returned by the TimesTags API</comment>
+        <domain rdf:resource="http://www.w3.org/2004/02/skos/core#&#34;Concept"/>
+        <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/nyt"/>
+        <label>is Times tag</label>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/nyt#related_article">
+        <comment>A summary of a NYT article related to a NYT concept/topic tag</comment>
+        <domain rdf:resource="http://www.w3.org/2004/02/skos/core#&#34;Concept"/>
+        <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/nyt"/>
+        <label>related NYT article</label>
+        <range rdf:resource="http://purl.org/ontology/bibo/Document"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/nyt#topic_page">
+        <comment>A NYT topic page associated with a NYT concept/topic tag</comment>
+        <domain rdf:resource="http://www.w3.org/2004/02/skos/core#&#34;Concept"/>
+        <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/nyt"/>
+        <label>topic page</label>
+        <range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
