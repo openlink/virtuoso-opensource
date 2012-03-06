@@ -66,6 +66,7 @@
 	xmlns:awol="&awol;"
 	xmlns:d="&d;"
 	xmlns:m="&m;"	
+    xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="baseUri" />
@@ -211,6 +212,7 @@
 				    </xsl:if>
 				    <xsl:if test="string (//foaf:mbox/@rdf:resource) != ''">
 			                <foaf:mbox rdf:resource="{//foaf:mbox/@rdf:resource}" />                  
+		<opl:email_address_digest rdf:resource="{vi:di-uri (//foaf:mbox/@rdf:resource)}"/>
 				    </xsl:if>
 					<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
                 <foaf:made rdf:resource="{vi:proxyIRI (@rdf:about)}" />

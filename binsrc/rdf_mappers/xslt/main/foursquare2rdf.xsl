@@ -144,6 +144,7 @@
 			</foaf:gender>
 			<xsl:if test="string-length(contact/email) &gt; 0">
 				<foaf:mbox rdf:resource="{concat('mailto:', contact/email)}"/>
+				<opl:email_address_digest rdf:resource="{vi:di-uri (contact/email)}"/>
 			</xsl:if>
 			<xsl:if test="string-length(contact/facebook) &gt; 0">
 				<sioc:link rdf:resource="{concat('http://www.facebook.com/profile.php?id=', contact/facebook)}"/>

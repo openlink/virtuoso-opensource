@@ -508,6 +508,7 @@
                 </xsl:if>
                 <xsl:if test="email">
                     <foaf:mbox rdf:resource="{email}"/>
+		    <opl:email_address_digest rdf:resource="{vi:di-uri (email)}"/>
                 </xsl:if>
 				<!--xsl:for-each select="metadata/connections/*">
 					<foaf:focus rdf:resource="{.}"/>

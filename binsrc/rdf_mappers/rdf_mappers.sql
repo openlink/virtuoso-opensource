@@ -1126,6 +1126,18 @@ create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 }
 ;
 
+create procedure DB.DBA.DI_URI (in str varchar)
+{
+  declare sha, ret any;
+  if (str like 'mailto:%')
+    str := subseq (str, 7);
+  sha := xenc_sha1_digest (str);
+  sha := replace (replace (rtrim (sha, '='), '+', '-'), '/', '_');
+  ret := sprintf ('di:sha1;%s', sha);
+  return ret;
+}
+;
+
 create procedure DB.DBA.XSLT_SPLIT_AND_DECODE (in val varchar, in md int, in pattern varchar)
 {
   declare x, ses any;
@@ -2008,6 +2020,7 @@ grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public;
 grant execute on DB.DBA.RM_UMBEL_GET to public;
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
 grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
+grant execute on DB.DBA.DI_URI to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_REPLACE1 to public;
@@ -2053,6 +2066,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_value_nam
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_ontology_domain', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:di-uri', 'DB.DBA.DI_URI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html5md_localname', 'DB.DBA.GET_HTML5MD_LOCALNAME');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html5md_namespace', 'DB.DBA.GET_HTML5MD_NAMESPACE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');

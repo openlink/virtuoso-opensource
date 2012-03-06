@@ -303,6 +303,7 @@
 
     <xsl:template match="email_address[. != '']">
 	<foaf:mbox rdf:resource="mailto:{.}"/>
+		<opl:email_address_digest rdf:resource="{vi:di-uri (.)}"/>
     </xsl:template>
 
     <xsl:template match="*[* and ../../*]" priority="1">

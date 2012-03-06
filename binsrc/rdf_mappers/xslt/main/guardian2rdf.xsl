@@ -83,6 +83,7 @@
 				</xsl:if>
 				<xsl:for-each select="person/contact-details/email-addresses">
 					<foaf:mbox rdf:resource="{email}"/>
+					<opl:email_address_digest rdf:resource="{vi:di-uri (email)}"/>
 				</xsl:for-each>
 				<xsl:for-each select="person/contact-details/websites">
 					<rdfs:seeAlso rdf:resource="{url}"/>

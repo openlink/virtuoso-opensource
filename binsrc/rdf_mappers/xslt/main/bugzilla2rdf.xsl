@@ -53,6 +53,7 @@
   xmlns:sioc="&sioc;"
   xmlns:owl="&owl;"
   xmlns:xsd="&xsd;"
+  xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
@@ -108,6 +109,7 @@
 					<foaf:name><xsl:value-of select="who/@name"/></foaf:name>
 			    </xsl:if>
 			    <foaf:mbox rdf:resource="mailto:{who}"/>
+			    <opl:email_address_digest rdf:resource="{vi:di-uri (who)}"/>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
@@ -153,6 +155,7 @@
 			    <foaf:name><xsl:value-of select="who/@name"/></foaf:name>
 			    </xsl:if>
 			    <foaf:mbox rdf:resource="mailto:{who}"/>
+			    <opl:email_address_digest rdf:resource="{vi:di-uri (who)}"/>
 			    <sioc:creator_of rdf:resource="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}"/>
 			</rdf:Description>
 		</xsl:for-each>
