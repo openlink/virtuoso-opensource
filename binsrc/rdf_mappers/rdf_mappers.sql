@@ -136,6 +136,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PROFILE', null, 'Google (Profile)');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://socialstatistics.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_SOCIALSTATISTICS', null, 'Google+ Stats');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://maps.google.com/.*',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_PLACES', null, 'Google (Places)');
 	
@@ -6248,6 +6252,42 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_PLUS (in graph_iri varchar, in new_origi
   xd2 := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd2, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_SOCIALSTATISTICS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xd2, xt, api_urls, tmp any;
+	declare url, people_api_url, activity_api_url any;
+	declare item_id varchar;
+	declare pos integer;
+
+	declare exit handler for sqlstate '*'
+	{
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+
+	if (new_origin_uri like 'http://socialstatistics.com/profile/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://socialstatistics.com/profile/%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+		url := sprintf('http://api.socialstatistics.com/1/users/show/%s.json', item_id);
+	}
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (length (tmp) = 0)
+		return 0;
+	tmp := json_parse (tmp);
+	xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/socialstatistics2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+	xd2 := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd2, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
 }
 ;
 
