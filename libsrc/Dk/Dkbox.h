@@ -696,6 +696,7 @@ EXE_EXPORT (ptrlong, unbox_ptrlong, (ccaddr_t n));
 EXE_EXPORT (int64, unbox_int64, (ccaddr_t n));
 EXE_EXPORT (box_t, box_num, (boxint n));
 EXE_EXPORT (box_t, box_num_nonull, (boxint n));
+EXE_EXPORT (box_t, box_iri_id, (int64 n));
 EXE_EXPORT (box_t, box_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_short_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_short_nchars, (const char *buf, size_t buf_len));
@@ -768,6 +769,7 @@ box_t dbg_box_copy_tree (const char *file, int line, cbox_t box);
 box_t dbg_box_try_copy_tree (const char *file, int line, cbox_t box, box_t stub);
 box_t dbg_box_num (const char *file, int line, boxint n);
 box_t dbg_box_num_nonull (const char *file, int line, boxint n);
+box_t dbg_box_iri_id (const char *file, int line, int64 n);
 char *dbg_box_dv_ubuf (const char *file, int line, size_t buf_strlen);
 box_t dbg_box_dv_uname_from_ubuf (const char *file, int line, char *ubuf);
 box_t dbg_box_dv_uname_string (const char *file, int line, const char *string);
@@ -798,6 +800,7 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define box_try_copy_tree(S,STUB)		dbg_box_try_copy_tree (__FILE__, __LINE__, (S), (STUB))
 #define box_num(S)				dbg_box_num (__FILE__, __LINE__, (S))
 #define box_num_nonull(S)			dbg_box_num_nonull (__FILE__, __LINE__, (S))
+#define box_iri_id(S)				dbg_box_iri_id (__FILE__, __LINE__, (S))
 #define box_dv_ubuf(B)				dbg_box_dv_ubuf (__FILE__, __LINE__, (B))
 #define box_dv_uname_from_ubuf(U)		dbg_box_dv_uname_from_ubuf (__FILE__, __LINE__, (U))
 #define box_dv_uname_string(S)			dbg_box_dv_uname_string (__FILE__, __LINE__, (S))

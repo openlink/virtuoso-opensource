@@ -1006,6 +1006,17 @@ DBG_NAME (box_num_nonull) (DBG_PARAMS boxint n)
 }
 
 
+box_t
+DBG_NAME (box_iri_id) (DBG_PARAMS int64 n)
+{
+  iri_id_t * box = (iri_id_t*) dk_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
+  *box = n;
+  return (caddr_t) box;
+}
+
+
+
+
 /*
  * Box a null-terminated string into a
  * DV_<XX>_STRING tagged box
@@ -2416,6 +2427,14 @@ box_t
 box_num_nonull (boxint n)
 {
   return dbg_box_num_nonull (__FILE__, __LINE__, n);
+}
+
+
+#undef box_iri_id
+box_t
+box_iri_id (int64 n)
+{
+  return dbg_box_iri_id (__FILE__, __LINE__, n);
 }
 
 
