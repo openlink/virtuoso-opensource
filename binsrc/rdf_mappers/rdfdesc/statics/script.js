@@ -14,7 +14,7 @@ var x = function (data)
        }
      if (o && o.result != 0)
        {
-	 div.innerHTML = "Processing: " + o.cartridge + ", " + o.time + "s";
+	 div.innerHTML = "Processing: " + o.cartridge + ", " + o.time + "sec. in queue";
        } 
      if (o && o.result == 0)
        {
