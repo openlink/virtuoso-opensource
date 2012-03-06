@@ -11800,6 +11800,10 @@ create procedure DB.DBA.RM_MAKE_DOC_LINKS (in graph_iri varchar, in new_origin_u
   dict_put (dict, vector (subj1, pti, prim), 1);
   if (add_doc)
     dict_put (dict, vector (subj1, tp, iri_to_id ('http://xmlns.com/foaf/0.1/Document')), 1);
+  dict_put (dict, vector (subj1, iri_to_id ('http://vocab.deri.ie/void#inDataset'), iri_to_id (coalesce (dest, graph_iri))), 1);
+  dict_put (dict, vector (iri_to_id (coalesce (dest, graph_iri)), 
+  	iri_to_id ('http://rdfs.org/ns/void#sparqlEndpoint'), 
+	iri_to_id (sprintf ('http://%{URIQADefaultHost}s/sparql/'))), 1);
   return dict_list_keys (dict, 2);
 }
 ;
