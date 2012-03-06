@@ -123,7 +123,7 @@
     }
 
     -- Get the access token
-    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=%U&client_secret=%s&code=%s',
+    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%U&redirect_uri=%U&client_secret=%U&code=%U',
         fb_app_id, fb_app_site_url, fb_app_secret, oauth_code);
 
     oauth_resp := http_client_ext (url=>oauth_url, headers=>oauth_headers);

@@ -376,10 +376,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-	values ('.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('app_secret', '', 'app_id', '', 'offline_access', '1'));
+	values ('.*facebook.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'Facebook (Graph API)', vector ('app_secret', '', 'app_id', '', 'offline_access', '1'));
 
 -- Force an update to the Facebook cartridge name if its already registered
-update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '.*', RM_DESCRIPTION = 'Facebook (Graph API)'
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '.*facebook.*', RM_DESCRIPTION = 'Facebook (Graph API)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
