@@ -3498,7 +3498,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
       DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
     }
     ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
-    ret := -1 * RM_CONTENT_TYPE_IS_RDF (mime);
+    ret := -1;
     for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
     {
       if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
@@ -3527,7 +3527,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     if (length (access_token) = 0)
     {
       log_message (sprintf('%s: No access token is available to query this OpenGraph object\'s metadata.', current_proc_name()));
-      return -1 * RM_CONTENT_TYPE_IS_RDF (mime);
+      return 0;
     }
     url := url || '&access_token=' || access_token;
     cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
@@ -3537,7 +3537,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     if (og_object_type <> 'album')
     {
       log_message (sprintf('%s: Unexpected OpenGraph object type - %s', current_proc_name(), og_object_type));
-      return -1 * RM_CONTENT_TYPE_IS_RDF (mime);
+      return 0;
     }
     -- Get the Facebook user ID of the Album's creator
     og_id := cast (xpath_eval('/results/from/id', xt_og_metadata) as varchar);
@@ -11491,13 +11491,15 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
 	      dbg_obj_prin1 ('Return ', rc, RM_HOOK);
+	      dbg_obj_print ('no triples:', dict_size (dict));
 	      if (__tag(rc) = 193 or rc < 0 or rc > 0)
                 dbg_obj_prin1 ('END of mappings');
 	    }
 	  if (__tag(rc) = 193 or rc < 0 or rc > 0)
 	    {
+	      ins_triples:
 	      declare triples, links any;
-	      dbg_obj_print ('no triples:', dict_size (dict));
+	      dbg_obj_print ('inserting triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
 	      triples := dict_list_keys (dict, 1);
 	      links := DB.DBA.RM_MAKE_DOC_LINKS (graph_iri, new_origin_uri, dest, new_opts, triples);
@@ -11514,9 +11516,12 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 		    }
 		  resignal;
 		};
+		--dbg_obj_print (coalesce (dest, graph_iri), triples);
 	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), triples);
 	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), links);
+		commit work;
 		DB.DBA.RDF_SPONGER_STATUS (graph_iri, new_origin_uri, dest, null, options);
+		commit work;
 	      }	
               if (__tag(rc) = 193)
                 return rc;
@@ -11525,6 +11530,8 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 	}
       try_next_mapper:;
     }
+  if (dict_size (dict))
+    goto ins_triples;
   return 0;
 }
 ;
