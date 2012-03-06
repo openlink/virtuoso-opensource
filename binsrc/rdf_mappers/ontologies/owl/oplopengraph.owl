@@ -895,6 +895,14 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#public_profile_url">
+        <rdfs:comment>URL to a Facebook user's home page</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
+        <rdfs:label>Facebook profile URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#quotes">
         <rdfs:comment>The user's favorite quotes</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#User"/>
@@ -1024,8 +1032,8 @@
     </owl:ObjectProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/opengraph#uri">
-        <rdfs:comment>The URI of a Facebook user's Facebook home page</rdfs:comment>
-        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Product"/>
+        <rdfs:comment>A link to an OpenGraph resource</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/opengraph#Object"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opengraph"/>
         <rdfs:label>uri</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>

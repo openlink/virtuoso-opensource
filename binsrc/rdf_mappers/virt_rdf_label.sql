@@ -52,6 +52,7 @@ TTLP (
 @prefix umbelrc: <http://umbel.org/umbel/rc/> .
 @prefix oplog: <http://www.openlinksw.com/schemas/opengraph#> . 
 @prefix mo: <http://purl.org/ontology/mo/> .
+@prefix oplbase: <http://www.openlinksw.com/schemas/oplbase#> . 
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -748,6 +749,10 @@ oplog:tagged_by rdfs:subPropertyOf dbpedia:Source .
 oplog:link rdfs:subPropertyOf dbpedia:Source . 
 oplog:uri rdfs:subPropertyOf dbpedia:Source . 
 
+oplbase:social_profile_url rdfs:subPropertyOf foaf:homepage .
+oplli:public_profile_url rdfs:subPropertyOf oplbase:social_profile_url .
+oplog:public_profile_url rdfs:subPropertyOf oplbase:social_profile_url .
+opltw:public_profile_url rdfs:subPropertyOf oplbase:social_profile_url .
 
 ', '', 'virtrdf-label');
 

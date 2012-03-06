@@ -638,7 +638,7 @@
     				<oplog:locale><xsl:value-of select="locale"/></oplog:locale>
                 </xsl:if>
                 <xsl:if test="link">
-                    <oplog:uri rdf:resource="{link}"/>
+                    <oplog:public_profile_url rdf:resource="{link}"/>
                 </xsl:if>
 				<xsl:if test="username">
                     <foaf:nick><xsl:value-of select="username"/></foaf:nick>

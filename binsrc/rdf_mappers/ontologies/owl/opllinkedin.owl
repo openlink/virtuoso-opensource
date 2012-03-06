@@ -687,10 +687,10 @@
     </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/linkedin#public_profile_url">
-        <rdfs:comment>URL to a member's public profile</rdfs:comment>
+        <rdfs:comment>URL to a LinkedIn member's public profile</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/linkedin#Person"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/linkedin"/>
-        <rdfs:label>public profile URL</rdfs:label>
+        <rdfs:label>LinkedIn profile URL</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
     </owl:DatatypeProperty>
 
@@ -846,5 +846,4 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 </rdf:RDF>
-
 
