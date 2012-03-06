@@ -1806,6 +1806,19 @@ create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
 }
 ;
 
+create procedure DB.DBA.XENC_X509_PUB_KEY (in data varchar) returns any
+{
+  declare x, m, e any;
+  data := ltrim (data, 'data:application/x-x509-user-cert;base64,');
+  x := get_certificate_info (9, decode_base64 (data), 1);
+  e := cast (x[1] as varchar);
+  m := bin2hex (x[2]);
+  return xtree_doc (sprintf ('<key><mod>%s</mod><exp>%s</exp></key>', m, e));
+}
+;
+
+grant execute on DB.DBA.XENC_X509_PUB_KEY to public;
+
 create procedure DB.DBA.DECODEXML(in xmlstr varchar)
 {
   -- takes XMLSTR, returns an xml tree doc
@@ -1984,6 +1997,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:convert_to_xtree', 'DB.
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:crunchbase_moneystring2decimal', 'DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_SANEURI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
