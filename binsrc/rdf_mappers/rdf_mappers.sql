@@ -1030,6 +1030,8 @@ create procedure RM_CLEAN_DEST (inout triple_dict any, in dest varchar, in graph
   declare deadl int;
   if (get_keyword ('disable-clean', opts, '') = 'Y')
     return;
+  if (get_keyword ('get:soft', opts, '') = 'add')
+    return;
   if (triple_dict is not null)
     {
       dict_zap (triple_dict, 2);
@@ -11971,9 +11973,10 @@ DB.DBA.RM_LOAD_ONTOLOGIES ();
 
 drop procedure DB.DBA.RM_LOAD_ONTOLOGIES;
 
-create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refresh int := null)
+create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refresh int := null, in sp_mode varchar := 'add')
 {
   declare dedl int;
+  --dbg_obj_print_vars (sp_mode);
   set_user_id ('SPARQL');
   dedl := 10;
   declare exit handler for sqlstate '40001'
@@ -11986,9 +11989,9 @@ create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refres
   };
 again:
   if (do_refresh is null)
-    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft',  'refresh_free_text' ,  0, 'meta-cartridges-mode', sp_type));
+    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  sp_mode,  'refresh_free_text' ,  0, 'meta-cartridges-mode', sp_type));
   else
-    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft',  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type, 'get:refresh', do_refresh));
+    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  sp_mode,  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type, 'get:refresh', do_refresh));
 }
 ;
 
