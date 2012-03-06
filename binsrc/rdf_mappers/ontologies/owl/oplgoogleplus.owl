@@ -860,7 +860,7 @@
         <domain rdf:resource="http://www.openlinksw.com/schemas/googleplus#Object"/>
         <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/googleplus"/>
         <label>published</label>
-        <range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
     </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/googleplus#radius">
@@ -959,7 +959,7 @@
         <domain rdf:resource="http://www.openlinksw.com/schemas/googleplus#Object"/>
         <isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/googleplus"/>
         <label>updated</label>
-        <range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+        <range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
     </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/googleplus#url_type">

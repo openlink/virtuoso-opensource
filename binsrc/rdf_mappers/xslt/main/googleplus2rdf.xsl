@@ -582,12 +582,12 @@
 	    <xsl:value-of select="object/content"/>
 	  </oplgp:comment_content>
 	  <xsl:if test="string-length(published) &gt; 0">
-	    <oplgp:published rdf:datatype="&xsd;date">
+	    <oplgp:published rdf:datatype="&xsd;dateTime">
 	      <xsl:value-of select="published"/>
 	    </oplgp:published>
 	  </xsl:if>
 	  <xsl:if test="string-length(updated) &gt; 0">
-	    <oplgp:updated rdf:datatype="&xsd;date">
+	    <oplgp:updated rdf:datatype="&xsd;dateTime">
 	      <xsl:value-of select="updated"/>
 	    </oplgp:updated>
 	  </xsl:if>
@@ -686,7 +686,7 @@
       </oplgp:providerTitle>
     </xsl:if>
     <xsl:if test="string-length(published) &gt; 0">
-      <oplgp:published rdf:datatype="&xsd;date">
+      <oplgp:published rdf:datatype="&xsd;dateTime">
         <xsl:value-of select="published"/>
       </oplgp:published>
     </xsl:if>
@@ -701,7 +701,7 @@
       </oplgp:activity_title>
     </xsl:if>
     <xsl:if test="string-length(updated) &gt; 0">
-      <oplgp:updated rdf:datatype="&xsd;date">
+      <oplgp:updated rdf:datatype="&xsd;dateTime">
         <xsl:value-of select="updated"/>
       </oplgp:updated>
     </xsl:if>
