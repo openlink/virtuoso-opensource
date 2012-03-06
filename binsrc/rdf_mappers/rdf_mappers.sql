@@ -11751,10 +11751,10 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	  if (rc < 0 or rc > 0)
 	    {
 	      ins_triples:
-	      declare triples, links any;
+	      declare _triples, links any;
 	      dbg_obj_print ('inserting triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
-	      triples := dict_list_keys (dict, 1);
+	      _triples := dict_list_keys (dict, 1);
 	      {
 		declare deadl int;
 		deadl := 5;
@@ -11769,7 +11769,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 		  resignal;
 		};
 		--dbg_obj_print (coalesce (dest, graph_iri), triples);
-	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), triples);
+	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), _triples);
 		commit work;
 	      }
 	      return (case when rc < 0 then 0 else 1 end);
