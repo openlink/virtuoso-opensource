@@ -3424,6 +3424,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
   declare og_timeout integer; -- Timeout when accessing Open Graph collections
   declare http_new_origin_uri varchar;
   declare append_access_token_to_connections integer;
+  declare default_access_token varchar;
 
   og_timeout := 60;
   og_id := null;
@@ -3536,16 +3537,19 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
   cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   append_access_token_to_connections := 1;
 
-  -- Handle OpenGraph object type Album as a special case when sponged directly.
-  -- An access token must be supplied to be able to query this object type at all.
+  -- Handle some OpenGraph object types as special cases when sponged directly.
+  -- i.e. - the input URL identifies the OpenGraph object directly
+  --      - the object isn't retrieved from a connection/collection of a parent object
+  -- An access token must be supplied to be able to query these object types at all.
+  -- e.g. Album, Link
   -- If not supplied, OpenGraph returns HTTP 200 (OK) and 'false' instead of an OAuthException.
   --
   -- Attempts to sponge Photos directly return HTTP 400 (Bad request) and an OAuthException.
   -- The Sponger doesn't invoke this cartridge.
   if (cnt = 'false')
   {
-    -- We don't yet know the Facebook user ID of the Album's creator.
-    -- Try all available access tokens to get the Album's metadata
+    -- We don't yet know the Facebook user ID of the object's creator.
+    -- Try all available access tokens to get the unknown object's metadata
     declare access_tokens any;
 
     access_token := null;
@@ -3569,38 +3573,35 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
         if (og_err is null)
 	{
           access_token := token;
-          goto got_usable_token_for_album;
+          goto got_usable_token_for_object;
 	}
       }
     }
     log_message (sprintf('%s: No access token is available to query this OpenGraph object\'s metadata.', current_proc_name()));
     return 0;
 
-got_usable_token_for_album:
+got_usable_token_for_object:
     tree := json_parse (cnt);
     xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
     og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
-    if (og_object_type <> 'album')
-    {
-      log_message (sprintf('%s: Unexpected OpenGraph object type - %s', current_proc_name(), og_object_type));
-      return 0;
-    }
-    -- Get the Facebook user ID of the Album's creator
+
+    -- Get the Facebook user ID of the object's creator
     og_id := cast (xpath_eval('/results/from/id', xt_og_metadata) as varchar);
     -- Has he/she granted an access token
-    declare default_access_token varchar;
     default_access_token := access_token;
-    access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
+    if (length (og_id))
+      access_token := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
+
     if (access_token <> default_access_token)
     {
-      -- Re-fetch the Album's metadata
+      -- Re-fetch the object's metadata
       -- Because this query includes an access token, any connection URIs in the returned metadata will
       -- include the creator's access token
       url := sprintf ('https://graph.facebook.com/%s?metadata=1', id);
       url := url || '&access_token=' || access_token;
       cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
     }
-    -- Prevent DB.DBA.OPENGRAPH_OBJ_CONNECTIONS from appending it to the Album's connection/collection URLs. 
+    -- Prevent DB.DBA.OPENGRAPH_OBJ_CONNECTIONS from appending the access token to the object's connection/collection URLs. 
     -- The access token should already appended to these URLs in the returned metadata
     append_access_token_to_connections := 0;
   }
@@ -3614,7 +3615,7 @@ got_usable_token_for_album:
         vector ('baseUri', new_origin_uri, 'og_object_type', og_object_type));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
-  -- May already have og_id if handling an Album
+  -- May already have og_id
   if (og_id is null)
   {
     og_id := cast (xpath_eval('/results/id', xt_og_metadata) as varchar);

@@ -95,29 +95,62 @@
             <xsl:when test="$og_object_type = 'general'">
 	            <xsl:apply-templates mode="general"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page'">
+            <xsl:when test="$og_object_type = 'album'">
 	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="page"/>
+	            <xsl:apply-templates mode="album"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user'">
-	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="user"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'event'">
-	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="event"/>
+            <xsl:when test="$og_object_type = 'album_photos'">
+	            <xsl:apply-templates mode="album_photos"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'application'">
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="application"/>
             </xsl:when>
+            <xsl:when test="$og_object_type = 'event'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="event"/>
+            </xsl:when>
             <xsl:when test="$og_object_type = 'group'">
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="group"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'album'">
+            <xsl:when test="$og_object_type = 'link'">
 	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="album"/>
+	            <xsl:apply-templates mode="link"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'link_comments'">
+	            <xsl:apply-templates mode="status_comments"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="page"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_albums'">
+	            <xsl:apply-templates mode="user_albums"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_events'">
+	            <xsl:apply-templates mode="page_events"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_feed'">
+	            <xsl:apply-templates mode="page_feed"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_links'">
+	            <xsl:apply-templates mode="user_links"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_notes'">
+	            <xsl:apply-templates mode="page_notes"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_posts'">
+	            <xsl:apply-templates mode="user_posts"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_statuses'">
+	            <xsl:apply-templates mode="page_statuses"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_tagged'">
+	            <xsl:apply-templates mode="page_feed"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_videos'">
+	            <xsl:apply-templates mode="user_movies"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'photo'">
 	            <xsl:apply-templates mode="root"/>
@@ -127,60 +160,48 @@
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="status"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'link'">
+            <xsl:when test="$og_object_type = 'status_comments'">
+	            <xsl:apply-templates mode="status_comments"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'user'">
 	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="link"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_activities'">
-	            <xsl:apply-templates mode="user_activities"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_notes'">
-	            <xsl:apply-templates mode="page_notes"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_events'">
-	            <xsl:apply-templates mode="page_events"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_links'">
-	            <xsl:apply-templates mode="user_links"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_links'">
-	            <xsl:apply-templates mode="user_links"/>
+	            <xsl:apply-templates mode="user"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_accounts'">
 	            <xsl:apply-templates mode="user_accounts"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_books'">
-	            <xsl:apply-templates mode="user_books"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_friends'">
-	            <xsl:apply-templates mode="user_friends"/>
+            <xsl:when test="$og_object_type = 'user_activities'">
+	            <xsl:apply-templates mode="user_activities"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_albums'">
 	            <xsl:apply-templates mode="user_albums"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_albums'">
-	            <xsl:apply-templates mode="user_albums"/>
+            <xsl:when test="$og_object_type = 'user_books'">
+	            <xsl:apply-templates mode="user_books"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_statuses'">
-	            <xsl:apply-templates mode="page_statuses"/>
+            <xsl:when test="$og_object_type = 'user_feed'">
+	            <xsl:apply-templates mode="page_feed"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_likes'">
-	            <xsl:apply-templates mode="user_likes"/>
+            <xsl:when test="$og_object_type = 'user_friends'">
+	            <xsl:apply-templates mode="user_friends"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'user_games'">
+	            <xsl:apply-templates mode="user_games"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_interests'">
 	            <xsl:apply-templates mode="user_interests"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_movies'">
-	            <xsl:apply-templates mode="user_movies"/>
+            <xsl:when test="$og_object_type = 'user_likes'">
+	            <xsl:apply-templates mode="user_likes"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_videos'">
+            <xsl:when test="$og_object_type = 'user_links'">
+	            <xsl:apply-templates mode="user_links"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'user_movies'">
 	            <xsl:apply-templates mode="user_movies"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_music'">
 	            <xsl:apply-templates mode="user_music"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_games'">
-	            <xsl:apply-templates mode="user_games"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_picture'">
 	            <xsl:apply-templates mode="user_picture"/>
@@ -188,26 +209,12 @@
             <xsl:when test="$og_object_type = 'user_posts'">
 	            <xsl:apply-templates mode="user_posts"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_feed' or $og_object_type = 'user_feed'">
-	            <xsl:apply-templates mode="page_feed"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_tagged'">
-	            <xsl:apply-templates mode="page_feed"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_posts'">
-	            <xsl:apply-templates mode="user_posts"/>
-            </xsl:when>
             <xsl:when test="$og_object_type = 'user_television'">
 	            <xsl:apply-templates mode="user_television"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'status_comments'">
-	            <xsl:apply-templates mode="status_comments"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'link_comments'">
-	            <xsl:apply-templates mode="status_comments"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'album_photos'">
-	            <xsl:apply-templates mode="album_photos"/>
+            <xsl:when test="$og_object_type = 'video'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="video"/>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:apply-templates />
@@ -329,12 +336,6 @@
 		</rdf:RDF>
 	</xsl:template>
 
-	<!-- 
-	This template redundant?
-	Photos can't be sponged directly as an access token is required.
-	The usual starting point for Sponging is a public OpenGraph object which doesn't require an access token.
-	Photos are sponged as part of an Album - c.f. template for mode="album_photos".
-	-->
 	<xsl:template match="/results" mode="photo">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$resourceURL}">
@@ -386,6 +387,19 @@
 					<foaf:depiction rdf:resource="{icon}"/>
 				</xsl:if>
 				-->
+
+				<!-- 
+				Some photo objects appear to be more like a status update relating to a photo.
+				In which case the following fields are present
+				-->
+                <xsl:if test="caption">
+                    <dc:title><xsl:value-of select="caption"/></dc:title>
+                </xsl:if>
+				<xsl:if test="string-length(story) &gt; 0">
+                    <dc:description><xsl:value-of select="story"/></dc:description>
+                </xsl:if>
+				<!-- -->
+
 				<dcterms:created rdf:datatype="&xsd;dateTime">
                     <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                     <xsl:choose>
@@ -1521,10 +1535,8 @@
 		        <opl:providedBy rdf:resource="{$providedByIRI}" />
 			    <owl:sameAs rdf:resource="{$docIRI}"/>
                 <rdf:type rdf:resource="&oplog;Post" />
-                <rdf:type rdf:resource="&sioc;Post" />
                 <oplog:id><xsl:value-of select="id"/></oplog:id>
                 <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
-                <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
     	        <dcterms:created rdf:datatype="&xsd;dateTime">
                     <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                     <xsl:choose>
@@ -1547,6 +1559,43 @@
                         </xsl:otherwise>
                     </xsl:choose>
 				</dcterms:modified>
+
+				<xsl:choose>
+					<xsl:when test="string-length(message) &gt; 0">
+						<rdfs:label>
+							<xsl:choose>
+								<xsl:when test="string-length(message) &gt; 50">
+									<xsl:value-of select="concat(substring (message, 1, 100), '...')"/>
+								 </xsl:when>
+								 <xsl:otherwise>
+									 <xsl:value-of select="message"/>
+								 </xsl:otherwise>
+							 </xsl:choose>
+                        </rdfs:label>
+					</xsl:when>
+					<xsl:when test="string-length(description) &gt; 0">
+                        <rdfs:label>
+							<xsl:choose>
+								<xsl:when test="string-length(description) &gt; 50">
+									<xsl:value-of select="concat(substring (description, 1, 100), '...')"/>
+								</xsl:when>
+								<xsl:otherwise>
+								    <xsl:value-of select="description"/>
+								</xsl:otherwise>
+							</xsl:choose>
+						</rdfs:label>
+					</xsl:when>
+					<xsl:when test="string-length(story) &gt; 0">
+						<rdfs:label><xsl:value-of select="story"/></rdfs:label>
+					</xsl:when>
+					<xsl:otherwise>
+						<rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+					</xsl:otherwise>
+				</xsl:choose>
+
+                <xsl:if test="description">
+					<oplog:description><xsl:value-of select="description"/></oplog:description>
+                </xsl:if>
                 <xsl:if test="message">
                     <oplog:message><xsl:value-of select="message"/></oplog:message>
                 </xsl:if>
@@ -1568,7 +1617,16 @@
                 <rdf:type rdf:resource="&sioc;Post" />
                 <oplog:id><xsl:value-of select="id"/></oplog:id>
                 <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
-                <rdfs:label><xsl:value-of select="concat ('Link ', $id)"/></rdfs:label>
+                <rdfs:label>
+				  <xsl:choose>
+					<xsl:when test="string-length (name) &gt; 0">
+					  <xsl:value-of select="name"/>
+					</xsl:when>
+					<xsl:otherwise>
+					  <xsl:value-of select="concat ('Link ', $id)"/>
+					</xsl:otherwise>
+				  </xsl:choose>
+				</rdfs:label>
     	        <dcterms:created rdf:datatype="&xsd;dateTime">
                     <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                     <xsl:choose>
@@ -1617,7 +1675,6 @@
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Post_', $id))}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Post" />
-                            <rdf:type rdf:resource="&sioc;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
@@ -1642,12 +1699,40 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:modified>
-                            <!--
-                            <xsl:if test="name">
-                                <rdfs:label><xsl:value-of select="name"/></rdfs:label>
-                            </xsl:if>
-                            -->
-                            <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+
+							<xsl:choose>
+							  <xsl:when test="string-length(message) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(message) &gt; 50">
+										  <xsl:value-of select="concat(substring (message, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="message"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+                                </rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(description) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(description) &gt; 50">
+										  <xsl:value-of select="concat(substring (description, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="description"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+								</rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(story) &gt; 0">
+								<rdfs:label><xsl:value-of select="story"/></rdfs:label>
+							  </xsl:when>
+							  <xsl:otherwise>
+								<rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+							  </xsl:otherwise>
+							</xsl:choose>
+
                             <xsl:if test="description">
                                 <oplog:description><xsl:value-of select="description"/></oplog:description>
                             </xsl:if>
@@ -1677,10 +1762,13 @@
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Post_', $id))}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Post" />
-                            <rdf:type rdf:resource="&sioc;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
-                            <oplog:to><xsl:value-of select="concat (to/data/name, ' (', to/data/id, ')')"/></oplog:to>
+							<xsl:if test="to">
+								<oplog:to>
+									<xsl:value-of select="concat (to/data/name, ' (', to/data/id, ')')"/>
+								</oplog:to>
+							</xsl:if>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
                               <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                               <xsl:choose>
@@ -1703,7 +1791,40 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:modified>
-                            <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+
+							<xsl:choose>
+							  <xsl:when test="string-length(message) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(message) &gt; 50">
+										  <xsl:value-of select="concat(substring (message, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="message"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+                                </rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(description) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(description) &gt; 50">
+										  <xsl:value-of select="concat(substring (description, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="description"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+								</rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(story) &gt; 0">
+								<rdfs:label><xsl:value-of select="story"/></rdfs:label>
+							  </xsl:when>
+							  <xsl:otherwise>
+								<rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+							  </xsl:otherwise>
+							</xsl:choose>
+
                             <xsl:if test="description">
                                 <oplog:description><xsl:value-of select="description"/></oplog:description>
                             </xsl:if>
@@ -1932,6 +2053,97 @@
                 </xsl:for-each>
 		    </rdf:Description>
 	    </rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="/results" mode="video">
+		<rdf:RDF>
+		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <rdf:type rdf:resource="&oplog;Video" />
+                <oplog:uri rdf:resource="{source}" />
+                <xsl:if test="id">
+                    <oplog:id><xsl:value-of select="id"/></oplog:id>
+                </xsl:if>
+				<dcterms:creator>
+					<!-- 
+					Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+					-->
+					<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+						<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+					</rdf:Description>
+				</dcterms:creator>
+                <xsl:if test="name">
+                    <foaf:name><xsl:value-of select="name"/></foaf:name>
+                </xsl:if>
+				<xsl:if test="description">
+					<dc:description>
+						<xsl:value-of select="description"/>
+					</dc:description>
+				</xsl:if>
+				<xsl:if test="picture">
+					<foaf:depiction rdf:resource="{picture}"/>
+				</xsl:if>
+
+				<dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                      <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                        <xsl:value-of select="$time_without_bad_offset"/>
+                      </xsl:when>
+                      <xsl:otherwise>
+                        <xsl:value-of select="created_time"/>
+                      </xsl:otherwise>
+                    </xsl:choose>
+				</dcterms:created>
+                <xsl:if test="updated_time">
+    				<dcterms:modified rdf:datatype="&xsd;dateTime">
+                      <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                      <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                          <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                          <xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
+					</dcterms:modified>
+                </xsl:if>
+				<xsl:for-each select="comments/data">
+					<sioc:has_reply>
+						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+							<rdfs:label>
+								<xsl:value-of select="message"/>
+							</rdfs:label>
+							<sioc:content>
+								<xsl:value-of select="message" />
+							</sioc:content>
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+                                <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                <xsl:choose>
+                                  <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                    <xsl:value-of select="$time_without_bad_offset"/>
+                                  </xsl:when>
+                                  <xsl:otherwise>
+                                    <xsl:value-of select="created_time"/>
+                                  </xsl:otherwise>
+                                </xsl:choose>
+							</dcterms:created>
+							<dcterms:creator>
+								<!-- 
+								Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+								-->
+								<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+									<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+								</rdf:Description>
+							</dcterms:creator>
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
+						</sioct:Comment>
+					</sioc:has_reply>
+				</xsl:for-each>
+		    </rdf:Description>
+		</rdf:RDF>
 	</xsl:template>
 
     <xsl:template match="*|text()"/>
