@@ -176,6 +176,7 @@
 			<foaf:title>
 				<xsl:value-of select="description" />
 			</foaf:title>
+			<twitter:public_profile_url rdf:resource="{concat('http://twitter.com/', screen_name)}"/>
 			<owl:sameAs rdf:resource="{concat('http://twitter.com/#!/', screen_name)}"/>
 		</foaf:Person>
 	</xsl:template>
@@ -208,19 +209,22 @@
 		    </oplcert:Certificate>
 		</xsl:if>
 		<!-- x509 certificate -->
-		<xsl:if test="starts-with (text, '#X509Cert di:')">
+		<xsl:if test="text like '%di:%?hashtag=webid%'">
 		    <xsl:variable name="di"><xsl:copy-of select="vi:di-split (text)"/></xsl:variable>
-		    <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
-		    <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
+		    <xsl:variable name="au"><xsl:value-of select="vi:proxyIRI(concat('http://twitter.com/', user/screen_name))"/></xsl:variable>
+		    <xsl:for-each select="$di/result/di">
+			<xsl:variable name="fp"><xsl:value-of select="hash"/></xsl:variable>
+			<xsl:variable name="dgst"><xsl:value-of select="dgst"/></xsl:variable>
 		    <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
-		    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}">
-			<oplcert:hasCertificate rdf:resource="{vi:proxyIRI (concat('http://twitter.com/', user/screen_name), '', $fp)}"/>
+			<foaf:Person rdf:about="{$au}">
+			    <oplcert:hasCertificate rdf:resource="{vi:proxyIRI ($au, '', $fp)}"/>
 		    </foaf:Person>
-		    <oplcert:Certificate rdf:about="{vi:proxyIRI (concat('http://twitter.com/', user/screen_name), '', $fpn)}">
+			<oplcert:Certificate rdf:about="{vi:proxyIRI ($au, '', $fp)}">
 			<rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
 			<oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
 			<oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
 		    </oplcert:Certificate>
+		    </xsl:for-each>
 		</xsl:if>
 		<!-- end certificate -->
 
