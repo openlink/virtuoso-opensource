@@ -3369,6 +3369,8 @@ EXEC_STMT(
 create index OPENGRAPH_ACCESS_TOKENS_USER_ID on DB.DBA.OPENGRAPH_ACCESS_TOKENS (OGAT_GRANTOR_ID)', 0)
 ;
 
+RM_UPGRADE_TBL ('DB.DBA.OPENGRAPH_ACCESS_TOKENS', 'OGAT_TOKEN_INVALID', 'integer default 0');
+
 EXEC_STMT(
 'create table DB.DBA.LINKEDIN_ACCESS_TOKENS (
     LIAT_ACCESS_TOKEN varchar,           -- LinkedIn access token
@@ -3833,7 +3835,7 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
        from
          DB.DBA.OPENGRAPH_ACCESS_TOKENS
        where
-         OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES is null
+         OGAT_GRANTOR_ID = og_id and OGAT_TOKEN_INVALID = 0 and OGAT_EXPIRES is null
        order by OGAT_CREATED desc
       )
     do
@@ -3850,7 +3852,7 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
        from
          DB.DBA.OPENGRAPH_ACCESS_TOKENS
        where
-         OGAT_GRANTOR_ID = og_id and OGAT_EXPIRES > now()
+         OGAT_GRANTOR_ID = og_id and OGAT_TOKEN_INVALID = 0 and OGAT_EXPIRES > now()
       )
     do
     {
@@ -3866,7 +3868,7 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
      from 
        DB.DBA.OPENGRAPH_ACCESS_TOKENS 
      where 
-       OGAT_EXPIRES is null 
+       OGAT_TOKEN_INVALID = 0 and OGAT_EXPIRES is null 
      order by OGAT_CREATED desc
     )
     do
@@ -3879,8 +3881,52 @@ create procedure DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (in og_id varchar)
   else
   {
     declare access_tokens any;
-    access_tokens := (select DB.DBA.VECTOR_AGG(OGAT_ACCESS_TOKEN) from DB.DBA.OPENGRAPH_ACCESS_TOKENS order by OGAT_CREATED desc);
+    access_tokens := (select DB.DBA.VECTOR_AGG(OGAT_ACCESS_TOKEN) from DB.DBA.OPENGRAPH_ACCESS_TOKENS where OGAT_TOKEN_INVALID = 0 order by OGAT_CREATED desc);
     return access_tokens;
+  }
+}
+;
+
+create procedure DB.DBA.OPENGRAPH_CHECK_ACCESS_TOKENS ()
+{
+  -- Checks for invalid access tokens:
+  -- After granting a token, a user may subsequently have revoked it by opting to deny the Sponger Facebook application access to their profile, 
+  -- or they may have changed their password.
+
+  declare token_test_url_template, url, cnt varchar;
+  declare tree, xt, hdr any;
+  -- declare grantor_id, access_token any;
+
+  if (not exists( select top 1 1 from DB.DBA.SYS_COLS where upper("TABLE") = 'DB.DBA.OPENGRAPH_ACCESS_TOKENS' and upper("COLUMN") = 'OGAT_TOKEN_INVALID'))
+  {
+    log_message ('%s: Update RDF Mappers VAD or run RM_UPGRADE_TBL (''DB.DBA.OPENGRAPH_ACCESS_TOKENS'', ''OGAT_TOKEN_INVALID'', ''integer default 0'')', current_proc_name());
+    return;
+  }
+
+  -- Not all Graph API connections require an access token; photos does.
+  token_test_url_template := 'https://graph.facebook.com/%s/photos?access_token=%s';
+  for (select OGAT_GRANTOR_ID as grantor_id, OGAT_ACCESS_TOKEN as access_token from DB.DBA.OPENGRAPH_ACCESS_TOKENS where OGAT_TOKEN_INVALID is null or OGAT_TOKEN_INVALID = 0) do
+  {
+    url := sprintf (token_test_url_template, grantor_id, access_token);
+    cnt := http_client_ext (url, headers=>hdr);
+    -- Invalid tokens result in HTTP/1.1 400 Bad Request
+    if (hdr[0] like 'HTTP/1._ 400 %')
+    {
+      tree := json_parse (cnt);
+      if (tree is not null)
+      {
+        xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+        if (xpath_eval ('/results/error/type[. = "OAuthException"]', xt) is not null)
+        {
+	  declare msg varchar;
+	  msg := cast (xpath_eval ('/results/error/message', xt) as varchar);
+	  if (strstr (msg, 'Error validating access token') is not null)
+	  {
+	    update DB.DBA.OPENGRAPH_ACCESS_TOKENS set OGAT_TOKEN_INVALID = 1 where OGAT_ACCESS_TOKEN = access_token;
+	  }
+        }
+      }
+    }
   }
 }
 ;
