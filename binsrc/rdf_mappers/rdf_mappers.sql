@@ -11661,7 +11661,7 @@ load_rdf:
 
 create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
-  declare xd, xt, tmp, url, article_url, desired_response_fields any;
+  declare xd, xt, tmp, url, article_url, desired_response_fields, hdr any;
   declare response_fields varchar;
 
   declare exit handler for sqlstate '*'
@@ -11695,7 +11695,9 @@ create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE (in graph_iri varchar, in new_origi
   article_url := replace (new_origin_uri, '/', '\\/');
   url := sprintf ('http://api.nytimes.com/svc/search/v1/article?query=url:%s&fields=%s&api-key=%s', article_url, response_fields, _key);
 
-  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());        
+  tmp := http_client_ext (url=>url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+  DB.DBA.RM_LOG_RESPONSE (tmp, hdr);
   if (length (tmp) = 0)
   {
     log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
