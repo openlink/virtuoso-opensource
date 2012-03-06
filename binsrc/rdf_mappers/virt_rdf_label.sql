@@ -89,22 +89,22 @@ og:longitude rdfs:subPropertyOf geo:long .
 <http://rdfs.org/ns/void#vocabulary> owl:equivalentProperty <http://www.openlinksw.com/schema/attribution#isDescribedUsing> .
 <http://www.rdfabout.com/rdf/schema/ussec/tradingSymbol> a owl:inverseFunctionalProperty . 
 <http://www.rdfabout.com/rdf/schema/ussec/cik> a owl:inverseFunctionalProperty .
-foaf:logo owl:subPropertyOf foaf:depiction .
+foaf:logo rdfs:subPropertyOf foaf:depiction .
 <http://umbel.org/umbel#isAbout> owl:equivalentProperty foaf:focus .
 gr:name rdfs:subPropertyOf foaf:name .
 <http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
 <http://www.w3.org/2007/05/powder-s#describedby> owl:equivalentProperty <http://www.iana.org/assignments/relation/describedby> .
 <http://dbpedia.org/property/secCik> a owl:inverseFunctionalProperty .
 dv:photo owl:equivalentProperty foaf:depiction .
-dv:instructions owl:equivalentProperty dc:description .
+dv:instructions rdfs:subPropertyOf dc:description .
 dv:name rdfs:subPropertyOf virtrdf:label .
 c:summary rdfs:subPropertyOf virtrdf:label .
 c:description owl:equivalentProperty dc:description .
 foaf:img rdfs:subPropertyOf virtrdf:image .
 foaf:depiction rdfs:subPropertyOf virtrdf:image .
 dv:photo rdfs:subPropertyOf virtrdf:image .
-<http://www.openlinksw.com/schemas/virtcxml#Custom-Screen%20Name> owl:equivalentProperty foaf:nick.
-<http://www.openlinksw.com/schemas/virtcxml#Custom-Real%20Name> owl:equivalentProperty foaf:name .
+<http://www.openlinksw.com/schemas/virtcxml#Custom-Screen%20Name> rdfs:subPropertyOf foaf:nick.
+<http://www.openlinksw.com/schemas/virtcxml#Custom-Real%20Name> rdfs:subPropertyOf foaf:name .
 <http://www.openlinksw.com/schemas/virtcxml#FacetDescription> owl:equivalentProperty dcterms:description .
 <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> rdfs:subPropertyOf virtrdf:label .
 <http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name> rdfs:subPropertyOf virtrdf:label .
@@ -130,39 +130,32 @@ oplgp:comment_actor owl:equivalentProperty sioc:has_creator .
 oplgp:has_comment owl:equivalentProperty sioc:has_reply .
 oplgp:in_reply_to owl:equivalentProperty sioc:reply_of .
 oplgp:attachment owl:equivalentProperty sioc:attachment .
-oplgp:annotation owl:equivalentProperty sioc:content .
+oplgp:annotation rdfs:subPropertyOf sioc:content .
 oplgp:html_content owl:equivalentProperty sioc:content .
 oplgp:originalContent owl:equivalentProperty sioc:content .
 oplgp:content owl:equivalentProperty sioc:content .
 oplgp:comment_content owl:equivalentProperty sioc:content .
 oplgp:email owl:equivalentProperty sioc:email .
 oplgp:role owl:equivalentProperty sioc:has_function .
-oplgp:activity_replied_to_id owl:equivalentProperty sioc:id .
-oplgp:placeId owl:equivalentProperty sioc:id.
+oplgp:activity_replied_to_id rdfs:subPropertyOf sioc:id .
+oplgp:placeId rdfs:subPropertyOf sioc:id.
 oplgp:id owl:equivalentProperty sioc:id. 
-oplgp:updated owl:equivalentProperty sioc:last_activity_date .
-oplgp:activity_url owl:equivalentProperty sioc:link .
-oplgp:profile_url owl:equivalentProperty sioc:link .
-oplgp:shared_url owl:equivalentProperty sioc:link .
-oplgp:primary_url owl:equivalentProperty sioc:link .
-oplgp:url_value owl:equivalentProperty sioc:link .
-oplgp:object_url owl:equivalentProperty sioc:link .
-oplgp:actor_profile_url owl:equivalentProperty sioc:link .
-oplgp:attachment_url owl:equivalentProperty sioc:link .
-oplgp:embed_url owl:equivalentProperty sioc:link .
-oplgp:full_image_url owl:equivalentProperty sioc:link .
-oplgp:preview_image_url owl:equivalentProperty sioc:link .
-oplgp:in_reply_to_url owl:equivalentProperty sioc:link .
+oplgp:updated rdfs:subPropertyOf sioc:last_activity_date .
+oplgp:activity_url rdfs:subPropertyOf sioc:link .
+oplgp:profile_url rdfs:subPropertyOf sioc:link .
+oplgp:shared_url rdfs:subPropertyOf sioc:link .
+oplgp:primary_url rdfs:subPropertyOf sioc:link .
+oplgp:url_value rdfs:subPropertyOf sioc:link .
+oplgp:object_url rdfs:subPropertyOf sioc:link .
+oplgp:actor_profile_url rdfs:subPropertyOf sioc:link .
+oplgp:attachment_url rdfs:subPropertyOf sioc:link .
+oplgp:embed_url rdfs:subPropertyOf sioc:link .
+oplgp:full_image_url rdfs:subPropertyOf sioc:link .
+oplgp:preview_image_url rdfs:subPropertyOf sioc:link .
+oplgp:in_reply_to_url rdfs:subPropertyOf sioc:link .
 oplgp:displayName rdfs:subPropertyOf sioc:name .
 oplgp:name rdfs:subPropertyOf sioc:name .
-oplgp:formatted rdfs:subPropertyOf sioc:name .
-oplgp:middleName rdfs:subPropertyOf sioc:name .
-oplgp:organization_name rdfs:subPropertyOf sioc:name .
-oplgp:actor_displayName rdfs:subPropertyOf sioc:name .
-oplgp:attachment_displayName rdfs:subPropertyOf sioc:name .
-oplgp:familyName rdfs:subPropertyOf sioc:name .
-oplgp:givenName rdfs:subPropertyOf sioc:name .
-oplgp:annotation owl:equivalentProperty sioc:note . 
+oplgp:annotation rdfs:subPropertyOf sioc:note . 
 
 oplgp:Organization owl:equivalentClass foaf:Organization .
 oplgp:Person owl:equivalentClass foaf:Person .
@@ -171,30 +164,26 @@ oplgp:PreviewImage owl:equivalentClass foaf:Image .
 oplgp:Actor owl:equivalentClass foaf:OnlineAccount .
 
 oplgp:email owl:equivalentProperty foaf:mbox .
-oplgp:actor_profile_image owl:equivalentProperty foaf:img .
-oplgp:profile_image owl:equivalentProperty foaf:img .
-oplgp:fullImage owl:equivalentProperty foaf:img .
-oplgp:previewImage owl:equivalentProperty foaf:img .
-oplgp:displayName rdfs:subPropertyOf foaf:name .
+oplgp:actor_profile_image rdfs:subPropertyOf foaf:img .
+oplgp:profile_image rdfs:subPropertyOf foaf:img .
+oplgp:fullImage rdfs:subPropertyOf foaf:img .
+oplgp:previewImage rdfs:subPropertyOf foaf:img .
 oplgp:name rdfs:subPropertyOf foaf:name .
-oplgp:formatted rdfs:subPropertyOf foaf:name .
-oplgp:organization_name rdfs:subPropertyOf foaf:name .
-oplgp:actor_displayName rdfs:subPropertyOf foaf:name .
 oplgp:familyName owl:equivalentProperty foaf:familyName .
 oplgp:givenName owl:equivalentProperty foaf:givenName .
 oplgp:gender owl:equivalentProperty foaf:gender .
 oplgp:nickname owl:equivalentProperty foaf:nick .
 oplgp:date_of_birth owl:equivalentProperty foaf:birthday .
-oplgp:relationshipStatus owl:equivalentProperty foaf:status .
+oplgp:relationshipStatus rdfs:subPropertyOf foaf:status .
 oplgp:honorificPrefix owl:equivalentProperty foaf:title .
 
 oplgp:aboutMe rdfs:subPropertyOf dc:description .
 oplgp:activity_title owl:equivalentProperty dc:title .
-oplgp:published owl:equivalentProperty dc:date .
-oplgp:updated owl:equivalentProperty dc:date .
-oplgp:date_of_birth owl:equivalentProperty dc:date .
-oplgp:endDate owl:equivalentProperty dc:date .
-oplgp:startDate owl:equivalentProperty dc:date .
+oplgp:published rdfs:subPropertyOf dc:date .
+oplgp:updated rdfs:subPropertyOf dc:date .
+oplgp:date_of_birth rdfs:subPropertyOf dc:date .
+oplgp:endDate rdfs:subPropertyOf dc:date .
+oplgp:startDate rdfs:subPropertyOf dc:date .
 oplgp:actor owl:equivalentProperty dc:creator .
 oplgp:comment_actor owl:equivalentProperty dc:creator .
 oplgp:tagline rdfs:subPropertyOf dc:description .
@@ -226,8 +215,8 @@ oplgp:preview_image_url rdfs:subPropertyOf dc:source .
 oplgp:comment_self_link rdfs:subPropertyOf dc:source .
 oplgp:in_reply_to_url rdfs:subPropertyOf dc:source .
 oplgp:title owl:equivalentProperty dc:title .
-oplgp:attachment_displayName owl:equivalentProperty dc:title .
-oplgp:activity_title owl:equivalentProperty dc:title .
+oplgp:attachment_displayName rdfs:subPropertyOf dc:title .
+oplgp:activity_title rdfs:subPropertyOf dc:title .
 oplgp:email_type rdfs:subPropertyOf dc:type .
 oplgp:organization_type owl:equivalentProperty dc:type .
 oplgp:url_type rdfs:subPropertyOf dc:type .
@@ -288,8 +277,7 @@ oplgp:FullImage owl:equivalentClass bibo:Image .
 oplgp:Email owl:equivalentClass bibo:Email .
 oplgp:PreviewImage owl:equivalentClass bibo:Image . 
 
-oplgp:annotation owl:equivalentProperty bibo:content .
-oplgp:annotation owl:equivalentProperty bibo:annotates .
+oplgp:annotation rdfs:subPropertyOf bibo:annotates .
 oplgp:originalContent owl:equivalentProperty bibo:content .
 oplgp:content owl:equivalentProperty bibo:content .
 oplgp:comment_content owl:equivalentProperty bibo:content .
@@ -312,26 +300,23 @@ oplgp:placeName owl:equivalentProperty event:place .
 oplgp:date_of_birth owl:equivalentProperty <http://www.openlinksw.com/schemas/rdfs/birthDate#this> .
 	
 oplgp:honorificPrefix owl:equivalentProperty vcard:TITLE .
-oplgp:formatted owl:equivalentProperty vcard:FN .
 oplgp:nickname owl:equivalentProperty vcard:NICKNAME .
 oplgp:date_of_birth owl:equivalentProperty vcard:BDAY .
 oplgp:title owl:equivalentProperty vcard:TITLE .
 oplgp:role owl:equivalentProperty vcard:ROLE .
-oplgp:annotation owl:equivalentProperty vcard:NOTE .
+oplgp:annotation rdfs:subPropertyOf vcard:NOTE .
 oplgp:email owl:equivalentProperty vcard:EMAIL .
-oplgp:displayName owl:equivalentProperty vcard:N .
-oplgp:name owl:equivalentProperty vcard:N .
-oplgp:formatted owl:equivalentProperty vcard:N .
+oplgp:name rdfs:subPropertyOf vcard:N .
 oplgp:familyName owl:equivalentProperty vcard:Family .
 oplgp:givenName owl:equivalentProperty vcard:Given .
 oplgp:honorificPrefix owl:equivalentProperty vcard:Prefix .
 oplgp:honorificSuffix owl:equivalentProperty vcard:Suffix .
 oplgp:organization_name owl:equivalentProperty vcard:ORG .
-oplgp:department owl:subPropertyOf vcard:Orgunit .
+oplgp:department rdfs:subPropertyOf vcard:Orgunit .
 oplgp:actor_profile_image owl:equivalentProperty vcard:PHOTO .
-oplgp:profile_image owl:equivalentProperty vcard:PHOTO .
-oplgp:fullImage owl:equivalentProperty vcard:PHOTO .
-oplgp:previewImage owl:equivalentProperty vcard:PHOTO .
+oplgp:profile_image rdfs:subPropertyOf vcard:PHOTO .
+oplgp:fullImage rdfs:subPropertyOf vcard:PHOTO .
+oplgp:previewImage rdfs:subPropertyOf vcard:PHOTO .
 
 oplgp:shared_url owl:equivalentProperty rdfs:seeAlso .
 
@@ -342,11 +327,11 @@ oplgp:Person owl:equivalentClass dbpedia:Person .
 oplgp:Actor owl:equivalentClass dbpedia:Actor .
 oplgp:PlaceLived owl:equivalentClass dbpedia:Place .
 oplgp:activity_title owl:equivalentClass dbpedia:Publisher .
-oplgp:published owl:equivalentProperty dbpedia:Date .
-oplgp:updated owl:equivalentProperty dbpedia:Date .
+oplgp:published rdfs:subPropertyOf dbpedia:Date .
+oplgp:updated rdfs:subPropertyOf dbpedia:Date .
 oplgp:access owl:equivalentProperty dbpedia:Access .
 oplgp:address owl:equivalentProperty dbpedia:Address .
-oplgp:annotation owl:equivalentProperty dbpedia:Note .
+oplgp:annotation rdfs:subPropertyOf dbpedia:Note .
 oplgp:placeName owl:equivalentProperty dbpedia:Place .
 oplgp:currentLocation owl:equivalentProperty dbpedia:LocatedInArea .
 oplgp:date_of_birth owl:equivalentProperty dbpedia:BirthDate .
@@ -402,7 +387,6 @@ oplli:InstantMessagingAccount rdfs:subClassOf foaf:OnlineAccount .
 oplli:TwitterAccount owl:equivalentClass foaf:OnlineAccount .
 
 oplli:first_name owl:equivalentProperty foaf:firstName .
-oplli:has_phone_number owl:equivalentProperty foaf:phone .
 oplli:has_im_account owl:equivalentProperty foaf:account .
 oplli:has_twitter_account owl:equivalentProperty foaf:account .
 oplli:interests owl:equivalentProperty foaf:interest .
@@ -410,17 +394,12 @@ oplli:last_name owl:equivalentProperty foaf:lastName .
 oplli:location_name owl:equivalentProperty foaf:based_near .
 oplli:picture_url owl:equivalentProperty foaf:img .
 oplli:publication owl:equivalentProperty foaf:publications .
-oplli:public_profile_url owl:equivalentProperty foaf:accountServiceHomepage .
-oplli:public_profile_url owl:equivalentProperty foaf:page .
-oplli:company_name rdfs:subPropertyOf foaf:name .
-oplli:school_name rdfs:subPropertyOf foaf:name .
+oplli:public_profile_url rdfs:subPropertyOf foaf:accountServiceHomepage .
+oplli:public_profile_url rdfs:subPropertyOf foaf:page .
 oplli:im_account_name owl:equivalentProperty foaf:accountName .
 oplli:phone_number owl:equivalentProperty foaf:phone .
-oplli:publication_summary owl:equivalentProperty foaf:publications .
 oplli:publication_title owl:equivalentProperty foaf:publications .
-oplli:publisher_name rdfs:subPropertyOf foaf:name .
-oplli:author_name rdfs:subPropertyOf foaf:name .
-oplli:provider_account_name owl:equivalentProperty foaf:account .  
+  
 
 oplli:Publication owl:equivalentClass sioc:Post .
 oplli:Recommendation owl:equivalentClass sioc:Post .
@@ -433,16 +412,16 @@ oplli:patent_status_id rdfs:subPropertyOf sioc:id .
 oplli:inventor_id rdfs:subPropertyOf sioc:id .
 oplli:author_id rdfs:subPropertyOf sioc:id .
 oplli:provider_account_id rdfs:subPropertyOf sioc:id .
-oplli:member_url_resource owl:equivalentProperty sioc:link .
-oplli:picture_url owl:equivalentProperty sioc:link .
-oplli:public_profile_url owl:equivalentProperty sioc:link .
-oplli:patent_url owl:equivalentProperty sioc:link .
-oplli:member_shared_resource_url owl:equivalentProperty sioc:link .
-oplli:publication_url owl:equivalentProperty sioc:link . 
+oplli:member_url_resource rdfs:subPropertyOf sioc:link .
+oplli:picture_url rdfs:subPropertyOf sioc:link .
+oplli:public_profile_url rdfs:subPropertyOf sioc:link .
+oplli:patent_url rdfs:subPropertyOf sioc:link .
+oplli:member_shared_resource_url rdfs:subPropertyOf sioc:link .
+oplli:publication_url rdfs:subPropertyOf sioc:link . 
 oplli:summary owl:equivalentProperty sioc:content . 
 oplli:patent_summary owl:equivalentProperty sioc:content . 
 oplli:publication_summary owl:equivalentProperty sioc:content . 
-oplli:education_notes owl:equivalentProperty sioc:note . 
+oplli:education_notes rdfs:subPropertyOf sioc:note . 
 oplli:provider_account_name rdfs:subPropertyOf sioc:name . 
 oplli:first_name rdfs:subPropertyOf sioc:name . 
 oplli:im_account_name rdfs:subPropertyOf sioc:name . 
@@ -467,10 +446,10 @@ oplli:proposal_comments rdfs:subPropertyOf dc:description .
 oplli:associations rdfs:subPropertyOf dc:description .
 oplli:certification rdfs:subPropertyOf dc:description .
 oplli:language owl:equivalentProperty dc:language .
-oplli:company_type owl:equivalentProperty dc:type .
-oplli:im_account_type owl:equivalentProperty dc:type .
-oplli:phone_number_type owl:equivalentProperty dc:type .
-oplli:recommendation_type owl:equivalentProperty dc:type .
+oplli:company_type rdfs:subPropertyOf dc:type .
+oplli:im_account_type rdfs:subPropertyOf dc:type .
+oplli:phone_number_type rdfs:subPropertyOf dc:type .
+oplli:recommendation_type rdfs:subPropertyOf dc:type .
 oplli:id owl:equivalentProperty dc:identifier .
 oplli:patent_status_id rdfs:subPropertyOf dc:identifier . 
 oplli:inventor_id rdfs:subPropertyOf dc:identifier .
@@ -487,15 +466,15 @@ oplli:summary owl:equivalentProperty dc:description .
 oplli:patent_title owl:equivalentProperty dc:title .
 oplli:title owl:equivalentProperty dc:title .
 oplli:publication_title owl:equivalentProperty dc:title .
-oplli:date_of_birth owl:equivalentProperty dc:date .
-oplli:certification_start_date owl:equivalentProperty dc:date .
-oplli:certification_end_date owl:equivalentProperty dc:date .
-oplli:education_start_date owl:equivalentProperty dc:date .
-oplli:education_end_date owl:equivalentProperty dc:date .
-oplli:patent_date owl:equivalentProperty dc:date .
-oplli:end_date owl:equivalentProperty dc:date .
-oplli:start_date owl:equivalentProperty dc:date .
-oplli:publication_date owl:equivalentProperty dc:date .
+oplli:date_of_birth rdfs:subPropertyOf dc:date .
+oplli:certification_start_date rdfs:subPropertyOf dc:date .
+oplli:certification_end_date rdfs:subPropertyOf dc:date .
+oplli:education_start_date rdfs:subPropertyOf dc:date .
+oplli:education_end_date rdfs:subPropertyOf dc:date .
+oplli:patent_date rdfs:subPropertyOf dc:date .
+oplli:end_date rdfs:subPropertyOf dc:date .
+oplli:start_date rdfs:subPropertyOf dc:date .
+oplli:publication_date rdfs:subPropertyOf dc:date .
 oplli:author_name owl:equivalentProperty dc:creator .
 
 oplli:Person rdfs:subClassOf dcterms:Agent .
@@ -508,10 +487,10 @@ oplli:associations rdfs:subPropertyOf dcterms:description .
 oplli:certification rdfs:subPropertyOf dcterms:description .
 oplli:education rdfs:subPropertyOf dcterms:educationLevel .
 oplli:language owl:equivalentProperty dcterms:language .
-oplli:company_type owl:equivalentProperty dcterms:type .
-oplli:im_account_type owl:equivalentProperty dcterms:type .
-oplli:phone_number_type owl:equivalentProperty dcterms:type .
-oplli:recommendation_type owl:equivalentProperty dcterms:type .
+oplli:company_type rdfs:subPropertyOf dcterms:type .
+oplli:im_account_type rdfs:subPropertyOf dcterms:type .
+oplli:phone_number_type rdfs:subPropertyOf dcterms:type .
+oplli:recommendation_type rdfs:subPropertyOf dcterms:type .
 oplli:id owl:equivalentProperty dcterms:identifier .
 oplli:patent_status_id rdfs:subPropertyOf dcterms:identifier . 
 oplli:inventor_id rdfs:subPropertyOf dcterms:identifier .
@@ -528,53 +507,53 @@ oplli:summary owl:equivalentProperty dcterms:description .
 oplli:patent_title owl:equivalentProperty dcterms:title .
 oplli:title owl:equivalentProperty dcterms:title .
 oplli:publication_title owl:equivalentProperty dcterms:title .
-oplli:date_of_birth owl:equivalentProperty dcterms:date .
-oplli:certification_start_date owl:equivalentProperty dcterms:date .
-oplli:certification_end_date owl:equivalentProperty dcterms:date .
-oplli:education_start_date owl:equivalentProperty dcterms:date .
-oplli:education_end_date owl:equivalentProperty dcterms:date .
-oplli:patent_date owl:equivalentProperty dcterms:date .
-oplli:end_date owl:equivalentProperty dcterms:date .
-oplli:start_date owl:equivalentProperty dcterms:date .
-oplli:publication_date owl:equivalentProperty dcterms:date .
+oplli:date_of_birth rdfs:subPropertyOf dcterms:date .
+oplli:certification_start_date rdfs:subPropertyOf dcterms:date .
+oplli:certification_end_date rdfs:subPropertyOf dcterms:date .
+oplli:education_start_date rdfs:subPropertyOf dcterms:date .
+oplli:education_end_date rdfs:subPropertyOf dcterms:date .
+oplli:patent_date rdfs:subPropertyOf dcterms:date .
+oplli:end_date rdfs:subPropertyOf dcterms:date .
+oplli:start_date rdfs:subPropertyOf dcterms:date .
+oplli:publication_date rdfs:subPropertyOf dcterms:date .
 oplli:author_name owl:equivalentProperty dcterms:creator .
 
 
 oplli:Patent owl:equivalentClass bibo:Patent .
 oplli:Publication rdfs:subClassOf bibo:Document .
 
-oplli:publication_url owl:equivalentProperty bibo:uri .
-oplli:education_notes owl:equivalentProperty bibo:annotates .
-oplli:patent_number owl:equivalentProperty bibo:number .
-oplli:skill_years_of_experience owl:equivalentProperty bibo:number .
-oplli:patent_status owl:equivalentProperty bibo:status .
-oplli:author_name owl:equivalentProperty bibo:owner.
-oplli:author_name owl:equivalentProperty bibo:producer .
-oplli:author_person owl:equivalentProperty bibo:owner.
-oplli:author_person owl:equivalentProperty bibo:producer .
-oplli:patent_summary owl:equivalentProperty bibo:content .
-oplli:position_summary owl:equivalentProperty bibo:content .
-oplli:publication_summary owl:equivalentProperty bibo:content .
-oplli:summary owl:equivalentProperty bibo:content .
+oplli:publication_url rdfs:subPropertyOf bibo:uri .
+oplli:education_notes rdfs:subPropertyOf bibo:annotates .
+oplli:patent_number rdfs:subPropertyOf bibo:number .
+oplli:skill_years_of_experience rdfs:subPropertyOf bibo:number .
+oplli:patent_status rdfs:subPropertyOf bibo:status .
+oplli:author_name rdfs:subPropertyOf bibo:owner.
+oplli:author_name rdfs:subPropertyOf bibo:producer .
+oplli:author_person rdfs:subPropertyOf bibo:owner.
+oplli:author_person rdfs:subPropertyOf bibo:producer .
+oplli:patent_summary rdfs:subPropertyOf bibo:content .
+oplli:position_summary rdfs:subPropertyOf bibo:content .
+oplli:publication_summary rdfs:subPropertyOf bibo:content .
+oplli:summary rdfs:subPropertyOf bibo:content .
 oplli:id owl:equivalentProperty bibo:identifier .
-oplli:patent_status_id owl:equivalentProperty bibo:identifier .
-oplli:inventor_id owl:equivalentProperty bibo:identifier .
-oplli:author_id owl:equivalentProperty bibo:identifier .
-oplli:provider_account_id owl:equivalentProperty bibo:identifier .
+oplli:patent_status_id rdfs:subPropertyOf bibo:identifier .
+oplli:inventor_id rdfs:subPropertyOf bibo:identifier .
+oplli:author_id rdfs:subPropertyOf bibo:identifier .
+oplli:provider_account_id rdfs:subPropertyOf bibo:identifier .
 
 
 oplli:date_of_birth owl:equivalentProperty vcard:BDAY .
-oplli:education_notes owl:equivalentProperty vcard:NOTE .
+oplli:education_notes rdfs:subPropertyOf vcard:NOTE .
 oplli:first_name owl:equivalentProperty vcard:Given .
 oplli:last_name owl:equivalentProperty vcard:Family .
 oplli:picture_url owl:equivalentProperty vcard:PHOTO .
 oplli:company_industry rdfs:subPropertyOf vcard:Orgunit .
 oplli:company_name owl:equivalentProperty vcard:Orgname .
 oplli:id owl:equivalentProperty vcard:UID .
-oplli:patent_status_id owl:equivalentProperty vcard:UID .
-oplli:inventor_id owl:equivalentProperty vcard:UID .
-oplli:author_id owl:equivalentProperty vcard:UID .
-oplli:provider_account_id owl:equivalentProperty vcard:UID .
+oplli:patent_status_id rdfs:subPropertyOf vcard:UID .
+oplli:inventor_id rdfs:subPropertyOf vcard:UID .
+oplli:author_id rdfs:subPropertyOf vcard:UID .
+oplli:provider_account_id rdfs:subPropertyOf vcard:UID .
 oplli:phone_number owl:equivalentProperty vcard:TEL .
 oplli:phone_number_type owl:equivalentProperty vcard:TELTYPES .
 oplli:main_address owl:equivalentProperty vcard:ADR .
@@ -585,17 +564,17 @@ oplli:TwitterAccount owl:equivalentClass dbpedia:Person .
 oplli:Company owl:equivalentClass dbpedia:Organization .
 oplli:Language owl:equivalentClass dbpedia:Language .
 oplli:Publication owl:equivalentClass dbpedia:Activity .
-oplli:date_of_birth owl:equivalentProperty dbpedia:Date .
-oplli:certification_start_date owl:equivalentProperty dbpedia:Date .
-oplli:certification_end_date owl:equivalentProperty dbpedia:Date .
-oplli:education_start_date owl:equivalentProperty dbpedia:Date .
-oplli:education_end_date owl:equivalentProperty dbpedia:Date .
-oplli:patent_date owl:equivalentProperty dbpedia:Date .
-oplli:end_date owl:equivalentProperty dbpedia:Date .
-oplli:start_date owl:equivalentProperty dbpedia:Date .
-oplli:publication_date owl:equivalentProperty dbpedia:Date .
+oplli:date_of_birth rdfs:subPropertyOf dbpedia:Date .
+oplli:certification_start_date rdfs:subPropertyOf dbpedia:Date .
+oplli:certification_end_date rdfs:subPropertyOf dbpedia:Date .
+oplli:education_start_date rdfs:subPropertyOf dbpedia:Date .
+oplli:education_end_date rdfs:subPropertyOf dbpedia:Date .
+oplli:patent_date rdfs:subPropertyOf dbpedia:Date .
+oplli:end_date rdfs:subPropertyOf dbpedia:Date .
+oplli:start_date rdfs:subPropertyOf dbpedia:Date .
+oplli:publication_date rdfs:subPropertyOf dbpedia:Date .
 oplli:main_address owl:equivalentProperty dbpedia:Address .
-oplli:education_notes owl:equivalentProperty dbpedia:Note .
+oplli:education_notes rdfs:subPropertyOf dbpedia:Note .
 oplli:location_name owl:equivalentProperty dbpedia:Place .
 oplli:date_of_birth owl:equivalentProperty dbpedia:BirthDate .
 oplli:patent_title owl:equivalentProperty dbpedia:Title .
@@ -627,23 +606,23 @@ oplli:title owl:equivalentProperty dbpedia:Position .
 oplli:publisher_name owl:equivalentProperty dbpedia:Publisher .
 oplli:company_name owl:equivalentProperty dbpedia:Company .
 oplli:patent_status owl:equivalentProperty dbpedia:Status .
-oplli:patent_number owl:equivalentProperty dbpedia:Number .
-oplli:certification_number owl:equivalentProperty dbpedia:Number .
-oplli:phone_number owl:equivalentProperty dbpedia:Number .
-oplli:skill_years_of_experience owl:equivalentProperty dbpedia:Number .
-oplli:company_type owl:equivalentProperty dbpedia:Type .
-oplli:im_account_type owl:equivalentProperty dbpedia:Type .
-oplli:phone_number_type owl:equivalentProperty dbpedia:Type .
-oplli:recommendation_type owl:equivalentProperty dbpedia:Type . 
-oplli:member_url_resource owl:equivalentProperty dbpedia:Source . 
-oplli:picture_url owl:equivalentProperty dbpedia:Source . 
-oplli:public_profile_url owl:equivalentProperty dbpedia:Source . 
-oplli:member_shared_resource_url owl:equivalentProperty dbpedia:Source . 
-oplli:patent_url owl:equivalentProperty dbpedia:Source . 
-oplli:publication_url owl:equivalentProperty dbpedia:Source . 
-oplli:inventor_person owl:equivalentProperty dbpedia:Person . 
-oplli:author_name owl:equivalentProperty dbpedia:Author . 
-oplli:author_person owl:equivalentProperty dbpedia:Author . 
+oplli:patent_number rdfs:subPropertyOf dbpedia:Number .
+oplli:certification_number rdfs:subPropertyOf dbpedia:Number .
+oplli:phone_number rdfs:subPropertyOf dbpedia:Number .
+oplli:skill_years_of_experience rdfs:subPropertyOf dbpedia:Number .
+oplli:company_type rdfs:subPropertyOf dbpedia:Type .
+oplli:im_account_type rdfs:subPropertyOf dbpedia:Type .
+oplli:phone_number_type rdfs:subPropertyOf dbpedia:Type .
+oplli:recommendation_type rdfs:subPropertyOf dbpedia:Type . 
+oplli:member_url_resource rdfs:subPropertyOf dbpedia:Source . 
+oplli:picture_url rdfs:subPropertyOf dbpedia:Source . 
+oplli:public_profile_url rdfs:subPropertyOf dbpedia:Source . 
+oplli:member_shared_resource_url rdfs:subPropertyOf dbpedia:Source . 
+oplli:patent_url rdfs:subPropertyOf dbpedia:Source . 
+oplli:publication_url rdfs:subPropertyOf dbpedia:Source . 
+oplli:inventor_person rdfs:subPropertyOf dbpedia:Person . 
+oplli:author_name rdfs:subPropertyOf dbpedia:Author . 
+oplli:author_person rdfs:subPropertyOf dbpedia:Author . 
 
 oplli:Company owl:equivalentClass gr:BusinessEntity .
 
@@ -665,15 +644,14 @@ oplog:Image owl:equivalentClass foaf:Image .
 oplog:Album rdfs:subClassOf mo:ReleaseType .
 oplog:Application rdfs:subClassOf dbpedia:Software . 
 
-oplog:has_picture owl:equivalentProperty foaf:img .
-oplog:picture owl:equivalentProperty foaf:img .
-oplog:has_photo owl:equivalentProperty foaf:img .
+oplog:has_picture rdfs:subPropertyOf foaf:img .
+oplog:picture rdfs:subPropertyOf foaf:img .
+oplog:has_photo rdfs:subPropertyOf foaf:img .
 oplog:photos rdfs:subPropertyOf foaf:img .
 oplog:has_account rdfs:subPropertyOf foaf:page .
-oplog:name owl:equivalentProperty foaf:name .
+oplog:name rdfs:subPropertyOf foaf:name .
 oplog:uri rdfs:subPropertyOf foaf:homepage .
 oplog:website rdfs:subPropertyOf foaf:homepage .
-oplog:username rdfs:subPropertyOf foaf:name .
 oplog:has_interest owl:equivalentProperty foaf:interest .
 oplog:first_name owl:equivalentProperty foaf:firstName .
 oplog:last_name owl:equivalentProperty foaf:lastName .
@@ -690,10 +668,10 @@ oplog:Comment owl:equivalentClass sioc:Post .
 
 oplog:email owl:equivalentProperty sioc:email .
 oplog:id owl:equivalentProperty sioc:id .
-oplog:third_party_id owl:equivalentProperty sioc:id .
+oplog:third_party_id rdfs:subPropertyOf sioc:id .
 oplog:updated_time owl:equivalentProperty sioc:last_activity_date .
 oplog:link owl:equivalentProperty sioc:link .
-oplog:name owl:equivalentProperty sioc:name .
+oplog:name rdfs:subPropertyOf sioc:name .
 oplog:notes rdfs:subPropertyOf sioc:note .
 
 oplog:id owl:equivalentProperty dc:identifier .
@@ -702,10 +680,10 @@ oplog:album_type rdfs:subPropertyOf dc:type .
 oplog:description owl:equivalentProperty dc:description .
 oplog:height rdfs:subPropertyOf dc:format .
 oplog:width rdfs:subPropertyOf dc:format .
-oplog:tagged_by owl:equivalentProperty dc:source .
-oplog:link owl:equivalentProperty dc:source .
-oplog:uri owl:equivalentProperty dc:source .
-oplog:username owl:equivalentProperty dc:publisher .
+oplog:tagged_by rdfs:subPropertyOf dc:source .
+oplog:link rdfs:subPropertyOf dc:source .
+oplog:uri rdfs:subPropertyOf dc:source .
+oplog:username rdfs:subPropertyOf dc:publisher .
 oplog:updated_time rdfs:subPropertyOf dc:date .
 oplog:birthday rdfs:subPropertyOf dc:date .
 oplog:languages rdfs:subPropertyOf dc:language .
@@ -716,10 +694,10 @@ oplog:album_type rdfs:subPropertyOf dcterms:type .
 oplog:description owl:equivalentProperty dcterms:description .
 oplog:height rdfs:subPropertyOf dcterms:format .
 oplog:width rdfs:subPropertyOf dcterms:format .
-oplog:tagged_by owl:equivalentProperty dcterms:source .
-oplog:link owl:equivalentProperty dcterms:source .
-oplog:uri owl:equivalentProperty dcterms:source .
-oplog:username owl:equivalentProperty dcterms:publisher .
+oplog:tagged_by rdfs:subPropertyOf dcterms:source .
+oplog:link rdfs:subPropertyOf dcterms:source .
+oplog:uri rdfs:subPropertyOf dcterms:source .
+oplog:username rdfs:subPropertyOf dcterms:publisher .
 oplog:updated_time rdfs:subPropertyOf dcterms:date .
 oplog:birthday rdfs:subPropertyOf dcterms:date .
 oplog:languages rdfs:subPropertyOf dcterms:language .
@@ -734,7 +712,6 @@ oplog:third_party_id rdfs:subPropertyOf bibo:identifier .
 
 oplog:Event owl:equivalentClass event:Event .
 
-oplog:name owl:equivalentProperty vcard:N .
 oplog:birthday owl:equivalentProperty vcard:BDAY .
 oplog:email owl:equivalentProperty vcard:EMAIL .
 oplog:last_name owl:equivalentProperty vcard:Family .
