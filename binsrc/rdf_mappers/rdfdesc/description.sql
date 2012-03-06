@@ -128,7 +128,7 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
     }
   --exec (sprintf ('sparql define input:inference "virtrdf-label" '||
   --'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (o) , lbl_order (P) from RDF_QUAD table option (with ''virtrdf-label'')
+  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (o) , cast (lbl_order (P) as int) from RDF_QUAD table option (with ''virtrdf-label'') 
   	where G = __i2id (?) and S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', null, null, vector (_G, _S), 0, meta, data);
   best_str := '';
   best_q := 0;
@@ -172,7 +172,7 @@ create procedure rdfdesc_label_1 (in _S any, in lines any := null)
       langs := http_request_header_full (lines, 'Accept-Language', 'en');
     }
   stat := '00000';
-  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (o) , lbl_order (P) from RDF_QUAD table option (with ''virtrdf-label'') 
+  exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (o) , cast (lbl_order (P) as int) from RDF_QUAD table option (with ''virtrdf-label'') 
   	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', null, null, vector (_S), 0, meta, data);
   --exec (sprintf ('sparql define input:inference "virtrdf-label" '||
   --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
