@@ -2104,56 +2104,66 @@ create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
 }
 ;
 
+create procedure DB.DBA.STREE_ELEM (in tag varchar)
+{
+  declare x any;
+  x := replace(replace(tag, ' ', '_'), '@', '');
+  if (strchr ('!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~0123456789', x[0]) is not null)
+    return 'elem_' || x;
+  return x; 
+}
+;
+
 create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, inout	ses	any)
 {
- 	tag := trim(tag, '\"');
-	if (not isarray (tree) or	isstring (tree))
+  tag := trim(tag, '\"');
+  if (not isarray (tree) or	isstring (tree))
+    {
+      if (isstring (tree))
+	tree := trim(tree, '\"');
+	if (left(tag,	7) = 'http://')
+	tag	:= 'Site';
+	http_value (tree, tag, ses);
+    }
+  else if (length (tree) > 1 and __tag (tree[0]) = 255)
+    {
+      if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
 	{
-                if (isstring (tree))
-                    tree := trim(tree, '\"');
-		if (left(tag,	7) = 'http://')
-			tag	:= 'Site';
-		http_value (tree, tag, ses);
+	  http ('<Document>\n', ses);
+	  http_value (tag, 'about', ses);
 	}
-	else if (length (tree) > 1 and __tag (tree[0]) = 255)
+      else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
 	{
-		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
-		{
-			http ('<Document>\n', ses);
-			http_value (tag, 'about', ses);
-		}
-		else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
-		{
-			 http (sprintf ('<date><when>%U</when>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
-		}
-		else
-		{
-            http (sprintf ('<%U>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
-                }
-		for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
-		{
-			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
-		}
-		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
-		{
-			http ('</Document>\n',	ses);
-		}	
-		else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
-		{
-			 http ('</date>\n', ses);
-		}
-		else
-                {
-			http (sprintf ('</%U>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
-                }
+	  http (sprintf ('<date><when>%U</when>\n', replace(replace(tag, ' ', '_'), '@', '')), ses);
 	}
-	else if (length (tree) > 0)
+      else
 	{
-		for (declare i,l int,	i := 0,	l := length	(tree);	i <	l; i :=	i +	1)
-		{
-			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i], tag,	ses);
-		}
+	  http (sprintf ('<%U>\n', STREE_ELEM (tag)), ses);
 	}
+      for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
+	{
+	  DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
+	}
+      if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:' or left(tag, 4) = 'sgn:')
+	  {
+	    http ('</Document>\n',	ses);
+	  }	
+	else if (regexp_parse ('^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$', tag, 0))
+	  {
+	    http ('</date>\n', ses);
+	  }
+	else
+	  {
+	    http (sprintf ('</%U>\n', STREE_ELEM (tag)), ses);
+	  }
+    }
+  else if (length (tree) > 0)
+    {
+      for (declare i,l int,	i := 0,	l := length	(tree);	i <	l; i :=	i +	1)
+      {
+	DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i], tag,	ses);
+      }
+    }
 }
 ;
 
@@ -3569,8 +3579,9 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     -- in the returned metadata
     access_token := null;
   }
-
+  declare og_nick any;
   tree := json_parse (cnt);
+  og_nick := get_keyword ('username', tree);
   xt_og_metadata := DB.DBA.SOCIAL_TREE_TO_XML (tree);
   og_object_type := cast (xpath_eval('/results/type', xt_og_metadata) as varchar);
   -- Transform the base OpenGraph object description to RDF
@@ -3588,10 +3599,31 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     }
   }
 
+  --cnt := http_client (sprintf ('https://graph.facebook.com/%U/feed?access_token=%U', og_nick, access_token), proxy=>get_keyword_ucase ('get:proxy', opts));
+  --dbg_obj_print (cnt);
+
   retries := 0;
 retry_without_access_token:
   -- Try all the object's connections listed in the object metadata
   og_conns := DB.DBA.OPENGRAPH_OBJ_CONNECTIONS (xt_og_metadata, access_token);
+  -- batch request
+  declare br, req, rtree any;
+  br := '[';
+  for (declare i int, i := 0; i < length (og_conns); i := i + 2)
+    {
+      declare u, h any;
+      h := rfc1808_parse_uri (og_conns[i + 1]);
+      h [0] := h [1] := ''; 
+      u := vspx_uri_compose (h);
+      br := br || sprintf ('{"method": "GET", "relative_url": "%s"},', subseq (u, 1)); 
+    }
+  br := rtrim (br, ',') || ']';
+  req := sprintf ('access_token=%U&batch=%U', access_token, br);
+  cnt := http_get ('https://graph.facebook.com', og_headers, 'POST', null, req);
+  string_to_file ('fbr.json', cnt, -2);
+  rtree := json_parse (cnt);
+  if (length (rtree) <> length (og_conns) / 2)
+    log_message ('FB api returns different results');
   -- Transform each of the OpenGraph object's connections
   for (declare i int, i := 0; i < length (og_conns); i := i + 2)
   {
@@ -3622,7 +3654,8 @@ got_picture_url:
     else
     {
       -- Some of the Open Graph collections occasionally fail to respond, so set timeout
-      cnt := http_client (og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), timeout=>og_timeout);
+      -- cnt := http_client (og_conns[i+1], proxy=>get_keyword_ucase ('get:proxy', opts), timeout=>og_timeout, http_headers=>'User-Agent: curl');
+      cnt := get_keyword ('body', rtree[i/2]);
       tree := json_parse (cnt);
       xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
     }

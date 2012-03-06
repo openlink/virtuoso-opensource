@@ -115,8 +115,8 @@
 
       -- Request permissions for additional info beyond the basic info returned
       -- See http://developers.facebook.com/docs/authentication/permissions/ for full permissions list
-      fb_login_dialog_url := fb_login_dialog_url || 'user_likes,friends_likes,user_activities,user_interests,user_notes,user_photos,user_status,user_videos,user_website,user_checkins,friends_checkins';
-
+      fb_login_dialog_url := fb_login_dialog_url || 'user_likes,friends_likes,user_activities,user_interests,user_notes,user_photos,user_status,user_videos,user_website,user_checkins,friends_checkins,publish_stream,read_stream';
+      -- dbg_obj_print (fb_login_dialog_url);
       http ('<script>');
       http (sprintf ('top.location.href=\'%s\';', fb_login_dialog_url));
       http ('</script>');

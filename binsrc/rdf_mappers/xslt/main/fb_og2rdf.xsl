@@ -45,6 +45,8 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY oplcert "http://www.openlinksw.com/schema/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
 	xmlns:fb="http://www.facebook.com/2008/fbml"
@@ -73,6 +75,7 @@
     xmlns:vi="&vi;"
     xmlns:video="&video;"
     xmlns:xhv="&xhv;"
+    xmlns:oplcert="&oplcert;"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     version="1.0"
 	>
@@ -185,7 +188,7 @@
             <xsl:when test="$og_object_type = 'user_posts'">
 	            <xsl:apply-templates mode="user_posts"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_feed'">
+            <xsl:when test="$og_object_type = 'page_feed' or $og_object_type = 'user_feed'">
 	            <xsl:apply-templates mode="page_feed"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'page_tagged'">
@@ -1715,7 +1718,29 @@
 		                </rdf:Description>
                     </oplog:posted>
                 </xsl:for-each>
+	    </rdf:Description>
+	    <xsl:for-each select="data">
+		<!-- x509 -->
+		<xsl:if test="starts-with (message, '#X509Cert Fingerprint:')">
+		    <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (message, '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+		    <xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
+		    <xsl:variable name="dgst">
+			<xsl:choose>
+			    <xsl:when test="contains (message, '#SHA1')">sha1</xsl:when>
+			    <xsl:otherwise>md5</xsl:otherwise>
+			</xsl:choose>
+		    </xsl:variable>
+		    <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fpn)"/></xsl:variable>
+		    <rdf:Description rdf:about="{$resourceURL}">
+			<oplcert:hasCertificate rdf:resource="{$ct}"/>
 		    </rdf:Description>
+		    <oplcert:Certificate rdf:about="{$ct}">
+			<rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+			<oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+			<oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+		    </oplcert:Certificate>
+		</xsl:if>
+	    </xsl:for-each>
 	    </rdf:RDF>
 	</xsl:template>
 	
