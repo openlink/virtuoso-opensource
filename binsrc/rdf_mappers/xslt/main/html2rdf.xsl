@@ -125,7 +125,7 @@
       </xsl:for-each>
       <!-- end certificate -->
       <!-- x509 certificate -->
-      <xsl:for-each select="//*[starts-with (normalize-space (text()), 'di:')]">
+      <xsl:for-each select="//*[concat (' ', normalize-space (text())) like ' di:%']">
 	  <xsl:variable name="di"><xsl:copy-of select="vi:di-split (.)"/></xsl:variable>
 	  <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
 	  <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
