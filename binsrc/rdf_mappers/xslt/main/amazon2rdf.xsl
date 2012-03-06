@@ -38,7 +38,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY pto "http://www.productontology.org/id/">
-<!ENTITY amz "http://webservices.amazon.com/AWSECommerceService/2005-10-05">
+<!ENTITY amz "http://webservices.amazon.com/AWSECommerceService/2011-08-01">
 <!ENTITY oplamz "http://www.openlinksw.com/schemas/amazon#">
 ]>
 <xsl:stylesheet
@@ -255,24 +255,25 @@
       <rdfs:label>
         <xsl:value-of select="concat('Offer ', position(), ':', //amz:ItemAttributes/amz:Title)"/>
       </rdfs:label>
-      <gr:hasEAN_UCC-13>
-        <xsl:value-of select="//amz:ItemAttributes/amz:EAN"/>
-      </gr:hasEAN_UCC-13>
+			<xsl:if test="string-length(//amz:ItemAttributes/amz:EAN) &gt; 0">
+				<gr:hasEAN_UCC-13>
+					<xsl:value-of select="//amz:ItemAttributes/amz:EAN"/>
+				</gr:hasEAN_UCC-13>
+			</xsl:if>
       <oplamz:condition>
         <xsl:value-of select="./amz:OfferAttributes/amz:Condition"/>
       </oplamz:condition>
-      <oplamz:conditionNote>
-        <xsl:value-of select="./amz:OfferAttributes/amz:ConditionNote"/>
-      </oplamz:conditionNote>
+			<xsl:if test="string-length(./amz:OfferAttributes/amz:ConditionNote) &gt; 0">
+				<oplamz:conditionNote>
+					<xsl:value-of select="./amz:OfferAttributes/amz:ConditionNote"/>
+				</oplamz:conditionNote>
+			</xsl:if>
       <oplamz:availability>
         <xsl:value-of select="./amz:OfferListing/amz:Availability"/>
       </oplamz:availability>
       <oplamz:offerListingId>
         <xsl:value-of select="./amz:OfferListing/amz:OfferListingId"/>
       </oplamz:offerListingId>
-      <oplamz:merchantId>
-        <xsl:value-of select="./amz:Merchant/amz:MerchantId"/>
-      </oplamz:merchantId>
 			<gr:hasPriceSpecification>
 		  		<gr:UnitPriceSpecification rdf:about="{concat(vi:proxyIRI ($base, '', 'OfferPrice_'), position())}">
 					<rdfs:label>
@@ -288,6 +289,7 @@
 					<gr:priceType rdf:datatype="&xsd;string">offer price</gr:priceType>
           		</gr:UnitPriceSpecification>
 			</gr:hasPriceSpecification>
+			<xsl:if test="./amz:OfferListing/amz:SalePrice">
 			<oplamz:hasSalePrice>
 				<gr:UnitPriceSpecification rdf:about="{concat(vi:proxyIRI ($base, '', 'SalePrice_'), position())}">
 					<rdfs:label>
@@ -303,31 +305,10 @@
 					<gr:priceType rdf:datatype="&xsd;string">sale price</gr:priceType>
 				</gr:UnitPriceSpecification>
 			</oplamz:hasSalePrice>
+			</xsl:if>
 		</xsl:element>
-		<xsl:element namespace="&gr;" name="BusinessEntity">
-      <xsl:attribute name="rdf:about">
-				<xsl:value-of select="concat (vi:proxyIRI($base, '', 'Vendor_'), position())"/>
-			</xsl:attribute>
-			<rdfs:comment>The legal agent making the offering</rdfs:comment>
-			<!-- MERCHANTID_{merchant id} will be replaced by merchant name/nickname by cartridge hook function -->
-      <rdfs:label>
-        <xsl:value-of select="concat('MERCHANTID_', ./amz:Merchant/amz:MerchantId)"/>
-      </rdfs:label>
-      <gr:legalName>
-        <xsl:value-of select="concat('MERCHANTID_', ./amz:Merchant/amz:MerchantId)"/>
-      </gr:legalName>
-		    <gr:offers>
-        <xsl:attribute name="rdf:resource">
-					<xsl:value-of select="concat (vi:proxyIRI($base, '', 'Offer_'), position())"/>
-				</xsl:attribute>
-			</gr:offers>
-		  	<rdfs:seeAlso rdf:resource="{./amz:Merchant/amz:GlancePage}"/>
-		  	<oplamz:vendorSynopsisUrl rdf:resource="{./amz:Merchant/amz:GlancePage}"/>
-		</xsl:element>
-
 		<!-- shortcuts -->
 		<rdf:Description rdf:about="{$docproxyIRI}">
-			<foaf:topic rdf:resource="{concat (vi:proxyIRI ($base, '', 'Vendor_'), position())}"/>
 			<foaf:topic rdf:resource="{concat (vi:proxyIRI ($base, '', 'Offer_'), position())}"/>
 		</rdf:Description>
     </xsl:template>

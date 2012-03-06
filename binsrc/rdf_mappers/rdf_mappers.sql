@@ -8431,12 +8431,13 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 		tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/%s', 0);
 		asin := rtrim (tmp[2], '/');
 	}
-	else if (new_origin_uri like 'http://%amazon.%/gp/registry/wishlist/%')
-	{
-		tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/registry/wishlist/%s', 0);
-		asin := rtrim (tmp[2], '/');
-		is_wish_list := 1;
-	}
+	-- ListLookup operation, used for this URL pattern, has been deprecated
+	-- else if (new_origin_uri like 'http://%amazon.%/gp/registry/wishlist/%')
+	-- {
+	--	tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/registry/wishlist/%s', 0);
+	--	asin := rtrim (tmp[2], '/');
+	--	is_wish_list := 1;
+	-- }
 	else if (new_origin_uri like 'http://%amazon.%/s?%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/s?%skeywords=%s', 0);
@@ -8525,7 +8526,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 		secret_key := get_keyword ('secret_key', opts);
 		associate_key := get_keyword ('associate_key', opts);
 	}
-	if ((0 = length (api_key)) or (0 = length (secret_key)))
+	if ((0 = length (api_key)) or (0 = length (secret_key)) or (0 = length (associate_key)))
 		return 0;
 	if (asin is null)
 		return 0;
@@ -8534,18 +8535,22 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 	--       Lowercase parameters will come after uppercase ones in the canonical query string.
 	if (is_wish_list = 1)
 	{
-		canon := sprintf('AWSAccessKeyId=%s&Condition=All&ListId=%s&ListType=WishList&MerchantId=All&Operation=ListLookup&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+	  -- Operation ListLookup has been deprecated
+	  -- canon := sprintf('AWSAccessKeyId=%s&AssociateTag=%s&Condition=All&ListId=%s&ListType=WishList&MerchantId=All&Operation=ListLookup&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s&Version=2011-08-01', api_key, associate_key, asin, datenow);
+	  return 0;
 	}
 	else if (is_wish_list = 2)
 	{
-		canon := sprintf('AWSAccessKeyId=%s&Availability=Available&Condition=All&Keywords=%s&MerchantId=All&Operation=ItemSearch&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&SearchIndex=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, index1, datenow);
+		canon := sprintf('AWSAccessKeyId=%s&AssociateTag=%s&Availability=Available&Condition=All&Keywords=%s&Operation=ItemSearch&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&SearchIndex=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s&Version=2011-08-01', api_key, associate_key, asin, index1, datenow);
 	}
 	else
 	{
-		canon := sprintf('AWSAccessKeyId=%s&Condition=All&ItemId=%s&MerchantId=All&Operation=ItemLookup&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+		canon := sprintf('AWSAccessKeyId=%s&AssociateTag=%s&Condition=All&ItemId=%s&Operation=ItemLookup&ResponseGroup=Large%%2CItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s&Version=2011-08-01', api_key, associate_key, asin, datenow);
 	}
 	url := DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (canon, secret_key);
+        DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());        
 	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+        DB.DBA.RM_LOG_RESPONSE (tmp, hdr);
 	if (hdr[0] not like 'HTTP/1._ 200 %')
 		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
 	xd := xtree_doc (tmp);
@@ -8553,49 +8558,6 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 		vector ('baseUri', new_origin_uri, 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar),
 		'wish_list', cast(is_wish_list as varchar), 'associate_key', associate_key));
 	xd_utf8 := serialize_to_UTF8_xml (xt);
-	{
-		declare mlist varchar;
-		declare xdMerchants, merchantIds any;
-		declare strTmp varchar;
-		-- Extract the merchantIds contained in initial AWS query response
-		mlist := '';
-		merchantIds := xpath_eval('//Offer/Merchant/MerchantId', xd, 0);
-		foreach (any mid in merchantIds) do
-		{
-			declare id varchar;
-			id := cast(mid as varchar);
-			if (length (mlist))
-				mlist := mlist || '%2C';
-			mlist := mlist || id ;
-		}
-		-- Query AWS to get the names of these merchants
-		canon := sprintf('AWSAccessKeyId=%s&Operation=SellerLookup&SellerId=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s',
-		api_key, mlist, datenow);
-		url := DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (canon, secret_key);
-		tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
-		if (hdr[0] not like 'HTTP/1._ 200 %')
-			--  signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
-			--  leave legalName of gr:BusinessEntity instances as MERCHANTID_<merchantId>
-			goto skip_merchantid2name;
-		xdMerchants := xtree_doc (tmp);
-		foreach (any mid in merchantIds) do
-		{
-			declare id, sellerName varchar;
-			declare sName, sNickname any;
-			id := cast(mid as varchar);
-			sellerName := '';
-			sName := xpath_eval('//Seller[SellerId="' || id || '"]/SellerName', xdMerchants);
-			sNickname := xpath_eval('//Seller[SellerId="' || id || '"]/Nickname', xdMerchants);
-			if (sName is not null)
-				sellerName := cast (sName as varchar);
-			else if (sNickname is not null)
-				sellerName := cast (sNickname as varchar);
-			-- Replace MERCHANTID_xxx placeholders with seller name
-			if (length(sellerName))
-				xd_utf8 := replace (xd_utf8, 'MERCHANTID_' || id, sellerName);
-		}
-	}
-	skip_merchantid2name:
 	RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
 	DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd_utf8, new_origin_uri, coalesce (dest, graph_iri));
 	DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
