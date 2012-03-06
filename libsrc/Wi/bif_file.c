@@ -1340,76 +1340,110 @@ file_native_name (caddr_t se_name)
     {
     case DV_WIDE:
       {
-        int wchars;
-        int bufsize;
-        caddr_t buf;
-        char *buf_end, *end_of_dat;
-        wchars = box_length (se_name) / sizeof (wchar_t) - 1;
-        if (wchars > (PATH_MAX * 10))
-          wchars = PATH_MAX * 10;
-        bufsize = wchars * i18n_volume_encoding->eh_maxsize;
-        buf = dk_alloc_box (bufsize + 1, DV_STRING);
-        buf_end = buf + bufsize;
-        end_of_dat = i18n_volume_encoding->eh_encode_wchar_buffer (
-          ((const wchar_t *)se_name), ((const wchar_t *)se_name) + wchars, buf, buf_end,
-          i18n_volume_encoding );
-        if (end_of_dat == buf_end)
-          {
-            buf_end[0] = '\0';
-            volume_fname = buf;
-          }
-        else
-          {
-            volume_fname = box_dv_short_nchars (buf, end_of_dat - buf);
-            dk_free_box (buf);
-          }
-        break;
+	int wchars;
+	int bufsize;
+	caddr_t buf;
+	char *buf_end, *end_of_dat;
+	wchars = box_length (se_name) / sizeof (wchar_t) - 1;
+	if (wchars > (PATH_MAX * 10))
+	  wchars = PATH_MAX * 10;
+	bufsize = wchars * i18n_volume_encoding->eh_maxsize;
+	buf = dk_alloc_box (bufsize + 1, DV_STRING);
+	buf_end = buf + bufsize;
+	end_of_dat = i18n_volume_encoding->eh_encode_wchar_buffer (
+	    ((const wchar_t *) se_name), ((const wchar_t *) se_name) + wchars, buf, buf_end, i18n_volume_encoding);
+	if (end_of_dat == buf_end)
+	  {
+	    buf_end[0] = '\0';
+	    volume_fname = buf;
+	  }
+	else
+	  {
+	    volume_fname = box_dv_short_nchars (buf, end_of_dat - buf);
+	    dk_free_box (buf);
+	  }
+	break;
       }
     case DV_STRING:
       {
-        long len = box_length (se_name) - 1;
-        if (len > PATH_MAX * 30)
-          len = PATH_MAX * 30;
-        volume_fname = box_dv_short_nchars (se_name, len);
-        break;
+	long len = box_length (se_name) - 1;
+	if (len > PATH_MAX * 30)
+	  len = PATH_MAX * 30;
+	volume_fname = box_dv_short_nchars (se_name, len);
+	break;
       }
     case DV_UNAME:
       if (&eh__UTF8 == i18n_volume_encoding)
-        {
-          long len = box_length (se_name) - 1;
-          if (len > PATH_MAX * 30)
-            len = PATH_MAX * 30;
-          volume_fname = box_dv_short_nchars (se_name, len);
-        }
+	{
+	  long len = box_length (se_name) - 1;
+	  if (len > PATH_MAX * 30)
+	    len = PATH_MAX * 30;
+	  volume_fname = box_dv_short_nchars (se_name, len);
+	}
       else
-        {
-          caddr_t se1, res;
-          long len = box_length (se_name) - 1;
-          if (len > PATH_MAX * 30)
-            len = PATH_MAX * 30;
-          se1 = box_utf8_as_wide_char (se_name, NULL, len, 0, DV_WIDE);
-          res = file_native_name (se1);
-          dk_free_box (se1);
-          return res;
-        }
+	{
+	  caddr_t se1, res;
+	  long len = box_length (se_name) - 1;
+	  if (len > PATH_MAX * 30)
+	    len = PATH_MAX * 30;
+	  se1 = box_utf8_as_wide_char (se_name, NULL, len, 0, DV_WIDE);
+	  res = file_native_name (se1);
+	  dk_free_box (se1);
+	  return res;
+	}
       break;
     default:
       {
-        GPF_T1 ("Bad box type for file name");
-        volume_fname = NULL; /* to keep the compiler happy */
+	GPF_T1 ("Bad box type for file name");
+	volume_fname = NULL;	/* to keep the compiler happy */
       }
     }
 #ifdef HAVE_DIRECT_H
   for (fname_tail = volume_fname; fname_tail[0]; fname_tail++)
     {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
+      switch (fname_tail[0])
+	{
+	  /* case '|': fname_tail[0] = ':'; break; */
+	case '/':
+	  fname_tail[0] = '\\';
+	  break;
+	}
     }
-   if ((fname_tail - 1) >= volume_fname && *(fname_tail - 1) == '\\')
-      *(fname_tail - 1) = 0;
+  if ((fname_tail - 1) >= volume_fname && *(fname_tail - 1) == '\\')
+    *(fname_tail - 1) = 0;
 #endif
+  dk_check_tree (volume_fname);
   return volume_fname;
 }
+
+caddr_t
+file_native_name_from_iri_path_nchars (const char *iri_path, size_t iri_path_len)
+{
+  caddr_t fname;
+#ifdef WIN32
+  char fname[_MAX_PATH], *fname_ptr, *fname_end;
+  if (iri_path_len >= _MAX_PATH)
+    iri_path_len = _MAX_PATH-1;
+  fname = box_dv_short_nchars (iri_path, iri_path_len);
+  fname_end = fname + iri_path_len;
+  for (fname_ptr = fname; fname_ptr < fname_end; fname_ptr++)
+    {
+      switch (fname_ptr[0])
+        {
+        case '|':
+          fname_ptr[0] = ':';
+          break;
+        case '/':
+          fname_ptr[0] = '\\';
+          break;
+        }
+    }
+#else
+  fname = box_dv_short_nchars (iri_path, iri_path_len);
+#endif
+  return fname;
+}
+
 
 /* IvAn/WinFileNames/000815
    1. File descriptor's leaks has removed.
