@@ -1034,7 +1034,9 @@ create procedure DB.DBA.RM_ADD_PRV (inout triple_dict any, in proc varchar, in b
   if (length (service_url) > 1500)
     return;
   h := rfc1808_parse_uri (service_url);
-  h [3] := ''; h [4] := ''; h [5] := '';
+    h [3] := '';
+    h [4] := ''; 
+    h [5] := '';
   service_url := DB.DBA.vspx_uri_compose (h);
   proc := cast (proc as varchar);
   ses := string_output ();
@@ -1247,8 +1249,7 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
 	return ret;
     }
   -- Wed Dec 10 21:24:54 EST 2008
-  if (regexp_match ('[[:upper:]][[:lower:]]{2} [[:upper:]][[:lower:]]{2} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [[:upper:]]{2,} [0-9]{4,}', val)
-      is not null)
+    if (regexp_match ('[[:upper:]][[:lower:]]{2} [[:upper:]][[:lower:]]{2} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [[:upper:]]{2,} [0-9]{4,}', val) is not null)
     {
       tmp := sprintf_inverse (val, '%s %s %s %s %s %s', 0);
       if (tmp is not null and length (tmp) > 5)
@@ -1511,7 +1512,6 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
   ua [0] := '';
   uri := vspx_uri_compose (ua);
   uri := ltrim (uri, '/');
-  
   ret := sprintf ('%s://%s/about/id/entity/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
   return ret;
 }
@@ -5934,14 +5934,15 @@ create procedure DB.DBA.RDF_LOAD_GROUPON (in graph_iri varchar, in new_origin_ur
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/groupon2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
 	xd := serialize_to_UTF8_xml (xt);
-	RM_CLEAN_DEST (dest, graph_iri, new_origin_uri, opts);
-	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-	DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 	return 1;
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_EOL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+
+create procedure DB.DBA.RDF_LOAD_EOL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
 	declare xd, section_name, search, xt, url, tmp any;
 	declare entity varchar;
@@ -6654,25 +6655,42 @@ got_activity_id:
     DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd2, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
 
-    if (api_mode = 'activity')
+      if (api_mode = 'activity' and max_comment_pages >= 0) 
     {
       declare vReplies_urls any;
       declare replies_url varchar;
+	declare iReply integer;
+	iReply := 0;
       vReplies_urls := xpath_eval ('/results/items/object/replies/selfLink', xd, 0);
       foreach (any replies_url_entry in vReplies_urls) do
       {
+	  iReply := iReply + 1;
         replies_url := cast (replies_url_entry as varchar);
-        DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (graph_iri, new_origin_uri, dest, _key, opts, triple_dict, null, replies_url);
+          DB.DBA.RDF_LOAD_GOOGLE_PLUS_COMMENTS (graph_iri, new_origin_uri, dest, _key, opts, triple_dict, null, replies_url, items_per_comment_page, max_comment_pages);
+        }
       }
+
+      if (api_mode = 'activity')
+      {
+        page_token := cast (xpath_eval ('/results/nextPageToken', xd) as varchar);
+	if (length (page_token))
+	{
+	  next_page := next_page + 1;
+	  url := sprintf ('%s&pageToken=%s', pair[0], page_token);
+	}
+	else
+	  next_page := 0;
+      }
+      else
+	next_page := 0; -- No paging required for api_mode = 'people'
     }
+
+got_all_activity_pages:;
   }
 
   url := sprintf('http://api.socialstatistics.com/1/users/show/%s.json', uid);
   tmp := '';
-      DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());        
-      -- tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
-      tmp := http_client_ext (url=>url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
-      DB.DBA.RM_LOG_RESPONSE (tmp, hdr);
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (length (tmp) = 0)
     return 0;
   tmp := json_parse (tmp);
