@@ -490,6 +490,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('text/html',
 	'MIME', 'DB.DBA.RDF_LOAD_RDFA_NP_CARTRIDGE', null, 'RDFa (no translation)', 0);
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS, RM_ENABLED)
+    values ('http://.*.nytimes.com/.*', 'URL', 'DB.DBA.RDF_LOAD_NYT_ARTICLE', null, 'NYT Article', null, 0);
+
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
@@ -11508,6 +11511,61 @@ load_rdf:
   xd := serialize_to_UTF8_xml (xt);
   RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
   DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_NYT_ARTICLE (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
+{
+  declare xd, xt, tmp, url, article_url, desired_response_fields any;
+  declare response_fields varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    return 0;
+  };
+
+  if (length (_key) = 0)
+  {
+    log_message (sprintf ('%s: An API key has not been configured for the New York Times API', current_proc_name ()));
+    return 0;
+  }
+
+  -- NB: The related article description returned by the Semantic API returns only: body, byline, date, title, url
+  desired_response_fields := vector (
+    'abstract', 'author', 'body', 'byline', 'classifiers_facet', 'column_facet', 'comments', 
+    'date', 'dbpedia_resource', 'dbpedia_resource_url', 'des_facet', 'desk_facet', 'fee', 
+    'geo_facet', 'lead_paragraph', 'material_type_facet', 'multimedia', 'nytd_byline', 'nytd_des_facet',
+    'nytd_geo_facet', 'nytd_lead_paragraph', 'nytd_org_facet', 'nytd_per_facet', 'nytd_section_facet', 
+    'nytd_title', 'nytd_works_mentioned_facet', 'org_facet', 'per_facet', 'related_multimedia', 
+    'small_image', 'small_image_url', 'small_image_height', 'small_image_width', 'source_facet', 
+    'title', 'url', 'word_count', 'works_mentioned_facet'
+    );
+
+  response_fields := '';
+  foreach (varchar field in desired_response_fields) do
+    response_fields := response_fields || field || ',';
+  response_fields := trim (response_fields, ',');
+
+  article_url := replace (new_origin_uri, '/', '\\/');
+  url := sprintf ('http://api.nytimes.com/svc/search/v1/article?query=url:%s&fields=%s&api-key=%s', article_url, response_fields, _key);
+
+  tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+  if (length (tmp) = 0)
+  {
+    log_message (sprintf ('%s: Failed HTTP GET: %s', current_proc_name(), url));
+    return 0;
+  }
+  tmp := json_parse (tmp);
+  xd := DB.DBA.SOCIAL_TREE_TO_XML (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/nyt_article2rdf.xsl', xd, 
+	    vector ('baseUri', new_origin_uri));
+  xd := serialize_to_UTF8_xml (xt);
+  RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+  DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+
   return 1;
 }
 ;
