@@ -1808,12 +1808,13 @@ create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
 
 create procedure DB.DBA.XENC_X509_PUB_KEY (in data varchar) returns any
 {
-  declare x, m, e any;
+  declare x, m, e, fp any;
   data := ltrim (data, 'data:application/x-x509-user-cert;base64,');
   x := get_certificate_info (9, decode_base64 (data), 1);
+  fp := get_certificate_info (6, decode_base64 (data), 1);
   e := cast (x[1] as varchar);
   m := bin2hex (x[2]);
-  return xtree_doc (sprintf ('<key><mod>%s</mod><exp>%s</exp></key>', m, e));
+  return xtree_doc (sprintf ('<key><mod>%s</mod><exp>%s</exp><fp>%s</fp></key>', m, e, replace (fp, ':', '')));
 }
 ;
 
