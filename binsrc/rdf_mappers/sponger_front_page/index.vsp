@@ -135,7 +135,7 @@
 
             <ul>
               <li><a href=
-              "javascript:window.location='http://linkeddata.uriburner.com/about/html/http/'+window.location.host+window.location.pathname+window.location.search">
+              "javascript:if (/twitter.com$/.test(window.location.host)) window.location='http://linkeddata.uriburner.com/about/html/'+window.location.toString().replace('/#!',''); else window.location='http://linkeddata.uriburner.com/about/html/http/'+window.location.host+window.location.pathname+window.location.search;">
               Page Description</a> (default: XHTML with embedded
               RDFa)</li>
               <!--
@@ -190,7 +190,7 @@
 
             <ul>
               <li><a href=
-              "javascript:window.location='http://linkeddata.uriburner.com/ode/?uri='+window.location">
+              "javascript:if (/twitter.com$/.test(window.location.host)) window.location='http://linkeddata.uriburner.com/ode/?uri='+window.location.toString().replace('/#!',''); else window.location='http://linkeddata.uriburner.com/ode/?uri='+window.location;">
               OpenLink Data Explorer (a Linked Data
               Browser)</a></li>
             </ul>
