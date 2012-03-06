@@ -154,7 +154,7 @@ oplgp:in_reply_to_url owl:equivalentProperty sioc:link .
 oplgp:displayName owl:equivalentProperty sioc:name .
 oplgp:name owl:equivalentProperty sioc:name .
 oplgp:formatted owl:equivalentProperty sioc:name .
-oplgp:middleName owl:equivalentProperty sioc:name .
+oplgp:middleName rdfs:subPropertyOf sioc:name .
 oplgp:organization_name owl:equivalentProperty sioc:name .
 oplgp:actor_displayName owl:equivalentProperty sioc:name .
 oplgp:attachment_displayName owl:equivalentProperty sioc:name .
@@ -177,7 +177,7 @@ oplgp:previewImage owl:equivalentProperty foaf:img .
 oplgp:displayName owl:equivalentProperty foaf:name .
 oplgp:name owl:equivalentProperty foaf:name .
 oplgp:formatted owl:equivalentProperty foaf:name .
-oplgp:middleName owl:equivalentProperty foaf:name .
+oplgp:middleName rdfs:subPropertyOf foaf:name .
 oplgp:organization_name owl:equivalentProperty foaf:name .
 oplgp:actor_displayName owl:equivalentProperty foaf:name .
 oplgp:attachment_displayName owl:equivalentProperty foaf:name .
@@ -475,7 +475,6 @@ oplli:interests rdfs:subPropertyOf dc:description .
 oplli:proposal_comments rdfs:subPropertyOf dc:description .
 oplli:associations rdfs:subPropertyOf dc:description .
 oplli:certification rdfs:subPropertyOf dc:description .
-oplli:education rdfs:subPropertyOf dc:educationLevel .
 oplli:language owl:equivalentProperty dc:language .
 oplli:company_type owl:equivalentProperty dc:type .
 oplli:im_account_type owl:equivalentProperty dc:type .
