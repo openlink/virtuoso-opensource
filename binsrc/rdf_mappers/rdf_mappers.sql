@@ -1939,14 +1939,15 @@ create procedure DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL (in val varchar)
 }
 ;
 
-create procedure DB.DBA.XSLT_SANEURI (in val varchar, in seed integer)
+create procedure DB.DBA.XSLT_SANEURI (in val varchar, in seed integer default -1)
 {
  -- Generate sane URI with xml/http-safe characters, based on val and seed (xpath position)
   
   declare str varchar;
-  if ( (not seed) or (seed is null)) 
-    seed:=0;
-  str:=regexp_replace(sprintf('%s_%d', val, seed), '[^a-zA-Z0-9_-]', '', 1, null); 
+  if ( seed=-1 )
+    str:=regexp_replace(sprintf('%s', val), '[^a-zA-Z0-9_-]', '', 1, null);
+  else 
+    str:=regexp_replace(sprintf('%s_%d', val, seed), '[^a-zA-Z0-9_-]', '', 1, null); 
   return str;
 }
 ;
@@ -9486,6 +9487,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
 	if (profile is not null)
 		profs := split_and_decode (profile, 0, '\0\0 ');
+		
 	reg := '';
 	doc_base := get_keyword ('http-redirect-to', opts, new_origin_uri);
 	DB.DBA.RDF_LOAD_GRDDL_REC (triple_dict, doc_base, graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0, opts);
@@ -9651,8 +9653,18 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	xt := xt_sav;
 	if (add_html_meta = 1 and xpath_eval ('/html', xt) is not null)
 	{
+		declare numtriples integer;
 		xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/html2rdf.xsl', xt, vector ('baseUri', new_origin_uri, 'source', tgt_page));
-		if (xpath_eval ('count(/RDF/*)', xd) > 0)
+		numtriples:=cast(xpath_eval ('count(/RDF/*)', xd) as integer);
+		if (numtriples > 0)
+		{
+			mdta := mdta + 1;
+			xd := serialize_to_UTF8_xml (xd);
+			DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri), 1);
+		}
+		xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/htmlAllMeta2rdf.xsl', xt, vector ('baseUri', new_origin_uri, 'source', tgt_page));
+		numtriples:=cast(xpath_eval ('count(/RDF/*)', xd) as integer);
+		if (numtriples > 0)
 		{
 			mdta := mdta + 1;
 			xd := serialize_to_UTF8_xml (xd);
@@ -9696,6 +9708,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	return 0;
 }
 ;
+
 
 create procedure DB.DBA.RDF_LOAD_FEED_RESPONSE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
