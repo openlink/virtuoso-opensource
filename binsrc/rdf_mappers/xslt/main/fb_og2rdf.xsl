@@ -1862,7 +1862,7 @@
 		    </oplcert:Certificate>
 		</xsl:if>
 		<!-- x509 certificate -->
-		<xsl:if test="starts-with (message, '#X509Cert di:')">
+		<xsl:if test="starts-with (message, 'di:')">
 		    <xsl:variable name="di"><xsl:copy-of select="vi:di-split (message)"/></xsl:variable>
 		    <xsl:variable name="fp"><xsl:value-of select="$di/di/hash"/></xsl:variable>
 		    <xsl:variable name="dgst"><xsl:value-of select="$di/di/dgst"/></xsl:variable>
