@@ -683,20 +683,20 @@ json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
 
-sqlwords.h: $(srcdir)/sqlwords.gperf
+sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
 		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
-sql3.c sql3.h: sql3.y
+sql3.c sql3.h: sql3.y Makefile.am
 	@$(GEN) $(YACC) -o sql3.c -vd $(srcdir)/sql3.y
 
-scn3.c: scn3.l sql3.c sqlwords.h
+scn3.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3.c $(srcdir)/scn3.l
 
-scn3split.c: scn3.l sql3.c sqlwords.h
+scn3split.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
 $(top_srcdir)/binsrc/cached_resources/cached_resources.c:
@@ -708,16 +708,16 @@ sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_c
 	@echo "#include \"sql_code_cache_impl.c\"" >> $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
-xpathp.c xpathp.h : xpathp.y
+xpathp.c xpathp.h : xpathp.y Makefile.am
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
 
-xpathp_lex_props.c: list_lex_props.sh xpathp.y
+xpathp_lex_props.c: list_lex_props.sh xpathp.y Makefile.am
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
 
-xpscn.c: xpscn.l xpathp.h
+xpscn.c: xpscn.l xpathp.h Makefile.am
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
 
-sparqlwords.h: sparqlwords.gperf
+sparqlwords.h: sparqlwords.gperf Makefile.am
 	@$(GEN) --stdout $(GPERF) -o $@ \
 		-aCDGptr \
 		-Kkwd \
@@ -727,29 +727,29 @@ sparqlwords.h: sparqlwords.gperf
 		-Nsparql_lex_hash_kw \
 		sparqlwords.gperf
 
-sparql_p.c sparql_p.h: sparql_p.y
+sparql_p.c sparql_p.h: sparql_p.y Makefile.am
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
 
-sparql_lex_props.c: list_lex_props.sh sparql_p.y
+sparql_lex_props.c: list_lex_props.sh sparql_p.y Makefile.am
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
 
-sparql_l.c: sparql_l.l sparql_p.h
+sparql_l.c: sparql_l.l sparql_p.h Makefile.am
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
 
-nquad_p.c nquad_p.h: nquad_p.y
+nquad_p.c nquad_p.h: nquad_p.y Makefile.am
 	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
-turtle_p.c turtle_p.h: turtle_p.y
+turtle_p.c turtle_p.h: turtle_p.y Makefile.am
 	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
-turtle_lex_props.c: list_lex_props.sh turtle_p.y
+turtle_lex_props.c: list_lex_props.sh turtle_p.y Makefile.am
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
-turtle_l.c: turtle_l.l turtle_p.h
+turtle_l.c: turtle_l.l turtle_p.h Makefile.am
 	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
 
 
-AWK_FILES = $(srcdir)/sql_to_c.awk
+AWK_FILES = $(srcdir)/sql_to_c.awk Makefile.am
 
 sql_code.c: $(SQL_FILES) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
@@ -838,7 +838,7 @@ sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_2PC)
 
-#sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES)
+#sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES) Makefile.am
 #	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
 #		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
 
