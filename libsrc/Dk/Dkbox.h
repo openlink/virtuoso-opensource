@@ -307,7 +307,7 @@ ptr += 4
 
 #define DV_NON_BOX 			101
 
-#define FIRST_DV_DTP 			180
+#define FIRST_DV_DTP 			125
 
 /* Data types */
 

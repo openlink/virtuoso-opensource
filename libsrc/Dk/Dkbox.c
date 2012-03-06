@@ -803,6 +803,8 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
+  if (tag < FIRST_DV_DTP)
+    GPF_T1 ("Tree contains a pointer to a Box with weird tag");
   if (!box_can_appear_twice_in_tree[tag])
     {
       box_t other_parent = gethash (box, known);
@@ -1151,6 +1153,10 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 #endif
 
     default:
+#ifdef MALLOC_DEBUG
+      if (tag < FIRST_DV_DTP)
+        GPF_T1 ("Copy of a box with weird tag");
+#endif
       if (box_copier[tag])
 	return (box_copier[tag] ((caddr_t) box));
     }
@@ -1202,6 +1208,10 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
 
 #endif
     default:
+#ifdef MALLOC_DEBUG
+      if (tag < FIRST_DV_DTP)
+        GPF_T1 ("Copy of a box with weird tag");
+#endif
       if (box_copier[tag])
 	return (box_copier[tag] ((caddr_t) box));
     }
@@ -1286,6 +1296,10 @@ DBG_NAME (box_try_copy_tree) (DBG_PARAMS box_t box, box_t stub)
 #endif
 
     default:
+#ifdef MALLOC_DEBUG
+      if (tag < FIRST_DV_DTP)
+        GPF_T1 ("Copy of a box with weird tag");
+#endif
       if (box_copier[tag])
 	return (box_copier[tag] (box));
     }
@@ -2026,6 +2040,7 @@ box_dv_uname_make_immortal (caddr_t tree)
   switch (DV_TYPE_OF (tree))
     {
     case DV_UNAME:
+      /*printf ("\nUNAME %s is about to become immortal", tree);*/
       mutex_enter (uname_mutex);
 #ifdef MALLOC_DEBUG
       len = box_length (tree) - 1;
