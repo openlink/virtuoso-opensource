@@ -1282,6 +1282,23 @@ create procedure DB.DBA.RDF_SPONGE_DOC_IRI (in url varchar, in dest varchar := n
 }
 ;
 
+create procedure RM_CONTENT_TYPE_IS_RDF (in ret_content_type any)
+{
+  if (strstr (ret_content_type, 'application/rdf+xml') is not null or
+      strstr (ret_content_type, 'text/rdf+n3') is not null or
+      strstr (ret_content_type, 'text/n3') is not null or
+      strstr (ret_content_type, 'text/rdf+ttl') is not null or
+      strstr (ret_content_type, 'text/rdf+turtle') is not null or
+      strstr (ret_content_type, 'text/turtle') is not null or
+      strstr (ret_content_type, 'application/rdf+n3') is not null or
+      strstr (ret_content_type, 'application/rdf+turtle') is not null or
+      strstr (ret_content_type, 'application/turtle') is not null or
+      strstr (ret_content_type, 'application/x-turtle') is not null )
+    return 1;
+  return 0;
+}
+;
+
 
 --
 -- # this returns document IRI, non-proxy one
@@ -3382,6 +3399,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
   og_timeout := 60;
   og_id := null;
   access_token := null;
+  mime := get_keyword ('content-type', opts);
 
   declare exit handler for sqlstate '*'
   {
@@ -3468,9 +3486,8 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
       DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
       DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
     }
-    mime := get_keyword ('content-type', opts);
     ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
-    ret := -1;
+    ret := -1 * RM_CONTENT_TYPE_IS_RDF (mime);
     for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
     {
       if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
@@ -3499,7 +3516,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     if (length (access_token) = 0)
     {
       log_message (sprintf('%s: No access token is available to query this OpenGraph object\'s metadata.', current_proc_name()));
-      return -1;
+      return -1 * RM_CONTENT_TYPE_IS_RDF (mime);
     }
     url := url || '&access_token=' || access_token;
     cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
@@ -3509,7 +3526,7 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
     if (og_object_type <> 'album')
     {
       log_message (sprintf('%s: Unexpected OpenGraph object type - %s', current_proc_name(), og_object_type));
-      return -1;
+      return -1 * RM_CONTENT_TYPE_IS_RDF (mime);
     }
     -- Get the Facebook user ID of the Album's creator
     og_id := cast (xpath_eval('/results/from/id', xt_og_metadata) as varchar);
@@ -11381,6 +11398,39 @@ create procedure DB.DBA.RDF_SPONGER_STATUS (in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.RM_MAKE_DOC_LINKS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout opts any, inout triples any)
+{
+  declare gr, subj1, ss, des, pt, mime, tp, pti, prim any;
+  declare dict, arr any;
+  declare have_pt, add_doc int;
+
+  mime := get_keyword ('content-type', opts);
+  if (mime like '%/rdf+%' or mime = 'text/n3')
+    return vector ();
+
+  add_doc := 1;
+  subj1 := iri_to_id (DB.DBA.RDF_SPONGE_PROXY_IRI (coalesce (dest, graph_iri)));
+  prim := iri_to_id (DB.DBA.RDF_PROXY_ENTITY_IRI (new_origin_uri));
+  des := iri_to_id ('http://www.openlinksw.com/schema/attribution#isDescribedUsing');
+  pt := iri_to_id ('http://www.w3.org/2007/05/powder-s#describedby');
+  tp := iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+  pti := iri_to_id ('http://xmlns.com/foaf/0.1/primaryTopic');
+
+  dict := dict_new (10);
+  foreach (any x in triples) do
+    {
+      if (x[1] = tp and x[0] <> subj1)
+	dict_put (dict, vector (x[0], pt, subj1), 1);
+      if (x[0] = subj1 and x[1] = tp)
+	add_doc := 0;
+    }
+  dict_put (dict, vector (subj1, pti, prim), 1);
+  if (add_doc)
+    dict_put (dict, vector (subj1, tp, iri_to_id ('http://xmlns.com/foaf/0.1/Document')), 1);
+  return dict_list_keys (dict, 2);
+}
+;
+
 -- /* top level, called from sparql engine */
 create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
     inout ret_body any, in ret_content_type varchar, inout options any, inout ret_hdr any, inout ps any, inout aq any, inout req_hdr_arr any)
@@ -11433,10 +11483,11 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 	    }
 	  if (__tag(rc) = 193 or rc < 0 or rc > 0)
 	    {
-	      declare triples any;
-	      --dbg_obj_print ('no triples:', dict_size (dict));
+	      declare triples, links any;
+	      dbg_obj_print ('no triples:', dict_size (dict));
 	      --dbg_obj_print ('in store: ', (select count(*) from RDF_QUAD where G = iri_to_id (coalesce (dest, graph_iri))));
 	      triples := dict_list_keys (dict, 1);
+	      links := DB.DBA.RM_MAKE_DOC_LINKS (graph_iri, new_origin_uri, dest, new_opts, triples);
 	      {
 		declare deadl int;
 		deadl := 5;
@@ -11451,6 +11502,7 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 		  resignal;
 		};
 	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), triples);
+	        DB.DBA.RDF_INSERT_TRIPLES (coalesce (dest, graph_iri), links);
 		DB.DBA.RDF_SPONGER_STATUS (graph_iri, new_origin_uri, dest, null, options);
 	      }	
               if (__tag(rc) = 193)
