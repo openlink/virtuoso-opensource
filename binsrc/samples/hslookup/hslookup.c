@@ -38,7 +38,7 @@
 #include <time.h>
 
 #ifdef WIN32  
-#include <hdl/handle.h>
+#include <handle.h>
 #else
 #include <hdl/hdl.h>
 #endif

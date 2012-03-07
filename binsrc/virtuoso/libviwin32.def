@@ -195,7 +195,6 @@ EXPORTS
 	sch_name_to_type		@673
 	PrpcThreadAttach		@674
 	PrpcThreadDetach		@675
-	decode_base64			@676
 	case_mode			@677
 	virtuoso_odbc_port		@678
 	uudecode_base64			@679
@@ -210,3 +209,4 @@ EXPORTS
 	isp_schema_1 			@688
 	strses_enable_paging		@689
 	http_ses_size			@690
+	log_proc_overwrite		@691
