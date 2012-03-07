@@ -2081,13 +2081,13 @@ create procedure INIT_SERVER_SETTINGS ()
 	     'Enter your User ID and Password',
 	     '',
 	     '',
-	     'Copyright &copy; 1998-2011 OpenLink Software',
+	     'Copyright &copy; 1998-2012 OpenLink Software',
 	     '',
 	     sys_stat ('st_host_name'),
 	     1
 	    );
   }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2011 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2012 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
