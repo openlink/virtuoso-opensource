@@ -402,6 +402,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
     NULL,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_briefcase_html', 1,
+    '/dataspace/doc/([^/]*)/(briefcase)/([^/]*)/folder/([^/\\?]*)',
+    vector('uname', 'app', 'inst', 'item'), 3,
+    '%s?id=%s&what=c', vector('inst', 'item'),
+    'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    2);
+
 -- Wiki item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
     '/dataspace/doc/([^/]*)/wiki/([^/]*)/([^\\?]*)',
@@ -766,6 +774,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_discussion_home_html',
 	  'ods_discussion_html',
 	  'ods_item_html',
+    'ods_item_briefcase_html',
     'ods_item_discussion_html',
     'ods_item_annotation_html',
 	  'ods_wiki_item_html',
