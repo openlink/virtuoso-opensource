@@ -240,7 +240,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
       {
 	goto ret;
       };
-    page := http_get (graph);
+    page := http_client (url=>graph, n_redirects=>15);
     xt := xtree_doc (page, 2);
     xp := xpath_eval ('string (.)', xt);
     xp := cast (xp as varchar);
@@ -265,10 +265,16 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
       }
     exec (sprintf ('sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', graph), 
 	stat, msg, vector (), 0, meta, data);
-    if (length (data) and length (data[0]) and data[0][0] = fing)
+    if (length (data))
      {
-	ret_code := 1;
-	goto ret;	
+       foreach (any x in data) do
+	 {
+	   if (x[0] = fing)
+	     {
+	       ret_code := 1;
+	       goto ret;
+	     }
+	 }
       }
 
   }
