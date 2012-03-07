@@ -121,7 +121,7 @@
           }
        ?>
       <v:url name="sec_url_5" value="X.509 Certificates" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=5')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="sec_url_6" value="Private Keys" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=7')" xhtml_class="--case when self.tabNo = 7 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_6" value="Certificate &amp; Private Key" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=7')" xhtml_class="--case when self.tabNo = 7 then 'tabX activeTabX' else 'tabX' end"/>
     </div>
     <div class="contents">
   <v:form name="usr_pwd" type="simple" method="POST" action="uiedit_sec.vspx?page=3">
