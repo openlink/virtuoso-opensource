@@ -389,7 +389,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	   fng := replace (fng, ':', '');
 	   fng2 := x[0];
 	   fng2 := replace (fng2, ':', '');
-    	   if (fng2 = fng)
+    	   if (lower (fng2) = lower (fng))
     	     {
     	       ret_code := 1;
     	       goto ret;
@@ -406,12 +406,15 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 create procedure WEBID_DI_SPLIT (in str varchar)
 {
   declare di, h, dgst varchar;
-  di := regexp_match ('di:[^ <>]+', str);
-  if (di is null)
-    return null;
-  h := WS.WS.PARSE_URI (di);
-  dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
-  return vector (h[2], dgst);
+  declare ret any;
+  ret := vector ();
+  while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
+    {
+      h := WS.WS.PARSE_URI (di);
+      dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
+      ret := vector_concat (ret, vector (h[2], dgst));
+    }
+  return ret;
 }
 ;
 
@@ -578,17 +581,20 @@ create procedure WEBID_AUTH_GEN_2 (
     di_arr := WEBID_DI_SPLIT (xp);
     if (length (di_arr) > 1)
       {
-	dgst := di_arr [0];
-	dhash := di_arr [1]; 
-	fing := get_certificate_info (6, cert, ctype, null, dgst);
-	fing := lower (replace (fing, ':', ''));
-	fing_b64u := encode_base64url (cast (hex2bin (fing) as varchar));
-	if (fing = dhash)
+	foreach (any elm in di_arr) do
 	  {
-	    ret_code := 1;
-	    goto ret;	
+	    dgst := elm [0];
+	    dhash := elm [1]; 
+	    fing := get_certificate_info (6, cert, ctype, null, dgst);
+	    fing := lower (replace (fing, ':', ''));
+	    fing_b64u := encode_base64url (cast (hex2bin (fing) as varchar));
+	    if (fing = dhash)
+	      {
+		ret_code := 1;
+		goto ret;	
+	      }
+	    is_di := 1;
 	  }
-	is_di := 1;
       }
     else
       {
@@ -681,7 +687,7 @@ create procedure WEBID_AUTH_GEN_2 (
 	   fng := replace (fng, ':', '');  
 	   fng2 := x[0];
 	   fng2 := replace (fng2, ':', '');  
-    	   if (fng2 = fng)
+    	   if (lower (fng2) = lower (fng))
     	     {
     	       ret_code := 1;
     	       goto ret;
