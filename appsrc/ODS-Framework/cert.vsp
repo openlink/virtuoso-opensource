@@ -94,7 +94,7 @@
 	else if (regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
 	  goto make_cert;
         else 
-	 {  ?>Certificate & Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead <?vsp } 
+	 {  ?>Certificate &amp; Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead <?vsp } 
        }
        else
        {
