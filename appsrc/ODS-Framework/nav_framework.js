@@ -55,12 +55,9 @@ function _getChildElemsByClassName(elm, class_name, max_depth,
   return elm_arr;
 }
 
-function getChildElemsByClassName(elm, class_name, max_depth,
-		stop_at_first_match) {
+function getChildElemsByClassName(elm, class_name, max_depth, stop_at_first_match) {
   var elm_arr = new Array ();
-  
-	return _getChildElemsByClassName(elm, class_name, max_depth,
-			stop_at_first_match, elm_arr);
+	return _getChildElemsByClassName(elm, class_name, max_depth, stop_at_first_match, elm_arr);
 }
 
 function replaceTemplateClass(elm, class_name, content) {
@@ -1099,7 +1096,7 @@ ODS.Nav = function(navOptions) {
 			}, 'menu_link profile_edit shortcut');
 		profileMenuAProfileEdit.innerHTML = 'edit';
       OAT.Event.attach (profileMenuAProfileEdit, "click", function () {
-				      self.loadVspx (self.expandURL (self.ods + 'uiedit.vspx'));
+				self.loadCheckedVspx(self.expandURL(self.ods + 'uiedit.vspx'));
 				  });
 
 		if (self.session.userName)
@@ -1235,11 +1232,9 @@ ODS.Nav = function(navOptions) {
 
 	    var messagesMenu = new OAT.Menu ();
 	    messagesMenu.noCloseFilter = 'menu_separator';
-
 	    messagesMenu.createFromUL ("messages_menu");
 
-	    OAT.Style.include ('dock.css');
-
+			OAT.Style.include(location.protocol + '//' + location.host + '/ods/dock.css');
 	    OAT.Dom.show ($('messages_menu').parentNode);
 
 			OAT.Loader.load( [ "dock" ], function() {
@@ -1873,7 +1868,7 @@ ODS.Nav = function(navOptions) {
 		var aSettings = OAT.Dom.create("a", {cursor: 'pointer'});
 
 		OAT.Event.attach(aSettings, "click", function() {
-			      self.loadVspx (self.expandURL (self.ods + 'app_settings.vspx'));
+			self.loadCheckedVspx(self.expandURL(self.ods + 'app_settings.vspx'));
 			  });
 
     aSettings.innerHTML = 'Application Settings';
@@ -1881,7 +1876,7 @@ ODS.Nav = function(navOptions) {
 		var aSiteSettings = OAT.Dom.create("a", {cursor: 'pointer'});
 
 		OAT.Event.attach(aSiteSettings, "click", function() {
-			      self.loadVspx (self.expandURL (self.ods + 'site_settings.vspx'));
+			self.loadCheckedVspx(self.expandURL(self.ods + 'site_settings.vspx'));
 			  });
 
 	aSiteSettings.innerHTML = 'Site Settings';
@@ -4011,6 +4006,18 @@ ODS.Nav = function(navOptions) {
 		return this.expandURL(this.ods + 'sfront.vspx');
 	};
 
+	this.loadCheckedVspx = function(url) {
+    var x = function (data) {
+      var xml = OAT.Xml.createXmlDoc(data);
+      if (hasError(xml, false)) {
+				self.session.end();
+      } else {
+	      self.loadVspx(url);
+	    }
+    }
+    OAT.AJAX.GET('/ods/api/user.validate?sid='+self.session.sid+'&realm='+self.session.realm, false, x);
+	};
+
 	this.loadRDFB = function(url, useFrame) {
 		if (typeof (url) == 'undefined')
 			return;
@@ -4150,7 +4157,7 @@ ODS.Nav = function(navOptions) {
 	if (applicationType == 'FeedManager')
 	    applicationType = 'Feed Manager';
 
-	if (applicationType == 'InstantMessenger')
+		else if (applicationType == 'InstantMessenger')
 	    applicationType = 'Instant Messenger';
 
 		var data = 'sid=' + self.session.sid + '&application=' + encodeURIComponent(applicationType);
@@ -4160,7 +4167,8 @@ ODS.Nav = function(navOptions) {
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 			} else {
-		    self.wait();
+				self.session.end();
+				// self.wait();
 		}
     }
 		OAT.AJAX.POST(self.session.endpoint + "checkApplication", data, callback, ajaxOptions);
