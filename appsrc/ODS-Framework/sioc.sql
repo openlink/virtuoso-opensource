@@ -41,7 +41,8 @@ create procedure get_graph ()
   return sprintf ('http://%s%s', get_cname (), get_base_path ());
 };
 
-create procedure get_graph_ext (in access_mode integer)
+create procedure get_graph_ext (
+  in access_mode integer)
 {
   declare graph varchar;
 
@@ -53,32 +54,18 @@ create procedure get_graph_ext (in access_mode integer)
 };
 
 create procedure get_graph_new (
-  in instance_id integer := null,
   in access_mode integer := null,
   in object_iri varchar := null)
 {
-  declare arr any;
-  declare exit handler for not found { return null; };
-
-  if (isnull (access_mode))
-    access_mode := coalesce((select WAI_IS_PUBLIC from DB.DBA.WA_INSTANCE where WAI_ID = instance_id), 0);
-
-  if (access_mode = 0)
-    return null;
+  declare V any;
 
   if (access_mode = 1)
     return get_graph ();
 
-  if (access_mode = 2)
-  {
-    if (isnull (object_iri))
-      object_iri := get_graph ();
-    arr := sprintf_inverse (object_iri, 'http://%s/dataspace/%s', 1);
-    if (length (arr) <> 2)
-      return null;
-    return sprintf ('http://%s/dataspace/protected/%s',arr[0],arr[1]);
-  }
-  return null;
+  V := sprintf_inverse (object_iri, 'http://%s/dataspace/%s', 1);
+  if (length (V) <> 2)
+    return null;
+  return sprintf ('http://%s/dataspace/protected/%s', V[0], V[1]);
 };
 
 create procedure get_ods_link ()
@@ -223,6 +210,11 @@ create procedure opl_iri (in s varchar)
   return concat ('http://www.openlinksw.com/schema/attribution#', s);
 };
 
+
+create procedure oplmail_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schemas/mail#', s);
+};
 
 create procedure cert_iri (in s varchar)
 {
@@ -2256,7 +2248,7 @@ create procedure fill_ods_sioc_online (in doall int := 0, in iri_result int := 1
 
 create procedure fill_ods_sioc (in doall int := 0)
 {
-  declare iri, site_iri, graph_iri, sioc_version varchar;
+  declare iri, site_iri, graph_iri, tmp_graph_iri, forum_iri, sioc_version varchar;
   declare fCreate, cpt, deadl, cnt int;
 
   declare exit handler for sqlstate '*', not found
@@ -2288,6 +2280,30 @@ create procedure fill_ods_sioc (in doall int := 0)
     
     l0:
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (fix_graph (graph_iri));
+
+    -- clean private graphs
+	  for select WAI_ID,
+	             WAI_TYPE_NAME,
+	             WAI_NAME,
+               WAI_IS_PUBLIC
+		      from DB.DBA.WA_INSTANCE
+		     where WAI_IS_PUBLIC = 0 do
+		{
+      forum_iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+      tmp_graph_iri := get_graph_new (WAI_IS_PUBLIC, forum_iri);
+      if (length (tmp_graph_iri))
+      {
+        delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (tmp_graph_iri);
+
+        -- remove user's rights for private graphs
+    	  for select WAM_USER
+    		      from DB.DBA.WA_MEMBER
+  		     where WAM_INST = WAI_NAME do
+    		{
+          SIOC..private_user_remove (tmp_graph_iri, WAM_USER);
+        }
+      }
+		}
     commit work;
     set isolation='committed';
     ods_graph_init ();
@@ -2484,7 +2500,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		           DB.DBA.WA_INSTANCE
 		     where WAM_USER = U_ID 
 		       and WAM_INST = WAI_NAME 
-		       and ((WAI_IS_PUBLIC = 1) or (WAI_TYPE_NAME = 'oDrive')) do
+		       and SIOC..instance_sioc_check (WAI_IS_PUBLIC, WAI_TYPE_NAME) = 1 do
 		{
 		  instance_sioc_data (
                           WAM_INST,
@@ -3612,14 +3628,24 @@ create trigger WA_RELATED_APPS_SIOC_D after delete on DB.DBA.WA_RELATED_APPS ref
 };
 
 
+create procedure instance_sioc_check (
+  in _WA_IS_PUBLIC integer,
+  in _WA_TYPE varchar)
+{
+  if ((_WA_IS_PUBLIC > 0) or (_WA_TYPE in ('oDrive', 'oMail')))
+    return 1;
+
+  return 0;
+};
+
 create procedure instance_sioc_data (
-  in N_WAM_INST varchar,
-  in N_WAM_APP_TYPE varchar,
-  in N_WAM_USER integer,
-  in N_WAM_MEMBER_TYPE integer,
-  in N_WAM_IS_PUBLIC integer,
-  in N_WAM_DESCRIPTION varchar := null,
-  in N_WAM_LICENSE varchar := null)
+  in _WAM_INST varchar,
+  in _WAM_APP_TYPE varchar,
+  in _WAM_USER integer,
+  in _WAM_MEMBER_TYPE integer,
+  in _WAM_IS_PUBLIC integer,
+  in _WAM_DESCRIPTION varchar := null,
+  in _WAM_LICENSE varchar := null)
 {
   declare graph_iri, user_iri, role_iri, forum_iri, site_iri, svc_proc_name varchar;
   declare exit handler for sqlstate '*'
@@ -3628,28 +3654,37 @@ create procedure instance_sioc_data (
     return;
   };
 
-  if ((N_WAM_MEMBER_TYPE = 1) and ((N_WAM_IS_PUBLIC > 0) or (N_WAM_APP_TYPE = 'oDrive')))
-    {
-    site_iri := get_graph ();
-    forum_iri := forum_iri (N_WAM_APP_TYPE, N_WAM_INST);
-    graph_iri := get_graph_new (null, N_WAM_IS_PUBLIC, forum_iri);
-    sioc_forum (graph_iri, site_iri, forum_iri, N_WAM_INST, N_WAM_APP_TYPE, N_WAM_DESCRIPTION);
-    if (not isnull (N_WAM_LICENSE))
-      cc_work_lic (graph_iri, forum_iri, N_WAM_LICENSE);
+  if (not SIOC..instance_sioc_check (_WAM_IS_PUBLIC, _WAM_APP_TYPE))
+    return;
 
-      -- add services here
-    svc_proc_name := sprintf ('SIOC.DBA.ods_%s_services', DB.DBA.wa_type_to_app (N_WAM_APP_TYPE));
-    if (__proc_exists (svc_proc_name))
-	    call (svc_proc_name) (graph_iri, forum_iri, N_WAM_USER, N_WAM_INST);
+  forum_iri := forum_iri (_WAM_APP_TYPE, _WAM_INST);
+  graph_iri := get_graph_new (_WAM_IS_PUBLIC, forum_iri);
+  if (_WAM_MEMBER_TYPE = 1)
+    {
+    if (not _WAM_IS_PUBLIC)
+    {
+      SIOC..private_init ();
+      SIOC..private_graph_add (graph_iri);
     }
 
-  user_iri := user_iri (N_WAM_USER);
-  role_iri := role_iri_by_name (N_WAM_INST, N_WAM_USER);
+    site_iri := get_graph ();
+    sioc_forum (graph_iri, site_iri, forum_iri, _WAM_INST, _WAM_APP_TYPE, _WAM_DESCRIPTION);
+    if (not isnull (_WAM_LICENSE))
+      cc_work_lic (graph_iri, forum_iri, _WAM_LICENSE);
 
-  do_social:
-  forum_iri := forum_iri (N_WAM_APP_TYPE, N_WAM_INST);
-  graph_iri := get_graph_new (null, N_WAM_IS_PUBLIC, forum_iri);
-  if (user_iri is not null and role_iri is not null and forum_iri is not null and ((N_WAM_IS_PUBLIC > 0) or (N_WAM_APP_TYPE = 'oDrive')))
+      -- add services here
+    svc_proc_name := sprintf ('SIOC.DBA.ods_%s_services', DB.DBA.wa_type_to_app (_WAM_APP_TYPE));
+    if (__proc_exists (svc_proc_name))
+	    call (svc_proc_name) (graph_iri, forum_iri, _WAM_USER, _WAM_INST);
+    }
+  if (not _WAM_IS_PUBLIC)
+    SIOC..private_user_add (graph_iri, _WAM_USER);
+
+  user_iri := user_iri (_WAM_USER);
+  role_iri := role_iri_by_name (_WAM_INST, _WAM_USER);
+
+_social:
+  if ((user_iri is not null) and (role_iri is not null) and (forum_iri is not null))
   {
     DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), role_iri);
     DB.DBA.ODS_QUAD_URI (graph_iri, role_iri, sioc_iri ('function_of'), user_iri);
@@ -3660,20 +3695,66 @@ create procedure instance_sioc_data (
 	    DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('has_owner'), user_iri);
 	    DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioc_iri ('owner_of'), forum_iri);
 	}
-    if (N_WAM_APP_TYPE = 'Community')
-	{
-	  declare person_iri any;
+    if (_WAM_APP_TYPE = 'Community')
+	    DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (forum_iri), foaf_iri ('member'), person_iri (user_iri));
 
-	    person_iri := person_iri (user_iri);
-	    DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (forum_iri), foaf_iri ('member'), person_iri);
-    }
-    if (N_WAM_APP_TYPE = 'AddressBook')
+    if (_WAM_APP_TYPE = 'AddressBook')
     {
-      N_WAM_APP_TYPE := 'SocialNetwork';
-      goto do_social;
+      forum_iri := forum_iri ('SocialNetwork', _WAM_INST);
+      graph_iri := get_graph_new (_WAM_IS_PUBLIC, forum_iri);
+      goto _social;
     }
   }
-};
+}
+;
+
+create procedure instance_sioc_data_delete (
+  in _WAM_INST varchar,
+  in _WAM_APP_TYPE varchar,
+  in _WAM_USER integer,
+  in _WAM_MEMBER_TYPE integer,
+  in _WAM_IS_PUBLIC integer)
+{
+  declare p_name varchar;
+  declare user_iri, graph_iri, role_iri, forum_iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  if (not SIOC..instance_sioc_check (_WAM_IS_PUBLIC, _WAM_APP_TYPE))
+    return;
+
+  forum_iri := SIOC..forum_iri (_WAM_APP_TYPE, _WAM_INST);
+  graph_iri := SIOC..get_graph_new (_WAM_IS_PUBLIC, forum_iri);
+  if (_WAM_MEMBER_TYPE = 1)
+    {
+    if (not _WAM_IS_PUBLIC)
+      SIOC..private_graph_remove (graph_iri);
+
+    -- instance drop
+    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+    p_name := sprintf ('SIOC.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (_WAM_APP_TYPE));
+    if (__proc_exists (p_name))
+	    call (p_name) (_WAM_INST, _WAM_IS_PUBLIC);
+
+    SIOC..ods_object_services_dettach (graph_iri, forum_iri, 'instance');
+    SIOC..ods_object_services_dettach (graph_iri, forum_iri, DB.DBA.wa_type_to_app (_WAM_APP_TYPE));
+    }
+
+  if (not _WAM_IS_PUBLIC)
+    SIOC..private_user_remove (graph_iri, _WAM_USER);
+
+  user_iri := user_iri (_WAM_USER);
+  role_iri := role_iri_by_name (_WAM_INST, _WAM_USER);
+  if (user_iri is not null and role_iri is not null)
+    delete_quad_s_or_o (graph_iri, role_iri, role_iri);
+
+  if (_WAM_APP_TYPE = 'Community')
+    delete_quad_po (graph_iri, foaf_iri ('member'), person_iri (user_iri));
+}
+;
 
 -- DB.DBA.WA_MEMBER
 create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new as N
@@ -3684,144 +3765,159 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
     N.WAM_USER,
     N.WAM_MEMBER_TYPE,
     N.WAM_IS_PUBLIC);
-};
+}
+;
 
 create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing old as O
 {
-  declare p_name varchar;
-  declare user_iri, graph_iri, role_iri, forum_iri varchar;
-  declare exit handler for sqlstate '*'
-  {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-
-  forum_iri := SIOC..forum_iri (O.WAM_APP_TYPE, O.WAM_INST);
-  graph_iri := SIOC..get_graph_new (null, O.WAM_IS_PUBLIC, forum_iri);
-  if ((O.WAM_MEMBER_TYPE = 1) and (O.WAM_IS_PUBLIC > 0)) -- instance drop
-    {
-    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
-    p_name := sprintf ('SIOC.DBA.clean_ods_%s_sioc2', DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
-    if (__proc_exists (p_name))
-	    call (p_name) (O.WAM_INST, O.WAM_IS_PUBLIC);
-
-    SIOC..ods_object_services_dettach (graph_iri, forum_iri, 'instance');
-    SIOC..ods_object_services_dettach (graph_iri, forum_iri, DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
-    }
-
-  user_iri := user_iri (O.WAM_USER);
-  role_iri := role_iri_by_name (O.WAM_INST, O.WAM_USER);
-  if (user_iri is not null and role_iri is not null)
-    {
-    delete_quad_s_or_o (graph_iri, role_iri, role_iri);
-    }
-  if (O.WAM_APP_TYPE = 'Community')
-    {
-      declare person_iri any;
-
-    person_iri := person_iri (user_iri);
-      delete_quad_po (graph_iri, foaf_iri ('member'), person_iri);
-    }
-};
+  SIOC..instance_sioc_data_delete (
+    O.WAM_INST,
+    O.WAM_APP_TYPE,
+    O.WAM_USER,
+    O.WAM_MEMBER_TYPE,
+    O.WAM_IS_PUBLIC);
+}
+;
 
 -- DB.DBA.WA_INSTANCE
 -- INSERT and delete are DONE IN THE WA_MEMBER WHEN INSERT THE OWNER
 create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencing old as O, new as N
 {
-  declare p_name varchar;
-  declare o_graph_iri, n_graph_iri, site_iri, o_forum_iri, n_forum_iri, role_iri, o_role_iri varchar;
+  declare p_name, wam_user varchar;
+  declare site_iri, o_graph_iri, n_graph_iri, o_forum_iri, n_forum_iri, n_role_iri, o_role_iri varchar;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  if ((N.WAI_IS_PUBLIC = 0) and (O.WAI_IS_PUBLIC = 0))
-    return;
-
   n_forum_iri := SIOC..forum_iri_n (O.WAI_TYPE_NAME, O.WAI_NAME, N.WAI_NAME);
-  n_graph_iri := SIOC..get_graph_new (null, N.WAI_IS_PUBLIC, n_forum_iri);
+  n_graph_iri := SIOC..get_graph_new (N.WAI_IS_PUBLIC, n_forum_iri);
   o_forum_iri := SIOC..forum_iri (O.WAI_TYPE_NAME, O.WAI_NAME);
-  o_graph_iri := SIOC..get_graph_new (null, O.WAI_IS_PUBLIC, o_forum_iri);
-  if (N.WAI_TYPE_NAME = 'Community')
-    {
-    declare group_iri any;
+  o_graph_iri := SIOC..get_graph_new (O.WAI_IS_PUBLIC, o_forum_iri);
 
-    group_iri := group_iri (o_forum_iri);
-    delete_quad_sp (o_graph_iri, group_iri, foaf_iri ('name'));
-    }
-
-  -- new: private data
-  if (N.WAI_IS_PUBLIC = 0)
-    {
-    for select O as post
-          from DB.DBA.RDF_QUAD
-         where G = DB.DBA.RDF_IID_OF_QNAME (o_graph_iri)
-           and S = DB.DBA.RDF_IID_OF_QNAME (o_forum_iri)
-           and P = DB.DBA.RDF_IID_OF_QNAME (sioc_iri ('container_of')) do
-	  {
-	    SIOC..delete_quad_s_or_o (o_graph_iri, post, post);
-	  }
-    SIOC..delete_quad_s_or_o (o_graph_iri, o_forum_iri, o_forum_iri);
-    p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
-
-    SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, 'instance');
-    SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, DB.DBA.wa_type_to_app (O.WAI_TYPE_NAME));
+  -- no SIOC related changes
+  if ((n_graph_iri = o_graph_iri) and (n_forum_iri = o_forum_iri))
     return;
-    }
 
-  -- old: private data - must be created forum
-  if (O.WAI_IS_PUBLIC = 0)
-  {
-    SIOC..instance_sioc_data (
-      N.WAI_NAME,
-      N.WAI_TYPE_NAME,
-      (select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and WAM_MEMBER_TYPE = 1),
+  -- delete old
+  wam_user := (select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and WAM_MEMBER_TYPE = 1);
+  SIOC..instance_sioc_data_delete (
+      O.WAI_NAME,
+      O.WAI_TYPE_NAME,
+      wam_user,
       1,
-      N.WAI_IS_PUBLIC,
-      N.WAI_DESCRIPTION,
-      N.WAI_LICENSE);
-    }
-  else if (N.WAI_IS_PUBLIC <> O.WAI_IS_PUBLIC)
-    {
-    delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('id'));
-    delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('link'));
-    update_quad_g_s_o (o_graph_iri, n_graph_iri, o_forum_iri, n_forum_iri);
-    delete_quad_sp (o_graph_iri, o_forum_iri, cc_iri ('license'));
-    cc_work_lic (n_graph_iri, n_forum_iri, N.WAI_LICENSE);
+      O.WAI_IS_PUBLIC);
 
-    for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and ((WAM_IS_PUBLIC > 0) or (WAM_APP_TYPE = 'oDrive')) do
-	{
-	  declare _role varchar;
+  if (not SIOC..instance_sioc_check (N.WAI_IS_PUBLIC, N.WAI_TYPE_NAME))
+    return;
 
-	    _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
-	  if (_role is null and tp = 1)
-	    _role := 'owner';
+  -- create new
+  SIOC..instance_sioc_data (
+    N.WAI_NAME,
+    N.WAI_TYPE_NAME,
+    wam_user,
+    1,
+    N.WAI_IS_PUBLIC,
+    N.WAI_DESCRIPTION,
+    N.WAI_LICENSE);
 
-	    role_iri := n_forum_iri || '#' || _role;
-	    o_role_iri := o_forum_iri || '#' || _role;
-	    update_quad_g_s_o (o_graph_iri, n_graph_iri, o_role_iri, role_iri);
-	  }
-    DB.DBA.ODS_QUAD_URI_L (n_graph_iri, n_forum_iri, sioc_iri ('id'), N.WAI_NAME);
-    DB.DBA.ODS_QUAD_URI (n_graph_iri, n_forum_iri, sioc_iri ('link'), n_forum_iri);
-	}
+  delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('id'));
+  delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('link'));
+  DB.DBA.ODS_QUAD_URI_L (n_graph_iri, n_forum_iri, sioc_iri ('id'), N.WAI_NAME);
+  DB.DBA.ODS_QUAD_URI (n_graph_iri, n_forum_iri, sioc_iri ('link'), n_forum_iri);
+  update_quad_g_s_o (o_graph_iri, n_graph_iri, o_forum_iri, n_forum_iri);
 
-  -- refresh be created forum
-  if (N.WAI_IS_PUBLIC <> O.WAI_IS_PUBLIC)
+  delete_quad_sp (o_graph_iri, o_forum_iri, cc_iri ('license'));
+  cc_work_lic (n_graph_iri, n_forum_iri, N.WAI_LICENSE);
+
+  if (o_graph_iri <> n_graph_iri)
   {
-    p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
-    p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (n_graph_iri, site_iri, N.WAI_NAME);
-    p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc2', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (N.WAI_NAME, N.WAI_IS_PUBLIC);
+    for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and SIOC..instance_sioc_check (WAM_IS_PUBLIC, WAM_APP_TYPE) = 1 do
+    {
+      declare _role varchar;
+
+      _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
+      if (_role is null and tp = 1)
+        _role := 'owner';
+
+      n_role_iri := n_forum_iri || '#' || _role;
+      o_role_iri := o_forum_iri || '#' || _role;
+      update_quad_g_s_o (o_graph_iri, n_graph_iri, o_role_iri, n_role_iri);
     }
-};
+    }
+
+  -- update instanse item's data
+  p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
+  if (__proc_exists (p_name))
+    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
+  p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
+  if (__proc_exists (p_name))
+    call (p_name) (n_graph_iri, site_iri, N.WAI_NAME);
+  p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc2', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
+  if (__proc_exists (p_name))
+    call (p_name) (N.WAI_NAME, N.WAI_IS_PUBLIC);
+}
+;
+
+--
+-- Private graphs
+--
+create procedure SIOC..private_graph ()
+{
+  return 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
+}
+;
+
+create procedure SIOC..private_init ()
+{
+  -- create private graph group (if not exists)
+  DB.DBA.RDF_GRAPH_GROUP_CREATE (SIOC..private_graph (), 1);
+
+  -- set default rights for private graphs
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0, 1);
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 511, 1);
+}
+;
+
+create procedure SIOC..private_graph_add (
+  inout graph_iri varchar)
+{
+  DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
+}
+;
+
+create procedure SIOC..private_graph_remove (
+  inout graph_iri varchar)
+{
+  DB.DBA.RDF_GRAPH_GROUP_DEL (SIOC..private_graph (), graph_iri);
+}
+;
+
+create procedure SIOC..private_user_add (
+  in graph_iri varchar,
+  in uid any,
+  in rights integer := 1)
+{
+  declare exit handler for sqlstate '*' {return 0;};
+
+  if (isinteger (uid))
+    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+  DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uid, rights);
+}
+;
+
+create procedure SIOC..private_user_remove (
+  in graph_iri varchar,
+  in uid any)
+{
+  declare exit handler for sqlstate '*' {return 0;};
+
+  if (isinteger (uid))
+    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+  DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uid);
+}
+;
 
 --
 -- ACL
