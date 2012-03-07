@@ -4099,80 +4099,31 @@ create procedure SIOC..acl_delete (
 
 create procedure SIOC..acl_webID ()
 {
-  declare retIRI varchar;
-  declare foafIRI, foafGraph, loadIRI, localIRI any;
-  declare S, V, info, st, msg, data, meta any;
+  declare webid varchar;
+  declare cert, dummy any;
 
   if (not is_https_ctx ())
   {
-    retIRI := null;
+    webid := null;
     goto _exit;
   }
 
-  retIRI := connection_get ('vspx_vebid');
-  if (not isnull (retIRI))
+  webid := connection_get ('vspx_vebid');
+  if (not isnull (webid))
   {
-    if (retIRI = '')
-      retIRI := null;
+    if (webid = '')
+      webid := null;
     goto _exit;
   }
 
-  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
-  V := split_and_decode (V, 0, '\0\0,:');
-  if (V is null)
-    V := vector ();
-  foafIRI := get_keyword ('URI', V);
-  if (isnull (foafIRI))
-  {
-    retIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
-    if (not isnull (retIRI))
-      goto _set;
-    retIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
-    goto _set;
-  }
 
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  localIRI := foafIRI;
-  V := rfc1808_parse_uri (localIRI);
-  if (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
-  {
-    V [0] := 'local';
-    V [1] := '';
-    localIRI := db.dba.vspx_uri_compose (V);
-  }
-  V := rfc1808_parse_uri (foafIRI);
-  V[5] := '';
-  loadIRI := DB.DBA.vspx_uri_compose (V);
-
-  S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
-  st := '00000';
-  exec (S, st, msg, vector (), 0);
-  if (st = '00000')
-  {
-    S := FOAF_SSL_QR (foafGraph, localIRI);
-  exec (S, st, msg, vector (), 0, meta, data);
-    if (st = '00000')
-    {
-      info := get_certificate_info (9);
-  foreach (any _row in data) do
-  {
-    if (_row[0] = cast (info[1] as varchar) and lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
-    {
-          retIRI := foafIRI;
-          goto _break;
-        }
-      }
-    }
-  }
-_break:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
-
-_set:;
-  connection_set ('vspx_vebid', coalesce (retIRI, ''));
+  cert := client_attr ('client_certificate');
+  dummy := null;
+  DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy);
+  connection_set ('vspx_vebid', coalesce (webid, ''));
 
 _exit:;
-  return retIRI;
+  return webid;
 }
 ;
 
