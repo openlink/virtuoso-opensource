@@ -62,7 +62,7 @@
             <td valign="top">
               <div id="lf" class="form">
                 <div class="header">
-                  Identify Yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
+                  Please identify yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="Digest">Digest</li>
