@@ -241,6 +241,7 @@ div.ODS_tabContents {
 }
 
 div.ODS_tabContent {
+  border: 0px;
   font-size: 1em;
   padding: 6px;
 }
@@ -270,6 +271,52 @@ div.ODS_tabLabelActive {
   border-color: #7f94a5;
 }
 
+/* Forms */
+.ODS_formHeader
+{
+  font-size: 13px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  padding: 0px 0px 3px 4px;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 10px;
+  background-color: #B0CDE4;
+}
+
+.ODS_formFooter
+{
+  margin: 6px 0px;
+  text-align: center;
+  border: solid 1px #7f94a5;
+  background-color: #B0CDE4;
+  height: 20px;
+  padding-top: 0px;
+  padding-bottom: 2px;
+}
+
+.ODS_formBody {
+  font-size: 1em;
+  padding: 6px;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #EFEFEF;
+}
+
+.ODS_formBody table {
+  width: 100%;
+  background-color: #EFEFEF;
+}
+
+.ODS_formBody table td {
+  padding: 2px;
+}
+
+.ODS_formBody table th {
+  text-align: right;
+  white-space: nowrap;
+  padding: 2px 4px 2px 4px;
+}
+
 .ODS_formList {
   width: 100%;
   border: solid #7f94a5;
@@ -277,7 +324,7 @@ div.ODS_tabLabelActive {
   background-color: #fff;
 }
 
-.ODS_formList th {
+.ODS_formList tr th {
   text-align: center;
   white-space: nowrap;
   font-size: 1em;
@@ -288,12 +335,13 @@ div.ODS_tabLabelActive {
   border-width: 0px 1px 1px 0px;
 }
 
-ODS_formList th:last-child {
+.ODS_formList th:last-child {
   border-width: 0px 0px 1px 0px;
 }
 
-ODS_formList td {
+.ODS_formList td {
   border: solid #7f94a5;
   border-width: 0px 0px 0px 0px;
   padding: 2px 4px 2px 4px;
+  background-color: #FFF;
 }
