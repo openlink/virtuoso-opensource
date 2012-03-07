@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -57,70 +57,19 @@ section.
 
 </abstract>
 
+  <sect1 id="installallplatforms">
+  	<title>Virtuoso on All platforms Commmon Specifics</title>
+    <sect2 id="srvadminstallreqt"><title>Installation Requirements</title>
+      <para>A typical installation will require a minimum of 400Mb of hard disk space to install the code, 
+      samples, documentation and sample database. The database will need additional space for data inserted, 
+      backups, logs and reports, web pages, etc.</para>
+      <para>The size of the database .db file will not reduce when data is removed. The spare space will 
+      however be reclaimed for later use.</para>
+    </sect2>
 
-
-	<sect1 id="installwin32">
-		<title>Virtuoso for Windows</title>
-		<sect2 id="b4ustart">
-			<title>Before You Start</title>
-			<para>To ensure a smooth installation, please review the
-    following checklist before you start the setup program.</para>
-			<sect3 id="haveudld">
-				<title>Have you downloaded the software?</title>
-				<para>If you have not already done so, please download your copy of OpenLink
-    Virtuoso from the OpenLink web site.  The URL is 
-    <ulink url="http://www.openlinksw.com">http://www.openlinksw.com</ulink>.
-    When you visit the site, select &quot;Download &amp; Evaluation&quot;. </para>
-                                <orderedlist>
-                                   <listitem>
-                                     <para>Select product &quot;OpenLink Virtuoso: Personal Edition &quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>From &quot;Product Category&quot; choose &quot;Universal Server&quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>From &quot;Product&quot; choose &quot;Virtuoso Universal Server&quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>Select &quot;Database Version&quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>From &quot;server OS&quot; select &quot;Windows&quot; and click &quot;Next&quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>Select a release and click &quot;Next&quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>You will be prompt to login in not already.</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>Click &quot;Next&quot;</para>
-                                   </listitem>
-                                   <listitem>
-                                     <para>Download the desired component. For example, click the HTTP link for &quot;Multi-Threaded Universal Server (Commercial Edition)  for OpenLink Virtuoso 4.x&quot;</para>
-                                   </listitem>
-                                </orderedlist>
-			</sect3>
-			<sect3 id="douhavelic">
-				<title>Do you have the License file?</title>
-				<para>The server will need a license file, and this is automatically delivered by email
-				as part of the download process. It is therefore important to supply a valid email
-				address. The installer will prompt for the license file location.</para>
-			</sect3>
-			
-			  <sect3 id="srvadminstallreqt"><title>Installation Requirements</title>
-    <para>A typical installation will require a minimum of 400Mb of hard disk
-    space to install the code, samples, documentation and sample database.
-The database will need additional space for data inserted, backups, logs and reports, web pages, etc.
-</para>
-    <para>The size of the database .db file will not reduce when data is
-    removed. The spare space will however be reclaimed for later use.</para>
-  </sect3>
-    
-  <sect3 id="srvadmopreq"><title>Operational Requirements</title>
-    <para>The Virtuoso database requires a minimum of 64Mb of system memory
-    for each instance to operate in. Each connection will take between 70kb
-    and 130kb of memory.</para>
+    <sect2 id="srvadmopreq"><title>Operational Requirements</title>
+      <para>The Virtuoso database requires a minimum of 64Mb of system memory for each instance to operate 
+      in. Each connection will take between 70kb and 130kb of memory.</para>
     <para>The memory usage is affected by the following parameters in the
     <link linkend="VIRTINI">Virtuoso configuration file</link>.</para>
     <simplelist>
@@ -130,11 +79,10 @@ The database will need additional space for data inserted, backups, logs and rep
       <member>FutureThreadSize</member>
       <member>NumberOfBuffers</member>
     </simplelist>
-    <para>See the following <link linkend="parameters">Parameter section</link>
-    for more details.</para>
-  </sect3>
+      <para>See the following <link linkend="parameters">Parameter section</link> for more details.</para>
+    </sect2>
 
-  <sect3 id="srvadmossupport"><title>Operating System Support</title>
+    <sect2 id="srvadmossupport"><title>Operating System Support</title>
     <para>Virtuoso runs on the following operating systems:</para>
     <simplelist>
       <member>Windows</member>
@@ -142,17 +90,13 @@ The database will need additional space for data inserted, backups, logs and rep
       <member>Unix: AIX, HP-UX, Solaris, etc.</member>
       <member>Mac OS X</member>
     </simplelist>
-  </sect3>
+    </sect2>
 
-
-<sect3 id="limitsandparameters">
+    <sect2 id="limitsandparameters">
 <title>Limits</title>
-
-<para>
-The below table lists the most important parameters and limits for a database or a Virtuoso server instance.  For space consumption of individual data types, see <link linkend="SpaceConsump">Space Consumption</link>.
-</para>
-
-
+      <para>The below table lists the most important parameters and limits for a database or a Virtuoso 
+      server instance. For space consumption of individual data types, see 
+      <link linkend="SpaceConsump">Space Consumption</link>.</para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
   <title>Limits</title>
   <tgroup align="char" charoff="50" char="." cols="2">
@@ -2991,7 +2935,7 @@ on dereferenceable <link linkend="rdfiriidtype">IRIs</link>.</para>
   <listitem>The example assumes that you have a local Virtuoso server with the Northwind demo database
 installed. If the demo database is not already installed then download the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/demo_dav.vad">demo database VAD package</ulink>
 (demo_dav.vad) and install it. The VAD package will create a new database in Virtuoso called demo
-containing the familiar Northwind tables. It will also creates <ulink url="http://docs.openlinksw.com/virtuoso/rdfsparqlintegrationmiddleware.html#rdfviews">RDF views</ulink> of the Northwind tables.
+containing the familiar Northwind tables. It will also creates <ulink url="http://docs.openlinksw.com/virtuoso/rdfsparqlintegrationmiddleware.html#rdfviews">Linked Data Views</ulink> of the Northwind tables.
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users would
 use the appropriate hostname and port number of their Virtuoso installation to create the sample
@@ -4308,7 +4252,7 @@ explore the RDF data by clicking on dereferenceable <link linkend="rdfiriidtype"
   <listitem>The example assumes that you have a local Virtuoso server with the Northwind demo database
 installed. If the demo database is not already installed then download the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/demo_dav.vad">demo database VAD package</ulink>
 (demo_dav.vad) and install it. The VAD package will create a new database in Virtuoso called demo
-containing the familiar Northwind tables. It will also creates <ulink url="http://docs.openlinksw.com/virtuoso/rdfsparqlintegrationmiddleware.html#rdfviews">RDF views</ulink> of the Northwind tables.
+containing the familiar Northwind tables. It will also creates <ulink url="http://docs.openlinksw.com/virtuoso/rdfsparqlintegrationmiddleware.html#rdfviews">Linked Data Views</ulink> of the Northwind tables.
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users would
 use the appropriate hostname and port number of their Virtuoso installation to create the sample
@@ -4691,7 +4635,7 @@ access layer. In these examples a combination of Silverlight 3 and .NET RIA Serv
 presentation layer and application layer while the data will reside in Virtuoso and be accessed using
 the Virtuoso ADO.NET provider. The first example demonstrates how to display data from the Employee
 table in the Demo database in a grid on a web page. The second example shows how to display IRIs from
-the RDF views of the demo data. The IRIs are used to create hyperlinks that are the starting point
+the Linked Data Views of the demo data. The IRIs are used to create hyperlinks that are the starting point
 for exploring the linked data.
 </para>
       <sect2 id="installnetriaddpreq">
@@ -4700,7 +4644,7 @@ for exploring the linked data.
   <listitem>The example assumes that you have a local Virtuoso server with the Northwind demo database
 installed. If the demo database is not already installed then download the demo database VAD package
 (demo_dav.vad) and install it. The VAD package will create a new database in Virtuoso called demo
-containing the familiar Northwind tables. It will also creates RDF views of the Northwind tables.
+containing the familiar Northwind tables. It will also creates Linked Data Views of the Northwind tables.
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users
 would use the appropriate hostname and port number of their Virtuoso installation to create the

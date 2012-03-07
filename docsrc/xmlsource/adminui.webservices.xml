@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -188,7 +188,7 @@ http://virtuoso.openlinksw.com/
       <graphic fileref="ui/cr12a.png"/>
     </figure>   	
   </listitem>
-  <listitem>This will result in the Target site being crawled and the retrieved pages stored locally in DAV and any sponged triples in the RDF Quad store.
+  <listitem>This will result in the Target site being crawled and the retrieved pages stored locally in DAV and any network resource triples being fetched in the RDF Quad store.
     <figure id="cr13" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
       <graphic fileref="ui/cr13.png"/>
@@ -539,6 +539,318 @@ DAV/home/demo/gov.uk/data
   </listitem>       
 </orderedlist>  
   </sect5>   
+  <sect5 id="contentcrawleratom"><title>Setting up a Content Crawler Job to Retrieve Content from ATOM feed</title>
+    <para>This section demonstrates populating the Virtuoso Quad Store using ATOM feed.</para>
+    <para>Populating the Virtuoso Quad Store can be done in different ways Virtuoso supports. The Conductor -> Content Import UI offers plenty of options, one of which is the XPath expression for crawling RDF resources URLs and this feature is a powerful and easy-to-use for managing the Quad Store.</para>
+    <para>To populate the Virtuoso Quad Store, in this Guide we will use a XPAth expression for the URLs of the RDF resources references in a given ATOM feed. For ex. this one of the "National Bibliography" Store.</para>
+    <orderedlist>
+      <listitem>Go to http://cname/conductor</listitem>
+      <listitem>Enter dba credentials</listitem>
+      <listitem>Go to Web Application Server -> Content Management -> Content Imports:
+        <figure id="cra1" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra1.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Click "New Target":
+        <figure id="cra2" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra2.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>In the presented form specify respectively:
+        <itemizedlist mark="bullet">
+          <listitem>"Target description": for ex. National Bibliography ;</listitem>
+          <listitem>"Target URL": for ex. http://data.libris.kb.se/nationalbibliography/feed/ ;
+          <para>Note: the entered URL will be the graph URI for storing the imported RDF data. You can also set it explicitly by entering another graph URI in the "Data Source URL" shown as option in this form.</para>
+          </listitem>
+          <listitem>"Copy to local DAV collection": for ex.
+<programlisting><![CDATA[
+/DAV/temp/nbio/ 	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"XPath expression for links extraction:":
+<programlisting><![CDATA[
+//entry/link/@href	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"Update Interval (minutes)": for ex. 10 ; </listitem>
+          <listitem>"Run Sponger": hatch this check-box ; </listitem>
+          <listitem>"Accept RDF": hatch this check-box ; </listitem>
+          <listitem>"Store metadata": hatch this check-box ; </listitem>
+          <listitem>"RDF Cartridge": hatch this check-box and specify what cartridges will be used:
+            <figure id="cra3" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra3.png"/>
+            </figure>     
+            <figure id="cra4" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra4.png"/>
+            </figure>
+            <figure id="cra5" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra5.png"/>
+            </figure>
+            <figure id="cra6" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra6.png"/>
+            </figure>                                         	
+          </listitem>
+        </itemizedlist>      	
+      </listitem>
+      <listitem>Click "Create".</listitem>
+      <listitem>The new created target should be displayed in the list of available Targets:
+        <figure id="cra7" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra7.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click "Import Queues": 
+        <figure id="cra8" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra8.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click for "National Bibliography" target the "Run" link from the very-right "Action" column.</listitem>
+      <listitem>Should be presented list of Top pending URLs:
+        <figure id="cra9" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra9.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Finally when the import is finished, should be shown the total URLs that were processed:
+        <figure id="cra10" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra10.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Click "Back":
+        <figure id="cra11" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra11.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click "Retrieved Sites":
+        <figure id="cra12" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra12.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Out target should be presented in the list of available retrieved sites. From here you could manage the retrieved URLs by editing the imported URLs or exporting to External/Internal WebDAV destination. Click for ex. the "Edit" link of the very-right "Action" column for our retrieved site.</listitem>
+      <listitem>Should be presented all downloaded URLs of RDF resources referenced in our initial ATOM feed:
+        <figure id="cra13" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra13.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>To view the imported RDF data, go to http://cname/sparql and enter a simple query for ex.: 
+<programlisting><![CDATA[
+SELECT * 
+FROM <http://data.libris.kb.se/nationalbibliography/feed/>
+WHERE 
+  {
+    ?s ?p ?o
+  }	
+]]></programlisting>      
+        <figure id="cra14" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra14.png"/>
+        </figure>  	
+      </listitem>
+      <listitem>Click "Run Query".</listitem>
+      <listitem>The imported RDF data triples should be shown:
+        <figure id="cra15" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra15.png"/>
+        </figure>  	      	
+      </listitem>   
+    </orderedlist>
+  </sect5>  
+  <sect5 id="contentcrawlersparqlendp"><title>Setting up a Content Crawler Job to Retrieve Content from SPARQL endpoint</title>   
+    <para>The following step-by section walks you through the process of:</para>
+    <itemizedlist mark="bullet">
+      <listitem>Populating a Virtuoso Quad Store with data from a 3rd party SPARQL endpoint</listitem>
+      <listitem>Generating RDF dumps that are accessible to basic HTTP or WebDAV user agents.</listitem>
+    </itemizedlist>
+    <orderedlist>
+      <listitem>Sample SPARQL query producing a list SPARQL endpoints:
+<programlisting><![CDATA[
+PREFIX rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:      <http://www.w3.org/2002/07/owl#>
+PREFIX xsd:      <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf:     <http://xmlns.com/foaf/0.1/>
+PREFIX dcterms:  <http://purl.org/dc/terms/>
+PREFIX scovo:    <http://purl.org/NET/scovo#>
+PREFIX void:     <http://rdfs.org/ns/void#>
+PREFIX akt:      <http://www.aktors.org/ontology/portal#>
+
+SELECT DISTINCT ?endpoint 
+WHERE 
+  { 
+    ?ds a void:Dataset . 
+    ?ds void:sparqlEndpoint ?endpoint 
+  }	
+]]></programlisting>      	
+      </listitem>
+      <listitem>Here is a sample SPARQL protocol URL constructed from one of the sparql endpoints in the result from the query above: 
+<programlisting><![CDATA[
+http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ahomepage+%3Furl+%7D%0D%0A&format=sparql	
+]]></programlisting>      	
+      </listitem>
+      <listitem>Here is the cURL output showing a Virtuoso SPARQL URL that executes against a 3rd party SPARQL Endpoint URL: 
+<programlisting><![CDATA[
+$ curl "http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void
+%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ah
+omepage+%3Furl+%7D%0D%0A&format=sparql"
+<?xml version="1.0"?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+  <head>
+    <variable name="url"/>
+  </head>
+  <results ordered="false" distinct="true">
+    <result>
+      <binding name="url"><uri>http://kisti.rkbexplorer.com/</uri></binding>
+    </result>
+    <result>
+      <binding name="url"><uri>http://epsrc.rkbexplorer.com/</uri></binding>
+    </result>
+    <result>
+      <binding name="url"><uri>http://test2.rkbexplorer.com/</uri></binding>
+    </result>
+    <result>
+      <binding name="url"><uri>http://test.rkbexplorer.com/</uri></binding>
+    </result>
+    ...
+    ...
+    ...
+  </results>
+</sparql>	
+]]></programlisting>      	
+      </listitem>
+      <listitem>Go to Conductor UI. For ex. http://localhost:8890/conductor :
+        <figure id="scp1" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp1.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Enter dba credentials;</listitem>
+      <listitem>Go to "Web Application Server"-> "Content Management" -> "Content Imports"
+        <figure id="scp2" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp2.png"/>
+        </figure>        	
+      </listitem>
+      <listitem>Click "New Target":
+        <figure id="scp3" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp3.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>In the presented form enter for ex.:
+        <orderedlist>
+          <listitem>"Target description": voiD store;</listitem>
+          <listitem>"Target URL": the url from above i.e.:
+<programlisting><![CDATA[
+http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ahomepage+%3Furl+%7D%0D%0A&format=sparql	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"Copy to local DAV collection":
+<programlisting><![CDATA[
+/DAV/void.rkbexplorer.com/content	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"Follow links matching (delimited with ;)": 
+<programlisting><![CDATA[
+%
+]]></programlisting>          	
+          </listitem>
+          <listitem>Un-hatch "Use robots.txt" ;</listitem>
+          <listitem>"XPath expression for links extraction":
+<programlisting><![CDATA[
+//binding[@name="url"]/uri/text()	
+]]></programlisting>          	
+          </listitem>
+          <listitem>Hatch "Semantic Web Crawling";</listitem>
+          <listitem>"If Graph IRI is unassigned use this Data Source URL:": enter for ex:
+<programlisting><![CDATA[
+http://void.collection	
+]]></programlisting>          	
+          </listitem>
+          <listitem>Hatch "Follow URLs outside of the target host";</listitem>  
+          <listitem>Hatch "Run "Sponger" and "Accept RDF"
+            <figure id="scp4" float="1">
+              <title>Crawling SPARQL Endpoints</title>
+              <graphic fileref="ui/scp4.png"/>
+            </figure>           	
+            <figure id="scp5" float="1">
+              <title>Crawling SPARQL Endpoints</title>
+              <graphic fileref="ui/scp5.png"/>
+            </figure>           	
+            <figure id="scp6" float="1">
+              <title>Crawling SPARQL Endpoints</title>
+              <graphic fileref="ui/scp6.png"/>
+            </figure>           	                        
+          </listitem>
+        </orderedlist>      	
+      </listitem>
+      <listitem>Click "Create";</listitem>
+      <listitem>The target should be created and presented in the list of available targets:
+        <figure id="scp7" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp7.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Click "Import Queues":
+        <figure id="scp8" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp8.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click "Run" for the imported target: 
+        <figure id="scp9" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp9.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>To check the retrieved content go to "Web Application Server"-> "Content Management" -> "Content Imports" -> "Retrieved Sites":
+        <figure id="scp11" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp11.png"/>
+        </figure>       	      	
+      </listitem>
+      <listitem>Click "voiD store" -> "Edit":
+        <figure id="scp12" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp12.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>To check the imported URLs go to "Web Application Server"-> "Content Management" -> "Repository" path DAV/void.rkbexplorer.com/content:
+        <figure id="scp10" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp10.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>To check the inserted into the RDF QUAD data go to http://cname/sparql and execute the following query:
+<programlisting><![CDATA[
+SELECT * 
+FROM <http://void.collection> 
+WHERE 
+  {
+    ?s ?p ?o
+  }	
+]]></programlisting>    
+        <figure id="scp13" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp13.png"/>
+        </figure>    	
+        <figure id="scp14" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp14.png"/>
+        </figure>    	        
+      </listitem>
+    </orderedlist>
+  </sect5>
   </sect4>
   </sect3>
   <sect3 id="admiui.accesscontrol"><title>Access Control</title>

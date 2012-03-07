@@ -318,6 +318,8 @@
 <!ENTITY rdf_graph_group_create                 SYSTEM  "funcref/rdf_graph_group_create.xml">
 <!ENTITY rdf_graph_group_ins                    SYSTEM  "funcref/rdf_graph_group_ins.xml">
 <!ENTITY rdfs_rule_set                          SYSTEM  "funcref/rdfs_rule_set.xml">
+<!ENTITY rdf_view_sync_to_physical              SYSTEM  "funcref/rdf_view_sync_to_physical.xml">
+
 
 <!ENTITY rdf_load_rdfa                          SYSTEM  "funcref/rdf_load_rdfa.xml">
 <!ENTITY rdf_load_rdfxml        		SYSTEM "funcref/rdf_load_rdfxml.xml">
@@ -344,9 +346,12 @@
 <!ENTITY rdf_restore_metadata           	SYSTEM "funcref/rdf_restore_metadata.xml">
 <!ENTITY rdf_64bit_upgrade              	SYSTEM "funcref/rdf_64bit_upgrade.xml">
 <!ENTITY rdf_convert_rdfxml_to_ttl      	SYSTEM "funcref/rdf_convert_rdfxml_to_ttl.xml">
+PVK<!ENTITY rdf_geo_fill                           SYSTEM  "funcref/rdf_geo_fill.xml">
+PVK<!ENTITY rdf_geo_add                            SYSTEM  "funcref/rdf_geo_add.xml">
 <!ENTITY isref                                  SYSTEM  "funcref/isref.xml">
 <!ENTITY SAMPLE                                 SYSTEM  "funcref/SAMPLE.xml">
 <!ENTITY GROUP_CONCAT                           SYSTEM  "funcref/GROUP_CONCAT.xml">
+<!ENTITY GROUP_DIGEST                           SYSTEM  "funcref/GROUP_DIGEST.xml">
 
 <!--
 - Uncommented for Virtuoso 6 Release-->
@@ -588,6 +593,7 @@
 <!ENTITY vad_fail_check				SYSTEM "funcref/vad_fail_check.xml">
 <!ENTITY vad_install				SYSTEM "funcref/vad_install.xml">
 <!ENTITY vad_load_file				SYSTEM "funcref/vad_load_file.xml">
+<!ENTITY vad_load_sql_file				SYSTEM	"funcref/vad_load_sql_file.xml">
 <!ENTITY vad_pack				SYSTEM "funcref/vad_pack.xml">
 <!ENTITY vad_safe_exec				SYSTEM "funcref/vad_safe_exec.xml">
 <!ENTITY vad_uninstall				SYSTEM "funcref/vad_uninstall.xml">

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -698,7 +698,7 @@ These are then enforced for SPARUL (the SPARQL update language) and SPARQL.
 </para>
 <para>
 When an RDF graph is based on relationally stored data in Virtuoso or another RDBMS through Virtuoso's
-SQL federation feature (i.e., if the graph is an RDF View of underlying SQL data), then all relational
+SQL federation feature (i.e., if the graph is an Linked Data View of underlying SQL data), then all relational
 security controls apply.
 </para>
 <para>
@@ -780,12 +780,12 @@ MaxCheckpointRemap = 246837
        say 1/4 of the DB size will resolve the issue.</para>
     </sect2>                  
     <sect2 id="virtuosotipsandtricksrdftriggersoptions">
-      <title>What are "Generate RDB2RDF triggers" and "Enable Data Syncs with Physical Quad Store" RDF Views options?</title>
-      <para>These RDF Views options basically persist the triples in the transient View Graph in the Native Quad Store. The Data Sync is how you keep the transient views in sync with the persisted triples.</para>	      
+      <title>What are "Generate RDB2RDF triggers" and "Enable Data Syncs with Physical Quad Store" Linked Data Views options?</title>
+      <para>These Linked Data Views options basically persist the triples in the transient View Graph in the Native Quad Store. The Data Sync is how you keep the transient views in sync with the persisted triples.</para>	      
       <para>Without this capability you cannot exploit faceted browsing without severe performance overhead when using Linked Data based conceptual views over ODBC or JDBC accessible data sources.</para>	
       <para>Note: Using these options when the RFViews have already been created is not currently possible via the Conductor UI. Instead you should be able to add them manually from isql:</para>	            
 <orderedlist>
-  <listitem>Drop the RDF View graph and Quad Map.</listitem>
+  <listitem>Drop the Linked Data View graph and Quad Map.</listitem>
   <listitem>Create it again with the RDB2RDF Triggers options enabled.</listitem>
 </orderedlist>  
      <tip><title>See Also:</title>
@@ -834,7 +834,7 @@ LIMIT 10
     </sect2>  
     <sect2 id="virtuosotipsandtricksquadstorageinternally">
       <title>How can I see which quad storages exist and in which quad storage a graph resides?</title>
-      <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created RDF view from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
+      <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created Linked Data View from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
       </para>	
 <programlisting><![CDATA[
 http://localhost:8890/rdfv_demo/quad_storage/default	
@@ -876,10 +876,10 @@ http://www.openlinksw.com/schemas/virtrdf#SyncToQuads
         <listitem><emphasis>virtrdf:DefaultServiceStorage</emphasis> will be used for SPARQL federation.</listitem>
         <listitem><emphasis>virtrdf:SyncToQuads</emphasis> is to keep the list of Linked Data Views that are translated into RDB2RDF triggers.</listitem>        
       </itemizedlist>      
-      <para>There are two ways of using the RDF View from above in SPARQL endpoint without 
+      <para>There are two ways of using the Linked Data View from above in SPARQL endpoint without 
       	<emphasis>define input:storage</emphasis>:</para>	
       <orderedlist>
-        <listitem>Create RDF View right in <emphasis>virtrdf:DefaultQuadStorage</emphasis> or add the 
+        <listitem>Create Linked Data View right in <emphasis>virtrdf:DefaultQuadStorage</emphasis> or add the 
         view in other storage and then copy it from there to <emphasis>virtrdf:DefaultQuadStorage</emphasis>.
           <itemizedlist mark="bullet">
             <listitem>In any of these two variants, use: 
@@ -2541,7 +2541,7 @@ DB.DBA.TTLP (http_get ('http://purl.org/ontology/mo/', null, 'GET', 'Accept: tex
          <para>Existing RDF data can be added to the Virtuoso RDF Quad Store via a variety of built-in data loader utilities.</para>
          <para>Many options allow you to easily and quickly generate RDF data from other data sources:</para>       	    
          <itemizedlist mark="bullet">
-           <listitem>Install the Sponger Bookmarklet for the URIBurner service. Bind this to your own SPARQL-compliant backend RDF database (in this scenario, your local Virtuoso instance), and then Sponge some HTTP-accessible resources.</listitem>
+           <listitem>Install the Sponger Bookmarklet for the URIBurner service. Bind this to your own SPARQL-compliant backend RDF database (in this scenario, your local Virtuoso instance), and then perform Network Resource Fetch of some HTTP-accessible resources.</listitem>
            <listitem>Convert relational DBMS data to RDF using the Virtuoso Linked Data Views Wizard.</listitem>
            <listitem>Starting with CSV files, you can:
              <itemizedlist mark="bullet">
@@ -2834,7 +2834,7 @@ _______________________________________________________________________________
 ]]></programlisting>        	
         </listitem>
       </orderedlist>      
-      <para>If you want to use the procedure's output inside SPARQL queries, it can be wrapped by a procedure view and it in turn can be used in an RDF View but it is redundant for most applications.</para>
+      <para>If you want to use the procedure's output inside SPARQL queries, it can be wrapped by a procedure view and it in turn can be used in an Linked Data View but it is redundant for most applications.</para>
       <para>For typical "almost static" data, it is more practical to write a procedure that will store all found predicates in some dedicated "dictionary" graph and then use the graph as usual.</para>
     </sect2>          	         	
     <sect2 id="constrinserst">  
@@ -3068,7 +3068,7 @@ SQL>
         <listitem><emphasis>OFFBAND</emphasis>: See description for this free-text option in 
         <link linkend="offbanddata">this section</link>.           
           <itemizedlist mark="bullet">
-            <listitem>Note: it is useful only if data comers via an RDF View and the source 
+            <listitem>Note: it is useful only if data comers via an Linked Data View and the source 
             	relational table uses this trick;</listitem>
           </itemizedlist>          
         </listitem>

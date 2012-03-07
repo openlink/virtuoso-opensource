@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -167,12 +167,12 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_audit_metadata; &rdf_backup_metadata; &rdf_void_store;
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata; &rdf_load_rdfxml_mt; &rdf_load_rdfxml; &rdf_load_rdfa; &ld_dir; &ttlp; &ttlp_mt; &ttlp_mt_local_file; &rdf_datatype_of_obj; 
-&rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
+&rdf_triples_to_rdf_xml_text; &rdf_triples_to_ttl; &rdf_64bit_upgrade; &rdf_view_sync_to_physical;
 &rdf_convert_rdfxml_to_ttl; &rdf_graph_group_create; &rdf_graph_group_ins; &rdfs_rule_set;
 &rdf_graph_collect_fp_list; &rdf_graph_diff; &rdf_suo_apply_patch;
 &rdf_suo_diff_ttl; &sparql_rdb2rdf_codegen; &sparql_rdb2rdf_list_tables; &sparql_select_known_graphs;
 &rowvector_digit_sort; <!-- &rowvector_subj_sort; -->
- &isref; &SAMPLE; &GROUP_CONCAT; &http_nt_triple; &http_ttl_triple; 
+ &isref; &SAMPLE; &GROUP_CONCAT; &GROUP_DIGEST; &http_nt_triple; &http_ttl_triple; 
 
 &ann_phrase_class_add; &ann_phrase_class_del; &ap_build_match_list; &ap_add_phrases;
 
@@ -247,7 +247,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &user_set_password; &username; &uudecode; &uuencode; &uuvalidate;
 
 &vad_check; &vad_check_installability; &vad_check_uninstallability; &vad_fail_check;
-&vad_install; &vad_load_file;	&vad_pack; &vad_safe_exec; &vad_uninstall;
+&vad_install; &vad_load_file;	&vad_load_sql_file; &vad_pack; &vad_safe_exec; &vad_uninstall;
 &vd_remote_data_source; &vd_remote_proc_wrapper; &vd_remote_table; &vd_statistics;
 &vdd_disconnect_data_source; &vdd_measure_rpc_time; &vector; &vector_concat;
 &vhost_define; &vhost_remove; &virtuoso_ini_path; &server_root; &vsp_calculate_digest; &vt_batch;

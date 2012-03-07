@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<refentry id="fn_sample">
+<refentry id="fn_SAMPLE">
   <refmeta>
     <refentrytitle>SAMPLE</refentrytitle>
     <refmiscinfo>rdf</refmiscinfo>
@@ -55,5 +55,7 @@ No. of rows in result: 1
   <refsect1 id="seealso_sample">
     <title>See Also</title>
     <para><link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link></para>    
+    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
   </refsect1>
 </refentry>

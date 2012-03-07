@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -163,7 +163,7 @@
 	</sect3>
 	<sect3 id="rdfadmviews"><title>Views</title>
 	  <para>Virtuoso uses a SPARQL-based Meta Schema Language to provide RDBMS-to-RDF mapping 
-	  	functionality (also described as, RDF Views of SQL data). The language is an extension of the 
+	  	functionality (also described as, Linked Data Views of SQL data). The language is an extension of the 
 	  	SPARQL query language meshed with Virtuoso's SPASQL (SPARQL-inside-SQL) functionality. The 
 	  	language enables you to declaratively map relational database schema tables, columns, rows, 
 	  	and foreign key relationships to Classes, Attributes, Relationships, and Instances 
@@ -179,7 +179,7 @@
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF#Mapping%20Process">Mapping Process steps.</ulink></para>
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF#Mapping%20Example">Mapping Example.</ulink></para>
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF">Mapping SQL Data to RDF.</ulink></para>	      
-	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtRdb2RDFViewsGeneration">Automated Generation of RDF Views over Relational Data Sources with Virtuoso.</ulink></para>	      	      
+	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtRdb2RDFViewsGeneration">Automated Generation of Linked Data Views over Relational Data Sources with Virtuoso.</ulink></para>	      	      
 	    </tip>
 	</sect3>
 	<sect3 id="rdfadm"><title>Quad Store Upoload</title>

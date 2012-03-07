@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -1617,6 +1617,17 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
         Defer Loading of inference rules at start up.
 	</para>
     </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_ShortenLongURIs">
+  <formalpara>
+  	<title>ShortenLongURIs  = 1</title>
+  	<para>Shorten extremely long URIs in datasets when loading with the RDF Bulk Loader. Default is 0. </para>
+  	<para><emphasis>Note</emphasis>: This parameter is only in the Virtuoso 06.03.3131+ commercial builds, 
+  	at the time of writing it is not included in the open source 6.1.4 archives but will be in the 
+  	next 6.1.5 release. A patch to enable this feature is however available from the 
+  	<ulink url="http://sourceforge.net/tracker/?func=detail&amp;aid=3496331&amp;group_id=161622&amp;atid=820576">Virtuso patches page on source forge</ulink>, which can be applied to a 6.1.4 archive from source forge and the Virtuoso 
+  	server binary rebuilt.</para>
+  </formalpara>		
 </listitem>
 <listitem id="ini_SPARQL_MaxMemInUse">
     <formalpara>

@@ -23,7 +23,9 @@
     	the values of an expression with a group. The order of the strings is not specified. 
     	The separator character used in the concatenation may be given with the scalar 
     	argument delimiter.</para>
-    <para>Note: Using the "sql:" prefix is mandatory for this aggregate.</para>
+    <para>Note: the "sql:" prefix is mandatory when this aggregate is used in SPARQL queries. 
+    	In SQL queries the prefix is "DB.DBA".
+    </para>
   </refsect1>
   <refsect1 id="params_GROUP_CONCAT">
     <title>Parameters</title>
@@ -76,6 +78,8 @@ No. of rows in result: 10
   <refsect1 id="seealso_GROUP_CONCAT">
     <title>See Also</title>
     <para><link linkend="fn_SAMPLE"><function>SAMPLE</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link></para>
+    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
   </refsect1>
 </refentry>
 
