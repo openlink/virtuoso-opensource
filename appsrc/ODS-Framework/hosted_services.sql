@@ -7535,6 +7535,18 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule', 'ods_root_rule'));
 
+create procedure ods_mv_desc ()
+{
+  declare str any;
+  str := sprintf ('%U', 'describe ?o from <http://localhost/mv> 
+  where { ?s ?p ?o option (transitive, t_in (?o), t_out (?s)) . 
+    filter (?s = <http://HOST/mv/data/LOCAL> ) }');
+  str := replace (str, 'HOST', '^{URIQADefaultHost}^');
+  str := replace (str, '%', '%%');
+  str := replace (str, 'LOCAL', '%s');
+  return str;
+};
+    
 
 create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)
 {
@@ -7757,7 +7769,7 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ods_mv_rule_list_1', 1, vector ('ods_mv_rule_1'));
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_1', 1, '/mv/data/(.*)\x24', vector ('par_1'), 1,
-      '/sparql?query=construct%%20%%7B%%20%%3Fs%%20%%3Fp%%20%%3Fo%%20.%%20%%3Ft%%20%%3Ftp%%20%%3Fto%%20.%%20%%7D%%20%%20from%%20%%3Chttp%%3A%%2F%%2Flocalhost%%2Fmv%%3E%%20where%%20%%7B%%20%%3Fs%%20%%3Fp%%20%%3Fo%%20%%20.%%20%%3Fs%%20foaf%%3AprimaryTopic%%20%%3Ft%%20.%%20%%3Ft%%20%%3Ftp%%20%%3Fto%%20.%%20filter%%20%%28%%3Fs%%20%%3D%%20%%3Chttp%%3A%%2F%%2F^{URIQADefaultHost}^%%2Fmv%%2Fdata%%2F%s%%3E%%20%%29%%20%%7D%%20&format=%U',
+      '/sparql?query='||ods_mv_desc()||'&format=%U',
       vector ('par_1', '*accept*'), NULL, NULL, 2, 303, '');
 
 
