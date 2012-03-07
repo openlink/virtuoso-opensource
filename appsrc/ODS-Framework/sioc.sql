@@ -1948,11 +1948,11 @@ create procedure ods_sioc_post (
       if (__tag (content) = __tag of XML)
 	content := serialize_to_UTF8_xml (content);
       content := subseq (content, 0, 10000000);
-      content := regexp_replace (content, '<[^>]+>', '', 1, null);
-	  ses := string_output ();
-	  http_value (content, null, ses);
-	  ses := string_output_string (ses);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), ses);
+      --content := regexp_replace (content, '<[^>]+>', '', 1, null);
+      --ses := string_output ();
+      --http_value (content, null, ses);
+      --ses := string_output_string (ses);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), content);
 	}
       if (do_ann)
 	{
