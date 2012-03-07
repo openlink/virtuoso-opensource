@@ -3510,6 +3510,15 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
 }
 ;
 
+--
+-- For VOS only
+--
+create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
+{
+  return;
+}
+;
+
 
 create procedure DB.DBA.RDF_TRIPLES_TO_VERBOSE_TTL (inout triples any, inout ses any)
 {
@@ -3560,6 +3569,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_VERBOSE_TTL (inout triples any, inout ses
     rowvector_digit_sort (triples, 1, 1);
   if (not string_subjs_found)
     rowvector_digit_sort (triples, 0, 1);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   prev_s := null;
   prev_p := null;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -3662,6 +3672,7 @@ end_pred_sort: ;
     rowvector_subj_sort (triples, 0, 1);
 end_subj_sort: ;
   }
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
@@ -3749,6 +3760,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NT (inout triples any, inout ses any)
       return;
     }
   env := vector (0, 0, 0);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       http_nt_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
@@ -3835,6 +3847,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
   declare ns_dict, env any;
   declare tcount, tctr integer;
   tcount := length (triples);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   { whenever sqlstate '*' goto end_pred_sort;
     rowvector_subj_sort (triples, 1, 1);
 end_pred_sort: ;
@@ -3897,6 +3910,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
 -- No error handlers here because failed sorting by predicate or subject would result in poorly structured output.
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('{\n  ', ses);
   status := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -3925,6 +3939,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
 -- No error handlers here because failed sorting by predicate or subject would result in poorly structured output.
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('{ "@": [\n  ', ses);
   status := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -3945,6 +3960,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON (inout triples any, inout ses any)
   http ('\n{ "head": { "link": [], "vars": [ "s", "p", "o" ] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
   tcount := length (triples);
   env := vector (0, 0, vector ('s', 'p', 'o'), null);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare triple any;
@@ -3967,6 +3983,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_CSV (inout triples any, inout ses any)
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_CSV:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   { whenever sqlstate '*' goto p_done; rowvector_subj_sort (triples, 1, 1); p_done: ; }
   { whenever sqlstate '*' goto s_done; rowvector_subj_sort (triples, 0, 1); s_done: ; }
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][0]);
@@ -3998,6 +4015,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
   dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; (tctr < tcount) and (1000 > dict_size (nsdict)); tctr := tctr + 1)
     {
       sparql_iri_split_rdfa_qname (triples[tctr][0], nsdict, 1);
@@ -4213,6 +4231,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   endpoint_fmt := DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT ('ul');
   can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   http ('>\n<head><title>HTML RDFa and Microdata document</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
@@ -4378,6 +4397,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   endpoint_fmt := DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT ('tr');
   can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   http ('>\n<head><title>HTML RDFa and Microdata document</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
@@ -4537,6 +4557,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
   dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; (tctr < tcount) and (1000 > dict_size (nsdict)); tctr := tctr + 1)
     {
       sparql_iri_split_rdfa_qname (triples[tctr][0], nsdict, 1);
@@ -4715,6 +4736,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   prev_subj := prev_pred := null;
   obj_needs_comma := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -4912,6 +4934,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses 
   ns_dict := dict_new ();
   ns_ctr := 0;
   tcount := length (triples);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('{ "d" : { \n  "results": [ \n', ses);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
@@ -4998,6 +5021,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
   ns_dict := dict_new ();
   ns_ctr := 0; pct := 0;
   tcount := length (triples);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   if (print_top_level)
     {
        http ('<?xml version="1.0" encoding="utf-8" ?>\n<feed \n\t xmlns="http://www.w3.org/2005/Atom" \n'||
