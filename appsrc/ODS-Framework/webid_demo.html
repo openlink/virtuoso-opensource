@@ -125,7 +125,12 @@
     <div id="result" style="display: none;">
     	The return values are:
 	    <ul id="result_webid" style="display: none;">
-	      <li>WebID -  <a id="webid"></a></li>
+	      <li>WebID - <script language="javascript" type="text/javascript">
+            document.write('<a href="" id="link"><span id="webid"></span><\/a>')
+          </script></li>
+	      <li>Subject - <span id="subj"></span></li>
+	      <li>MD5 - <span id="md5"></span></li>
+	      <li>SHA1 - <span id="sha1"></span></li>
 	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
 	    </ul>
 	    <ul id="result_error" style="display: none;">
@@ -133,7 +138,30 @@
 	    </ul>
     </div>
     <script type="text/javascript">
-  	  OAT.Loader.load(['ajax'], showResult);
+      var webid = getParam('webid');
+      var error = getParam('error');
+      if ((webid != '') || (error != '')) {
+        show('result');
+        if (webid != '') {
+          show('result_webid');
+          getObject('webid').innerHTML = getParam('webid');
+          getObject('link').href = getParam('webid');
+          getObject('ts').innerHTML = getParam('ts');
+          getObject('md5').innerHTML = getParam('md5');
+          getObject('sha1').innerHTML = getParam('sha1');
+          getObject('subj').innerHTML = getParam('subj');
+        } else {
+          hide('result_webid');
+        }
+        if (error != '') {
+          show('result_error');
+          getObject('error').innerHTML = getParam('error');;
+        } else {
+          hide('result_error');
+        }
+      } else {
+        hide('result');
+      }
   	</script>
   </body>
 </html>

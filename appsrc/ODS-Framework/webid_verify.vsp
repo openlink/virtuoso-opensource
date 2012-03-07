@@ -1,5 +1,5 @@
 <?vsp
-  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, vtype any;
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, vtype, md5, sha1, subj any;
   cb := {?'callback'};
   cert := {?'certificate'};
   err := '';
@@ -36,6 +36,7 @@
   else
     cb := cb || '&';
   mod := exp := '';
+  md5 := ''; sha1 := ''; subj := '';
   if (not is_http_ctx () or cert = 0)
     res := 'noCert';
   else
@@ -51,6 +52,9 @@
         { 
       	  mod := info[1];
           exp := bin2hex (info[2]);
+          md5 := get_certificate_info (6, cert, ctype, null, 'md5');
+          sha1 := get_certificate_info (6, cert, ctype, null, 'sha1');
+          subj := get_certificate_info (2, cert, ctype);
 	}
     }
    if (res = 'success')
@@ -61,7 +65,7 @@
      {
        ret_url := sprintf ('%serror=%U', cb, res);
      }
-   ret_url := ret_url || sprintf ('&ts=%U', date_iso8601 (now ()));  
+   ret_url := ret_url || sprintf ('&ts=%U&md5=%U&sha1=%U&subj=%U', date_iso8601 (now ()), md5, sha1, subj);
    ret_url := ret_url || sprintf ('&signature=%U', xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa')));  
    http_status_set (302);
    http_header (sprintf ('Location: %s\r\n', ret_url));
