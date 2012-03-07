@@ -610,7 +610,7 @@ DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.n3',     'text/rdf+
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.nt',     'text/n3',             1.0, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.rdf',    'application/rdf+xml', 1.0, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.jmd',    'application/microdata+json', 1.0, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.jld',    'application/x-json+ld', 1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.jld',    'application/ld+json', 1.0, location_hook=>null);
 
 create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 {
@@ -633,7 +633,7 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 	vector ('turtle','N3/Turtle', 'text/turtle'),
 	vector ('ttl', 	'N3/Turtle', 'text/rdf+ttl'),
 	vector ('jmd', 	'Microdata+JSON', 'application/microdata+json'),
-	vector ('jld', 	'JSON-LD', 'application/x-json+ld')
+	vector ('jld', 	'JSON-LD', 'application/ld+json')
 	);
   path := regexp_replace (in_path, '/(about|foaf|sioc)\\.([a-z0-9]+)\x24', '', 1, null);	
   if (regexp_match ('/dataspace/(person|organization)/([^/]+)\x24', path) is not null)
@@ -694,7 +694,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     '/dataspace/([^\\?]*)', vector('path'), 1,
     '/dataspace/raw/%s/sioc', vector('path'),
     null, --'DB.DBA.ODS_DET_REF',
-    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)|(application/microdata+json)|(application/x-json+ld)',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)|(application/microdata+json)|(application/ld+json)',
     2,
     303,
     null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
@@ -705,7 +705,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     '/dataspace/(.*)/page/([0-9]*)', vector('path', 'page'), 1,
     '/ods/data/rdf/%U.%U?page=%U', vector('path', '*accept*', 'page'),
     'DB.DBA.ODS_DET_REF',
-    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)|(application/microdata+json)|(application/x-json+ld)',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)|(application/microdata+json)|(application/ld+json)',
     2,
     303,
     null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
