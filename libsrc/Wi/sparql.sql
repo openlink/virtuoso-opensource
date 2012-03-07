@@ -3870,7 +3870,7 @@ end_pred_sort: ;
          {
            http_rdfxml_p_ns (env, triples[tctr][1], ses);
          }
-       http ('>', ses);
+       http (' >', ses);
     }
   { whenever sqlstate '*' goto end_subj_sort;
     rowvector_subj_sort (triples, 0, 1);
