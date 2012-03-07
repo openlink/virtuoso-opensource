@@ -723,9 +723,10 @@ create procedure WEBID_AUTH_GEN_2 (
 
 create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, in use_session int := 1)
 {
-  declare cert any;
+  declare cert, gr, w, vtype any;
   cert := client_attr ('client_certificate');
-  return WEBID_AUTH_GEN (cert, 0, realm, allow_nobody, use_session);
+  gr := null;
+  return WEBID_AUTH_GEN_2 (cert, 0, realm, allow_nobody, use_session, w, gr, 0, vtype);
 }
 ;
 
@@ -785,6 +786,10 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
 
 DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-ssl');
 DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-ssl',
+    ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1), auth_fn=>'DB.DBA.FOAF_SSL_AUTH');
+
+DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-webid');
+DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-webid',
     ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1), auth_fn=>'DB.DBA.FOAF_SSL_AUTH');
 
 create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
