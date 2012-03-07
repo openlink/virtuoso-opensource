@@ -200,11 +200,11 @@
     <tr>
       <th><xsl:value-of select="$label"/></th>
       <td>
-        <image>
+        <img border="0" width="64" class="resize">
           <xsl:attribute name="src">
             <xsl:value-of select="$value"/>
           </xsl:attribute>
-        </image>
+        </img>
       </td>
     </tr>
   </xsl:template>
