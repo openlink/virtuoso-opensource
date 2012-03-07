@@ -544,7 +544,7 @@ create procedure WEBID_AUTH_GEN_2 (
 		  declare arr, uid any;
 		  authenticated:
 		  ag := agent;
-		  _gr := graph;
+		  --_gr := graph;
 		  uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
 		  if ('nobody' = uid and allow_nobody = 0)
 		    goto ret;
