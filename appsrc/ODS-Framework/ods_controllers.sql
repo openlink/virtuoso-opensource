@@ -511,7 +511,7 @@ create procedure ODS.ODS_API."qrcode" (
   in data any,
   in width int := 120,
   in height int := 120,
-  in scale int := 4) __soap_http 'text/plain'
+  in scale int := 3) __soap_http 'text/plain'
 {
   declare qrcode_bytes, mixed_content, content varchar;
   declare qrcode any;

@@ -12,11 +12,11 @@
         font-family: Verdana, Helvetica, sans-serif;
         list-style-type: none;
       }
-      #qrcode { 
+      #qrcode {
         float: right;
         clear: right;
-        margin-right: 20px; 
-      }       
+        margin-right: 20px;
+      }
     </style>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -57,18 +57,24 @@
         else
           return decodeURIComponent(results[1]);
       }
+      function showQR()
+      {
+        var hostURL = document.location.protocol + '//' + document.location.host + document.location.pathname;
+        var x = function (data) {
+          var img = getObject('qrcodeImg');
+          img.src = 'data:image/jpg;base64,'+data;
+          show(img);
+        }
+        OAT.AJAX.GET ('/ods/api/qrcode?data='+encodeURIComponent(hostURL), false, x, {async: false});
+      }
     </script>
   </head>
   <body>
     <h1>WebID Verification Demo</h1>
-    <!--?vsp declare qrimg, ua any; 
-     ua := http_request_header (lines, 'User-Agent');
-     qrimg := make_qr_code (sprintf ('http://%{WSHost}s%s', http_path ())); 
-     if (qrimg is not null and strcasestr (ua, 'Mobile') is null) { 
-    ?>
-    <div id="qrcode"><img alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/></div>
-    <?vsp 
-      } ?-->
+    <div id="qrcode"><img id="qrcodeImg" alt="QRcode image" src="" /></div>
+    <script type="text/javascript">
+  	  OAT.Loader.load(['ajax'], showQR);
+  	</script>
     <div>
       This will check the WebID watermark in your X.509 Certificate.<br/><br/>
       This service supports WebIDs based on the following URI schemes (more to come):
@@ -91,7 +97,7 @@
 	    <ul id="result_webid" style="display: none;">
 	      <li>WebID - <script language="javascript" type="text/javascript">
             document.write('<a href="" id="link"><span id="webid"></span><\/a>')
-          </script></li> 
+          </script></li>
 	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
 	    </ul>
 	    <ul id="result_error" style="display: none;">

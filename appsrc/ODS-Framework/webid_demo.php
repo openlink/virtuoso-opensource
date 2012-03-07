@@ -93,23 +93,24 @@
         font-family: Verdana, Helvetica, sans-serif;
         list-style-type: none;
       }
-      #qrcode { 
+      #qrcode {
         float: right;
         clear: right;
-        margin-right: 20px; 
-      }       
+        margin-right: 20px;
+      }
     </style>
   </head>
   <body>
     <h1>WebID Verification Demo</h1>
-    <!--?vsp declare qrimg, ua any; 
-     ua := http_request_header (lines, 'User-Agent');
-     qrimg := make_qr_code (sprintf ('http://%{WSHost}s%s', http_path ())); 
-     if (qrimg is not null and strcasestr (ua, 'Mobile') is null) { 
+    <?php
+      $_QR = getRequest (sprintf ("%s/qrcode?data=%s", apiURL(), urlencode(httpURL())));
+      if ($_QR <> '')
+      {
     ?>
-    <div id="qrcode"><img alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/></div>
-    <?vsp 
-      } ?-->
+    <div id="qrcode"><img alt="QRcode image" src="data:image/jpg;base64,<?php print ($_QR); ?>" /></div>
+    <?php
+      }
+    ?>
     <div>
       This will check the WebID watermark in your X.509 Certificate.<br/><br/>
       This service supports WebIDs based on the following URI schemes (more to come):
