@@ -1,4 +1,4 @@
-set SQL_FILES=system.sql system2.sql odbccat.sql useraggr.sql vt_text.sql phrasematch.sql hosting.sql
+set SQL_FILES=system.sql system2.sql odbccat.sql vt_text.sql phrasematch.sql hosting.sql
 set SQL_FILES_1=oledb.sql information_schema.sql
 set SQL_FILES_WS=../../binsrc/vsp/vsp_auth.sql soap.sql wsrp_ultim.xsl wsrp_resp.xsl wsrp_interm.xsl wsrp_error.xsl soap_sch.xsl soap_import_sch.xsl wsdl_expand.xsl wsdl_parts.xsl wsdl_import.xsl wsdl2rdf.xsl xmlrpc_soap.xsl soap_xmlrpc.xsl soap12_router.xsl ../../binsrc/ws/wsrm/wsrm_ddl.sql ../../binsrc/ws/wsrm/wsrm_xsd.sql ../../binsrc/ws/wsrm/wsrmcli.sql ../../binsrc/ws/wsrm/wsrmsrv.sql ../../binsrc/ws/wstr/wstr_ddl.sql ../../binsrc/ws/wstr/wstrcli.sql ../../binsrc/ws/wstr/wstrsrv.sql ../../binsrc/ws/wsrm/wsrmcall.xsl rdf_net.sql simile.sql http_auth.sql xmla.sql openxml.sql ../../binsrc/vspx/vspx.sql ../../binsrc/vspx/vspx_add_locations.xsl ../../binsrc/vspx/vspx_expand.xsl ../../binsrc/vspx/vspx_pre_xsd.xsl ../../binsrc/vspx/vspx_pre_sql.xsl ../../binsrc/vspx/vspx_log_format.xsl ../../binsrc/vspx/vspx.xsd ../../binsrc/vspx/vspx.xsl
 set SQL_FILES_REPL=snapshot_repl.sql repl.sql
@@ -16,6 +16,7 @@ set SQL_FILES_PLDBG=cov_report.xsl cov_time.xsl
 set SQL_FILES_VAD=../../binsrc/vad/vad_root.sql ../../binsrc/vad/vad_misc.sql ../../binsrc/vad/oper_pars.sql ../../binsrc/vad/pars_init.sql ../../binsrc/vad/vad_make.sql
 set SQL_FILES_DBP=../../binsrc/vsp/admin/dbpump/dbpump_root.sql ../../binsrc/vsp/admin/dbpump/oper_pars.sql ../../binsrc/vsp/admin/dbpump/components.sql ../../binsrc/vsp/admin/dbpump/comp_html.sql ../../binsrc/vsp/admin/dbpump/comp_misc.sql ../../binsrc/vsp/admin/dbpump/comp_rpath.sql ../../binsrc/vsp/admin/dbpump/comp_tables.sql ../../binsrc/vsp/admin/dbpump/pars_init.sql
 set SQL_FILES_SPARQL=sparql.sql sparql_io.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql
+set SQL_FILES_SPARQL_INIT=useraggr.sql sparql_init.sql
 
 rm -f sql_code.c sql_code_1.c sql_code_ws.c sql_code_repl.c sql_code_dav.c sql_code_ddk.c sql_code_sys.c sql_code_uddi.c 
 rm -f sql_code_imsg.c sql_code_auto.c sql_code_adm.c sql_code_2pc.c sql_code_vdb.c sql_code_pldbg.c 
@@ -39,6 +40,7 @@ gawk -f sql_to_c.awk -v init_name=_pldbg -v pl_stats=PLDBG %SQL_FILES_PLDBG% > s
 gawk -f sql_to_c.awk -v init_name=_vad  -v pl_stats=PLDBG  %SQL_FILES_VAD% > sql_code_vad.c
 gawk -f sql_to_c.awk -v init_name=_dbp  -v pl_stats=PLDBG  %SQL_FILES_DBP% > sql_code_dbp.c
 gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=PLDBG %SQL_FILES_SPARQL% > sql_code_sparql.c
+gawk -f sql_to_c.awk -v init_name=_sparql_init -v pl_stats=PLDBG %SQL_FILES_SPARQL_INIT% > sql_code_sparql_init.c
 
 gawk -f "jso_reformat.awk" -v "output_mode=h" -v "h_wrapper=__RDF_MAPPING_JSO_H" -v "init_name=rdf_mapping" rdf_mapping.jso > rdf_mapping_jso.h
 

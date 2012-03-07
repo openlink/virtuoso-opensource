@@ -3393,13 +3393,13 @@ xp_mdata_element_end (void *userdata, const char * name)
           dk_set_t children;
           caddr_t *literal_head;
           caddr_t literal_tree;
+          xml_tree_ent_t *literal_xte;
           XP_STRSES_FLUSH (xp);
           children = dk_set_nreverse (current_node->xn_children);
           literal_head = (caddr_t *)list (1, uname__root);
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
           current_node->xn_children = NULL;
-          xml_tree_ent_t *literal_xte;
           literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
           obj = (caddr_t) literal_xte;
         }

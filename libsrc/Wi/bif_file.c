@@ -1421,7 +1421,7 @@ file_native_name_from_iri_path_nchars (const char *iri_path, size_t iri_path_len
 {
   caddr_t fname;
 #ifdef WIN32
-  char fname[_MAX_PATH], *fname_ptr, *fname_end;
+  char *fname_ptr, *fname_end;
   if (iri_path_len >= _MAX_PATH)
     iri_path_len = _MAX_PATH-1;
   fname = box_dv_short_nchars (iri_path, iri_path_len);

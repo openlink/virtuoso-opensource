@@ -125,7 +125,7 @@
     <ClCompile Include="..\binsrc\tests\biftest\bif_sample.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\win32\virtuoso_t.rc" />
+    <ResourceCompile Include="..\binsrc\virtuoso\virtuoso_t.rc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libvirtuoso_odbc_t.vcxproj">
