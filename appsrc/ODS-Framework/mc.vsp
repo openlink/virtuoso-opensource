@@ -44,7 +44,14 @@
        digest := sha1_digest (mbox);
        id := sprintf ('http://%{URIQADefaultHost}s/mv/data/') || bin2hex (cast (decode_base64 (digest) as varbinary));
        mu := 'mailto:' || mbox;
-       sparql insert into graph iri ('http://localhost/mv') { `iri (?:id)` foaf:primaryTopic `iri(?:webid)` . `iri(?:webid)` foaf:mbox_sha1sum ?:digest . };
+       ep := sprintf ('http://%{URIQADefaultHost}s/sparql/');
+       sparql insert into graph iri ('http://localhost/mv') 
+	  { 
+             `iri (?:id)` <http://vocab.deri.ie/void#inDataset> <http://localhost/mv> .
+             <http://localhost/mv> <http://rdfs.org/ns/void#sparqlEndpoint> `iri(?:ep)` .
+	     `iri (?:id)` foaf:primaryTopic `iri(?:webid)` . 
+             `iri(?:webid)` foaf:mbox_sha1sum ?:digest . 
+          };
        if (length (cb))
 	 {
 	   declare c any;
