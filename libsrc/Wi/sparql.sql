@@ -1302,6 +1302,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
 create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any
 {
   declare t int;
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (', v, g_iid, p_iid, ro_id_dict, ')');
   t := __tag (v);
   if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
@@ -1329,6 +1330,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, in lang varchar) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (', v, dt_iid, lang, ')');
 retry_unrdf:
   t := __tag (v);
   if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
@@ -1353,6 +1355,7 @@ retry_unrdf:
     lang_twobyte := DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang);
   else
     lang_twobyte := 257;
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (', v, dt_iid, lang, ') calls DB.DBA.RDF_OBJ_ADD (', dt_twobyte, v, lang_twobyte, ')');
   return DB.DBA.RDF_OBJ_ADD (dt_twobyte, v, lang_twobyte);
 }
 ;
@@ -1405,6 +1408,7 @@ retry_unrdf:
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any
 {
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (', o_val, o_type, o_lang, ')');
   if (__tag (o_type) in (__tag of varchar, 217))
     {
       declare parsed any;
@@ -1457,9 +1461,11 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
         return null;
       if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
         return null;
+      -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') will return ', __xsd_type (shortobj, dflt), ' for non-rdfbox');
       return iri_to_id (__xsd_type (shortobj, dflt));
     }
   twobyte := rdf_box_type (shortobj);
+  -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return case (rdf_box_lang (shortobj)) when 257 then iri_to_id (dflt) else null end;
   whenever not found goto badtype;
@@ -1482,9 +1488,11 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
         return null;
       if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
         return null;
+      -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') got a non-rdfbox');
       return dflt;
     }
   twobyte := rdf_box_lang (shortobj);
+  -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return dflt;
   whenever not found goto badtype;
