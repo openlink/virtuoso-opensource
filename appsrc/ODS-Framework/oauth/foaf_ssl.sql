@@ -248,6 +248,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     xp := cast (xp as varchar);
     if (strstr (xp, '#SHA1') is not null)
       fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+    fing := replace (fing, ':', '');  
     if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
       {
 	ret_code := 1;
@@ -267,6 +268,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	    goto ret;	
 	  }
 	fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+	fing := replace (fing, ':', '');  
         json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
 	arr := json_parse (json);
         res := get_keyword ('results', arr);
@@ -316,9 +318,12 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
      {
        foreach (any x in data) do
     	 {
-	   declare fng any;
+	   declare fng, fng2 any;
 	   fng := get_certificate_info (6, cert, ctype, null, x[1]);
-    	   if (x[0] = fng)
+	   fng := replace (fng, ':', '');  
+	   fng2 := x[0];
+	   fng2 := replace (fng2, ':', '');  
+    	   if (fng2 = fng)
     	     {
     	       ret_code := 1;
     	       goto ret;
