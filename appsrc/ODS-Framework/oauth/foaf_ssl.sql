@@ -147,6 +147,9 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
+  declare ret_code int;
+
+  ret_code := 0;
   acc := 0;
   declare exit handler for sqlstate '*'
     {
@@ -228,21 +231,24 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
       goto again_check;
     }
   err_ret:
+--  dbg_obj_print (stat, data);
   exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
---  dbg_obj_print (stat, data);
   {
     declare page, xt, xp varchar;
     declare exit handler for sqlstate '*'
       {
-	return 0;
+	goto ret;
       };
     page := http_get (graph);
     xt := xtree_doc (page, 2);
     xp := xpath_eval ('string (.)', xt);
     xp := cast (xp as varchar);
-    if (strstr (xp, sprintf ('#Self #WebID #Fingerprint:%s', fing)) is not null)
-      return 1;
+    if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
+      {
+	ret_code := 1;
+        goto ret;	
+      }
     if (graph like 'http://twitter.com/%')
       {
 	declare acc, arr, json, res any;
@@ -252,10 +258,24 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	arr := json_parse (json);
         res := get_keyword ('results', arr);
 	if (length (res) > 0)
-	  return 1;
+	  {
+	    ret_code := 1;
+	    goto ret;	
+	  }
       }
+    exec (sprintf ('sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', graph), 
+	stat, msg, vector (), 0, meta, data);
+    if (length (data) and length (data[0]) and data[0][0] = fing)
+     {
+	ret_code := 1;
+	goto ret;	
+      }
+
   }
-  return 0;
+  ret:
+  exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+  commit work;
+  return ret_code;
 }
 ;
 
