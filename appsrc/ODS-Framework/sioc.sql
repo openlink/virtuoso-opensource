@@ -6479,6 +6479,9 @@ create procedure SIOC..rdf_links_head_internal (in iri any)
 --
 create procedure SIOC..rdf_links_head (in iri any)
 {
+  if (iri is null)
+    return;
+
   http (SIOC..rdf_links_head_internal(iri));
 }
 ;
@@ -6495,8 +6498,11 @@ create procedure WA_INTEREST_UPGRADE ()
   for (select WAUI_U_ID, WAUI_INTERESTS as F1, WAUI_INTEREST_TOPICS as F2 from DB.DBA.WA_USER_INFO) do
   {
   	 uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
-     WA_USER_EDIT (uname, 'WAUI_INTERESTS', F2);
-     WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', F1);
+  	 if (not isnull (uname))
+  	 {
+       WA_USER_EDIT (uname, 'WAUI_INTERESTS', F2);
+       WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', F1);
+     }
   }
 
   registry_set ('WA_INTEREST_UPGRADE', 'done');

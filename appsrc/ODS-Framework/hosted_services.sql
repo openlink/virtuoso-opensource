@@ -4343,9 +4343,6 @@ create procedure WA_USER_EDIT (in _name varchar, in _key varchar, in _data any)
   else if (_key = 'WAUI_ACL')
     UPDATE WA_USER_INFO SET WAUI_ACL = _data WHERE WAUI_U_ID = _uid;
 
-  else if (_key = 'WAUI_PHOTO_URL')
-    UPDATE WA_USER_INFO SET WAUI_PHOTO_URL = _data WHERE WAUI_U_ID = _uid;
-
   else if (_key = 'WAUI_SETTINGS')
     UPDATE WA_USER_INFO SET WAUI_SETTINGS = _data WHERE WAUI_U_ID = _uid;
 
@@ -5833,15 +5830,18 @@ create procedure WA_FOAF_UPGRADE ()
   for (select WAUI_U_ID, WAUI_FOAF from DB.DBA.WA_USER_INFO) do
   {
 
-  	 uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
-     visibility := WA_USER_VISIBILITY (uname);
-     access := visibility[8];
-     tmp := '';
-     for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = WAUI_FOAF) do
-     {
-        tmp := tmp || interest || ';' || cast (access as varchar) || '\n';
-     }
-     WA_USER_EDIT (uname, 'WAUI_FOAF', tmp);
+  	uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
+  	if (not isnull (uname))
+  	{
+      visibility := WA_USER_VISIBILITY (uname);
+      access := visibility[8];
+      tmp := '';
+      for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = WAUI_FOAF) do
+      {
+         tmp := tmp || interest || ';' || cast (access as varchar) || '\n';
+      }
+      WA_USER_EDIT (uname, 'WAUI_FOAF', tmp);
+    }
   }
 
   registry_set ('WA_FOAF_UPGRADE', 'done');
