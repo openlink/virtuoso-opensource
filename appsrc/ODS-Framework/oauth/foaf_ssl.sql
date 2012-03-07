@@ -454,7 +454,8 @@ create procedure WEBID_AUTH_GEN_2 (
 	in use_session int := 1, 	-- use session table
 	out ag any,   			-- detected webid URI
 	inout _gr any,			-- if non null data from webid URI will be loaded in the graph name in _gr
-	in check_expiration int := 0
+	in check_expiration int := 0,
+	out validation_type int		-- if valid, the way it was done : 0 - rdf graph, 1 - webfinger, 2 - DI, 3 - search, 4 - sponge
 	)			
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
@@ -469,6 +470,7 @@ create procedure WEBID_AUTH_GEN_2 (
   done := 0;
   is_di := 0;
   ag := null;
+  validation_type := null;
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -497,6 +499,7 @@ create procedure WEBID_AUTH_GEN_2 (
 	  declare st any;
 	  st := deserialize (VS_STATE);
 	  ag := get_keyword ('agent', st);
+	  validation_type := get_keyword ('vtype', st);
 	  connection_set ('SPARQLUserId', VS_UID);
 	  return 1;
 	}
@@ -511,7 +514,10 @@ create procedure WEBID_AUTH_GEN_2 (
       agent_fp:
       ag := agent;
       if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (agent, cert, ctype, dummy))
-	goto authenticated;
+	{
+	  validation_type := 5;
+	  goto authenticated;
+	}
 
       hf := rfc1808_parse_uri (agent);
       hf[5] := '';
@@ -524,6 +530,7 @@ create procedure WEBID_AUTH_GEN_2 (
       stat := '00000';
     --  dbg_printf ('%s', qr);
       exec (qr, stat, msg, vector (), 0, meta, data);
+      validation_type := 0;
       again_check:; 
       if (stat = '00000' and length (data))
 	{
@@ -544,7 +551,7 @@ create procedure WEBID_AUTH_GEN_2 (
 		  connection_set ('SPARQLUserId', uid);
 		  if (use_session)
 		    insert replacing VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) 
-			values (fing, 'FOAF+SSL', uid, now (), serialize (vector ('agent', ag)));
+			values (fing, 'FOAF+SSL', uid, now (), serialize (vector ('agent', ag, 'vtype', validation_type)));
 		  if (_gr is null)
 		    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
 		  commit work;
@@ -566,12 +573,14 @@ create procedure WEBID_AUTH_GEN_2 (
   agent := FOAF_SSL_WEBFINGER (cert, 0, ctype);
   if (agent is not null)
     {
+      validation_type := 1;
       goto authenticated;
     }
   err_ret:
   if (_gr is null)
     exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
+  validation_type := null;
   {
     ag := graph;
     declare page, xt, xp varchar;
@@ -597,6 +606,7 @@ create procedure WEBID_AUTH_GEN_2 (
 	    fing_b64u := encode_base64url (cast (hex2bin (fing) as varchar));
 	    if (fing = dhash)
 	      {
+		validation_type := 2;
 		ret_code := 1;
 		goto ret;	
 	      }
@@ -611,6 +621,7 @@ create procedure WEBID_AUTH_GEN_2 (
       }
     if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
       {
+	validation_type := 2;
 	ret_code := 1;
         goto ret;	
       }
@@ -632,6 +643,7 @@ create procedure WEBID_AUTH_GEN_2 (
         res := get_keyword ('results', arr);
 	if (length (res) > 0)
 	  {
+	    validation_type := 3;
 	    ret_code := 1;
 	    goto ret;	
 	  }
@@ -644,6 +656,7 @@ create procedure WEBID_AUTH_GEN_2 (
 	    res := get_keyword ('results', arr);
 	    if (length (res) > 0)
 	      {
+		validation_type := 3;
 		ret_code := 1;
 		goto ret;	
 	      }
@@ -696,6 +709,7 @@ create procedure WEBID_AUTH_GEN_2 (
 	   fng2 := replace (fng2, ':', '');  
     	   if (lower (fng2) = lower (fng))
     	     {
+	       validation_type := 4;
     	       ret_code := 1;
     	       goto ret;
     	     }

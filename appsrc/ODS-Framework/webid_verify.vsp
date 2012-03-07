@@ -1,5 +1,5 @@
 <?vsp
-  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify any;
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, vtype any;
   cb := {?'callback'};
   cert := {?'certificate'};
   err := '';
@@ -43,7 +43,7 @@
       info := get_certificate_info (9, cert, ctype);
       if (info is null)
         res := 'noCert';
-      else if (WEBID_AUTH_GEN_2 (cert, ctype, null, 1, 0, webid, dummy, expiry_verify))
+      else if (WEBID_AUTH_GEN_2 (cert, ctype, null, 1, 0, webid, dummy, expiry_verify, vtype))
 	res := 'success';
       else
 	res := 'noVerified';

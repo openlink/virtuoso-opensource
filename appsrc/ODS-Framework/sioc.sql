@@ -4100,7 +4100,7 @@ create procedure SIOC..acl_delete (
 create procedure SIOC..acl_webID ()
 {
   declare webid varchar;
-  declare cert, dummy any;
+  declare cert, dummy, vtype any;
 
   if (not is_https_ctx ())
   {
@@ -4119,7 +4119,7 @@ create procedure SIOC..acl_webID ()
 
   cert := client_attr ('client_certificate');
   dummy := null;
-  DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy);
+  DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
   connection_set ('vspx_vebid', coalesce (webid, ''));
 
 _exit:;
