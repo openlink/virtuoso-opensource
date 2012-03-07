@@ -124,12 +124,13 @@
           <?php
             if ($_webid <> '')
             {
+	            $_proxyIri = getRequest (sprintf ("%s/iri2proxy?iri=%s", apiURL(), urlencode($_webid)));
           ?>
-          <li>WebID - <?php echo("<a href=\"$_webid\">$_webid</a>"); ?></li>
+  	      <li>WebID -  <?php print (sprintf('<a href="%s">%s</a>', $_proxyIri, $_proxyIri)); ?></li>
   	      <li>Timestamp in ISO 8601 format - <?php print ($_REQUEST['ts']); ?></li>
           <?php
             }
-            if ($_error <> '')
+            else if ($_error <> '')
             {
           ?>
   	      <li>Error - <?php print ($_error); ?></li>
