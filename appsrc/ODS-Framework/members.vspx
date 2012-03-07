@@ -32,6 +32,8 @@
   <vm:page>
     <vm:header>
       <script type="text/javascript" src="tbl.js">;</script>
+      <script type="text/javascript" src="typeahead.js">;</script>
+      <link rel="stylesheet" href="typeahead.css" type="text/css" />
       <vm:title>Application Members</vm:title>
     </vm:header>
     <v:on-init>
@@ -45,14 +47,6 @@
         if (self.instance_descr = 'Blog')
         {
           self.ihome := self.inst.wa_home_url();
-        }
-        else if (self.wa_type in ('oMail'))
-        {
-          declare tmp varchar;
-
-          tmp := self.iname;
-          self.iname := subseq(tmp, 0, strstr(tmp, '@'));
-          self.wa_domain := subseq(tmp, strstr(tmp, '@'));
         }
       ]]>
     </v:on-init>
@@ -100,6 +94,7 @@
      			  self.vc_redirect ('services.vspx');
  		      </v:on-post>
   		  </v:button>
+  		  <br /><br />
         <v:template name="template_01" type="simple" enabled="--case when self.wa_type in ('oDrive', 'oMail', 'IM') or (self.imodel = 1) then 0 else 1 end">
           <fieldset>
             <legend><b>Members</b></legend>
