@@ -275,7 +275,7 @@ directory_init() {
   cp *.css vad/data/wa
   cp *.html vad/data/wa
   cp *.sql vad/data/wa
-  cp $HOME/binsrc/dav/DET_RDFData.sql vad/data/wa
+  #cp $HOME/binsrc/dav/DET_RDFData.sql vad/data/wa
   cp *.js vad/data/wa
   cp comp/*.xsl vad/data/wa/comp
   cp comp/*.js vad/data/wa/comp
@@ -426,7 +426,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc_priv.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.\"RDFData_MAKE_DET_COL\" ('/DAV/VAD/wa/RDFData/', sioc..get_graph (), NULL);" >> $STICKER
   echo "      DB.DBA.wa_users_rdf_data_det_upgrade ();" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER

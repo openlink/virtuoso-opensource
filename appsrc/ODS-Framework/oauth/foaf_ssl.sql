@@ -301,7 +301,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	goto verify;
       }
     exec (sprintf (
-    'sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/cert#> select ?f from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f }', 
+    'sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schemas/cert#> select ?f from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f }', 
     	graph), stat, msg, vector (), 0, meta, data);
     if (length (data))
      {
