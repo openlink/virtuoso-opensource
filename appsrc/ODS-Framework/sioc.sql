@@ -229,6 +229,11 @@ create procedure cert_iri (in s varchar)
   return concat ('http://www.w3.org/ns/auth/cert#', s);
 };
 
+create procedure xsd_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/2001/XMLSchema#', s);
+};
+
 create procedure rev_iri (in s varchar)
 {
   return concat ('http://purl.org/stuff/rev#', s);
@@ -820,11 +825,11 @@ create procedure sioc_user_cert (in graph_iri varchar, in person_iri varchar, in
       modulus := info[2];
       exponent := info[1];
       crt_iri := replace (person_iri, '#this', sprintf ('#cert%d', cert_id));
-      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, cert_iri ('identity'), person_iri);
-      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, cert_iri ('key'), crt_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), cert_iri ('RSAPublicKey'));
 
-      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
-      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, cert_iri ('modulus'), bin2hex (modulus), xsd_iri ('hexBinary'), null);
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, cert_iri ('exponent'), cast (exponent as varchar), xsd_iri ('int'), null);
     }
   return;
 }
@@ -1108,26 +1113,6 @@ create procedure sioc_user_info (
   if (protected is not null)
     DB.DBA.ODS_QUAD_URI (public_graph_iri, iri, rdfs_iri ('seeAlso'), protected);
 
-  -- disabled, see above function
-  if (0 and length (cert))
-	{
-	  declare info, modulus, exponent any;
-
-	  info := get_certificate_info (9, cast (cert as varchar), 0);
-	  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
-	    {
-    	  DB.DBA.ODS_QUAD_URI (public_graph_iri, crt_iri, cert_iri ('identity'), iri);
-	      modulus := info[2];
-	      exponent := info[1];
-    	  DB.DBA.ODS_QUAD_URI (public_graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
-    	  DB.DBA.ODS_QUAD_URI_L_TYPED (public_graph_iri, crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
-    	  DB.DBA.ODS_QUAD_URI_L_TYPED (public_graph_iri, crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
-    	  --DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
-    	  --DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
-    	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
-    	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
-	    }
-	}
   -- contact services
   SIOC..ods_object_services_attach (public_graph_iri, iri, 'user');
 };
@@ -3998,21 +3983,7 @@ create procedure SIOC..acl_webID ()
   exec (S, st, msg, vector (), 0);
   if (st = '00000')
   {
-  S := sprintf (' sparql define input:storage "" ' ||
-                ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
-                ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-                ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
-                '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
-                '   from <%s> ' ||
-                '  where { ' ||
-                '          ?id cert:identity <%s> ; ' ||
-                '              rsa:public_exponent ?exp ; ' ||
-                '              rsa:modulus ?mod . ' ||
-                '          optional { ?exp cert:decimal ?exp_val . ' ||
-                '          ?mod cert:hex ?mod_val . } ' ||
-                '        }',
-                foafGraph,
-                localIRI);
+    S := FOAF_SSL_QR (foafGraph, localIRI);
   exec (S, st, msg, vector (), 0, meta, data);
     if (st = '00000')
     {
@@ -5308,10 +5279,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?interest rdfs:label ?interest_label .
 	    ?person foaf:topic_interest ?topic_interest .
 	    ?topic_interest rdfs:label ?topic_interest_label .
-	    ?idn cert:identity ?person .
-	    ?idn rdf:type rsa:RSAPublicKey .
-	    ?idn rsa:public_exponent ?exp .
-	    ?idn rsa:modulus ?mod .
+	    ?person cert:key ?key .
+	    ?key rdf:type cert:RSAPublicKey .
+	    ?key cert:exponent ?exp .
+	    ?key cert:modulus ?mod .
 	    ?event_iri rdf:type ?bioEvent .
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
@@ -5331,7 +5302,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?interest rdfs:label ?interest_label  } .
 	      optional { ?person foaf:topic_interest ?topic_interest } .
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
-	        optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . } .
+	        optional { ?person cert:key ?key . ?key cert:exponent ?exp ; cert:modulus ?mod . } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
 		optional { ?person pingback:to ?pb } .
 		optional { ?person pingback:service ?psvc } .

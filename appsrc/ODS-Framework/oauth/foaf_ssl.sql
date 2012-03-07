@@ -1,21 +1,22 @@
 DB.DBA.EXEC_STMT ('create table FOAF_SSL_ACL (FS_URI varchar primary key, FS_UID varchar not null)', 0)
 ;
 
-create procedure FOAF_SSL_QR (in gr varchar, in agent varchar)
+create procedure FOAF_SSL_QR (in gr varchar, in uri varchar)
 {
-  declare qr any;
-  qr := sprintf (
-        'sparql define input:storage "" '||
-	' prefix cert: <http://www.w3.org/ns/auth/cert#> '||
-	' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
-	' from <%S> '||
-  	' where { '||
-	' 	  ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ' ||
-	' 	  optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } '||
-	'       } ',
-	gr, agent);
-  return qr;      
+    return sprintf ('sparql 
+    define input:storage ""  
+    prefix cert: <http://www.w3.org/ns/auth/cert#>  
+    prefix rsa: <http://www.w3.org/ns/auth/rsa#>  
+    select (str (?exp)) (str (?mod))  
+    from <%S>  
+    where 
+    {  	  
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  } 	  
+      union 
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }  	  
+      union 
+      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }        
+    }', gr, uri, uri, uri);
 }
 ;
 
