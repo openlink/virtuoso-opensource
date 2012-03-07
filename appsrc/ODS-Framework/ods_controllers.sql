@@ -3884,7 +3884,7 @@ create procedure ODS.ODS_API."user.mades.update" (
   {
     declare exit handler for sqlstate '*'
     {
-      exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+      SPARQL clear graph ?:tmp;
       goto _next;
     };
     qrs := vector (0,0,0);
@@ -3931,7 +3931,7 @@ create procedure ODS.ODS_API."user.mades.update" (
     	}
     }
   _found:
-    exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+    SPARQL clear graph ?:tmp;
   }
 _next:;
 
@@ -4865,7 +4865,7 @@ create procedure ODS.ODS_API.graph_clear (
   in graph varchar)
 {
   commit work;
-  exec (sprintf ('SPARQL clear graph <%s>', graph));
+  SPARQL clear graph ?:graph;
 }
 ;
 
